@@ -1,0 +1,168 @@
+---
+title: "Notification Architecture"
+version: "1.2.0"
+status: Active
+last_updated: "2026-05-25"
+authors:
+  - thitipongroo
+related_docs:
+  - 03-system-design.md
+  - 06-rbac-permission-matrix.md
+  - 15-event-driven-workflow.md
+  - 16-enterprise-event-flow.md
+---
+
+# 19. Notification Architecture
+
+## Table of Contents
+
+- [19.1 Purpose](#191-purpose)
+- [19.2 Notification Channels](#192-notification-channels)
+- [19.3 Notification Types](#193-notification-types)
+  - [Immediate (real-time)](#immediate-real-time)
+  - [Digest (scheduled)](#digest-scheduled)
+  - [Escalation (threshold-triggered)](#escalation-threshold-triggered)
+- [19.4 Role-to-Notification Routing](#194-role-to-notification-routing)
+- [19.5 Notification Record Schema](#195-notification-record-schema)
+- [19.6 Notification Preferences](#196-notification-preferences)
+- [19.7 Infrastructure](#197-infrastructure)
+
+---
+
+## 19.1 Purpose
+
+The Notification Service (defined in 03-system-design section 3.2) is responsible for
+delivering real-time and asynchronous alerts to users across all roles.
+
+Notifications are triggered by events from the Event Bus (see 15-event-driven-workflow
+and 16-enterprise-event-flow) and routed to recipients based on their role and project scope.
+
+---
+
+## 19.2 Notification Channels
+
+| Channel | Delivery | Use Case |
+| --- | --- | --- |
+| In-app (web) | SSE (Server-Sent Events) | Real-time alerts while user is active in web UI |
+| Push (mobile) | Expo Push Notifications (APNs / FCM) | Alerts to field users on React Native app |
+| Email | SendGrid (MVP) / AWS SES (production target) | Non-urgent summaries, daily digests, escalations |
+
+SMS is not included in MVP. It is evaluated post-MVP based on field user adoption data.
+
+Note on In-app Channel :
+
+SSE (Server-Sent Events) is used for in-app delivery because notification delivery is
+unidirectional (server → client only). SSE is simpler to scale than WebSocket for this
+use case and does not require persistent bidirectional session state on the server.
+WebSocket is not used for notifications — bidirectional communication is not required
+for alert delivery. See section 19.7 for infrastructure details.
+
+---
+
+## 19.3 Notification Types
+
+### Immediate (real-time)
+
+Delivered via in-app and push as soon as the triggering event is consumed :
+
+- Safety incident reported
+- Inspection failed
+- Budget exceeded
+- Delay detected
+- AI risk prediction generated
+- Purchase order approved / rejected
+- Task assigned to user
+
+### Digest (scheduled)
+
+Batched and delivered via email on a schedule :
+
+- Daily site summary (end of day — 18:00 local time)
+- Weekly project cost summary (Monday 08:00)
+- Weekly procurement status (Monday 08:00)
+
+### Escalation (threshold-triggered)
+
+Delivered when an unacknowledged immediate notification exceeds a timeout :
+
+- Safety incident unacknowledged after 30 minutes → escalate to Project Manager
+- Budget exceeded unacknowledged after 2 hours → escalate to Executive
+- AI risk prediction unacknowledged after 24 hours → escalate to PM
+
+---
+
+## 19.4 Role-to-Notification Routing
+
+Based on roles defined in 06-rbac-permission-matrix section 6.2 :
+
+| Event | Executive | PM | Site Engineer | Procurement | Finance | Safety Officer | CRM/Sales |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| DelayDetected | Push | Push | In-app | — | — | — | — |
+| BudgetExceeded | Push | Push | — | — | Push | — | — |
+| InspectionFailed | — | In-app | Push | — | — | In-app | — |
+| SafetyIncidentReported | In-app | Push | In-app | — | — | Push | — |
+| PurchaseApproved | — | In-app | — | Push | Push | — | — |
+| DeliveryReceived | — | In-app | Push | Push | — | — | — |
+| RiskPredictionGenerated | Push | Push | — | — | — | — | — |
+| VendorInvoiceApproved | — | — | — | In-app | Push | — | — |
+| BillingApproved | — | In-app | — | — | Push | — | — |
+| LeadCreated | — | — | — | — | — | — | Push |
+| OpportunityConverted | In-app | — | — | — | — | — | Push |
+
+Routing is project-scoped — a PM only receives notifications for projects they are assigned to.
+
+---
+
+## 19.5 Notification Record Schema
+
+Stored in PostgreSQL for audit and in-app inbox :
+
+- notification_id
+- tenant_id
+- recipient_user_id
+- event_type
+- event_source_id (FK to the triggering entity)
+- channel (in_app / push / email)
+- title
+- body
+- read_at (null = unread)
+- created_at
+
+---
+
+## 19.6 Notification Preferences
+
+Users can configure per-channel preferences per notification type :
+
+- Enable / disable a notification type per channel
+- Quiet hours: suppress push notifications between user-defined hours (default 22:00–07:00)
+- Digest frequency: daily or weekly
+
+Preferences are stored per user in PostgreSQL.
+Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) cannot be disabled.
+
+---
+
+## 19.7 Infrastructure
+
+- Notification Service subscribes to the Kafka event bus (see 15-event-driven-workflow section 15.3)
+- Push delivery: Expo Push Notification Service → APNs (iOS) / FCM (Android)
+- Email delivery: SendGrid (MVP) — migrates to AWS SES (with bounce/complaint handling) before production release
+- In-app delivery: Server-Sent Events (SSE) endpoint per authenticated user session
+- Notification records persisted to PostgreSQL before delivery — delivery is at-least-once
+
+---
+
+## References
+
+| ID | Title | Source |
+| --- | --- | --- |
+| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
+| [FCM] | Firebase Cloud Messaging Documentation | [firebase.google.com/docs/cloud-messaging](https://firebase.google.com/docs/cloud-messaging) |
+| [APNs] | Apple Push Notification service Documentation | [developer.apple.com/documentation/usernotifications](https://developer.apple.com/documentation/usernotifications) |
+| [WebSocket] | The WebSocket Protocol | RFC 6455 |
+| [SSE] | Server-Sent Events — W3C Recommendation | [html.spec.whatwg.org/multipage/server-sent-events.html](https://html.spec.whatwg.org/multipage/server-sent-events.html) |
+| [PostgreSQL] | PostgreSQL Documentation | [postgresql.org/docs](https://www.postgresql.org/docs/) |
+| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
+
+> 📎 See also: [03-system-design](03-system-design.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md)

@@ -1,0 +1,55 @@
+---
+title: "Executive Overview"
+version: "1.1.0"
+status: Active
+last_updated: "2026-05-26"
+authors:
+  - thitipongroo
+related_docs:
+  - 01-business-architecture.md
+  - 02-system-wide-integration.md
+  - 22-ai-architecture.md
+  - 29-final-strategic-positioning.md
+---
+
+# 0. Executive Overview
+
+> 📝 เอกสารนี้เขียนเป็นภาษาไทยสำหรับผู้บริหาร
+> *This document is intentionally written in Thai for the primary executive audience of the Thai-first platform.*
+
+เป้าหมายของระบบนี้คือสร้าง "Construction Operating System (Construction OS)" สำหรับธุรกิจ :
+
+- รับเหมาก่อสร้าง
+- พัฒนาอสังหาริมทรัพย์
+- ออกแบบสถาปัตย์/วิศวกรรม
+- Procurement
+- Site operation
+- Finance
+- Asset lifecycle
+- Facility management
+- Customer handover
+
+โดยระบบทั้งหมดต้องเชื่อมกันเป็น :
+
+> Single Source of Truth + Operational Intelligence + AI-native Workflow Platform
+
+- ไม่ใช่แค่ ERP
+- ไม่ใช่แค่ Project Management
+- ไม่ใช่แค่ BIM
+- ไม่ใช่แค่ Accounting
+
+แต่คือ "Digital Operating Layer" ของธุรกิจก่อสร้างครบวงจร
+
+---
+
+## Primary Market
+
+- ตลาดหลัก : ประเทศไทยและภูมิภาค Southeast Asia — first-mover market
+- ภาษาไทยเป็น first-class language ในทุก UI, AI outputs และ construction terminology
+- ออกแบบให้สอดคล้องกับ Thailand PDPA และ GDPR ตั้งแต่ Day 1
+- เป้าหมายคือกลุ่ม mid-market contractors ใน SEA ที่ยังใช้ Excel หรือ basic accounting tools (ประมาณ 90–95% ของตลาด)
+
+ดูรายละเอียด AI strategy สำหรับภาษาไทยได้ที่ [22-ai-architecture](22-ai-architecture.md)
+ดู competitive landscape และ market opportunity ได้ที่ [29-final-strategic-positioning](29-final-strategic-positioning.md)
+
+> 📎 See also: [01-business-architecture](01-business-architecture.md) · [02-system-wide-integration](02-system-wide-integration.md) · [22-ai-architecture](22-ai-architecture.md) · [29-final-strategic-positioning](29-final-strategic-positioning.md)

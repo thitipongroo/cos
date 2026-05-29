@@ -1,0 +1,226 @@
+---
+title: "RBAC Permission Matrix"
+version: "1.1.0"
+status: Active
+last_updated: "2026-05-25"
+authors:
+  - thitipongroo
+related_docs:
+  - 05-security-compliance.md
+  - 07-multi-tenant-architecture.md
+  - 13-product-architecture.md
+  - 20-ux-flow.md
+---
+
+# 6. RBAC Permission Matrix
+
+## Table of Contents
+
+- [6.1 Overview](#61-overview)
+- [6.2 Roles](#62-roles)
+- [6.3 Permission Levels](#63-permission-levels)
+- [6.4 Module Permission Matrix](#64-module-permission-matrix)
+- [6.5 ABAC Supplementary Rules](#65-abac-supplementary-rules)
+- [6.6 Default Role Seeding at Tenant Provisioning](#66-default-role-seeding-at-tenant-provisioning)
+- [6.7 System Admin — Platform-level Permissions](#67-system-admin--platform-level-permissions)
+
+---
+
+## 6.1 Overview
+
+This document defines the role-based access control (RBAC) matrix for all platform modules.
+
+Roles are defined in section 6.2 of this document (the authoritative role definition).
+20-ux-flow section 20.2 describes UX requirements per role — it does not define roles.
+Modules are defined in 13-product-architecture section 13.1 (Layer 2).
+Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
+
+---
+
+## 6.2 Roles
+
+| Role | Description |
+| --- | --- |
+| Executive | Company owner or C-level; sees all projects and financial data |
+| Project Manager | Manages one or more projects end-to-end |
+| Site Engineer | Executes and reports daily field work |
+| Procurement Officer | Manages RFQ, PO, vendors, and deliveries |
+| Finance | Manages cost, billing, payments, and cash flow |
+| Safety Officer | Manages safety checklists, incidents, and compliance |
+| CRM / Sales Manager | Manages leads, opportunities, and customer accounts |
+| Tenant Admin | Configures the tenant: users, roles, workflows, integrations |
+| System Admin | Platform-level administration (SaaS operator only) |
+
+---
+
+## 6.3 Permission Levels
+
+| Level | Meaning |
+| --- | --- |
+| — | No access |
+| R | Read only |
+| RW | Read and write (create, update) |
+| RWD | Read, write, and delete |
+| A | Approve (can trigger approval workflow step) |
+| FULL | Full access including configuration |
+
+---
+
+## 6.4 Module Permission Matrix
+
+### Core Platform
+
+| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| User management | R | — | — | — | — | — | — | FULL |
+| Role assignment | — | — | — | — | — | — | — | FULL |
+| Workflow configuration | R | R | — | — | — | — | — | FULL |
+| Audit logs | R | R | — | — | R | — | — | FULL |
+| Notification preferences | R | RW | RW | RW | RW | RW | RW | FULL |
+
+### Construction Modules
+
+| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Project (create/configure) | RW | RW | — | — | — | — | — | FULL |
+| Project (view) | FULL | FULL | R | R | R | R | R | FULL |
+| BOQ | R | RW | R | R | R | — | — | FULL |
+| Tasks | R | RW | RW | R | — | R | — | FULL |
+| Site reports | R | RW | RW | R | R | R | — | FULL |
+| Inspections / QC | R | RW | RW | — | — | RW | — | FULL |
+| Safety checklists | R | R | RW | — | — | RWD | — | FULL |
+| Safety incidents | R | R | RW | — | — | RWD | — | FULL |
+| Workforce attendance | R | RW | RW | — | R | — | — | FULL |
+| Equipment | R | RW | R | R | R | — | — | FULL |
+| Permits | R | RW | R | — | — | RW | — | FULL |
+
+### Procurement Modules
+
+| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Purchase requests | R | RW | RW | RWD | R | — | — | FULL |
+| RFQ | R | R | — | RWD | R | — | — | FULL |
+| Vendor quotations | R | R | — | RWD | R | — | — | FULL |
+| Purchase orders | A | A | — | RW | A | — | — | FULL |
+| Deliveries | R | R | RW | RWD | R | — | — | FULL |
+| Vendor Invoices (AP) | A | R | — | RW | RWD | — | — | FULL |
+| Inventory | R | R | RW | RWD | R | — | — | FULL |
+| Vendor management | R | R | — | RWD | R | — | — | FULL |
+
+### Financial Modules
+
+| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Budget (view) | FULL | R | — | R | FULL | — | — | FULL |
+| Budget (edit) | A | RW | — | — | RW | — | — | FULL |
+| Cost transactions | R | R | — | R | RWD | — | — | FULL |
+| Client Billing (AR) | A | A | — | R | RWD | — | — | FULL |
+| AR Receipts | R | R | — | — | RW | — | — | FULL |
+| Payments | A | — | — | — | RW | — | — | FULL |
+| Contracts | R | RW | — | R | R | — | — | FULL |
+| Financial reports | R | R | — | — | FULL | — | — | FULL |
+| Cash flow forecast | R | R | — | — | FULL | — | — | FULL |
+
+### Asset Management
+
+| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Unit inventory | R | RW | R | — | R | — | R | FULL |
+| Asset handover | R | RW | RW | — | R | — | RW | FULL |
+| Warranty | R | R | — | — | R | — | R | FULL |
+| Maintenance | R | RW | R | R | R | — | — | FULL |
+
+### CRM Modules
+
+| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Leads | R | — | — | — | — | — | RWD | FULL |
+| Opportunities | R | — | — | — | R | — | RWD | FULL |
+| Contacts | R | — | — | — | — | — | RWD | FULL |
+| Customers | R | R | — | — | R | — | RWD | FULL |
+
+### Intelligence Layer
+
+| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Executive dashboard | FULL | R | — | — | R | — | — | FULL |
+| AI risk predictions | R | R | R | R | R | R | — | FULL |
+| Forecasting reports | R | R | — | R | R | — | — | FULL |
+| Knowledge graph (read) | R | R | — | — | — | — | — | FULL |
+| AI copilot | R | R | R | R | R | R | R | FULL |
+
+---
+
+## 6.5 ABAC Supplementary Rules
+
+RBAC defines module-level access. ABAC (Attribute-Based Access Control) enforces
+row-level and context-level rules on top of RBAC :
+
+- Project scope: a PM can only read/write entities within projects they are assigned to
+- Tenant scope: all queries are filtered by tenant_id — cross-tenant access is blocked at service layer
+- Approval authority: Finance can approve Vendor Invoices (AP) only up to their configured approval limit; above the limit requires Executive approval
+- Approval authority: PM can approve Client Billing (AR) only up to their configured approval limit; above the limit requires Executive approval
+- Self-service: a Site Engineer can update only their own attendance record, not other workers'
+
+---
+
+## 6.6 Default Role Seeding at Tenant Provisioning
+
+When a new tenant is provisioned (see 07-multi-tenant-architecture section 7.6),
+these default roles are created :
+
+- Executive (1 seat — the account owner)
+- Tenant Admin (1 seat — may be the same person as Executive)
+- Project Manager
+- Site Engineer
+- Procurement Officer
+- Finance
+- Safety Officer
+- CRM / Sales Manager
+
+All roles are customizable per tenant after provisioning.
+
+---
+
+## 6.7 System Admin — Platform-level Permissions
+
+System Admin (defined in section 6.2) is a cross-tenant platform operator role assigned
+only to SaaS platform operators. It is NOT provisioned to any tenant.
+Because System Admin operates outside tenant-scoped module boundaries, it is not included
+as a column in the module permission matrices in section 6.4.
+
+System Admin platform capabilities :
+
+| Capability | Description |
+| --- | --- |
+| Tenant management | Create, suspend, delete, and configure tenants via the platform admin API |
+| Cross-tenant read | Read-only access to any tenant's data for support, debugging, and compliance |
+| Platform configuration | Update platform-wide settings: feature flags, rate limits, SLA parameters |
+| Keycloak administration | Manage realms, clients, and IdP federation configurations |
+| Billing and subscription | Manage tenant billing state, subscription tier, and usage quotas |
+| Audit access | Read all tenant audit logs for platform-level compliance and incident investigation |
+| Emergency override | Temporary elevated write access for incident response — requires mandatory justification string |
+
+All System Admin actions are immutably audit-logged with the operator's user identity,
+action type, target tenant_id, and a mandatory justification string.
+No System Admin action is silent — every cross-tenant operation is fully traceable.
+
+System Admin cannot be assigned to a tenant-level user via the Tenant Admin role
+provisioning flow (section 6.6). It requires direct platform operator provisioning
+by the SaaS operator team.
+
+---
+
+## References
+
+| ID | Title | Source |
+| --- | --- | --- |
+| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
+| [NIST-RBAC] | Role Based Access Control — NIST SP 800-207 | NIST Special Publication 800-207 |
+| [ABAC] | Guide to Attribute Based Access Control (ABAC) | NIST SP 800-162 |
+| [OAuth2] | The OAuth 2.0 Authorization Framework | RFC 6749 |
+| [OIDC] | OpenID Connect Core 1.0 | [openid.net/specs/openid-connect-core-1_0.html](https://openid.net/specs/openid-connect-core-1_0.html) |
+| [Keycloak] | Keycloak Server Documentation | [keycloak.org/documentation](https://www.keycloak.org/documentation) |
+| [JWT-RFC] | JSON Web Token (JWT) | RFC 7519 |
+
+> 📎 See also: [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [13-product-architecture](13-product-architecture.md) · [20-ux-flow](20-ux-flow.md)
