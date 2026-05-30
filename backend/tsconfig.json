@@ -1,0 +1,34 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "baseUrl": ".",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "paths": {
+      "@cos/shared": ["../packages/@cos/shared/src/index.ts"],
+      "@cos/shared/*": ["../packages/@cos/shared/src/*"],
+      "@cos/rbac": ["../packages/@cos/rbac/src/index.ts"],
+      "@cos/rbac/*": ["../packages/@cos/rbac/src/*"],
+      "@cos/logger": ["../packages/@cos/logger/src/index.ts"],
+      "@cos/logger/*": ["../packages/@cos/logger/src/*"],
+      "@cos/tracing": ["../packages/@cos/tracing/src/index.ts"],
+      "@cos/tracing/*": ["../packages/@cos/tracing/src/*"],
+      "@cos/financial": ["../packages/@cos/financial/src/index.ts"],
+      "@cos/financial/*": ["../packages/@cos/financial/src/*"],
+      "@cos/types": ["../packages/@cos/types/src/index.ts"],
+      "@cos/types/*": ["../packages/@cos/types/src/*"],
+      "@cos/config": ["../packages/@cos/config/src/index.ts"],
+      "@cos/config/*": ["../packages/@cos/config/src/*"],
+      "@cos/validation": ["../packages/@cos/validation/src/index.ts"],
+      "@cos/validation/*": ["../packages/@cos/validation/src/*"],
+      "@cos/database": ["../packages/@cos/database/src/index.ts"],
+      "@cos/database/*": ["../packages/@cos/database/src/*"],
+      "@cos/extension-points": ["../packages/@cos/extension-points/src/index.ts"],
+      "@cos/extension-points/*": ["../packages/@cos/extension-points/src/*"]
+    }
+  },
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,27 @@
+// Construction OS — Prisma Schema
+// Phase 1: Foundation structure only
+// Schema-per-tenant: TenantPrismaService sets SET LOCAL search_path = {tenant_code}
+// All tenant entity schemas are defined and migrated per-phase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Application connects via PgBouncer (QM-18) — never directly to port 5432
+  url      = env("DATABASE_URL")
+}
+
+// ─── PLATFORM SCHEMA (cross-tenant system tables) ─────────────────────────
+// These tables live in the "platform" schema, not a tenant schema.
+// Provisioned by Phase 2 (Auth + Tenant System).
+//
+// Phase 2 adds:
+//   - platform.tenants
+//   - platform.users
+//   - platform.tenant_memberships
+//   - platform.audit_logs
+//
+// Phase 3+: tenant-scoped entities live in their own schemas,
+// managed via TenantPrismaService (SET LOCAL search_path = {tenant_code}).
