@@ -1,0 +1,72 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs
+dist
+build
+.next
+out
+coverage
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Secrets — never commit these
+*.pem
+*.key
+*.pfx
+*.p12
+*.crt
+*.cer
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Turbo
+.turbo
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+.venv
+venv
+.pytest_cache
+.mypy_cache
+
+# Go
+vendor
+
+# Prisma
+backend/prisma/migrations/**/migration_lock.toml
+
+# Docker
+.docker
+
+# Test artifacts
+test-results
+playwright-report
+
+# cos-audit (content is git-ignored, directory committed)
+cos-audit/*
+!cos-audit/.gitkeep
