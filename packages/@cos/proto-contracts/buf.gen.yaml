@@ -1,0 +1,8 @@
+version: v2
+plugins:
+  - plugin: buf.build/grpc/typescript:v0.1.0
+    out: src/generated
+    opt:
+      - import_style=commonjs
+  - plugin: buf.build/bufbuild/es:v1.9.0
+    out: src/generated

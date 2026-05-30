@@ -1,0 +1,13 @@
+{
+  "name": "@cos/extension-points",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "import": "./dist/index.js", "require": "./dist/index.js", "types": "./dist/index.d.ts" }
+  },
+  "scripts": { "build": "tsc", "dev": "tsc --watch", "type-check": "tsc --noEmit", "clean": "rm -rf dist" },
+  "dependencies": { "@cos/logger": "workspace:*", "@nestjs/common": "^10.3.0" },
+  "devDependencies": { "typescript": "^5.4.0", "@types/node": "^20.12.0" }
+}

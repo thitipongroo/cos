@@ -1,0 +1,13 @@
+{
+  "name": "@cos/rbac",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "import": "./dist/index.js", "require": "./dist/index.js", "types": "./dist/index.d.ts" }
+  },
+  "scripts": { "build": "tsc", "dev": "tsc --watch", "type-check": "tsc --noEmit", "clean": "rm -rf dist" },
+  "dependencies": { "@cos/types": "workspace:*", "@nestjs/common": "^10.3.0" },
+  "devDependencies": { "typescript": "^5.4.0", "reflect-metadata": "^0.2.0" }
+}
