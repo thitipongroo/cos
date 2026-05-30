@@ -1,27 +1,128 @@
 // Construction OS — Prisma Schema
-// Phase 1: Foundation structure only
+// Phase 2: Platform schema (cross-tenant system tables)
 // Schema-per-tenant: TenantPrismaService sets SET LOCAL search_path = {tenant_code}
 // All tenant entity schemas are defined and migrated per-phase
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
   // Application connects via PgBouncer (QM-18) — never directly to port 5432
   url      = env("DATABASE_URL")
+  schemas  = ["platform"]
 }
 
 // ─── PLATFORM SCHEMA (cross-tenant system tables) ─────────────────────────
-// These tables live in the "platform" schema, not a tenant schema.
-// Provisioned by Phase 2 (Auth + Tenant System).
-//
-// Phase 2 adds:
-//   - platform.tenants
-//   - platform.users
-//   - platform.tenant_memberships
-//   - platform.audit_logs
-//
-// Phase 3+: tenant-scoped entities live in their own schemas,
+// These tables live in the "platform" schema (not a tenant schema).
+// Identity module tables are cross-tenant by design.
+// Tenant-scoped entities (Phase 3+) live in {tenant_code} schemas
 // managed via TenantPrismaService (SET LOCAL search_path = {tenant_code}).
+
+enum PlanType {
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+
+  @@schema("platform")
+}
+
+enum CosRoleEnum {
+  SYSTEM_ADMIN
+  TENANT_ADMIN
+  EXECUTIVE
+  PROJECT_MANAGER
+  PROCUREMENT_OFFICER
+  FINANCE
+  SAFETY_OFFICER
+  SITE_ENGINEER
+  CRM_SALES_MANAGER
+  // Implementation sub-roles (not in spec §6.2)
+  PROC_MANAGER
+  SITE_WORKER
+  VIEWER
+
+  @@schema("platform")
+}
+
+// @pdpa(category: "organizational") — tenant data is not personal data
+model Tenant {
+  tenantId      String   @id @default(dbgenerated("gen_random_uuid()")) @map("tenant_id") @db.Uuid
+  tenantCode    String   @unique @map("tenant_code") @db.VarChar(50)
+  tenantName    String   @map("tenant_name") @db.VarChar(255)
+  keycloakRealm String   @unique @map("keycloak_realm") @db.VarChar(100)
+  planType      PlanType @map("plan_type")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  users            User[]
+  memberships      TenantMembership[]
+  auditLogs        AuditLog[]
+
+  @@map("tenants")
+  @@schema("platform")
+}
+
+// @pdpa(category: "identity") — email and display_name are personal data
+model User {
+  userId          String   @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
+  tenantId        String   @map("tenant_id") @db.Uuid
+  keycloakUserId  String   @unique @map("keycloak_user_id") @db.VarChar(255)
+  // @pdpa(category: "contact") — email is personal data
+  email           String   @map("email") @db.VarChar(255)
+  // @pdpa(category: "identity") — display name is personal data
+  displayName     String   @map("display_name") @db.VarChar(255)
+  isActive        Boolean  @default(true) @map("is_active")
+  mfaEnabled      Boolean  @default(false) @map("mfa_enabled")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  tenant      Tenant             @relation(fields: [tenantId], references: [tenantId])
+  memberships TenantMembership[]
+  auditLogs   AuditLog[]         @relation("ActorLogs")
+
+  @@index([tenantId, email])
+  @@map("users")
+  @@schema("platform")
+}
+
+model TenantMembership {
+  membershipId String      @id @default(dbgenerated("gen_random_uuid()")) @map("membership_id") @db.Uuid
+  tenantId     String      @map("tenant_id") @db.Uuid
+  userId       String      @map("user_id") @db.Uuid
+  role         CosRoleEnum @map("role")
+  assignedAt   DateTime    @default(now()) @map("assigned_at") @db.Timestamptz()
+
+  tenant Tenant @relation(fields: [tenantId], references: [tenantId])
+  user   User   @relation(fields: [userId], references: [userId])
+
+  @@unique([tenantId, userId])
+  @@map("tenant_memberships")
+  @@schema("platform")
+}
+
+// Immutable: no UPDATE or DELETE allowed via application (QM-4, Phase 16 RLS)
+// @pdpa(category: "operational") — actor_id traces to user but is not directly PII
+model AuditLog {
+  logId        String   @id @default(dbgenerated("gen_random_uuid()")) @map("log_id") @db.Uuid
+  tenantId     String   @map("tenant_id") @db.Uuid
+  actorId      String   @map("actor_id") @db.Uuid
+  action       String   @map("action") @db.VarChar(255)
+  resourceType String   @map("resource_type") @db.VarChar(100)
+  resourceId   String?  @map("resource_id") @db.Uuid
+  // @pdpa: [REDACTED] in logs — store as-is in audit_logs only (operational necessity)
+  ipAddress    String?  @map("ip_address") @db.Inet
+  userAgent    String?  @map("user_agent") @db.Text
+  occurredAt   DateTime @default(now()) @map("occurred_at") @db.Timestamptz()
+  metadata     Json?    @map("metadata") @db.JsonB
+
+  tenant Tenant @relation(fields: [tenantId], references: [tenantId])
+  actor  User   @relation("ActorLogs", fields: [actorId], references: [userId])
+
+  @@index([tenantId, occurredAt(sort: Desc)])
+  @@map("audit_logs")
+  @@schema("platform")
+}

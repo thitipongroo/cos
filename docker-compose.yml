@@ -16,6 +16,7 @@ volumes:
   minio_data:
   vault_data:
   pgbouncer_config:
+  keycloak_data:
 
 networks:
   cos-network:
@@ -286,6 +287,39 @@ services:
       - "${TEMPORAL_UI_PORT:-8088}:8080"
     depends_on:
       - temporal
+    networks:
+      - cos-network
+
+  # ─── Keycloak 24.x — Identity Provider (Phase 2) ─────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.4
+    container_name: cos-keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-cos_keycloak_admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-construction_os}
+      KC_DB_USERNAME: ${POSTGRES_USER:-cos}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-cos_dev_password}
+      KC_DB_SCHEMA: keycloak
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_LOG_LEVEL: warn
+    ports:
+      - "${KEYCLOAK_PORT:-8090}:8080"
+    volumes:
+      - ./infrastructure/keycloak/realms:/opt/keycloak/data/import:ro
+      - keycloak_data:/opt/keycloak/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - cos-network
 

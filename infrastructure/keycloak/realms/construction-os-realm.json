@@ -1,0 +1,83 @@
+{
+  "id": "construction-os",
+  "realm": "construction-os",
+  "displayName": "Construction OS",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "accessTokenLifespan": 900,
+  "refreshTokenMaxReuse": 0,
+  "ssoSessionMaxLifespan": 604800,
+  "offlineSessionMaxLifespan": 5184000,
+  "accessCodeLifespan": 60,
+  "roles": {
+    "realm": [
+      { "name": "SYSTEM_ADMIN", "description": "Platform admin (cross-tenant)" },
+      { "name": "TENANT_ADMIN", "description": "Tenant administrator" },
+      { "name": "EXECUTIVE", "description": "Company owner or C-level" },
+      { "name": "PROJECT_MANAGER", "description": "Full access to assigned projects" },
+      { "name": "PROCUREMENT_OFFICER", "description": "Procurement data entry" },
+      { "name": "FINANCE", "description": "Cost, billing, payments" },
+      { "name": "SAFETY_OFFICER", "description": "Safety checklists and compliance" },
+      { "name": "SITE_ENGINEER", "description": "Site operations and field work" },
+      { "name": "CRM_SALES_MANAGER", "description": "Leads and customer accounts" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "cos-backend",
+      "name": "Construction OS Backend",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "cos-backend-secret-dev",
+      "bearerOnly": true,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.signed.response.alg": "RS256"
+      }
+    },
+    {
+      "clientId": "cos-web",
+      "name": "Construction OS Web",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3001/*",
+        "http://localhost:3002/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3001",
+        "http://localhost:3002"
+      ],
+      "attributes": {
+        "access.token.signed.response.alg": "RS256",
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ],
+  "defaultDefaultClientScopes": [
+    "web-origins",
+    "roles",
+    "profile",
+    "email"
+  ],
+  "protocolMappers": []
+}

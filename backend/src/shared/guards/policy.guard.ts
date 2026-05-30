@@ -1,0 +1,43 @@
+// PolicyGuard — enforces ABAC rules (project_membership, tenant_match, resource_ownership).
+// Default ABAC covers MVP. Swap advanced policy via EP-AUTH-001.
+
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { createLogger } from '@cos/logger';
+import { JwtPayload } from '../../modules/identity/jwt.payload';
+
+const logger = createLogger('policy-guard');
+
+export interface ResourceContext {
+  tenantId?: string;
+  ownerId?: string;
+  projectId?: string;
+}
+
+@Injectable()
+export class PolicyGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest<{
+      user?: JwtPayload;
+      params?: Record<string, string>;
+      tenantId?: string;
+    }>();
+
+    const user = request.user;
+    if (!user) return false;
+
+    // 1. tenant_match — request tenant must match JWT tenant
+    const requestTenantId = request.tenantId ?? request.params?.['tenantId'];
+    if (requestTenantId && requestTenantId !== user.cos_tenant_id) {
+      logger.warn(
+        { userId: user.cos_user_id, requestTenantId, jwtTenantId: user.cos_tenant_id },
+        'Cross-tenant access attempt blocked',
+      );
+      throw new ForbiddenException('Cross-tenant access is not allowed');
+    }
+
+    // 2. project_membership and resource_ownership are enforced in service layer
+    //    (requires DB query — guard enforces what can be checked from JWT alone)
+
+    return true;
+  }
+}

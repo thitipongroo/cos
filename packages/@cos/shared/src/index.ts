@@ -26,3 +26,9 @@ export type * from './events/finance.budget.exceeded.v1';
 export type * from './events/procurement.vendor_invoice.approved.v1';
 export type * from './events/finance.cashflow_risk.detected.v1';
 export type * from './events/ai.risk_prediction.generated.v1';
+
+// Phase 2 identity events (canonical names — spec §Phase 2 Kafka events)
+export type * from './events/identity.tenant.created.v1';
+export type * from './events/identity.tenant.deactivated.v1';
+export type * from './events/identity.user.created.v1';
+export type * from './events/identity.user.role_changed.v1';

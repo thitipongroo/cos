@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 
 @Module({
   imports: [
@@ -24,5 +26,9 @@ import { TenantModule } from './modules/tenant/tenant.module';
     // Phase 22: WorkforceModule
   ],
   controllers: [HealthController],
+  providers: [
+    // Global audit interceptor — logs all mutating operations (QM-4, Phase 16 RLS)
+    { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+  ],
 })
 export class AppModule {}
