@@ -41,7 +41,7 @@ flowchart TD
 > Independent Go workers handle analytics and KG ingestion; Python services handle AI/ML.
 > **Write path:** Application writes to DB first (Outbox Pattern). Events flow from DB to Kafka
 > via CDC (Debezium) and the Outbox Pattern — not between the Application Layer and DB.
-> See [09-data-architecture](09-data-architecture.md) section 9.4, [ADR-001](../01-architecture/adr/001-modular-monolith.md), and [01-architecture/README.md](../01-architecture/README.md).
+> See [09-data-architecture](09-data-architecture.md) section 9.4, [ADR-001](../architecture/adr/001-modular-monolith.md), and [architecture/README.md](../architecture/README.md).
 
 ---
 

@@ -295,21 +295,21 @@ All dashboards are version-controlled as Grafana JSON in the GitOps repository.
 
 ### Incident Runbooks
 
-Operational runbooks for on-call response live in `docs/03-runbooks/`:
+Operational runbooks for on-call response live in `docs/runbooks/`:
 
 | Scenario | Runbook |
 | --- | --- |
-| Service deployment / rollout | [deployment.md](../03-runbooks/deployment.md) |
-| Service rollback | [rollback.md](../03-runbooks/rollback.md) |
-| P1/P2 incident management | [incident-response.md](../03-runbooks/incident-response.md) |
-| Full disaster recovery | [disaster-recovery.md](../03-runbooks/disaster-recovery.md) |
-| Production readiness gate | [production-readiness.md](../03-runbooks/production-readiness.md) |
-| AI feature activation | [ai-readiness-checklist.md](../03-runbooks/ai-readiness-checklist.md) |
-| DB failover (PostgreSQL RDS Multi-AZ) | [db-failover.md](../03-runbooks/db-failover.md) |
-| Kafka consumer lag & partition rebalance | [kafka-partition-rebalance.md](../03-runbooks/kafka-partition-rebalance.md) |
-| Keycloak realm recovery | [keycloak-realm-recovery.md](../03-runbooks/keycloak-realm-recovery.md) |
-| Keycloak realm daily backup (CronJob spec) | [keycloak-realm-backup.md](../03-runbooks/keycloak-realm-backup.md) |
-| Temporal.io worker restart & stuck workflows | [temporal-worker-restart.md](../03-runbooks/temporal-worker-restart.md) |
+| Service deployment / rollout | [deployment.md](../runbooks/deployment.md) |
+| Service rollback | [rollback.md](../runbooks/rollback.md) |
+| P1/P2 incident management | [incident-response.md](../runbooks/incident-response.md) |
+| Full disaster recovery | [disaster-recovery.md](../runbooks/disaster-recovery.md) |
+| Production readiness gate | [production-readiness.md](../runbooks/production-readiness.md) |
+| AI feature activation | [ai-readiness-checklist.md](../runbooks/ai-readiness-checklist.md) |
+| DB failover (PostgreSQL RDS Multi-AZ) | [db-failover.md](../runbooks/db-failover.md) |
+| Kafka consumer lag & partition rebalance | [kafka-partition-rebalance.md](../runbooks/kafka-partition-rebalance.md) |
+| Keycloak realm recovery | [keycloak-realm-recovery.md](../runbooks/keycloak-realm-recovery.md) |
+| Keycloak realm daily backup (CronJob spec) | [keycloak-realm-backup.md](../runbooks/keycloak-realm-backup.md) |
+| Temporal.io worker restart & stuck workflows | [temporal-worker-restart.md](../runbooks/temporal-worker-restart.md) |
 
 ### Post-incident Review
 

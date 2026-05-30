@@ -19,7 +19,7 @@ related_docs:
 
 # 32. Implementation Specifications
 
-> **Authority note:** This document is part of `docs/00-specifications/` — the source of truth
+> **Authority note:** This document is part of `docs/specifications/` — the source of truth
 > for all platform decisions. `context/00_master_construction_os.md` derives its implementation
 > sections from this document. On any conflict, this document wins.
 

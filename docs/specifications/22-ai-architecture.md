@@ -286,7 +286,7 @@ When the decision is made, produce a one-page ADR (Architecture Decision Record)
 - **Migration impact:** (any changes to existing Temporal.io approval workflows)
 - **Owner:** (who is responsible for implementation in Phase C)
 
-File the ADR as `docs/01-architecture/adr-layer-c-agent-framework.md` and update
+File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 [LAYER-C-001] status in `extension-points.md` from `PENDING` to `DECIDED`.
 
 ---

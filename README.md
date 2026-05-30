@@ -7,7 +7,7 @@
 > deterministic commands for that stage only.
 >
 > **Authority hierarchy:**
-> `docs/00-specifications/` > `context/00_master_construction_os.md` > product owner chat > stage files 01–11
+> `docs/specifications/` > `context/00_master_construction_os.md` > product owner chat > stage files 01–11
 >
 > **All technology decisions, architecture choices, EP resolutions, and platform specifications
 > are defined in `00_master_construction_os.md`. Stage files (01–11) provide execution context

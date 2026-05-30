@@ -26,6 +26,8 @@ coverage
 # OS
 .DS_Store
 Thumbs.db
+context.md
+context/
 
 # IDE
 .vscode

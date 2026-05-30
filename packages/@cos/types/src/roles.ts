@@ -1,6 +1,6 @@
 // RBAC Role Definitions
 // Source: context/00_master_construction_os.md §Phase 2 (C-03 resolved 2026-05-27; ADR-014)
-// Authoritative spec: docs/00-specifications/06-rbac-permission-matrix.md §6.2
+// Authoritative spec: docs/specifications/06-rbac-permission-matrix.md §6.2
 
 /** Spec §6.2 roles — seeded at tenant provisioning */
 export enum CosRole {

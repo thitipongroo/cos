@@ -6,8 +6,8 @@ last_updated: "2026-05-29"
 authors:
   - thitipongroo
 related_docs:
-  - 00-specifications/README.md
-  - 01-architecture/README.md
+  - specifications/README.md
+  - architecture/README.md
 ---
 
 # Construction OS — Documentation
@@ -15,7 +15,7 @@ related_docs:
 > AI-native Construction Operating System — Multi-tenant SaaS for the Thai construction and real estate industry.
 
 This folder contains the complete technical documentation for the Construction OS platform.
-New team members should start with the **Quick Start** table below; on-call engineers go directly to `03-runbooks/`.
+New team members should start with the **Quick Start** table below; on-call engineers go directly to `runbooks/`.
 
 ---
 
@@ -23,10 +23,10 @@ New team members should start with the **Quick Start** table below; on-call engi
 
 | Sub-tree | Contents | Entry point |
 | --- | --- | --- |
-| [00-specifications/](00-specifications/) | Master architecture specification suite — documents covering business architecture, system design, API, security, AI, data, and go-to-market strategy | [README](00-specifications/README.md) |
-| [01-architecture/](01-architecture/) | Architecture overview diagram, service interaction map, tenant isolation model, and Architecture Decision Records (ADRs) | [README](01-architecture/README.md) |
-| [02-manual/](02-manual/) | Developer manual — covering environment setup, tech stack, API reference, Kafka events, mobile app, CI/CD pipeline, and extension points | [README](02-manual/README.md) |
-| [03-runbooks/](03-runbooks/) | Operational runbooks —  covering deployment (ArgoCD), rollback, incident response, disaster recovery, Kafka rebalance, Keycloak backup/recovery, and AI readiness | [README](03-runbooks/README.md) |
+| [specifications/](specifications/) | Master architecture specification suite — documents covering business architecture, system design, API, security, AI, data, and go-to-market strategy | [README](specifications/README.md) |
+| [architecture/](architecture/) | Architecture overview diagram, service interaction map, tenant isolation model, and Architecture Decision Records (ADRs) | [README](architecture/README.md) |
+| [manual/](manual/) | Developer manual — covering environment setup, tech stack, API reference, Kafka events, mobile app, CI/CD pipeline, and extension points | [README](manual/README.md) |
+| [runbooks/](runbooks/) | Operational runbooks —  covering deployment (ArgoCD), rollback, incident response, disaster recovery, Kafka rebalance, Keycloak backup/recovery, and AI readiness | [README](runbooks/README.md) |
 | [api/](api/) | OpenAPI 3.1 specifications — domain API contracts (auth, projects, procurement, finance, site operations, workforce, AI, and more) | [README](api/README.md) |
 
 ---
@@ -35,9 +35,9 @@ New team members should start with the **Quick Start** table below; on-call engi
 
 | Role | Start here |
 | --- | --- |
-| New engineer (first day) | [00-specifications/README.md → Quick Start](00-specifications/README.md#-quick-start-for-new-team-members) |
-| Backend / API developer | [02-manual/getting-started.md](02-manual/getting-started.md) → [02-manual/api-reference.md](02-manual/api-reference.md) |
-| Architecture decisions | [01-architecture/README.md](01-architecture/README.md) |
+| New engineer (first day) | [specifications/README.md → Quick Start](specifications/README.md#-quick-start-for-new-team-members) |
+| Backend / API developer | [manual/getting-started.md](manual/getting-started.md) → [manual/api-reference.md](manual/api-reference.md) |
+| Architecture decisions | [architecture/README.md](architecture/README.md) |
 | API consumer / integration | [api/README.md](api/README.md) |
-| On-call / operations | [03-runbooks/README.md](03-runbooks/README.md) |
-| Product / strategy | [00-specifications/README.md → Reading Order by Role](00-specifications/README.md#reading-order-by-role) |
+| On-call / operations | [runbooks/README.md](runbooks/README.md) |
+| Product / strategy | [specifications/README.md → Reading Order by Role](specifications/README.md#reading-order-by-role) |
