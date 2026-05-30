@@ -4,12 +4,13 @@
 > Source: context/00_master_construction_os.md §EXTENSION POINT PROTOCOL
 
 ## Status legend
+
 - `STUB` — stub class created, not yet implemented
 - `RESOLVED` — fully implemented
 - `CLOSED` — not needed (see note)
 
 | EP ID | Name | Status | Version | Phase | Trigger | File |
-|-------|------|--------|---------|-------|---------|------|
+| ------- | ------ | -------- | --------- | ------- | --------- | ------ |
 | EP-API-001 | APIMonetizationProvider | STUB | 0.1.0 | Phase 5+ | First API-as-a-product customer or marketplace launch | — |
 | EP-AUTH-001 | AdvancedABACPolicy | STUB | 0.1.0 | Phase 2 | Enterprise customer requires custom attribute rules | — |
 | EP-AUTH-002 | SMSOTPProvider | RESOLVED | 1.0.0 | Phase 2 | AWS SNS selected | identity module |

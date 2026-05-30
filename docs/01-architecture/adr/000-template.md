@@ -24,14 +24,18 @@ Why is this the right decision? What alternatives were considered and why were t
 What becomes easier or harder to do because of this decision?
 
 ### Positive
+
 - ...
 
 ### Negative
+
 - ...
 
 ### Neutral
+
 - ...
 
 ## References
+
 - [Link to spec section]
 - [Link to related ADR]
