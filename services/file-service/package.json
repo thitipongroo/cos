@@ -1,0 +1,28 @@
+{
+  "name": "@cos/file-service",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/main.ts",
+    "start": "node dist/main.js",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:unit": "jest --testPathPattern='src/'",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "fastify": "^4.27.0",
+    "@fastify/multipart": "^8.3.0",
+    "@fastify/cors": "^9.0.0",
+    "minio": "^7.1.0",
+    "@cos/logger": "workspace:*",
+    "@cos/types": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.12.0",
+    "ts-node": "^10.9.0",
+    "jest": "^29.7.0"
+  }
+}
