@@ -1,0 +1,256 @@
+# Construction OS — Kafka Topic Definitions
+# Source: context/00_master_construction_os.md §Phase 8 — EVENT-DRIVEN INFRASTRUCTURE
+#
+# Topic naming: {service}.{entity}.{event}
+# Schema subject naming: {topic-name}-value
+# Compatibility mode: BACKWARD_TRANSITIVE (all schemas must register before first producer use)
+#
+# Production:  replication_factor=3, min_isr=2
+# Development: replication_factor=1, min_isr=1 (docker-compose override)
+#
+# Log compaction: enabled for entity state topics (project.project.*, etc.)
+# Max message size: 1MB (large payloads → store in S3, reference in event)
+
+topics:
+  # ─── Construction / Project ─────────────────────────────────────────────────
+  - name: project.project.created
+    canonical_event: construction.project.created.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000     # 7 days
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: project.project.updated
+    canonical_event: construction.project.updated.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: project.project.status_changed
+    canonical_event: construction.project.status_changed.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: compact,delete
+    max_message_bytes: 1048576
+
+  # ─── Construction / BOQ ─────────────────────────────────────────────────────
+  - name: boq.version.created
+    canonical_event: construction.boq.version_created.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: boq.version.approved
+    canonical_event: construction.boq.version_approved.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  # ─── Construction / Task ────────────────────────────────────────────────────
+  - name: construction.task.completed
+    canonical_event: construction.task.completed.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: construction.delay.detected
+    canonical_event: construction.delay.detected.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  # ─── Procurement ────────────────────────────────────────────────────────────
+  - name: procurement.rfq.created
+    canonical_event: procurement.rfq.created.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: procurement.rfq.status_changed
+    canonical_event: procurement.rfq.status_changed.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: compact,delete
+    max_message_bytes: 1048576
+
+  - name: procurement.purchase_order.created
+    canonical_event: procurement.purchase_order.created.v1
+    partitions: 12
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: procurement.purchase_order.status_changed
+    canonical_event: procurement.purchase_order.status_changed.v1
+    partitions: 12
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: compact,delete
+    max_message_bytes: 1048576
+
+  - name: procurement.delivery.received
+    canonical_event: procurement.delivery.received.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: procurement.vendor_invoice.received
+    canonical_event: procurement.vendor_invoice.received.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: procurement.vendor_invoice.approved
+    canonical_event: procurement.vendor_invoice.approved.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  # ─── Site Operations ────────────────────────────────────────────────────────
+  - name: site.report.created
+    canonical_event: site.report.created.v1
+    partitions: 12
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: site.inspection.failed
+    canonical_event: site.inspection.failed.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: site.material.consumed
+    canonical_event: site.material.consumed.v1
+    partitions: 12
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  # ─── Finance ────────────────────────────────────────────────────────────────
+  - name: finance.budget.exceeded
+    canonical_event: finance.budget.exceeded.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: finance.cashflow_risk.detected
+    canonical_event: finance.cashflow_risk.detected.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  # ─── Workforce ──────────────────────────────────────────────────────────────
+  - name: workforce.checkin.created
+    canonical_event: workforce.checkin.created.v1
+    partitions: 12
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  # ─── AI ─────────────────────────────────────────────────────────────────────
+  - name: ai.risk_prediction.generated
+    canonical_event: ai.risk_prediction.generated.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  # ─── Identity / Tenant ──────────────────────────────────────────────────────
+  - name: identity.tenant.created
+    canonical_event: identity.tenant.created.v1
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: compact,delete
+    max_message_bytes: 1048576
+
+  - name: identity.user.created
+    canonical_event: identity.user.created.v1
+    partitions: 6
+    replication_factor: 3
+    retention_ms: 604800000
+    cleanup_policy: compact,delete
+    max_message_bytes: 1048576
+
+  # ─── Dead Letter Queues (one per domain) ────────────────────────────────────
+  - name: project.dlq
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 2592000000    # 30 days for DLQ — manual review window
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: procurement.dlq
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 2592000000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: site.dlq
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 2592000000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: finance.dlq
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 2592000000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: workforce.dlq
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 2592000000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: ai.dlq
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 2592000000
+    cleanup_policy: delete
+    max_message_bytes: 1048576
+
+  - name: identity.dlq
+    partitions: 3
+    replication_factor: 3
+    retention_ms: 2592000000
+    cleanup_policy: delete
+    max_message_bytes: 1048576

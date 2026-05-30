@@ -4,7 +4,16 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@cos/types": ["../../packages/@cos/types/src/index.ts"]
+      "@cos/types": ["../../packages/@cos/types/src/index.ts"],
+      "@cos/types/*": ["../../packages/@cos/types/src/*"],
+      "@cos/financial": ["../../packages/@cos/financial/src/index.ts"],
+      "@cos/financial/*": ["../../packages/@cos/financial/src/*"],
+      "@cos/validation": ["../../packages/@cos/validation/src/index.ts"],
+      "@cos/validation/*": ["../../packages/@cos/validation/src/*"],
+      "@cos/rbac": ["../../packages/@cos/rbac/src/index.ts"],
+      "@cos/rbac/*": ["../../packages/@cos/rbac/src/*"],
+      "@cos/shared": ["../../packages/@cos/shared/src/index.ts"],
+      "@cos/shared/*": ["../../packages/@cos/shared/src/*"]
     }
   }
 }
