@@ -1,0 +1,164 @@
+# Kafka 3-broker StatefulSet (KRaft mode, no ZooKeeper) — Phase 8
+# Spec: 3 brokers, replication factor 3, min ISR 2, retention 7 days, max message 1MB
+# Image: confluentinc/cp-kafka:7.6.0 (matches docker-compose.yml)
+---
+# Headless Service — stable DNS: kafka-{0,1,2}.kafka-headless.cos.svc.cluster.local
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless
+  namespace: cos
+  labels:
+    app: kafka
+spec:
+  clusterIP: None
+  selector:
+    app: kafka
+  ports:
+    - name: broker
+      port: 9092
+      targetPort: 9092
+    - name: controller
+      port: 9093
+      targetPort: 9093
+---
+# ClusterIP Service — single entry point for clients inside the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+  namespace: cos
+  labels:
+    app: kafka
+spec:
+  selector:
+    app: kafka
+  ports:
+    - name: broker
+      port: 9092
+      targetPort: 9092
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: cos
+  labels:
+    app: kafka
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:7.6.0
+          # Derive KAFKA_NODE_ID from pod ordinal: kafka-0 → 1, kafka-1 → 2, kafka-2 → 3
+          command:
+            - sh
+            - -exc
+            - |
+              ORDINAL=$(hostname | rev | cut -d'-' -f1 | rev)
+              export KAFKA_NODE_ID=$((ORDINAL + 1))
+              export KAFKA_ADVERTISED_LISTENERS="PLAINTEXT://$(hostname -f):9092"
+              exec /etc/confluent/docker/run
+          ports:
+            - containerPort: 9092
+              name: broker
+            - containerPort: 9093
+              name: controller
+          env:
+            - name: KAFKA_PROCESS_ROLES
+              value: 'broker,controller'
+            - name: KAFKA_LISTENERS
+              value: 'PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093'
+            - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+              value: 'PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT'
+            - name: KAFKA_CONTROLLER_LISTENER_NAMES
+              value: 'CONTROLLER'
+            - name: KAFKA_INTER_BROKER_LISTENER_NAME
+              value: 'PLAINTEXT'
+            # All 3 controller quorum voters — must match headless DNS
+            - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+              value: '1@kafka-0.kafka-headless.cos.svc.cluster.local:9093,2@kafka-1.kafka-headless.cos.svc.cluster.local:9093,3@kafka-2.kafka-headless.cos.svc.cluster.local:9093'
+            # Replication settings — production: 3 replicas, min ISR 2 (spec §Phase 8)
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: '3'
+            - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+              value: '3'
+            - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+              value: '2'
+            - name: KAFKA_MIN_INSYNC_REPLICAS
+              value: '2'
+            - name: KAFKA_DEFAULT_REPLICATION_FACTOR
+              value: '3'
+            # Retention: 7 days (spec §Phase 8)
+            - name: KAFKA_LOG_RETENTION_HOURS
+              value: '168'
+            - name: KAFKA_LOG_RETENTION_BYTES
+              value: '-1'
+            # Max message size: 1MB (spec §Phase 8 — larger payloads go to S3)
+            - name: KAFKA_MESSAGE_MAX_BYTES
+              value: '1048576'
+            - name: KAFKA_REPLICA_FETCH_MAX_BYTES
+              value: '1048576'
+            # Disable auto topic creation — all topics created explicitly (production safety)
+            - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+              value: 'false'
+            - name: KAFKA_LOG_DIRS
+              value: '/var/lib/kafka/data'
+            # KRaft cluster ID — stored in Secret (never commit actual value)
+            - name: CLUSTER_ID
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-cluster-id
+                  key: cluster-id
+          resources:
+            requests:
+              cpu: '500m'
+              memory: '1Gi'
+            limits:
+              cpu: '2'
+              memory: '4Gi'
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - kafka-broker-api-versions --bootstrap-server localhost:9092
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - kafka-broker-api-versions --bootstrap-server localhost:9092
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        resources:
+          requests:
+            storage: 10Gi
