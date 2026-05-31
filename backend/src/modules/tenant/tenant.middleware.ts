@@ -3,7 +3,8 @@
 // Sets req.tenantCode from the tenant record for TenantPrismaService.
 
 import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+// @types/express added to devDeps — NestJS uses express-compatible types even with Fastify adapter
+import type { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
 

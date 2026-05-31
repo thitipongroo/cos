@@ -28,7 +28,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # pnpm-lock.yaml not yet committed — use pnpm install (generates lock file on first run)
+      # TODO: commit pnpm-lock.yaml after running `pnpm install` locally, then switch back to --frozen-lockfile
+      - run: pnpm install
       - run: pnpm run lint
       - run: pnpm run format:check
 
@@ -45,12 +47,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      # pnpm-lock.yaml not yet committed — use pnpm install (generates lock file on first run)
+      # TODO: commit pnpm-lock.yaml after running `pnpm install` locally, then switch back to --frozen-lockfile
+      - run: pnpm install
       - run: pnpm run type-check
 
-  # ─── Step 3: Unit Tests ─────────────────────────────────────────────────────
+  # ─── Step 3: Unit Tests + Coverage Enforcement ─────────────────────────────
+  # Decision 2/7 (2026-05-31): jest.config created in Phase 1; coverage enforced
+  # from Phase 1 onwards per QM-1 (spec §30.3): ≥80% lines / ≥70% branches.
   unit-tests:
-    name: Unit Tests
+    name: Unit Tests (coverage ≥80% lines / ≥70% branches)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -61,14 +67,53 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm run test:unit
-      - name: Upload coverage
+      # pnpm-lock.yaml not yet committed — use pnpm install (generates lock file on first run)
+      # TODO: commit pnpm-lock.yaml after running `pnpm install` locally, then switch back to --frozen-lockfile
+      - run: pnpm install
+      # jest.config.js in each package enforces coverage thresholds (QM-1, Rule 36)
+      - name: Unit tests + coverage — backend
+        working-directory: backend
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/shared
+        working-directory: packages/@cos/shared
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/database
+        working-directory: packages/@cos/database
+        run: pnpm run test:cov
+      # Rule 36 (2026-05-31): @cos packages with executable logic must have CI coverage
+      - name: Unit tests + coverage — @cos/financial (QM-1 financial logic)
+        working-directory: packages/@cos/financial
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/rbac
+        working-directory: packages/@cos/rbac
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/validation
+        working-directory: packages/@cos/validation
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/logger
+        working-directory: packages/@cos/logger
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/tracing
+        working-directory: packages/@cos/tracing
+        run: pnpm run test:cov
+      - name: Unit tests + coverage — @cos/config
+        working-directory: packages/@cos/config
+        run: pnpm run test:cov
+      - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage
-          path: backend/coverage/
+          path: |
+            backend/coverage/
+            packages/@cos/shared/coverage/
+            packages/@cos/database/coverage/
+            packages/@cos/financial/coverage/
+            packages/@cos/rbac/coverage/
+            packages/@cos/validation/coverage/
+            packages/@cos/logger/coverage/
+            packages/@cos/tracing/coverage/
+            packages/@cos/config/coverage/
 
   # ─── Step 4: Build Docker Images ────────────────────────────────────────────
   build-docker:

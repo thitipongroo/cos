@@ -31,10 +31,13 @@
     "@nestjs/cache-manager": "^2.2.0",
     "@nestjs/event-emitter": "^2.0.0",
     "@nestjs/schedule": "^4.0.0",
+    "@nestjs/passport": "^10.0.0",
+    "@nestjs/jwt": "^10.2.0",
     "@temporalio/client": "^1.9.0",
     "@temporalio/worker": "^1.9.0",
     "@temporalio/workflow": "^1.9.0",
     "@prisma/client": "^5.13.0",
+    "@aws-sdk/client-sns": "^3.600.0",
     "class-validator": "^0.14.0",
     "class-transformer": "^0.5.1",
     "zod": "^3.22.0",
@@ -44,6 +47,8 @@
     "ioredis": "^5.3.0",
     "kafkajs": "^2.2.0",
     "@confluentinc/schemaregistry": "^1.0.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.0",
     "pino": "^9.1.0",
     "pino-http": "^10.0.0",
     "@opentelemetry/sdk-node": "^0.51.0",
@@ -58,6 +63,9 @@
     "@nestjs/testing": "^10.3.0",
     "@nestjs/schematics": "^10.1.0",
     "@types/node": "^20.12.0",
+    "@types/passport-jwt": "^4.0.0",
+    "@types/express": "^4.17.0",
+    "@types/passport": "^1.0.0",
     "prisma": "^5.13.0",
     "ts-node": "^10.9.0",
     "ts-jest": "^29.1.0",
@@ -66,35 +74,5 @@
     "supertest": "^7.0.0",
     "@types/supertest": "^6.0.0",
     "testcontainers": "^10.9.0"
-  },
-  "jest": {
-    "moduleFileExtensions": ["js", "json", "ts"],
-    "rootDir": ".",
-    "roots": ["<rootDir>/src", "<rootDir>/test"],
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": ["src/**/*.ts", "!src/**/*.module.ts", "!src/main.ts"],
-    "coverageThreshold": {
-      "global": {
-        "lines": 80,
-        "branches": 70
-      }
-    },
-    "coverageDirectory": "coverage",
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^@cos/shared(.*)$": "<rootDir>/../packages/@cos/shared/src$1",
-      "^@cos/rbac(.*)$": "<rootDir>/../packages/@cos/rbac/src$1",
-      "^@cos/logger(.*)$": "<rootDir>/../packages/@cos/logger/src$1",
-      "^@cos/tracing(.*)$": "<rootDir>/../packages/@cos/tracing/src$1",
-      "^@cos/financial(.*)$": "<rootDir>/../packages/@cos/financial/src$1",
-      "^@cos/types(.*)$": "<rootDir>/../packages/@cos/types/src$1",
-      "^@cos/config(.*)$": "<rootDir>/../packages/@cos/config/src$1",
-      "^@cos/validation(.*)$": "<rootDir>/../packages/@cos/validation/src$1",
-      "^@cos/database(.*)$": "<rootDir>/../packages/@cos/database/src$1",
-      "^@cos/extension-points(.*)$": "<rootDir>/../packages/@cos/extension-points/src$1"
-    }
   }
 }

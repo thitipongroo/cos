@@ -6,7 +6,7 @@ import {
   Controller, Post, Body, HttpCode, HttpStatus, Req, UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
 import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';

@@ -7,7 +7,10 @@
 // Service code calls OutboxPublisher.write() inside $transaction.
 // OutboxPoller runs as a background process (started in main.ts).
 
-import { PrismaClient } from '@prisma/client';
+// import type — PrismaClient is used only for TypeScript type annotations, not at runtime.
+// This prevents @prisma/client from being bundled by mobile (Metro) or any non-Node.js environment.
+// Rule 27 (2026-05-31): @cos/shared must remain framework-agnostic — no server-only runtime imports.
+import type { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from './producer';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';

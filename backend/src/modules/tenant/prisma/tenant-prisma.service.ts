@@ -7,7 +7,7 @@
 import { Injectable, Scope, Inject, UnauthorizedException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { withRetry } from '@cos/database';
 import { createLogger } from '@cos/logger';
 

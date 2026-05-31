@@ -20,6 +20,10 @@
       "inputs": ["src/**", "test/**", "tsconfig*.json"],
       "outputs": ["coverage/**"]
     },
+    "test:cov": {
+      "inputs": ["src/**", "test/**", "tsconfig*.json", "jest.config*"],
+      "outputs": ["coverage/**"]
+    },
     "test:integration": {
       "dependsOn": ["^build"],
       "inputs": ["src/**", "test/**", "tsconfig*.json"],
