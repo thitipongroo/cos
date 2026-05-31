@@ -2,9 +2,7 @@
 // Runs on POST, PUT, PATCH, DELETE for all tenant-scoped endpoints.
 // PII must never appear in logs — uses IDs only (QM-4, QM-8).
 
-import {
-  Injectable, NestInterceptor, ExecutionContext, CallHandler,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
@@ -76,6 +74,6 @@ export class AuditInterceptor implements NestInterceptor {
   private extractResourceType(path: string): string {
     // e.g. /api/v1/projects/uuid/boq → "projects"
     const segments = path.replace(/^\/api\/v\d+\//, '').split('/');
-    return segments[0] ?? 'unknown';
+    return segments[0] ?? /* istanbul ignore next */ 'unknown';
   }
 }

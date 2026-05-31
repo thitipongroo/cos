@@ -13,6 +13,7 @@ jest.mock('kafkajs', () => ({
     }),
   })),
   CompressionTypes: { GZIP: 2 },
+  logLevel: { NOTHING: 0, ERROR: 1, WARN: 2, INFO: 4, DEBUG: 5 },
 }));
 
 jest.mock('../schema-registry.client', () => ({
@@ -35,8 +36,9 @@ describe('KafkaProducer', () => {
     await producer.disconnect();
   });
 
-  it('connects and disconnects', () => {
+  it('connects and disconnects', async () => {
     expect(connectMock).toHaveBeenCalledTimes(1);
+    await producer.disconnect();
     expect(disconnectMock).toHaveBeenCalledTimes(1);
   });
 
@@ -74,6 +76,26 @@ describe('KafkaProducer', () => {
     const headers = sendMock.mock.calls[0][0].messages[0].headers;
     expect(headers['trace_id']).toBe('abc123');
     expect(headers['span_id']).toBe('def456');
+  });
+
+  it('uses 0000000000000000 as default spanId when only traceId provided (covers ?? branch)', async () => {
+    await producer.publish(
+      {
+        event_type: 'site.report.created.v1',
+        event_version: '1.0',
+        tenant_id: 'tenant-1',
+        actor_id: 'user-1',
+        occurred_at: new Date().toISOString(),
+        correlation_id: 'corr-1',
+        payload: {},
+      },
+      { traceId: 'abc123' }, // no spanId → ?? '0000000000000000'
+    );
+
+    const headers = sendMock.mock.calls[0][0].messages[0].headers;
+    expect(headers['traceparent']).toContain('0000000000000000');
+    expect(headers['trace_id']).toBe('abc123');
+    expect(headers['span_id']).toBeUndefined();
   });
 
   it('throws when publish called before connect', async () => {

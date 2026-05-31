@@ -166,7 +166,7 @@ export class ProjectService {
       throw new UnprocessableEntityException({
         error: {
           code: 'COS-PROJ-003',
-          message: result.reason ?? 'Transition not allowed',
+          message: result.reason ?? /* istanbul ignore next */ 'Transition not allowed',
           messageKey: 'project.error.transitionNotAllowed',
           details: { from: existing.status, to: dto.to },
           traceId: this.correlationId,

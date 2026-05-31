@@ -30,6 +30,10 @@ describe('Project State Machine', () => {
     it('returns empty array from CANCELLED (terminal)', () => {
       expect(allowedTransitions('CANCELLED')).toHaveLength(0);
     });
+
+    it('returns [] fallback for unknown status (covers ?? branch)', () => {
+      expect(allowedTransitions('UNKNOWN' as ProjectStatus)).toEqual([]);
+    });
   });
 
   describe('validateTransition() — allowed transitions', () => {

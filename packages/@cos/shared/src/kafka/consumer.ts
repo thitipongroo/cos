@@ -4,7 +4,7 @@
 //   - OTel trace context extraction from Kafka headers
 //   - DLQ forwarding after max retries (3 attempts, exponential backoff)
 
-import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
+import { Kafka, Consumer, EachMessagePayload, logLevel } from 'kafkajs';
 import { Redis } from 'ioredis';
 import { decodeAvro } from './schema-registry.client';
 import { createLogger } from '@cos/logger';
@@ -37,6 +37,7 @@ export class KafkaConsumer {
     this.kafka = new Kafka({
       clientId: process.env['KAFKA_CLIENT_ID'] ?? 'cos-backend',
       brokers: (process.env['KAFKA_BROKERS'] ?? 'localhost:29092').split(','),
+      logLevel: process.env['NODE_ENV'] === 'test' ? logLevel.NOTHING : logLevel.WARN,
     });
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
   }

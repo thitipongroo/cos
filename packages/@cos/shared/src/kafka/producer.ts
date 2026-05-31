@@ -4,7 +4,7 @@
 //   - Prometheus metrics: kafka_messages_produced_total, kafka_producer_error_total
 // All domain services MUST use this class to publish events — never call KafkaJS directly.
 
-import { Kafka, Producer, Message, CompressionTypes } from 'kafkajs';
+import { Kafka, Producer, Message, CompressionTypes, logLevel } from 'kafkajs';
 import { randomUUID } from 'crypto';
 import { registerSchema, encodeAvro } from './schema-registry.client';
 import { createLogger } from '@cos/logger';
@@ -60,6 +60,7 @@ export class KafkaProducer {
     this.kafka = new Kafka({
       clientId: process.env['KAFKA_CLIENT_ID'] ?? 'cos-backend',
       brokers: (process.env['KAFKA_BROKERS'] ?? 'localhost:29092').split(','),
+      logLevel: process.env['NODE_ENV'] === 'test' ? logLevel.NOTHING : logLevel.WARN,
     });
   }
 

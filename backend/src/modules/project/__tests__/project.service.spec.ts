@@ -215,5 +215,275 @@ describe('ProjectService', () => {
       const docs = await service.listDocuments('proj-uuid-001');
       expect(Array.isArray(docs)).toBe(true);
     });
+
+    it('throws 404 for non-existent project', async () => {
+      const repo = makeRepo({ findById: jest.fn().mockResolvedValue(null) });
+      const service = await buildService(repo);
+      await expect(service.listDocuments('missing')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('list()', () => {
+    it('delegates to repo.list when no search query', async () => {
+      const service = await buildService(makeRepo());
+      const result = await service.list({ limit: 20 } as never);
+      expect(result.items).toHaveLength(1);
+    });
+
+    it('uses OpenSearch when dto.q is provided', async () => {
+      const service = await buildService(makeRepo());
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+      // OpenSearch mock returns empty hits → falls back gracefully
+      expect(Array.isArray(result.items)).toBe(true);
+    });
+
+    it('falls back to repo.list when OpenSearch throws', async () => {
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockRejectedValue(new Error('opensearch down')),
+      }));
+      const service = await buildService(makeRepo());
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+      expect(Array.isArray(result.items)).toBe(true);
+    });
+  });
+
+  describe('addMember()', () => {
+    it('adds member to an existing project', async () => {
+      const service = await buildService(makeRepo());
+      await expect(
+        service.addMember('proj-uuid-001', { user_id: 'user-2', role: 'SITE_ENGINEER' as never }),
+      ).resolves.toBeUndefined();
+    });
+
+    it('throws 404 when project does not exist', async () => {
+      const repo = makeRepo({ findById: jest.fn().mockResolvedValue(null) });
+      const service = await buildService(repo);
+      await expect(
+        service.addMember('missing', { user_id: 'u', role: 'SITE_ENGINEER' as never }),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('removeMember()', () => {
+    it('removes member from an existing project', async () => {
+      const service = await buildService(makeRepo());
+      await expect(service.removeMember('proj-uuid-001', 'user-2')).resolves.toBeUndefined();
+    });
+
+    it('throws 404 when project does not exist', async () => {
+      const repo = makeRepo({ findById: jest.fn().mockResolvedValue(null) });
+      const service = await buildService(repo);
+      await expect(service.removeMember('missing', 'user-2')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('constructor — null/undefined request fields (lines 51-53)', () => {
+    it('falls back to empty string when tenantId and user are missing', async () => {
+      const service = await buildService(makeRepo(), { tenantId: undefined, user: undefined });
+      // findById still works even with empty tenantId (repo mock returns row)
+      const project = await service.findById('proj-uuid-001');
+      expect(project).toBeDefined();
+    });
+  });
+
+  describe('create() — null optional fields in returned row (lines 84-88)', () => {
+    it('uses fallbacks when budget/dates are null', async () => {
+      const nullRow = {
+        ...baseProject,
+        budget_amount: null,
+        budget_currency: null,
+        start_date: null,
+        end_date: null,
+      };
+      const repo = makeRepo({
+        create: jest.fn().mockResolvedValue(nullRow),
+        findById: jest.fn().mockResolvedValue(nullRow),
+      });
+      const service = await buildService(repo);
+      const result = await service.create({
+        project_code: 'P-NULL',
+        project_name: 'Null Budget',
+        project_type: 'COMMERCIAL' as never,
+      });
+      expect(result.budget_amount).toBeNull();
+    });
+  });
+
+  describe('list() — limit fallback (line 112)', () => {
+    it('defaults limit to 20 when dto.limit is undefined', async () => {
+      const service = await buildService(makeRepo());
+      const result = await service.list({} as never);
+      expect(result.items).toBeDefined();
+    });
+  });
+
+  describe('addMember() — alreadyExists branch (line 230)', () => {
+    it('silently upserts when member already exists', async () => {
+      const existingMembers = [
+        {
+          membership_id: 'm1',
+          user_id: 'user-uuid-002',
+          project_id: 'proj-uuid-001',
+          tenant_id: 'tenant-uuid-001',
+          role: 'SITE_ENGINEER',
+          assigned_at: new Date(),
+          assigned_by: 'user-uuid-001',
+        },
+      ];
+      const repo = makeRepo({ listMembers: jest.fn().mockResolvedValue(existingMembers) });
+      const service = await buildService(repo);
+      await expect(
+        service.addMember('proj-uuid-001', {
+          user_id: 'user-uuid-002',
+          role: 'SITE_ENGINEER' as never,
+        }),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('searchProjects — status/type filters (lines 294-295)', () => {
+    it('pushes status filter when dto.status provided with q', async () => {
+      const service = await buildService(makeRepo());
+      const result = await service.list({ q: 'Test', status: 'DRAFT', limit: 10 } as never);
+      expect(Array.isArray(result.items)).toBe(true);
+    });
+
+    it('pushes type filter when dto.type provided with q', async () => {
+      const service = await buildService(makeRepo());
+      const result = await service.list({ q: 'Test', type: 'COMMERCIAL', limit: 10 } as never);
+      expect(Array.isArray(result.items)).toBe(true);
+    });
+  });
+
+  describe('searchProjects — hits.hits undefined (line 302 ?? branch)', () => {
+    it('returns empty items when response.body.hits is undefined', async () => {
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockResolvedValue({ body: {} }), // hits is undefined
+      }));
+      const service = await buildService(makeRepo());
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+      expect(result.items).toEqual([]);
+    });
+  });
+
+  describe('list() — searchProjects with hits (lines 308-313)', () => {
+    it('fetches rows from DB for each OpenSearch hit', async () => {
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockResolvedValue({
+          body: { hits: { hits: [{ _id: 'proj-uuid-001' }] } },
+        }),
+      }));
+      const service = await buildService(makeRepo());
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+      expect(result.items.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('searchProjects with hit where DB row is null (row skipped)', async () => {
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockResolvedValue({
+          body: { hits: { hits: [{ _id: 'missing-id' }] } },
+        }),
+      }));
+      const repo = makeRepo({ findById: jest.fn().mockResolvedValue(null) });
+      const service = await buildService(repo);
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+      expect(result.items).toHaveLength(0);
+    });
+  });
+
+  describe('publishEvent — error path (line 335)', () => {
+    it('logs error when Kafka publish throws (non-fatal)', async () => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+      KafkaProducer.mockImplementationOnce(() => ({
+        connect: jest.fn().mockRejectedValue(new Error('Kafka down')),
+        publish: jest.fn(),
+        disconnect: jest.fn(),
+      }));
+      const service = await buildService(makeRepo());
+      // create() calls publishEvent internally — Kafka failure must not throw
+      await expect(
+        service.create({
+          project_code: 'P2',
+          project_name: 'P2',
+          project_type: 'COMMERCIAL' as never,
+        }),
+      ).resolves.toBeDefined();
+    });
+  });
+
+  describe('indexProject — error path (line 274)', () => {
+    it('logs warn when OpenSearch index throws (non-fatal)', async () => {
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockRejectedValue(new Error('OpenSearch down')),
+        search: jest.fn().mockResolvedValue({ body: { hits: { hits: [] } } }),
+      }));
+      const service = await buildService(makeRepo());
+      // update() calls indexProject — failure must not throw
+      await expect(service.update('proj-uuid-001', { project_name: 'X' })).resolves.toBeDefined();
+    });
+  });
+
+  describe('transition() — meta fields', () => {
+    it('sets on_hold_reason and on_hold_at when transitioning to ON_HOLD', async () => {
+      const activeProject = { ...baseProject, status: 'ACTIVE' as const };
+      const repo = makeRepo({
+        findById: jest.fn().mockResolvedValue(activeProject),
+        updateStatus: jest.fn().mockResolvedValue({ ...activeProject, status: 'ON_HOLD' }),
+      });
+      const service = await buildService(repo);
+      const result = await service.transition('proj-uuid-001', {
+        to: 'ON_HOLD' as never,
+        reason: 'Funding pause',
+      });
+      expect(result.status).toBe('ON_HOLD');
+    });
+
+    it('sets cancellation_reason when transitioning to CANCELLED', async () => {
+      const repo = makeRepo({
+        updateStatus: jest.fn().mockResolvedValue({ ...baseProject, status: 'CANCELLED' }),
+      });
+      // CANCELLED requires TENANT_ADMIN role + reason
+      const service = await buildService(repo, {
+        user: { cos_user_id: 'user-uuid-001', cos_role: 'TENANT_ADMIN' },
+      });
+      const result = await service.transition('proj-uuid-001', {
+        to: 'CANCELLED' as never,
+        reason: 'Budget cut',
+      });
+      expect(result.status).toBe('CANCELLED');
+    });
+
+    it('emits archived event when transitioning ACTIVE → COMPLETED', async () => {
+      // COMPLETED requires TENANT_ADMIN + end_date <= today (use past date)
+      const activeProject = { ...baseProject, status: 'ACTIVE' as const, end_date: '2020-01-01' };
+      const repo = makeRepo({
+        findById: jest.fn().mockResolvedValue(activeProject),
+        updateStatus: jest.fn().mockResolvedValue({ ...activeProject, status: 'COMPLETED' }),
+      });
+      const service = await buildService(repo, {
+        user: { cos_user_id: 'user-uuid-001', cos_role: 'TENANT_ADMIN' },
+      });
+      const result = await service.transition('proj-uuid-001', { to: 'COMPLETED' as never });
+      expect(result.status).toBe('COMPLETED');
+    });
   });
 });

@@ -48,6 +48,13 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('works with no options (covers default parameter and ?? DEFAULT branches)', async () => {
+    const fn = jest.fn().mockResolvedValue('default-ok');
+    const result = await withRetry(fn);
+    expect(result).toBe('default-ok');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
   it('retries on P2034 (write conflict/deadlock) — 1 retry', async () => {
     const deadlockError = new Prisma.PrismaClientKnownRequestError('write conflict', {
       code: 'P2034',
@@ -104,11 +111,14 @@ describe('withRetry', () => {
     const fn = jest.fn().mockRejectedValue(err);
 
     const promise = withRetry(fn, { maxRetries: 3, baseDelayMs: 0 });
+    // Attach rejection handler BEFORE running timers to prevent unhandledRejection.
+    // rejects.toMatchObject checks the error's code property, not message.
+    const assertion = expect(promise).rejects.toMatchObject({ code: 'P2034' });
     // 3 retries = 3 sleep timers to run
     await jest.runAllTimersAsync();
     await jest.runAllTimersAsync();
     await jest.runAllTimersAsync();
-    await expect(promise).rejects.toThrow('P2034');
+    await assertion;
     expect(fn).toHaveBeenCalledTimes(4); // 1 initial + 3 retries
   });
 
@@ -120,7 +130,7 @@ describe('withRetry', () => {
     const fn = jest.fn().mockRejectedValue(err);
 
     // No timer needed — fails immediately without retry
-    await expect(withRetry(fn, { baseDelayMs: 0 })).rejects.toThrow('P2002');
+    await expect(withRetry(fn, { baseDelayMs: 0 })).rejects.toMatchObject({ code: 'P2002' });
     expect(fn).toHaveBeenCalledTimes(1);
   });
 

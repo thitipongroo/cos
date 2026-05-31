@@ -11,13 +11,19 @@ import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of } from 'rxjs';
 import { PrismaClient } from '@prisma/client';
 
-const makeCtx = (method: string, path: string, user?: object, tenantId?: string): ExecutionContext => ({
-  switchToHttp: () => ({
-    getRequest: () => ({ method, path, user, tenantId, ip: '127.0.0.1', headers: {} }),
-  }),
-  getHandler: jest.fn(),
-  getClass: jest.fn(),
-} as unknown as ExecutionContext);
+const makeCtx = (
+  method: string,
+  path: string,
+  user?: object,
+  tenantId?: string,
+): ExecutionContext =>
+  ({
+    switchToHttp: () => ({
+      getRequest: () => ({ method, path, user, tenantId, ip: '127.0.0.1', headers: {} }),
+    }),
+    getHandler: jest.fn(),
+    getClass: jest.fn(),
+  }) as unknown as ExecutionContext;
 
 const makeHandler = (): CallHandler => ({ handle: () => of({ result: 'ok' }) });
 
@@ -68,8 +74,44 @@ describe('AuditInterceptor', () => {
   });
 
   it('extracts resourceType correctly from path', () => {
-    const extract = (interceptor as unknown as { extractResourceType: (p: string) => string }).extractResourceType;
+    const extract = (interceptor as unknown as { extractResourceType: (p: string) => string })
+      .extractResourceType;
     expect(extract('/api/v1/projects/uuid/boq')).toBe('projects');
     expect(extract('/api/v1/procurement/po/123')).toBe('procurement');
+  });
+
+  it('writes audit log with null ipAddress when ip is missing (covers ?? null branch)', (done) => {
+    const ctx: ExecutionContext = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          method: 'POST',
+          path: '/api/v1/projects',
+          user: { cos_user_id: 'u1' },
+          tenantId: 'tenant-1',
+          ip: undefined,
+          headers: {},
+        }),
+      }),
+      getHandler: jest.fn(),
+      getClass: jest.fn(),
+    } as unknown as ExecutionContext;
+    interceptor.intercept(ctx, makeHandler()).subscribe(() => {
+      setImmediate(() => {
+        expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+  });
+
+  it('logs error when writeAuditLog throws (covers catch on line 50)', (done) => {
+    prismaMock.$executeRaw.mockRejectedValueOnce(new Error('DB write failed'));
+    const ctx = makeCtx('POST', '/api/v1/projects', { cos_user_id: 'u1' }, 'tenant-1');
+    interceptor.intercept(ctx, makeHandler()).subscribe(() => {
+      setImmediate(() => {
+        // $executeRaw threw — the .catch() logger.error branch is covered
+        expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
   });
 });

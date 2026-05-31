@@ -33,6 +33,8 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
+  // testcontainers Kafka/Redis containers take time to stop — force exit after all tests pass.
+  forceExit: true,
   moduleNameMapper: {
     '^@cos/logger$': '<rootDir>/../logger/src/index.ts',
     '^@cos/logger/(.*)$': '<rootDir>/../logger/src/$1',

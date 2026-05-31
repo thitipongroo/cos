@@ -44,10 +44,7 @@ export interface RetryOptions {
  *   prisma.project.findMany({ where: { tenantId } })
  * );
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {},
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
   const baseDelayMs = options.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
 
@@ -67,5 +64,6 @@ export async function withRetry<T>(
     }
   }
 
+  /* istanbul ignore next */
   throw lastError;
 }

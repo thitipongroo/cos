@@ -2,13 +2,19 @@
 
 const redisMock: Record<string, string> = {};
 
-jest.mock('ioredis', () =>
-  jest.fn().mockImplementation(() => ({
-    set: jest.fn(async (key: string, val: string) => { redisMock[key] = val; return 'OK'; }),
+jest.mock('ioredis', () => ({
+  Redis: jest.fn().mockImplementation(() => ({
+    set: jest.fn(async (key: string, val: string) => {
+      redisMock[key] = val;
+      return 'OK';
+    }),
     get: jest.fn(async (key: string) => redisMock[key] ?? null),
-    del: jest.fn(async (...keys: string[]) => { keys.forEach(k => delete redisMock[k]); return 1; }),
+    del: jest.fn(async (...keys: string[]) => {
+      keys.forEach((k) => delete redisMock[k]);
+      return 1;
+    }),
   })),
-);
+}));
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
@@ -22,7 +28,12 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaClient } from '@prisma/client';
 import { UnauthorizedException } from '@nestjs/common';
 
-const mockUser = { user_id: 'user-1', tenant_id: 'tenant-1', tenant_code: 'acme', role: 'SITE_WORKER' };
+const mockUser = {
+  user_id: 'user-1',
+  tenant_id: 'tenant-1',
+  tenant_code: 'acme',
+  role: 'SITE_WORKER',
+};
 
 describe('IdentityService', () => {
   let service: IdentityService;
@@ -30,7 +41,7 @@ describe('IdentityService', () => {
   let prismaMock: jest.Mocked<PrismaClient>;
 
   beforeEach(() => {
-    Object.keys(redisMock).forEach(k => delete redisMock[k]);
+    Object.keys(redisMock).forEach((k) => delete redisMock[k]);
     jwtService = {
       sign: jest.fn().mockReturnValue('mock-token'),
       verify: jest.fn(),
@@ -51,15 +62,20 @@ describe('IdentityService', () => {
 
     it('throws UnauthorizedException when user not found', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
-      await expect(service.issueTokensForPhone('+66812345678')).rejects.toThrow(UnauthorizedException);
+      await expect(service.issueTokensForPhone('+66812345678')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
   describe('refreshAccessToken', () => {
     it('issues new access token for valid non-revoked refresh token', async () => {
       const payload = {
-        sub: 'user-1', cos_user_id: 'user-1', cos_tenant_id: 'tenant-1',
-        cos_tenant_code: 'acme', cos_role: 'SITE_WORKER',
+        sub: 'user-1',
+        cos_user_id: 'user-1',
+        cos_tenant_id: 'tenant-1',
+        cos_tenant_code: 'acme',
+        cos_role: 'SITE_WORKER',
       };
       jwtService.verify = jest.fn().mockReturnValue(payload);
       const refreshToken = 'valid-refresh-12345678';
@@ -74,11 +90,15 @@ describe('IdentityService', () => {
       const payload = { sub: 'user-1', cos_user_id: 'user-1' };
       jwtService.verify = jest.fn().mockReturnValue(payload);
       // No Redis entry = revoked
-      await expect(service.refreshAccessToken('revoked-token-12345678')).rejects.toThrow(UnauthorizedException);
+      await expect(service.refreshAccessToken('revoked-token-12345678')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException for invalid/expired token', async () => {
-      jwtService.verify = jest.fn().mockImplementation(() => { throw new Error('jwt expired'); });
+      jwtService.verify = jest.fn().mockImplementation(() => {
+        throw new Error('jwt expired');
+      });
       await expect(service.refreshAccessToken('bad-token')).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -95,7 +115,9 @@ describe('IdentityService', () => {
     });
 
     it('silently ignores invalid token during logout', async () => {
-      jwtService.verify = jest.fn().mockImplementation(() => { throw new Error('invalid'); });
+      jwtService.verify = jest.fn().mockImplementation(() => {
+        throw new Error('invalid');
+      });
       await expect(service.logout('bad-token')).resolves.toBeUndefined();
     });
   });

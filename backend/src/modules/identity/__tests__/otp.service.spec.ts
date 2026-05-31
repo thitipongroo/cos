@@ -6,8 +6,8 @@ import { BadRequestException } from '@nestjs/common';
 const redisMock: Record<string, string> = {};
 const expiryMock: Record<string, number> = {};
 
-jest.mock('ioredis', () => {
-  return jest.fn().mockImplementation(() => ({
+jest.mock('ioredis', () => ({
+  Redis: jest.fn().mockImplementation(() => ({
     set: jest.fn(async (key: string, value: string, _ex?: string, ttl?: number) => {
       redisMock[key] = value;
       if (ttl) expiryMock[key] = ttl;
@@ -21,8 +21,8 @@ jest.mock('ioredis', () => {
       return parseInt(redisMock[key]!, 10);
     }),
     expire: jest.fn(),
-  }));
-});
+  })),
+}));
 
 jest.mock('@aws-sdk/client-sns', () => ({
   SNSClient: jest.fn().mockImplementation(() => ({
@@ -83,5 +83,28 @@ describe('OtpService', () => {
     const dailyKey = `otp:daily:+66812345678:${new Date().toISOString().slice(0, 10)}`;
     redisMock[dailyKey] = '10';
     await expect(service.requestOtp('+66812345678')).rejects.toMatchObject({ status: 429 });
+  });
+});
+
+describe('OtpService — production SNS path (line 105)', () => {
+  const originalEnv = process.env['NODE_ENV'];
+
+  beforeEach(() => {
+    Object.keys(redisMock).forEach((k) => delete redisMock[k]);
+  });
+
+  afterEach(() => {
+    process.env['NODE_ENV'] = originalEnv;
+  });
+
+  it('calls SNS send when NODE_ENV is not development', async () => {
+    process.env['NODE_ENV'] = 'production';
+    // Re-create service so it picks up the new env
+    const prodService = new OtpService();
+    const snsMock = (prodService as unknown as { sns: { send: jest.Mock } }).sns;
+    snsMock.send = jest.fn().mockResolvedValue({});
+
+    await prodService.requestOtp('+66812345678');
+    expect(snsMock.send).toHaveBeenCalledTimes(1);
   });
 });

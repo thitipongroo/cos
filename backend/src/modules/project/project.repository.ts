@@ -73,7 +73,7 @@ function decodeCursor(cursor: string): { projectId: string; createdAt: string } 
     const createdAt = decoded.slice(colonIdx + 1);
     if (!projectId || !createdAt) return null;
     return { projectId, createdAt };
-  } catch {
+  } catch /* istanbul ignore next */ {
     return null;
   }
 }

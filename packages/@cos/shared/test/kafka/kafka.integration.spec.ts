@@ -1,5 +1,7 @@
 // Integration test — Phase 8: full publish/consume cycle with real Kafka
 // Uses @testcontainers/kafka to start a real Kafka broker.
+// TESTCONTAINERS_RYUK_DISABLED=true prevents the Reaper container from keeping
+// a TCP connection alive after tests finish, which causes the Jest worker warning.
 //
 // Schema Registry is mocked — Avro encoding is tested separately in
 //   src/kafka/__tests__/schema-registry.client.spec.ts
@@ -10,6 +12,9 @@
 //   1. KafkaProducer connects to a real broker and publishes a message
 //   2. KafkaConsumer subscribes and receives the exact same message
 //   3. Idempotency: same event_id is processed exactly once
+
+// Disable Ryuk reaper so it doesn't keep a TCP connection alive after tests
+process.env['TESTCONTAINERS_RYUK_DISABLED'] = 'true';
 
 import { KafkaContainer, StartedKafkaContainer } from '@testcontainers/kafka';
 import { Kafka } from 'kafkajs';

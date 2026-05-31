@@ -7,12 +7,16 @@ module.exports = {
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': ['ts-jest', {
-      tsconfig: {
-        emitDecoratorMetadata: true,
-        experimentalDecorators: true,
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          emitDecoratorMetadata: true,
+          experimentalDecorators: true,
+          types: ['jest', 'node'],
+        },
       },
-    }],
+    ],
   },
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -34,6 +38,9 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
+  // Integration tests (test/) require real infra (Redis, Keycloak, DB).
+  // They run via test:integration; exclude from unit test:cov.
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/test/'],
   moduleNameMapper: {
     '^@cos/shared$': '<rootDir>/../packages/@cos/shared/src/index.ts',
     '^@cos/shared/(.*)$': '<rootDir>/../packages/@cos/shared/src/$1',

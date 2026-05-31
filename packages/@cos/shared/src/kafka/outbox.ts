@@ -14,6 +14,7 @@ interface OutboxPrismaClient {
   $queryRaw<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T>;
   $executeRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<number>;
 }
+import { randomUUID } from 'crypto';
 import { KafkaProducer } from './producer';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
@@ -48,7 +49,6 @@ export class OutboxPublisher {
     tx: { $executeRaw: (query: TemplateStringsArray, ...values: unknown[]) => Promise<unknown> },
     event: Omit<BaseEventEnvelope<T>, 'event_id'> & { event_id?: string },
   ): Promise<void> {
-    const { randomUUID } = await import('crypto');
     const eventId = event.event_id ?? randomUUID();
     const envelope = { ...event, event_id: eventId };
 

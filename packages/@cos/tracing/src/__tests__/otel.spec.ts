@@ -30,6 +30,10 @@ describe('initTracing', () => {
 });
 
 describe('shutdownTracing', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('resolves without error when SDK not initialized', async () => {
     await expect(shutdownTracing()).resolves.toBeUndefined();
   });
