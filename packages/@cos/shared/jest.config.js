@@ -7,11 +7,15 @@ module.exports = {
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': ['ts-jest', {
-      tsconfig: {
-        strict: true,
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          strict: true,
+          isolatedModules: true,
+        },
       },
-    }],
+    ],
   },
   collectCoverageFrom: [
     'src/**/*.ts',

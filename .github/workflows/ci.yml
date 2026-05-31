@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: ['**']
   pull_request:
     branches: [main, develop]
 
@@ -12,7 +12,7 @@ concurrency:
 
 env:
   PNPM_VERSION: 9.1.0
-  NODE_VERSION: "20"
+  NODE_VERSION: '20'
 
 jobs:
   # ─── Step 1: Lint ───────────────────────────────────────────────────────────
@@ -28,9 +28,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      # pnpm-lock.yaml not yet committed — use pnpm install (generates lock file on first run)
-      # TODO: commit pnpm-lock.yaml after running `pnpm install` locally, then switch back to --frozen-lockfile
-      - run: pnpm install
+      # pnpm-lock.yaml is committed — use --frozen-lockfile to enforce reproducible installs (Rule 29)
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
       - run: pnpm run format:check
 
@@ -47,9 +46,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      # pnpm-lock.yaml not yet committed — use pnpm install (generates lock file on first run)
-      # TODO: commit pnpm-lock.yaml after running `pnpm install` locally, then switch back to --frozen-lockfile
-      - run: pnpm install
+      # pnpm-lock.yaml is committed — use --frozen-lockfile to enforce reproducible installs (Rule 29)
+      - run: pnpm install --frozen-lockfile
       - run: pnpm run type-check
 
   # ─── Step 3: Unit Tests + Coverage Enforcement ─────────────────────────────
@@ -67,9 +65,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      # pnpm-lock.yaml not yet committed — use pnpm install (generates lock file on first run)
-      # TODO: commit pnpm-lock.yaml after running `pnpm install` locally, then switch back to --frozen-lockfile
-      - run: pnpm install
+      # pnpm-lock.yaml is committed — use --frozen-lockfile to enforce reproducible installs (Rule 29)
+      - run: pnpm install --frozen-lockfile
       # jest.config.js in each package enforces coverage thresholds (QM-1, Rule 36)
       - name: Unit tests + coverage — backend
         working-directory: backend
@@ -153,10 +150,10 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: "fs"
-          scan-ref: "."
-          severity: "CRITICAL,HIGH"
-          exit-code: "1"
+          scan-type: 'fs'
+          scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
           ignore-unfixed: true
 
   # ─── Step 6: Push to ECR (main/staging only) ────────────────────────────────
