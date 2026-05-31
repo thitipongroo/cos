@@ -20,13 +20,13 @@ describe('loadConfig', () => {
 
   it('loads valid config without throwing', async () => {
     Object.assign(process.env, validEnv);
-    const { loadConfig } = await import('../index');
+    const { loadConfig } = await import('../index.js');
     expect(() => loadConfig()).not.toThrow();
   });
 
   it('returns config with correct values', async () => {
     Object.assign(process.env, validEnv);
-    const { loadConfig } = await import('../index');
+    const { loadConfig } = await import('../index.js');
     const config = loadConfig();
     expect(config.PORT).toBe(3000);
     expect(config.NODE_ENV).toBe('test');
@@ -41,7 +41,7 @@ describe('loadConfig', () => {
     delete process.env['DATABASE_URL'];
     Object.assign(process.env, env);
 
-    const { loadConfig } = await import('../index');
+    const { loadConfig } = await import('../index.js');
     expect(() => loadConfig()).toThrow('Invalid environment configuration');
     if (prev !== undefined) process.env['DATABASE_URL'] = prev;
   });
@@ -52,7 +52,7 @@ describe('loadConfig', () => {
     delete process.env['PORT'];
     Object.assign(process.env, env);
 
-    const { loadConfig } = await import('../index');
+    const { loadConfig } = await import('../index.js');
     const config = loadConfig();
     expect(config.PORT).toBe(3000);
   });
@@ -60,7 +60,7 @@ describe('loadConfig', () => {
 
 describe('getConfig', () => {
   it('throws when config not loaded yet', async () => {
-    const { getConfig } = await import('../index');
+    const { getConfig } = await import('../index.js');
     // After module reset, _config is null
     expect(() => getConfig()).toThrow('Config not loaded');
   });
@@ -73,7 +73,7 @@ describe('getConfig', () => {
       SCHEMA_REGISTRY_URL: 'http://localhost:8081',
       TEMPORAL_ADDRESS: 'localhost:7233',
     });
-    const { loadConfig, getConfig } = await import('../index');
+    const { loadConfig, getConfig } = await import('../index.js');
     loadConfig();
     const config = getConfig();
     expect(config).toBeDefined();

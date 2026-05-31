@@ -10,14 +10,20 @@ import { withRetry } from '../retry';
 // Mock Prisma error classes
 jest.mock('@prisma/client', () => {
   class PrismaClientKnownRequestError extends Error {
-    constructor(public code: string) {
-      super(`Prisma error ${code}`);
+    code: string;
+    clientVersion: string;
+    constructor(message: string, { code, clientVersion }: { code: string; clientVersion: string }) {
+      super(message);
+      this.code = code;
+      this.clientVersion = clientVersion;
       this.name = 'PrismaClientKnownRequestError';
     }
   }
   class PrismaClientInitializationError extends Error {
-    constructor() {
-      super('Init error');
+    clientVersion: string;
+    constructor(message: string, clientVersion: string) {
+      super(message);
+      this.clientVersion = clientVersion;
       this.name = 'PrismaClientInitializationError';
     }
   }
@@ -43,10 +49,11 @@ describe('withRetry', () => {
   });
 
   it('retries on P2034 (write conflict/deadlock) — 1 retry', async () => {
-    const deadlockError = new Prisma.PrismaClientKnownRequestError('P2034');
-    const fn = jest.fn()
-      .mockRejectedValueOnce(deadlockError)
-      .mockResolvedValue('ok');
+    const deadlockError = new Prisma.PrismaClientKnownRequestError('write conflict', {
+      code: 'P2034',
+      clientVersion: '5',
+    });
+    const fn = jest.fn().mockRejectedValueOnce(deadlockError).mockResolvedValue('ok');
 
     const promise = withRetry(fn, { baseDelayMs: 0 });
     // runAllTimersAsync fires the sleep(0) timer AND drains microtasks
@@ -57,8 +64,12 @@ describe('withRetry', () => {
   });
 
   it('retries on P1001 (unreachable) — 2 retries', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('P1001');
-    const fn = jest.fn()
+    const err = new Prisma.PrismaClientKnownRequestError('unreachable', {
+      code: 'P1001',
+      clientVersion: '5',
+    });
+    const fn = jest
+      .fn()
       .mockRejectedValueOnce(err)
       .mockRejectedValueOnce(err)
       .mockResolvedValue('recovered');
@@ -73,10 +84,11 @@ describe('withRetry', () => {
   });
 
   it('retries on P1002 (timeout)', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('P1002');
-    const fn = jest.fn()
-      .mockRejectedValueOnce(err)
-      .mockResolvedValue('ok');
+    const err = new Prisma.PrismaClientKnownRequestError('timeout', {
+      code: 'P1002',
+      clientVersion: '5',
+    });
+    const fn = jest.fn().mockRejectedValueOnce(err).mockResolvedValue('ok');
 
     const promise = withRetry(fn, { baseDelayMs: 0 });
     await jest.runAllTimersAsync();
@@ -85,7 +97,10 @@ describe('withRetry', () => {
   });
 
   it('throws after max retries exceeded (3 retries)', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('P2034');
+    const err = new Prisma.PrismaClientKnownRequestError('write conflict', {
+      code: 'P2034',
+      clientVersion: '5',
+    });
     const fn = jest.fn().mockRejectedValue(err);
 
     const promise = withRetry(fn, { maxRetries: 3, baseDelayMs: 0 });
@@ -98,7 +113,10 @@ describe('withRetry', () => {
   });
 
   it('does NOT retry on non-retryable error — P2002 unique constraint', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('P2002');
+    const err = new Prisma.PrismaClientKnownRequestError('unique constraint', {
+      code: 'P2002',
+      clientVersion: '5',
+    });
     const fn = jest.fn().mockRejectedValue(err);
 
     // No timer needed — fails immediately without retry
@@ -114,10 +132,8 @@ describe('withRetry', () => {
   });
 
   it('retries on PrismaClientInitializationError', async () => {
-    const err = new Prisma.PrismaClientInitializationError();
-    const fn = jest.fn()
-      .mockRejectedValueOnce(err)
-      .mockResolvedValue('ok');
+    const err = new Prisma.PrismaClientInitializationError('Connection failed', '5.0');
+    const fn = jest.fn().mockRejectedValueOnce(err).mockResolvedValue('ok');
 
     const promise = withRetry(fn, { baseDelayMs: 0 });
     await jest.runAllTimersAsync();

@@ -5,12 +5,18 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
-    ".": { "import": "./dist/index.js", "require": "./dist/index.js", "types": "./dist/index.d.ts" }
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
     "proto-gen": "buf generate",
     "clean": "rm -rf dist src/generated"
   },
-  "devDependencies": { "typescript": "^5.4.0" }
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
 }

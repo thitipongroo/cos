@@ -24,8 +24,11 @@ beforeEach(() => {
 
 describe('Schema Registry client', () => {
   it('registerSchema returns schema ID', async () => {
-    const { registerSchema } = await import('../schema-registry.client');
-    const id = await registerSchema('construction.project.created-value', 'construction.project.created.v1.avsc');
+    const { registerSchema } = await import('../schema-registry.client.js');
+    const id = await registerSchema(
+      'construction.project.created-value',
+      'construction.project.created.v1.avsc',
+    );
     expect(id).toBe(42);
     expect(registerMock).toHaveBeenCalledWith(
       { type: 'AVRO', schema: '{"type":"record","name":"Test","fields":[]}' },
@@ -34,14 +37,14 @@ describe('Schema Registry client', () => {
   });
 
   it('encodeAvro returns Buffer', async () => {
-    const { encodeAvro } = await import('../schema-registry.client');
+    const { encodeAvro } = await import('../schema-registry.client.js');
     const result = await encodeAvro(42, { event_id: 'test' });
     expect(Buffer.isBuffer(result)).toBe(true);
     expect(encodeMock).toHaveBeenCalledWith(42, { event_id: 'test' });
   });
 
   it('decodeAvro returns decoded object', async () => {
-    const { decodeAvro } = await import('../schema-registry.client');
+    const { decodeAvro } = await import('../schema-registry.client.js');
     const result = await decodeAvro(Buffer.from('data'));
     expect(result).toEqual({ event_id: 'test' });
   });

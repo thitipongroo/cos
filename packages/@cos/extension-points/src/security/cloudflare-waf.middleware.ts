@@ -3,14 +3,14 @@
 // Source: context/00_master_construction_os.md §Phase 16 WAF
 
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { FastifyRequest, FastifyReply } from 'fastify';
+import type { IncomingMessage, ServerResponse } from 'http';
 import { createLogger } from '@cos/logger';
 
 const log = createLogger('cloudflare-waf');
 
 @Injectable()
 export class CloudflareWafMiddleware implements NestMiddleware {
-  use(req: FastifyRequest['raw'], res: FastifyReply['raw'], next: () => void): void {
+  use(req: IncomingMessage, res: ServerResponse, next: () => void): void {
     const cfRay = (req.headers as Record<string, string | undefined>)['cf-ray'];
     const cfConnectingIp = (req.headers as Record<string, string | undefined>)['cf-connecting-ip'];
 

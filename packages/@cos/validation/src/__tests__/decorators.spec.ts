@@ -1,7 +1,7 @@
 // Unit tests for @cos/validation custom decorators
 
 import 'reflect-metadata';
-import { validate, IsString } from 'class-validator';
+import { validate } from 'class-validator';
 import { IsCurrencyCode, IsDecimalString } from '../decorators';
 
 class TestDto {

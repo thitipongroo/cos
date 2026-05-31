@@ -516,6 +516,16 @@ importers:
         version: 5.9.3
 
   packages/@cos/tracing:
+    dependencies:
+      '@opentelemetry/api':
+        specifier: ^1.9.0
+        version: 1.9.1
+      '@opentelemetry/auto-instrumentations-node':
+        specifier: ^0.46.0
+        version: 0.46.1(@opentelemetry/api@1.9.1)
+      '@opentelemetry/sdk-node':
+        specifier: ^0.51.0
+        version: 0.51.1(@opentelemetry/api@1.9.1)
     devDependencies:
       '@types/jest':
         specifier: ^29.5.0
@@ -547,6 +557,9 @@ importers:
       class-validator:
         specifier: ^0.14.0
         version: 0.14.4
+      reflect-metadata:
+        specifier: ^0.2.0
+        version: 0.2.2
       zod:
         specifier: ^3.22.0
         version: 3.25.76
