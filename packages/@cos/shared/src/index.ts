@@ -1,14 +1,17 @@
-// @cos/shared — Typed Kafka event interfaces + Avro schemas
+// @cos/shared — Typed Kafka event interfaces + Avro schemas + Kafka SDK
 // All cross-service event contracts are defined here.
 // Source: context/00_master_construction_os.md §6 CROSS-SERVICE EVENT CONTRACT SPEC
-// Phase 8 adds the KafkaProducer, KafkaConsumer, OutboxPublisher implementations.
 
 export type { BaseEventEnvelope } from '@cos/types';
 
-// Phase 8 deliverables (stub exports — implemented in Phase 8):
-// export { KafkaProducer } from './kafka/producer';
-// export { KafkaConsumer } from './kafka/consumer';
-// export { OutboxPublisher } from './kafka/outbox';
+// Phase 8 — Kafka SDK (KafkaProducer, KafkaConsumer, OutboxPublisher, DlqPublisher)
+export { KafkaProducer }          from './kafka/producer';
+export { KafkaConsumer }          from './kafka/consumer';
+export type { MessageHandler, ConsumerOptions } from './kafka/consumer';
+export { OutboxPublisher, OutboxPoller } from './kafka/outbox';
+export { DlqPublisher }           from './kafka/dlq';
+export { initKafkaMetrics, recordProduced, recordConsumed, recordProducerError, setConsumerLag, setDlqDepth } from './kafka/metrics';
+export { getSchemaRegistry, registerSchema, encodeAvro, decodeAvro } from './kafka/schema-registry.client';
 
 // Event payload types (canonical names — spec §32.4)
 export type * from './events/construction.project.created.v1';
