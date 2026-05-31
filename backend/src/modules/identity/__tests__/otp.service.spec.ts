@@ -1,6 +1,6 @@
 // Unit tests for OtpService — validates OTP logic without real Redis or SNS.
 
-import { BadRequestException, TooManyRequestsException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 
 // Mock ioredis before importing OtpService
 const redisMock: Record<string, string> = {};
@@ -13,9 +13,11 @@ jest.mock('ioredis', () => {
       if (ttl) expiryMock[key] = ttl;
     }),
     get: jest.fn(async (key: string) => redisMock[key] ?? null),
-    del: jest.fn(async (...keys: string[]) => { keys.forEach(k => delete redisMock[k]); }),
+    del: jest.fn(async (...keys: string[]) => {
+      keys.forEach((k) => delete redisMock[k]);
+    }),
     incr: jest.fn(async (key: string) => {
-      redisMock[key] = String((parseInt(redisMock[key] ?? '0', 10)) + 1);
+      redisMock[key] = String(parseInt(redisMock[key] ?? '0', 10) + 1);
       return parseInt(redisMock[key]!, 10);
     }),
     expire: jest.fn(),
@@ -38,7 +40,7 @@ describe('OtpService', () => {
   let service: OtpService;
 
   beforeEach(() => {
-    Object.keys(redisMock).forEach(k => delete redisMock[k]);
+    Object.keys(redisMock).forEach((k) => delete redisMock[k]);
     service = new OtpService();
   });
 
@@ -67,15 +69,19 @@ describe('OtpService', () => {
     await service.requestOtp('+66812345678');
     // 3 failed attempts
     for (let i = 0; i < 3; i++) {
-      try { await service.verifyOtp('+66812345678', '000000'); } catch {}
+      try {
+        await service.verifyOtp('+66812345678', '000000');
+      } catch {}
     }
-    await expect(service.verifyOtp('+66812345678', '000000')).rejects.toThrow(TooManyRequestsException);
+    await expect(service.verifyOtp('+66812345678', '000000')).rejects.toMatchObject({
+      status: 429,
+    });
   });
 
   it('requestOtp throws TooManyRequestsException after daily limit', async () => {
     // Simulate 10 requests already made today
     const dailyKey = `otp:daily:+66812345678:${new Date().toISOString().slice(0, 10)}`;
     redisMock[dailyKey] = '10';
-    await expect(service.requestOtp('+66812345678')).rejects.toThrow(TooManyRequestsException);
+    await expect(service.requestOtp('+66812345678')).rejects.toMatchObject({ status: 429 });
   });
 });

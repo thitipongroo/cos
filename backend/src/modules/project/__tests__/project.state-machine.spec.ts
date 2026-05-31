@@ -1,0 +1,216 @@
+// Unit tests: Project State Machine
+// QM-1: ≥80% line coverage, ≥70% branch coverage
+// Tests cover all allowed/forbidden transitions and role restrictions.
+
+import { validateTransition, allowedTransitions } from '../project.state-machine';
+import type { ProjectStatus } from '../project.state-machine';
+
+describe('Project State Machine', () => {
+  describe('allowedTransitions()', () => {
+    it('returns correct targets from DRAFT', () => {
+      expect(allowedTransitions('DRAFT')).toEqual(expect.arrayContaining(['ACTIVE', 'CANCELLED']));
+    });
+
+    it('returns correct targets from ACTIVE', () => {
+      expect(allowedTransitions('ACTIVE')).toEqual(
+        expect.arrayContaining(['ON_HOLD', 'COMPLETED', 'CANCELLED']),
+      );
+    });
+
+    it('returns correct targets from ON_HOLD', () => {
+      expect(allowedTransitions('ON_HOLD')).toEqual(
+        expect.arrayContaining(['ACTIVE', 'CANCELLED']),
+      );
+    });
+
+    it('returns empty array from COMPLETED (terminal)', () => {
+      expect(allowedTransitions('COMPLETED')).toHaveLength(0);
+    });
+
+    it('returns empty array from CANCELLED (terminal)', () => {
+      expect(allowedTransitions('CANCELLED')).toHaveLength(0);
+    });
+  });
+
+  describe('validateTransition() — allowed transitions', () => {
+    it('DRAFT → ACTIVE succeeds for PROJECT_MANAGER', () => {
+      const result = validateTransition({
+        currentStatus: 'DRAFT',
+        toStatus: 'ACTIVE',
+        actorRole: 'PROJECT_MANAGER',
+      });
+      expect(result.allowed).toBe(true);
+    });
+
+    it('DRAFT → ACTIVE succeeds for TENANT_ADMIN', () => {
+      const result = validateTransition({
+        currentStatus: 'DRAFT',
+        toStatus: 'ACTIVE',
+        actorRole: 'TENANT_ADMIN',
+      });
+      expect(result.allowed).toBe(true);
+    });
+
+    it('ACTIVE → ON_HOLD succeeds with reason', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'ON_HOLD',
+        actorRole: 'PROJECT_MANAGER',
+        reason: 'Waiting for permits',
+      });
+      expect(result.allowed).toBe(true);
+    });
+
+    it('ON_HOLD → ACTIVE succeeds for PROJECT_MANAGER', () => {
+      const result = validateTransition({
+        currentStatus: 'ON_HOLD',
+        toStatus: 'ACTIVE',
+        actorRole: 'PROJECT_MANAGER',
+      });
+      expect(result.allowed).toBe(true);
+    });
+
+    it('ACTIVE → COMPLETED succeeds for TENANT_ADMIN with past end_date', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'COMPLETED',
+        actorRole: 'TENANT_ADMIN',
+        endDate: '2020-01-01',
+      });
+      expect(result.allowed).toBe(true);
+    });
+
+    it('DRAFT → CANCELLED succeeds for TENANT_ADMIN with reason', () => {
+      const result = validateTransition({
+        currentStatus: 'DRAFT',
+        toStatus: 'CANCELLED',
+        actorRole: 'TENANT_ADMIN',
+        reason: 'Client withdrew',
+      });
+      expect(result.allowed).toBe(true);
+    });
+  });
+
+  describe('validateTransition() — forbidden transitions', () => {
+    it('CANCELLED → ACTIVE is blocked (terminal state)', () => {
+      const result = validateTransition({
+        currentStatus: 'CANCELLED',
+        toStatus: 'ACTIVE',
+        actorRole: 'TENANT_ADMIN',
+      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/terminal/i);
+    });
+
+    it('COMPLETED → ACTIVE is blocked (no allowed targets)', () => {
+      const result = validateTransition({
+        currentStatus: 'COMPLETED',
+        toStatus: 'ACTIVE',
+        actorRole: 'TENANT_ADMIN',
+      });
+      expect(result.allowed).toBe(false);
+    });
+
+    it('DRAFT → COMPLETED is blocked (invalid transition)', () => {
+      const result = validateTransition({
+        currentStatus: 'DRAFT',
+        toStatus: 'COMPLETED',
+        actorRole: 'TENANT_ADMIN',
+        endDate: '2020-01-01',
+      });
+      expect(result.allowed).toBe(false);
+    });
+
+    it('ACTIVE → COMPLETED blocked without end_date', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'COMPLETED',
+        actorRole: 'TENANT_ADMIN',
+        endDate: null,
+      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/end_date/i);
+    });
+
+    it('ACTIVE → COMPLETED blocked when end_date is in the future', () => {
+      const futureDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'COMPLETED',
+        actorRole: 'TENANT_ADMIN',
+        endDate: futureDate,
+      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/end_date/i);
+    });
+  });
+
+  describe('validateTransition() — role enforcement', () => {
+    it('ACTIVE → COMPLETED blocked for PROJECT_MANAGER (TENANT_ADMIN only)', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'COMPLETED',
+        actorRole: 'PROJECT_MANAGER',
+        endDate: '2020-01-01',
+      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/PROJECT_MANAGER/);
+    });
+
+    it('ACTIVE → CANCELLED blocked for SITE_ENGINEER', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'CANCELLED',
+        actorRole: 'SITE_ENGINEER',
+        reason: 'reason',
+      });
+      expect(result.allowed).toBe(false);
+    });
+
+    it('ACTIVE → ON_HOLD blocked for FINANCE role', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'ON_HOLD',
+        actorRole: 'FINANCE',
+        reason: 'reason',
+      });
+      expect(result.allowed).toBe(false);
+    });
+  });
+
+  describe('validateTransition() — reason requirement', () => {
+    it('ON_HOLD requires reason', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'ON_HOLD',
+        actorRole: 'PROJECT_MANAGER',
+        reason: undefined,
+      });
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toMatch(/reason/i);
+    });
+
+    it('CANCELLED requires reason', () => {
+      const result = validateTransition({
+        currentStatus: 'ACTIVE',
+        toStatus: 'CANCELLED',
+        actorRole: 'TENANT_ADMIN',
+        reason: undefined,
+      });
+      expect(result.allowed).toBe(false);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('handles all ProjectStatus values without throwing', () => {
+      const statuses: ProjectStatus[] = ['DRAFT', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'];
+      for (const from of statuses) {
+        for (const to of statuses) {
+          expect(() =>
+            validateTransition({ currentStatus: from, toStatus: to, actorRole: 'TENANT_ADMIN' }),
+          ).not.toThrow();
+        }
+      }
+    });
+  });
+});

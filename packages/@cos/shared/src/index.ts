@@ -5,16 +5,31 @@
 export type { BaseEventEnvelope } from '@cos/types';
 
 // Phase 8 — Kafka SDK (KafkaProducer, KafkaConsumer, OutboxPublisher, DlqPublisher)
-export { KafkaProducer }          from './kafka/producer';
-export { KafkaConsumer }          from './kafka/consumer';
+export { KafkaProducer } from './kafka/producer';
+export { KafkaConsumer } from './kafka/consumer';
 export type { MessageHandler, ConsumerOptions } from './kafka/consumer';
 export { OutboxPublisher, OutboxPoller } from './kafka/outbox';
-export { DlqPublisher }           from './kafka/dlq';
-export { initKafkaMetrics, recordProduced, recordConsumed, recordProducerError, setConsumerLag, setDlqDepth } from './kafka/metrics';
-export { getSchemaRegistry, registerSchema, encodeAvro, decodeAvro } from './kafka/schema-registry.client';
+export { DlqPublisher } from './kafka/dlq';
+export {
+  initKafkaMetrics,
+  recordProduced,
+  recordConsumed,
+  recordProducerError,
+  setConsumerLag,
+  setDlqDepth,
+} from './kafka/metrics';
+export {
+  getSchemaRegistry,
+  registerSchema,
+  encodeAvro,
+  decodeAvro,
+} from './kafka/schema-registry.client';
 
 // Event payload types (canonical names — spec §32.4)
 export type * from './events/construction.project.created.v1';
+export type * from './events/construction.project.updated.v1';
+export type * from './events/construction.project.status_changed.v1';
+export type * from './events/construction.project.archived.v1';
 export type * from './events/construction.boq.version_created.v1';
 export type * from './events/procurement.purchase_order.created.v1';
 export type * from './events/procurement.vendor_invoice.received.v1';

@@ -2,11 +2,8 @@
 // Path A: SMS OTP (field workers) — POST /auth/otp/request, /auth/otp/verify
 // Path B: Keycloak OIDC (office) — redirect handled by Keycloak; /auth/refresh here
 
-import {
-  Controller, Post, Body, HttpCode, HttpStatus, Req, UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
 import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';
@@ -57,7 +54,7 @@ export class IdentityController {
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Logout — invalidate refresh token' })
-  async logout(@Req() req: Request, @Body('refreshToken') refreshToken: string) {
+  async logout(@Body('refreshToken') refreshToken: string) {
     await this.identityService.logout(refreshToken);
   }
 }

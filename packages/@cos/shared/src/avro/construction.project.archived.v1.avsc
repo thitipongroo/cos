@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "ProjectArchivedEvent",
+  "namespace": "com.constructionos.events.construction",
+  "doc": "construction.project.archived.v1 — Phase 3 Project Service",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "ProjectArchivedPayload",
+      "fields": [
+        { "name": "project_id", "type": "string", "doc": "UUID" }
+      ]
+    }}
+  ]
+}

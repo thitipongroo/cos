@@ -1,0 +1,582 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — Project Service API
+  description: |
+    Project lifecycle management: create, update, status transitions, member management.
+    All endpoints require a valid JWT (Keycloak RS256 or COS OTP token).
+    Error codes follow the COS-PROJ-NNN registry (docs/api/error-codes.md).
+  version: '1.0.0'
+  contact:
+    name: Construction OS Engineering
+
+servers:
+  - url: /api/v1
+    description: Current API version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ProjectType:
+      type: string
+      enum: [RESIDENTIAL, COMMERCIAL, INFRASTRUCTURE, INDUSTRIAL]
+
+    ProjectStatus:
+      type: string
+      enum: [DRAFT, ACTIVE, ON_HOLD, COMPLETED, CANCELLED]
+
+    CosRole:
+      type: string
+      enum:
+        - SYSTEM_ADMIN
+        - TENANT_ADMIN
+        - EXECUTIVE
+        - PROJECT_MANAGER
+        - PROCUREMENT_OFFICER
+        - FINANCE
+        - SAFETY_OFFICER
+        - SITE_ENGINEER
+        - CRM_SALES_MANAGER
+        - PROC_MANAGER
+        - SITE_WORKER
+        - VIEWER
+
+    Project:
+      type: object
+      required:
+        - project_id
+        - tenant_id
+        - project_code
+        - project_name
+        - project_type
+        - status
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        project_code:
+          type: string
+          maxLength: 50
+          example: 'PROJ-2026-001'
+        project_name:
+          type: string
+          maxLength: 255
+          example: 'Riverside Tower A'
+        project_type:
+          $ref: '#/components/schemas/ProjectType'
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+        budget_amount:
+          type: string
+          nullable: true
+          description: 'DECIMAL(19,4) as string — use decimal.js on client'
+          example: '5000000.0000'
+        budget_currency:
+          type: string
+          nullable: true
+          description: 'ISO 4217 code'
+          example: 'THB'
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        on_hold_reason:
+          type: string
+          nullable: true
+          maxLength: 500
+        on_hold_at:
+          type: string
+          format: date-time
+          nullable: true
+        cancellation_reason:
+          type: string
+          nullable: true
+          maxLength: 500
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CreateProjectRequest:
+      type: object
+      required:
+        - project_code
+        - project_name
+        - project_type
+      properties:
+        project_code:
+          type: string
+          maxLength: 50
+        project_name:
+          type: string
+          maxLength: 255
+        project_type:
+          $ref: '#/components/schemas/ProjectType'
+        budget_amount:
+          type: string
+          description: 'DECIMAL(19,4) as string'
+        budget_currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    UpdateProjectRequest:
+      type: object
+      properties:
+        project_name:
+          type: string
+          maxLength: 255
+        budget_amount:
+          type: string
+        budget_currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    TransitionProjectRequest:
+      type: object
+      required:
+        - to
+      properties:
+        to:
+          type: string
+          enum: [ACTIVE, ON_HOLD, COMPLETED, CANCELLED]
+          description: 'Target status. reason is required for ON_HOLD and CANCELLED.'
+        reason:
+          type: string
+          maxLength: 500
+
+    ProjectMember:
+      type: object
+      required:
+        - membership_id
+        - project_id
+        - tenant_id
+        - user_id
+        - role
+        - assigned_at
+        - assigned_by
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/CosRole'
+        assigned_at:
+          type: string
+          format: date-time
+        assigned_by:
+          type: string
+          format: uuid
+
+    AddMemberRequest:
+      type: object
+      required:
+        - user_id
+        - role
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/CosRole'
+
+    ProjectDocument:
+      type: object
+      required:
+        - document_id
+        - project_id
+        - tenant_id
+        - uploaded_by
+        - uploaded_at
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        file_id:
+          type: string
+          format: uuid
+          nullable: true
+        document_type:
+          type: string
+          nullable: true
+        uploaded_by:
+          type: string
+          format: uuid
+        uploaded_at:
+          type: string
+          format: date-time
+
+    ProjectListResponse:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        nextCursor:
+          type: string
+          nullable: true
+          description: 'Base64 cursor for the next page; null when no more pages'
+
+    CosError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - timestamp
+          properties:
+            code:
+              type: string
+              example: 'COS-PROJ-001'
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+paths:
+  /projects:
+    post:
+      summary: Create a new project
+      description: |
+        Creates a project in DRAFT status.
+        Emits `construction.project.created.v1` Kafka event.
+        Required role: PROJECT_MANAGER or TENANT_ADMIN.
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProjectRequest'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role
+        '422':
+          description: Business rule violation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
+
+    get:
+      summary: List projects
+      description: |
+        Returns a cursor-paginated list of projects for the authenticated tenant.
+        Supports optional filters by status, type, and full-text search (q).
+      operationId: listProjects
+      parameters:
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/ProjectStatus'
+        - in: query
+          name: type
+          schema:
+            $ref: '#/components/schemas/ProjectType'
+        - in: query
+          name: q
+          schema:
+            type: string
+            maxLength: 100
+          description: 'Full-text search on project_name and project_code (OpenSearch)'
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          description: 'Pagination cursor from previous response'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paginated project list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectListResponse'
+        '400':
+          description: Invalid filter value
+
+  /projects/{id}:
+    get:
+      summary: Get project by ID
+      operationId: getProject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Project detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          description: Not found (COS-PROJ-001)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
+
+    patch:
+      summary: Update project metadata
+      description: |
+        Updates project_name, budget, or dates. Does NOT update status — use /transitions.
+        Emits `construction.project.updated.v1`.
+        Blocked if project is COMPLETED or CANCELLED (COS-PROJ-002).
+      operationId: updateProject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProjectRequest'
+      responses:
+        '200':
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '422':
+          description: Not editable (COS-PROJ-002)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
+
+  /projects/{id}/transitions:
+    post:
+      summary: Trigger a status transition
+      description: |
+        Valid transitions (source: context/00_master_construction_os.md §Phase 3):
+        - DRAFT → ACTIVE | CANCELLED
+        - ACTIVE → ON_HOLD | COMPLETED | CANCELLED
+        - ON_HOLD → ACTIVE | CANCELLED
+        - COMPLETED and CANCELLED are terminal.
+
+        Emits `construction.project.status_changed.v1`.
+        COMPLETED also emits `construction.project.archived.v1`.
+      operationId: transitionProject
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitionProjectRequest'
+      responses:
+        '200':
+          description: Project after transition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '422':
+          description: Transition not allowed (COS-PROJ-003)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CosError'
+
+  /projects/{id}/members:
+    post:
+      summary: Add or update a project member
+      description: |
+        Adds user_id to the project with the specified role.
+        If user_id is already a member, their role is updated (upsert).
+      operationId: addProjectMember
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+      responses:
+        '204':
+          description: Member added or role updated
+        '400':
+          description: Validation error
+        '404':
+          description: Project not found
+
+    get:
+      summary: List project members
+      operationId: listProjectMembers
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectMember'
+        '404':
+          description: Project not found
+
+  /projects/{id}/members/{userId}:
+    delete:
+      summary: Remove a project member
+      operationId: removeProjectMember
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: userId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Member removed
+        '404':
+          description: Project not found
+
+  /projects/{id}/documents:
+    get:
+      summary: List project documents
+      description: |
+        Returns document metadata. File content is served by the File Service (Phase 9).
+        file_id is a loose reference to File Service — no FK constraint.
+      operationId: listProjectDocuments
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectDocument'
+        '404':
+          description: Project not found

@@ -5,6 +5,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
 import { TenantModule } from './modules/tenant/tenant.module';
+import { ProjectModule } from './modules/project/project.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 
 @Module({
@@ -13,8 +14,8 @@ import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
     TerminusModule,
     IdentityModule,
     TenantModule,
+    ProjectModule,
     // Remaining modules added per phase:
-    // Phase 3: ProjectModule
     // Phase 4: BoqModule
     // Phase 5: ProcurementModule
     // Phase 6: SiteOpsModule

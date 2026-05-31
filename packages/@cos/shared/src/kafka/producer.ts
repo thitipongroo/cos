@@ -14,25 +14,28 @@ const logger = createLogger('kafka-producer');
 
 // Avsc filename mapping: event_type → file basename
 const EVENT_AVSC_MAP: Record<string, string> = {
-  'construction.project.created.v1':         'construction.project.created.v1.avsc',
-  'construction.boq.version_created.v1':      'construction.boq.version_created.v1.avsc',
-  'procurement.purchase_order.created.v1':    'procurement.purchase_order.created.v1.avsc',
-  'procurement.vendor_invoice.received.v1':   'procurement.vendor_invoice.received.v1.avsc',
-  'procurement.vendor_invoice.approved.v1':   'procurement.vendor_invoice.approved.v1.avsc',
-  'procurement.delivery.received.v1':         'procurement.delivery.received.v1.avsc',
-  'site.report.created.v1':                   'site.report.created.v1.avsc',
-  'site.inspection.failed.v1':                'site.inspection.failed.v1.avsc',
-  'site.material.consumed.v1':                'site.material.consumed.v1.avsc',
-  'construction.task.completed.v1':           'construction.task.completed.v1.avsc',
-  'construction.delay.detected.v1':           'construction.delay.detected.v1.avsc',
-  'workforce.checkin.created.v1':             'workforce.checkin.created.v1.avsc',
-  'finance.budget.exceeded.v1':               'finance.budget.exceeded.v1.avsc',
-  'finance.cashflow_risk.detected.v1':        'finance.cashflow_risk.detected.v1.avsc',
-  'ai.risk_prediction.generated.v1':          'ai.risk_prediction.generated.v1.avsc',
-  'identity.tenant.created.v1':               'identity.tenant.created.v1.avsc',
-  'identity.tenant.deactivated.v1':           'identity.tenant.deactivated.v1.avsc',
-  'identity.user.created.v1':                 'identity.user.created.v1.avsc',
-  'identity.user.role_changed.v1':            'identity.user.role_changed.v1.avsc',
+  'construction.project.created.v1': 'construction.project.created.v1.avsc',
+  'construction.project.updated.v1': 'construction.project.updated.v1.avsc',
+  'construction.project.status_changed.v1': 'construction.project.status_changed.v1.avsc',
+  'construction.project.archived.v1': 'construction.project.archived.v1.avsc',
+  'construction.boq.version_created.v1': 'construction.boq.version_created.v1.avsc',
+  'procurement.purchase_order.created.v1': 'procurement.purchase_order.created.v1.avsc',
+  'procurement.vendor_invoice.received.v1': 'procurement.vendor_invoice.received.v1.avsc',
+  'procurement.vendor_invoice.approved.v1': 'procurement.vendor_invoice.approved.v1.avsc',
+  'procurement.delivery.received.v1': 'procurement.delivery.received.v1.avsc',
+  'site.report.created.v1': 'site.report.created.v1.avsc',
+  'site.inspection.failed.v1': 'site.inspection.failed.v1.avsc',
+  'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
+  'construction.task.completed.v1': 'construction.task.completed.v1.avsc',
+  'construction.delay.detected.v1': 'construction.delay.detected.v1.avsc',
+  'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
+  'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',
+  'finance.cashflow_risk.detected.v1': 'finance.cashflow_risk.detected.v1.avsc',
+  'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
+  'identity.tenant.created.v1': 'identity.tenant.created.v1.avsc',
+  'identity.tenant.deactivated.v1': 'identity.tenant.deactivated.v1.avsc',
+  'identity.user.created.v1': 'identity.user.created.v1.avsc',
+  'identity.user.role_changed.v1': 'identity.user.role_changed.v1.avsc',
 };
 
 // topic naming: {service}.{entity}.{action} — derived from canonical event type
@@ -95,14 +98,15 @@ export class KafkaProducer {
     const encoded = await encodeAvro(schemaId, envelope);
 
     const headers: Record<string, string> = {
-      'event_id': envelope.event_id,
-      'event_type': envelope.event_type,
-      'tenant_id': envelope.tenant_id,
+      event_id: envelope.event_id,
+      event_type: envelope.event_type,
+      tenant_id: envelope.tenant_id,
     };
     // OTel W3C trace propagation via Kafka headers (QM-8)
-    if (options.traceId) headers['traceparent'] = `00-${options.traceId}-${options.spanId ?? '0000000000000000'}-01`;
+    if (options.traceId)
+      headers['traceparent'] = `00-${options.traceId}-${options.spanId ?? '0000000000000000'}-01`;
     if (options.traceId) headers['trace_id'] = options.traceId;
-    if (options.spanId)  headers['span_id']  = options.spanId;
+    if (options.spanId) headers['span_id'] = options.spanId;
 
     const message: Message = {
       key: envelope.tenant_id,
@@ -113,7 +117,11 @@ export class KafkaProducer {
     await this.producer.send({ topic, messages: [message], compression: CompressionTypes.GZIP });
 
     logger.info(
-      { event_type: envelope.event_type, event_id: envelope.event_id, tenant_id: envelope.tenant_id },
+      {
+        event_type: envelope.event_type,
+        event_id: envelope.event_id,
+        tenant_id: envelope.tenant_id,
+      },
       'Kafka event published',
     );
   }

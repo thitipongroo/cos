@@ -7,10 +7,13 @@
 // Service code calls OutboxPublisher.write() inside $transaction.
 // OutboxPoller runs as a background process (started in main.ts).
 
-// import type — PrismaClient is used only for TypeScript type annotations, not at runtime.
-// This prevents @prisma/client from being bundled by mobile (Metro) or any non-Node.js environment.
-// Rule 27 (2026-05-31): @cos/shared must remain framework-agnostic — no server-only runtime imports.
-import type { PrismaClient } from '@prisma/client';
+// Minimal Prisma-compatible interface — avoids importing @prisma/client at the package level.
+// @cos/shared must remain framework-agnostic (Rule 35): no Node.js-only runtime imports.
+// Callers pass a real PrismaClient instance; this interface covers the methods OutboxPoller uses.
+interface OutboxPrismaClient {
+  $queryRaw<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T>;
+  $executeRaw(strings: TemplateStringsArray, ...values: unknown[]): Promise<number>;
+}
 import { KafkaProducer } from './producer';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
@@ -49,7 +52,7 @@ export class OutboxPublisher {
     const eventId = event.event_id ?? randomUUID();
     const envelope = { ...event, event_id: eventId };
 
-    await (tx as unknown as PrismaClient).$executeRaw`
+    await (tx as unknown as OutboxPrismaClient).$executeRaw`
       INSERT INTO outbox_events (id, event_type, payload, published)
       VALUES (${eventId}::uuid, ${envelope.event_type}, ${JSON.stringify(envelope)}::jsonb, false)
     `;
@@ -62,12 +65,12 @@ export class OutboxPublisher {
  * Start once per deployable in main.ts bootstrap.
  */
 export class OutboxPoller {
-  private readonly prisma: PrismaClient;
+  private readonly prisma: OutboxPrismaClient;
   private readonly producer: KafkaProducer;
   private running = false;
   private timer: NodeJS.Timeout | null = null;
 
-  constructor(prisma: PrismaClient, producer: KafkaProducer) {
+  constructor(prisma: OutboxPrismaClient, producer: KafkaProducer) {
     this.prisma = prisma;
     this.producer = producer;
   }
@@ -120,7 +123,10 @@ export class OutboxPoller {
             WHERE id = ${row.id}::uuid
           `;
         } catch (err) {
-          logger.error({ err, event_id: row.id, event_type: row.event_type }, 'OutboxPoller: failed to publish event');
+          logger.error(
+            { err, event_id: row.id, event_type: row.event_type },
+            'OutboxPoller: failed to publish event',
+          );
           // Leave as unpublished — will retry on next poll
         }
       }

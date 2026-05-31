@@ -8,7 +8,6 @@
 
 import { Counter, Gauge, Registry } from 'prom-client';
 
-let registry: Registry | null = null;
 let messagesProduced: Counter | null = null;
 let messagesConsumed: Counter | null = null;
 let producerErrors: Counter | null = null;
@@ -16,8 +15,6 @@ let consumerLag: Gauge | null = null;
 let dlqDepth: Gauge | null = null;
 
 export function initKafkaMetrics(reg: Registry): void {
-  registry = reg;
-
   messagesProduced = new Counter({
     name: 'kafka_messages_produced_total',
     help: 'Total Kafka messages successfully produced',
@@ -66,7 +63,12 @@ export function recordProducerError(topic: string): void {
   producerErrors?.labels(topic).inc();
 }
 
-export function setConsumerLag(topic: string, groupId: string, partition: number, lag: number): void {
+export function setConsumerLag(
+  topic: string,
+  groupId: string,
+  partition: number,
+  lag: number,
+): void {
   consumerLag?.labels(topic, groupId, String(partition)).set(lag);
 }
 

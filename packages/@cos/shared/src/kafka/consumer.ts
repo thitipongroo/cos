@@ -82,9 +82,18 @@ export class KafkaConsumer {
 
     // Idempotency check (QM-9 — Kafka idempotency via Redis)
     const idempKey = `kafka:processed:${event.event_id}`;
-    const alreadyProcessed = await this.redis.set(idempKey, '1', 'EX', IDEMPOTENCY_TTL_SECONDS, 'NX');
+    const alreadyProcessed = await this.redis.set(
+      idempKey,
+      '1',
+      'EX',
+      IDEMPOTENCY_TTL_SECONDS,
+      'NX',
+    );
     if (!alreadyProcessed) {
-      logger.debug({ event_id: event.event_id, event_type: event.event_type }, 'Duplicate event skipped');
+      logger.debug(
+        { event_id: event.event_id, event_type: event.event_type },
+        'Duplicate event skipped',
+      );
       return;
     }
 
@@ -98,7 +107,7 @@ export class KafkaConsumer {
     const headers = message.headers ?? {};
     const traceContext = {
       traceId: this.headerToString(headers['trace_id']),
-      spanId:  this.headerToString(headers['span_id']),
+      spanId: this.headerToString(headers['span_id']),
     };
 
     // Execute with retry + DLQ
@@ -127,7 +136,7 @@ export class KafkaConsumer {
     }
   }
 
-  private async sendToDlq(originalTopic: string, value: Buffer, reason: string): Promise<void> {
+  private async sendToDlq(originalTopic: string, _value: Buffer, reason: string): Promise<void> {
     // DLQ topic naming: {original-topic}.dlq
     const dlqTopic = `${originalTopic}.dlq`;
     logger.error({ dlqTopic, reason }, 'Message sent to DLQ');
@@ -135,8 +144,15 @@ export class KafkaConsumer {
     // In production: a separate DlqPublisher pushes failed messages to DLQ topic
   }
 
-  private headerToString(header: Buffer | string | undefined): string | undefined {
+  private headerToString(
+    header: Buffer | string | (string | Buffer)[] | undefined,
+  ): string | undefined {
     if (!header) return undefined;
+    if (Array.isArray(header)) {
+      const first = header[0];
+      if (!first) return undefined;
+      return Buffer.isBuffer(first) ? first.toString('utf-8') : first;
+    }
     return Buffer.isBuffer(header) ? header.toString('utf-8') : header;
   }
 }

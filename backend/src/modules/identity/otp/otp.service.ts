@@ -3,14 +3,14 @@
 // OTP: 6-digit numeric, TTL 5min in Redis, max 3 attempts, 10 req/phone/day.
 // SMS gateway: AWS SNS (ap-southeast-1) via @aws-sdk/client-sns.
 
-import { Injectable, BadRequestException, TooManyRequestsException } from '@nestjs/common';
+import { Injectable, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { Redis } from 'ioredis';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('otp-service');
 
-const OTP_TTL_SECONDS = 300;        // 5 minutes
+const OTP_TTL_SECONDS = 300; // 5 minutes
 const OTP_MAX_ATTEMPTS = 3;
 const OTP_DAILY_LIMIT = 10;
 const OTP_LENGTH = 6;
@@ -67,7 +67,10 @@ export class OtpService {
     const attempts = parseInt(attemptsStr ?? '0', 10);
     if (attempts >= OTP_MAX_ATTEMPTS) {
       await this.redis.del(otpKey, attemptsKey);
-      throw new TooManyRequestsException('Maximum OTP attempts exceeded — request a new OTP');
+      throw new HttpException(
+        'Maximum OTP attempts exceeded — request a new OTP',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
 
     if (storedOtp !== otp) {
@@ -88,7 +91,7 @@ export class OtpService {
       await this.redis.expire(dailyKey, 86400); // 24h TTL
     }
     if (count > OTP_DAILY_LIMIT) {
-      throw new TooManyRequestsException('Daily OTP limit exceeded');
+      throw new HttpException('Daily OTP limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
     }
   }
 
