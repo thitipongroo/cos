@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "TenantCreatedEvent",
+  "namespace": "com.constructionos.events.identity",
+  "doc": "identity.tenant.created.v1 — Phase 2 identity event",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "TenantCreatedPayload",
+      "fields": [
+        { "name": "tenant_id",   "type": "string" },
+        { "name": "tenant_code", "type": "string" },
+        { "name": "tenant_name", "type": "string" },
+        { "name": "plan_type", "type": { "type": "enum", "name": "PlanType",
+            "symbols": ["STARTER", "PROFESSIONAL", "ENTERPRISE"] } }
+      ]
+    }}
+  ]
+}

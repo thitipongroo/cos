@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "FinanceBudgetExceededEvent",
+  "namespace": "com.constructionos.events.finance",
+  "doc": "finance.budget.exceeded.v1 — spec §32.4 event #12",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "FinanceBudgetExceededPayload",
+      "fields": [
+        { "name": "project_id",      "type": "string" },
+        { "name": "cost_category",   "type": "string" },
+        { "name": "budget_amount",   "type": { "type": "record", "name": "BudgetMoney",
+            "fields": [{ "name": "amount", "type": "string" }, { "name": "currency_code", "type": "string" }] } },
+        { "name": "actual_amount",   "type": { "type": "record", "name": "ActualMoney",
+            "fields": [{ "name": "amount", "type": "string" }, { "name": "currency_code", "type": "string" }] } },
+        { "name": "overage_percent", "type": "string", "doc": "decimal string, 2dp" },
+        { "name": "detected_at",     "type": "string" }
+      ]
+    }}
+  ]
+}

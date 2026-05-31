@@ -1,0 +1,17 @@
+{
+  "type": "record",
+  "name": "BaseEventEnvelope",
+  "namespace": "com.constructionos.events",
+  "doc": "Base event envelope for all Construction OS Kafka events. Source: context/00_master_construction_os.md §6",
+  "fields": [
+    { "name": "event_id",       "type": "string", "doc": "UUID v4 — unique per event" },
+    { "name": "event_type",     "type": "string", "doc": "Canonical format: {domain}.{entity}.{action}.v{N}" },
+    { "name": "event_version",  "type": "string", "doc": "Semver patch version within major (e.g. '1.0')" },
+    { "name": "tenant_id",      "type": "string", "doc": "UUID — tenant that owns the entity" },
+    { "name": "actor_id",       "type": "string", "doc": "UUID — user who triggered the event" },
+    { "name": "occurred_at",    "type": "string", "doc": "ISO 8601 UTC timestamp" },
+    { "name": "correlation_id", "type": "string", "doc": "UUID — for distributed tracing" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null, "doc": "OTel trace_id — propagated via Kafka headers" },
+    { "name": "span_id",        "type": ["null", "string"], "default": null, "doc": "OTel span_id — propagated via Kafka headers" }
+  ]
+}

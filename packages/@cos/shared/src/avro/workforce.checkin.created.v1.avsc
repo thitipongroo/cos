@@ -1,0 +1,32 @@
+{
+  "type": "record",
+  "name": "WorkforceCheckinCreatedEvent",
+  "namespace": "com.constructionos.events.workforce",
+  "doc": "workforce.checkin.created.v1 — spec §32.4 event #9",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "WorkforceCheckinCreatedPayload",
+      "fields": [
+        { "name": "checkin_id",  "type": "string" },
+        { "name": "worker_id",   "type": "string" },
+        { "name": "project_id",  "type": "string" },
+        { "name": "checkin_at",  "type": "string" },
+        { "name": "method", "type": { "type": "enum", "name": "CheckinMethod",
+            "symbols": ["QR_CODE", "GPS", "BIOMETRIC", "MANUAL"] } },
+        { "name": "location", "type": ["null", {
+          "type": "record", "name": "GpsLocation",
+          "fields": [{ "name": "lat", "type": "double" }, { "name": "lng", "type": "double" }]
+        }], "default": null }
+      ]
+    }}
+  ]
+}
