@@ -33,7 +33,10 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
-  // testcontainers Kafka/Redis containers take time to stop — force exit after all tests pass.
+  // Integration tests in test/ require Docker (testcontainers KafkaContainer).
+  // They run via `test:integration` only — exclude from unit test:cov.
+  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/test/'],
+  // testcontainers containers take time to stop — force exit after all tests pass.
   forceExit: true,
   moduleNameMapper: {
     '^@cos/logger$': '<rootDir>/../logger/src/index.ts',

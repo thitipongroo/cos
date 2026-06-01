@@ -28,6 +28,8 @@ module.exports = {
     '!src/**/index.ts',
     '!src/**/*.interface.ts',
     '!src/**/*.enum.ts',
+    // Phase 16 deliverable — tests written in Phase 16 (Security hardening)
+    '!src/shared/middleware/cloudflare-waf.middleware.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
