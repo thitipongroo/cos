@@ -215,11 +215,11 @@ interface CRMIntegration {
 
 **Three adapter stubs (each STUB until tenant with that CRM onboards):**
 
-| Adapter           | EP ID         | CRM System                                           | File                                          |
-| ----------------- | ------------- | ---------------------------------------------------- | --------------------------------------------- |
-| SalesforceAdapter | EP-DOMAIN-001 | Salesforce REST API — won Opportunity → project      | `ai/shared/extension_points/EP_DOMAIN_001.py` |
-| HubSpotAdapter    | EP-DOMAIN-002 | HubSpot Webhooks — deal stage "Closed Won" → project | `ai/shared/extension_points/EP_DOMAIN_002.py` |
-| PipedriveAdapter  | EP-DOMAIN-003 | Pipedrive Webhooks — deal status "won" → project     | `ai/shared/extension_points/EP_DOMAIN_003.py` |
+| Adapter           | CRM System                                           |
+| ----------------- | ---------------------------------------------------- |
+| SalesforceAdapter | Salesforce REST API — won Opportunity → project      |
+| HubSpotAdapter    | HubSpot Webhooks — deal stage "Closed Won" → project |
+| PipedriveAdapter  | Pipedrive Webhooks — deal status "won" → project     |
 
 Field mapping (CRM deal fields → COS project fields) is configured per-tenant per-CRM system.
 
@@ -233,10 +233,7 @@ Field mapping (CRM deal fields → COS project fields) is configured per-tenant 
 
 **Two integration points:**
 
-**Phase 3 — Project Structure Import (EP-DOMAIN-004):**
-
-Stub file: `ai/shared/extension_points/EP_DOMAIN_004.py`
-Trigger: first tenant with BIM workflow onboards
+**Phase 3 — Project Structure Import:**
 
 ```typescript
 interface BIMProjectStructure {
