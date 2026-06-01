@@ -59,25 +59,57 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "protocol": "openid-connect",
-      "redirectUris": [
-        "http://localhost:3001/*",
-        "http://localhost:3002/*"
-      ],
-      "webOrigins": [
-        "http://localhost:3001",
-        "http://localhost:3002"
-      ],
+      "redirectUris": ["http://localhost:3001/*", "http://localhost:3002/*"],
+      "webOrigins": ["http://localhost:3001", "http://localhost:3002"],
       "attributes": {
         "access.token.signed.response.alg": "RS256",
         "pkce.code.challenge.method": "S256"
       }
     }
   ],
-  "defaultDefaultClientScopes": [
-    "web-origins",
-    "roles",
-    "profile",
-    "email"
-  ],
-  "protocolMappers": []
+  "defaultDefaultClientScopes": ["web-origins", "roles", "profile", "email"],
+  "protocolMappers": [
+    {
+      "name": "tenant_id",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-attribute-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "tenant_id",
+        "claim.name": "tenant_id",
+        "jsonType.label": "String",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "userinfo.token.claim": "true"
+      }
+    },
+    {
+      "name": "user_id",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-attribute-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "user_id",
+        "claim.name": "user_id",
+        "jsonType.label": "String",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "userinfo.token.claim": "true"
+      }
+    },
+    {
+      "name": "role",
+      "protocol": "openid-connect",
+      "protocolMapper": "oidc-usermodel-attribute-mapper",
+      "consentRequired": false,
+      "config": {
+        "user.attribute": "role",
+        "claim.name": "role",
+        "jsonType.label": "String",
+        "id.token.claim": "true",
+        "access.token.claim": "true",
+        "userinfo.token.claim": "true"
+      }
+    }
+  ]
 }

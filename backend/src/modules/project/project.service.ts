@@ -45,12 +45,12 @@ export class ProjectService {
     @Inject(REQUEST)
     request: Request & {
       tenantId?: string;
-      user?: { cos_user_id?: string; cos_role?: string };
+      user?: { user_id?: string; role?: string };
     },
   ) {
     this.tenantId = request.tenantId ?? '';
-    this.userId = request.user?.cos_user_id ?? '';
-    this.userRole = request.user?.cos_role ?? '';
+    this.userId = request.user?.user_id ?? '';
+    this.userRole = request.user?.role ?? '';
     this.correlationId = randomUUID();
     this.openSearch = new OpenSearchClient({
       node: process.env['OPENSEARCH_URL'] ?? 'http://localhost:9200',

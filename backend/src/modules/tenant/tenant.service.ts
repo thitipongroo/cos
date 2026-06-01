@@ -1,10 +1,13 @@
 // Tenant Service — Phase 2
 // Manages tenant lifecycle: creation, deactivation, schema provisioning.
 // Uses platform PrismaClient directly (cross-tenant operations).
+// Emits identity.tenant.created.v1 and identity.tenant.deactivated.v1 Kafka events.
 
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaClient, Tenant } from '@prisma/client';
+import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
+import { randomUUID } from 'crypto';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 
 const logger = createLogger('tenant-service');
@@ -13,6 +16,7 @@ const logger = createLogger('tenant-service');
 export class TenantService {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
   private readonly prisma = new PrismaClient();
+  private readonly kafka = new KafkaProducer();
 
   async createTenant(dto: CreateTenantDto, createdBy: string): Promise<Tenant> {
     const existing = await this.prisma.$queryRaw<Array<{ tenant_id: string }>>`
@@ -36,14 +40,9 @@ export class TenantService {
       `;
 
       // 2. Provision tenant schema
-      await tx.$executeRawUnsafe(
-        `CREATE SCHEMA IF NOT EXISTS "${dto.tenantCode}"`,
-      );
+      await tx.$executeRawUnsafe(`CREATE SCHEMA IF NOT EXISTS "${dto.tenantCode}"`);
 
-      logger.info(
-        { tenantCode: dto.tenantCode, createdBy },
-        'Tenant schema provisioned',
-      );
+      logger.info({ tenantCode: dto.tenantCode, createdBy }, 'Tenant schema provisioned');
 
       return created!;
     });
@@ -55,6 +54,14 @@ export class TenantService {
       { tenantCode: dto.tenantCode, keycloakRealm },
       'Keycloak realm provisioning deferred to Keycloak Admin API (Phase 2+)',
     );
+
+    // 4. Emit identity.tenant.created.v1 (non-fatal — outbox pattern handles retries)
+    await this.publishEvent('identity.tenant.created.v1', {
+      tenant_id: tenant.tenantId,
+      tenant_code: tenant.tenantCode,
+      tenant_name: tenant.tenantName,
+      plan_type: tenant.planType,
+    });
 
     return tenant;
   }
@@ -70,6 +77,8 @@ export class TenantService {
       throw new NotFoundException(`Tenant ${tenantId} not found or already inactive`);
     }
     logger.info({ tenantId, actorId }, 'Tenant deactivated');
+
+    await this.publishEvent('identity.tenant.deactivated.v1', { tenant_id: tenantId });
   }
 
   async findByCode(tenantCode: string): Promise<Tenant | null> {
@@ -88,5 +97,23 @@ export class TenantService {
       LIMIT 1
     `;
     return tenant ?? null;
+  }
+
+  private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
+    try {
+      await this.kafka.connect();
+      await this.kafka.publish<T>({
+        event_type: eventType,
+        event_version: '1.0',
+        tenant_id: 'platform',
+        actor_id: 'system',
+        occurred_at: new Date().toISOString(),
+        correlation_id: randomUUID(),
+        payload,
+      });
+      await this.kafka.disconnect();
+    } catch (err) {
+      logger.error({ event_type: eventType, err }, 'kafka.publish.failed');
+    }
   }
 }

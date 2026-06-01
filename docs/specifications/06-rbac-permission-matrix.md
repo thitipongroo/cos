@@ -1,8 +1,8 @@
 ---
-title: "RBAC Permission Matrix"
-version: "1.1.0"
+title: 'RBAC Permission Matrix'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -39,30 +39,36 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 
 ## 6.2 Roles
 
-| Role | Description |
-| --- | --- |
-| Executive | Company owner or C-level; sees all projects and financial data |
-| Project Manager | Manages one or more projects end-to-end |
-| Site Engineer | Executes and reports daily field work |
-| Procurement Officer | Manages RFQ, PO, vendors, and deliveries |
-| Finance | Manages cost, billing, payments, and cash flow |
-| Safety Officer | Manages safety checklists, incidents, and compliance |
-| CRM / Sales Manager | Manages leads, opportunities, and customer accounts |
-| Tenant Admin | Configures the tenant: users, roles, workflows, integrations |
-| System Admin | Platform-level administration (SaaS operator only) |
+| Role                | Description                                                    |
+| ------------------- | -------------------------------------------------------------- |
+| Executive           | Company owner or C-level; sees all projects and financial data |
+| Project Manager     | Manages one or more projects end-to-end                        |
+| Site Engineer       | Executes and reports daily field work                          |
+| Procurement Officer | Manages RFQ, PO, vendors, and deliveries                       |
+| Finance             | Manages cost, billing, payments, and cash flow                 |
+| Safety Officer      | Manages safety checklists, incidents, and compliance           |
+| CRM / Sales Manager | Manages leads, opportunities, and customer accounts            |
+| Tenant Admin        | Configures the tenant: users, roles, workflows, integrations   |
+| System Admin        | Platform-level administration (SaaS operator only)             |
+
+> **Display name → JWT enum mapping:** The display names above are used in UI, documentation,
+> and approval chain tables. In JWT tokens and code, these map to uppercase snake_case enum
+> constants (e.g., "CRM / Sales Manager" → `CRM_SALES_MANAGER`, "Site Engineer" → `SITE_ENGINEER`,
+> "Project Manager" → `PROJECT_MANAGER`). See `05-security-compliance` §5.4.1 for the
+> authoritative JWT claim names.
 
 ---
 
 ## 6.3 Permission Levels
 
-| Level | Meaning |
-| --- | --- |
-| — | No access |
-| R | Read only |
-| RW | Read and write (create, update) |
-| RWD | Read, write, and delete |
-| A | Approve (can trigger approval workflow step) |
-| FULL | Full access including configuration |
+| Level | Meaning                                      |
+| ----- | -------------------------------------------- |
+| —     | No access                                    |
+| R     | Read only                                    |
+| RW    | Read and write (create, update)              |
+| RWD   | Read, write, and delete                      |
+| A     | Approve (can trigger approval workflow step) |
+| FULL  | Full access including configuration          |
 
 ---
 
@@ -70,84 +76,84 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 
 ### Core Platform
 
-| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| User management | R | — | — | — | — | — | — | FULL |
-| Role assignment | — | — | — | — | — | — | — | FULL |
-| Workflow configuration | R | R | — | — | — | — | — | FULL |
-| Audit logs | R | R | — | — | R | — | — | FULL |
-| Notification preferences | R | RW | RW | RW | RW | RW | RW | FULL |
+| Module                   | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| ------------------------ | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| User management          | R         | —   | —             | —           | —       | —      | —         | FULL         |
+| Role assignment          | —         | —   | —             | —           | —       | —      | —         | FULL         |
+| Workflow configuration   | R         | R   | —             | —           | —       | —      | —         | FULL         |
+| Audit logs               | R         | R   | —             | —           | R       | —      | —         | FULL         |
+| Notification preferences | R         | RW  | RW            | RW          | RW      | RW     | RW        | FULL         |
 
 ### Construction Modules
 
-| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Project (create/configure) | RW | RW | — | — | — | — | — | FULL |
-| Project (view) | FULL | FULL | R | R | R | R | R | FULL |
-| BOQ | R | RW | R | R | R | — | — | FULL |
-| Tasks | R | RW | RW | R | — | R | — | FULL |
-| Site reports | R | RW | RW | R | R | R | — | FULL |
-| Inspections / QC | R | RW | RW | — | — | RW | — | FULL |
-| Safety checklists | R | R | RW | — | — | RWD | — | FULL |
-| Safety incidents | R | R | RW | — | — | RWD | — | FULL |
-| Workforce attendance | R | RW | RW | — | R | — | — | FULL |
-| Equipment | R | RW | R | R | R | — | — | FULL |
-| Permits | R | RW | R | — | — | RW | — | FULL |
+| Module                     | Executive | PM   | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| -------------------------- | --------- | ---- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Project (create/configure) | RW        | RW   | —             | —           | —       | —      | —         | FULL         |
+| Project (view)             | FULL      | FULL | R             | R           | R       | R      | R         | FULL         |
+| BOQ                        | R         | RW   | R             | R           | R       | —      | —         | FULL         |
+| Tasks                      | R         | RW   | RW            | R           | —       | R      | —         | FULL         |
+| Site reports               | R         | RW   | RW            | R           | R       | R      | —         | FULL         |
+| Inspections / QC           | R         | RW   | RW            | —           | —       | RW     | —         | FULL         |
+| Safety checklists          | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
+| Safety incidents           | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
+| Workforce attendance       | R         | RW   | RW            | —           | R       | —      | —         | FULL         |
+| Equipment                  | R         | RW   | R             | R           | R       | —      | —         | FULL         |
+| Permits                    | R         | RW   | R             | —           | —       | RW     | —         | FULL         |
 
 ### Procurement Modules
 
-| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Purchase requests | R | RW | RW | RWD | R | — | — | FULL |
-| RFQ | R | R | — | RWD | R | — | — | FULL |
-| Vendor quotations | R | R | — | RWD | R | — | — | FULL |
-| Purchase orders | A | A | — | RW | A | — | — | FULL |
-| Deliveries | R | R | RW | RWD | R | — | — | FULL |
-| Vendor Invoices (AP) | A | R | — | RW | RWD | — | — | FULL |
-| Inventory | R | R | RW | RWD | R | — | — | FULL |
-| Vendor management | R | R | — | RWD | R | — | — | FULL |
+| Module               | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| -------------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Purchase requests    | R         | RW  | RW            | RWD         | R       | —      | —         | FULL         |
+| RFQ                  | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
+| Vendor quotations    | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
+| Purchase orders      | A         | A   | —             | RW          | A       | —      | —         | FULL         |
+| Deliveries           | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
+| Vendor Invoices (AP) | A         | R   | —             | RW          | RWD     | —      | —         | FULL         |
+| Inventory            | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
+| Vendor management    | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
 
 ### Financial Modules
 
-| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Budget (view) | FULL | R | — | R | FULL | — | — | FULL |
-| Budget (edit) | A | RW | — | — | RW | — | — | FULL |
-| Cost transactions | R | R | — | R | RWD | — | — | FULL |
-| Client Billing (AR) | A | A | — | R | RWD | — | — | FULL |
-| AR Receipts | R | R | — | — | RW | — | — | FULL |
-| Payments | A | — | — | — | RW | — | — | FULL |
-| Contracts | R | RW | — | R | R | — | — | FULL |
-| Financial reports | R | R | — | — | FULL | — | — | FULL |
-| Cash flow forecast | R | R | — | — | FULL | — | — | FULL |
+| Module              | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| ------------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Budget (view)       | FULL      | R   | —             | R           | FULL    | —      | —         | FULL         |
+| Budget (edit)       | A         | RW  | —             | —           | RW      | —      | —         | FULL         |
+| Cost transactions   | R         | R   | —             | R           | RWD     | —      | —         | FULL         |
+| Client Billing (AR) | A         | A   | —             | R           | RWD     | —      | —         | FULL         |
+| AR Receipts         | R         | R   | —             | —           | RW      | —      | —         | FULL         |
+| Payments            | A         | —   | —             | —           | RW      | —      | —         | FULL         |
+| Contracts           | R         | RW  | —             | R           | R       | —      | —         | FULL         |
+| Financial reports   | R         | R   | —             | —           | FULL    | —      | —         | FULL         |
+| Cash flow forecast  | R         | R   | —             | —           | FULL    | —      | —         | FULL         |
 
 ### Asset Management
 
-| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Unit inventory | R | RW | R | — | R | — | R | FULL |
-| Asset handover | R | RW | RW | — | R | — | RW | FULL |
-| Warranty | R | R | — | — | R | — | R | FULL |
-| Maintenance | R | RW | R | R | R | — | — | FULL |
+| Module         | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| -------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Unit inventory | R         | RW  | R             | —           | R       | —      | R         | FULL         |
+| Asset handover | R         | RW  | RW            | —           | R       | —      | RW        | FULL         |
+| Warranty       | R         | R   | —             | —           | R       | —      | R         | FULL         |
+| Maintenance    | R         | RW  | R             | R           | R       | —      | —         | FULL         |
 
 ### CRM Modules
 
-| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Leads | R | — | — | — | — | — | RWD | FULL |
-| Opportunities | R | — | — | — | R | — | RWD | FULL |
-| Contacts | R | — | — | — | — | — | RWD | FULL |
-| Customers | R | R | — | — | R | — | RWD | FULL |
+| Module        | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| ------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Leads         | R         | —   | —             | —           | —       | —      | RWD       | FULL         |
+| Opportunities | R         | —   | —             | —           | R       | —      | RWD       | FULL         |
+| Contacts      | R         | —   | —             | —           | —       | —      | RWD       | FULL         |
+| Customers     | R         | R   | —             | —           | R       | —      | RWD       | FULL         |
 
 ### Intelligence Layer
 
-| Module | Executive | PM | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Executive dashboard | FULL | R | — | — | R | — | — | FULL |
-| AI risk predictions | R | R | R | R | R | R | — | FULL |
-| Forecasting reports | R | R | — | R | R | — | — | FULL |
-| Knowledge graph (read) | R | R | — | — | — | — | — | FULL |
-| AI copilot | R | R | R | R | R | R | R | FULL |
+| Module                 | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| ---------------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Executive dashboard    | FULL      | R   | —             | —           | R       | —      | —         | FULL         |
+| AI risk predictions    | R         | R   | R             | R           | R       | R      | —         | FULL         |
+| Forecasting reports    | R         | R   | —             | R           | R       | —      | —         | FULL         |
+| Knowledge graph (read) | R         | R   | —             | —           | —       | —      | —         | FULL         |
+| AI copilot             | R         | R   | R             | R           | R       | R      | R         | FULL         |
 
 ---
 
@@ -191,15 +197,15 @@ as a column in the module permission matrices in section 6.4.
 
 System Admin platform capabilities :
 
-| Capability | Description |
-| --- | --- |
-| Tenant management | Create, suspend, delete, and configure tenants via the platform admin API |
-| Cross-tenant read | Read-only access to any tenant's data for support, debugging, and compliance |
-| Platform configuration | Update platform-wide settings: feature flags, rate limits, SLA parameters |
-| Keycloak administration | Manage realms, clients, and IdP federation configurations |
-| Billing and subscription | Manage tenant billing state, subscription tier, and usage quotas |
-| Audit access | Read all tenant audit logs for platform-level compliance and incident investigation |
-| Emergency override | Temporary elevated write access for incident response — requires mandatory justification string |
+| Capability               | Description                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------- |
+| Tenant management        | Create, suspend, delete, and configure tenants via the platform admin API                       |
+| Cross-tenant read        | Read-only access to any tenant's data for support, debugging, and compliance                    |
+| Platform configuration   | Update platform-wide settings: feature flags, rate limits, SLA parameters                       |
+| Keycloak administration  | Manage realms, clients, and IdP federation configurations                                       |
+| Billing and subscription | Manage tenant billing state, subscription tier, and usage quotas                                |
+| Audit access             | Read all tenant audit logs for platform-level compliance and incident investigation             |
+| Emergency override       | Temporary elevated write access for incident response — requires mandatory justification string |
 
 All System Admin actions are immutably audit-logged with the operator's user identity,
 action type, target tenant_id, and a mandatory justification string.
@@ -213,14 +219,14 @@ by the SaaS operator team.
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [NIST-RBAC] | Role Based Access Control — NIST SP 800-207 | NIST Special Publication 800-207 |
-| [ABAC] | Guide to Attribute Based Access Control (ABAC) | NIST SP 800-162 |
-| [OAuth2] | The OAuth 2.0 Authorization Framework | RFC 6749 |
-| [OIDC] | OpenID Connect Core 1.0 | [openid.net/specs/openid-connect-core-1_0.html](https://openid.net/specs/openid-connect-core-1_0.html) |
-| [Keycloak] | Keycloak Server Documentation | [keycloak.org/documentation](https://www.keycloak.org/documentation) |
-| [JWT-RFC] | JSON Web Token (JWT) | RFC 7519 |
+| ID          | Title                                                              | Source                                                                                                 |
+| ----------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| [IEEE 830]  | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                      |
+| [NIST-RBAC] | Role Based Access Control — NIST SP 800-207                        | NIST Special Publication 800-207                                                                       |
+| [ABAC]      | Guide to Attribute Based Access Control (ABAC)                     | NIST SP 800-162                                                                                        |
+| [OAuth2]    | The OAuth 2.0 Authorization Framework                              | RFC 6749                                                                                               |
+| [OIDC]      | OpenID Connect Core 1.0                                            | [openid.net/specs/openid-connect-core-1_0.html](https://openid.net/specs/openid-connect-core-1_0.html) |
+| [Keycloak]  | Keycloak Server Documentation                                      | [keycloak.org/documentation](https://www.keycloak.org/documentation)                                   |
+| [JWT-RFC]   | JSON Web Token (JWT)                                               | RFC 7519                                                                                               |
 
 > 📎 See also: [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [13-product-architecture](13-product-architecture.md) · [20-ux-flow](20-ux-flow.md)

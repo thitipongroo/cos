@@ -77,6 +77,7 @@ model User {
   displayName     String   @map("display_name") @db.VarChar(255)
   isActive        Boolean  @default(true) @map("is_active")
   mfaEnabled      Boolean  @default(false) @map("mfa_enabled")
+  mfaTotpSecret   String?  @map("mfa_totp_secret") @db.VarChar(255)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 

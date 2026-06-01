@@ -1,8 +1,8 @@
 ---
-title: "AI Training Pipeline"
-version: "1.3.0"
+title: 'AI Training Pipeline'
+version: '1.3.0'
 status: Active
-last_updated: "2026-05-26"
+last_updated: '2026-05-26'
 authors:
   - thitipongroo
 related_docs:
@@ -83,13 +83,13 @@ is considered post-Stage 3 only (see section 24.5 Strategy note).
 
 ## 24.3 Model Types
 
-| Model | Use Case |
-| --- | --- |
-| LLM | Copilot |
-| Time-series forecasting | Delay prediction |
-| Computer vision | Safety/compliance |
-| Graph ML | Relationship inference |
-| Classification | Risk detection |
+| Model                   | Use Case               |
+| ----------------------- | ---------------------- |
+| LLM                     | Copilot                |
+| Time-series forecasting | Delay prediction       |
+| Computer vision         | Safety/compliance      |
+| Graph ML                | Relationship inference |
+| Classification          | Risk detection         |
 
 ---
 
@@ -119,7 +119,7 @@ RAG Pipeline :
 Document ingested
 → OCR / text extraction
 → chunked (512–1024 tokens, 20% overlap)
-→ embedded via text-embedding-3-small (OpenAI, 1536 dimensions — EP-AI-012)
+→ embedded via text-embedding-3-small (OpenAI, 1536 dimensions)
 → stored in pgvector (MVP) / Weaviate (at scale)
 → query-time: hybrid search (semantic similarity + keyword BM25)
 → top-k chunks injected into LLM prompt as context
@@ -138,15 +138,15 @@ Thai Language :
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [Whisper] | Robust Speech Recognition via Large-Scale Weak Supervision | Radford et al., OpenAI 2022 |
-| [RAG] | Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks | Lewis et al., NeurIPS 2020 |
-| [pgvector] | pgvector: Vector Similarity Search for Postgres | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector) |
-| [MLflow] | MLflow — Open source platform for the ML lifecycle | [mlflow.org/docs/latest/index.html](https://mlflow.org/docs/latest/index.html) |
-| [ConfluentSR] | Confluent Schema Registry Documentation | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
-| [OpenAI-embed] | OpenAI Embeddings Documentation | [platform.openai.com/docs/guides/embeddings](https://platform.openai.com/docs/guides/embeddings) |
-| [LangChain] | LangChain Python Documentation | [python.langchain.com/docs/introduction](https://python.langchain.com/docs/introduction/) |
+| ID             | Title                                                              | Source                                                                                                                      |
+| -------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [IEEE 830]     | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                           |
+| [Whisper]      | Robust Speech Recognition via Large-Scale Weak Supervision         | Radford et al., OpenAI 2022                                                                                                 |
+| [RAG]          | Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks   | Lewis et al., NeurIPS 2020                                                                                                  |
+| [pgvector]     | pgvector: Vector Similarity Search for Postgres                    | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)                                                        |
+| [MLflow]       | MLflow — Open source platform for the ML lifecycle                 | [mlflow.org/docs/latest/index.html](https://mlflow.org/docs/latest/index.html)                                              |
+| [ConfluentSR]  | Confluent Schema Registry Documentation                            | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
+| [OpenAI-embed] | OpenAI Embeddings Documentation                                    | [platform.openai.com/docs/guides/embeddings](https://platform.openai.com/docs/guides/embeddings)                            |
+| [LangChain]    | LangChain Python Documentation                                     | [python.langchain.com/docs/introduction](https://python.langchain.com/docs/introduction/)                                   |
 
 > 📎 See also: [09-data-architecture](09-data-architecture.md) · [22-ai-architecture](22-ai-architecture.md) · [23-ai-native-operating-model](23-ai-native-operating-model.md) · [04-tech-stack](04-tech-stack.md)

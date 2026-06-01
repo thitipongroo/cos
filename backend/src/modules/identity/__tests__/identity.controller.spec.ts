@@ -1,4 +1,4 @@
-// Unit tests for IdentityController — delegates to OtpService and IdentityService
+// Unit tests for IdentityController — delegates to OtpService, IdentityService, MfaService
 
 const mockOtpService = {
   requestOtp: jest.fn(),
@@ -9,6 +9,12 @@ const mockIdentityService = {
   issueTokensForPhone: jest.fn(),
   refreshAccessToken: jest.fn(),
   logout: jest.fn(),
+};
+
+const mockMfaService = {
+  generateEnrollmentSecret: jest.fn(),
+  verifyAndActivate: jest.fn(),
+  authenticate: jest.fn(),
 };
 
 jest.mock('@cos/logger', () => ({
@@ -22,7 +28,11 @@ describe('IdentityController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new IdentityController(mockOtpService as never, mockIdentityService as never);
+    controller = new IdentityController(
+      mockOtpService as never,
+      mockIdentityService as never,
+      mockMfaService as never,
+    );
   });
 
   describe('requestOtp', () => {
@@ -62,6 +72,37 @@ describe('IdentityController', () => {
       mockIdentityService.logout.mockResolvedValue(undefined);
       await controller.logout('refresh-token');
       expect(mockIdentityService.logout).toHaveBeenCalledWith('refresh-token');
+    });
+  });
+
+  const fakeReq = (userId: string, sub: string) => ({ user: { user_id: userId, sub } }) as never;
+
+  describe('mfaEnroll', () => {
+    it('delegates to mfaService.generateEnrollmentSecret', async () => {
+      const result = { otpAuthUrl: 'otpauth://...', secret: 'BASE32' };
+      mockMfaService.generateEnrollmentSecret.mockResolvedValue(result);
+      const res = await controller.mfaEnroll(fakeReq('user-1', 'user@example.com'));
+      expect(mockMfaService.generateEnrollmentSecret).toHaveBeenCalledWith(
+        'user-1',
+        'user@example.com',
+      );
+      expect(res).toBe(result);
+    });
+  });
+
+  describe('mfaVerify', () => {
+    it('delegates to mfaService.verifyAndActivate', async () => {
+      mockMfaService.verifyAndActivate.mockResolvedValue(undefined);
+      await controller.mfaVerify(fakeReq('user-1', 'user@example.com'), '123456');
+      expect(mockMfaService.verifyAndActivate).toHaveBeenCalledWith('user-1', '123456');
+    });
+  });
+
+  describe('mfaAuthenticate', () => {
+    it('delegates to mfaService.authenticate', async () => {
+      mockMfaService.authenticate.mockResolvedValue(undefined);
+      await controller.mfaAuthenticate(fakeReq('user-1', 'user@example.com'), '654321');
+      expect(mockMfaService.authenticate).toHaveBeenCalledWith('user-1', '654321');
     });
   });
 });

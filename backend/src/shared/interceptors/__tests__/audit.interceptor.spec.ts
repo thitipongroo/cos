@@ -37,7 +37,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('does NOT write audit log for GET requests', (done) => {
-    const ctx = makeCtx('GET', '/api/v1/projects', { cos_user_id: 'u1' }, 'tenant-1');
+    const ctx = makeCtx('GET', '/api/v1/projects', { user_id: 'u1' }, 'tenant-1');
     interceptor.intercept(ctx, makeHandler()).subscribe(() => {
       expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
       done();
@@ -45,7 +45,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('writes audit log for POST requests with user and tenant', (done) => {
-    const ctx = makeCtx('POST', '/api/v1/projects', { cos_user_id: 'u1' }, 'tenant-1');
+    const ctx = makeCtx('POST', '/api/v1/projects', { user_id: 'u1' }, 'tenant-1');
     interceptor.intercept(ctx, makeHandler()).subscribe(() => {
       // Audit write is async (fire-and-forget) — give it a tick
       setImmediate(() => {
@@ -56,7 +56,7 @@ describe('AuditInterceptor', () => {
   });
 
   it('writes audit log for PATCH requests', (done) => {
-    const ctx = makeCtx('PATCH', '/api/v1/projects/p1', { cos_user_id: 'u1' }, 'tenant-1');
+    const ctx = makeCtx('PATCH', '/api/v1/projects/p1', { user_id: 'u1' }, 'tenant-1');
     interceptor.intercept(ctx, makeHandler()).subscribe(() => {
       setImmediate(() => {
         expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
@@ -86,7 +86,7 @@ describe('AuditInterceptor', () => {
         getRequest: () => ({
           method: 'POST',
           path: '/api/v1/projects',
-          user: { cos_user_id: 'u1' },
+          user: { user_id: 'u1' },
           tenantId: 'tenant-1',
           ip: undefined,
           headers: {},
@@ -105,7 +105,7 @@ describe('AuditInterceptor', () => {
 
   it('logs error when writeAuditLog throws (covers catch on line 50)', (done) => {
     prismaMock.$executeRaw.mockRejectedValueOnce(new Error('DB write failed'));
-    const ctx = makeCtx('POST', '/api/v1/projects', { cos_user_id: 'u1' }, 'tenant-1');
+    const ctx = makeCtx('POST', '/api/v1/projects', { user_id: 'u1' }, 'tenant-1');
     interceptor.intercept(ctx, makeHandler()).subscribe(() => {
       setImmediate(() => {
         // $executeRaw threw — the .catch() logger.error branch is covered

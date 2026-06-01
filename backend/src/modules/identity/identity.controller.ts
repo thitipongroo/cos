@@ -1,13 +1,17 @@
 // Auth controller — Phase 2
 // Path A: SMS OTP (field workers) — POST /auth/otp/request, /auth/otp/verify
 // Path B: Keycloak OIDC (office) — redirect handled by Keycloak; /auth/refresh here
+// MFA (TOTP) — required for TENANT_ADMIN and FINANCE (Path B users only)
 
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
+import { MfaService } from './mfa/mfa.service';
 import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import type { JwtPayload } from './jwt.payload';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -15,6 +19,7 @@ export class IdentityController {
   constructor(
     private readonly otpService: OtpService,
     private readonly identityService: IdentityService,
+    private readonly mfaService: MfaService,
   ) {}
 
   // ─── Path A: SMS OTP ───────────────────────────────────────────────────
@@ -56,5 +61,48 @@ export class IdentityController {
   @ApiOperation({ summary: 'Logout — invalidate refresh token' })
   async logout(@Body('refreshToken') refreshToken: string) {
     await this.identityService.logout(refreshToken);
+  }
+
+  // ─── MFA (TOTP) — TENANT_ADMIN and FINANCE only ──────────────────────
+
+  @Post('mfa/enroll')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Initiate TOTP MFA enrollment — returns otpauth:// URI for QR code (Path B office users)',
+  })
+  @ApiResponse({ status: 200, description: 'OTP auth URL and secret for QR code rendering' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated' })
+  async mfaEnroll(@Req() req: Request) {
+    const user = req.user as JwtPayload;
+    return this.mfaService.generateEnrollmentSecret(user.user_id, user.sub);
+  }
+
+  @Post('mfa/verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Confirm TOTP token to complete MFA enrollment' })
+  @ApiResponse({ status: 204, description: 'MFA enrollment confirmed — mfa_enabled set to true' })
+  @ApiResponse({ status: 400, description: 'No pending enrollment or enrollment expired' })
+  @ApiResponse({ status: 401, description: 'Invalid TOTP token' })
+  async mfaVerify(@Req() req: Request, @Body('token') token: string) {
+    const user = req.user as JwtPayload;
+    await this.mfaService.verifyAndActivate(user.user_id, token);
+  }
+
+  @Post('mfa/authenticate')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Verify TOTP token during login (Path B only)' })
+  @ApiResponse({ status: 204, description: 'TOTP verified' })
+  @ApiResponse({ status: 400, description: 'MFA not enrolled for this user' })
+  @ApiResponse({ status: 401, description: 'Invalid TOTP token' })
+  async mfaAuthenticate(@Req() req: Request, @Body('token') token: string) {
+    const user = req.user as JwtPayload;
+    await this.mfaService.authenticate(user.user_id, token);
   }
 }

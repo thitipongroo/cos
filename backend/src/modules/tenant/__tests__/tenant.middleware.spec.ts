@@ -20,7 +20,8 @@ describe('TenantMiddleware', () => {
 
   beforeEach(() => {
     middleware = new TenantMiddleware();
-    prismaMock = (middleware as unknown as { platformPrisma: jest.Mocked<PrismaClient> }).platformPrisma;
+    prismaMock = (middleware as unknown as { platformPrisma: jest.Mocked<PrismaClient> })
+      .platformPrisma;
     jest.clearAllMocks();
   });
 
@@ -46,7 +47,7 @@ describe('TenantMiddleware', () => {
   it('throws UnauthorizedException when no tenantId in JWT', async () => {
     const req = {
       path: '/api/v1/projects',
-      user: { userId: 'user-1', role: 'PROJECT_MANAGER' }, // no tenantId
+      user: { user_id: 'user-1', role: 'PROJECT_MANAGER' }, // no tenant_id
     } as unknown as TenantRequest;
     await expect(middleware.use(req, res, noop)).rejects.toThrow(UnauthorizedException);
   });
@@ -55,7 +56,7 @@ describe('TenantMiddleware', () => {
     (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
     const req = {
       path: '/api/v1/projects',
-      user: { tenantId: 'tenant-x', userId: 'user-1', role: 'PROJECT_MANAGER' },
+      user: { tenant_id: 'tenant-x', user_id: 'user-1', role: 'PROJECT_MANAGER' },
     } as unknown as TenantRequest;
     await expect(middleware.use(req, res, noop)).rejects.toThrow(UnauthorizedException);
   });
@@ -64,7 +65,7 @@ describe('TenantMiddleware', () => {
     (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([{ tenant_code: 'acme_corp' }]);
     const req = {
       path: '/api/v1/projects',
-      user: { tenantId: 'tenant-1', userId: 'user-1', role: 'PROJECT_MANAGER' },
+      user: { tenant_id: 'tenant-1', user_id: 'user-1', role: 'PROJECT_MANAGER' },
     } as unknown as TenantRequest;
     await middleware.use(req, res, noop);
     expect(req.tenantCode).toBe('acme_corp');

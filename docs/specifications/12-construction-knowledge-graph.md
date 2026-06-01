@@ -1,8 +1,8 @@
 ---
-title: "Construction Knowledge Graph"
-version: "1.2.0"
+title: 'Construction Knowledge Graph'
+version: '1.2.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -54,13 +54,13 @@ Entities :
 - Floor
 - Room
 - Structure
-- Task
+- Task (maps to BOQ line items — `task_id` = `boq_item_id`; BOQ is the authoritative task source)
 - Worker
 - Vendor
 - Material
 - Equipment
 - Procurement
-- Contract
+- Contract (`contract_id` maps to `po_id` of APPROVED Purchase Orders; a PO in APPROVED status is the contractual agreement in this system. No separate Contract module needed.)
 - Inspection
 - Incident
 - Invoice
@@ -139,12 +139,12 @@ Transfer lessons learned across projects.
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [Neo4j] | Neo4j Graph Database Documentation | [neo4j.com/docs](https://neo4j.com/docs/) |
-| [PropertyGraph] | openCypher — Property Graph Query Language | [opencypher.org](https://opencypher.org/) |
-| [W3C-RDF] | RDF 1.1 Concepts and Abstract Syntax | W3C Recommendation — [w3.org/TR/rdf11-concepts](https://www.w3.org/TR/rdf11-concepts/) |
-| [pgvector] | pgvector: Vector Similarity Search for Postgres | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector) |
+| ID              | Title                                                              | Source                                                                                 |
+| --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| [IEEE 830]      | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                      |
+| [Neo4j]         | Neo4j Graph Database Documentation                                 | [neo4j.com/docs](https://neo4j.com/docs/)                                              |
+| [PropertyGraph] | openCypher — Property Graph Query Language                         | [opencypher.org](https://opencypher.org/)                                              |
+| [W3C-RDF]       | RDF 1.1 Concepts and Abstract Syntax                               | W3C Recommendation — [w3.org/TR/rdf11-concepts](https://www.w3.org/TR/rdf11-concepts/) |
+| [pgvector]      | pgvector: Vector Similarity Search for Postgres                    | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)                   |
 
 > 📎 See also: [09-data-architecture](09-data-architecture.md) · [10-construction-ontology](10-construction-ontology.md) · [11-database-schema](11-database-schema.md) · [22-ai-architecture](22-ai-architecture.md)

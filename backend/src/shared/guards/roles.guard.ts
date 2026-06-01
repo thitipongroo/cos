@@ -1,5 +1,5 @@
 // RolesGuard — enforces @Roles(...) decorator on endpoints.
-// Checks JWT claim cos_role against the required roles.
+// Checks JWT claim `role` against the required roles (spec §5.4.1).
 // Must run AFTER JwtAuthGuard (which populates req.user).
 
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
@@ -28,19 +28,19 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<{ user?: JwtPayload }>();
     const user = request.user;
 
-    if (!user?.cos_role) {
+    if (!user?.role) {
       logger.warn('RolesGuard: no role in JWT');
       throw new ForbiddenException('Missing role claim in JWT');
     }
 
-    const hasRole = requiredRoles.includes(user.cos_role as CosRole);
+    const hasRole = requiredRoles.includes(user.role as CosRole);
     if (!hasRole) {
       logger.warn(
-        { userId: user.cos_user_id, requiredRoles, actualRole: user.cos_role },
+        { userId: user.user_id, requiredRoles, actualRole: user.role },
         'Access denied — insufficient role',
       );
       throw new ForbiddenException(
-        `Role '${user.cos_role}' does not have access. Required: ${requiredRoles.join(' | ')}`,
+        `Role '${user.role}' does not have access. Required: ${requiredRoles.join(' | ')}`,
       );
     }
 

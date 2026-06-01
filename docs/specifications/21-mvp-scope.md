@@ -1,8 +1,8 @@
 ---
-title: "MVP Scope"
-version: "1.4.0"
+title: 'MVP Scope'
+version: '1.4.0'
 status: Active
-last_updated: "2026-05-26"
+last_updated: '2026-05-26'
 authors:
   - thitipongroo
 related_docs:
@@ -160,12 +160,12 @@ What is included in MVP (schema-only) :
 
 The CRM REST API endpoints (`docs/api/crm.openapi.yaml`) are **available via API from Day 1** — they are not blocked at the Kong Gateway.
 
-| Layer | MVP Status |
-| --- | --- |
-| CRM database schema | ✅ Built Day 1 |
+| Layer                                                                                     | MVP Status                                                    |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| CRM database schema                                                                       | ✅ Built Day 1                                                |
 | CRM API endpoints (`/crm/leads`, `/crm/opportunities`, `/crm/opportunities/{id}/convert`) | ✅ Available — role-gated (EXECUTIVE, CRM_SALES_MANAGER only) |
-| CRM web UI (pipeline views, dashboards, proposal workflows) | ❌ Excluded from MVP |
-| CRM mobile screens | ❌ Excluded from MVP |
+| CRM web UI (pipeline views, dashboards, proposal workflows)                               | ❌ Excluded from MVP                                          |
+| CRM mobile screens                                                                        | ❌ Excluded from MVP                                          |
 
 **Rationale for API-open, UI-excluded approach:**
 
@@ -173,7 +173,7 @@ The CRM REST API endpoints (`docs/api/crm.openapi.yaml`) are **available via API
 - FK integrity to Project and Finance tables is enforced from Day 1
 - Exposing the API without UI adds no attack surface beyond the existing JWT + role check
 
-**Access control:** Kong Gateway enforces the JWT `tenantId` claim. The NestJS auth guard checks
+**Access control:** Kong Gateway enforces the JWT `tenant_id` claim. The NestJS auth guard checks
 that the requesting user has `EXECUTIVE` or `CRM_SALES_MANAGER` role. No other role can reach
 CRM endpoints regardless of whether the UI exists.
 
@@ -181,12 +181,12 @@ CRM endpoints regardless of whether the UI exists.
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
-| [Temporal] | Temporal Workflow Documentation | [docs.temporal.io](https://docs.temporal.io/) |
-| [React Native] | React Native / Expo Documentation | [docs.expo.dev](https://docs.expo.dev/) |
-| [NestJS] | NestJS — A progressive Node.js framework | [docs.nestjs.com](https://docs.nestjs.com/) |
+| ID             | Title                                                              | Source                                                                    |
+| -------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| [IEEE 830]     | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                         |
+| [Kafka]        | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
+| [Temporal]     | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                             |
+| [React Native] | React Native / Expo Documentation                                  | [docs.expo.dev](https://docs.expo.dev/)                                   |
+| [NestJS]       | NestJS — A progressive Node.js framework                           | [docs.nestjs.com](https://docs.nestjs.com/)                               |
 
 > 📎 See also: [03-system-design](03-system-design.md) · [13-product-architecture](13-product-architecture.md) · [20-ux-flow](20-ux-flow.md) · [22-ai-architecture](22-ai-architecture.md) · [11-database-schema](11-database-schema.md)

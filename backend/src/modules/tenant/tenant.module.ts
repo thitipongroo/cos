@@ -3,11 +3,13 @@ import { TenantService } from './tenant.service';
 import { TenantController } from './tenant.controller';
 import { TenantMiddleware } from './tenant.middleware';
 import { TenantPrismaService } from './prisma/tenant-prisma.service';
+import { UserService } from './user.service';
+import { UserController } from './user.controller';
 
 @Module({
-  providers: [TenantService, TenantPrismaService],
-  controllers: [TenantController],
-  exports: [TenantService, TenantPrismaService],
+  providers: [TenantService, TenantPrismaService, UserService],
+  controllers: [TenantController, UserController],
+  exports: [TenantService, TenantPrismaService, UserService],
 })
 export class TenantModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

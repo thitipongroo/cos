@@ -1,8 +1,8 @@
 ---
-title: "Database Schema"
-version: "1.3.0"
+title: 'Database Schema'
+version: '1.3.0'
 status: Active
-last_updated: "2026-05-27"
+last_updated: '2026-05-27'
 authors:
   - thitipongroo
 related_docs:
@@ -43,11 +43,12 @@ Projects :
 - tenant_id
 - project_code
 - project_name
-- project_type       (enum: residential / commercial / infrastructure / industrial)
+- project_type (enum: residential / commercial / infrastructure / industrial)
 - status
 - budget
 - start_date
 - end_date
+- estimated_completion_date — nullable DATE; entered by PM manually (PATCH /api/v1/projects/:id); used as input for AI delay risk detection (falls back to end_date when null)
 
 Building :
 
@@ -69,7 +70,7 @@ Room :
 
 - room_id
 - tenant_id
-- floor_id               (FK → Floor)
+- floor_id (FK → Floor)
 - room_number
 - room_type
 - area_sqm
@@ -90,12 +91,12 @@ Tasks :
 - tenant_id
 - project_id
 - task_name
-- work_type              (task category — values include: construction / rfi / administrative; configurable per tenant)
-- status                 (not_started / in_progress / completed / blocked / cancelled)
-- floor_id               (nullable — FK → Floor; not all tasks are floor-specific)
-- room_id                (nullable — FK → Room; not all tasks are room-specific)
-- boq_item_id            (nullable — FK → BOQ; links task to a BOQ line item)
-- assigned_to            (FK → Employee.employee_id)
+- work_type (task category — values include: construction / rfi / administrative; configurable per tenant)
+- status (not_started / in_progress / completed / blocked / cancelled)
+- floor_id (nullable — FK → Floor; not all tasks are floor-specific)
+- room_id (nullable — FK → Room; not all tasks are room-specific)
+- boq_item_id (nullable — FK → BOQ; links task to a BOQ line item)
+- assigned_to (FK → Employee.employee_id)
 - planned_start
 - planned_end
 - actual_start
@@ -117,12 +118,12 @@ Procurement — Purchase Request (PR) :
 - pr_id
 - tenant_id
 - project_id
-- requested_by          (FK → Employee.employee_id)
+- requested_by (FK → Employee.employee_id)
 - description
 - quantity
 - unit
 - required_by_date
-- status                (draft / submitted / approved / rejected)
+- status (draft / submitted / approved / rejected)
 - created_at
 
 Procurement — RFQ :
@@ -130,10 +131,10 @@ Procurement — RFQ :
 - rfq_id
 - tenant_id
 - project_id
-- pr_id                 (FK → Procurement — Purchase Request)
+- pr_id (FK → Procurement — Purchase Request)
 - rfq_number
 - deadline_date
-- status                (open / closed / cancelled)
+- status (open / closed / cancelled)
 - created_by
 - created_at
 
@@ -141,13 +142,13 @@ Procurement — Quotation :
 
 - quotation_id
 - tenant_id
-- rfq_id                (FK → Procurement — RFQ)
-- vendor_id             (FK → Vendor)
+- rfq_id (FK → Procurement — RFQ)
+- vendor_id (FK → Vendor)
 - unit_price
 - total_price
 - lead_time_days
 - validity_date
-- status                (pending / selected / rejected)
+- status (pending / selected / rejected)
 - submitted_at
 
 Procurement — Purchase Order (PO) :
@@ -155,13 +156,13 @@ Procurement — Purchase Order (PO) :
 - po_id
 - tenant_id
 - project_id
-- rfq_id                (FK → Procurement — RFQ)
-- quotation_id          (FK → Procurement — Quotation — the selected quotation)
-- vendor_id             (FK → Vendor)
+- rfq_id (FK → Procurement — RFQ)
+- quotation_id (FK → Procurement — Quotation — the selected quotation)
+- vendor_id (FK → Vendor)
 - po_number
 - total_amount
 - expected_delivery_date
-- status                (draft / approved / fulfilled / cancelled)
+- status (draft / approved / fulfilled / cancelled)
 - approved_by
 - created_at
 
@@ -169,24 +170,24 @@ Procurement — Delivery :
 
 - delivery_id
 - tenant_id
-- po_id                 (FK → Procurement — Purchase Order)
+- po_id (FK → Procurement — Purchase Order)
 - project_id
 - quantity_delivered
 - delivery_date
-- received_by           (FK → Employee.employee_id)
-- status                (pending / partial / complete)
+- received_by (FK → Employee.employee_id)
+- status (pending / partial / complete)
 - created_at
 
 Procurement — Vendor Invoice :
 
 - vendor_invoice_id
 - tenant_id
-- po_id                 (FK → Procurement — Purchase Order)
-- vendor_id             (FK → Vendor)
+- po_id (FK → Procurement — Purchase Order)
+- vendor_id (FK → Vendor)
 - invoice_number
 - amount
 - due_date
-- status                (pending / approved / paid)
+- status (pending / approved / paid)
 - approved_by
 - created_at
 
@@ -210,12 +211,12 @@ Material Consumption :
 - consumption_id
 - tenant_id
 - project_id
-- material_id            (FK → Material)
-- inventory_id           (FK → Inventory — the inventory record drawn from)
+- material_id (FK → Material)
+- inventory_id (FK → Inventory — the inventory record drawn from)
 - quantity_consumed
-- consumed_by            (FK → Employee.employee_id)
+- consumed_by (FK → Employee.employee_id)
 - consumed_at
-- task_id                (nullable — FK → Tasks; links consumption to a specific task)
+- task_id (nullable — FK → Tasks; links consumption to a specific task)
 
 Note : Material Consumption is an append-only log. Each consumption event creates a new
 row; Inventory.quantity_on_hand is updated in tandem but does not replace this record.
@@ -238,8 +239,8 @@ QC Inspection Template :
 - qc_template_id
 - tenant_id
 - template_name
-- inspection_type        (structural / architectural / MEP / finishing / safety_compliance)
-- status                 (active / archived)
+- inspection_type (structural / architectural / MEP / finishing / safety_compliance)
+- status (active / archived)
 - created_by
 - created_at
 
@@ -248,9 +249,9 @@ Inspections :
 - inspection_id
 - tenant_id
 - project_id
-- qc_template_id        (FK → QC Inspection Template)
-- result                (pass / fail / conditional)
-- issue_severity        (low / medium / high / critical — nullable; populated when result is fail or conditional)
+- qc_template_id (FK → QC Inspection Template)
+- result (pass / fail / conditional)
+- issue_severity (low / medium / high / critical — nullable; populated when result is fail or conditional)
 - photos
 - issue_status
 
@@ -264,10 +265,10 @@ Financials — Cost Transaction :
 - transaction_id
 - tenant_id
 - project_id
-- cost_category         (material / labor / equipment / overhead)
+- cost_category (material / labor / equipment / overhead)
 - amount
-- reference_id          (FK to source record: po_id, vendor_invoice_id, attendance_id, etc.)
-- reference_type        (purchase_order / vendor_invoice / attendance / other)
+- reference_id (FK to source record: po_id, vendor_invoice_id, attendance_id, etc.)
+- reference_type (purchase_order / vendor_invoice / attendance / other)
 - transaction_date
 - recorded_by
 
@@ -276,45 +277,45 @@ Financials — Budget Line :
 - budget_line_id
 - tenant_id
 - project_id
-- boq_item_id           (FK → BOQ — optional; nullable for overhead lines)
+- boq_item_id (FK → BOQ — optional; nullable for overhead lines)
 - category
 - allocated_amount
 - spent_amount
-- period                (month or budget cycle label)
+- period (month or budget cycle label)
 
 Financials — Payment :
 
 - payment_id
 - tenant_id
 - project_id
-- vendor_invoice_id     (FK → Procurement — Vendor Invoice)
-- vendor_id             (FK → Vendor)
+- vendor_invoice_id (FK → Procurement — Vendor Invoice)
+- vendor_id (FK → Vendor)
 - amount
 - payment_date
 - payment_method
-- status                (scheduled / released / reconciled)
+- status (scheduled / released / reconciled)
 - released_by
 
 Financials — Retention :
 
 - retention_id
 - tenant_id
-- contract_id           (FK → Contract)
+- contract_id (FK → Contract)
 - amount_retained
-- retention_percent
+- retention_percent — DECIMAL(5,2); set by TENANT_ADMIN per PO in UI; no system default; nullable
 - scheduled_release_date
-- status                (held / partially_released / released)
+- status (held / partially_released / released)
 
 Financials — Billing :
 
 - billing_id
 - tenant_id
 - project_id
-- contract_id           (FK → Contract)
+- contract_id (FK → Contract)
 - billing_number
 - amount
 - due_date
-- status                (draft / issued / paid)
+- status (draft / issued / paid)
 - issued_at
 
 Note : Billing (AR — Accounts Receivable) records amounts the contractor invoices to the
@@ -326,13 +327,13 @@ Financials — AR Receipt :
 - ar_receipt_id
 - tenant_id
 - project_id
-- billing_id            (FK → Financials — Billing)
-- customer_id           (FK → Customer)
+- billing_id (FK → Financials — Billing)
+- customer_id (FK → Customer)
 - amount_received
 - received_date
 - payment_method
 - payment_reference
-- received_by           (FK → Employee.employee_id)
+- received_by (FK → Employee.employee_id)
 - created_at
 
 Note : AR Receipt records the actual client payment received against a billing invoice.
@@ -345,10 +346,10 @@ Contract :
 - contract_id
 - tenant_id
 - project_id
-- contract_type         (main_contract / subcontract / supply_agreement)
-- contract_value        (nullable — total contract amount; required for main_contract; may be null for framework agreements)
-- customer_id           (nullable — FK → Customer; populated for main_contract — client-side contracts)
-- vendor_id             (nullable — FK → Vendor; populated for subcontract / supply_agreement contracts)
+- contract_type (main_contract / subcontract / supply_agreement)
+- contract_value (nullable — total contract amount; required for main_contract; may be null for framework agreements)
+- customer_id (nullable — FK → Customer; populated for main_contract — client-side contracts)
+- vendor_id (nullable — FK → Vendor; populated for subcontract / supply_agreement contracts)
 - status
 
 Note : Contract covers both client-side and vendor-side agreements.
@@ -398,7 +399,7 @@ Customer :
 
 - customer_id
 - tenant_id
-- opportunity_id        (FK → CRM — Opportunity — the won opportunity this customer was created from)
+- opportunity_id (FK → CRM — Opportunity — the won opportunity this customer was created from)
 - company_name
 - customer_type
 - status
@@ -429,7 +430,7 @@ Employee :
 - tenant_id
 - full_name
 - employee_code
-- employment_type  (FTE / daily_labor / subcontractor)
+- employment_type (FTE / daily_labor / subcontractor)
 - role
 - department
 - status
@@ -440,7 +441,7 @@ Workforce (Site Attendance) :
 
 - attendance_id
 - tenant_id
-- worker_id           (FK → Employee.employee_id)
+- worker_id (FK → Employee.employee_id)
 - project_id
 - role_on_site
 - check_in
@@ -485,13 +486,13 @@ Permit :
 - permit_id
 - tenant_id
 - project_id
-- permit_type     (work_permit / safety_permit / drawing_approval / entry_permit)
+- permit_type (work_permit / safety_permit / drawing_approval / entry_permit)
 - permit_number
 - issued_by
 - valid_from
 - valid_until
-- status          (pending / active / expired / revoked)
-- linked_task_id  (optional — links permit to a specific task)
+- status (pending / active / expired / revoked)
+- linked_task_id (optional — links permit to a specific task)
 - created_by
 - created_at
 
@@ -521,9 +522,9 @@ Lead → (qualify) → Opportunity → (win) → Customer
 
 Relationship :
 
-- Contact.lead_id → Lead.lead_id  (contact belongs to a lead)
+- Contact.lead_id → Lead.lead_id (contact belongs to a lead)
 - Opportunity.lead_id → Lead.lead_id
-- Customer.opportunity_id → Opportunity.opportunity_id  (traceability from win back to lead)
+- Customer.opportunity_id → Opportunity.opportunity_id (traceability from win back to lead)
 - Customer is a separate entity from Contact — Customer is the company/account, Contact is the person
 
 ---
@@ -536,7 +537,7 @@ Every record includes :
 - created_by
 - created_at
 - updated_at
-- deleted_at   (nullable — soft delete; NULL = active, non-NULL = logically deleted)
+- deleted_at (nullable — soft delete; NULL = active, non-NULL = logically deleted)
 - audit metadata
 
 Project-scoped records additionally include :
@@ -561,12 +562,12 @@ and **GDPR Article 17**.
 
 PII-bearing entities and the fields subject to erasure:
 
-| Entity | PII Fields Subject to Erasure |
-| --- | --- |
-| Employee | `full_name`, `contact_phone` |
-| Vendor | `contact_name`, `contact_email`, `contact_phone` |
-| CRM — Lead | `contact_name` |
-| CRM — Contact | `name`, `email`, `phone` |
+| Entity        | PII Fields Subject to Erasure                    |
+| ------------- | ------------------------------------------------ |
+| Employee      | `full_name`, `contact_phone`                     |
+| Vendor        | `contact_name`, `contact_email`, `contact_phone` |
+| CRM — Lead    | `contact_name`                                   |
+| CRM — Contact | `name`, `email`, `phone`                         |
 
 Erasure procedure :
 
@@ -588,12 +589,12 @@ Query behaviour after erasure :
 
 The four lifecycle states of a record:
 
-| `deleted_at` | `pii_erased_at` | Meaning |
-| --- | --- | --- |
-| NULL | NULL | Active record — normal state |
-| Set | NULL | Logically deleted — standard soft delete; PII preserved for audit |
-| NULL | Set | PII erased — right-to-erasure exercised; record operationally active |
-| Set | Set | Fully completed lifecycle — deleted and PII erased |
+| `deleted_at` | `pii_erased_at` | Meaning                                                              |
+| ------------ | --------------- | -------------------------------------------------------------------- |
+| NULL         | NULL            | Active record — normal state                                         |
+| Set          | NULL            | Logically deleted — standard soft delete; PII preserved for audit    |
+| NULL         | Set             | PII erased — right-to-erasure exercised; record operationally active |
+| Set          | Set             | Fully completed lifecycle — deleted and PII erased                   |
 
 See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strategy.
 
@@ -601,13 +602,13 @@ See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strat
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [PostgreSQL] | PostgreSQL Documentation | [postgresql.org/docs](https://www.postgresql.org/docs/) |
-| [UUID-RFC] | A Universally Unique Identifier (UUID) URN Namespace | RFC 4122 |
-| [Avro] | Apache Avro Specification | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html) |
-| [PostgreSQL-RLS] | PostgreSQL Row Security Policies | [postgresql.org/docs/current/ddl-rowsecurity.html](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
-| [ISO-8601] | Data Elements and Interchange Formats — Date and Time Representation | ISO 8601:2004 |
+| ID               | Title                                                                | Source                                                                                                           |
+| ---------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| [IEEE 830]       | IEEE Recommended Practice for Software Requirements Specifications   | IEEE Std 830-1998                                                                                                |
+| [PostgreSQL]     | PostgreSQL Documentation                                             | [postgresql.org/docs](https://www.postgresql.org/docs/)                                                          |
+| [UUID-RFC]       | A Universally Unique Identifier (UUID) URN Namespace                 | RFC 4122                                                                                                         |
+| [Avro]           | Apache Avro Specification                                            | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html)                         |
+| [PostgreSQL-RLS] | PostgreSQL Row Security Policies                                     | [postgresql.org/docs/current/ddl-rowsecurity.html](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
+| [ISO-8601]       | Data Elements and Interchange Formats — Date and Time Representation | ISO 8601:2004                                                                                                    |
 
 > 📎 See also: [09-data-architecture](09-data-architecture.md) · [10-construction-ontology](10-construction-ontology.md) · [12-construction-knowledge-graph](12-construction-knowledge-graph.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [05-security-compliance](05-security-compliance.md)

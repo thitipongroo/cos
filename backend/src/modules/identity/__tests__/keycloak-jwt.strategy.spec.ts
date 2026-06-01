@@ -24,34 +24,33 @@ describe('KeycloakJwtStrategy', () => {
     const validPayload: JwtPayload = {
       sub: 'user-1',
       jti: 'jwt-id-1',
-      cos_tenant_id: 'tenant-1',
-      cos_tenant_code: 'acme',
-      cos_role: 'PROJECT_MANAGER',
-      cos_user_id: 'user-1',
+      tenant_id: 'tenant-1',
+      user_id: 'user-1',
+      role: 'PROJECT_MANAGER',
       iss: 'http://localhost:8090/realms/construction-os',
       aud: 'cos-backend',
       exp: Math.floor(Date.now() / 1000) + 3600,
       iat: Math.floor(Date.now() / 1000),
     };
 
-    it('returns payload when all required COS claims present', () => {
+    it('returns payload when all required claims present', () => {
       const result = strategy.validate(validPayload);
       expect(result).toBe(validPayload);
     });
 
-    it('throws UnauthorizedException when cos_tenant_id is missing', () => {
-      const payload = { ...validPayload, cos_tenant_id: undefined } as never;
+    it('throws UnauthorizedException when tenant_id is missing', () => {
+      const payload = { ...validPayload, tenant_id: undefined } as never;
       expect(() => strategy.validate(payload)).toThrow(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException when cos_role is missing', () => {
-      const payload = { ...validPayload, cos_role: undefined } as never;
+    it('throws UnauthorizedException when role is missing', () => {
+      const payload = { ...validPayload, role: undefined } as never;
       expect(() => strategy.validate(payload)).toThrow(UnauthorizedException);
     });
 
-    it('throws with message about missing COS claims', () => {
-      const payload = { ...validPayload, cos_tenant_id: undefined } as never;
-      expect(() => strategy.validate(payload)).toThrow('Missing required COS claims in JWT');
+    it('throws with message about missing claims', () => {
+      const payload = { ...validPayload, tenant_id: undefined } as never;
+      expect(() => strategy.validate(payload)).toThrow('Missing required claims in JWT');
     });
   });
 });

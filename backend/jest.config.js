@@ -60,7 +60,5 @@ module.exports = {
     '^@cos/validation/(.*)$': '<rootDir>/../packages/@cos/validation/src/$1',
     '^@cos/database$': '<rootDir>/../packages/@cos/database/src/index.ts',
     '^@cos/database/(.*)$': '<rootDir>/../packages/@cos/database/src/$1',
-    '^@cos/extension-points$': '<rootDir>/../packages/@cos/extension-points/src/index.ts',
-    '^@cos/extension-points/(.*)$': '<rootDir>/../packages/@cos/extension-points/src/$1',
   },
 };

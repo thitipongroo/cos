@@ -1,21 +1,22 @@
-// JWT payload shape — RS256 signed by Keycloak.
-// Both Path A (SMS OTP) and Path B (Keycloak OIDC) produce this shape.
+// JWT payload shape — RS256 signed by Keycloak (Path B) or COS identity service (Path A).
+// Claim names defined in spec §5.4.1 (05-security-compliance.md).
 
 export interface JwtPayload {
   // Standard OIDC claims
-  sub: string;          // Keycloak user_id (keycloak_user_id in DB)
-  iss: string;          // Keycloak issuer URL
+  sub: string; // Keycloak user_id (= platform.users.keycloak_user_id)
+  iss: string;
   aud: string | string[];
   exp: number;
   iat: number;
-  jti: string;          // JWT ID — used for refresh token tracking
+  jti: string;
 
-  // COS custom claims (mapped via Keycloak token mapper)
-  cos_tenant_id: string;    // UUID
-  cos_tenant_code: string;  // e.g. "acme_corp"
-  cos_user_id: string;      // UUID (platform.users.user_id)
-  cos_role: string;         // CosRole enum value
-  email?: string;           // Present for Path B (office users)
-  phone_number?: string;    // Present for Path A (field workers — [REDACTED] in logs)
-  name?: string;            // display_name
+  // COS custom claims — authoritative names per spec §5.4.1
+  tenant_id: string; // UUID — platform.tenants.tenant_id
+  user_id: string; // UUID — platform.users.user_id (distinct from sub)
+  role: string; // CosRole enum value e.g. "PROJECT_MANAGER"
+
+  // Standard OIDC profile claims (optional)
+  email?: string;
+  phone_number?: string;
+  name?: string;
 }

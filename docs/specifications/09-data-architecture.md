@@ -1,8 +1,8 @@
 ---
-title: "Data Architecture"
-version: "1.1.0"
+title: 'Data Architecture'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -79,10 +79,16 @@ Unstructured Data :
 - Drawings
 - PDFs
 - Photos
-- Videos
+- Videos (max 1 GB per file; MIME types: video/mp4, video/quicktime, video/webm, video/x-msvideo, video/x-ms-wmv)
 - Voice notes
 - Contracts
 - BIM files
+
+File Lifecycle Policy :
+
+- Soft delete: `deleted_at` timestamp set on delete request — file remains in MinIO storage
+- Hard delete: 30 days after soft delete (`deleted_at + 30 days`) — file purged from MinIO; implemented as a Temporal scheduled workflow running daily
+- Files with active project references are not hard-deleted regardless of soft delete timestamp
 
 AI Data :
 
@@ -97,18 +103,18 @@ AI Data :
 
 ## 9.3 Data Storage Architecture
 
-| Data Type | Storage |
-| --- | --- |
-| Relational transactions | PostgreSQL |
-| Time-series telemetry | TimescaleDB |
-| Search/index | OpenSearch |
-| Blob storage | S3-compatible |
-| Data lake format | Apache Iceberg (on S3) |
-| Analytics warehouse | ClickHouse |
-| Graph relations | Neo4j |
-| Cache | Redis |
-| Vector embeddings | pgvector (MVP) → Weaviate (at scale) |
-| Streaming events | Kafka |
+| Data Type               | Storage                              |
+| ----------------------- | ------------------------------------ |
+| Relational transactions | PostgreSQL                           |
+| Time-series telemetry   | TimescaleDB                          |
+| Search/index            | OpenSearch                           |
+| Blob storage            | S3-compatible                        |
+| Data lake format        | Apache Iceberg (on S3)               |
+| Analytics warehouse     | ClickHouse                           |
+| Graph relations         | Neo4j                                |
+| Cache                   | Redis                                |
+| Vector embeddings       | pgvector (MVP) → Weaviate (at scale) |
+| Streaming events        | Kafka                                |
 
 ---
 
@@ -164,15 +170,15 @@ Writes go to DB first (Path 1). Path 2 operates as a separate CDC stream.
 
 ### Report Types
 
-| Report | Frequency | Primary Consumer | Data Source |
-| --- | --- | --- | --- |
-| Daily site report | Daily | Site Engineer, PM | PostgreSQL (same-day ops) |
-| Project cost summary | On-demand / weekly | PM, Finance | ClickHouse |
-| Procurement status | On-demand | Procurement Officer | PostgreSQL |
-| Executive portfolio dashboard | Real-time | Executive | ClickHouse + Redis cache |
-| Cash flow forecast | Daily | Finance | ClickHouse + AI Pipeline |
-| Safety compliance report | Weekly | Safety Officer | PostgreSQL |
-| AI risk report | Continuous | Executive, PM | AI Pipeline output |
+| Report                        | Frequency          | Primary Consumer    | Data Source               |
+| ----------------------------- | ------------------ | ------------------- | ------------------------- |
+| Daily site report             | Daily              | Site Engineer, PM   | PostgreSQL (same-day ops) |
+| Project cost summary          | On-demand / weekly | PM, Finance         | ClickHouse                |
+| Procurement status            | On-demand          | Procurement Officer | PostgreSQL                |
+| Executive portfolio dashboard | Real-time          | Executive           | ClickHouse + Redis cache  |
+| Cash flow forecast            | Daily              | Finance             | ClickHouse + AI Pipeline  |
+| Safety compliance report      | Weekly             | Safety Officer      | PostgreSQL                |
+| AI risk report                | Continuous         | Executive, PM       | AI Pipeline output        |
 
 ### Analytics Stack
 
@@ -197,16 +203,16 @@ Writes go to DB first (Path 1). Path 2 operates as a separate CDC stream.
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [PostgreSQL] | PostgreSQL Documentation | [postgresql.org/docs](https://www.postgresql.org/docs/) |
-| [TimescaleDB] | TimescaleDB Documentation | [docs.timescale.com](https://docs.timescale.com/) |
-| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
-| [Avro] | Apache Avro Specification | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html) |
-| [Iceberg] | Apache Iceberg Table Specification | [iceberg.apache.org/spec](https://iceberg.apache.org/spec/) |
-| [Neo4j] | Neo4j Graph Database Documentation | [neo4j.com/docs](https://neo4j.com/docs/) |
-| [pgvector] | pgvector: Vector Similarity Search for Postgres | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector) |
-| [MinIO] | MinIO Object Storage Documentation | [min.io/docs/minio/linux/index.html](https://min.io/docs/minio/linux/index.html) |
+| ID            | Title                                                              | Source                                                                                   |
+| ------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [IEEE 830]    | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                        |
+| [PostgreSQL]  | PostgreSQL Documentation                                           | [postgresql.org/docs](https://www.postgresql.org/docs/)                                  |
+| [TimescaleDB] | TimescaleDB Documentation                                          | [docs.timescale.com](https://docs.timescale.com/)                                        |
+| [Kafka]       | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                |
+| [Avro]        | Apache Avro Specification                                          | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html) |
+| [Iceberg]     | Apache Iceberg Table Specification                                 | [iceberg.apache.org/spec](https://iceberg.apache.org/spec/)                              |
+| [Neo4j]       | Neo4j Graph Database Documentation                                 | [neo4j.com/docs](https://neo4j.com/docs/)                                                |
+| [pgvector]    | pgvector: Vector Similarity Search for Postgres                    | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)                     |
+| [MinIO]       | MinIO Object Storage Documentation                                 | [min.io/docs/minio/linux/index.html](https://min.io/docs/minio/linux/index.html)         |
 
 > 📎 See also: [04-tech-stack](04-tech-stack.md) · [10-construction-ontology](10-construction-ontology.md) · [11-database-schema](11-database-schema.md) · [15-event-driven-workflow](15-event-driven-workflow.md)

@@ -30,28 +30,31 @@ export class TenantMiddleware implements NestMiddleware {
       return next();
     }
 
-    // JWT payload injected by Keycloak strategy before this middleware
-    const jwtPayload = (req as unknown as { user?: { tenantId: string; userId: string; role: string } }).user;
-    if (!jwtPayload?.tenantId) {
+    // JWT payload injected by Keycloak strategy before this middleware.
+    // Claim names: tenant_id, user_id, role — per spec §5.4.1.
+    const jwtPayload = (
+      req as unknown as { user?: { tenant_id: string; user_id: string; role: string } }
+    ).user;
+    if (!jwtPayload?.tenant_id) {
       throw new UnauthorizedException('Missing tenant context in JWT');
     }
 
     // Look up tenantCode — needed to set search_path
     const tenant = await this.platformPrisma.$queryRaw<Array<{ tenant_code: string }>>`
       SELECT tenant_code FROM platform.tenants
-      WHERE tenant_id = ${jwtPayload.tenantId}::uuid
+      WHERE tenant_id = ${jwtPayload.tenant_id}::uuid
         AND is_active = true
       LIMIT 1
     `;
 
     if (!tenant.length) {
-      logger.warn({ tenantId: jwtPayload.tenantId }, 'Tenant not found or inactive');
+      logger.warn({ tenantId: jwtPayload.tenant_id }, 'Tenant not found or inactive');
       throw new UnauthorizedException('Tenant not found or inactive');
     }
 
-    req.tenantId = jwtPayload.tenantId;
+    req.tenantId = jwtPayload.tenant_id;
     req.tenantCode = tenant[0]!.tenant_code;
-    req.userId = jwtPayload.userId;
+    req.userId = jwtPayload.user_id;
     req.userRole = jwtPayload.role;
 
     logger.debug({ tenantCode: req.tenantCode, userId: req.userId }, 'Tenant context injected');

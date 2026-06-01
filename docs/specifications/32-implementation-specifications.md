@@ -1,8 +1,8 @@
 ---
-title: "Implementation Specifications"
-version: "2.0.0"
+title: 'Implementation Specifications'
+version: '2.0.0'
 status: Active
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 related_docs:
@@ -107,13 +107,13 @@ All domain services depend on the shared event SDK output from Phase 8.
 
 ### SaaS Maturity Model — Phase to Stage Mapping
 
-| Stage | Name | Phases |
-| --- | --- | --- |
-| Stage 1 | Multi-tenant MVP | Phase 1–2 (Foundation + Auth) |
-| Stage 2 | Multi-project SaaS | Phase 3–7 (Core Domains) |
-| Stage 3 | Multi-company Enterprise | Phase 8–14 (Events + AI + Analytics) |
-| Stage 4 | Cross-region Deployment | Phase 17 + EP-INFRA-003 (DevOps + Multi-region) |
-| Stage 5 | AI-native Ecosystem | Phase 23–24 (MLOps + Digital Twin) |
+| Stage   | Name                     | Phases                                                                                                      |
+| ------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| Stage 1 | Multi-tenant MVP         | Phase 1–2 (Foundation + Auth)                                                                               |
+| Stage 2 | Multi-project SaaS       | Phase 3–7 (Core Domains)                                                                                    |
+| Stage 3 | Multi-company Enterprise | Phase 8–14 (Events + AI + Analytics)                                                                        |
+| Stage 4 | Cross-region Deployment  | Phase 17 + multi-region Terraform module (active-passive, primary ap-southeast-1, Route 53 latency routing) |
+| Stage 5 | AI-native Ecosystem      | Phase 23–24 (MLOps + Digital Twin)                                                                          |
 
 > **Phase 24 — Digital Twin:** Phase 24 corresponds to the Digital Twin / IoT capability in
 > 28-ecosystem-expansion section 28.2 Phase 5 (Smart Infrastructure Layer). The full Phase 24
@@ -132,10 +132,10 @@ Never implement a Stage N+1 feature during Stage N work.
 > because it enables enterprise-grade event-driven architecture. However, the Phase Dependency Graph
 > above shows Phase 8 as a **build-order prerequisite** for Phase 3–7 (Stage 2 domain services):
 > Phase 8 MUST be completed first because all domain services depend on the shared event SDK it
-> produces. The "Stage N+1" agent rule applies to *domain feature work* (e.g., do not build
+> produces. The "Stage N+1" agent rule applies to _domain feature work_ (e.g., do not build
 > AI report generation (Phase 12, Stage 3) while completing Stage 2 procurement). Phase 8 is
 > infrastructure that MUST be laid before Stage 2 domain work begins — its Stage 3 classification
-> reflects its *capability category* (enterprise event bus), not its *build position* in the
+> reflects its _capability category_ (enterprise event bus), not its _build position_ in the
 > dependency graph.
 
 ---
@@ -144,18 +144,18 @@ Never implement a Stage N+1 feature during Stage N work.
 
 The platform deploys as distinct units. Do **not** merge runtimes or split prematurely.
 
-| Deployable | Runtime | Contents |
-| --- | --- | --- |
-| Main Application (`backend/`) | NestJS (monolith) | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce |
-| File Service (`services/file-service/`) | Fastify | Multipart upload I/O (extracted for I/O throughput) |
-| AI Gateway (`services/ai-gateway/`) | FastAPI (Python) | LLM routing, RAG, token tracking |
-| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python) | Embedding generation |
-| AI OCR Pipeline (`services/ai-ocr-pipeline/`) | FastAPI (Python) | OCR processing |
-| Analytics Worker (`services/analytics-worker/`) | Go | ClickHouse aggregation |
-| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go | Neo4j ingestion |
-| Web Frontend (`apps/web/`) | Next.js | Desktop/tablet web app |
-| PWA (`apps/pwa/`) | Next.js + PWA | Offline tablet/laptop |
-| Mobile (`apps/mobile/`) | React Native + Expo | Smartphone native app |
+| Deployable                                            | Runtime             | Contents                                                                                           |
+| ----------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
+| Main Application (`backend/`)                         | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce |
+| File Service (`services/file-service/`)               | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                |
+| AI Gateway (`services/ai-gateway/`)                   | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                   |
+| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python)    | Embedding generation                                                                               |
+| AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                     |
+| Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                             |
+| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion                                                                                    |
+| Web Frontend (`apps/web/`)                            | Next.js             | Desktop/tablet web app                                                                             |
+| PWA (`apps/pwa/`)                                     | Next.js + PWA       | Offline tablet/laptop                                                                              |
+| Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                              |
 
 ### Service Extraction Rules
 
@@ -168,14 +168,14 @@ If either condition is absent → keep as a module inside the monolith.
 
 ### Internal vs Cross-deployable Communication
 
-| Communication path | Protocol |
-| --- | --- |
-| Module-to-module (within monolith) | NestJS dependency injection — never HTTP/gRPC |
-| Async events (within monolith) | Kafka (same process, external infra) |
-| Main App ↔ File Service | REST API (HTTP) |
-| Main App ↔ AI Services | REST API (HTTP) |
-| Main App → Go Workers (write/ingestion) | Kafka events |
-| Main App ← Go Workers (read/query) | gRPC (proto-contracts) |
+| Communication path                      | Protocol                                      |
+| --------------------------------------- | --------------------------------------------- |
+| Module-to-module (within monolith)      | NestJS dependency injection — never HTTP/gRPC |
+| Async events (within monolith)          | Kafka (same process, external infra)          |
+| Main App ↔ File Service                 | REST API (HTTP)                               |
+| Main App ↔ AI Services                  | REST API (HTTP)                               |
+| Main App → Go Workers (write/ingestion) | Kafka events                                  |
+| Main App ← Go Workers (read/query)      | gRPC (proto-contracts)                        |
 
 ---
 
@@ -202,15 +202,14 @@ DOMAIN codes:
   MOBILE    — Mobile and PWA capabilities
   DOMAIN    — Business domain expansions (CRM, IoT, etc.)
 
-Example: EP-FINANCE-001, EP-AI-004, EP-TENANT-003
+Example: FINANCE-001, AI-004, TENANT-003
 ```
 
 ### File Locations
 
-| Language | Location |
-| --- | --- |
-| TypeScript | `packages/@cos/extension-points/src/{domain}/{EP-ID}.ts` |
-| Python | `ai/{service}/extension_points/{ep_id}.py` |
+| Language | Location                                   |
+| -------- | ------------------------------------------ |
+| Python   | `ai/{service}/extension_points/{ep_id}.py` |
 
 ### Stub Pattern
 
@@ -220,14 +219,14 @@ Silent stubs are prohibited — every call MUST be logged for observability.
 ```typescript
 // TypeScript stub pattern
 class XxxExtensionPoint extends StubBase {
-  readonly EP_ID      = 'EP-{DOMAIN}-{NUMBER}'
-  readonly EP_VERSION = '0.1.0'                 // semver; bump on contract change
-  readonly TRIGGER    = '<condition that unblocks implementation>'
-  readonly PHASE      = 'Phase N'
+  readonly EP_ID = 'EP-{DOMAIN}-{NUMBER}';
+  readonly EP_VERSION = '0.1.0'; // semver; bump on contract change
+  readonly TRIGGER = '<condition that unblocks implementation>';
+  readonly PHASE = 'Phase N';
 
   async methodName(args: ArgsType): Promise<ReturnType> {
-    this.logStubCall('methodName', args)
-    return /* safe default */
+    this.logStubCall('methodName', args);
+    return; /* safe default */
   }
 }
 ```
@@ -246,44 +245,48 @@ class XxxExtensionPoint(StubBase):
 
 ### EP Registry
 
-All extension points are registered in `extension-points.md` at the repo root.
-Agents must check this registry every sprint planning before deciding whether to implement or stub.
+All extension point decisions are documented in the relevant spec file in `docs/specifications/`:
+
+- Domain integrations (CRM, BIM, IoT, Financing, Biometric, API monetization): `13-product-architecture` §13.3–13.5
+- AI integrations (LLM, OCR, Embeddings, ML models, W&B, MLflow, Feast): `22-ai-architecture` §22.6
+- Compliance audit workflow: `05-security-compliance` §5.3.1
+- Other domain-specific EPs: in the spec file most relevant to that domain
 
 ### AI Provider Interfaces
 
-Formal contracts for EP-AI-001 (`LLMProvider`) and EP-AI-012 (`EmbeddingProvider`).
+Formal contracts for `LLMProvider` and `EmbeddingProvider`.
 All AI service code **must** depend on these interfaces — never directly on LangChain or OpenAI SDK classes.
 Resolved implementations are listed at the bottom of this section.
 
-#### TypeScript — `packages/@cos/extension-points/src/ai/providers.ts`
+#### TypeScript AI Provider Interfaces
 
 ```typescript
 // ── Message & Response Types ─────────────────────────────────────────────
 
-export type LLMRole = 'system' | 'user' | 'assistant'
+export type LLMRole = 'system' | 'user' | 'assistant';
 
 export interface LLMMessage {
-  role: LLMRole
-  content: string
+  role: LLMRole;
+  content: string;
 }
 
 export interface LLMUsage {
-  promptTokens: number
-  completionTokens: number
-  totalTokens: number
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
 }
 
 export interface LLMResponse {
-  content: string          // generated text
-  model: string            // actual model used (e.g. "gpt-4o")
-  usage: LLMUsage
-  finishReason: 'stop' | 'length' | 'error'
+  content: string; // generated text
+  model: string; // actual model used (e.g. "gpt-4o")
+  usage: LLMUsage;
+  finishReason: 'stop' | 'length' | 'error';
 }
 
 export interface LLMOptions {
-  model?: string           // override; default: "gpt-4o"
-  temperature?: number     // 0.0–1.0; default: 0.2 (construction domain determinism)
-  maxTokens?: number       // default: 2048
+  model?: string; // override; default: "gpt-4o"
+  temperature?: number; // 0.0–1.0; default: 0.2 (construction domain determinism)
+  maxTokens?: number; // default: 2048
 }
 
 // ── LLMProvider Interface ────────────────────────────────────────────────
@@ -293,23 +296,23 @@ export interface LLMProvider {
    * Send a chat completion request.
    * @throws {LLMProviderError} on provider-side failure (retryable flag set if safe to retry)
    */
-  chat(messages: LLMMessage[], options?: LLMOptions): Promise<LLMResponse>
+  chat(messages: LLMMessage[], options?: LLMOptions): Promise<LLMResponse>;
 
   /** Provider identity — used for logging, metrics, and alerting. */
-  getInfo(): { provider: string; defaultModel: string }
+  getInfo(): { provider: string; defaultModel: string };
 }
 
 // ── Embedding Types ──────────────────────────────────────────────────────
 
 export interface EmbeddingResponse {
-  vector: number[]         // float32[], length must equal `dimensions`
-  dimensions: number       // must be 1536 for text-embedding-3-small (EP-AI-012)
-  model: string
-  tokensUsed: number
+  vector: number[]; // float32[], length must equal `dimensions`
+  dimensions: number; // must be 1536 for text-embedding-3-small
+  model: string;
+  tokensUsed: number;
 }
 
 export interface EmbeddingOptions {
-  model?: string           // override; default: "text-embedding-3-small"
+  model?: string; // override; default: "text-embedding-3-small"
 }
 
 // ── EmbeddingProvider Interface ──────────────────────────────────────────
@@ -319,16 +322,16 @@ export interface EmbeddingProvider {
    * Embed a single text string.
    * @throws {EmbeddingProviderError} on failure
    */
-  embed(text: string, options?: EmbeddingOptions): Promise<EmbeddingResponse>
+  embed(text: string, options?: EmbeddingOptions): Promise<EmbeddingResponse>;
 
   /**
    * Batch-embed multiple texts — more token-efficient than looping embed().
    * Result order matches input order.
    */
-  embedBatch(texts: string[], options?: EmbeddingOptions): Promise<EmbeddingResponse[]>
+  embedBatch(texts: string[], options?: EmbeddingOptions): Promise<EmbeddingResponse[]>;
 
   /** Provider identity and embedding dimensions — validate against VECTOR(1536) column spec. */
-  getInfo(): { provider: string; defaultModel: string; dimensions: number }
+  getInfo(): { provider: string; defaultModel: string; dimensions: number };
 }
 
 // ── Error Types ──────────────────────────────────────────────────────────
@@ -340,8 +343,8 @@ export class LLMProviderError extends Error {
     public readonly statusCode?: number,
     public readonly retryable = false,
   ) {
-    super(message)
-    this.name = 'LLMProviderError'
+    super(message);
+    this.name = 'LLMProviderError';
   }
 }
 
@@ -351,8 +354,8 @@ export class EmbeddingProviderError extends Error {
     public readonly provider: string,
     public readonly retryable = false,
   ) {
-    super(message)
-    this.name = 'EmbeddingProviderError'
+    super(message);
+    this.name = 'EmbeddingProviderError';
   }
 }
 ```
@@ -393,7 +396,7 @@ class EmbeddingResponse:
 # ── Abstract providers ────────────────────────────────────────────────────
 
 class LLMProvider(ABC):
-    """Abstract base — resolved by EP-AI-001 (OpenAI GPT-4o via LangChain 0.2.*)."""
+    """Abstract base for LLM provider (OpenAI GPT-4o via LangChain 0.2.*)."""
 
     @abstractmethod
     async def chat(
@@ -409,7 +412,7 @@ class LLMProvider(ABC):
 
 
 class EmbeddingProvider(ABC):
-    """Abstract base — resolved by EP-AI-012 (text-embedding-3-small via LangChain 0.2.*)."""
+    """Abstract base for embedding provider (text-embedding-3-small via LangChain 0.2.*)."""
 
     @abstractmethod
     async def embed(
@@ -427,10 +430,10 @@ class EmbeddingProvider(ABC):
 
 #### Resolved Implementations (Phase 11)
 
-| Interface | Implementation class | Resolved via | Package |
-| --- | --- | --- | --- |
-| `LLMProvider` | `OpenAILangChainProvider` | EP-AI-001 | `langchain-openai==0.1.*` — default model: `gpt-4o`, cost fallback: `gpt-4o-mini` |
-| `EmbeddingProvider` | `OpenAIEmbeddingProvider` | EP-AI-012 | `langchain-openai==0.1.*` — model: `text-embedding-3-small`, 1536 dimensions |
+| Interface           | Implementation class      | Resolved via                  | Package                                                                           |
+| ------------------- | ------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
+| `LLMProvider`       | `OpenAILangChainProvider` | OpenAI GPT-4o                 | `langchain-openai==0.1.*` — default model: `gpt-4o`, cost fallback: `gpt-4o-mini` |
+| `EmbeddingProvider` | `OpenAIEmbeddingProvider` | OpenAI text-embedding-3-small | `langchain-openai==0.1.*` — model: `text-embedding-3-small`, 1536 dimensions      |
 
 > **Rule:** If a new LLM or embedding provider is evaluated, it must implement the abstract class above and be
 > registered as a new EP — never swap the implementation by monkey-patching the resolved class.
@@ -477,23 +480,24 @@ compatibility) before first producer deployment.
 
 ### Event Payload Specifications
 
-| # | Event Type | Key Payload Fields |
-| --- | --- | --- |
-| 1 | `construction.project.created.v1` | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by` |
-| 2 | `construction.boq.version_created.v1` | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by` |
-| 3 | `procurement.purchase_order.created.v1` | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)} |
-| 4 | `procurement.vendor_invoice.received.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date` |
-| 5 | `site.report.created.v1` | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count` |
-| 6 | `site.inspection.failed.v1` | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at` |
-| 7 | `construction.task.completed.v1` | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days` |
-| 8 | `construction.delay.detected.v1` | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL) |
-| 9 | `workforce.checkin.created.v1` | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable) |
-| 10 | `site.material.consumed.v1` | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at` |
-| 11 | `procurement.delivery.received.v1` | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean |
-| 12 | `finance.budget.exceeded.v1` | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at` |
-| 13 | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due` |
-| 14 | `finance.cashflow_risk.detected.v1` | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE) |
-| 15 | `ai.risk_prediction.generated.v1` | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version` |
+| #   | Event Type                               | Key Payload Fields                                                                                                                                                                                                                                                                         |
+| --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `construction.project.created.v1`        | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by`                                                                    |
+| 2   | `construction.boq.version_created.v1`    | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by`                                                                                                                                                                                  |
+| 3   | `procurement.purchase_order.created.v1`  | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)}                                                                                               |
+| 4   | `procurement.vendor_invoice.received.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date`                                                                                                                                                                             |
+| 5   | `site.report.created.v1`                 | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count`                                                                                                                                                                         |
+| 6   | `site.inspection.failed.v1`              | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at`                                                                                                                                                                     |
+| 7   | `construction.task.completed.v1`         | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days`                                                                                                                                                     |
+| 8   | `construction.delay.detected.v1`         | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+) |
+| 9   | `workforce.checkin.created.v1`           | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable)                                                                                                                                                     |
+| 10  | `site.material.consumed.v1`              | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at`                                                                                                                                                                  |
+| 11  | `procurement.delivery.received.v1`       | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean                                                                                                                        |
+| 12  | `finance.budget.exceeded.v1`             | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at`                                                                                                                            |
+| 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                            |
+| 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE)                                                                                                                  |
+| 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                           |
+| 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                            |
 
 ### Schema Registry Rules
 
@@ -519,39 +523,39 @@ Non-canonical schemas MUST be migrated before Phase 8 (Multi-company Enterprise 
 
 Each legacy file below requires a canonical spec entry in §32.4 before migration can proceed.
 
-| Legacy File | Required Canonical Name | Notes |
-| --- | --- | --- |
-| `procurement.rfq.created.avsc` | `procurement.rfq.created.v1` | Core procurement event — high priority |
-| `procurement.rfq.alert.avsc` | `procurement.rfq.deadline_approaching.v1` | Rename for clarity |
-| `procurement.po.status_changed.avsc` | `procurement.purchase_order.status_changed.v1` | Entity name aligned |
-| `procurement.delivery.delayed.avsc` | `procurement.delivery.delayed.v1` | Version suffix only |
-| `procurement.inventory.low.avsc` | `procurement.inventory.low_threshold_reached.v1` | Rename for clarity |
-| `file.uploaded.avsc` | `file.document.uploaded.v1` | Entity name added |
-| `file.quarantined.avsc` | `file.document.quarantined.v1` | Entity name added |
-| `project.updated.avsc` | `construction.project.updated.v1` | Domain prefix added |
-| `project.status_changed.avsc` | `construction.project.status_changed.v1` | Domain prefix added |
-| `boq.created.avsc` | `construction.boq.created.v1` | Distinct from boq.version.created |
-| `boq.updated.avsc` | `construction.boq.updated.v1` | Domain prefix added |
-| `boq.version.approved.avsc` | `construction.boq.version_approved.v1` | Domain prefix aligned |
-| `site.report.submitted.avsc` | `site.report.submitted.v1` | "submitted" is correct — reports are directly submitted; distinct from `site.report.created.v1` |
-| `site.progress.updated.avsc` | `site.progress.updated.v1` | Version suffix only |
-| `site.issue.created.avsc` | `site.issue.created.v1` | Version suffix only |
-| `site.media.uploaded.avsc` | `site.media.uploaded.v1` | Version suffix only |
-| `inspection.passed.avsc` | `site.inspection.passed.v1` | Domain prefix added |
-| `issue.status_changed.avsc` | `site.issue.status_changed.v1` | Domain prefix added |
-| `equipment.assigned.avsc` | `equipment.unit.assigned.v1` | Entity name added |
-| `equipment.returned.avsc` | `equipment.unit.returned.v1` | Entity name added |
-| `equipment.maintenance_scheduled.avsc` | `equipment.unit.maintenance_scheduled.v1` | Entity name added |
-| `workforce.checkout.avsc` | `workforce.checkout.created.v1` | Action + version added |
-| `workforce.timesheet_approved.avsc` | `workforce.timesheet.approved.v1` | Entity name added |
-| `cost.budget.updated.avsc` | `finance.budget.updated.v1` | Domain renamed cost→finance |
-| `cost.budget.warning.avsc` | `finance.budget.warning_threshold_reached.v1` | Domain + name clarified |
-| `cost.entry.created.avsc` | `finance.cost_entry.created.v1` | Domain + entity added |
-| `finance.budget.created.avsc` | `finance.budget.created.v1` | Version suffix only |
-| `finance.payment.processed.avsc` | `finance.payment.processed.v1` | Version suffix only |
-| `finance.variance.alert.avsc` | `finance.budget.variance_detected.v1` | Name clarified |
-| `ai.queue.request.avsc` | `ai.inference.queued.v1` | Name clarified |
-| `ai.result.ready.avsc` | `ai.inference.completed.v1` | Name clarified |
+| Legacy File                            | Required Canonical Name                          | Notes                                                                                           |
+| -------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `procurement.rfq.created.avsc`         | `procurement.rfq.created.v1`                     | Core procurement event — high priority                                                          |
+| `procurement.rfq.alert.avsc`           | `procurement.rfq.deadline_approaching.v1`        | Rename for clarity                                                                              |
+| `procurement.po.status_changed.avsc`   | `procurement.purchase_order.status_changed.v1`   | Entity name aligned                                                                             |
+| `procurement.delivery.delayed.avsc`    | `procurement.delivery.delayed.v1`                | Version suffix only                                                                             |
+| `procurement.inventory.low.avsc`       | `procurement.inventory.low_threshold_reached.v1` | Rename for clarity                                                                              |
+| `file.uploaded.avsc`                   | `file.document.uploaded.v1`                      | Entity name added                                                                               |
+| `file.quarantined.avsc`                | `file.document.quarantined.v1`                   | Entity name added                                                                               |
+| `project.updated.avsc`                 | `construction.project.updated.v1`                | Domain prefix added                                                                             |
+| `project.status_changed.avsc`          | `construction.project.status_changed.v1`         | Domain prefix added                                                                             |
+| `boq.created.avsc`                     | `construction.boq.created.v1`                    | Distinct from boq.version.created                                                               |
+| `boq.updated.avsc`                     | `construction.boq.updated.v1`                    | Domain prefix added                                                                             |
+| `boq.version.approved.avsc`            | `construction.boq.version_approved.v1`           | Domain prefix aligned                                                                           |
+| `site.report.submitted.avsc`           | `site.report.submitted.v1`                       | "submitted" is correct — reports are directly submitted; distinct from `site.report.created.v1` |
+| `site.progress.updated.avsc`           | `site.progress.updated.v1`                       | Version suffix only                                                                             |
+| `site.issue.created.avsc`              | `site.issue.created.v1`                          | Version suffix only                                                                             |
+| `site.media.uploaded.avsc`             | `site.media.uploaded.v1`                         | Version suffix only                                                                             |
+| `inspection.passed.avsc`               | `site.inspection.passed.v1`                      | Domain prefix added                                                                             |
+| `issue.status_changed.avsc`            | `site.issue.status_changed.v1`                   | Domain prefix added                                                                             |
+| `equipment.assigned.avsc`              | `equipment.unit.assigned.v1`                     | Entity name added                                                                               |
+| `equipment.returned.avsc`              | `equipment.unit.returned.v1`                     | Entity name added                                                                               |
+| `equipment.maintenance_scheduled.avsc` | `equipment.unit.maintenance_scheduled.v1`        | Entity name added                                                                               |
+| `workforce.checkout.avsc`              | `workforce.checkout.created.v1`                  | Action + version added                                                                          |
+| `workforce.timesheet_approved.avsc`    | `workforce.timesheet.approved.v1`                | Entity name added                                                                               |
+| `cost.budget.updated.avsc`             | `finance.budget.updated.v1`                      | Domain renamed cost→finance                                                                     |
+| `cost.budget.warning.avsc`             | `finance.budget.warning_threshold_reached.v1`    | Domain + name clarified                                                                         |
+| `cost.entry.created.avsc`              | `finance.cost_entry.created.v1`                  | Domain + entity added                                                                           |
+| `finance.budget.created.avsc`          | `finance.budget.created.v1`                      | Version suffix only                                                                             |
+| `finance.payment.processed.avsc`       | `finance.payment.processed.v1`                   | Version suffix only                                                                             |
+| `finance.variance.alert.avsc`          | `finance.budget.variance_detected.v1`            | Name clarified                                                                                  |
+| `ai.queue.request.avsc`                | `ai.inference.queued.v1`                         | Name clarified                                                                                  |
+| `ai.result.ready.avsc`                 | `ai.inference.completed.v1`                      | Name clarified                                                                                  |
 
 ---
 
@@ -561,34 +565,34 @@ All monetary values across all services must comply with these rules.
 
 ### Storage
 
-| Rule | Value |
-| --- | --- |
-| PostgreSQL column type | `DECIMAL(19, 4)` |
-| Currency column type | `VARCHAR(3)` — ISO 4217 code (e.g. `"THB"`, `"USD"`) |
-| Exchange rate column type | `DECIMAL(19, 6)` |
-| Prohibited types | `FLOAT`, `DOUBLE`, JavaScript `Number` |
+| Rule                      | Value                                                |
+| ------------------------- | ---------------------------------------------------- |
+| PostgreSQL column type    | `DECIMAL(19, 4)`                                     |
+| Currency column type      | `VARCHAR(3)` — ISO 4217 code (e.g. `"THB"`, `"USD"`) |
+| Exchange rate column type | `DECIMAL(19, 6)`                                     |
+| Prohibited types          | `FLOAT`, `DOUBLE`, JavaScript `Number`               |
 
 ### Arithmetic Libraries
 
-| Runtime | Library | Mode |
-| --- | --- | --- |
-| TypeScript / Node.js | `decimal.js` | — |
-| Python | `decimal` module | `ROUND_HALF_UP` context |
+| Runtime              | Library          | Mode                    |
+| -------------------- | ---------------- | ----------------------- |
+| TypeScript / Node.js | `decimal.js`     | —                       |
+| Python               | `decimal` module | `ROUND_HALF_UP` context |
 
 ### Rounding Rules
 
-| Context | Rule |
-| --- | --- |
-| Default | `HALF_UP` (standard commercial rounding) |
-| Tax calculation | `HALF_UP` per line item, then sum — never round intermediate values |
-| Unit price × quantity | Round final result to 4 decimal places |
-| UI display | 2 decimal places (4 stored internally) |
+| Context               | Rule                                                                |
+| --------------------- | ------------------------------------------------------------------- |
+| Default               | `HALF_UP` (standard commercial rounding)                            |
+| Tax calculation       | `HALF_UP` per line item, then sum — never round intermediate values |
+| Unit price × quantity | Round final result to 4 decimal places                              |
+| UI display            | 2 decimal places (4 stored internally)                              |
 
 ### Multi-currency
 
 - Store all amounts in original transaction currency
 - Reporting currency: configurable per tenant (stored in tenant settings)
-- Exchange rate source: Open Exchange Rates API (EP-FINANCE-003 — resolved)
+- Exchange rate source: Open Exchange Rates API
   - Daily cache in Redis, TTL 24h
   - Fallback: last cached rate if API unavailable
 - Currency conversion: `original_amount × exchange_rate`, rounded to 4 decimal places
@@ -617,13 +621,13 @@ DRAFT → PUBLISHED → CLOSED → EVALUATED → AWARDED
                                         → CANCELLED
 ```
 
-| Transition | Trigger | Role |
-| --- | --- | --- |
-| DRAFT → PUBLISHED | Manual action | `Procurement Officer` |
-| PUBLISHED → CLOSED | Deadline expiry (Temporal timer) or manual | `Procurement Officer` |
-| CLOSED → EVALUATED | System — after quotation comparison complete | System |
-| EVALUATED → AWARDED | Manual approval | `Procurement Officer` |
-| EVALUATED → CANCELLED | Manual | `Procurement Officer` |
+| Transition            | Trigger                                      | Role                  |
+| --------------------- | -------------------------------------------- | --------------------- |
+| DRAFT → PUBLISHED     | Manual action                                | `Procurement Officer` |
+| PUBLISHED → CLOSED    | Deadline expiry (Temporal timer) or manual   | `Procurement Officer` |
+| CLOSED → EVALUATED    | System — after quotation comparison complete | System                |
+| EVALUATED → AWARDED   | Manual approval                              | `Procurement Officer` |
+| EVALUATED → CANCELLED | Manual                                       | `Procurement Officer` |
 
 ### Purchase Order Workflow
 
@@ -635,18 +639,18 @@ DRAFT → PENDING_APPROVAL → APPROVED → SENT → ACKNOWLEDGED
                                                                              → DISPUTED
 ```
 
-| Transition | Trigger | Role |
-| --- | --- | --- |
-| DRAFT → PENDING_APPROVAL | Manual | `Procurement Officer` |
-| PENDING_APPROVAL → APPROVED | Manual approval | `Project Manager` (see thresholds in 15-event-driven-workflow §15.5) |
-| PENDING_APPROVAL → DRAFT | Reject / revise | `Project Manager` |
-| APPROVED → SENT | System (auto after approval) | System |
-| SENT → ACKNOWLEDGED | Vendor confirmation event | System |
-| ACKNOWLEDGED → PARTIALLY_DELIVERED | Delivery recording | System |
-| PARTIALLY_DELIVERED → FULLY_DELIVERED | Delivery completion | System |
-| FULLY_DELIVERED → INVOICED | Invoice receipt | System |
-| INVOICED → PAID | Manual | `Finance` |
-| INVOICED → DISPUTED | Manual | `Finance` |
+| Transition                            | Trigger                      | Role                                                                 |
+| ------------------------------------- | ---------------------------- | -------------------------------------------------------------------- |
+| DRAFT → PENDING_APPROVAL              | Manual                       | `Procurement Officer`                                                |
+| PENDING_APPROVAL → APPROVED           | Manual approval              | `Project Manager` (see thresholds in 15-event-driven-workflow §15.5) |
+| PENDING_APPROVAL → DRAFT              | Reject / revise              | `Project Manager`                                                    |
+| APPROVED → SENT                       | System (auto after approval) | System                                                               |
+| SENT → ACKNOWLEDGED                   | Vendor confirmation event    | System                                                               |
+| ACKNOWLEDGED → PARTIALLY_DELIVERED    | Delivery recording           | System                                                               |
+| PARTIALLY_DELIVERED → FULLY_DELIVERED | Delivery completion          | System                                                               |
+| FULLY_DELIVERED → INVOICED            | Invoice receipt              | System                                                               |
+| INVOICED → PAID                       | Manual                       | `Finance`                                                            |
+| INVOICED → DISPUTED                   | Manual                       | `Finance`                                                            |
 
 ### Workflow Rules
 
@@ -661,59 +665,59 @@ DRAFT → PENDING_APPROVAL → APPROVED → SENT → ACKNOWLEDGED
 
 ### Brand Identity
 
-| Token | Value | Usage |
-| --- | --- | --- |
-| Brand name | CONSTRUCTION OS | — |
-| Product shortform | COS | Favicon, app icon, monogram |
-| Tagline | "AI-Native Construction Platform" | 11px, uppercase, letter-spacing 3.5px |
-| Personality | Industrial · Intelligent · Enterprise · AI-native · Mission-critical | — |
-| Positioning | Palantir / Datadog / Linear aesthetic — not construction contractor aesthetic | — |
+| Token             | Value                                                                         | Usage                                 |
+| ----------------- | ----------------------------------------------------------------------------- | ------------------------------------- |
+| Brand name        | CONSTRUCTION OS                                                               | —                                     |
+| Product shortform | COS                                                                           | Favicon, app icon, monogram           |
+| Tagline           | "AI-Native Construction Platform"                                             | 11px, uppercase, letter-spacing 3.5px |
+| Personality       | Industrial · Intelligent · Enterprise · AI-native · Mission-critical          | —                                     |
+| Positioning       | Palantir / Datadog / Linear aesthetic — not construction contractor aesthetic | —                                     |
 
 Prohibited in all visual work: building/crane/hard hat/blueprint/gear icons;
 orange/amber colour; rounded playful shapes; gradients or glow effects.
 
 ### Brand Colour Tokens (web + desktop + PWA)
 
-| Token | Hex | Usage |
-| --- | --- | --- |
-| `--cos-navy` | `#0B1020` | Infrastructure Core — wordmark, headers, dark UI |
-| `--cos-blue` | `#2563EB` | System Blue — CTAs, active states, navigation |
-| `--cos-cyan` | `#06B6D4` | AI Cyan — AI modules, insights, event highlights |
-| `--cos-gray` | `#64748B` | Steel Gray — secondary text, borders, inactive |
+| Token         | Hex       | Usage                                                |
+| ------------- | --------- | ---------------------------------------------------- |
+| `--cos-navy`  | `#0B1020` | Infrastructure Core — wordmark, headers, dark UI     |
+| `--cos-blue`  | `#2563EB` | System Blue — CTAs, active states, navigation        |
+| `--cos-cyan`  | `#06B6D4` | AI Cyan — AI modules, insights, event highlights     |
+| `--cos-gray`  | `#64748B` | Steel Gray — secondary text, borders, inactive       |
 | `--cos-white` | `#F8FAFC` | Concrete White — page backgrounds, surfaces, reports |
 
 #### Dark Theme Tokens
 
-| Token | Hex |
-| --- | --- |
-| `--cos-dark-bg` | `#020617` |
-| `--cos-dark-surface` | `#0F172A` |
+| Token                 | Hex       |
+| --------------------- | --------- |
+| `--cos-dark-bg`       | `#020617` |
+| `--cos-dark-surface`  | `#0F172A` |
 | `--cos-dark-elevated` | `#111827` |
-| `--cos-dark-text` | `#F8FAFC` |
-| `--cos-dark-muted` | `#94A3B8` |
-| `--cos-dark-blue` | `#2563EB` |
-| `--cos-dark-cyan` | `#22D3EE` |
-| `--cos-dark-success` | `#10B981` |
-| `--cos-dark-warning` | `#F59E0B` |
-| `--cos-dark-danger` | `#EF4444` |
+| `--cos-dark-text`     | `#F8FAFC` |
+| `--cos-dark-muted`    | `#94A3B8` |
+| `--cos-dark-blue`     | `#2563EB` |
+| `--cos-dark-cyan`     | `#22D3EE` |
+| `--cos-dark-success`  | `#10B981` |
+| `--cos-dark-warning`  | `#F59E0B` |
+| `--cos-dark-danger`   | `#EF4444` |
 
 ### Mobile Colour Tokens (React Native — field app)
 
 Optimised for outdoor sunlight visibility.
 
-| Token | Hex | Usage |
-| --- | --- | --- |
-| `--mobile-primary` | `#0066FF` | Bright blue (outdoor visibility) |
-| `--mobile-success` | `#00C853` | Confirmation green |
-| `--mobile-warning` | `#FF9500` | Caution orange |
-| `--mobile-danger` | `#FF3B30` | Urgent / delete red |
-| `--mobile-bg` | `#FFFFFF` | Background |
-| `--mobile-surface` | `#F5F5F5` | Card surface |
-| `--mobile-text-primary` | `#1C1C1E` | Primary text |
-| `--mobile-text-secondary` | `#6C6C70` | Secondary text |
-| `--mobile-offline` | `#8E8E93` | Offline indicator |
-| `--mobile-syncing` | `#FFD60A` | Syncing indicator |
-| `--mobile-synced` | `#00C853` | Synced indicator |
+| Token                     | Hex       | Usage                            |
+| ------------------------- | --------- | -------------------------------- |
+| `--mobile-primary`        | `#0066FF` | Bright blue (outdoor visibility) |
+| `--mobile-success`        | `#00C853` | Confirmation green               |
+| `--mobile-warning`        | `#FF9500` | Caution orange                   |
+| `--mobile-danger`         | `#FF3B30` | Urgent / delete red              |
+| `--mobile-bg`             | `#FFFFFF` | Background                       |
+| `--mobile-surface`        | `#F5F5F5` | Card surface                     |
+| `--mobile-text-primary`   | `#1C1C1E` | Primary text                     |
+| `--mobile-text-secondary` | `#6C6C70` | Secondary text                   |
+| `--mobile-offline`        | `#8E8E93` | Offline indicator                |
+| `--mobile-syncing`        | `#FFD60A` | Syncing indicator                |
+| `--mobile-synced`         | `#00C853` | Synced indicator                 |
 
 > **Design decision:** `--mobile-primary #0066FF` ≠ `--cos-blue #2563EB` — intentional.
 > Field workers use the app in direct sunlight; `#0066FF` has higher outdoor visibility.
@@ -732,93 +736,134 @@ Optimised for outdoor sunlight visibility.
 
 Base unit: 14px (compact enterprise SaaS standard)
 
-| Token | Size | Weight | Usage |
-| --- | --- | --- | --- |
-| `--web-text-display` | 32px | 700 | Hero numbers, project budgets |
-| `--web-text-h1` | 24px | 600 | Page titles |
-| `--web-text-h2` | 20px | 600 | Section headers, card titles |
-| `--web-text-h3` | 16px | 500 | Sub-section headers, table headers |
-| `--web-text-body` | 14px | 400 | Default body, table content |
-| `--web-text-small` | 12px | 400 | Metadata, timestamps, secondary labels |
-| `--web-text-tiny` | 11px | 400 | Badges, footnotes, fine print |
+| Token                | Size | Weight | Usage                                  |
+| -------------------- | ---- | ------ | -------------------------------------- |
+| `--web-text-display` | 32px | 700    | Hero numbers, project budgets          |
+| `--web-text-h1`      | 24px | 600    | Page titles                            |
+| `--web-text-h2`      | 20px | 600    | Section headers, card titles           |
+| `--web-text-h3`      | 16px | 500    | Sub-section headers, table headers     |
+| `--web-text-body`    | 14px | 400    | Default body, table content            |
+| `--web-text-small`   | 12px | 400    | Metadata, timestamps, secondary labels |
+| `--web-text-tiny`    | 11px | 400    | Badges, footnotes, fine print          |
 
 #### Mobile Typography Scale
 
-| Token | Size | Usage |
-| --- | --- | --- |
-| `--mobile-text-hero` | 28px | Page titles |
-| `--mobile-text-title` | 22px | Card titles |
-| `--mobile-text-body` | 17px | Body text (iOS standard) |
-| `--mobile-text-caption` | 15px | Metadata |
-| `--mobile-text-label` | 13px | Input labels |
+| Token                   | Size | Usage                    |
+| ----------------------- | ---- | ------------------------ |
+| `--mobile-text-hero`    | 28px | Page titles              |
+| `--mobile-text-title`   | 22px | Card titles              |
+| `--mobile-text-body`    | 17px | Body text (iOS standard) |
+| `--mobile-text-caption` | 15px | Metadata                 |
+| `--mobile-text-label`   | 13px | Input labels             |
 
 ### Spacing Tokens
 
 #### Web / Desktop Spacing (base unit: 4px)
 
-| Token | Value | Usage |
-| --- | --- | --- |
-| `--web-space-1` | 4px | Icon-to-text tight gap |
-| `--web-space-2` | 8px | Inline element gaps, icon padding |
-| `--web-space-3` | 12px | Form field internal padding |
-| `--web-space-4` | 16px | Card internal padding, standard gaps |
-| `--web-space-6` | 24px | Card padding, section internal gap |
-| `--web-space-8` | 32px | Between cards/components |
-| `--web-space-12` | 48px | Major page section gap |
+| Token            | Value | Usage                                |
+| ---------------- | ----- | ------------------------------------ |
+| `--web-space-1`  | 4px   | Icon-to-text tight gap               |
+| `--web-space-2`  | 8px   | Inline element gaps, icon padding    |
+| `--web-space-3`  | 12px  | Form field internal padding          |
+| `--web-space-4`  | 16px  | Card internal padding, standard gaps |
+| `--web-space-6`  | 24px  | Card padding, section internal gap   |
+| `--web-space-8`  | 32px  | Between cards/components             |
+| `--web-space-12` | 48px  | Major page section gap               |
 
 Border radius: `--web-radius-sm` 4px · `--web-radius-md` 8px · `--web-radius-lg` 12px · `--web-radius-xl` 16px
 
 #### Mobile Spacing
 
-| Token | Value | Usage |
-| --- | --- | --- |
-| `--mobile-space-xs` | 8px | Icon padding |
-| `--mobile-space-sm` | 12px | Card internal padding |
-| `--mobile-space-md` | 16px | Section padding |
-| `--mobile-space-lg` | 24px | Screen edge padding |
-| `--mobile-space-xl` | 32px | Major section separation |
+| Token               | Value | Usage                    |
+| ------------------- | ----- | ------------------------ |
+| `--mobile-space-xs` | 8px   | Icon padding             |
+| `--mobile-space-sm` | 12px  | Card internal padding    |
+| `--mobile-space-md` | 16px  | Section padding          |
+| `--mobile-space-lg` | 24px  | Screen edge padding      |
+| `--mobile-space-xl` | 32px  | Major section separation |
 
 ### Touch Target Standards (mobile)
 
-| Element | Minimum | Recommended |
-| --- | --- | --- |
-| Primary button | 44px | 52px |
-| Secondary button | 44px | 48px |
-| Icon button | 44px (WCAG AAA) | — |
-| List item | 52px | 60px |
-| Form input | 48px | 52px |
-| Checkbox / radio | 44px tap area | 24–28px visual |
-| Spacing between targets | 8px minimum | — |
+| Element                 | Minimum         | Recommended    |
+| ----------------------- | --------------- | -------------- |
+| Primary button          | 44px            | 52px           |
+| Secondary button        | 44px            | 48px           |
+| Icon button             | 44px (WCAG AAA) | —              |
+| List item               | 52px            | 60px           |
+| Form input              | 48px            | 52px           |
+| Checkbox / radio        | 44px tap area   | 24–28px visual |
+| Spacing between targets | 8px minimum     | —              |
 
 ### Mobile Core Component Library (React Native)
 
-| Component | Description |
-| --- | --- |
-| `<MobileNav />` | Bottom navigation, 4–5 items max, icons + labels |
-| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap |
-| `<PhotoCapture />` | Camera + gallery grid, inline annotation, offline queue |
-| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription |
-| `<OfflineBanner />` | Fixed top, queue count, auto-dismiss on reconnect |
-| `<TaskCard />` | Swipeable (swipe-right = done), status badge, photo count |
-| `<StatusChip />` | Visual status: Todo / InProgress / Done / Syncing / Synced |
-| `<OptimisticList />` | Instant UI update, rollback on failure, retry option |
+| Component             | Description                                                |
+| --------------------- | ---------------------------------------------------------- |
+| `<MobileNav />`       | Bottom navigation, 4–5 items max, icons + labels           |
+| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap          |
+| `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue    |
+| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription     |
+| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect          |
+| `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count  |
+| `<StatusChip />`      | Visual status: Todo / InProgress / Done / Syncing / Synced |
+| `<OptimisticList />`  | Instant UI update, rollback on failure, retry option       |
 
 Do **not** implement on mobile: tables (use cards), navigation deeper than 3 levels,
 modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
 
 ---
 
+## 32.8 Known Deferred Deliverables
+
+Items in this section are **known** (implementation is understood) but **not yet done**
+because of a dependency or resource constraint. These are distinct from Extension Points
+(§32.3), which mark architectural uncertainty where the implementation strategy is unknown.
+
+When a deferred deliverable is completed, remove it from this section and commit the
+implementation in the same PR.
+
+### Phase 2 — Auth + Tenant System
+
+#### KD-AUTH-001: Keycloak Admin REST API Integration for Path B User Provisioning
+
+**Status:** Deferred — no Keycloak Admin API client in the codebase yet
+
+**What is deferred:**
+When a Tenant Admin creates a Path B user (email/Keycloak), the system must:
+
+1. Call `POST /admin/realms/{realm}/users` (Keycloak Admin REST API) to create the Keycloak account
+2. Retrieve the Keycloak UUID from the response (`Location` header or GET by email)
+3. Set Keycloak user attributes: `tenant_id`, `user_id`, `role` (see `05-security-compliance` §5.4.2)
+4. Create the `platform.users` record with `keycloak_user_id` = Keycloak UUID
+5. Create the `platform.tenant_memberships` record
+6. Emit `identity.user.created.v1` Kafka event
+
+**Current placeholder behaviour:**
+`email` is stored as `keycloak_user_id` in `platform.users`. A warning is logged.
+Path B users created this way cannot log in via Keycloak until step 1–3 are completed manually.
+
+**What is needed to implement:**
+
+- Add `@keycloak/keycloak-admin-client` to `backend/package.json`
+- Create `KeycloakAdminService` in `backend/src/modules/identity/` with: `createUser(email, displayName, tenantRealm): Promise<{ keycloakUserId: string }>`
+- Call from `UserService.createUser()` (Path B branch) before creating the COS user record
+- Keycloak Admin credentials: client `cos-backend` with `realm-management` role in each realm — store in AWS Secrets Manager / Vault (see `05-security-compliance` §5.2)
+- Update `UserService.createUser()` to replace the email-placeholder path with the real Keycloak UUID
+
+**Unblocks when:** Keycloak Admin API credentials are provisioned and `@keycloak/keycloak-admin-client` is added
+
+---
+
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [Avro] | Apache Avro Specification | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html) |
-| [ConfluentSR] | Confluent Schema Registry Documentation | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
-| [Temporal] | Temporal Workflow Documentation | [docs.temporal.io](https://docs.temporal.io/) |
-| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
-| [PostgreSQL] | PostgreSQL Documentation | [postgresql.org/docs](https://www.postgresql.org/docs/) |
-| [W3C-DesignTokens] | W3C Design Tokens Community Group Report | [tr.designtokens.org/format](https://tr.designtokens.org/format/) |
-| [IEEE-754] | IEEE Standard for Floating-Point Arithmetic | IEEE Std 754-2019 |
+| ID                 | Title                                                              | Source                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [IEEE 830]         | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                           |
+| [Avro]             | Apache Avro Specification                                          | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html)                                    |
+| [ConfluentSR]      | Confluent Schema Registry Documentation                            | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
+| [Temporal]         | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                                                                               |
+| [Kafka]            | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                                                   |
+| [PostgreSQL]       | PostgreSQL Documentation                                           | [postgresql.org/docs](https://www.postgresql.org/docs/)                                                                     |
+| [W3C-DesignTokens] | W3C Design Tokens Community Group Report                           | [tr.designtokens.org/format](https://tr.designtokens.org/format/)                                                           |
+| [IEEE-754]         | IEEE Standard for Floating-Point Arithmetic                        | IEEE Std 754-2019                                                                                                           |
 
 > 📎 See also: [03-system-design](03-system-design.md) — service decomposition and architecture overview · [09-data-architecture](09-data-architecture.md) — data domains and storage strategy · [11-database-schema](11-database-schema.md) — core entity schemas · [14-api-architecture](14-api-architecture.md) — API contracts and endpoint patterns · [15-event-driven-workflow](15-event-driven-workflow.md) — event bus and workflow architecture · [20-ux-flow](20-ux-flow.md) — role-based UX flows · [21-mvp-scope](21-mvp-scope.md) — MVP modules and phase scope · [30-testing-strategy](30-testing-strategy.md) — test strategy for event contracts, state machines, and financial precision rules defined here

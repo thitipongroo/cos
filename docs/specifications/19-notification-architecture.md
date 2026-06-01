@@ -1,8 +1,8 @@
 ---
-title: "Notification Architecture"
-version: "1.2.0"
+title: 'Notification Architecture'
+version: '1.2.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -41,11 +41,11 @@ and 16-enterprise-event-flow) and routed to recipients based on their role and p
 
 ## 19.2 Notification Channels
 
-| Channel | Delivery | Use Case |
-| --- | --- | --- |
-| In-app (web) | SSE (Server-Sent Events) | Real-time alerts while user is active in web UI |
-| Push (mobile) | Expo Push Notifications (APNs / FCM) | Alerts to field users on React Native app |
-| Email | SendGrid (MVP) / AWS SES (production target) | Non-urgent summaries, daily digests, escalations |
+| Channel       | Delivery                                     | Use Case                                         |
+| ------------- | -------------------------------------------- | ------------------------------------------------ |
+| In-app (web)  | SSE (Server-Sent Events)                     | Real-time alerts while user is active in web UI  |
+| Push (mobile) | Expo Push Notifications (APNs / FCM)         | Alerts to field users on React Native app        |
+| Email         | SendGrid (MVP) / AWS SES (production target) | Non-urgent summaries, daily digests, escalations |
 
 SMS is not included in MVP. It is evaluated post-MVP based on field user adoption data.
 
@@ -93,21 +93,23 @@ Delivered when an unacknowledged immediate notification exceeds a timeout :
 
 ## 19.4 Role-to-Notification Routing
 
-Based on roles defined in 06-rbac-permission-matrix section 6.2 :
+Based on roles defined in 06-rbac-permission-matrix section 6.2. Column headers use
+abbreviated display names: "PM" = Project Manager, "Procurement" = Procurement Officer,
+"CRM/Sales" = CRM / Sales Manager (see §6.2 for full names and enum constants).
 
-| Event | Executive | PM | Site Engineer | Procurement | Finance | Safety Officer | CRM/Sales |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| DelayDetected | Push | Push | In-app | — | — | — | — |
-| BudgetExceeded | Push | Push | — | — | Push | — | — |
-| InspectionFailed | — | In-app | Push | — | — | In-app | — |
-| SafetyIncidentReported | In-app | Push | In-app | — | — | Push | — |
-| PurchaseApproved | — | In-app | — | Push | Push | — | — |
-| DeliveryReceived | — | In-app | Push | Push | — | — | — |
-| RiskPredictionGenerated | Push | Push | — | — | — | — | — |
-| VendorInvoiceApproved | — | — | — | In-app | Push | — | — |
-| BillingApproved | — | In-app | — | — | Push | — | — |
-| LeadCreated | — | — | — | — | — | — | Push |
-| OpportunityConverted | In-app | — | — | — | — | — | Push |
+| Event                   | Executive | PM     | Site Engineer | Procurement | Finance | Safety Officer | CRM/Sales |
+| ----------------------- | --------- | ------ | ------------- | ----------- | ------- | -------------- | --------- |
+| DelayDetected           | Push      | Push   | In-app        | —           | —       | —              | —         |
+| BudgetExceeded          | Push      | Push   | —             | —           | Push    | —              | —         |
+| InspectionFailed        | —         | In-app | Push          | —           | —       | In-app         | —         |
+| SafetyIncidentReported  | In-app    | Push   | In-app        | —           | —       | Push           | —         |
+| PurchaseApproved        | —         | In-app | —             | Push        | Push    | —              | —         |
+| DeliveryReceived        | —         | In-app | Push          | Push        | —       | —              | —         |
+| RiskPredictionGenerated | Push      | Push   | —             | —           | —       | —              | —         |
+| VendorInvoiceApproved   | —         | —      | —             | In-app      | Push    | —              | —         |
+| BillingApproved         | —         | In-app | —             | —           | Push    | —              | —         |
+| LeadCreated             | —         | —      | —             | —           | —       | —              | Push      |
+| OpportunityConverted    | In-app    | —      | —             | —           | —       | —              | Push      |
 
 Routing is project-scoped — a PM only receives notifications for projects they are assigned to.
 
@@ -155,14 +157,14 @@ Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) 
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [FCM] | Firebase Cloud Messaging Documentation | [firebase.google.com/docs/cloud-messaging](https://firebase.google.com/docs/cloud-messaging) |
-| [APNs] | Apple Push Notification service Documentation | [developer.apple.com/documentation/usernotifications](https://developer.apple.com/documentation/usernotifications) |
-| [WebSocket] | The WebSocket Protocol | RFC 6455 |
-| [SSE] | Server-Sent Events — W3C Recommendation | [html.spec.whatwg.org/multipage/server-sent-events.html](https://html.spec.whatwg.org/multipage/server-sent-events.html) |
-| [PostgreSQL] | PostgreSQL Documentation | [postgresql.org/docs](https://www.postgresql.org/docs/) |
-| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
+| ID           | Title                                                              | Source                                                                                                                   |
+| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| [IEEE 830]   | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                        |
+| [FCM]        | Firebase Cloud Messaging Documentation                             | [firebase.google.com/docs/cloud-messaging](https://firebase.google.com/docs/cloud-messaging)                             |
+| [APNs]       | Apple Push Notification service Documentation                      | [developer.apple.com/documentation/usernotifications](https://developer.apple.com/documentation/usernotifications)       |
+| [WebSocket]  | The WebSocket Protocol                                             | RFC 6455                                                                                                                 |
+| [SSE]        | Server-Sent Events — W3C Recommendation                            | [html.spec.whatwg.org/multipage/server-sent-events.html](https://html.spec.whatwg.org/multipage/server-sent-events.html) |
+| [PostgreSQL] | PostgreSQL Documentation                                           | [postgresql.org/docs](https://www.postgresql.org/docs/)                                                                  |
+| [Kafka]      | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                                                |
 
 > 📎 See also: [03-system-design](03-system-design.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md)

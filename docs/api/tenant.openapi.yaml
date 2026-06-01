@@ -1,0 +1,158 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — Tenant API
+  version: '1.0.0'
+  description: |
+    Tenant lifecycle management for Construction OS.
+
+    All endpoints require `SYSTEM_ADMIN` role.
+    Tenant operations are cross-tenant (operate on the `platform` schema).
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateTenantRequest:
+      type: object
+      required: [tenantCode, tenantName, planType]
+      properties:
+        tenantCode:
+          type: string
+          pattern: '^[a-z0-9_]{2,50}$'
+          description: Unique slug used as PostgreSQL schema name (e.g. acme_corp)
+          example: acme_corp
+        tenantName:
+          type: string
+          minLength: 2
+          maxLength: 255
+          example: ACME Construction Co.
+        planType:
+          type: string
+          enum: [STARTER, PROFESSIONAL, ENTERPRISE]
+
+    TenantResponse:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantCode:
+          type: string
+          example: acme_corp
+        tenantName:
+          type: string
+          example: ACME Construction Co.
+        keycloakRealm:
+          type: string
+          example: cos-acme_corp
+        planType:
+          type: string
+          enum: [STARTER, PROFESSIONAL, ENTERPRISE]
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-TENANT-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+paths:
+  /admin/tenants:
+    post:
+      summary: Provision a new tenant (SYSTEM_ADMIN only)
+      description: |
+        Creates a tenant record, provisions a PostgreSQL schema `{tenantCode}`,
+        and queues Keycloak realm creation.
+
+        Emits Kafka event: `identity.tenant.created.v1`
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+      responses:
+        '201':
+          description: Tenant provisioned — schema created, Kafka event emitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '409':
+          description: Tenant code already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/{tenantId}/deactivate:
+    patch:
+      summary: Deactivate a tenant (SYSTEM_ADMIN only)
+      description: |
+        Sets `is_active = false`. Tenant data is preserved.
+        Emits Kafka event: `identity.tenant.deactivated.v1`
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Tenant deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Tenant deactivated
+        '404':
+          description: Tenant not found or already inactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required

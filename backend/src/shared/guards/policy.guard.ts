@@ -27,9 +27,9 @@ export class PolicyGuard implements CanActivate {
 
     // 1. tenant_match — request tenant must match JWT tenant
     const requestTenantId = request.tenantId ?? request.params?.['tenantId'];
-    if (requestTenantId && requestTenantId !== user.cos_tenant_id) {
+    if (requestTenantId && requestTenantId !== user.tenant_id) {
       logger.warn(
-        { userId: user.cos_user_id, requestTenantId, jwtTenantId: user.cos_tenant_id },
+        { userId: user.user_id, requestTenantId, jwtTenantId: user.tenant_id },
         'Cross-tenant access attempt blocked',
       );
       throw new ForbiddenException('Cross-tenant access is not allowed');

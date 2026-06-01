@@ -7,6 +7,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { IdentityController } from './identity.controller';
 import { IdentityService } from './identity.service';
+import { MfaService } from './mfa/mfa.service';
 import { OtpService } from './otp/otp.service';
 import { KeycloakJwtStrategy } from './strategies/keycloak-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -22,7 +23,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     }),
   ],
   controllers: [IdentityController],
-  providers: [IdentityService, OtpService, KeycloakJwtStrategy, JwtAuthGuard],
-  exports: [IdentityService, JwtAuthGuard, PassportModule],
+  providers: [IdentityService, MfaService, OtpService, KeycloakJwtStrategy, JwtAuthGuard],
+  exports: [IdentityService, MfaService, JwtAuthGuard, PassportModule],
 })
 export class IdentityModule {}

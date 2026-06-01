@@ -8,6 +8,14 @@ jest.mock('@prisma/client', () => ({
   })),
 }));
 
+jest.mock('@cos/shared', () => ({
+  KafkaProducer: jest.fn().mockImplementation(() => ({
+    connect: jest.fn().mockResolvedValue(undefined),
+    publish: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 import { TenantService } from '../tenant.service';
 import { PrismaClient } from '@prisma/client';
 import { ConflictException, NotFoundException } from '@nestjs/common';
@@ -33,13 +41,15 @@ describe('TenantService', () => {
   describe('createTenant', () => {
     it('creates tenant and provisions schema', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
-      (prismaMock.$transaction as jest.Mock).mockImplementation(async (fn: (tx: unknown) => Promise<unknown>) => {
-        const tx = {
-          $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
-          $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
-        };
-        return fn(tx);
-      });
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
+          };
+          return fn(tx);
+        },
+      );
 
       const result = await service.createTenant(
         { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
@@ -67,7 +77,9 @@ describe('TenantService', () => {
 
     it('throws NotFoundException when tenant not found or already inactive', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
-      await expect(service.deactivateTenant('nonexistent', 'admin-1')).rejects.toThrow(NotFoundException);
+      await expect(service.deactivateTenant('nonexistent', 'admin-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

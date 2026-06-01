@@ -34,9 +34,9 @@ export class KeycloakJwtStrategy extends PassportStrategy(Strategy, 'keycloak-jw
   }
 
   validate(payload: JwtPayload): JwtPayload {
-    if (!payload.cos_tenant_id || !payload.cos_role) {
-      logger.warn({ sub: payload.sub }, 'JWT missing required COS claims');
-      throw new UnauthorizedException('Missing required COS claims in JWT');
+    if (!payload.tenant_id || !payload.role) {
+      logger.warn({ sub: payload.sub }, 'JWT missing required claims (tenant_id, role)');
+      throw new UnauthorizedException('Missing required claims in JWT');
     }
     return payload;
   }

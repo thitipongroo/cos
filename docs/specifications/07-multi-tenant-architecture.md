@@ -1,8 +1,8 @@
 ---
-title: "Multi-tenant Architecture"
-version: "1.4.0"
+title: 'Multi-tenant Architecture'
+version: '1.4.0'
 status: Active
-last_updated: "2026-05-27"
+last_updated: '2026-05-27'
 authors:
   - thitipongroo
 related_docs:
@@ -44,13 +44,13 @@ For enterprise.
 
 Deployment-to-isolation mapping :
 
-| Deployment Option | Isolation Model |
-| --- | --- |
-| Shared SaaS — SMB | Shared DB + tenant_id |
-| Shared SaaS — Mid-market | Schema-per-tenant |
-| Dedicated Tenant | Dedicated DB |
-| Hybrid | Dedicated DB |
-| Fully On-premise | Dedicated DB |
+| Deployment Option        | Isolation Model       |
+| ------------------------ | --------------------- |
+| Shared SaaS — SMB        | Shared DB + tenant_id |
+| Shared SaaS — Mid-market | Schema-per-tenant     |
+| Dedicated Tenant         | Dedicated DB          |
+| Hybrid                   | Dedicated DB          |
+| Fully On-premise         | Dedicated DB          |
 
 ---
 
@@ -94,11 +94,11 @@ Topic lifecycle management :
 
 **Retention policy (default):**
 
-| Tier | Time Retention | Size Limit | Scope |
-| --- | --- | --- | --- |
-| SMB / Mid-market (shared cluster) | 7 days (`log.retention.hours=168`) | 10 GB per partition | AWS MSK topic-level config |
-| Enterprise (dedicated namespace) | 30 days (default); negotiable per contract | 50 GB per partition | Dedicated MSK cluster config |
-| DLQ topics (all tiers) | 14 days (double normal — extends reprocessing window) | Same as tier | Same as tier |
+| Tier                              | Time Retention                                        | Size Limit          | Scope                        |
+| --------------------------------- | ----------------------------------------------------- | ------------------- | ---------------------------- |
+| SMB / Mid-market (shared cluster) | 7 days (`log.retention.hours=168`)                    | 10 GB per partition | AWS MSK topic-level config   |
+| Enterprise (dedicated namespace)  | 30 days (default); negotiable per contract            | 50 GB per partition | Dedicated MSK cluster config |
+| DLQ topics (all tiers)            | 14 days (double normal — extends reprocessing window) | Same as tier        | Same as tier                 |
 
 **Tenant offboarding — topic cleanup procedure:**
 
@@ -151,7 +151,8 @@ Steps :
 
 1. Tenant registration request received (via platform admin API)
 2. Tenant record created in `tenants` table with unique `tenant_id` (UUID)
-3. Keycloak assignment: shared realm for SMB/mid-market; dedicated realm created for enterprise
+3. Keycloak assignment: shared realm for SMB/mid-market; dedicated realm created for enterprise.
+   **Protocol mappers MUST be configured** on every realm (shared or dedicated) per `05-security-compliance` §5.4.2 — mappers for `tenant_id`, `user_id`, and `role` are required before any user can authenticate. Missing mappers cause Kong Gateway to reject all requests.
 4. Database provisioning:
    - SMB: no migration needed — `tenant_id` already in all tables
    - Mid-market: new schema created and migrated
@@ -167,14 +168,14 @@ Steps :
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [PostgreSQL-RLS] | PostgreSQL Row Security Policies | [postgresql.org/docs/current/ddl-rowsecurity.html](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
-| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
-| [Neo4j] | Neo4j Graph Database Documentation | [neo4j.com/docs](https://neo4j.com/docs/) |
-| [Keycloak] | Keycloak Server Documentation | [keycloak.org/documentation](https://www.keycloak.org/documentation) |
-| [MinIO] | MinIO Object Storage Documentation | [min.io/docs/minio/linux/index.html](https://min.io/docs/minio/linux/index.html) |
-| [Kubernetes] | Kubernetes Documentation | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/) |
+| ID               | Title                                                              | Source                                                                                                           |
+| ---------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| [IEEE 830]       | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                |
+| [PostgreSQL-RLS] | PostgreSQL Row Security Policies                                   | [postgresql.org/docs/current/ddl-rowsecurity.html](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
+| [Kafka]          | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                                        |
+| [Neo4j]          | Neo4j Graph Database Documentation                                 | [neo4j.com/docs](https://neo4j.com/docs/)                                                                        |
+| [Keycloak]       | Keycloak Server Documentation                                      | [keycloak.org/documentation](https://www.keycloak.org/documentation)                                             |
+| [MinIO]          | MinIO Object Storage Documentation                                 | [min.io/docs/minio/linux/index.html](https://min.io/docs/minio/linux/index.html)                                 |
+| [Kubernetes]     | Kubernetes Documentation                                           | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/)                                                      |
 
 > 📎 See also: [05-security-compliance](05-security-compliance.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [11-database-schema](11-database-schema.md)

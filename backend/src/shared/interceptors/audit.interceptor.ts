@@ -30,7 +30,7 @@ export class AuditInterceptor implements NestInterceptor {
     }
 
     const user = request.user;
-    if (!user?.cos_user_id || !request.tenantId) {
+    if (!user?.user_id || !request.tenantId) {
       return next.handle(); // Auth/admin endpoints — skip audit
     }
 
@@ -39,13 +39,13 @@ export class AuditInterceptor implements NestInterceptor {
         next: () => {
           this.writeAuditLog({
             tenantId: request.tenantId!,
-            actorId: user.cos_user_id,
+            actorId: user.user_id,
             action: `${request.method} ${request.path}`,
             resourceType: this.extractResourceType(request.path),
             // @pdpa: ip_address is stored in audit_logs only (operational necessity)
             ipAddress: request.ip,
           }).catch((err) =>
-            logger.error({ err, actorId: user.cos_user_id }, 'Failed to write audit log'),
+            logger.error({ err, actorId: user.user_id }, 'Failed to write audit log'),
           );
         },
       }),

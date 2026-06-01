@@ -27,7 +27,7 @@ jest.mock('@cos/shared', () => ({
 const mockRequest = {
   tenantId: 'tenant-uuid-001',
   tenantCode: 'acme_corp',
-  user: { cos_user_id: 'user-uuid-001', cos_role: 'PROJECT_MANAGER' },
+  user: { user_id: 'user-uuid-001', role: 'PROJECT_MANAGER' },
 };
 
 const baseProject: ProjectRow = {
@@ -173,7 +173,7 @@ describe('ProjectService', () => {
         updateStatus: jest.fn().mockResolvedValue({ ...baseProject, status: 'CANCELLED' }),
       });
       const service = await buildService(repo, {
-        user: { cos_user_id: 'user-uuid-001', cos_role: 'TENANT_ADMIN' },
+        user: { user_id: 'user-uuid-001', role: 'TENANT_ADMIN' },
       });
       const result = await service.transition('proj-uuid-001', {
         to: 'CANCELLED' as never,
@@ -187,7 +187,7 @@ describe('ProjectService', () => {
         findById: jest.fn().mockResolvedValue({ ...baseProject, status: 'CANCELLED' }),
       });
       const service = await buildService(repo, {
-        user: { cos_user_id: 'user-uuid-001', cos_role: 'TENANT_ADMIN' },
+        user: { user_id: 'user-uuid-001', role: 'TENANT_ADMIN' },
       });
       await expect(service.transition('proj-uuid-001', { to: 'ACTIVE' as never })).rejects.toThrow(
         UnprocessableEntityException,
@@ -463,7 +463,7 @@ describe('ProjectService', () => {
       });
       // CANCELLED requires TENANT_ADMIN role + reason
       const service = await buildService(repo, {
-        user: { cos_user_id: 'user-uuid-001', cos_role: 'TENANT_ADMIN' },
+        user: { user_id: 'user-uuid-001', role: 'TENANT_ADMIN' },
       });
       const result = await service.transition('proj-uuid-001', {
         to: 'CANCELLED' as never,
@@ -480,7 +480,7 @@ describe('ProjectService', () => {
         updateStatus: jest.fn().mockResolvedValue({ ...activeProject, status: 'COMPLETED' }),
       });
       const service = await buildService(repo, {
-        user: { cos_user_id: 'user-uuid-001', cos_role: 'TENANT_ADMIN' },
+        user: { user_id: 'user-uuid-001', role: 'TENANT_ADMIN' },
       });
       const result = await service.transition('proj-uuid-001', { to: 'COMPLETED' as never });
       expect(result.status).toBe('COMPLETED');

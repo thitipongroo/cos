@@ -1,8 +1,8 @@
 ---
-title: "Event-driven Workflow"
-version: "1.2.0"
+title: 'Event-driven Workflow'
+version: '1.2.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -52,7 +52,7 @@ Material delivery event :
 3. Procurement marked fulfilled
 4. Cost updated
 5. Site notified
-6. AI recalculates delay risk  (post-MVP — Layer B Analytical AI; see 21-mvp-scope section 21.4)
+6. AI recalculates delay risk (post-MVP — Layer B Analytical AI; see 21-mvp-scope section 21.4)
 
 ---
 
@@ -79,7 +79,7 @@ Workflow Types :
 - Approval workflows (RFQ → PO → Payment)
 - Construction milestone workflows
 - Safety incident escalation workflows
-- AI-triggered remediation workflows  (post-MVP — Layer B/C; see 22-ai-architecture section 22.3)
+- AI-triggered remediation workflows (post-MVP — Layer B/C; see 22-ai-architecture section 22.3)
 
 Characteristics :
 
@@ -94,17 +94,17 @@ Characteristics :
 
 ### Approval Chain Types
 
-| Workflow | Initiator | Approver(s) | Final Authority |
-| --- | --- | --- | --- |
-| Purchase Request → PO | Site Engineer / Procurement | PM (up to budget threshold) | Finance + Executive (above threshold) |
-| Vendor Invoice (AP) approval | Procurement Officer | Finance | Executive (above approval limit) |
-| Client Billing (AR) approval | Finance | PM | Executive (above approval limit) |
-| Budget amendment | PM | Finance | Executive |
-| Variation Order | PM | Finance | Executive |
-| Safety permit | Site Engineer | Safety Officer | PM |
-| Work permit | Site Engineer | Safety Officer | — |
-| Drawing approval | Site Engineer | PM | — |
-| Contractor payment release | Finance | Executive | — |
+| Workflow                     | Initiator                           | Approver(s)                 | Final Authority                       |
+| ---------------------------- | ----------------------------------- | --------------------------- | ------------------------------------- |
+| Purchase Request → PO        | Site Engineer / Procurement Officer | PM (up to budget threshold) | Finance + Executive (above threshold) |
+| Vendor Invoice (AP) approval | Procurement Officer                 | Finance                     | Executive (above approval limit)      |
+| Client Billing (AR) approval | Finance                             | PM                          | Executive (above approval limit)      |
+| Budget amendment             | PM                                  | Finance                     | Executive                             |
+| Variation Order              | PM                                  | Finance                     | Executive                             |
+| Safety permit                | Site Engineer                       | Safety Officer              | PM                                    |
+| Work permit                  | Site Engineer                       | Safety Officer              | —                                     |
+| Drawing approval             | Site Engineer                       | PM                          | —                                     |
+| Contractor payment release   | Finance                             | Executive                   | —                                     |
 
 ### Approval Thresholds
 
@@ -190,10 +190,10 @@ The CloudEvents `type` field uses the naming convention above (no tenant prefix)
 Kafka topic names include a `{tenant_id}.` prefix for isolation (see 07-multi-tenant-architecture
 section 7.3). These are distinct namespaces :
 
-- Kafka topic name  : `{tenant_id}.{domain}.{entity}.{action}.{version}`
-  Example           : `tenant_abc.construction.task.created.v1`
-- CloudEvents type  : `{domain}.{entity}.{action}.{version}`
-  Example           : `construction.task.created.v1`
+- Kafka topic name : `{tenant_id}.{domain}.{entity}.{action}.{version}`
+  Example : `tenant_abc.construction.task.created.v1`
+- CloudEvents type : `{domain}.{entity}.{action}.{version}`
+  Example : `construction.task.created.v1`
 
 The `tenant_id` is carried in the CloudEvents `source` field or message headers, not in
 the `type` field. Consumers must validate the `tenant_id` header before processing.
@@ -208,14 +208,14 @@ Versioning Rules :
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [CloudEvents] | CloudEvents Specification v1.0.2 | [cloudevents.io](https://cloudevents.io/) |
-| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
-| [Avro] | Apache Avro Specification | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html) |
-| [ConfluentSR] | Confluent Schema Registry Documentation | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
-| [Temporal] | Temporal Workflow Documentation | [docs.temporal.io](https://docs.temporal.io/) |
-| [MQTT5] | MQTT Version 5.0 | OASIS Standard, 2019 |
+| ID            | Title                                                              | Source                                                                                                                      |
+| ------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [IEEE 830]    | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                           |
+| [CloudEvents] | CloudEvents Specification v1.0.2                                   | [cloudevents.io](https://cloudevents.io/)                                                                                   |
+| [Kafka]       | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                                                   |
+| [Avro]        | Apache Avro Specification                                          | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html)                                    |
+| [ConfluentSR] | Confluent Schema Registry Documentation                            | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
+| [Temporal]    | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                                                                               |
+| [MQTT5]       | MQTT Version 5.0                                                   | OASIS Standard, 2019                                                                                                        |
 
 > 📎 See also: [04-tech-stack](04-tech-stack.md) · [09-data-architecture](09-data-architecture.md) · [14-api-architecture](14-api-architecture.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md) · [19-notification-architecture](19-notification-architecture.md)

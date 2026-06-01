@@ -1,8 +1,8 @@
 ---
-title: "Digital Twin and IoT Layer"
-version: "1.4.0"
+title: 'Digital Twin and IoT Layer'
+version: '1.4.0'
 status: Active
-last_updated: "2026-05-28"
+last_updated: '2026-05-28'
 authors:
   - thitipongroo
 related_docs:
@@ -25,7 +25,7 @@ related_docs:
 - [33.4 Data Model](#334-data-model)
 - [33.5 Kafka Events](#335-kafka-events)
 - [33.6 API Layer](#336-api-layer)
-- [33.7 Extension Points](#337-extension-points)
+- [33.7 Integrations](#337-integrations)
 - [33.8 Infrastructure](#338-infrastructure)
 - [33.9 Revenue Model](#339-revenue-model)
 - [33.10 Success Metrics](#3310-success-metrics)
@@ -34,14 +34,14 @@ related_docs:
 
 ## 33.0 Standards Reference
 
-| Domain | Standard | Version | Role |
-| --- | --- | --- | --- |
-| IoT messaging | MQTT — OASIS Standard | Version 5.0 (2019-03-07) | Normative — device-to-platform telemetry protocol |
-| BIM data exchange | Industry Foundation Classes (IFC) — ISO 16739-1 | IFC4 (ISO 16739-1:2018) | Normative — BIM element identifier format and file exchange for EP-DOMAIN-002 |
-| Embodied carbon factors | EN 15804:2012+A2:2019 / ISO 21930:2017 | Current | Normative — EPD life cycle module A1–A3 as the basis for material carbon emission factors |
-| GHG accounting | ISO 14064-1:2018 | 2018 | Informative — organizational GHG inventory framework for tenant carbon reporting |
-| Event envelope | CloudEvents | v1.0 | Normative — event envelope format (see 15-event-driven-workflow §15.6) |
-| Event schema | Apache Avro / Confluent Schema Registry | — | Normative — event schema format and compatibility (see 32-implementation-specifications §32.4) |
+| Domain                  | Standard                                        | Version                  | Role                                                                                           |
+| ----------------------- | ----------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------- |
+| IoT messaging           | MQTT — OASIS Standard                           | Version 5.0 (2019-03-07) | Normative — device-to-platform telemetry protocol                                              |
+| BIM data exchange       | Industry Foundation Classes (IFC) — ISO 16739-1 | IFC4 (ISO 16739-1:2018)  | Normative — BIM element identifier format and file exchange for BIM Integration                |
+| Embodied carbon factors | EN 15804:2012+A2:2019 / ISO 21930:2017          | Current                  | Normative — EPD life cycle module A1–A3 as the basis for material carbon emission factors      |
+| GHG accounting          | ISO 14064-1:2018                                | 2018                     | Informative — organizational GHG inventory framework for tenant carbon reporting               |
+| Event envelope          | CloudEvents                                     | v1.0                     | Normative — event envelope format (see 15-event-driven-workflow §15.6)                         |
+| Event schema            | Apache Avro / Confluent Schema Registry         | —                        | Normative — event schema format and compatibility (see 32-implementation-specifications §32.4) |
 
 **Normative** = implementation must comply with the standard.
 **Informative** = provides context and calculation methodology; does not mandate specific tooling.
@@ -70,7 +70,7 @@ capability per the SaaS Maturity Model in 32-implementation-specifications secti
 **What this phase does NOT include:**
 
 - Hardware manufacturing or device firmware (platform integrates with third-party IoT devices)
-- BIM authoring tools (platform consumes BIM data via EP-DOMAIN-002; it does not produce it)
+- BIM authoring tools (platform consumes BIM data via IFC.js parser, IFC format ISO 16739-1:2018; see `13-product-architecture` §13.4)
 - Autonomous construction control (humans remain in the loop for all physical actions)
 
 > ⚠️ **Stage gate:** Phase 24 may not begin until Phase 4 (Financial Infrastructure,
@@ -83,14 +83,14 @@ capability per the SaaS Maturity Model in 32-implementation-specifications secti
 
 ### Mandatory Prerequisites
 
-| Prerequisite | Source | Status |
-| --- | --- | --- |
-| Phase 13 — Knowledge Graph | 32-implementation-specifications §32.1 | Must be complete |
-| Phase 21 — Equipment Service | 32-implementation-specifications §32.1 | Must be complete |
-| Phase 23 — MLOps Pipeline | 32-implementation-specifications §32.1 | Must be complete |
-| EP-DOMAIN-002 — BIM Integration | 32-implementation-specifications §32.3 | Must be provisioned |
-| EP-DOMAIN-003 — IoT Device Integration | 32-implementation-specifications §32.3 | Must be provisioned |
-| Phase 4 (Financial Infrastructure) entry criteria | 28-ecosystem-expansion §28.5 | Revenue base sustainable |
+| Prerequisite                                      | Source                                 | Status                   |
+| ------------------------------------------------- | -------------------------------------- | ------------------------ |
+| Phase 13 — Knowledge Graph                        | 32-implementation-specifications §32.1 | Must be complete         |
+| Phase 21 — Equipment Service                      | 32-implementation-specifications §32.1 | Must be complete         |
+| Phase 23 — MLOps Pipeline                         | 32-implementation-specifications §32.1 | Must be complete         |
+| BIM Integration (IFC.js parser, spec §13.4)       | 13-product-architecture §13.4          | Must be implemented      |
+| IoT Device Integration                            | 32-implementation-specifications §32.3 | Must be provisioned      |
+| Phase 4 (Financial Infrastructure) entry criteria | 28-ecosystem-expansion §28.5           | Revenue base sustainable |
 
 ### Entry Criteria (28-ecosystem-expansion §28.5)
 
@@ -101,14 +101,14 @@ capability per the SaaS Maturity Model in 32-implementation-specifications secti
 
 ### Build Sequence Within Phase 24
 
-1. EP-DOMAIN-003 provisioned (IoT device SDK and connectivity layer)
+1. IoT Device Integration provisioned (IoT device SDK and connectivity layer)
 2. TwinEntity model and TimescaleDB hypertable deployed
 3. Kafka IoT telemetry ingestion pipeline live
 4. Twin state query API (`/api/v1/twin/`) deployed
-5. EP-DOMAIN-002 provisioned (BIM import → planned state)
+5. BIM Integration implemented (BIM import → planned state; IFC.js parser per spec §13.4)
 6. Divergence detection engine live
 7. Carbon analytics module live
-8. Smart city integration API (EP-DOMAIN-004, future)
+8. Smart City Integration API (future — municipal partnership required)
 
 ---
 
@@ -162,22 +162,22 @@ bypass cache and query TimescaleDB directly.
 
 **Confidence scoring:** Every state record carries a confidence score [0.0, 1.0].
 
-| Confidence | Meaning |
-| --- | --- |
-| 1.0 | Live IoT data (sensor reading ≤ 60 seconds old) |
-| 0.7–0.9 | Recent telemetry (last known reading, not yet stale) |
-| < 0.7 | AI-inferred state (no direct sensor data) |
+| Confidence | Meaning                                              |
+| ---------- | ---------------------------------------------------- |
+| 1.0        | Live IoT data (sensor reading ≤ 60 seconds old)      |
+| 0.7–0.9    | Recent telemetry (last known reading, not yet stale) |
+| < 0.7      | AI-inferred state (no direct sensor data)            |
 
 ### Service Assignment
 
-| Component | Service / Worker | Runtime |
-| --- | --- | --- |
-| IoT ingestion | `services/iot-ingestion-worker/` | Go |
-| BIM import | `services/bim-import-worker/` | Python |
-| Digital Twin API | `services/ai-gateway/` (Phase 24 module) | FastAPI (Python) |
-| State cache | Redis (shared infrastructure) | — |
-| Time-series storage | TimescaleDB (new — Phase 24) | — |
-| Carbon aggregations | `services/analytics-worker/` (Phase 24 module) | Go → ClickHouse |
+| Component           | Service / Worker                               | Runtime          |
+| ------------------- | ---------------------------------------------- | ---------------- |
+| IoT ingestion       | `services/iot-ingestion-worker/`               | Go               |
+| BIM import          | `services/bim-import-worker/`                  | Python           |
+| Digital Twin API    | `services/ai-gateway/` (Phase 24 module)       | FastAPI (Python) |
+| State cache         | Redis (shared infrastructure)                  | —                |
+| Time-series storage | TimescaleDB (new — Phase 24)                   | —                |
+| Carbon aggregations | `services/analytics-worker/` (Phase 24 module) | Go → ClickHouse  |
 
 ---
 
@@ -187,50 +187,50 @@ bypass cache and query TimescaleDB directly.
 
 Represents a physical or digital object tracked by the platform.
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `entity_id` | UUID | Primary key |
-| `tenant_id` | UUID | FK → tenants |
-| `project_id` | UUID | FK → Projects |
-| `entity_type` | enum | STRUCTURE / EQUIPMENT / MATERIAL_STOCK / WORKFORCE_ZONE / INSPECTION_ZONE |
-| `physical_ref` | string (nullable) | IoT device ID, GPS tracker ID, or sensor ID |
-| `digital_ref` | string (nullable) | IFC GlobalId (22-character base64-encoded GUID per ISO 16739-1:2018) or WBS node ID (from EP-DOMAIN-002) |
-| `last_synced_at` | timestamp (nullable) | Timestamp of most recent IoT data write |
-| `confidence` | DECIMAL(4,3) | Current confidence score [0.000, 1.000] |
-| `created_at` | timestamp | — |
-| `updated_at` | timestamp | — |
+| Field            | Type                 | Description                                                                                                |
+| ---------------- | -------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `entity_id`      | UUID                 | Primary key                                                                                                |
+| `tenant_id`      | UUID                 | FK → tenants                                                                                               |
+| `project_id`     | UUID                 | FK → Projects                                                                                              |
+| `entity_type`    | enum                 | STRUCTURE / EQUIPMENT / MATERIAL_STOCK / WORKFORCE_ZONE / INSPECTION_ZONE                                  |
+| `physical_ref`   | string (nullable)    | IoT device ID, GPS tracker ID, or sensor ID                                                                |
+| `digital_ref`    | string (nullable)    | IFC GlobalId (22-character base64-encoded GUID per ISO 16739-1:2018) or WBS node ID (from BIM Integration) |
+| `last_synced_at` | timestamp (nullable) | Timestamp of most recent IoT data write                                                                    |
+| `confidence`     | DECIMAL(4,3)         | Current confidence score [0.000, 1.000]                                                                    |
+| `created_at`     | timestamp            | —                                                                                                          |
+| `updated_at`     | timestamp            | —                                                                                                          |
 
 ### TwinState (TimescaleDB hypertable)
 
 Append-only time-series record. Partitioned by `recorded_at`.
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `entity_id` | UUID | FK → TwinEntity (partition key secondary) |
-| `tenant_id` | UUID | For isolation |
-| `recorded_at` | timestamptz | TimescaleDB partition key |
-| `attributes` | JSONB | Freeform state attributes (fuel_level, lat, lng, speed, status, etc.) |
-| `source` | enum | IOT / MANUAL / AI_INFERRED |
-| `confidence` | DECIMAL(4,3) | [0.000, 1.000] |
+| Field         | Type         | Description                                                           |
+| ------------- | ------------ | --------------------------------------------------------------------- |
+| `entity_id`   | UUID         | FK → TwinEntity (partition key secondary)                             |
+| `tenant_id`   | UUID         | For isolation                                                         |
+| `recorded_at` | timestamptz  | TimescaleDB partition key                                             |
+| `attributes`  | JSONB        | Freeform state attributes (fuel_level, lat, lng, speed, status, etc.) |
+| `source`      | enum         | IOT / MANUAL / AI_INFERRED                                            |
+| `confidence`  | DECIMAL(4,3) | [0.000, 1.000]                                                        |
 
 **Retention policy:** Raw state records retained for 2 years.
 Aggregated daily summaries retained indefinitely (ClickHouse).
 
 ### CarbonRecord
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `carbon_record_id` | UUID | Primary key |
-| `tenant_id` | UUID | — |
-| `project_id` | UUID | FK → Projects |
-| `consumption_id` | UUID | FK → Material Consumption (11-database-schema) |
-| `material_id` | UUID | FK → Material |
-| `quantity_consumed` | DECIMAL(10,4) | Amount used |
-| `unit` | string | Unit of measure |
-| `carbon_factor` | DECIMAL(10,6) | kgCO₂e per declared unit — sourced from EPD per EN 15804:2012+A2:2019 / ISO 21930:2017 module A1–A3 |
-| `carbon_factor_source` | string | Reference to the EPD document or database entry that provided the factor |
-| `carbon_kgco2e` | DECIMAL(19,4) | `quantity_consumed × carbon_factor` |
-| `recorded_at` | timestamp | — |
+| Field                  | Type          | Description                                                                                         |
+| ---------------------- | ------------- | --------------------------------------------------------------------------------------------------- |
+| `carbon_record_id`     | UUID          | Primary key                                                                                         |
+| `tenant_id`            | UUID          | —                                                                                                   |
+| `project_id`           | UUID          | FK → Projects                                                                                       |
+| `consumption_id`       | UUID          | FK → Material Consumption (11-database-schema)                                                      |
+| `material_id`          | UUID          | FK → Material                                                                                       |
+| `quantity_consumed`    | DECIMAL(10,4) | Amount used                                                                                         |
+| `unit`                 | string        | Unit of measure                                                                                     |
+| `carbon_factor`        | DECIMAL(10,6) | kgCO₂e per declared unit — sourced from EPD per EN 15804:2012+A2:2019 / ISO 21930:2017 module A1–A3 |
+| `carbon_factor_source` | string        | Reference to the EPD document or database entry that provided the factor                            |
+| `carbon_kgco2e`        | DECIMAL(19,4) | `quantity_consumed × carbon_factor`                                                                 |
+| `recorded_at`          | timestamp     | —                                                                                                   |
 
 **Carbon factor library:** Maintained as a configurable reference table per tenant.
 
@@ -239,6 +239,21 @@ Aggregated daily summaries retained indefinitely (ClickHouse).
 - Source of factors: EPD programme operators (e.g., EPD International, IBU, BRE) or national inventory data compliant with **ISO 14064-1:2018**.
 - Factors are configurable per tenant and per material. The platform does not ship a pre-loaded factor database — tenants load factors from their chosen EPD source.
 - `carbon_factor_source` MUST be recorded for every factor used to enable audit trail.
+
+**Carbon Reporting Framework — GHG Protocol:**
+
+Project-level carbon footprint is aggregated and reported using the **GHG Protocol** framework (Scope 1/2/3 classification):
+
+| Scope   | Construction context                            | Source                                          |
+| ------- | ----------------------------------------------- | ----------------------------------------------- |
+| Scope 1 | On-site fuel combustion (equipment, generators) | Equipment telemetry (Phase 21 TimescaleDB)      |
+| Scope 2 | Grid electricity consumed on site               | Workforce/equipment energy meter data           |
+| Scope 3 | Embodied carbon in materials (A1–A3)            | `carbon_kgco2e` per material consumption record |
+
+The two standards work together:
+
+- **EN 15804 / ISO 21930** — defines how to calculate carbon_factor for each material (material-level)
+- **GHG Protocol** — defines how to classify and report the aggregated project footprint (project-level)
 
 ---
 
@@ -249,12 +264,12 @@ All events follow the naming convention `{domain}.{entity}.{action}.{version}` p
 
 ### Events Produced by This Phase
 
-| Event Type | Trigger | Key Consumers |
-| --- | --- | --- |
-| `twin.state.updated.v1` | Any IoT telemetry write to TwinState | AI Gateway, Analytics Worker |
-| `twin.divergence.detected.v1` | Divergence score crosses severity threshold | Notification Service (Phase 20) |
-| `twin.entity.registered.v1` | New TwinEntity created (device provisioning or BIM import) | Knowledge Graph Service (Phase 13) |
-| `carbon.record.created.v1` | Carbon record generated from material consumption | Analytics Worker |
+| Event Type                    | Trigger                                                    | Key Consumers                      |
+| ----------------------------- | ---------------------------------------------------------- | ---------------------------------- |
+| `twin.state.updated.v1`       | Any IoT telemetry write to TwinState                       | AI Gateway, Analytics Worker       |
+| `twin.divergence.detected.v1` | Divergence score crosses severity threshold                | Notification Service (Phase 20)    |
+| `twin.entity.registered.v1`   | New TwinEntity created (device provisioning or BIM import) | Knowledge Graph Service (Phase 13) |
+| `carbon.record.created.v1`    | Carbon record generated from material consumption          | Analytics Worker                   |
 
 ### Event Payloads
 
@@ -290,11 +305,11 @@ All events follow the naming convention `{domain}.{entity}.{action}.{version}` p
 
 Severity thresholds:
 
-| Severity | Gap threshold |
-| --- | --- |
-| LOW | gap < 0.15 |
-| MEDIUM | 0.15 ≤ gap < 0.40 |
-| HIGH | gap ≥ 0.40 |
+| Severity | Gap threshold     |
+| -------- | ----------------- |
+| LOW      | gap < 0.15        |
+| MEDIUM   | 0.15 ≤ gap < 0.40 |
+| HIGH     | gap ≥ 0.40        |
 
 ---
 
@@ -306,13 +321,13 @@ The Digital Twin query API is documented in `docs/api/digital-twin.openapi.yaml`
 
 **Core endpoints:**
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/twin/{projectId}/state` | Current twin snapshot (Redis cache, 5-min TTL) | Any role |
-| `GET` | `/twin/{projectId}/divergence` | Divergence report vs. planned state (BIM) | Executive, PM, Site Engineer |
-| `GET` | `/twin/{projectId}/entities` | List all registered entities for a project | Any role |
-| `POST` | `/twin/{projectId}/entities` | Register a new entity (device provisioning or BIM import) | Executive, PM, Site Engineer |
-| `GET` | `/twin/entities/{entityId}/history` | State history (TimescaleDB time-series) | Any role |
+| Method | Path                                       | Description                                               | Auth                         |
+| ------ | ------------------------------------------ | --------------------------------------------------------- | ---------------------------- |
+| `GET`  | `/api/v1/twin/{projectId}/state`           | Current twin snapshot (Redis cache, 5-min TTL)            | Any role                     |
+| `GET`  | `/api/v1/twin/{projectId}/divergence`      | Divergence report vs. planned state (BIM)                 | Executive, PM, Site Engineer |
+| `GET`  | `/api/v1/twin/{projectId}/entities`        | List all registered entities for a project                | Any role                     |
+| `POST` | `/api/v1/twin/{projectId}/entities`        | Register a new entity (device provisioning or BIM import) | Executive, PM, Site Engineer |
+| `GET`  | `/api/v1/twin/entities/{entityId}/history` | State history (TimescaleDB time-series)                   | Any role                     |
 
 > All writes arrive via Kafka — not via the REST API.
 > The registration endpoint (`POST /twin/{projectId}/entities`) is the only exception:
@@ -324,18 +339,18 @@ queries TimescaleDB directly.
 
 ---
 
-## 33.7 Extension Points
+## 33.7 Integrations
 
-| EP ID | Description | Trigger Condition |
-| --- | --- | --- |
-| EP-DOMAIN-002 | BIM Integration — import element tree, material quantities, and planned state from BIM authoring tools. Data exchange format: **IFC4 (ISO 16739-1:2018)**, file format `.ifc` (ISO 10303-21 STEP). Element identity: IFC GlobalId mapped to `TwinEntity.digital_ref`. | IoT hardware partner contracted; BIM partner confirmed |
-| EP-DOMAIN-003 | IoT Device Integration — device SDK, authentication, device registry. Telemetry protocol: **MQTT 5.0 (OASIS)**. QoS 1 minimum for telemetry; QoS 2 for critical state events. Topic structure: `cos/v1/devices/{device_id}/telemetry`. | Phase 23 (MLOps) complete; IoT hardware partner confirmed |
-| EP-DOMAIN-004 | Smart City Integration — outbound data feeds to municipal systems, infrastructure registries | Phase 24 core (IoT + Digital Twin) live; municipal partnership established |
+| Integration            | Description                                                                                                                                                                                                                                         | Trigger Condition                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| BIM Integration        | Import element tree, material quantities, and planned state from BIM authoring tools. Data exchange format: **IFC4 (ISO 16739-1:2018)**, file format `.ifc` (ISO 10303-21 STEP). Element identity: IFC GlobalId mapped to `TwinEntity.digital_ref`. | IoT hardware partner contracted; BIM partner confirmed                     |
+| IoT Device Integration | Device SDK, authentication, device registry. Telemetry protocol: **MQTT 5.0 (OASIS)**. QoS 1 minimum for telemetry; QoS 2 for critical state events. Topic structure: `cos/v1/devices/{device_id}/telemetry`.                                       | Phase 23 (MLOps) complete; IoT hardware partner confirmed                  |
+| Smart City Integration | Outbound data feeds to municipal systems, infrastructure registries                                                                                                                                                                                 | Phase 24 core (IoT + Digital Twin) live; municipal partnership established |
 
-**Stub rule:** Both EP-DOMAIN-002 and EP-DOMAIN-003 MUST be provisioned stubs from Phase 21
-onward. The Digital Twin Service must compile and start with these stubs returning safe defaults
-before either integration is live. See 32-implementation-specifications section 32.3 for
-stub pattern.
+**Implementation rule:**
+
+- BIM Integration — spec defined (IFC.js parser, IFC format, see `13-product-architecture` §13.4). **Must be implemented** before Phase 24 begins.
+- IoT Device Integration — must be provisioned as a stub (safe defaults) from Phase 21 onward. The Digital Twin Service must compile and start with this stub returning safe defaults before the integration is live. See `32-implementation-specifications` section 32.3 for stub pattern.
 
 ---
 
@@ -343,12 +358,12 @@ stub pattern.
 
 ### New Infrastructure Added by Phase 24
 
-| Component | Technology | Purpose |
-| --- | --- | --- |
-| Time-series database | TimescaleDB (PostgreSQL extension) | TwinState hypertable — IoT event storage and point-in-time queries |
-| IoT message broker | MQTT broker (EMQX or AWS IoT Core) | Device-to-platform telemetry ingestion |
-| BIM storage | Object storage (MinIO/S3, separate bucket) | BIM file storage — large files (100 MB–10 GB) |
-| Carbon factor library | PostgreSQL table | Reference data — emission factors by material type |
+| Component             | Technology                                 | Purpose                                                            |
+| --------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
+| Time-series database  | TimescaleDB (PostgreSQL extension)         | TwinState hypertable — IoT event storage and point-in-time queries |
+| IoT message broker    | MQTT broker (EMQX or AWS IoT Core)         | Device-to-platform telemetry ingestion                             |
+| BIM storage           | Object storage (MinIO/S3, separate bucket) | BIM file storage — large files (100 MB–10 GB)                      |
+| Carbon factor library | PostgreSQL table                           | Reference data — emission factors by material type                 |
 
 ### Infrastructure Scaling Notes
 
@@ -373,11 +388,11 @@ The main NestJS monolith is NOT modified — all Phase 24 logic lives in:
 
 From **28-ecosystem-expansion section 28.2 Phase 5**:
 
-| Stream | Model |
-| --- | --- |
-| IoT platform subscription | Per-device, per-month fee on top of base SaaS tier |
-| Digital twin SaaS | Premium add-on per project with BIM integration enabled |
-| Carbon credit verification service | Per-report fee for ESG compliance documentation |
+| Stream                             | Model                                                   |
+| ---------------------------------- | ------------------------------------------------------- |
+| IoT platform subscription          | Per-device, per-month fee on top of base SaaS tier      |
+| Digital twin SaaS                  | Premium add-on per project with BIM integration enabled |
+| Carbon credit verification service | Per-report fee for ESG compliance documentation         |
 
 ---
 

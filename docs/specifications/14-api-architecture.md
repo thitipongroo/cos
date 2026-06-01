@@ -1,8 +1,8 @@
 ---
-title: "API Architecture"
-version: "1.2.0"
+title: 'API Architecture'
+version: '1.2.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -50,11 +50,11 @@ Responsibilities :
 
 Rate Limiting Defaults (Kong Gateway, configurable per tenant tier) :
 
-| Tier | Requests / minute (per tenant) | Requests / minute (per API key) | Burst allowance |
-| --- | --- | --- | --- |
-| Shared SaaS — SMB | 1,000 | 200 | 2× for up to 10 seconds |
-| Shared SaaS — Mid-market | 5,000 | 1,000 | 2× for up to 10 seconds |
-| Dedicated Tenant / Enterprise | Configurable (default 20,000) | Configurable (default 5,000) | Configurable |
+| Tier                          | Requests / minute (per tenant) | Requests / minute (per API key) | Burst allowance         |
+| ----------------------------- | ------------------------------ | ------------------------------- | ----------------------- |
+| Shared SaaS — SMB             | 1,000                          | 200                             | 2× for up to 10 seconds |
+| Shared SaaS — Mid-market      | 5,000                          | 1,000                           | 2× for up to 10 seconds |
+| Dedicated Tenant / Enterprise | Configurable (default 20,000)  | Configurable (default 5,000)    | Configurable            |
 
 - Limits are enforced at Kong Gateway per `tenant_id` claim in the JWT
 - Exceeding the limit returns HTTP 429 Too Many Requests with a `Retry-After` header
@@ -100,7 +100,6 @@ Error response:
     "request_id": "uuid"
   }
 }
-
 ```
 
 ### Canonical Endpoint Patterns by Category
@@ -108,39 +107,44 @@ Error response:
 The patterns below define the shape for each API category. OpenAPI 3.x specs
 are maintained in `docs/api/`:
 
-| Domain | OpenAPI File | Scope |
-| --- | --- | --- |
-| Authentication | [auth.openapi.yaml](../api/auth.openapi.yaml) | MVP |
-| Projects | [projects.openapi.yaml](../api/projects.openapi.yaml) | MVP |
-| Procurement | [procurement.openapi.yaml](../api/procurement.openapi.yaml) | MVP |
-| Financial | [finance.openapi.yaml](../api/finance.openapi.yaml) | MVP |
-| Bill of Quantities | [boq.openapi.yaml](../api/boq.openapi.yaml) | MVP |
-| Workforce | [workforce.openapi.yaml](../api/workforce.openapi.yaml) | MVP |
-| Equipment | [equipment.openapi.yaml](../api/equipment.openapi.yaml) | MVP |
-| Files | [files.openapi.yaml](../api/files.openapi.yaml) | MVP |
-| Notifications | [notifications.openapi.yaml](../api/notifications.openapi.yaml) | MVP |
-| Site | [site.openapi.yaml](../api/site.openapi.yaml) | Planned — MVP |
-| Safety | [safety.openapi.yaml](../api/safety.openapi.yaml) | Planned — MVP |
-| AI | [ai.openapi.yaml](../api/ai.openapi.yaml) | Planned — MVP |
-| CRM | [crm.openapi.yaml](../api/crm.openapi.yaml) | Planned — MVP |
-| Vendor | [vendor.openapi.yaml](../api/vendor.openapi.yaml) | Planned — MVP |
-| Digital Twin | [digital-twin.openapi.yaml](../api/digital-twin.openapi.yaml) | **Post-MVP — Phase 5 / Year 5+** (see 28-ecosystem-expansion section 28.2) |
+| Domain             | OpenAPI File                                                    | Scope                                                                                                                                                                                    |
+| ------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication     | [auth.openapi.yaml](../api/auth.openapi.yaml)                   | MVP                                                                                                                                                                                      |
+| Tenant Management  | [tenant.openapi.yaml](../api/tenant.openapi.yaml)               | MVP                                                                                                                                                                                      |
+| Projects           | [projects.openapi.yaml](../api/projects.openapi.yaml)           | MVP                                                                                                                                                                                      |
+| Procurement        | [procurement.openapi.yaml](../api/procurement.openapi.yaml)     | MVP                                                                                                                                                                                      |
+| Financial          | [finance.openapi.yaml](../api/finance.openapi.yaml)             | MVP                                                                                                                                                                                      |
+| Bill of Quantities | [boq.openapi.yaml](../api/boq.openapi.yaml)                     | MVP                                                                                                                                                                                      |
+| Workforce          | [workforce.openapi.yaml](../api/workforce.openapi.yaml)         | MVP                                                                                                                                                                                      |
+| Equipment          | [equipment.openapi.yaml](../api/equipment.openapi.yaml)         | MVP                                                                                                                                                                                      |
+| Files              | [files.openapi.yaml](../api/files.openapi.yaml)                 | MVP                                                                                                                                                                                      |
+| Notifications      | [notifications.openapi.yaml](../api/notifications.openapi.yaml) | MVP                                                                                                                                                                                      |
+| Site               | [site.openapi.yaml](../api/site.openapi.yaml)                   | Planned — MVP                                                                                                                                                                            |
+| Safety             | [safety.openapi.yaml](../api/safety.openapi.yaml)               | Planned — MVP                                                                                                                                                                            |
+| AI                 | [ai.openapi.yaml](../api/ai.openapi.yaml)                       | Planned — MVP                                                                                                                                                                            |
+| CRM                | [crm.openapi.yaml](../api/crm.openapi.yaml)                     | Planned — MVP                                                                                                                                                                            |
+| Vendor             | [vendor.openapi.yaml](../api/vendor.openapi.yaml)               | Planned — MVP                                                                                                                                                                            |
+| Digital Twin       | [digital-twin.openapi.yaml](../api/digital-twin.openapi.yaml)   | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (see 28-ecosystem-expansion section 28.2 and 33-digital-twin-iot.md §33.2 entry criteria — not created before Phase 24 begins) |
 
 The endpoint patterns below serve as the canonical reference; OpenAPI files are the
 machine-readable contracts derived from these patterns.
+
+> **Auth column convention:** Values use display names from `06-rbac-permission-matrix` §6.2
+> (e.g., "CRM / Sales Manager", "Site Engineer"). These map to JWT enum constants in code
+> (e.g., `CRM_SALES_MANAGER`, `SITE_ENGINEER`) per `05-security-compliance` §5.4.1.
 
 ---
 
 #### Project APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/projects` | List projects for tenant (paginated) | Any role |
-| `POST` | `/api/v1/projects` | Create project | Executive, PM, Tenant Admin |
-| `GET` | `/api/v1/projects/{project_id}` | Get project detail | Any role |
-| `PATCH` | `/api/v1/projects/{project_id}` | Update project (status, budget, dates) | PM, Executive |
-| `GET` | `/api/v1/projects/{project_id}/tasks` | List tasks for project | Any role |
-| `POST` | `/api/v1/projects/{project_id}/tasks` | Create task | PM, Site Engineer |
+| Method  | Path                                  | Description                            | Auth                        |
+| ------- | ------------------------------------- | -------------------------------------- | --------------------------- |
+| `GET`   | `/api/v1/projects`                    | List projects for tenant (paginated)   | Any role                    |
+| `POST`  | `/api/v1/projects`                    | Create project                         | Executive, PM, Tenant Admin |
+| `GET`   | `/api/v1/projects/{project_id}`       | Get project detail                     | Any role                    |
+| `PATCH` | `/api/v1/projects/{project_id}`       | Update project (status, budget, dates) | PM, Executive               |
+| `GET`   | `/api/v1/projects/{project_id}/tasks` | List tasks for project                 | Any role                    |
+| `POST`  | `/api/v1/projects/{project_id}/tasks` | Create task                            | PM, Site Engineer           |
 
 Example request — create project:
 
@@ -160,87 +164,87 @@ POST /api/v1/projects
 
 #### Procurement APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/procurement/purchase-requests` | List PRs (filterable by status, project) | Any role |
-| `POST` | `/api/v1/procurement/purchase-requests` | Create PR | PM, Site Engineer, Procurement Officer |
-| `POST` | `/api/v1/procurement/rfqs` | Create RFQ from PR | Procurement Officer |
-| `GET` | `/api/v1/procurement/rfqs/{rfq_id}/quotations` | List vendor quotations for RFQ | Any role |
-| `POST` | `/api/v1/procurement/purchase-orders` | Create PO from selected quotation | Procurement Officer |
-| `PATCH` | `/api/v1/procurement/purchase-orders/{po_id}/approve` | Approve PO (triggers approval workflow) | PM, Finance, Executive |
-| `POST` | `/api/v1/procurement/deliveries` | Record delivery against PO | Procurement Officer, Site Engineer |
-| `POST` | `/api/v1/procurement/vendor-invoices` | Create vendor invoice against PO | Procurement Officer, Finance |
+| Method  | Path                                                  | Description                              | Auth                                   |
+| ------- | ----------------------------------------------------- | ---------------------------------------- | -------------------------------------- |
+| `GET`   | `/api/v1/procurement/purchase-requests`               | List PRs (filterable by status, project) | Any role                               |
+| `POST`  | `/api/v1/procurement/purchase-requests`               | Create PR                                | PM, Site Engineer, Procurement Officer |
+| `POST`  | `/api/v1/procurement/rfqs`                            | Create RFQ from PR                       | Procurement Officer                    |
+| `GET`   | `/api/v1/procurement/rfqs/{rfq_id}/quotations`        | List vendor quotations for RFQ           | Any role                               |
+| `POST`  | `/api/v1/procurement/purchase-orders`                 | Create PO from selected quotation        | Procurement Officer                    |
+| `PATCH` | `/api/v1/procurement/purchase-orders/{po_id}/approve` | Approve PO (triggers approval workflow)  | PM, Finance, Executive                 |
+| `POST`  | `/api/v1/procurement/deliveries`                      | Record delivery against PO               | Procurement Officer, Site Engineer     |
+| `POST`  | `/api/v1/procurement/vendor-invoices`                 | Create vendor invoice against PO         | Procurement Officer, Finance           |
 
 ---
 
 #### Financial APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/finance/budget/{project_id}` | Get budget summary with spent vs. allocated | Any role |
-| `GET` | `/api/v1/finance/cost-transactions` | List cost transactions (filterable by project, category, date range) | Any role |
-| `POST` | `/api/v1/finance/billing` | Create client billing invoice (AR) | Finance |
-| `PATCH` | `/api/v1/finance/billing/{billing_id}/approve` | Approve billing (triggers approval workflow) | PM, Executive |
-| `POST` | `/api/v1/finance/payments` | Record payment against vendor invoice | Finance |
-| `GET` | `/api/v1/finance/cashflow-forecast/{project_id}` | Get cash flow forecast | Executive, PM, Finance |
+| Method  | Path                                             | Description                                                          | Auth                   |
+| ------- | ------------------------------------------------ | -------------------------------------------------------------------- | ---------------------- |
+| `GET`   | `/api/v1/finance/budget/{project_id}`            | Get budget summary with spent vs. allocated                          | Any role               |
+| `GET`   | `/api/v1/finance/cost-transactions`              | List cost transactions (filterable by project, category, date range) | Any role               |
+| `POST`  | `/api/v1/finance/billing`                        | Create client billing invoice (AR)                                   | Finance                |
+| `PATCH` | `/api/v1/finance/billing/{billing_id}/approve`   | Approve billing (triggers approval workflow)                         | PM, Executive          |
+| `POST`  | `/api/v1/finance/payments`                       | Record payment against vendor invoice                                | Finance                |
+| `GET`   | `/api/v1/finance/cashflow-forecast/{project_id}` | Get cash flow forecast                                               | Executive, PM, Finance |
 
 ---
 
 #### Site APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/site/reports` | List daily site reports (filterable by project, date) | Any role |
-| `POST` | `/api/v1/site/reports` | Submit daily site report | PM, Site Engineer |
-| `GET` | `/api/v1/site/reports/{report_id}` | Get site report detail | Any role |
-| `POST` | `/api/v1/site/inspections` | Submit QC inspection result | PM, Site Engineer, Safety Officer |
-| `GET` | `/api/v1/site/permits` | List permits (filterable by project, type, status) | Any role |
-| `POST` | `/api/v1/site/permits` | Create permit request | PM, Safety Officer |
+| Method | Path                               | Description                                           | Auth                              |
+| ------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------- |
+| `GET`  | `/api/v1/site/reports`             | List daily site reports (filterable by project, date) | Any role                          |
+| `POST` | `/api/v1/site/reports`             | Submit daily site report                              | PM, Site Engineer                 |
+| `GET`  | `/api/v1/site/reports/{report_id}` | Get site report detail                                | Any role                          |
+| `POST` | `/api/v1/site/inspections`         | Submit QC inspection result                           | PM, Site Engineer, Safety Officer |
+| `GET`  | `/api/v1/site/permits`             | List permits (filterable by project, type, status)    | Any role                          |
+| `POST` | `/api/v1/site/permits`             | Create permit request                                 | PM, Safety Officer                |
 
 ---
 
 #### Workforce APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `POST` | `/api/v1/workforce/check-in` | Record worker check-in | PM, Site Engineer |
-| `PATCH` | `/api/v1/workforce/check-in/{attendance_id}/check-out` | Record worker check-out | PM, Site Engineer |
-| `GET` | `/api/v1/workforce/attendance` | List attendance records (filterable by project, date) | Any role |
+| Method  | Path                                                   | Description                                           | Auth              |
+| ------- | ------------------------------------------------------ | ----------------------------------------------------- | ----------------- |
+| `POST`  | `/api/v1/workforce/check-in`                           | Record worker check-in                                | PM, Site Engineer |
+| `PATCH` | `/api/v1/workforce/check-in/{attendance_id}/check-out` | Record worker check-out                               | PM, Site Engineer |
+| `GET`   | `/api/v1/workforce/attendance`                         | List attendance records (filterable by project, date) | Any role          |
 
 ---
 
 #### Equipment APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/equipment` | List equipment (filterable by project, type, status) | Any role |
-| `POST` | `/api/v1/equipment` | Register equipment | PM, Procurement Officer |
-| `GET` | `/api/v1/equipment/{equipment_id}` | Get equipment detail | Any role |
-| `PATCH` | `/api/v1/equipment/{equipment_id}` | Update equipment status or assignment | PM, Site Engineer |
-| `POST` | `/api/v1/equipment/usage-logs` | Record equipment usage against a project | PM, Site Engineer |
-| `GET` | `/api/v1/equipment/usage-logs` | List equipment usage logs (filterable by equipment, project, date) | Any role |
+| Method  | Path                               | Description                                                        | Auth                    |
+| ------- | ---------------------------------- | ------------------------------------------------------------------ | ----------------------- |
+| `GET`   | `/api/v1/equipment`                | List equipment (filterable by project, type, status)               | Any role                |
+| `POST`  | `/api/v1/equipment`                | Register equipment                                                 | PM, Procurement Officer |
+| `GET`   | `/api/v1/equipment/{equipment_id}` | Get equipment detail                                               | Any role                |
+| `PATCH` | `/api/v1/equipment/{equipment_id}` | Update equipment status or assignment                              | PM, Site Engineer       |
+| `POST`  | `/api/v1/equipment/usage-logs`     | Record equipment usage against a project                           | PM, Site Engineer       |
+| `GET`   | `/api/v1/equipment/usage-logs`     | List equipment usage logs (filterable by equipment, project, date) | Any role                |
 
 ---
 
 #### Files APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `POST` | `/api/v1/files/upload` | Upload file; returns `file_id` and signed download URL | Any role |
-| `GET` | `/api/v1/files/{file_id}` | Get file metadata and a short-lived download URL | Any role |
-| `DELETE` | `/api/v1/files/{file_id}` | Delete file (soft-delete; hard-delete by Tenant Admin only) | Tenant Admin |
-| `GET` | `/api/v1/projects/{project_id}/files` | List files attached to a project (filterable by type, uploader) | Any role |
+| Method   | Path                                  | Description                                                                                                                                                  | Auth         |
+| -------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| `POST`   | `/api/v1/files/upload`                | Upload file; returns `file_id` and signed download URL                                                                                                       | Any role     |
+| `GET`    | `/api/v1/files/{file_id}`             | Get file metadata and a short-lived download URL                                                                                                             | Any role     |
+| `DELETE` | `/api/v1/files/{file_id}`             | Soft-delete file (`deleted_at` set); automatic hard-delete from MinIO 30 days later via Temporal workflow (see `09-data-architecture` File Lifecycle Policy) | Tenant Admin |
+| `GET`    | `/api/v1/projects/{project_id}/files` | List files attached to a project (filterable by type, uploader)                                                                                              | Any role     |
 
 ---
 
 #### Safety APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `POST` | `/api/v1/safety/incidents` | Report safety incident | Site Engineer, Safety Officer |
-| `PATCH` | `/api/v1/safety/incidents/{incident_id}/acknowledge` | Acknowledge incident | Safety Officer |
-| `GET` | `/api/v1/safety/checklists` | List safety checklists | Any role |
-| `POST` | `/api/v1/safety/checklists` | Submit completed safety checklist | Site Engineer, Safety Officer |
+| Method  | Path                                                 | Description                       | Auth                          |
+| ------- | ---------------------------------------------------- | --------------------------------- | ----------------------------- |
+| `POST`  | `/api/v1/safety/incidents`                           | Report safety incident            | Site Engineer, Safety Officer |
+| `PATCH` | `/api/v1/safety/incidents/{incident_id}/acknowledge` | Acknowledge incident              | Safety Officer                |
+| `GET`   | `/api/v1/safety/checklists`                          | List safety checklists            | Any role                      |
+| `POST`  | `/api/v1/safety/checklists`                          | Submit completed safety checklist | Site Engineer, Safety Officer |
 
 ---
 
@@ -249,13 +253,13 @@ POST /api/v1/projects
 All AI endpoints are under `/api/v1/ai/` with separate token-rate limiting
 (see section 14.2 and `26-pricing-model` section 26.1).
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `POST` | `/api/v1/ai/report/generate` | Generate daily site report draft from raw inputs | PM, Site Engineer |
-| `POST` | `/api/v1/ai/documents/summarize` | Summarize uploaded document | Any role |
-| `POST` | `/api/v1/ai/documents/ocr` | Extract text from image or PDF | Any role |
-| `POST` | `/api/v1/ai/voice/transcribe` | Transcribe voice note to text | Any role |
-| `POST` | `/api/v1/ai/copilot/query` | Query the AI Copilot with context (RAG-backed) | Any role |
+| Method | Path                             | Description                                      | Auth              |
+| ------ | -------------------------------- | ------------------------------------------------ | ----------------- |
+| `POST` | `/api/v1/ai/report/generate`     | Generate daily site report draft from raw inputs | PM, Site Engineer |
+| `POST` | `/api/v1/ai/documents/summarize` | Summarize uploaded document                      | Any role          |
+| `POST` | `/api/v1/ai/documents/ocr`       | Extract text from image or PDF                   | Any role          |
+| `POST` | `/api/v1/ai/voice/transcribe`    | Transcribe voice note to text                    | Any role          |
+| `POST` | `/api/v1/ai/copilot/query`       | Query the AI Copilot with context (RAG-backed)   | Any role          |
 
 Example — generate report:
 
@@ -274,23 +278,80 @@ POST /api/v1/ai/report/generate
 
 #### CRM APIs (Schema-built; UI post-MVP)
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/crm/leads` | List leads | Executive, CRM / Sales Manager |
-| `POST` | `/api/v1/crm/leads` | Create lead | CRM / Sales Manager |
-| `POST` | `/api/v1/crm/opportunities` | Create opportunity from lead | CRM / Sales Manager |
-| `PATCH` | `/api/v1/crm/opportunities/{id}/convert` | Convert opportunity to Customer | CRM / Sales Manager |
+| Method  | Path                                     | Description                     | Auth                           |
+| ------- | ---------------------------------------- | ------------------------------- | ------------------------------ |
+| `GET`   | `/api/v1/crm/leads`                      | List leads                      | Executive, CRM / Sales Manager |
+| `POST`  | `/api/v1/crm/leads`                      | Create lead                     | CRM / Sales Manager            |
+| `POST`  | `/api/v1/crm/opportunities`              | Create opportunity from lead    | CRM / Sales Manager            |
+| `PATCH` | `/api/v1/crm/opportunities/{id}/convert` | Convert opportunity to Customer | CRM / Sales Manager            |
 
 ---
 
 #### Vendor APIs
 
-| Method | Path | Description | Auth |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/vendors` | List vendors | Any role |
-| `POST` | `/api/v1/vendors` | Register vendor | Procurement Officer |
-| `GET` | `/api/v1/vendors/{vendor_id}` | Get vendor detail with rating | Any role |
-| `GET` | `/api/v1/vendors/{vendor_id}/quotations` | List quotation history for vendor | Any role |
+| Method | Path                                     | Description                       | Auth                |
+| ------ | ---------------------------------------- | --------------------------------- | ------------------- |
+| `GET`  | `/api/v1/vendors`                        | List vendors                      | Any role            |
+| `POST` | `/api/v1/vendors`                        | Register vendor                   | Procurement Officer |
+| `GET`  | `/api/v1/vendors/{vendor_id}`            | Get vendor detail with rating     | Any role            |
+| `GET`  | `/api/v1/vendors/{vendor_id}/quotations` | List quotation history for vendor | Any role            |
+
+---
+
+#### User Management APIs
+
+Managed by **Tenant Admin** (FULL permission — see `06-rbac-permission-matrix` §6.4).
+All endpoints are tenant-scoped via JWT `tenant_id` claim; a Tenant Admin can only
+manage users within their own tenant.
+
+Path A users (SITE_ENGINEER — the authoritative field-worker role per `06-rbac-permission-matrix` §6.2) are identified by phone number.
+Path B users (all other roles) are identified by email address and require a
+corresponding Keycloak account in the tenant's realm.
+
+| Method  | Path                                 | Description                                                                   | Auth         |
+| ------- | ------------------------------------ | ----------------------------------------------------------------------------- | ------------ |
+| `GET`   | `/api/v1/users`                      | List all users in the tenant (paginated)                                      | Tenant Admin |
+| `POST`  | `/api/v1/users`                      | Create a user within the tenant; emits `identity.user.created.v1`             | Tenant Admin |
+| `PATCH` | `/api/v1/users/{user_id}/role`       | Change a user's role within the tenant; emits `identity.user.role_changed.v1` | Tenant Admin |
+| `PATCH` | `/api/v1/users/{user_id}/deactivate` | Deactivate a user (revokes access, preserves data)                            | Tenant Admin |
+
+Request body — create user (Path A, phone OTP):
+
+```json
+POST /api/v1/users
+{
+  "display_name": "สมชาย ใจดี",
+  "phone_number": "+66812345678",
+  "role": "SITE_ENGINEER"
+}
+```
+
+Request body — create user (Path B, email / Keycloak):
+
+```json
+POST /api/v1/users
+{
+  "display_name": "วิชัย รุ่งเรือง",
+  "email": "wichai@acmecorp.co.th",
+  "role": "PROJECT_MANAGER"
+}
+```
+
+Request body — change role:
+
+```json
+PATCH /api/v1/users/{user_id}/role
+{
+  "role": "FINANCE"
+}
+```
+
+Kafka events emitted:
+
+| Event                           | Trigger                                       |
+| ------------------------------- | --------------------------------------------- |
+| `identity.user.created.v1`      | `POST /api/v1/users` succeeds                 |
+| `identity.user.role_changed.v1` | `PATCH /api/v1/users/{user_id}/role` succeeds |
 
 ---
 
@@ -317,15 +378,15 @@ Breaking vs Non-breaking :
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [REST-RFC] | Hypertext Transfer Protocol — HTTP/1.1 | RFC 7231 |
-| [JWT-RFC] | JSON Web Token (JWT) | RFC 7519 |
-| [OAuth2] | The OAuth 2.0 Authorization Framework | RFC 6749 |
-| [OpenAPI] | OpenAPI Specification v3.1.0 | [spec.openapis.org/oas/v3.1.0](https://spec.openapis.org/oas/v3.1.0) |
-| [Kong] | Kong Gateway Documentation | [docs.konghq.com](https://docs.konghq.com/) |
-| [gRPC] | gRPC Protocol Documentation | [grpc.io/docs](https://grpc.io/docs/) |
-| [GraphQL] | GraphQL Specification | [spec.graphql.org](https://spec.graphql.org/) |
+| ID         | Title                                                              | Source                                                               |
+| ---------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                    |
+| [REST-RFC] | Hypertext Transfer Protocol — HTTP/1.1                             | RFC 7231                                                             |
+| [JWT-RFC]  | JSON Web Token (JWT)                                               | RFC 7519                                                             |
+| [OAuth2]   | The OAuth 2.0 Authorization Framework                              | RFC 6749                                                             |
+| [OpenAPI]  | OpenAPI Specification v3.1.0                                       | [spec.openapis.org/oas/v3.1.0](https://spec.openapis.org/oas/v3.1.0) |
+| [Kong]     | Kong Gateway Documentation                                         | [docs.konghq.com](https://docs.konghq.com/)                          |
+| [gRPC]     | gRPC Protocol Documentation                                        | [grpc.io/docs](https://grpc.io/docs/)                                |
+| [GraphQL]  | GraphQL Specification                                              | [spec.graphql.org](https://spec.graphql.org/)                        |
 
 > 📎 See also: [03-system-design](03-system-design.md) · [13-product-architecture](13-product-architecture.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [26-pricing-model](26-pricing-model.md)

@@ -13,7 +13,7 @@ describe('RolesGuard', () => {
       getHandler: jest.fn(),
       getClass: jest.fn(),
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: () => ({ user: { cos_role: CosSubRole.SITE_WORKER } }),
+        getRequest: () => ({ user: { role: CosSubRole.SITE_WORKER } }),
       }),
     } as unknown as ExecutionContext;
 
@@ -29,7 +29,7 @@ describe('RolesGuard', () => {
       getHandler: jest.fn(),
       getClass: jest.fn(),
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: () => ({ user: { cos_role: CosRole.PROJECT_MANAGER, cos_user_id: 'u1' } }),
+        getRequest: () => ({ user: { role: CosRole.PROJECT_MANAGER, user_id: 'u1' } }),
       }),
     } as unknown as ExecutionContext;
 
@@ -45,7 +45,7 @@ describe('RolesGuard', () => {
       getHandler: jest.fn(),
       getClass: jest.fn(),
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: () => ({ user: { cos_role: CosSubRole.SITE_WORKER, cos_user_id: 'u1' } }),
+        getRequest: () => ({ user: { role: CosSubRole.SITE_WORKER, user_id: 'u1' } }),
       }),
     } as unknown as ExecutionContext;
 
@@ -77,7 +77,7 @@ describe('RolesGuard', () => {
       getHandler: jest.fn(),
       getClass: jest.fn(),
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: () => ({ user: { cos_role: CosSubRole.SITE_WORKER, cos_user_id: 'u1' } }),
+        getRequest: () => ({ user: { role: CosSubRole.SITE_WORKER, user_id: 'u1' } }),
       }),
     } as unknown as ExecutionContext;
 

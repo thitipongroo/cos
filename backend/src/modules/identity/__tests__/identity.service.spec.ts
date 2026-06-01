@@ -72,10 +72,9 @@ describe('IdentityService', () => {
     it('issues new access token for valid non-revoked refresh token', async () => {
       const payload = {
         sub: 'user-1',
-        cos_user_id: 'user-1',
-        cos_tenant_id: 'tenant-1',
-        cos_tenant_code: 'acme',
-        cos_role: 'SITE_WORKER',
+        user_id: 'user-1',
+        tenant_id: 'tenant-1',
+        role: 'SITE_WORKER',
       };
       jwtService.verify = jest.fn().mockReturnValue(payload);
       const refreshToken = 'valid-refresh-12345678';
@@ -87,7 +86,7 @@ describe('IdentityService', () => {
     });
 
     it('throws UnauthorizedException for revoked refresh token', async () => {
-      const payload = { sub: 'user-1', cos_user_id: 'user-1' };
+      const payload = { sub: 'user-1', user_id: 'user-1' };
       jwtService.verify = jest.fn().mockReturnValue(payload);
       // No Redis entry = revoked
       await expect(service.refreshAccessToken('revoked-token-12345678')).rejects.toThrow(
@@ -105,7 +104,7 @@ describe('IdentityService', () => {
 
   describe('logout', () => {
     it('deletes refresh token from Redis', async () => {
-      const payload = { sub: 'user-1', cos_user_id: 'user-1' };
+      const payload = { sub: 'user-1', user_id: 'user-1' };
       jwtService.verify = jest.fn().mockReturnValue(payload);
       const refreshToken = 'valid-refresh-12345678';
       redisMock[`refresh:user-1:${refreshToken.slice(-8)}`] = 'user-1';

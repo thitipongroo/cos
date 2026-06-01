@@ -1,7 +1,11 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { PolicyGuard } from '../policy.guard';
 
-const makeCtx = (user?: { cos_user_id: string; cos_tenant_id: string; cos_role: string }, tenantId?: string, paramTenantId?: string) => {
+const makeCtx = (
+  user?: { user_id: string; tenant_id: string; role: string },
+  tenantId?: string,
+  paramTenantId?: string,
+) => {
   const request = {
     user,
     tenantId,
@@ -27,7 +31,7 @@ describe('PolicyGuard', () => {
 
   it('allows when tenant in JWT matches request tenant', () => {
     const ctx = makeCtx(
-      { cos_user_id: 'u1', cos_tenant_id: 'tenant-1', cos_role: 'PROJECT_MANAGER' },
+      { user_id: 'u1', tenant_id: 'tenant-1', role: 'PROJECT_MANAGER' },
       'tenant-1',
     );
     expect(guard.canActivate(ctx)).toBe(true);
@@ -35,7 +39,7 @@ describe('PolicyGuard', () => {
 
   it('blocks cross-tenant access via tenantId on request', () => {
     const ctx = makeCtx(
-      { cos_user_id: 'u1', cos_tenant_id: 'tenant-1', cos_role: 'PROJECT_MANAGER' },
+      { user_id: 'u1', tenant_id: 'tenant-1', role: 'PROJECT_MANAGER' },
       'tenant-2',
     );
     expect(() => guard.canActivate(ctx)).toThrow(ForbiddenException);
@@ -43,7 +47,7 @@ describe('PolicyGuard', () => {
 
   it('blocks cross-tenant access via params.tenantId', () => {
     const ctx = makeCtx(
-      { cos_user_id: 'u1', cos_tenant_id: 'tenant-1', cos_role: 'TENANT_ADMIN' },
+      { user_id: 'u1', tenant_id: 'tenant-1', role: 'TENANT_ADMIN' },
       undefined,
       'tenant-99',
     );
@@ -52,7 +56,7 @@ describe('PolicyGuard', () => {
 
   it('allows when no tenant context in request (tenant-agnostic endpoint)', () => {
     const ctx = makeCtx(
-      { cos_user_id: 'u1', cos_tenant_id: 'tenant-1', cos_role: 'PROJECT_MANAGER' },
+      { user_id: 'u1', tenant_id: 'tenant-1', role: 'PROJECT_MANAGER' },
       undefined,
     );
     expect(guard.canActivate(ctx)).toBe(true);

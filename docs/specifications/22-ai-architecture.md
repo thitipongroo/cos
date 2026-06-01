@@ -1,8 +1,8 @@
 ---
-title: "AI Architecture"
-version: "1.6.0"
+title: 'AI Architecture'
+version: '1.6.0'
 status: Active
-last_updated: "2026-05-28"
+last_updated: '2026-05-28'
 authors:
   - thitipongroo
 related_docs:
@@ -47,7 +47,7 @@ Layer A — Assistive AI :
 - Voice transcription
 - OCR
 - Daily report generation
-- Translation  (post-MVP Layer A — not in MVP AI scope; see 21-mvp-scope section 21.4)
+- Translation (post-MVP Layer A — not in MVP AI scope; see 21-mvp-scope section 21.4)
 
 Layer B — Analytical AI :
 
@@ -67,15 +67,15 @@ Layer C — Autonomous AI :
 
 ## 22.3 AI System Components
 
-| Component | Responsibility |
-| --- | --- |
-| LLM Gateway | Multi-model routing — implemented via LangChain (`langchain==0.2.*`, `langchain-openai==0.1.*`); provider interface abstracted via `LLMProvider`; primary: OpenAI GPT-4o / gpt-4o-mini (cost fallback); no direct SDK coupling in domain services |
-| RAG Engine | Context retrieval |
-| Vector DB | Embeddings |
-| Knowledge Graph | Construction relationships |
-| Feature Store | ML features |
-| Training Pipeline | Continuous learning |
-| Agent Orchestrator | Multi-step AI workflows — see note below |
+| Component          | Responsibility                                                                                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LLM Gateway        | Multi-model routing — implemented via LangChain (`langchain==0.2.*`, `langchain-openai==0.1.*`); provider interface abstracted via `LLMProvider`; primary: OpenAI GPT-4o / gpt-4o-mini (cost fallback); no direct SDK coupling in domain services |
+| RAG Engine         | Context retrieval                                                                                                                                                                                                                                 |
+| Vector DB          | Embeddings                                                                                                                                                                                                                                        |
+| Knowledge Graph    | Construction relationships                                                                                                                                                                                                                        |
+| Feature Store      | ML features                                                                                                                                                                                                                                       |
+| Training Pipeline  | Continuous learning                                                                                                                                                                                                                               |
+| Agent Orchestrator | Multi-step AI workflows — see note below                                                                                                                                                                                                          |
 
 Note on Agent Orchestrator :
 
@@ -101,7 +101,7 @@ agent must plan, invoke tools, and act across multiple services.
 > **Leading candidate:** Temporal.io (already in use for approval workflows — see
 > 15-event-driven-workflow section 15.4); evaluate against LangGraph before committing.
 > **Evaluation rubric** (apply when trigger fires — see §22.5 LAYER-C-001 Evaluation Rubric):
-> rank each candidate on 5 axes: (1) LangChain 0.2.* compatibility, (2) Temporal.io co-existence,
+> rank each candidate on 5 axes: (1) LangChain 0.2.\* compatibility, (2) Temporal.io co-existence,
 > (3) Thai-language tool-calling accuracy, (4) durable execution / human-in-the-loop support,
 > (5) operational complexity. Select the highest scorer; document rationale in a one-page ADR.
 > **Action:** Open a spec issue tagged `layer-c-decision` when Layer B stabilises.
@@ -140,16 +140,15 @@ CREATE INDEX ON document_embeddings (tenant_id, source_type, created_at DESC);
 
 #### Tier-by-Tier Isolation Strategy
 
-| Tenant Tier | Isolation Method | pgvector Location |
-| --- | --- | --- |
-| SMB (Shared DB) | Row-level `WHERE tenant_id = $tenantId` on **every** query — enforced at application layer | Shared `document_embeddings` table with `tenant_id` index |
-| Mid-market (Schema-per-tenant) | Separate `{tenant_schema}.document_embeddings` table per schema — no cross-schema query possible by construction | Per-tenant schema |
-| Enterprise (Dedicated DB) | Separate PostgreSQL instance with pgvector — no shared infrastructure | Dedicated PostgreSQL database |
+| Tenant Tier                    | Isolation Method                                                                                                 | pgvector Location                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| SMB (Shared DB)                | Row-level `WHERE tenant_id = $tenantId` on **every** query — enforced at application layer                       | Shared `document_embeddings` table with `tenant_id` index |
+| Mid-market (Schema-per-tenant) | Separate `{tenant_schema}.document_embeddings` table per schema — no cross-schema query possible by construction | Per-tenant schema                                         |
+| Enterprise (Dedicated DB)      | Separate PostgreSQL instance with pgvector — no shared infrastructure                                            | Dedicated PostgreSQL database                             |
 
 #### Enforcement Rules
 
-1. **JWT-bound tenant_id:** Every RAG query binds `tenant_id` from the decoded JWT claim
-   (`tenantId`) — never from a user-supplied body or query parameter.
+1. **JWT-bound tenant_id:** Every RAG query binds `tenant_id` from the decoded JWT claim — never from a user-supplied body or query parameter (see `05-security-compliance` §5.4.1).
 2. **No cross-tenant results:** Vector similarity search must never return rows from a different
    `tenant_id` than the requesting user's. A single mis-scoped query is a security incident.
 3. **SMB shared HNSW index trade-off:** The shared HNSW index covers all tenants for write
@@ -206,10 +205,10 @@ AI detects :
 
 Provider Hierarchy :
 
-| Provider | Role |
-| --- | --- |
-| GPT-4o (OpenAI) | **Primary** — reasoning, vision tasks, Thai language (resolved EP-AI-001) |
-| gpt-4o-mini (OpenAI) | **Cost fallback** — same provider, lower cost for high-volume simple tasks (resolved EP-AI-001) |
+| Provider             | Role                                                                                                                       |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| GPT-4o (OpenAI)      | **Primary** — reasoning, vision tasks, Thai language                                                                       |
+| gpt-4o-mini (OpenAI) | **Cost fallback** — same provider, lower cost for high-volume simple tasks                                                 |
 | Additional providers | Optional — accessed via `LLMProvider` interface without code changes; provider switching is a configuration-only operation |
 
 Routing :
@@ -222,7 +221,7 @@ RAG Architecture :
 
 - Documents ingested → text extracted (OCR for PDFs, photos)
 - Text chunked (512–1024 tokens with overlap)
-- Embedded via **text-embedding-3-small** (OpenAI, 1536 dimensions — resolved EP-AI-012) via `EmbeddingProvider` interface
+- Embedded via **text-embedding-3-small** (OpenAI, 1536 dimensions) via `EmbeddingProvider` interface
 - Stored in pgvector (MVP) → Weaviate (at scale)
 - Query-time: hybrid search — semantic similarity + keyword BM25
 - Retrieved chunks injected into LLM prompt as context
@@ -239,27 +238,27 @@ Thai Language :
 ## 22.6 LAYER-C-001 Evaluation Rubric
 
 > This section is **not active** — it is a decision template to be used when the
-> trigger condition fires: *Layer B deployed to production and stable for ≥ 30 days.*
+> trigger condition fires: _Layer B deployed to production and stable for ≥ 30 days._
 > Do not use this rubric to justify selecting a framework before the trigger.
 
 ### Candidates
 
-| Candidate | Description |
-| --- | --- |
+| Candidate       | Description                                                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Temporal.io** | Already deployed for approval workflows (15-event-driven-workflow §15.4). Durable execution, human-in-the-loop, retry semantics. Not an LLM-native framework. |
-| **LangGraph** | LangChain ecosystem. Stateful agent graphs, native tool-calling, compatible with `langchain==0.2.*` already in use. |
-| **CrewAI** | Role-based agent collaboration. Simple to prototype, limited enterprise durability features. |
-| **AutoGen** | Microsoft multi-agent conversation framework. Good for reasoning chains; less proven for production durable workflows. |
+| **LangGraph**   | LangChain ecosystem. Stateful agent graphs, native tool-calling, compatible with `langchain==0.2.*` already in use.                                           |
+| **CrewAI**      | Role-based agent collaboration. Simple to prototype, limited enterprise durability features.                                                                  |
+| **AutoGen**     | Microsoft multi-agent conversation framework. Good for reasoning chains; less proven for production durable workflows.                                        |
 
 ### Scoring Rubric (score 1–5 per axis, select highest total)
 
-| Axis | Weight | What to evaluate |
-| --- | --- | --- |
-| LangChain 0.2.* compatibility | 25% | Can agents use the existing `LLMProvider` / `EmbeddingProvider` interfaces without wrapping or replacing them? |
-| Temporal.io co-existence | 20% | Can agent workflows be durably orchestrated via Temporal activities, or does the framework require its own persistence layer? |
-| Thai-language tool-calling accuracy | 20% | Run the standard Thai construction scenario benchmark (see below) — measure correct tool selection rate and output accuracy |
-| Durable execution + human-in-the-loop | 20% | Does the framework natively support: retry on failure, pause-for-human-approval, resume from checkpoint? |
-| Operational complexity | 15% | How many new infra components does this add? Does it require a dedicated process / database / broker beyond what is already deployed? |
+| Axis                                  | Weight | What to evaluate                                                                                                                      |
+| ------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| LangChain 0.2.\* compatibility        | 25%    | Can agents use the existing `LLMProvider` / `EmbeddingProvider` interfaces without wrapping or replacing them?                        |
+| Temporal.io co-existence              | 20%    | Can agent workflows be durably orchestrated via Temporal activities, or does the framework require its own persistence layer?         |
+| Thai-language tool-calling accuracy   | 20%    | Run the standard Thai construction scenario benchmark (see below) — measure correct tool selection rate and output accuracy           |
+| Durable execution + human-in-the-loop | 20%    | Does the framework natively support: retry on failure, pause-for-human-approval, resume from checkpoint?                              |
+| Operational complexity                | 15%    | How many new infra components does this add? Does it require a dedicated process / database / broker beyond what is already deployed? |
 
 ### Thai Construction Benchmark (run before deciding)
 
@@ -287,22 +286,175 @@ When the decision is made, produce a one-page ADR (Architecture Decision Record)
 - **Owner:** (who is responsible for implementation in Phase C)
 
 File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
-[LAYER-C-001] status in `extension-points.md` from `PENDING` to `DECIDED`.
+[LAYER-C-001] decision documented in `docs/specifications/22-ai-architecture` §22.6.
+
+---
+
+## 22.6 AI Integration Decisions
+
+### LLM Provider
+
+**Decision:** OpenAI GPT-4o as primary LLM. Integration via `LLMProvider` interface in AI Gateway (FastAPI). All LLM calls routed through the interface — never called directly.
+
+| Attribute        | Value                                                           |
+| ---------------- | --------------------------------------------------------------- |
+| Primary provider | OpenAI GPT-4o (`gpt-4o`)                                        |
+| API              | OpenAI REST API (`/v1/chat/completions`)                        |
+| Auth             | API key stored per-tenant in AWS Secrets Manager / Vault        |
+| Interface        | `LLMProvider.complete(messages, options): Promise<LLMResponse>` |
+
+---
+
+### Alternative LLM Provider
+
+**Decision:** Two alternatives — Claude (Anthropic) for cloud fallback; Ollama for on-premise deployments.
+
+| Scenario                                                | Provider                                              | Notes                                                  |
+| ------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| Cloud fallback (OpenAI down or cost threshold exceeded) | Claude API (Anthropic) — `claude-sonnet-4-6` or later | Same `LLMProvider` interface; switch via tenant config |
+| On-premise deployments (data sovereignty)               | Ollama (self-hosted open-source LLM)                  | Llama 3 or equivalent; deployed on-premise EKS node    |
+
+---
+
+### OCR Provider
+
+**Decision:** AWS Textract for invoice photo OCR.
+
+| Attribute | Value                                                                       |
+| --------- | --------------------------------------------------------------------------- |
+| Service   | AWS Textract (`AnalyzeDocument` API — FORMS feature)                        |
+| Use case  | Extract vendor name, invoice number, amount, line items from invoice photos |
+| Auth      | IAM role (EKS IRSA) — no separate credentials                               |
+| Interface | `CloudOCRProvider.extract(imageUrl, documentType): Promise<OCRResult>`      |
+
+---
+
+### Embedding Provider
+
+**Decision:** OpenAI `text-embedding-3-small` for vector embeddings.
+
+| Attribute | Value                                                           |
+| --------- | --------------------------------------------------------------- |
+| Model     | OpenAI `text-embedding-3-small` (1,536 dimensions)              |
+| API       | OpenAI REST API (`/v1/embeddings`)                              |
+| Interface | `EmbeddingProvider.embed(texts: string[]): Promise<number[][]>` |
+
+---
+
+### LangChain Configuration
+
+**Decision:** LangChain Python SDK (`langchain` + `langchain-openai`) configured with the LLMProvider wrapper.
+
+| Attribute  | Value                                                            |
+| ---------- | ---------------------------------------------------------------- |
+| Library    | `langchain>=0.3`, `langchain-openai>=0.2`                        |
+| Chain type | RAG chain: retriever (pgvector/OpenSearch) → reranker → LLM      |
+| Config     | Chain config stored in `ai/chains/` as YAML per chain type       |
+| Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain` |
+
+---
+
+### Cross-Encoder Reranking
+
+**Decision:** `sentence-transformers` cross-encoder for RAG result reranking.
+
+| Attribute | Value                                                                       |
+| --------- | --------------------------------------------------------------------------- |
+| Library   | `sentence-transformers>=3.0` (Python)                                       |
+| Model     | `cross-encoder/ms-marco-MiniLM-L-6-v2` (fast, construction-domain suitable) |
+| Trigger   | Activate when RAG retrieval p95 relevance score < 0.7 over 7-day window     |
+| Interface | `CrossEncoderReranking.rerank(query, passages): Promise<RankedPassage[]>`   |
+
+---
+
+### Model Registry
+
+**Decision:** MLflow self-hosted on EKS for model versioning and registry.
+
+| Attribute      | Value                                                            |
+| -------------- | ---------------------------------------------------------------- |
+| Service        | MLflow Server (`mlflow server`) — Kubernetes Deployment          |
+| Backend store  | PostgreSQL (existing RDS)                                        |
+| Artifact store | MinIO (existing S3-compatible)                                   |
+| Interface      | `ModelRegistry.registerModel(name, version, artifactPath): void` |
+
+---
+
+### Feature Store
+
+**Decision:** Feast (open-source) configured with Redis online store and PostgreSQL offline store.
+
+| Attribute     | Value                                                                    |
+| ------------- | ------------------------------------------------------------------------ |
+| Library       | Feast (`feast>=0.40`)                                                    |
+| Online store  | Redis (existing)                                                         |
+| Offline store | PostgreSQL (existing RDS)                                                |
+| Interface     | `FeatureStore.getOnlineFeatures(entityKeys, featureRefs): FeatureVector` |
+
+---
+
+### Experiment Monitoring
+
+**Decision:** W&B Cloud (`wandb.ai`) — no self-hosted infrastructure needed.
+
+| Attribute | Value                                                                    |
+| --------- | ------------------------------------------------------------------------ |
+| Service   | Weights & Biases Cloud (wandb.ai)                                        |
+| Auth      | W&B API key stored in AWS Secrets Manager                                |
+| Usage     | Log training runs, metrics, model artifacts from Phase 23 MLOps pipeline |
+| Interface | `ExperimentMonitoring.logRun(config, metrics): void`                     |
+
+---
+
+### Autonomous Workflow Executor
+
+**Decision:** AI may act autonomously ONLY for notifications and report generation. All financial actions and approvals require human approval.
+
+| Action type           | Autonomous?        | Requires human?               |
+| --------------------- | ------------------ | ----------------------------- |
+| Send notification     | ✅ Yes             | —                             |
+| Generate report draft | ✅ Yes             | PM reviews before publish     |
+| Flag risk / delay     | ✅ Yes (flag only) | —                             |
+| Approve PO / invoice  | ❌ No              | Always human                  |
+| Adjust budget         | ❌ No              | Always FINANCE + EXECUTIVE    |
+| Modify workflow state | ❌ No              | Always role-appropriate human |
+
+**Implementation:** `AutonomousWorkflowExecutor.execute(action)` — checks action type against whitelist before executing; throws `GovernanceViolationError` for disallowed actions.
+
+---
+
+### ML Models (Phase 23)
+
+**Decision:** Python `scikit-learn` + `XGBoost` as the primary ML framework for all Phase 23 models.
+
+| Model              | Use case                   | Algorithm                                                                | Input features                                                               |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| DelayForecastModel | Delay forecast             | XGBoost regressor (days to delay)                                        | procurement delays, task completion %, weather history, workforce attendance |
+| SafetyVisionModel  | Safety violation detection | XGBoost classifier on extracted image features (HOG + ViT embeddings)    | site photo embeddings, PPE label presence                                    |
+| GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                           |
+| RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents        |
+
+All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thresholds before training:
+
+- DelayForecastModel: 90+ days production data
+- SafetyVisionModel: 10,000+ labeled site photos
+- GraphMLModel: 6+ months Neo4j relationship data
+- RiskClassifier: 50+ projects with full lifecycle
 
 ---
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [RAG] | Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks | Lewis et al., NeurIPS 2020 |
-| [pgvector] | pgvector: Open-source vector similarity search for Postgres | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector) |
-| [Whisper] | Robust Speech Recognition via Large-Scale Weak Supervision | Radford et al., OpenAI 2022 |
-| [OpenAI] | OpenAI API Documentation | [platform.openai.com/docs](https://platform.openai.com/docs/) |
-| [LangChain] | LangChain Python Documentation | [python.langchain.com/docs/introduction](https://python.langchain.com/docs/introduction/) |
-| [LangGraph] | LangGraph Documentation | [langchain-ai.github.io/langgraph](https://langchain-ai.github.io/langgraph/) |
-| [Temporal] | Temporal Workflow Documentation | [docs.temporal.io](https://docs.temporal.io/) |
-| [IFC4] | Industry Foundation Classes IFC4 | buildingSMART International |
+| ID          | Title                                                              | Source                                                                                    |
+| ----------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| [IEEE 830]  | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                         |
+| [RAG]       | Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks   | Lewis et al., NeurIPS 2020                                                                |
+| [pgvector]  | pgvector: Open-source vector similarity search for Postgres        | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)                      |
+| [Whisper]   | Robust Speech Recognition via Large-Scale Weak Supervision         | Radford et al., OpenAI 2022                                                               |
+| [OpenAI]    | OpenAI API Documentation                                           | [platform.openai.com/docs](https://platform.openai.com/docs/)                             |
+| [LangChain] | LangChain Python Documentation                                     | [python.langchain.com/docs/introduction](https://python.langchain.com/docs/introduction/) |
+| [LangGraph] | LangGraph Documentation                                            | [langchain-ai.github.io/langgraph](https://langchain-ai.github.io/langgraph/)             |
+| [Temporal]  | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                                             |
+| [IFC4]      | Industry Foundation Classes IFC4                                   | buildingSMART International                                                               |
 
 > 📎 See also: [09-data-architecture](09-data-architecture.md) · [12-construction-knowledge-graph](12-construction-knowledge-graph.md) · [21-mvp-scope](21-mvp-scope.md) · [23-ai-native-operating-model](23-ai-native-operating-model.md) · [24-ai-training-pipeline](24-ai-training-pipeline.md)
