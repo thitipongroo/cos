@@ -1,218 +1,5 @@
 # Construction OS — Agent Context
 
-<!-- Last audited: 2026-05-31 | Version: 5.6.0 -->
-<!-- v5.6.0 (2026-05-31): Phase 8 integration test spec made explicit (master v1.17.0):
-     Phase 8 Generate — "Integration tests" now specifies:
-       file path (packages/@cos/shared/test/kafka/kafka.integration.spec.ts),
-       devDependencies (testcontainers + @testcontainers/kafka), script (test:integration),
-       testing approach (KafkaContainer + mock SR + mock Redis), and exact test cases -->
-<!-- v5.5.0 (2026-05-31): Commands made specific to prevent new-project recurrence (master v1.16.0):
-     Phase 2: auth.openapi.yaml + tenant.openapi.yaml named explicitly
-     Phase 2: MFA endpoints given explicit paths (/mfa/enroll, /verify, /authenticate)
-     Phase 8: K8s manifests given explicit path (infrastructure/kubernetes/kafka/) + filenames
-     Phase 1: README list expanded to all directories including all 10 backend/src/modules/* and all 11 packages/@cos/* -->
-<!-- v5.4.0 (2026-05-31): Rule 37 added to Always section:
-     Rule 37: Exhaustive verification before claiming completion —
-       (a) read spec section line by line, (b) verify each item with ls/grep/cat output,
-       (c) only summarize after all items have ✅ filesystem evidence.
-       Prevents "I verified known issues" being reported as "everything is complete".
-     Root cause: agent was checking known bugs only, not every Generate item —
-       this pattern led to 6 missed deliverables despite claiming "all bugs fixed" -->
-<!-- v5.3.0 (2026-05-31): Rules 27-36 added to Always section (runtime checklist for agent);
-     Fixed MD032 blank line formatting around list block -->
-<!-- v5.2.0 (2026-05-31): 4 long-term vulnerabilities fixed (master v1.13.0):
-     V-01: context.md + context/ removed from .gitignore — rules now persist across git clone
-     V-02: Phase 2 Generate — explicit npm packages list added (prevent missing deps in new project)
-     V-03: Phase 2 Generate — ADR-008 added as deliverable (prevent dangling ADR reference)
-     V-04: Phase 1 Generate — jest.config packages expanded to all 9 packages with logic
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v5.1.0 (2026-05-31): Root cause prevention completed — Rules 33–36 added (master v1.12.0):
-     Rule 33: Single source of truth for jest config — no duplicate jest key in package.json
-     Rule 34: import type for non-runtime deps — prevent Mobile/Metro bundling Node.js-only packages
-     Rule 35: @cos/shared must be framework-agnostic — no server-only runtime imports
-     Rule 36: All @cos packages with executable logic must have unit tests + CI coverage
-     Implementation: jest.config.js + test:cov scripts + unit tests added to
-       @cos/financial (calculateLineTotal, convertCurrency, sumDecimals — QM-1 mutation testing)
-       @cos/rbac (ROLE_PERMISSIONS, decorators), @cos/validation (IsCurrencyCode, IsDecimalString)
-       @cos/logger (createLogger), @cos/tracing (initTracing/shutdown/getTraceId), @cos/config (loadConfig/getConfig)
-     CI updated: all 9 packages now have coverage gates
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v5.0.0 (2026-05-31): Root cause prevention — 6 new GLOBAL EXECUTION RULES added to master (v1.11.0):
-     Rules 27–32 prevent recurring bugs found across Phase 1/2/8 implementation:
-     Rule 27: package.json dependency sync before adding imports
-     Rule 28: turbo.json sync when adding new scripts
-     Rule 29: pnpm-lock.yaml must be committed after pnpm install
-     Rule 30: ADR reference verification before writing (see ADR-NNN)
-     Rule 31: jest.runAllTimersAsync() for async fake timer chains (not jest.runAllTimers())
-     Rule 32: Generate section scope must be exhaustive (READMEs, Tooling init, tsconfig exceptions)
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.9.0 (2026-05-31): Phase 2 implementation — FILE REFERENCE MAP updated:
-     M-01 RESOLVED: docs/security/secrets-rotation-policy.md status corrected ⚠️ NOT YET CREATED → ✅ EXISTS (created in Phase 2);
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.8.0 (2026-05-31): Phase 1 spec gap resolution — FILE REFERENCE MAP updated:
-     M-01 RESOLVED: CHANGELOG.md status corrected ⚠️ NOT YET CREATED → ✅ EXISTS (file was created at repo init);
-     M-02 RESOLVED: ADR-008 and ADR-015 added to FILE REFERENCE MAP (created 2026-05-31);
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.7.0 (2026-05-29): cos-context-auditor re-audit (round 7) — 2 issues resolved:
-     M-01 RESOLVED: GLOBAL EXECUTION RULES Never — added 2 inter-module coupling rules:
-       "Add direct HTTP or gRPC calls between NestJS modules inside the monolith" (master §3; rule 3);
-       "Query another module's database tables directly from application code" (master §4);
-     m-01 RESOLVED: AWAITING_DECISION stub EP_ID example 'ECO-001' → 'EP-DOMAIN-001' with valid format comment (master §5; spec §32.3);
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.6.0 (2026-05-29): cos-context-auditor re-audit (round 6) — 3 issues resolved:
-     M-01 RESOLVED: AES-256 encryption standard added — master Security Requirements + QM-4 + Never rule (spec §5.2);
-     M-02 RESOLVED: Mobile component enforcement rules added to GLOBAL EXECUTION RULES Never section (master §8; spec §32.7);
-     m-01 RESOLVED: Stage names aligned to file headers — ECOSYSTEM→ECOSYSTEM DOMINANCE, COORDINATION→INDUSTRY COORDINATION
-       in STEP 2 list, STEP 3 table, and FILE REFERENCE MAP;
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.5.0 (2026-05-29): cos-context-auditor re-audit (round 5) — 4 issues resolved:
-     M-01 RESOLVED: master FINAL EXECUTION ORDER — Event Infrastructure dep Phase 1 → Phase 2 (spec §32.1);
-     M-02 RESOLVED: master WORKFLOW ENGINE SPEC RFQ — EVALUATED→AWARDED/CANCELLED PROC_MANAGER → PROCUREMENT_OFFICER (spec §32.6 + §6.2);
-     m-01 RESOLVED: QM-4 TLS policy spec reference corrected §05 §8.3 → §05 §5.2;
-     m-02 RESOLVED: master rule 25 duplicate renumbered to 26; STEP 1 rule count updated 1–25 → 1–26;
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.4.0 (2026-05-29): cos-context-auditor re-audit (round 4) — 8 issues resolved:
-     M-01 RESOLVED: master §6 BASE EVENT ENVELOPE — added event_version field (spec §32.4);
-     M-02 RESOLVED: GLOBAL EXECUTION RULES — added 2 Workflow Engine rules:
-       Always: "Emit a Kafka event for every workflow state transition" (spec §32.6);
-       Never: "Invent workflow states or transitions beyond WORKFLOW ENGINE SPEC" (master §9);
-     M-03 RESOLVED: FILE REFERENCE MAP — 14 unflagged paths now tagged ⚠️ NOT YET CREATED with phase notes;
-     m-01 RESOLVED: master Stage 1 name corrected "Single Tenant MVP" → "Multi-tenant MVP" (spec §32.1);
-     m-02 RESOLVED: spec §32.3 + master EP stub templates now include EP_VERSION field;
-     m-NEW-1 RESOLVED: master §6 migration note updated — Group A MIGRATED (16 files deleted 2026-05-29);
-     m-NEW-2 RESOLVED: spec §32.4 migration counts updated — 46 files (15 canonical + 31 non-canonical);
-     SPEC-Q RESOLVED: spec §32.6 Workflow Rules — "must" → "MUST" for state transition Kafka rule;
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.3.1 (2026-05-27): cos-context-auditor re-audit (round 3) — 2 issues resolved:
-     M-01 RESOLVED: master RBAC Role Definitions table — 3 spec §6.2 roles were missing:
-       EXECUTIVE, SAFETY_OFFICER, CRM_SALES_MANAGER added to authoritative table;
-       sub-roles (PROC_MANAGER, SITE_WORKER, VIEWER) labeled as implementation sub-roles;
-       EXECUTIVE now defined for lines that reference it in workflow approval rules;
-       SAFETY_OFFICER now defined for line that references it in safety permit workflow;
-     m-01 RESOLVED: FILE REFERENCE MAP ADR count stale — "001–009" → "001–014"
-       (ADRs 010-014 were created during this session and exist on disk);
-     Overall system grade: A (0 Critical, 0 Major, 0 Minor) -->
-<!-- v4.3.0 (2026-05-27): PO decisions applied — final 2 open items resolved:
-     C-02 RESOLVED: Secrets management — conditional per deployment type (spec §5.2; ADR-013 created);
-       QM-4 No secrets: HashiCorp Vault unconditional → AWS SM (cloud/EKS) or Vault (on-prem/hybrid);
-       QM-4 Secrets rotation: unconditional Vault → conditional (AWS SM Lambda cloud; Vault DB engine on-prem);
-       Always rule: Vault unconditional → conditional; Never rule: Vault unconditional → conditional;
-       master infrastructure stack + Phase 2 Secret Management + Phase 19 Secret Management updated;
-     C-03 RESOLVED: RBAC role identifiers aligned to spec §6.2 (ADR-014 created);
-       SITE_MANAGER → SITE_ENGINEER (3 occurrences);
-       FINANCE_OFFICER → FINANCE (1 occurrence);
-       master: SITE_MANAGER → SITE_ENGINEER (9), PROC_OFFICER → PROCUREMENT_OFFICER (6),
-               FINANCE_OFFICER → FINANCE (13), SUPER_ADMIN → SYSTEM_ADMIN (1);
-       master RBAC Role Definitions table reformatted and aligned to spec -->
-<!-- v4.2.0 (2026-05-27): PO decisions applied — 3 open items resolved:
-     C-01 RESOLVED: Kong Gateway for rate limiting (spec §4.8; ADR-010 created);
-       QM-7 updated: NestJS ThrottlerModule → Kong Gateway; master API Gateway section updated;
-     C-04 RESOLVED: SonarQube for SAST + code quality (spec §30.10, §30.12; ADR-011 created);
-       QM-4 SAST updated: semgrep → SonarQube; Phase 19 check #4 updated to sonar-scanner;
-     C-05 RESOLVED: ArgoCD for GitOps CD (spec §4.9; ADR-012 created);
-       master Phase 17 pipeline updated: GitHub Actions CI-only + ArgoCD CD;
-       master Phase 19 CI/CD checks updated to ArgoCD commands;
-       master infrastructure stack: ArgoCD AWAITING_DECISION → RESOLVED;
-     OPEN (unchanged): C-02 Vault vs AWS SM; C-03 RBAC role names -->
-<!-- v4.1.0 (2026-05-27): cos-context-auditor re-audit (round 2) — 6 issues resolved:
-     C-NEW-2 RESOLVED: 5 canonical event names in master §6 corrected per spec §32.4:
-       events 5,6,9,10,13 had wrong domain prefix or wrong entity segment;
-       spec §32.4 is authoritative; all 15 cross-service contract names now match spec exactly;
-     M-NEW-1 RESOLVED: master Phase 20 Notification Service — WebSocket→SSE (spec §19.2);
-       FCM-only→Expo Push Notifications APNs+FCM (expo-server-sdk; direct FCM misses iOS);
-     M-NEW-2 RESOLVED: Phase 20 trigger events corrected (inspection.failed domain: construction→site;
-       site_report trigger event: construction.site_report.submitted.v1→site.report.created.v1);
-     M-NEW-3 RESOLVED: EP-INFRA-004 EmailProvider — annotated PARTIAL-RESOLUTION (spec §19.7:
-       SendGrid MVP → AWS SES production);
-     m-NEW-1 RESOLVED: master blockquote header Version/date corrected (1.0/2026-05-26→1.3/2026-05-27);
-     m-NEW-2 RESOLVED: check-schema-registry.sh CRITICAL_SCHEMAS — 8→15 schemas (all spec §32.4 events);
-     OPEN (unchanged): C-01 Kong vs NestJS; C-02 Vault vs AWS SM; C-03 RBAC role names;
-       C-04 SonarQube vs semgrep; C-05 ArgoCD vs GitHub Actions -->
-<!-- v4.0.0 (2026-05-27): cos-context-auditor full audit — 15 issues resolved:
-     C-NEW-1 RESOLVED: Kafka compatibility BACKWARD → BACKWARD_TRANSITIVE (QM-9, master §6, master Rule 24, master Phase 19 AUTO check, check-schema-registry.sh);
-     M-1 RESOLVED: QM-1 + Phase 19 coverage check + master Phase 18 + master Rule 11 — added 70% branch coverage gate (spec §30.3);
-     M-9 RESOLVED: QM-2 deprecation window 6 months → 12 months (spec §14.4);
-     M-7 RESOLVED: QM-6 + QM-14 latency targets corrected — read p95 500ms→300ms, write p95 800ms→500ms (spec §31.6);
-     M-8 RESOLVED: QM-14 availability — added SMB (99.5%) and Enterprise (99.95%) tiers alongside Mid-market (99.9%) (spec §31.6);
-     M-10 RESOLVED: QM-8 CloudWatch Logs replaced with Loki (spec §31.2 + master Phase 15);
-     M-11 RESOLVED: QM-8 CloudWatch alarms replaced with Alertmanager/Prometheus (spec §31.7 + master Phase 15);
-     m-2 RESOLVED: QM-8 sampling strategy head-based→tail-based; 1% production rate (spec §31.5); master Phase 15 sampling rate 10%→1%;
-     m-3 RESOLVED: FILE REFERENCE MAP — 6 existing runbooks added (ai-readiness-checklist, db-failover, kafka-partition-rebalance, keycloak-realm-recovery, keycloak-realm-backup, temporal-worker-restart);
-     m-4 RESOLVED: FILE REFERENCE MAP infrastructure/synthetics/ label CloudWatch Synthetics → OpenTelemetry/Prometheus;
-     M-5 RESOLVED: master CROSS-SERVICE EVENT CONTRACT — all 15 events annotated with canonical names {domain}.{entity}.{action}.v{N}; Phase 20 notification triggers updated; event_type envelope updated;
-     M-4 RESOLVED: Apache Iceberg added to master GLOBAL SYSTEM CONTEXT COMMAND infrastructure stack + Phase 17 cold storage;
-     M-6 RESOLVED: Debezium CDC (Path 2 — data lake replication) added to master infrastructure stack + Phase 8 stub EP-INFRA-005;
-     M-12 RESOLVED: PO approval thresholds added to master WORKFLOW ENGINE SPEC (≤50K THB → PM; 50K-500K → PM+Finance; >500K → PM+Finance+Executive);
-     M-2 FLAGGED C-04 AWAITING_DECISION: SonarQube (spec §30.10) vs semgrep (current) — ADR required before Stage 1→2;
-     M-3 FLAGGED C-05 AWAITING_DECISION: ArgoCD (spec §4.9) vs GitHub Actions+kubectl (current) — ADR required before Stage 1→2;
-     OPEN (requires PO): C-01 Kong vs NestJS; C-02 Vault vs AWS SM; C-03 RBAC role names -->
-<!-- v3.9.0 (2026-05-26): cos-context-auditor audit — C-05 RESOLVED: master API paths /v1/ corrected to /api/v1/
-     for Phases 3/4/6/7/11/12/13/14/15/18/21 (32 endpoints); M-03 ADR path in Always rule corrected
-     (docs/adr/ → docs/architecture/adr/); M-04 ADR template created
-     (docs/architecture/adr/000-template.md); M-05 OpenAPI path in FILE REFERENCE MAP + QM-2
-     corrected to per-service naming (docs/api/{service}.openapi.yaml); M-06 PgBouncer config dir
-     flagged as NOT YET CREATED in QM-18; master v1.0 → v1.1 (all above applied to master too);
-     OPEN (requires PO): C-01 Kong vs NestJS; C-02 Vault vs AWS SM; C-03 RBAC role names §06 vs master -->
-<!-- Change: Production-grade global scale upgrade —
-     QM-13 multi-region architecture, QM-14 SLI/SLO/error budget, QM-15 feature flags,
-     QM-16 deployment safety, QM-17 incident management; QM-4 expanded (TLS/mTLS/WAF/
-     security headers/secrets rotation/encryption at rest); QM-3 expanded (RTL/plural forms/
-     BE calendar/UTF-8/locale negotiation); QM-8 expanded (log retention/trace sampling/
-     synthetic monitoring); QM-9 Kafka schema registry made required; QM-12 production RTO
-     tightened to 30 min; Phase 19 counts corrected (61 total: 39 auto + 22 manual);
-     contradictory tenant isolation rule fixed; hardcoded local path removed;
-     mutation testing added to QM-1; API deprecation communication added to QM-2 -->
-<!-- v3.1.0 fixes (2026-05-24): GAP-1 QM-18 added (PgBouncer connection pool management);
-     GAP-2 QM-9 extended (offline conflict resolution — 3 entity strategies + financial hold rule);
-     GAP-3 QM-7 corrected (NestJS ThrottlerModule — removes false AWS API Gateway / Kong claim);
-     GAP-4 QM-4 corrected (HashiCorp Vault + sealed-secrets — removes false AWS Secrets Manager claim);
-     Global Execution Rules updated to match all four corrections -->
-<!-- v3.2.0 fixes (2026-05-26): C-01 QM-4 TLS corrected (TLS 1.3 minimum — removes false TLS 1.2 claim; source: master §Phase 16 + spec §05);
-     C-02 QM-4 WAF corrected (UNSPECIFIED EP — removes false mandatory AWS WAF claim; source: master §Phase 16);
-     C-03 QM-18/NEVER corrected (schema naming {tenant_code} — removes false tenant_{id} format; source: master §Phase 2);
-     M-01 FILE REFERENCE MAP corrected (Python stub base = ai/shared/stub_base.py, not extension-points/stub_logging_pattern.py);
-     M-03 Phase 19 SECTION B gate corrected (QM-13 added to QUALITY MANDATES GATE);
-     M-04 QM-4 mTLS corrected (Istio manages mTLS — removes false AWS Private CA claim; source: master tech stack);
-     M-05 audit date updated (2026-05-26) -->
-<!-- v3.8.0 (2026-05-26): cos-context-auditor audit — M-01 financial entity conflict rule added to master §Phase 6;
-     M-02 docs/adr/ corrected to docs/architecture/adr/ in FILE REFERENCE MAP + QM-11;
-     M-03 docs/runbooks/ corrected to docs/runbooks/ in FILE REFERENCE MAP + QM-12/16/17;
-     M-04 OTel sampling config path corrected (infrastructure/monitoring/otel-collector-config.yaml);
-     M-05 /v1/ paths in master Phase 9/10/20/22 updated to /api/v1/ (C-04 follow-up);
-     M-06 TENANT_ADMIN corrected from "ADMIN" in Phase 19 checklist;
-     m-01 Always rule corrected /v1/ → /api/v1/; m-02 stale "file 02" refs fixed in master Phase 19;
-     m-03 master last_updated 2026-05-25 → 2026-05-26; m-04 cos-audit/.gitkeep created;
-     m-05 infrastructure/synthetics/ flagged as NOT YET CREATED;
-     OPEN: C-01 Kong vs NestJS (requires PO); C-02 Vault vs AWS SM (requires PO);
-     C-03 RBAC role names spec §06 vs master (requires PO) -->
-<!-- v3.7.0 (2026-05-26): C-04 RESOLVED — API path convention corrected to /api/v1/ (Option B: spec updated to match
-     backend implementation; source: backend/src/main.ts setGlobalPrefix('api/v1'));
-     QM-2 updated; QM-4 WAF rate limit paths updated (/v*/ → /api/v*/); QM-7 paths updated;
-     QM-9 sync endpoint updated (/v1/sync/resolve → /api/v1/sync/resolve);
-     waf.tf all patterns updated (^/v[0-9]+/ → ^/api/v[0-9]+/);
-     api-baseline.js paths updated (/v1/ → /api/v1/);
-     spec §05 v1.4.0; context/README.md API versioning row corrected;
-     context/00_master_construction_os.md Phase 16 rate limit paths updated;
-     C-04a/C-04b fixed: graph.controller.ts @Controller('v1/graph')→@Controller('graph'),
-     finance.controller.ts @Controller('v1')→@Controller('') -->
-<!-- v3.6.0 (2026-05-26): C-03 RESOLVED — file upload rate limit confirmed 20 req/min per spec §05 §5.5
-     (product owner decision 2026-05-26); waf.tf requests_per_period=20; master Phase 16 updated;
-     spec §05 §5.5 table updated; QM-4 WAF rate limit attribution corrected (spec §05, not QM-7) -->
-<!-- v3.5.0 (2026-05-26): AUDIT FIXES — C-01 Cloudflare WAF paths corrected (/api/v* → /v*/; source: master §API versioning + context/README.md);
-     C-02 k6 load test paths corrected (/api/v1/ → /v1/; same root cause);
-     M-01 spec §05 §5.5 rate limit table paths corrected (/api/v*/ → /v*/);
-     M-02 master Phase 16 WAF rate limit paths corrected; M-03 context/README.md date updated;
-     C-03 file upload rate limit noted as pending — waf.tf + master used 10 pending decision -->
-
-<!-- v3.4.0 (2026-05-26): C-02 WAF RESOLVED — Cloudflare WAF selected (EP-WAF-001 resolved from UNSPECIFIED);
-     QM-4 WAF section updated with full Cloudflare architecture, rate limits, origin protection rules;
-     spec §05 v1.3.0 + master §Phase 16 WAF block updated; Terraform + middleware + K8s artifacts created -->
-<!-- v3.3.0 (2026-05-26): FILE REFERENCE MAP — 4 missing scripts created and flags updated:
-     check-security-headers.sh (Phase 16); check-schema-registry.sh (Phase 8);
-     check-openapi-freshness.sh (Phase 18); scripts/loadtest/api-baseline.js (QM-6 k6 gate, Phase 18);
-     .cos-stage created (value: 1) — STEP 2 auto-detect now functional;
-     check-i18n-completeness.sh remains ⚠️ NOT YET CREATED (Phase 18) -->
-
 ## ROLE
 
 You are a **principal-level AI engineering agent** for **Construction OS** — an AI-native Construction Operating System built to operate at global enterprise scale.
@@ -222,7 +9,7 @@ Your responsibilities:
 - Implement, review, debug, and evolve platform code to **production-grade, global-deployable quality**
 - Follow all execution commands in `context/00_master_construction_os.md` — it is the agent-optimized execution view derived from `docs/specifications/`
 - Never invent architecture or technology decisions — architecture decisions are authoritative in `docs/specifications/`; `context/00_master_construction_os.md` is the compiled execution view of those decisions
-- Generate `extension_point()` stubs for anything UNSPECIFIED — never implement guesses
+- If anything is UNSPECIFIED — STOP immediately, escalate to product owner for decision; do not generate stubs, do not implement
 - Enforce every QUALITY MANDATE and GLOBAL EXECUTION RULE on every code artifact you produce or review
 
 **Accountability standard:** Every line of code you write must be defensible to a staff engineer audit. "It works" is not sufficient. It must be correct, secure, observable, compliant, and backward-compatible.
@@ -345,7 +132,7 @@ Before starting any implementation task:
 1. State which Phase you are implementing
 2. State which SaaS Maturity Stage it maps to (from §32.1)
 3. Confirm the task does not violate any QUALITY MANDATE below
-4. List any EPs you will generate stubs for
+4. List any AWAITING_DECISION EPs you will generate stubs for
 
 ---
 
@@ -946,7 +733,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 ### On ambiguity
 
 - If spec is unclear → ask the user before implementing
-- If EP is UNSPECIFIED → generate stub, do not guess implementation
+- If EP is UNSPECIFIED → STOP, escalate to product owner immediately; do not generate stubs, do not implement
 - If `context/00_master_construction_os.md` conflicts with `docs/specifications/` → specs win; report discrepancy to product owner before implementing
 - If two spec files in `docs/specifications/` conflict → consult `32-implementation-specifications.md` first; if still unclear → ask product owner before implementing
 - If a quality mandate conflicts with a feature request → quality mandate wins; escalate to product owner if blocker
@@ -959,11 +746,11 @@ When loading context files `05_*` through `11_*`, each file contains a `## REQUI
 
 > Note: Stages 1–3 use fully specified implementation details — no open architectural decisions remain at that point. Stages 4–10 enter territory with genuine uncertainty; decisions must be made before implementation can proceed.
 
-Execute in this order — do not wait for answers before generating stubs:
+Execute in this order — **block until all decisions are answered before implementing anything**:
 
 ### Step 1 — Review REQUIRED DECISIONS for completeness
 
-Before generating stubs, read the `## REQUIRED DECISIONS` section and ask:
+Read the `## REQUIRED DECISIONS` section and ask:
 
 - ผลจาก stage ก่อนหน้าสร้าง requirement ใหม่อะไรที่ยังไม่มีในรายการนี้? (What new requirements did the previous stage create that are not yet in this list?)
 - production data ที่สะสมมา บอกอะไรที่ทำให้ต้องตัดสินใจเพิ่มอีกบ้าง? (What does accumulated production data tell us about additional decisions needed?)
@@ -973,63 +760,23 @@ Before generating stubs, read the `## REQUIRED DECISIONS` section and ask:
 ถ้าพบว่าขาด — เพิ่มคำถามใหม่เข้าไปใน `## REQUIRED DECISIONS` ของไฟล์นั้นก่อนดำเนินการต่อ
 Format: `[ ] [ID]-NEW-NNN: [question] — affects: [component]`
 
-### Step 2 — Generate stubs immediately
-
-For every `Generate:` item in the file, create a stub tagged `AWAITING_DECISION`:
-
-```typescript
-// AWAITING_DECISION: [DECISION_ID] — [question summary]
-// Implement after product owner answers: [question]
-class StubEcosystemInteroperabilityFramework extends StubBase {
-  readonly EP_ID = 'EP-DOMAIN-001'; // format: EP-{DOMAIN}-{NUMBER}; valid codes: AUTH,TENANT,FINANCE,PROC,AI,INFRA,DATA,MOBILE,DOMAIN
-  readonly EP_VERSION = '0.1.0'; // semver: increment when contract changes
-  readonly TRIGGER = 'Product owner decides: REST / GraphQL / gRPC / AsyncAPI';
-  readonly PHASE = 'Stage N — [Stage Name]'; // replace with current stage
-
-  async buildInteroperabilitySpec(): Promise<unknown> {
-    this.logStubCall('buildInteroperabilitySpec');
-    return {};
-  }
-}
-```
-
-### Step 3 — Ask product owner all questions
+### Step 2 — Present all decisions to product owner and BLOCK
 
 Present all `[ ]` items from the REQUIRED DECISIONS block — including any newly added ones from Step 1.
 Format: "ก่อน implement stage นี้จริง ต้องการคำตอบจาก product owner ดังนี้: ... / Before implementing this stage, the following decisions are required from the product owner: ..."
 
-### Step 4 — Continue working with stubs
+**Do not implement anything until all decisions are answered.** Every decision must be resolved and written into `docs/specifications/` before work begins.
 
-Do not block on answers. Stubs allow the rest of the system to compile and run.
-When product owner answers a question → replace the corresponding stub with real implementation.
-Update `EP_VERSION` in the stub/implementation when the contract changes.
+### Step 3 — Implement once all decisions are answered
+
+When product owner answers all questions → update `docs/specifications/` with the decisions → implement directly with full spec.
 
 ### AWAITING_DECISION vs UNSPECIFIED
 
-- `UNSPECIFIED` = not yet time to implement (waiting for data or trigger event)
-- `AWAITING_DECISION` = waiting for product owner answer (can implement immediately once answered)
+- `UNSPECIFIED` = requires immediate product owner decision — STOP and escalate; no implementation until resolved
+- `AWAITING_DECISION` = planned decision required at stage start — BLOCK until product owner answers; no implementation until resolved
 
 ---
-
-## EXTENSION POINT PROTOCOL
-
-When you encounter `generate extension_point()` in any spec:
-
-1. Create stub class extending `StubBase`:
-   - Python: `from ..stub_base import StubBase` (`ai/shared/stub_base.py`)
-2. Set `EP_ID`, `EP_VERSION` (start at `0.1.0`), `TRIGGER`, `PHASE` properties
-3. Call `this.logStubCall(method, context)` / `self.log_stub_call(method, context)` in every method
-4. Return safe default value (empty, zero, or false — never throw unless specified)
-5. Document EP decision in the relevant spec file in `docs/specifications/` (e.g., §13.3-13.5 for domain integrations, §22.6 for AI, §05-security-compliance §5.3.1 for compliance)
-
-**When a stub becomes a real implementation:**
-
-- Bump `EP_VERSION` (patch for non-breaking, minor for new contract, major for breaking change)
-- Mark EP as implemented in the relevant `docs/specifications/` file
-- Write or update contract tests for the EP's public interface
-- If the EP contract changed since STUB → create an ADR documenting the decision
-
-Do NOT implement business logic for UNSPECIFIED EPs.
 
 ---
 

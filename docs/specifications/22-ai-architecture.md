@@ -213,9 +213,18 @@ Provider Hierarchy :
 
 Routing :
 
-- LLM Gateway selects model based on task type, cost, and latency
+- LLM Gateway selects model based on `model_hint` passed by caller — two-tier configurable routing table (stored in env/YAML, never hardcoded)
 - All providers accessed via unified `LLMProvider` interface (LangChain abstraction) — no direct SDK coupling in domain services
 - Provider switching does not require application code changes
+
+| model_hint            | Model       | Rationale                      |
+| --------------------- | ----------- | ------------------------------ |
+| `report-generation`   | gpt-4o      | Complex reasoning, long output |
+| `risk-analysis`       | gpt-4o      | Multi-factor reasoning         |
+| `document-extraction` | gpt-4o      | Accuracy over throughput       |
+| `summarization`       | gpt-4o-mini | High-volume, lower complexity  |
+| `classification`      | gpt-4o-mini | Simple, latency-sensitive      |
+| `autocomplete`        | gpt-4o-mini | Real-time, cost-sensitive      |
 
 RAG Architecture :
 

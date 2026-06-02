@@ -361,7 +361,7 @@ queries TimescaleDB directly.
 | Component             | Technology                                 | Purpose                                                            |
 | --------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
 | Time-series database  | TimescaleDB (PostgreSQL extension)         | TwinState hypertable — IoT event storage and point-in-time queries |
-| IoT message broker    | MQTT broker (EMQX or AWS IoT Core)         | Device-to-platform telemetry ingestion                             |
+| IoT message broker    | EMQX self-hosted on EKS                    | Telemetry ingestion; EMQX→Kafka (MSK) connector built-in           |
 | BIM storage           | Object storage (MinIO/S3, separate bucket) | BIM file storage — large files (100 MB–10 GB)                      |
 | Carbon factor library | PostgreSQL table                           | Reference data — emission factors by material type                 |
 

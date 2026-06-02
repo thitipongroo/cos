@@ -189,7 +189,8 @@ interface ERPIntegration {
 | OracleAdapter   | Oracle Fusion Finance — REST API                   |
 | DynamicsAdapter | Microsoft Dynamics 365 Finance — REST API          |
 
-Each adapter is implemented only when the first tenant using that ERP system requests integration. API credentials, field mappings, and authentication are configured per-tenant in AWS Secrets Manager / Vault.
+Each adapter is implemented only when the first tenant using that ERP system requests integration.
+API credentials, field mappings, and authentication are configured per-tenant in AWS Secrets Manager / Vault.
 
 ---
 
@@ -227,7 +228,8 @@ Field mapping (CRM deal fields → COS project fields) is configured per-tenant 
 
 ### BIM Integration — IFC Parser
 
-**Decision:** Accept IFC format (ISO 16739-1:2018 — platform-agnostic open standard). Implement IFC parser first; any BIM software that exports IFC is compatible (Revit, ArchiCAD, Trimble, etc.).
+**Decision:** Accept IFC format (ISO 16739-1:2018 — platform-agnostic open standard).
+Implement IFC parser first; any BIM software that exports IFC is compatible (Revit, ArchiCAD, Trimble, etc.).
 
 **File format:** IFC 2x3 minimum; IFC 4.0 preferred (see `33-digital-twin-iot` §33.2 normative standards).
 
@@ -294,7 +296,7 @@ Quota tracked via Kong usage plans plugin; metering data fed to ClickHouse for b
 | Data flow       | COS exports invoice data → fintech partner API → advance payment ref returned                  |
 | Interface       | `ConstructionFinancing.submitFactoringApplication(invoiceId, tenantId): Promise<FinancingRef>` |
 | Trigger         | Implement when first tenant requests invoice factoring with a specific fintech partner         |
-| Fintech partner | UNSPECIFIED — implement per-partner adapter (Strategy pattern, same as ERP integration)        |
+| Fintech partner | PO decision required — per-partner adapter (Strategy pattern, same as ERP integration)         |
 
 ---
 

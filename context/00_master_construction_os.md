@@ -84,7 +84,7 @@ Read this file completely before writing any code, making any decision, or answe
 
 - Implement, review, debug, and evolve platform code according to the specs in this file
 - Never invent architecture or technology decisions — every decision is already made in `../docs/specifications/`
-- When a spec says `generate extension_point()` → create a stub, do not implement guessed logic
+- When a spec says `generate extension_point()` → STOP, escalate to product owner immediately; do not generate stubs, do not implement
 - When this file conflicts with `../docs/specifications/` → specs win; report to product owner
 - When asked to do something not covered in any spec → ask the user before proceeding
 
@@ -389,7 +389,8 @@ You must NEVER invent workflow state transitions not defined in this document.
 If information is missing:
 
 - explicitly mark as UNSPECIFIED
-- generate extension_point() stub
+- STOP immediately — escalate to product owner for decision
+- do not generate stubs
 - do not hallucinate implementation details
 - do not proceed with assumptions — surface the gap
 
@@ -1687,7 +1688,7 @@ Entities (PostgreSQL — schema: procurement):
     tenant_id       UUID NOT NULL
     vendor_code     VARCHAR(50) NOT NULL
     vendor_name     VARCHAR(255) NOT NULL
-    tax_id          VARCHAR(100)    — stored as-is, not validated (UNSPECIFIED format)
+    tax_id          VARCHAR(100)    — stored as-is, not validated (multi-country format, no validation by design)
     contact_email   VARCHAR(255)
     contact_phone   VARCHAR(50)
     address         TEXT
@@ -2029,7 +2030,7 @@ IMPORTANT SCOPE CLARIFICATION:
   It does NOT implement chart of accounts.
   It does NOT implement GL posting.
   It does NOT integrate with external ERP or accounting software.
-  All of the above are UNSPECIFIED — generate extension_point() for each.
+  All of the above are UNSPECIFIED — escalate to product owner for decision; do not generate stubs.
 
   What it DOES implement:
   - Project-level budget tracking (budget vs actual cost)
@@ -2326,10 +2327,10 @@ File Constraints (authoritative):
     Images:     image/jpeg, image/png, image/webp, image/gif
     Documents:  application/pdf
     CAD:        application/dxf, application/acad, image/vnd.dwg
-                (Note: DWG parsing/viewing is UNSPECIFIED — store only)
+                (Note: DWG parsing/viewing — PO decision required; store only until decided)
     Spreadsheets: application/vnd.ms-excel,
                   application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-    Archives:   application/zip (for bulk upload — UNSPECIFIED extraction logic)
+    Archives:   application/zip (for bulk upload — extraction logic requires PO decision)
 
   NOT allowed: executable files (.exe, .sh, .bat, .js), BLOCKED at upload
 
@@ -2341,7 +2342,7 @@ File Constraints (authoritative):
     File status: PENDING_SCAN → CLEAN | QUARANTINED
 
   File retention:
-    Default: indefinite (tenant-configurable, UNSPECIFIED policies)
+    Default: indefinite (tenant-configurable — retention policies require PO decision)
     Soft delete: files are soft-deleted (deleted_at timestamp), not immediately removed
     Hard delete: 30 days after soft delete (deleted_at + 30 days) — automated cleanup job (Temporal scheduled workflow)
 
@@ -2701,8 +2702,10 @@ AI Services (FastAPI — all in ai/ directory):
    Purpose: single entrypoint for all LLM calls from other services
    Responsibilities:
      - LLM client management via LLMProvider interface (no direct SDK calls)
-     - Model routing: route to model_hint based on task type (logic UNSPECIFIED —
-       implement as configurable routing table, not hardcoded model names)
+     - Model routing: route to model_hint based on task type (RESOLVED — two-tier
+       configurable routing table; store in env/YAML, never hardcode model names)
+       Tier POWERFUL (gpt-4o):   report-generation, risk-analysis, document-extraction
+       Tier FAST (gpt-4o-mini):  summarization, classification, autocomplete
      - Token usage tracking (persisted to PostgreSQL for billing/monitoring)
      - Prompt template rendering (Jinja2 templates from ai/prompts/)
      - Response caching (Redis, TTL configurable per template)
@@ -2780,7 +2783,7 @@ MLOps Stack (from source §19.4 — separate Phase 23, referenced here):
   Apache Airflow 2.x  — training pipeline orchestration
   Kubeflow Pipelines  — Kubernetes-native ML workflows
   Feast               — feature store
-  Weights & Biases    — experiment monitoring (UNSPECIFIED: self-hosted vs cloud)
+  Weights & Biases    — experiment monitoring (RESOLVED: W&B Cloud, wandb.ai; source: spec §22-ai-architecture §22.6)
   Full MLOps implementation: Phase 23
   Phase 11 generates: extension_point() hooks for model versioning and deployment
     ModelRegistry — interface for MLflow model registration post-training
@@ -2805,8 +2808,8 @@ Stubs in Phase 11 (generate stub, do NOT implement yet):
     Interface: { extract(fileUrl: string): Promise<OCRResult> }
     OCRResult: { text: string, fields: Record<string, string>, confidence: float }
     Candidates: AWS Textract, Google Document AI, Azure Form Recognizer
-    Note:     provider UNSPECIFIED — choose after measuring invoice photo quality
-              in production (image_type="invoice" photos from Phase 1 P5)
+    Note:     provider RESOLVED — AWS Textract (AnalyzeDocument API, FORMS feature)
+              Auth: IAM role (EKS IRSA); source: spec §22-ai-architecture §22.6
 
   AlternativeLLMProvider:
     Trigger:  need to swap from OpenAI (cost, latency, compliance, or availability)
@@ -2937,7 +2940,9 @@ Stubs in Phase 12 (generate stub, do NOT implement yet):
     Trigger:  retrieval quality insufficient — when RAG top-k results are irrelevant
     Interface: { rerank(query: string, documents: Document[]): RankedDocument[] }
     Candidates: cohere-rerank, bge-reranker, cross-encoder/ms-marco
-    Note:     model UNSPECIFIED — choose after measuring retrieval quality in production
+    Note:     model RESOLVED — sentence-transformers cross-encoder/ms-marco-MiniLM-L-6-v2
+              Trigger: activate when RAG p95 relevance < 0.7 over 7-day window
+              source: spec §22-ai-architecture §22.6
 
 - Before marking Phase 12 complete: read every Generate item above line by line,
   run ls/grep to verify each exists on disk, show output — Rule 37
@@ -3934,8 +3939,9 @@ Stub in Phase 21 (generate stub — implement when triggered):
     Common event types: GPS_POSITION, FUEL_LEVEL, ENGINE_HOURS, IGNITION_ON/OFF,
                         IDLE_ALERT, GEOFENCE_BREACH
     Candidates: AWS IoT Core, Azure IoT Hub, self-hosted EMQX (MQTT broker)
-    Note:     IoT platform UNSPECIFIED — MQTT is the universal protocol
-              implement MQTT ingestion pipeline first, then platform-specific adapters
+    Note:     IoT platform RESOLVED — EMQX self-hosted on EKS (MQTT broker)
+              EMQX → Kafka (MSK) connector built-in; consistent with AWS-native stack
+              Azure IoT Hub excluded; AWS IoT Core deferred (device mgmt at scale only)
 
 Constraints:
 
@@ -4107,7 +4113,7 @@ Generate:
 - Unit tests: DAG task functions (with mocked data sources)
 - Integration tests: end-to-end Airflow DAG run with test data
 
-Stubs in Phase 23 (generate stub — algorithm UNSPECIFIED, wait for production data):
+Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-architecture §22.6, implement when data thresholds met):
 
   ModelRegistry:
     Integrated with: MLflow tracking server (deployed in this phase)
@@ -4127,10 +4133,10 @@ Stubs in Phase 23 (generate stub — algorithm UNSPECIFIED, wait for production 
                 or data deletions — generate stub only, governance review required
 
   ExperimentMonitoring:
-    Integrated with: W&B (Weights & Biases) — provider UNSPECIFIED (self-hosted vs cloud)
+    Integrated with: W&B Cloud (wandb.ai) — RESOLVED: cloud, not self-hosted
     Interface: { logRun(experimentName: str, metrics: dict, params: dict): RunRef }
-    Candidates: W&B self-hosted, W&B cloud, MLflow experiment tracking (already present)
-    Note:     if MLflow covers requirements, ExperimentMonitoring may be closed as redundant
+    Auth:     W&B API key stored in AWS Secrets Manager
+    Note:     provider RESOLVED — W&B Cloud; source: spec §22-ai-architecture §22.6
 
   DelayForecastModel:
     Trigger:  after Phase 23 DAG dag-train-delay-model has run with 90+ days production data
@@ -4139,32 +4145,30 @@ Stubs in Phase 23 (generate stub — algorithm UNSPECIFIED, wait for production 
                      historical_velocity, days_to_deadline }
     DelayPrediction: { delay_probability: float, estimated_delay_days: int,
                        confidence_interval: tuple[int, int] }
-    Algorithm: UNSPECIFIED — choose after EDA on production data
-    Candidates: XGBoost (if tabular patterns), Prophet (if time-series),
-                LSTM (if sequential dependencies found)
+    Algorithm: RESOLVED — XGBoost regressor; source: spec §22-ai-architecture §22.6
+    Framework: scikit-learn + XGBoost
 
   SafetyVisionModel:
     Trigger:  after 10,000+ labeled site photos accumulated in production
     Interface: { analyze(image_url: str): SafetyAnalysisResult }
     SafetyAnalysisResult: { violations: list[str], confidence: float, severity: str }
-    Algorithm: UNSPECIFIED — choose after reviewing photo quality and label distribution
-    Candidates: YOLOv8 (real-time detection), fine-tuned ViT (classification),
-                AWS Rekognition Custom Labels (managed)
+    Algorithm: RESOLVED — XGBoost classifier on HOG + ViT image embeddings; source: spec §22-ai-architecture §22.6
+    Framework: scikit-learn + XGBoost
 
   GraphMLModel:
     Trigger:  after Neo4j graph has 6+ months of relationship data
     Interface: { inferRelationship(node_a: str, node_b: str,
                                    node_type: str): RelationshipScore }
     RelationshipScore: { score: float, relationship_type: str }
-    Algorithm: UNSPECIFIED — choose after measuring graph density and relationship types
-    Candidates: PyG (PyTorch Geometric), DGL, Neo4j GDS (built-in graph algorithms)
+    Algorithm: RESOLVED — XGBoost on Neo4j graph-derived features (PageRank, centrality); source: spec §22-ai-architecture §22.6
+    Framework: scikit-learn + XGBoost
 
   RiskClassifier:
     Trigger:  after 50+ projects with full lifecycle data in production
     Interface: { classify(project_features: ProjectFeatures): RiskLevel }
     RiskLevel: ENUM(LOW, MEDIUM, HIGH, CRITICAL)
-    Algorithm: UNSPECIFIED — choose after EDA on project outcome labels
-    Candidates: Random Forest (interpretable), XGBoost, LightGBM
+    Algorithm: RESOLVED — XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL); source: spec §22-ai-architecture §22.6
+    Framework: scikit-learn + XGBoost
 
 Constraints:
 
@@ -4283,7 +4287,7 @@ GLOBAL EXECUTION RULES:
 17. Always enforce RBAC using roles defined in Phase 2.
 18. Always include audit logging for all mutating operations.
 19. Always design for AI extensibility (AI Foundation is a separate layer).
-20. Always mark unspecified requirements with: UNSPECIFIED — generate extension_point()
+20. Always mark unspecified requirements with: UNSPECIFIED — escalate to product owner immediately; do not generate stubs
 21. Always follow FINANCIAL PRECISION SPEC for all monetary fields.
 22. Always follow SERVICE → RUNTIME MAPPING — do not reassign runtimes.
 23. Always use decimal.js (TypeScript) or Python decimal module for money math.
