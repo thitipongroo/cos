@@ -4,13 +4,15 @@ NestJS module for tenant provisioning and multi-tenant schema isolation.
 
 ## Purpose
 
-Implements the schema-per-tenant isolation model (ADR-008). Each tenant gets one PostgreSQL schema (`{tenant_code}`, e.g. `acme_corp`). All requests are routed to the correct schema via `TenantMiddleware`, which sets `SET LOCAL search_path = {tenant_code}` inside a PgBouncer transaction.
+Implements the schema-per-tenant isolation model (ADR-008).
+Each tenant gets one PostgreSQL schema (`{tenant_code}`, e.g. `acme_corp`).
+All requests are routed to the correct schema via `TenantMiddleware`, which sets `SET LOCAL search_path = {tenant_code}` inside a PgBouncer transaction.
 
 Also handles Keycloak realm provisioning when a new tenant is created.
 
 ## Public API
 
-```
+```text
 POST /api/v1/admin/tenants          — provision new tenant (SYSTEM_ADMIN only)
 GET  /api/v1/admin/tenants          — list tenants (SYSTEM_ADMIN only)
 PATCH /api/v1/admin/tenants/:id     — update tenant metadata

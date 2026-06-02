@@ -13,7 +13,7 @@ Manages OTP generation, token issuance, JWT validation, refresh token rotation, 
 
 ## Public API
 
-```
+```text
 POST /api/v1/auth/request-otp       — request SMS OTP (Path A)
 POST /api/v1/auth/verify-otp        — verify OTP, returns JWT + refresh token
 POST /api/v1/auth/refresh           — rotate refresh token

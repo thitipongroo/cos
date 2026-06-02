@@ -38,11 +38,11 @@ master: 00_master_construction_os.md
 - [Phase 2 — Operational Adoption](#execution-phase-2--operational-adoption)
 - [Phase 3 — Reliability & Production Maturity](#execution-phase-3--reliability--production-maturity)
 - [Phase 4 — Data Governance & Operational Intelligence](#execution-phase-4--data-governance--operational-intelligence)
-- [Phase 5 — AI Expansion](#execution-phase-5--ai-expansion)
+- [Phase 5 — AI Expansion](#execution-phase-5--ai-expansion--governance)
 - [Phase 6 — Enterprise Operations](#execution-phase-6--enterprise-operations)
 - [Phase 7 — Ecosystem Dependency](#execution-phase-7--ecosystem-dependency)
 - [Phase 8 — Platformization](#execution-phase-8--platformization)
-- [Phase 9 — Operational Scale](#execution-phase-9--operational-scale)
+- [Phase 9 — Operational Scale](#execution-phase-9--operational-scale--intelligence-compounding)
 - [Phase 10 — Infrastructure Positioning](#execution-phase-10--infrastructure-positioning)
 
 ---
@@ -136,7 +136,7 @@ Optimize for:
 
 ## EXECUTION PHASE 1 — PILOT DEPLOYMENT & VALIDATION
 
-## Objective
+### Objective
 
 Validate real operational usage safely.
 
@@ -204,7 +204,7 @@ Constraints:
 
 ## EXECUTION PHASE 2 — OPERATIONAL ADOPTION
 
-## Objective
+### Objective
 
 Drive organization-wide usage and dependency.
 
@@ -300,7 +300,7 @@ Constraints:
 
 ## EXECUTION PHASE 3 — RELIABILITY & PRODUCTION MATURITY
 
-## Objective
+### Objective
 
 Achieve infrastructure-grade operational reliability.
 
@@ -394,7 +394,7 @@ Constraints:
 
 ## EXECUTION PHASE 4 — DATA GOVERNANCE & OPERATIONAL INTELLIGENCE
 
-## Objective
+### Objective
 
 Transform operational data into trusted intelligence.
 
@@ -459,7 +459,7 @@ Constraints:
 
 ## EXECUTION PHASE 5 — AI EXPANSION & GOVERNANCE
 
-## Objective
+### Objective
 
 Expand AI safely into operational intelligence.
 
@@ -524,7 +524,7 @@ Constraints:
 
 ## EXECUTION PHASE 6 — ENTERPRISE OPERATIONS
 
-## Objective
+### Objective
 
 Scale into enterprise-grade organizational infrastructure.
 
@@ -588,7 +588,7 @@ Constraints:
 
 ## EXECUTION PHASE 7 — ECOSYSTEM DEPENDENCY
 
-## Objective
+### Objective
 
 Expand platform dependency beyond internal organization boundaries.
 
@@ -650,7 +650,7 @@ Constraints:
 
 ## EXECUTION PHASE 8 — PLATFORMIZATION
 
-## Objective
+### Objective
 
 Transition from internal platform → ecosystem platform.
 
@@ -714,7 +714,7 @@ Constraints:
 
 ## EXECUTION PHASE 9 — OPERATIONAL SCALE & INTELLIGENCE COMPOUNDING
 
-## Objective
+### Objective
 
 Create long-term operational intelligence advantage.
 
@@ -777,7 +777,7 @@ Constraints:
 
 ## EXECUTION PHASE 10 — INFRASTRUCTURE POSITIONING
 
-## Objective
+### Objective
 
 Transition from enterprise platform → operational infrastructure.
 

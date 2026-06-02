@@ -6,7 +6,9 @@
 
 ## Purpose
 
-Desktop/tablet web application for online-only use. All roles can access this platform when on tablet or laptop with internet connectivity. When offline on tablet/laptop → use the PWA (`apps/pwa`).
+Desktop/tablet web application for online-only use.
+All roles can access this platform when on tablet or laptop with internet connectivity.
+When offline on tablet/laptop → use the PWA (`apps/pwa`).
 
 ## Public API
 
@@ -36,6 +38,7 @@ pnpm --filter @cos/web build
 ## Design system
 
 Uses `@cos/types` design tokens (spec §32.7):
+
 - Primary font: Inter Tight
 - Base unit: 14px body, 4px spacing grid
 - Brand blue: `#2563EB` (not mobile primary `#0066FF`)

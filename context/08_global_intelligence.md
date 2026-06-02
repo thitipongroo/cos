@@ -40,7 +40,7 @@ awaiting_decisions: GLOB-001, GLOB-002, GLOB-003, GLOB-004, GLOB-005
 - [Phase 3 — Civilization-scale Coordination](#execution-phase-3--civilization-scale-coordination)
 - [Phase 4 — Autonomous Operational Coordination](#execution-phase-4--autonomous-operational-coordination)
 - [Phase 5 — Global Governance & Interoperability](#execution-phase-5--global-governance--interoperability)
-- [Execution Order + Critical Rules](#global-intelligence-execution-order)
+- [Execution Order + Critical Rules](#execution-order)
 
 ---
 
@@ -172,7 +172,7 @@ Optimize for:
 
 ## EXECUTION PHASE 1 — GLOBAL OPERATIONAL INTELLIGENCE NETWORK
 
-## Objective
+### Objective
 
 Create globally coordinated operational intelligence systems.
 
@@ -238,7 +238,7 @@ Constraints:
 
 ## EXECUTION PHASE 2 — PLANETARY INFRASTRUCTURE RESILIENCE
 
-## Objective
+### Objective
 
 Coordinate infrastructure resilience at planetary scale.
 
@@ -302,7 +302,7 @@ Constraints:
 
 ## EXECUTION PHASE 3 — CIVILIZATION-SCALE COORDINATION
 
-## Objective
+### Objective
 
 Coordinate operational systems across industries and regions.
 
@@ -366,7 +366,7 @@ Constraints:
 
 ## EXECUTION PHASE 4 — AUTONOMOUS OPERATIONAL COORDINATION
 
-## Objective
+### Objective
 
 Expand safely into governed autonomous coordination.
 
@@ -438,7 +438,7 @@ Constraints:
 
 ## EXECUTION PHASE 5 — GLOBAL GOVERNANCE & INTEROPERABILITY
 
-## Objective
+### Objective
 
 Maintain trust and interoperability at global scale.
 
@@ -502,7 +502,7 @@ Constraints:
 
 ## EXECUTION PHASE 6 — INTELLIGENCE COMPOUNDING & NETWORK EFFECTS
 
-## Objective
+### Objective
 
 Create civilization-scale intelligence advantages.
 
@@ -566,7 +566,7 @@ Constraints:
 
 ## EXECUTION PHASE 7 — PLANETARY INFRASTRUCTURE POSITIONING
 
-## Objective
+### Objective
 
 Transition from industry infrastructure → civilization infrastructure.
 
@@ -629,7 +629,7 @@ Constraints:
 
 ## EXECUTION PHASE 8 — LONG-TERM CIVILIZATION RESILIENCE
 
-## Objective
+### Objective
 
 Optimize long-term infrastructure survivability.
 

@@ -5,22 +5,23 @@
 
 ## Purpose
 
-Single deployable NestJS application containing all domain modules. Implements the modular monolith pattern — do not split into microservices without satisfying both extraction conditions (team boundary + independent scaling evidence).
+Single deployable NestJS application containing all domain modules.
+Implements the modular monolith pattern — do not split into microservices without satisfying both extraction conditions (team boundary + independent scaling evidence).
 
 ## Modules
 
-| Module | Phase | Status |
-|--------|-------|--------|
-| `identity` | Phase 2 | stub |
-| `tenant` | Phase 2 | stub |
-| `project` | Phase 3 | stub |
-| `boq` | Phase 4 | stub |
-| `procurement` | Phase 5 | stub |
-| `site-ops` | Phase 6 | stub |
-| `finance` | Phase 7 | stub |
-| `notification` | Phase 20 | stub |
-| `equipment` | Phase 21 | stub |
-| `workforce` | Phase 22 | stub |
+| Module         | Phase    | Status |
+| -------------- | -------- | ------ |
+| `identity`     | Phase 2  | stub   |
+| `tenant`       | Phase 2  | stub   |
+| `project`      | Phase 3  | stub   |
+| `boq`          | Phase 4  | stub   |
+| `procurement`  | Phase 5  | stub   |
+| `site-ops`     | Phase 6  | stub   |
+| `finance`      | Phase 7  | stub   |
+| `notification` | Phase 20 | stub   |
+| `equipment`    | Phase 21 | stub   |
+| `workforce`    | Phase 22 | stub   |
 
 ## Public API
 

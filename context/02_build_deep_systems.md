@@ -133,7 +133,7 @@ Optimize for:
 
 ## EXECUTION PHASE 1 — FOUNDATION STABILIZATION
 
-## Objective
+### Objective
 
 Build the production-grade platform foundation before expanding advanced intelligence layers.
 
@@ -242,7 +242,7 @@ Constraints:
 
 ## EXECUTION PHASE 2 — CORE DOMAIN IMPLEMENTATION
 
-## Objective
+### Objective
 
 Build deterministic operational domain systems.
 
@@ -409,7 +409,7 @@ Constraints:
 
 ## EXECUTION PHASE 3 — WORKFLOW & EVENT INFRASTRUCTURE
 
-## Objective
+### Objective
 
 Create organization-wide operational synchronization.
 
@@ -507,7 +507,7 @@ Constraints:
 
 ## EXECUTION PHASE 4 — DATA PLATFORM & ONTOLOGY
 
-## Objective
+### Objective
 
 Create canonical operational intelligence foundation.
 
@@ -602,7 +602,7 @@ Constraints:
 
 ## EXECUTION PHASE 5 — AI & INTELLIGENCE LAYER
 
-## Objective
+### Objective
 
 Transform operational data into operational intelligence.
 
@@ -700,7 +700,7 @@ Constraints:
 
 ## EXECUTION PHASE 6 — MOBILE & OFFLINE SYSTEMS
 
-## Objective
+### Objective
 
 Enable reliable field operations under real construction conditions.
 
@@ -798,7 +798,7 @@ Constraints:
 
 ## EXECUTION PHASE 7 — ENTERPRISE HARDENING
 
-## Objective
+### Objective
 
 Achieve enterprise-grade operational reliability.
 
@@ -896,7 +896,7 @@ Constraints:
 
 ## EXECUTION PHASE 8 — ECOSYSTEM & MARKETPLACE
 
-## Objective
+### Objective
 
 Expand into ecosystem infrastructure.
 
@@ -962,7 +962,7 @@ Constraints:
 
 ## EXECUTION PHASE 9 — PRODUCTION ADOPTION & SCALING
 
-## Objective
+### Objective
 
 Achieve real operational dependency.
 

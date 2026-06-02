@@ -4,13 +4,14 @@ NestJS module for construction equipment management and utilization tracking.
 
 ## Purpose
 
-Tracks equipment inventory, project assignments, maintenance schedules, and daily utilization (Phase 21). Time-series telemetry (utilization, fuel consumption) stored in TimescaleDB hypertables. IoT telemetry pipeline available via EP-DOMAIN-003.
+Tracks equipment inventory, project assignments, maintenance schedules, and daily utilization (Phase 21).
+Time-series telemetry (utilization, fuel consumption) stored in TimescaleDB hypertables. IoT telemetry pipeline available via EP-DOMAIN-003.
 
 **Status:** Module scaffolded. Full implementation in Phase 21.
 
 ## Public API
 
-```
+```text
 POST   /api/v1/equipment                                    — create equipment
 GET    /api/v1/equipment                                    — list (filter by status, type)
 GET    /api/v1/equipment/:id                                — get detail

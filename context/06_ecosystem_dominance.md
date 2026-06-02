@@ -40,7 +40,7 @@ awaiting_decisions: ECO-001, ECO-002, ECO-003, ECO-004, ECO-005
 - [Phase 3 — Operational Standardization](#execution-phase-3--operational-standardization)
 - [Phase 4 — Ecosystem Marketplace Infrastructure](#execution-phase-4--ecosystem-marketplace-infrastructure)
 - [Phase 5 — AI-driven Operational Intelligence](#execution-phase-5--ai-driven-operational-intelligence)
-- [Execution Order + Critical Rules](#ecosystem-dominance-execution-order)
+- [Execution Order + Critical Rules](#execution-order)
 
 ---
 
@@ -173,7 +173,7 @@ Optimize for:
 
 ## EXECUTION PHASE 1 — ECOSYSTEM INTEROPERABILITY
 
-## Objective
+### Objective
 
 Create interoperable operational infrastructure across organizations.
 
@@ -240,7 +240,7 @@ Constraints:
 
 ## EXECUTION PHASE 2 — INDUSTRY DATA & INTELLIGENCE NETWORK
 
-## Objective
+### Objective
 
 Transform operational data into industry-scale intelligence.
 
@@ -306,7 +306,7 @@ Constraints:
 
 ## EXECUTION PHASE 3 — OPERATIONAL STANDARDIZATION
 
-## Objective
+### Objective
 
 Establish operational standards across the ecosystem.
 
@@ -372,7 +372,7 @@ Constraints:
 
 ## EXECUTION PHASE 4 — ECOSYSTEM MARKETPLACE INFRASTRUCTURE
 
-## Objective
+### Objective
 
 Create trusted ecosystem transaction infrastructure.
 
@@ -436,7 +436,7 @@ Constraints:
 
 ## EXECUTION PHASE 5 — AI-DRIVEN OPERATIONAL INTELLIGENCE
 
-## Objective
+### Objective
 
 Expand AI into ecosystem operational intelligence.
 
@@ -502,7 +502,7 @@ Constraints:
 
 ## EXECUTION PHASE 6 — GOVERNANCE & INFRASTRUCTURE TRUST
 
-## Objective
+### Objective
 
 Create infrastructure-grade ecosystem trust.
 
@@ -566,7 +566,7 @@ Constraints:
 
 ## EXECUTION PHASE 7 — GLOBALIZATION & REGIONALIZATION
 
-## Objective
+### Objective
 
 Scale operational infrastructure globally.
 
@@ -628,7 +628,7 @@ Constraints:
 
 ## EXECUTION PHASE 8 — NETWORK EFFECTS & INTELLIGENCE COMPOUNDING
 
-## Objective
+### Objective
 
 Create self-reinforcing operational intelligence advantages.
 
@@ -691,7 +691,7 @@ Constraints:
 
 ## EXECUTION PHASE 9 — INDUSTRY INFRASTRUCTURE POSITIONING
 
-## Objective
+### Objective
 
 Transition from platform provider → infrastructure provider.
 
@@ -753,7 +753,7 @@ Constraints:
 
 ## EXECUTION PHASE 10 — INDUSTRY COORDINATION & MARKET INFRASTRUCTURE
 
-## Objective
+### Objective
 
 Become operational coordination infrastructure for the construction ecosystem.
 

@@ -4,13 +4,15 @@ NestJS module for site operations: daily reports, issues, inspections, and offli
 
 ## Purpose
 
-Captures structured operational data from construction sites (Phase 6). Implements the three offline conflict resolution strategies, the `ConflictHandler` class, and the `POST /api/v1/sync/resolve` server-side sync endpoint. Optimised for low-bandwidth mobile-first usage.
+Captures structured operational data from construction sites (Phase 6).
+Implements the three offline conflict resolution strategies, the `ConflictHandler` class, and the `POST /api/v1/sync/resolve` server-side sync endpoint.
+Optimised for low-bandwidth mobile-first usage.
 
 **Status:** Module scaffolded. Full implementation in Phase 6.
 
 ## Public API
 
-```
+```text
 POST  /api/v1/site-reports            — create or sync offline report
 GET   /api/v1/site-reports            — list (paginated, date range filter)
 GET   /api/v1/site-reports/:id        — get detail
@@ -35,7 +37,7 @@ PATCH /api/v1/conflict-records/:id/resolve — manual resolution
 
 Sync wire protocol:
 
-```
+```text
 POST /api/v1/sync/resolve
 { entity_type, entity_id, client_version, payload, client_submitted_at }
 → { resolved_payload, conflict_status, server_version }

@@ -4,7 +4,9 @@ NestJS module for multi-channel notification delivery.
 
 ## Purpose
 
-Centralised notification hub (Phase 20). All other services emit Kafka events; this module consumes them and delivers to the correct channels. No service sends notifications directly — all routing goes through here.
+Centralised notification hub (Phase 20).
+All other services emit Kafka events; this module consumes them and delivers to the correct channels.
+No service sends notifications directly — all routing goes through here.
 
 **Status:** Module scaffolded. Full implementation in Phase 20.
 
@@ -19,7 +21,7 @@ Centralised notification hub (Phase 20). All other services emit Kafka events; t
 
 ## Public API
 
-```
+```text
 GET   /api/v1/notifications                 — list my notifications (paginated)
 PATCH /api/v1/notifications/:id/read        — mark as read
 PATCH /api/v1/notifications/read-all        — mark all as read

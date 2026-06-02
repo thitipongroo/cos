@@ -4,11 +4,13 @@ NestJS module for project lifecycle management.
 
 ## Purpose
 
-Manages construction projects with a strict state machine (Phase 3). Enforces RBAC-controlled state transitions, project membership, and document associations. Emits Kafka events on all state changes for downstream consumers (Finance, Analytics, KG).
+Manages construction projects with a strict state machine (Phase 3).
+Enforces RBAC-controlled state transitions, project membership, and document associations.
+Emits Kafka events on all state changes for downstream consumers (Finance, Analytics, KG).
 
 ## Public API
 
-```
+```text
 POST   /api/v1/projects                          — create project (DRAFT)
 GET    /api/v1/projects                          — list (paginated, filter by status/type)
 GET    /api/v1/projects/:id                      — get detail
@@ -22,7 +24,7 @@ GET    /api/v1/projects/:id/documents            — list documents
 
 ## State Machine
 
-```
+```text
 DRAFT → ACTIVE → ON_HOLD → ACTIVE (resume)
 ACTIVE → COMPLETED  (TENANT_ADMIN only; end_date ≤ today required)
 ANY    → CANCELLED  (TENANT_ADMIN only; terminal state)

@@ -17,7 +17,7 @@
 
 ## Lifecycle Stage Map
 
-```
+```text
 [MASTER]
   00_master_construction_os.md      ← Read first, always
          │
@@ -168,5 +168,3 @@ The following decisions are open across stage files. They must be resolved befor
 | Platform by device  | React Native = smartphone (online+offline); PWA = tablet/laptop (offline); Web Next.js = tablet/laptop (online)                              |
 
 ---
-
-_Last updated: 2026-05-26 — Cloudflare WAF decision added to Phase 16; API path convention confirmed `/api/v1/` (NestJS `setGlobalPrefix('api/v1')` — source: `backend/src/main.ts`; C-04 resolved)_

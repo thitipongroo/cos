@@ -4,13 +4,15 @@ NestJS module for Bill of Quantities (BOQ) management.
 
 ## Purpose
 
-Manages BOQ versions, categories, and line items for construction projects (Phase 4). Enforces financial precision rules: all monetary values stored as `DECIMAL(19,4)`, calculated with `decimal.js` (never native JS float). Supports versioning with copy-on-approve semantics.
+Manages BOQ versions, categories, and line items for construction projects (Phase 4).
+Enforces financial precision rules: all monetary values stored as `DECIMAL(19,4)`, calculated with `decimal.js` (never native JS float).
+Supports versioning with copy-on-approve semantics.
 
 **Status:** Module scaffolded. Full implementation in Phase 4.
 
 ## Public API
 
-```
+```text
 POST   /api/v1/projects/:projectId/boq/versions                   — create new version
 GET    /api/v1/projects/:projectId/boq/versions                   — list versions
 GET    /api/v1/projects/:projectId/boq/versions/:versionId        — get version detail
@@ -24,7 +26,7 @@ GET    /api/v1/boq/versions/:versionId/export                     — export JSO
 
 ## Calculation Rules
 
-```
+```text
 estimated_total = ROUND(quantity × unit_cost, 4)  — HALF_UP
 category.subtotal = SUM(item.estimated_total)
 version.total = SUM(category.subtotal)

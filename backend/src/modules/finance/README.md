@@ -4,7 +4,9 @@ NestJS module for project cost tracking (NOT a full accounting system).
 
 ## Purpose
 
-Tracks project-level budget vs. committed vs. actual cost (Phase 7). Consumes Kafka events from the procurement module to auto-record cost transactions. Does NOT implement double-entry bookkeeping, chart of accounts, or GL posting.
+Tracks project-level budget vs. committed vs. actual cost (Phase 7).
+Consumes Kafka events from the procurement module to auto-record cost transactions.
+Does NOT implement double-entry bookkeeping, chart of accounts, or GL posting.
 
 **Status:** Module scaffolded. Full implementation in Phase 7.
 
@@ -26,7 +28,7 @@ Tracks project-level budget vs. committed vs. actual cost (Phase 7). Consumes Ka
 
 ## Public API
 
-```
+```text
 GET  /api/v1/projects/:projectId/finance/summary     — budget vs actual vs committed
 GET  /api/v1/projects/:projectId/finance/budget      — budget detail with lines
 POST /api/v1/projects/:projectId/finance/budget      — create/update budget

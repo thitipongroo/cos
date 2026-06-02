@@ -4,13 +4,15 @@ NestJS module for workforce management, attendance tracking, and timesheets.
 
 ## Purpose
 
-Manages workers, project allocations, attendance check-in/check-out, and timesheet approval (Phase 22). Attendance logs and timesheets are stored as TimescaleDB hypertables. Biometric / QR check-in available via EP-DOMAIN-008.
+Manages workers, project allocations, attendance check-in/check-out, and timesheet approval (Phase 22).
+Attendance logs and timesheets are stored as TimescaleDB hypertables.
+Biometric / QR check-in available via EP-DOMAIN-008.
 
 **Status:** Module scaffolded. Full implementation in Phase 22.
 
 ## Public API
 
-```
+```text
 POST /api/v1/workers                               — create worker
 GET  /api/v1/workers                               — list workers (tenant-scoped)
 GET  /api/v1/workers/:id                           — get detail
