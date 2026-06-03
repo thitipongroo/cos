@@ -645,11 +645,10 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 
 - Follow phase execution order from `context/00_master_construction_os.md` PHASE DEPENDENCY GRAPH
 - Use exact technology versions specified in master document
-- Extend `StubBase` for every `extension_point()` — never implement guessed logic
-- Log stub calls via `logStubCall()` (TypeScript) / `log_stub_call()` (Python) — never silent stubs
 - All monetary calculations use `decimal.js` (TypeScript) or Python `decimal` module — never `float`
 - All Kafka events must use typed contracts from `@cos/shared`
-- Check `docs/specifications/` (§13.3-13.5, §22.6, §05-security-compliance §5.3.1) before implementing any EP — all EP decisions are documented there
+- Check `docs/specifications/` (§13.3-13.5, §22.6, §05-security-compliance §5.3.1) before implementing any EP — all EP decisions are documented there;
+  stub implementation behaviour is defined in `32-implementation-specifications` §32.9
 - Version every HTTP API endpoint from `/api/v1/` on the first commit (QM-2; NestJS global prefix `api/v1` — source: `backend/src/main.ts`)
 - Route all user-facing strings through i18n keys — never hardcode (QM-3)
 - Tag all PII fields with `@pdpa(category: "...")` comment in Prisma schema (QM-5)

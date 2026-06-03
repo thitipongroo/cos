@@ -32,6 +32,7 @@ related_docs:
 - [32.5 Financial Precision Rules](#325-financial-precision-rules)
 - [32.6 Workflow State Machines](#326-workflow-state-machines)
 - [32.7 Design Token Specification](#327-design-token-specification)
+- [32.9 Integration Stub Pattern](#329-integration-stub-pattern)
 
 ---
 
@@ -741,8 +742,8 @@ modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
 ## 32.8 Known Deferred Deliverables
 
 Items in this section are **known** (implementation is understood) but **not yet done**
-because of a dependency or resource constraint. These are distinct from Extension Points
-(§32.3), which mark architectural uncertainty where the implementation strategy is unknown.
+because of a dependency or resource constraint. These are distinct from Extension Points,
+which mark architectural uncertainty where the implementation strategy is unknown.
 
 When a deferred deliverable is completed, remove it from this section and commit the
 implementation in the same PR.
@@ -776,6 +777,63 @@ Path B users created this way cannot log in via Keycloak until step 1–3 are co
 - Update `UserService.createUser()` to replace the email-placeholder path with the real Keycloak UUID
 
 **Unblocks when:** Keycloak Admin API credentials are provisioned and `@keycloak/keycloak-admin-client` is added
+
+---
+
+## 32.9 Integration Stub Pattern
+
+Every integration EP (Extension Point) that is deferred until a trigger condition is met must be
+implemented as a **stub** from day one so that the service compiles and starts without the real
+integration active.
+
+### Stub Behaviour by Integration Type
+
+Two behaviours are defined depending on whether the integration is on a **critical path**:
+
+#### Type A — Non-critical-path integrations (CRM, BIM, ERP, and similar)
+
+The stub **must**:
+
+1. Log at `WARN` level when called, including the integration name and method — so operators know
+   the code path was reached without a real implementation active.
+2. Throw a typed exception immediately (fail-fast). Returning `null` or an empty value is
+   prohibited because the caller may interpret it as a successful result and continue, leading to
+   silent data corruption or invalid workflow state.
+
+Rationale: reaching a non-critical-path stub in production means either a misconfiguration or a
+tenant was granted access to a feature before it was activated. Failing fast makes the problem
+immediately visible.
+
+#### Type B — Critical-path integrations where the service must remain operational without the integration (IoT, specified per phase)
+
+The stub **must**:
+
+1. Log at `WARN` level when called.
+2. Return safe defaults so the calling service continues to operate in a degraded but valid state.
+
+Which integrations are Type B is explicitly stated in the phase spec for that integration. If the
+phase spec does not state Type B, the integration is Type A.
+
+Currently specified as Type B:
+
+| Integration            | Specified in                   |
+| ---------------------- | ------------------------------ |
+| IoT Device (Phase 21+) | `33-digital-twin-iot.md` §33.7 |
+
+### Stub Implementation Rules
+
+- The stub must implement the full interface defined in the phase spec — no partial implementations.
+- The stub must be registered in the NestJS DI container from the first phase that introduces the
+  interface, replaced by the real implementation when the trigger condition is met.
+- The stub file is committed alongside the interface definition in the same PR — never as a
+  follow-up.
+- When the trigger condition is met and the real implementation is built, the stub file is deleted
+  in the same PR as the real implementation.
+
+### Reference
+
+See `13-product-architecture.md` §13.3–13.5 for the list of all integration EPs and their trigger
+conditions.
 
 ---
 

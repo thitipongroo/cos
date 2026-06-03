@@ -33,9 +33,11 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
-  // Integration tests in test/ require Docker (testcontainers KafkaContainer).
-  // They run via `test:integration` only — exclude from unit test:cov.
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/test/'],
+  // Only node_modules excluded globally. test/ exclusion is handled per-script via
+  // --testPathPattern='src/' (unit) and --testPathPattern='test/' (integration).
+  // testPathIgnorePatterns takes precedence over --testPathPattern, so test/ must
+  // NOT be listed here or the test:integration command would silently run nothing.
+  testPathIgnorePatterns: ['<rootDir>/node_modules/'],
   // testcontainers containers take time to stop — force exit after all tests pass.
   forceExit: true,
   moduleNameMapper: {

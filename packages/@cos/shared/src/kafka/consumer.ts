@@ -7,6 +7,7 @@
 import { Kafka, Consumer, EachMessagePayload, logLevel } from 'kafkajs';
 import { Redis } from 'ioredis';
 import { decodeAvro } from './schema-registry.client';
+import { DlqPublisher } from './dlq';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 
@@ -31,6 +32,7 @@ export class KafkaConsumer {
   private readonly kafka: Kafka;
   private consumer: Consumer | null = null;
   private readonly redis: Redis;
+  private readonly dlqPublisher: DlqPublisher;
   private readonly handlers = new Map<string, MessageHandler>();
 
   constructor() {
@@ -40,6 +42,7 @@ export class KafkaConsumer {
       logLevel: process.env['NODE_ENV'] === 'test' ? logLevel.NOTHING : logLevel.WARN,
     });
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
+    this.dlqPublisher = new DlqPublisher();
   }
 
   /** Register a handler for a specific event_type. */
@@ -48,6 +51,7 @@ export class KafkaConsumer {
   }
 
   async connect(options: ConsumerOptions): Promise<void> {
+    await this.dlqPublisher.connect();
     this.consumer = this.kafka.consumer({ groupId: options.groupId });
     await this.consumer.connect();
 
@@ -64,6 +68,7 @@ export class KafkaConsumer {
 
   async disconnect(): Promise<void> {
     await this.consumer?.disconnect();
+    await this.dlqPublisher.disconnect();
     this.consumer = null;
   }
 
@@ -137,12 +142,14 @@ export class KafkaConsumer {
     }
   }
 
-  private async sendToDlq(originalTopic: string, _value: Buffer, reason: string): Promise<void> {
-    // DLQ topic naming: {original-topic}.dlq
-    const dlqTopic = `${originalTopic}.dlq`;
-    logger.error({ dlqTopic, reason }, 'Message sent to DLQ');
-    // DLQ publishing is handled by DlqConsumer — here we just log and alert
-    // In production: a separate DlqPublisher pushes failed messages to DLQ topic
+  private async sendToDlq(originalTopic: string, value: Buffer, reason: string): Promise<void> {
+    await this.dlqPublisher.publish({
+      originalTopic,
+      originalValue: value,
+      reason,
+      failedAt: new Date().toISOString(),
+      retryCount: MAX_RETRIES,
+    });
   }
 
   private headerToString(

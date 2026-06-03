@@ -3,6 +3,14 @@
 
 const redisMock: Record<string, string> = {};
 
+jest.mock('../dlq', () => ({
+  DlqPublisher: jest.fn().mockImplementation(() => ({
+    connect: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+    publish: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 jest.mock('ioredis', () => ({
   Redis: jest.fn().mockImplementation(() => ({
     set: jest.fn(async (key: string, value: string, ...args: unknown[]) => {
@@ -248,9 +256,18 @@ describe('KafkaConsumer — error branches', () => {
 
   it('sends to DLQ and returns when Avro decode fails', async () => {
     (decodeAvro as jest.Mock).mockRejectedValueOnce(new Error('bad avro'));
+    const { DlqPublisher } = jest.requireMock('../dlq') as { DlqPublisher: jest.Mock };
     const consumer = new KafkaConsumer();
     await (consumer as unknown as { handleMessage: HandleMessage }).handleMessage(makeMessage());
-    // handler was never registered — DLQ path is taken, no throw
+    // DlqPublisher.publish() must be called — not just logged
+    const publishMock = DlqPublisher.mock.results[0]?.value.publish as jest.Mock;
+    expect(publishMock).toHaveBeenCalledTimes(1);
+    expect(publishMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        originalTopic: 'construction.project.created',
+        reason: 'AVRO_DECODE_ERROR',
+      }),
+    );
   });
 
   it('returns without calling handler when no handler is registered', async () => {

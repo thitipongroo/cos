@@ -192,6 +192,8 @@ interface ERPIntegration {
 Each adapter is implemented only when the first tenant using that ERP system requests integration.
 API credentials, field mappings, and authentication are configured per-tenant in AWS Secrets Manager / Vault.
 
+For stub implementation behaviour (Type A — fail-fast), see `32-implementation-specifications` §32.9.
+
 ---
 
 ## 13.4 Domain Integrations
@@ -223,6 +225,8 @@ interface CRMIntegration {
 | PipedriveAdapter  | Pipedrive Webhooks — deal status "won" → project     |
 
 Field mapping (CRM deal fields → COS project fields) is configured per-tenant per-CRM system.
+
+For stub implementation behaviour (Type A — fail-fast), see `32-implementation-specifications` §32.9.
 
 ---
 
@@ -267,6 +271,9 @@ interface BIMQuantities {
 
 1. IFC.js (open-source parser — `@thatopen/engine` or `web-ifc`) — platform-agnostic, handles all BIM software
 2. Autodesk Forge API / Trimble Connect API — optional vendor-specific connectors (add only if a tenant requires cloud-based BIM platform sync)
+
+Both integration points ship as stubs until a tenant requests IFC import.
+For stub implementation behaviour (Type A — fail-fast), see `32-implementation-specifications` §32.9.
 
 ---
 

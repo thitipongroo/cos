@@ -16,10 +16,10 @@
     "dev": "tsc --watch",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "jest",
+    "test": "jest --testPathPattern='src/'",
     "test:unit": "jest --testPathPattern='src/'",
     "test:integration": "jest --testPathPattern='test/'",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage --testPathPattern='src/'"
   },
   "dependencies": {
     "@cos/logger": "workspace:*",

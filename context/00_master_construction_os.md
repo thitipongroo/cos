@@ -3215,7 +3215,7 @@ Compliance Targets (source §13.3):
   Note: compliance audit workflow (Temporal) covers SOC 2 Type II + ISO 27001 + PDPA; see spec §05-security-compliance §5.3.1
     ComplianceAuditWorkflow (Phase 16)
     Trigger: 6 months before target certification date
-    Stub: return { status: 'PENDING', certification: null }
+    Stub: follow §32.9 Integration Stub Pattern (Type A — fail-fast)
 
 Security Requirements:
   Encryption algorithm: AES-256 minimum for all at-rest data encryption — custom field-level
@@ -4265,6 +4265,9 @@ GLOBAL EXECUTION RULES:
 22. Always follow SERVICE → RUNTIME MAPPING — do not reassign runtimes.
 23. Always use decimal.js (TypeScript) or Python decimal module for money math.
 24. Always use BACKWARD_TRANSITIVE-compatible schema evolution in Schema Registry (source: spec §32.4; ensures new schema reads ALL historical versions, not just the immediately preceding one).
+25. Always follow the Integration Stub Pattern when generating stubs (source: spec §32.9):
+    Type A (CRM, BIM, ERP and all integration stubs not listed as Type B) — log WARN + fail-fast.
+    Type B (IoT only, as specified in §32.9) — log WARN + return safe defaults.
 ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
 
   Rule 27 — Package dependency sync (prevents Bug-class-A: missing package.json deps):

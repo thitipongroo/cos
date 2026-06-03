@@ -89,7 +89,7 @@ capability per the SaaS Maturity Model in 32-implementation-specifications secti
 | Phase 21 — Equipment Service                      | 32-implementation-specifications §32.1 | Must be complete         |
 | Phase 23 — MLOps Pipeline                         | 32-implementation-specifications §32.1 | Must be complete         |
 | BIM Integration (IFC.js parser, spec §13.4)       | 13-product-architecture §13.4          | Must be implemented      |
-| IoT Device Integration                            | 32-implementation-specifications §32.3 | Must be provisioned      |
+| IoT Device Integration                            | 32-implementation-specifications §32.9 | Must be provisioned      |
 | Phase 4 (Financial Infrastructure) entry criteria | 28-ecosystem-expansion §28.5           | Revenue base sustainable |
 
 ### Entry Criteria (28-ecosystem-expansion §28.5)
@@ -350,7 +350,9 @@ queries TimescaleDB directly.
 **Implementation rule:**
 
 - BIM Integration — spec defined (IFC.js parser, IFC format, see `13-product-architecture` §13.4). **Must be implemented** before Phase 24 begins.
-- IoT Device Integration — must be provisioned as a stub (safe defaults) from Phase 21 onward. The Digital Twin Service must compile and start with this stub returning safe defaults before the integration is live. See `32-implementation-specifications` section 32.3 for stub pattern.
+- IoT Device Integration — must be provisioned as a stub (safe defaults) from Phase 21 onward.
+  The Digital Twin Service must compile and start with this stub returning safe defaults before
+  the integration is live. See `32-implementation-specifications` §32.9 for stub pattern.
 
 ---
 
