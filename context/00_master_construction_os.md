@@ -340,18 +340,18 @@ Infrastructure stack (all required — synced from source §3.3, §8.3, §8.4):
 - Docker                 — containerization
 - Terraform 1.7+         — infrastructure as code
 - Istio 1.21+            — service mesh (mTLS, traffic management, observability)
-- AWS Secrets Manager + HashiCorp Vault 1.16+ — secrets management: AWS SM (cloud/EKS via External Secrets Operator); Vault (on-premise/hybrid, Vault Agent sidecar); Vault dev mode (local dev); C-02 resolved 2026-05-27; ADR-013
+- AWS Secrets Manager + HashiCorp Vault 1.16+ — secrets management: AWS SM (cloud/EKS via External Secrets Operator); Vault (on-premise/hybrid, Vault Agent sidecar); Vault dev mode (local dev)
 - NGINX                  — ingress controller (via Kubernetes ingress-nginx)
 - Confluent Schema Registry — Kafka schema management
-- Apache Iceberg            — data lake table format on S3 (cold archive; spec §4.3, §9.3; M-4 resolved 2026-05-27)
-- Debezium CDC              — change data capture: reads PostgreSQL WAL → Kafka → S3/Iceberg (Path 2 data replication — see spec §9.4; M-6 resolved 2026-05-27; separate from Outbox Pattern Path 1)
-- ArgoCD                    — RESOLVED C-05 (2026-05-27): GitOps CD to EKS (spec §4.9; ADR-012); GitHub Actions handles CI only (build + push to ECR); ArgoCD handles CD (sync image tag to cluster)
+- Apache Iceberg            — data lake table format on S3 (cold archive; spec §4.3, §9.3)
+- Debezium CDC              — change data capture: reads PostgreSQL WAL → Kafka → S3/Iceberg (Path 2 data replication — see spec §9.4; separate from Outbox Pattern Path 1)
+- ArgoCD                    — GitOps CD to EKS (spec §4.9); GitHub Actions handles CI only (build + push to ECR); ArgoCD handles CD (sync image tag to cluster)
 
 
-API Gateway Responsibilities (source §4.8, §16.2; C-01 resolved 2026-05-27 — ADR-010):
+API Gateway Responsibilities (source §4.8, §16.2):
   Gateway:           Kong Gateway (open-source, Kubernetes-native) — runs in front of NestJS
   Authentication:    Kong validates Keycloak JWT at ingress; NestJS guards enforce authorization
-  Rate limiting:     Kong Gateway per tenant and per API key (spec §4.8; ADR-010)
+  Rate limiting:     Kong Gateway per tenant and per API key (spec §4.8)
                      Default limits enforced at Kong: auth 10/min/IP, general 100/min/user,
                      file upload 20/min/user, AI 20/min/tenant (spec §05 §5.5, QM-7)
   Tenant routing:    Kong routes to upstream; NestJS middleware sets search_path from JWT (Phase 2)
@@ -366,7 +366,7 @@ Mandatory architectural rules:
 - Architecture: modular monolith — do NOT split into microservices prematurely
 - every entity must include tenant schema isolation (schema-per-tenant via SET LOCAL search_path — PRIMARY mechanism). tenant_id+RLS is SECONDARY defense-in-depth only (Phase 16), never the primary isolation strategy
 - all modules must emit events via shared Kafka SDK (Phase 8 output)
-- all APIs must be versioned (/api/v1/, /api/v2/) — NestJS global prefix `api/v1` set in backend/src/main.ts (C-04 resolved 2026-05-26)
+- all APIs must be versioned (/api/v1/, /api/v2/) — NestJS global prefix `api/v1` set in backend/src/main.ts
 - APIs must be OpenAPI 3.1 compliant
 - monolith must be stateless (no local state, all state in DB/Redis/Kafka)
 - infrastructure must be containerized
@@ -438,7 +438,7 @@ EP decisions:  documented in docs/specifications/ per domain (§13.3-13.5, §22.
 
 > 📎 **Derived from:** `docs/specifications/32-implementation-specifications.md §32.4`
 > Authoritative payload specs (field types, enum values) are in specs. This section is agent-executable form.
-> ⚠️ **M-5 RESOLVED 2026-05-27 — EVENT NAMING MIGRATION REQUIRED:**
+> ⚠️ **EVENT NAMING MIGRATION REQUIRED:**
 > The canonical event naming format (spec §32.4 and §15.6) is:
 > `{domain}.{entity}.{action}.v{N}` — e.g., `construction.project.created.v1`
 > Agents MUST use the canonical format for ALL NEW events. Non-canonical legacy events
@@ -651,7 +651,7 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
 
 - Use Confluent Schema Registry (open-source, self-hosted)
 - All schemas registered in Avro format
-- Compatibility mode: BACKWARD_TRANSITIVE (new schema must be readable by ALL previous versions, not just the immediately preceding one; source: spec §32.4; C-NEW-1 resolved 2026-05-27)
+- Compatibility mode: BACKWARD_TRANSITIVE (new schema must be readable by ALL previous versions, not just the immediately preceding one; source: spec §32.4)
 - Schema subject naming: {topic_name}-value
 - Version increment on every schema change
 - Agents must generate both TypeScript interface AND Avro schema for each event
@@ -983,7 +983,7 @@ Purchase Order Workflow:
   PARTIALLY_DELIVERED → FULLY_DELIVERED → INVOICED → PAID | DISPUTED
   Transitions:
     DRAFT → PENDING_APPROVAL: triggered by ROLE: PROCUREMENT_OFFICER
-    PENDING_APPROVAL → APPROVED: threshold-based approval chain (source: spec §15.5; M-12 resolved 2026-05-27):
+    PENDING_APPROVAL → APPROVED: threshold-based approval chain (source: spec §15.5):
       ≤ 50,000 THB:             PM (PROJECT_MANAGER) approves alone
       50,001–500,000 THB:       PM + FINANCE required
       > 500,000 THB:            PM + FINANCE + EXECUTIVE required
@@ -1066,7 +1066,7 @@ services/                 — Separately deployed services (non-monolith)
 packages/                 — Shared packages (ONLY code used by 2+ apps/services)
   @cos/shared             — Typed Kafka event interfaces (Phase 1); Avro schemas added in Phase 8 alongside KafkaProducer/Consumer/OutboxPublisher
   @cos/proto-contracts/   — gRPC proto files + generated stubs (future use)
-  @cos/database/          — Prisma pagination utilities, ID generation, retry helpers (see ADR-015)
+  @cos/database/          — Prisma pagination utilities, ID generation, retry helpers
   @cos/rbac/              — RBAC + ABAC role definitions and guard utilities
   @cos/validation/        — Shared DTO validators (class-validator decorators)
   @cos/logger/            — Structured logging abstraction (Pino-based)
@@ -1226,7 +1226,7 @@ Authentication Decision (TWO PATHS — from file 01):
 
   Future SSO hook: Keycloak SAML 2.0 IdP configuration (admin console, no code change); configure per tenant realm when enterprise customer with existing IdP onboards
 
-RBAC Role Definitions (authoritative — all modules must use these; C-03 resolved 2026-05-27; ADR-014):
+RBAC Role Definitions (authoritative — all modules must use these):
   Spec §6.2 roles (9 — seeded at tenant provisioning per spec §6.6):
   SYSTEM_ADMIN        — Platform admin (cross-tenant; NOT provisioned to any tenant per spec §6.7)
   TENANT_ADMIN        — Tenant administrator (full access within tenant)
@@ -1276,7 +1276,7 @@ Tenant Isolation Model (FINAL — from file 01 §B):
     - All migrations run per-schema (not global)
     - identity module tables live in schema "platform" (cross-tenant system tables)
 
-  ORM configuration (Prisma — see ADR-008):
+  ORM configuration (Prisma):
     - Default schema: set per-request via TenantPrismaService.run() using SET LOCAL search_path
     - Pattern: request-scoped TenantPrismaService wraps every DB call in a schema-pinned transaction
     - SET LOCAL is transaction-scoped — safe with PgBouncer connection pooling (reverts on commit/rollback)
@@ -1289,7 +1289,7 @@ Tenant Isolation Model (FINAL — from file 01 §B):
   Note: SchemaTenantIsolation is NO LONGER an extension point —
         schema-per-tenant is now the baseline implementation, not an upgrade path.
 
-Secret Management: conditional per deployment type (spec §5.2; C-02 resolved 2026-05-27; ADR-013)
+Secret Management: conditional per deployment type (spec §5.2)
   Cloud (AWS EKS):   AWS Secrets Manager — External Secrets Operator syncs SM secrets → K8s Secret → pod env
   On-premise/hybrid: HashiCorp Vault 1.16+ — Vault Agent sidecar injector
   Local dev:         HashiCorp Vault: dev mode container (Docker Compose)
@@ -1387,10 +1387,6 @@ Generate:
     tenant.deactivated { tenant_id }
     user.created       { tenant_id, user_id, email, role }  ← emitted from POST /api/v1/users
     user.role_changed  { tenant_id, user_id, old_role, new_role }  ← emitted from PATCH /api/v1/users/:userId/role
-
-- ADR-008: TenantPrismaService schema-per-tenant ORM pattern (Rule 30 — create BEFORE
-  implementing TenantPrismaService; Phase 2 code references it via "(see ADR-008)"):
-    file: docs/architecture/adr/008-tenantprismaservice-schema-per-tenant.md
 
 npm packages required in backend/package.json — add BEFORE implementing (Rule 27):
   dependencies:    @nestjs/passport, @nestjs/jwt, passport, passport-jwt, @aws-sdk/client-sns
@@ -2195,7 +2191,7 @@ Schema Registry:
 
   (new schema must be readable by ALL previous versions, not just the immediately preceding one;
    this is stricter than BACKWARD — every historical consumer can read any newer schema version;
-   source: spec §32.4; C-NEW-1 resolved 2026-05-27)
+   source: spec §32.4)
 
 - Schema evolution rules:
 
@@ -2255,7 +2251,7 @@ Monitoring:
   - Producer errors: Prometheus kafka_producer_error_total counter
   - DLQ depth: alert when DLQ topic message count > 0
 
-DATA FLOW ARCHITECTURE (spec §9.4 — two independent paths; M-6 resolved 2026-05-27):
+DATA FLOW ARCHITECTURE (spec §9.4 — two independent paths):
   Path 1 — Business Event Flow (THIS PHASE — Outbox Pattern):
     Operational App → Operational DB (PostgreSQL) → Outbox Pattern → Kafka → Downstream Services
     Purpose: real-time domain event coordination between services
@@ -3195,7 +3191,7 @@ Distributed Tracing:
   FastAPI services: trace every HTTP request, LLM provider API call, embedding call
   Go workers: trace every Kafka consume iteration and DB write
   Trace propagation: W3C TraceContext headers on HTTP, Kafka headers for async
-  Sampling: 1% of requests in production (100% for errors — tail-based sampling; source: spec §31.5; m-2 resolved 2026-05-27 — production rate corrected from 10% staging rate to 1% production rate)
+  Sampling: 1% of requests in production (100% for errors — tail-based sampling; source: spec §31.5 — production rate corrected from 10% staging rate to 1% production rate)
 
 Grafana Dashboards (required):
   - Per-service: latency P50/P95/P99, error rate, throughput
@@ -3316,7 +3312,7 @@ Generate:
 
 - PostgreSQL RLS policies for all tables (migration files)
 - sealed-secrets manifests for all service secrets
-- Kong Gateway declarative config (rate limits per route, JWT validation plugin, tenant routing — C-01 resolved; ADR-010)
+- Kong Gateway declarative config (rate limits per route, JWT validation plugin, tenant routing)
 - Secure headers NestJS middleware
 - Audit log interceptor (auto-logs all mutating operations)
 - cert-manager Kubernetes manifests (for TLS)
@@ -3374,7 +3370,7 @@ Environments:
   staging:  Kubernetes multi-node — mirrors production spec at 50% size
   production: Kubernetes multi-node — full spec above
 
-Secret Management: conditional per deployment type (spec §5.2; ADR-013)
+Secret Management: conditional per deployment type (spec §5.2)
   Cloud (AWS EKS):   AWS Secrets Manager + External Secrets Operator (ESO)
   On-premise/hybrid: HashiCorp Vault 1.16+ (Vault Agent sidecar injector)
   Git secrets:       sealed-secrets (kubeseal) — works across all deployment types
@@ -3397,7 +3393,7 @@ Deployment Strategy:
   Rollback: automatic on health check failure (liveness probe 3 consecutive fails)
   Canary: Argo Rollouts (open-source Kubernetes progressive delivery) — no EP needed; decision made
 
-CI/CD Pipeline (C-05 resolved 2026-05-27 — ADR-012: ArgoCD GitOps):
+CI/CD Pipeline (ArgoCD GitOps):
 
   GitHub Actions — CI ONLY (no kubectl, no helm upgrade):
     on: push to any branch
@@ -3429,7 +3425,7 @@ Data Scaling Strategy (source §24.2):
     TimescaleDB: recent telemetry (equipment + workforce — 90-day retention)
 
   Cold storage (historical data — > 90 days):
-    PostgreSQL: automated archival → S3 in Apache Iceberg format via Debezium CDC → Kafka Connect S3 Sink (source: spec §9.4 Path 2; M-4+M-6 resolved 2026-05-27; replaces "S3 Parquet via pg_partman" which conflicted with spec)
+    PostgreSQL: automated archival → S3 in Apache Iceberg format via Debezium CDC → Kafka Connect S3 Sink (source: spec §9.4 Path 2; replaces "S3 Parquet via pg_partman" which conflicted with spec)
     ClickHouse: tiered storage — local NVMe for hot, S3-backed for cold (ClickHouse S3 integration); fed from Iceberg data lake via ClickHouse S3 import
     TimescaleDB: chunk compression after 30 days, chunk move to S3 after 90 days (to Iceberg layer)
     Raw files (photos, PDFs): MinIO lifecycle policy → S3 Glacier after 1 year
@@ -3506,7 +3502,7 @@ Testing Pyramid:
   Load tests:         5% — SLA validation per Phase 14
 
 Required Unit Test Coverage:
-  Minimum: 80% line coverage AND 70% branch coverage for all NestJS services (source: spec §30.3; M-1 resolved 2026-05-27)
+  Minimum: 80% line coverage AND 70% branch coverage for all NestJS services (source: spec §30.3)
   Mandatory coverage for:
     - All state machine transitions (Phase 3, Phase 5)
     - All financial calculations (Phase 4, Phase 7) — include decimal edge cases
@@ -3549,7 +3545,7 @@ Testcontainers Setup:
 
 Generate:
 
-- Jest config per service (coverage thresholds: 80% lines + 70% branches — source: spec §30.3; M-1 resolved 2026-05-27)
+- Jest config per service (coverage thresholds: 80% lines + 70% branches — source: spec §30.3)
   Note: jest.config.js is a Phase 1 deliverable — Phase 18 adds testcontainers and @cos/test-utils only
 - pytest config for Python services
 - Shared testcontainers setup utility (@cos/test-utils package)
@@ -3603,7 +3599,7 @@ Architecture:
   [MANUAL] [ ] Outbox pattern implemented in all services that emit Kafka events
   [AUTO]   [ ] Schema Registry enforcing BACKWARD_TRANSITIVE compatibility on all topics
                → curl http://schema-registry:8081/config (check compatibility=BACKWARD_TRANSITIVE)
-               Note: BACKWARD_TRANSITIVE is stricter than BACKWARD — all historical consumers can read any newer schema (spec §32.4; C-NEW-1 resolved 2026-05-27)
+               Note: BACKWARD_TRANSITIVE is stricter than BACKWARD — all historical consumers can read any newer schema (spec §32.4)
   [AUTO]   [ ] Temporal worker has at least 2 replicas in production
                → kubectl get deployment temporal-worker -o jsonpath='{.spec.replicas}'
 
@@ -3668,7 +3664,7 @@ Disaster Recovery:
   [MANUAL] [ ] Failover procedure: documented in docs/03-runbooks/disaster-recovery.md
   [MANUAL] [ ] Database restore test: performed and documented
 
-CI/CD (ArgoCD GitOps — C-05 resolved 2026-05-27; ADR-012):
+CI/CD (ArgoCD GitOps):
   [AUTO]   [ ] ArgoCD installed and running in argocd namespace
                → kubectl get pods -n argocd | grep argocd-server
   [AUTO]   [ ] All environments (staging, production) deploy via ArgoCD (not kubectl/helm in CI)
@@ -3753,7 +3749,7 @@ Purpose: centralized multi-channel notification delivery for all services.
 All other services emit events → Notification Service consumes and delivers.
 No service should send notifications directly — route through this service only.
 
-Channels (source: spec §19.2; M-NEW-1 resolved 2026-05-27):
+Channels (source: spec §19.2):
   In-app:  SSE (Server-Sent Events) per authenticated user session — NOT WebSocket;
            spec §19.2 explicitly prohibits WebSocket for notifications (unidirectional only)
   Push:    Expo Push Notifications → APNs (iOS) + FCM (Android) — NOT direct FCM;
@@ -3766,7 +3762,7 @@ Channels (source: spec §19.2; M-NEW-1 resolved 2026-05-27):
   SMS:     DELETED — removed (LINE, WhatsApp, Slack, Teams, Telegram,
            Discord cover all MVP notification channels)
 
-Notification triggers (consumed from Kafka — canonical event names per spec §32.4; M-5 + M-NEW-2 resolved 2026-05-27):
+Notification triggers (consumed from Kafka — canonical event names per spec §32.4):
   site.inspection.failed.v1                 → notify: SITE_ENGINEER, PROJECT_MANAGER
   construction.issue.created.v1 (CRITICAL)  → notify: SITE_ENGINEER, PROJECT_MANAGER
   procurement.purchase_order.status_changed.v1 → notify: PROCUREMENT_OFFICER (actor)
@@ -3821,7 +3817,7 @@ Generate:
 - SSE (Server-Sent Events) endpoint per authenticated user session (NestJS @Sse decorator) —
   NOT Socket.IO; spec §19.2: "SSE is used for in-app delivery; WebSocket is not used for notifications"
 - Expo Push Notifications integration via expo-server-sdk (routes to APNs for iOS + FCM for Android) —
-  NOT direct firebase-admin FCM; direct FCM misses all iOS users (spec §19.2; M-NEW-1 resolved 2026-05-27)
+  NOT direct firebase-admin FCM; direct FCM misses all iOS users (spec §19.2)
 - Email: SendGrid adapter for MVP, migrate to AWS SES before production (spec §19.7)
 - LINE: LINE Messaging API push message; tenant configures LINE Channel Access Token in tenant settings
 - SMS extension_point() stub: removed (LINE, WhatsApp, Slack, Teams, Telegram, Discord cover MVP notification needs)
@@ -4278,7 +4274,7 @@ GLOBAL EXECUTION RULES:
 8.  Never invent approval flows beyond those defined in WORKFLOW ENGINE SPEC.
 9.  Always use typed contracts (TypeScript interfaces + Avro schemas).
 10. Always emit events via shared @construction-os/shared package.
-11. Always generate tests (minimum 80% line coverage AND 70% branch coverage — source: spec §30.3; M-1 resolved 2026-05-27).
+11. Always generate tests (minimum 80% line coverage AND 70% branch coverage — source: spec §30.3).
 12. Always support scalability.
 13. Always support observability (metrics, logs, traces from day one).
 14. Always support containerization (every service must have Dockerfile).
@@ -4291,7 +4287,7 @@ GLOBAL EXECUTION RULES:
 21. Always follow FINANCIAL PRECISION SPEC for all monetary fields.
 22. Always follow SERVICE → RUNTIME MAPPING — do not reassign runtimes.
 23. Always use decimal.js (TypeScript) or Python decimal module for money math.
-24. Always use BACKWARD_TRANSITIVE-compatible schema evolution in Schema Registry (source: spec §32.4; ensures new schema reads ALL historical versions, not just the immediately preceding one; C-NEW-1 resolved 2026-05-27).
+24. Always use BACKWARD_TRANSITIVE-compatible schema evolution in Schema Registry (source: spec §32.4; ensures new schema reads ALL historical versions, not just the immediately preceding one).
 25. Every extension_point() stub MUST extend StubBase and call logStubCall()
 
     See: ai/shared/stub_base.py (Python EP stubs only)

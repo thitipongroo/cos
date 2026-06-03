@@ -491,7 +491,7 @@ Every production deployment must follow this protocol:
 
 Schema-per-tenant uses `SET LOCAL search_path = {tenant_code}` per request — where `{tenant_code}` is the tenant's schema name (e.g., `acme_corp`, `riverside_const`), NOT `tenant_{id}` (source: master §Phase 2: "Each tenant gets one PostgreSQL schema: {tenant_code}"). Direct application-to-PostgreSQL connections do not scale: each pod holds a connection pool, and with many tenants and replicas, PostgreSQL `max_connections` is exhausted before reaching meaningful tenant count. A connection pooler is mandatory.
 
-- **PgBouncer is the required connection pooler** for all environments (staging + production); deployed as a Kubernetes `Deployment` (not a sidecar) with a `PodDisruptionBudget` of `minAvailable: 1`; configuration committed to `infrastructure/kubernetes/pgbouncer/` (⚠️ NOT YET CREATED — create at Phase 17)
+- **PgBouncer is the required connection pooler** for all environments (staging + production); deployed as a Kubernetes `Deployment` (not a sidecar) with a `PodDisruptionBudget` of `minAvailable: 1`; configuration committed to `infrastructure/kubernetes/pgbouncer/` (Phase 17)
 - **Transaction mode is required** — `SET LOCAL search_path` is transaction-scoped and reverts on `COMMIT`/`ROLLBACK`, making transaction pooling safe for tenant routing; do NOT use session mode or statement mode
 - **Session mode is prohibited** — incompatible with horizontal pod autoscaling (connections are pinned to a pod)
 - **Statement mode is prohibited** — incompatible with multi-statement transactions
@@ -800,78 +800,73 @@ context/10_civilization_stewardship.md              — STEWARDSHIP stage contex
 context/11_background_civilization.md               — BACKGROUND CIVILIZATION stage context
 docs/specifications/                                — Architecture diagrams and system design reference
 
-# Extension Points
-ai/shared/stub_base.py                              — Python stub base class (actual location; used via `from ai.shared.stub_base import StubBase`)
-infrastructure/terraform/aws/ep_cloudwatch_alarms.tf — ⚠️ STALE — predates Prometheus/Alertmanager migration; review for replacement with Alertmanager alert rules
-.github/workflows/ep_phase_gate.yml                 — GitHub Actions for phase-based EP triggers
-
 # Readiness & Verification
-scripts/readiness/verify-production-readiness.sh    — Auto-verify 30 [AUTO] checks (original script)
-scripts/readiness/run-all-checks.sh                 — Interactive verify 14 [MANUAL] checks (original script)
-scripts/readiness/check-openapi-freshness.sh        — ✅ CREATED 2026-05-26 — Verify OpenAPI spec exists, is valid YAML/JSON, version present, live sync if INGRESS_HOST set (Phase 18)
-scripts/readiness/check-i18n-completeness.sh        — ⚠️ NOT YET CREATED — Verify all i18n keys are translated (create at Phase 18)
-scripts/readiness/check-security-headers.sh         — ✅ CREATED 2026-05-26 — Verify all required HTTP security headers on ingress (HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy) + TLS 1.3 (Phase 16)
-scripts/readiness/check-schema-registry.sh          — ✅ CREATED 2026-05-26 — Verify Kafka Schema Registry connectivity, BACKWARD_TRANSITIVE compatibility mode (not BACKWARD — spec §32.4; C-NEW-1 resolved 2026-05-27), all critical v1 schemas registered per spec §32.4 event table, local .avsc files valid JSON (Phase 8)
-scripts/loadtest/api-baseline.js                    — ✅ CREATED 2026-05-26 — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < **300ms**, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18; M-7 resolved 2026-05-27 — targets corrected per spec §31.6)
+scripts/readiness/verify-production-readiness.sh    — Auto-verify 30 [AUTO] checks (Phase 19)
+scripts/readiness/run-all-checks.sh                 — Interactive verify 14 [MANUAL] checks (Phase 19)
+scripts/readiness/check-openapi-freshness.sh        — Verify OpenAPI spec exists, is valid YAML/JSON, version present, live sync if INGRESS_HOST set (Phase 18)
+scripts/readiness/check-i18n-completeness.sh        — Verify all i18n keys are translated (Phase 18)
+scripts/readiness/check-security-headers.sh         — Verify all required HTTP security headers on ingress (HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy) + TLS 1.3 (Phase 16)
+scripts/readiness/check-schema-registry.sh          — Verify Kafka Schema Registry connectivity, BACKWARD_TRANSITIVE compatibility mode, all critical v1 schemas registered per spec §32.4 event table, local .avsc files valid JSON (Phase 8)
+scripts/loadtest/api-baseline.js                    — k6 load test: 100 VU × 5 min mixed-read baseline gate; P95 read < 300ms, P95 write < 500ms, error rate < 0.1% (QM-6; Phase 18)
 
 # Compliance & Governance
-docs/compliance/data-flow-map.md                    — ⚠️ NOT YET CREATED — PDPA/GDPR data flow documentation (create at Phase 16)
-docs/compliance/data-retention-policy.md            — ⚠️ NOT YET CREATED — Data retention rules per entity type (create at Phase 16)
-docs/compliance/log-retention-policy.md             — ⚠️ NOT YET CREATED — Log retention schedule and archival policy (create at Phase 15)
-docs/compliance/data-residency-policy.md            — ⚠️ NOT YET CREATED — Data residency requirements per region (create at Phase 17)
-docs/compliance/soc2-controls.md                    — ⚠️ NOT YET CREATED — SOC 2 Type II control tracking (create before Stage 2→3)
-docs/i18n/localization-gaps.md                      — ⚠️ NOT YET CREATED — TH-specific rules with no i18n equivalent (create at Phase 3)
+docs/compliance/data-flow-map.md                    — PDPA/GDPR data flow documentation (Phase 16)
+docs/compliance/data-retention-policy.md            — Data retention rules per entity type (Phase 16)
+docs/compliance/log-retention-policy.md             — Log retention schedule and archival policy (Phase 15)
+docs/compliance/data-residency-policy.md            — Data residency requirements per region (Phase 17)
+docs/compliance/soc2-controls.md                    — SOC 2 Type II control tracking (before Stage 2→3)
+docs/i18n/localization-gaps.md                      — TH-specific rules with no i18n equivalent (Phase 3)
 
 # Security
-docs/security/secrets-rotation-policy.md            — ✅ CREATED 2026-05-31 — Rotation schedule for all secret types (created at Phase 2)
-docs/security/csp-policy.md                         — ⚠️ NOT YET CREATED — Content Security Policy definition (create at Phase 16)
-docs/security/cors-policy.md                        — ⚠️ NOT YET CREATED — CORS allowed origins per environment (create at Phase 3)
-docs/security/pentest-findings.md                   — ⚠️ NOT YET CREATED — External pentest findings and resolution status (create before Stage 1→2)
-infrastructure/terraform/aws/kms.tf                 — ⚠️ NOT YET CREATED — KMS customer-managed key definitions (create at Phase 17)
+docs/security/secrets-rotation-policy.md            — Rotation schedule for all secret types (Phase 2)
+docs/security/csp-policy.md                         — Content Security Policy definition (Phase 16)
+docs/security/cors-policy.md                        — CORS allowed origins per environment (Phase 3)
+docs/security/pentest-findings.md                   — External pentest findings and resolution status (before Stage 1→2)
+infrastructure/terraform/aws/kms.tf                 — KMS customer-managed key definitions (Phase 17)
 
 # API & Documentation
 docs/api/                                           — OpenAPI 3.1 specs (auto-generated per service: auth.openapi.yaml, boq.openapi.yaml, etc.; QM-2 convention: docs/api/{service}.openapi.yaml)
-docs/api/error-codes.md                             — ⚠️ NOT YET CREATED — Error code registry (COS-{DOMAIN}-{NNN}) (create at Phase 3)
-docs/api/deprecation-schedule.md                    — ⚠️ NOT YET CREATED — API version sunset dates and tenant notification log (create at Phase 18)
+docs/api/error-codes.md                             — Error code registry (COS-{DOMAIN}-{NNN}) (Phase 3)
+docs/api/deprecation-schedule.md                    — API version sunset dates and tenant notification log (Phase 18)
 docs/architecture/adr/                              — Architecture Decision Records (see directory for current list)
 docs/architecture/adr/000-template.md              — ADR template
-docs/architecture/adr/008-tenantprismaservice-schema-per-tenant.md — ✅ CREATED 2026-05-31 — TenantPrismaService schema-per-tenant ORM pattern (Phase 2)
-docs/architecture/adr/015-database-retry-helpers.md               — ✅ CREATED 2026-05-31 — Database retry helper pattern for Prisma transient errors (Phase 1)
+docs/architecture/adr/008-tenantprismaservice-schema-per-tenant.md — TenantPrismaService schema-per-tenant ORM pattern (Phase 2)
+docs/architecture/adr/015-database-retry-helpers.md               — Database retry helper pattern for Prisma transient errors (Phase 1)
 
 # SLO & Reliability
-docs/slo/dashboard-registry.md                      — ⚠️ NOT YET CREATED — Grafana dashboard IDs per SLO (create at Phase 15)
-docs/slo/monthly-reviews/                           — ⚠️ NOT YET CREATED — Monthly SLO review notes directory (create at Phase 19)
+docs/slo/dashboard-registry.md                      — Grafana dashboard IDs per SLO (Phase 15)
+docs/slo/monthly-reviews/                           — Monthly SLO review notes directory (Phase 19)
 
 # Feature Flags
-docs/feature-flags/cleanup-backlog.md               — ⚠️ NOT YET CREATED — Stale flags pending removal from code (create at Phase 3)
+docs/feature-flags/cleanup-backlog.md               — Stale flags pending removal from code (Phase 3)
 
 # Runbooks
-docs/runbooks/disaster-recovery.md               — DR runbook (✅ EXISTS — primary DR procedure)
-docs/runbooks/disaster-recovery/                 — ⚠️ NOT YET CREATED — DR runbooks per failure scenario (structured dir; create at Phase 16)
-docs/runbooks/disaster-recovery/drill-log.md     — ⚠️ NOT YET CREATED — DR drill results and RTO measurements
-docs/runbooks/deployment-windows.md              — ⚠️ NOT YET CREATED — Approved production deployment windows
-docs/runbooks/releases/                          — ⚠️ NOT YET CREATED — Per-release deployment runbooks
-docs/runbooks/on-call-rotation.md                — ⚠️ NOT YET CREATED — On-call schedule and escalation path
-docs/runbooks/postmortem-template.md             — ⚠️ NOT YET CREATED — Blameless post-mortem template
-docs/runbooks/deployment.md                      — ✅ EXISTS — deployment checklist
-docs/runbooks/rollback.md                        — ✅ EXISTS — rollback runbook
-docs/runbooks/incident-response.md               — ✅ EXISTS — incident response runbook
-docs/runbooks/production-readiness.md            — ✅ EXISTS — production readiness checklist
-docs/runbooks/ai-readiness-checklist.md          — ✅ EXISTS — AI feature activation checklist (m-3 resolved 2026-05-27)
-docs/runbooks/db-failover.md                     — ✅ EXISTS — PostgreSQL RDS Multi-AZ failover procedure (m-3 resolved 2026-05-27)
-docs/runbooks/kafka-partition-rebalance.md       — ✅ EXISTS — Kafka consumer lag and partition rebalance procedure (m-3 resolved 2026-05-27)
-docs/runbooks/keycloak-realm-recovery.md         — ✅ EXISTS — Keycloak realm recovery procedure (m-3 resolved 2026-05-27)
-docs/runbooks/keycloak-realm-backup.md           — ✅ EXISTS — Keycloak realm daily backup (CronJob spec) (m-3 resolved 2026-05-27)
-docs/runbooks/temporal-worker-restart.md         — ✅ EXISTS — Temporal.io worker restart and stuck workflow recovery (m-3 resolved 2026-05-27)
+docs/runbooks/disaster-recovery.md               — DR runbook (primary DR procedure)
+docs/runbooks/disaster-recovery/                 — DR runbooks per failure scenario (structured dir; Phase 16)
+docs/runbooks/disaster-recovery/drill-log.md     — DR drill results and RTO measurements
+docs/runbooks/deployment-windows.md              — Approved production deployment windows
+docs/runbooks/releases/                          — Per-release deployment runbooks
+docs/runbooks/on-call-rotation.md                — On-call schedule and escalation path
+docs/runbooks/postmortem-template.md             — Blameless post-mortem template
+docs/runbooks/deployment.md                      — Deployment checklist
+docs/runbooks/rollback.md                        — Rollback runbook
+docs/runbooks/incident-response.md               — Incident response runbook
+docs/runbooks/production-readiness.md            — Production readiness checklist
+docs/runbooks/ai-readiness-checklist.md          — AI feature activation checklist
+docs/runbooks/db-failover.md                     — PostgreSQL RDS Multi-AZ failover procedure
+docs/runbooks/kafka-partition-rebalance.md       — Kafka consumer lag and partition rebalance procedure
+docs/runbooks/keycloak-realm-recovery.md         — Keycloak realm recovery procedure
+docs/runbooks/keycloak-realm-backup.md           — Keycloak realm daily backup (CronJob spec)
+docs/runbooks/temporal-worker-restart.md         — Temporal.io worker restart and stuck workflow recovery
 
 # Audit
 cos-audit/                                          — Product owner sign-off audit logs (git-ignored content, directory committed)
 
 # Observability Infrastructure
 infrastructure/monitoring/otel-collector-config.yaml — OTel collector config (includes trace sampling configuration)
-infrastructure/synthetics/                          — ⚠️ NOT YET CREATED — Synthetic monitoring probe definitions for Grafana Synthetic Monitoring / OpenTelemetry Collector (create at Phase 15; m-4 resolved 2026-05-27 — CloudWatch Synthetics removed; observability stack is Prometheus/Loki/Jaeger/Grafana per spec §31.2)
+infrastructure/synthetics/                          — Synthetic monitoring probe definitions for Grafana Synthetic Monitoring / OpenTelemetry Collector (Phase 15)
 
 # Stage Marker
-.cos-stage                                          — ✅ CREATED 2026-05-26 (value: "1") — Machine-readable current stage number; read by STEP 2 auto-detect in context.md
-CHANGELOG.md                                        — ✅ EXISTS — Changelog with BREAKING CHANGE entries (created at repo init)
+.cos-stage                                          — Machine-readable current stage number; read by STEP 2 auto-detect
+CHANGELOG.md                                        — Changelog with BREAKING CHANGE entries
 ```
