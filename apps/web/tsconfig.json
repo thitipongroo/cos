@@ -6,8 +6,15 @@
     "moduleResolution": "bundler",
     "jsx": "preserve",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "plugins": [{ "name": "next" }],
-    "outDir": ".next"
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "outDir": ".next",
+    "allowJs": true,
+    "noEmit": true,
+    "isolatedModules": true
   },
   "include": ["src/**/*", "next.config.js", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
