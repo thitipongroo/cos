@@ -384,19 +384,6 @@ importers:
         specifier: ^5.4.0
         version: 5.9.3
 
-  packages/@cos/extension-points:
-    dependencies:
-      '@cos/logger':
-        specifier: workspace:*
-        version: link:../logger
-    devDependencies:
-      '@types/node':
-        specifier: ^20.12.0
-        version: 20.19.41
-      typescript:
-        specifier: ^5.4.0
-        version: 5.9.3
-
   packages/@cos/financial:
     dependencies:
       decimal.js:

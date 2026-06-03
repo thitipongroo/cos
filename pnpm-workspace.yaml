@@ -1,6 +1,5 @@
 packages:
-  - "apps/*"
-  - "backend"
-  - "services/*"
-  - "packages/@cos/*"
-  - "ai/shared"
+  - 'apps/*'
+  - 'backend'
+  - 'services/*'
+  - 'packages/@cos/*'

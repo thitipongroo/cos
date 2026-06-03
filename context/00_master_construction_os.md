@@ -39,8 +39,7 @@ covers_stages: 01–11
 | [PHASE DEPENDENCY GRAPH](#phase-dependency-graph)                                      | §2   |
 | [GLOBAL TECHNOLOGY DECISION MAP](#global-technology-decision-map)                      | §3   |
 | [GLOBAL SYSTEM CONTEXT COMMAND](#global-system-context-command)                        | §4   |
-| [EXTENSION POINT SPECIFICATION](#extension-point-specification)                        | §5   |
-| [CROSS-SERVICE EVENT CONTRACT SPEC](#cross-service-event-contract-spec)                | §6   |
+| [CROSS-SERVICE EVENT CONTRACT SPEC](#cross-service-event-contract-spec)                | §5   |
 | [FINANCIAL PRECISION SPEC](#financial-precision-spec)                                  | §7   |
 | [DESIGN TOKEN SPECIFICATION](#design-token-specification)                              | §8   |
 | [WORKFLOW ENGINE SPEC](#workflow-engine-spec)                                          | §9   |
@@ -84,7 +83,6 @@ Read this file completely before writing any code, making any decision, or answe
 
 - Implement, review, debug, and evolve platform code according to the specs in this file
 - Never invent architecture or technology decisions — every decision is already made in `../docs/specifications/`
-- When a spec says `generate extension_point()` → STOP, escalate to product owner immediately; do not generate stubs, do not implement
 - When this file conflicts with `../docs/specifications/` → specs win; report to product owner
 - When asked to do something not covered in any spec → ask the user before proceeding
 
@@ -395,41 +393,6 @@ If information is missing:
 - do not proceed with assumptions — surface the gap
 
 Target: Build a production-grade Construction Operating System.
-```
-
----
-
-## EXTENSION POINT SPECIFICATION
-
-> 📎 **Derived from:** `docs/specifications/32-implementation-specifications.md §32.3`
-
-### Naming Convention
-
-```text
-Extension point ID format:  EP-{DOMAIN}-{NUMBER}
-  DOMAIN codes:
-    AUTH      — Identity and authorization
-    TENANT    — Tenant isolation models
-    FINANCE   — Financial and accounting integrations
-    PROC      — Procurement workflows
-    AI        — AI and ML capabilities
-    INFRA     — Infrastructure and cloud
-    DATA      — Data pipeline and storage
-    MOBILE    — Mobile and PWA capabilities
-    DOMAIN    — Business domain expansions (CRM, IoT, etc.)
-
-  Example: FINANCE-001, AI-004, TENANT-003
-
-Function name convention (TypeScript): createXxx, provideXxx, evaluateXxx
-Class name convention (TypeScript):    XxxExtensionPoint, XxxProvider
-Class name convention (Python):        XxxExtensionPoint, XxxProvider (snake_case file)
-
-File location:
-  Python:     ai/{service}/extension_points/{ep_id}.py
-
-Stub pattern:  extend StubBase, call this.logStubCall() on every invocation
-               See: ai/shared/stub_base.py (Python EP stubs only)
-EP decisions:  documented in docs/specifications/ per domain (§13.3-13.5, §22.6, §05-security-compliance §5.3.1)
 ```
 
 ---
@@ -1102,7 +1065,7 @@ docs/
   architecture/           — Architecture decision records (ADRs)
   api/                    — Generated OpenAPI specs
   runbooks/               — Operational runbooks
-  specifications/         — EP decisions documented per domain (§13.3-13.5, §22.6, §05-security-compliance)
+  specifications/         — Architecture diagrams and system design reference
 
 scripts/
   setup/                  — Local environment setup scripts
@@ -2396,7 +2359,7 @@ Generate:
 - Fastify application with multipart plugin (@fastify/multipart)
 - MinIO client integration (minio npm package)
 - File validation middleware (size, MIME type, extension check)
-- Antivirus hook extension_point() with stub implementation
+- Antivirus hook (ClamAV integration — deferred to Phase 9 spec; do not implement until spec defines it)
 - Signed URL generation service
 - OpenSearch indexing on upload complete
 - PostgreSQL migration files
@@ -2616,7 +2579,21 @@ Sync Engine Architecture:
   SyncManager (core class):
     - processQueue(): reads PENDING items from sync_queue, sends to server
     - markSynced(id): updates status to SYNCED
-    - markFailed(id, error): increments retry_count, sets FAILED after 3 retries
+    - markFailed(id, error): increments retry_count; after 5 retries → calls handleExhaustion(item)
+    - handleExhaustion(item): entity-specific behavior per spec §17.2 —
+        safety_incidents:      publish to platform.sync.exhausted → tenant admin review queue;
+                               push alert to PM and Safety Officer; preserve on device
+        workforce_attendance:  publish to platform.sync.exhausted → tenant admin review queue;
+                               push alert to PM; preserve on device
+        inspection_results:    publish to platform.sync.exhausted → tenant admin review queue;
+                               push alert to PM; preserve on device
+        material_consumption:  publish to platform.sync.exhausted → tenant admin review queue;
+                               preserve on device
+        task_progress_updates: discard sync attempt; notify user in-app; preserve on device
+        site_report_drafts:    discard sync attempt; notify user in-app; preserve on device
+        equipment_usage_logs:  discard sync attempt; preserve on device
+    - Tenant admin review queue: server-side queue (platform schema) visible to TENANT_ADMIN;
+                                 records never deleted from device until synced or admin-resolved
     - handleConflict(item, serverResponse): updates local record with conflict_status
 
   Conflict Handling (client-side):
@@ -2781,7 +2758,7 @@ MLOps Stack (from source §19.4 — separate Phase 23, referenced here):
   Feast               — feature store
   Weights & Biases    — experiment monitoring (RESOLVED: W&B Cloud, wandb.ai; source: spec §22-ai-architecture §22.6)
   Full MLOps implementation: Phase 23
-  Phase 11 generates: extension_point() hooks for model versioning and deployment
+  Phase 11 generates: interfaces for model versioning and deployment
     ModelRegistry — interface for MLflow model registration post-training
     FeatureStore — interface for Feast feature retrieval in inference
 
@@ -3820,7 +3797,7 @@ Generate:
   NOT direct firebase-admin FCM; direct FCM misses all iOS users (spec §19.2)
 - Email: SendGrid adapter for MVP, migrate to AWS SES before production (spec §19.7)
 - LINE: LINE Messaging API push message; tenant configures LINE Channel Access Token in tenant settings
-- SMS extension_point() stub: removed (LINE, WhatsApp, Slack, Teams, Telegram, Discord cover MVP notification needs)
+- SMS: not included in MVP (LINE, WhatsApp, Slack, Teams, Telegram, Discord cover MVP notification needs)
 - PostgreSQL migration files
 - OpenAPI 3.1 spec
 - Unit tests: template rendering, consumer routing, preference filtering
@@ -4024,7 +4001,7 @@ Generate:
 
 - NestJS module, service, repository, controller
 - TimescaleDB hypertable migrations (attendance_logs, timesheets)
-- Biometric extension_point() stub: BiometricCheckIn
+- Biometric check-in (deferred — do not implement until spec defines it)
 - OpenAPI 3.1 spec
 - Unit tests: attendance calculation, timesheet aggregation
 - Integration tests: check-in/out cycle
@@ -4105,7 +4082,7 @@ Generate:
 - MinIO bucket for data lake: cos-datalake-{tenant_id}
 - Data export utility: PostgreSQL → Parquet (using pandas + pyarrow)
 - Model serving integration: update AI Gateway endpoint post-deployment
-- EP decisions documented in docs/specifications/22-ai-architecture.md §22.6
+- AI provider decisions documented in docs/specifications/22-ai-architecture.md §22.6
 - Unit tests: DAG task functions (with mocked data sources)
 - Integration tests: end-to-end Airflow DAG run with test data
 
@@ -4288,11 +4265,6 @@ GLOBAL EXECUTION RULES:
 22. Always follow SERVICE → RUNTIME MAPPING — do not reassign runtimes.
 23. Always use decimal.js (TypeScript) or Python decimal module for money math.
 24. Always use BACKWARD_TRANSITIVE-compatible schema evolution in Schema Registry (source: spec §32.4; ensures new schema reads ALL historical versions, not just the immediately preceding one).
-25. Every extension_point() stub MUST extend StubBase and call logStubCall()
-
-    See: ai/shared/stub_base.py (Python EP stubs only)
-    Every stub call must emit WARN log with ep_id, phase, trigger fields.
-
 ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
 
   Rule 27 — Package dependency sync (prevents Bug-class-A: missing package.json deps):
@@ -4407,13 +4379,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     (prevents spec/context drift — root cause of WAF on-premise gap and JWT claim name
     inconsistency discovered 2026-06-01; agent had to be explicitly reminded both times)
 
-EXTENSION POINT TRACKING (3 mechanisms — all mandatory):
-  Mechanism 1: Stub logging  → ai/shared/stub_base.py (Python EP stubs only)
-  Mechanism 2: Spec documentation → docs/specifications/ (§13.3-13.5, §22.6, §05-security-compliance §5.3.1 etc.)
-  Mechanism 3: Metric alarms → infrastructure/terraform/ep_cloudwatch_alarms.tf
-  Mechanism 4: Phase gates   → .github/workflows/ep_phase_gate.yml
-
-26. When a rule in this document conflicts with a command in a Phase:
+25. When a rule in this document conflicts with a command in a Phase:
 
     THIS RULE SECTION takes precedence — surface the conflict, do not guess.
 

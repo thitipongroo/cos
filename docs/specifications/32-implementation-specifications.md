@@ -27,7 +27,7 @@ related_docs:
 
 - [32.1 Phase Dependency Graph](#321-phase-dependency-graph)
 - [32.2 Deployable Units](#322-deployable-units)
-- [32.3 Extension Point System](#323-extension-point-system)
+- [32.3 AI Provider Interfaces](#323-ai-provider-interfaces)
 - [32.4 Cross-Service Event Contracts](#324-cross-service-event-contracts)
 - [32.5 Financial Precision Rules](#325-financial-precision-rules)
 - [32.6 Workflow State Machines](#326-workflow-state-machines)
@@ -179,86 +179,13 @@ If either condition is absent → keep as a module inside the monolith.
 
 ---
 
-## 32.3 Extension Point System
-
-### Purpose
-
-Extension points (EPs) mark deliberate gaps where implementation is deferred until a
-specific trigger condition is met. Agents must generate a stub — never implement guessed logic.
-
-### Naming Convention
-
-```text
-Extension point ID format:  EP-{DOMAIN}-{NUMBER}
-
-DOMAIN codes:
-  AUTH      — Identity and authorization
-  TENANT    — Tenant isolation models
-  FINANCE   — Financial and accounting integrations
-  PROC      — Procurement workflows
-  AI        — AI and ML capabilities
-  INFRA     — Infrastructure and cloud
-  DATA      — Data pipeline and storage
-  MOBILE    — Mobile and PWA capabilities
-  DOMAIN    — Business domain expansions (CRM, IoT, etc.)
-
-Example: FINANCE-001, AI-004, TENANT-003
-```
-
-### File Locations
-
-| Language | Location                                   |
-| -------- | ------------------------------------------ |
-| Python   | `ai/{service}/extension_points/{ep_id}.py` |
-
-### Stub Pattern
-
-All stubs must extend `StubBase` and call `logStubCall()` on every invocation.
-Silent stubs are prohibited — every call MUST be logged for observability.
-
-```typescript
-// TypeScript stub pattern
-class XxxExtensionPoint extends StubBase {
-  readonly EP_ID = 'EP-{DOMAIN}-{NUMBER}';
-  readonly EP_VERSION = '0.1.0'; // semver; bump on contract change
-  readonly TRIGGER = '<condition that unblocks implementation>';
-  readonly PHASE = 'Phase N';
-
-  async methodName(args: ArgsType): Promise<ReturnType> {
-    this.logStubCall('methodName', args);
-    return; /* safe default */
-  }
-}
-```
-
-```python
-# Python stub pattern
-class XxxExtensionPoint(StubBase):
-    EP_ID      = 'EP-{DOMAIN}-{NUMBER}'
-    EP_VERSION = '0.1.0'   # semver; bump on contract change
-    TRIGGER    = '<condition that unblocks implementation>'
-
-    async def method_name(self, **kwargs) -> ReturnType:
-        self.log_stub_call('method_name', kwargs)
-        return None  # safe default
-```
-
-### EP Registry
-
-All extension point decisions are documented in the relevant spec file in `docs/specifications/`:
-
-- Domain integrations (CRM, BIM, IoT, Financing, Biometric, API monetization): `13-product-architecture` §13.3–13.5
-- AI integrations (LLM, OCR, Embeddings, ML models, W&B, MLflow, Feast): `22-ai-architecture` §22.6
-- Compliance audit workflow: `05-security-compliance` §5.3.1
-- Other domain-specific EPs: in the spec file most relevant to that domain
-
-### AI Provider Interfaces
+## 32.3 AI Provider Interfaces
 
 Formal contracts for `LLMProvider` and `EmbeddingProvider`.
 All AI service code **must** depend on these interfaces — never directly on LangChain or OpenAI SDK classes.
 Resolved implementations are listed at the bottom of this section.
 
-#### TypeScript AI Provider Interfaces
+### TypeScript AI Provider Interfaces
 
 ```typescript
 // ── Message & Response Types ─────────────────────────────────────────────
@@ -360,7 +287,7 @@ export class EmbeddingProviderError extends Error {
 }
 ```
 
-#### Python — `ai/ai-gateway/extension_points/ai_providers.py`
+### Python AI Provider Interfaces
 
 ```python
 from abc import ABC, abstractmethod
@@ -428,15 +355,14 @@ class EmbeddingProvider(ABC):
     def get_info(self) -> dict[str, str | int]: ...
 ```
 
-#### Resolved Implementations (Phase 11)
+### Resolved Implementations (Phase 11)
 
 | Interface           | Implementation class      | Resolved via                  | Package                                                                           |
 | ------------------- | ------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
 | `LLMProvider`       | `OpenAILangChainProvider` | OpenAI GPT-4o                 | `langchain-openai==0.1.*` — default model: `gpt-4o`, cost fallback: `gpt-4o-mini` |
 | `EmbeddingProvider` | `OpenAIEmbeddingProvider` | OpenAI text-embedding-3-small | `langchain-openai==0.1.*` — model: `text-embedding-3-small`, 1536 dimensions      |
 
-> **Rule:** If a new LLM or embedding provider is evaluated, it must implement the abstract class above and be
-> registered as a new EP — never swap the implementation by monkey-patching the resolved class.
+> **Rule:** If a new LLM or embedding provider is evaluated, it must implement the abstract class above — never swap the implementation by monkey-patching the resolved class.
 
 ---
 
