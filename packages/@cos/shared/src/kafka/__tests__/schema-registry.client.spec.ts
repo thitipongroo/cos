@@ -17,10 +17,19 @@ jest.mock('fs', () => ({
   readFileSync: jest.fn().mockReturnValue('{"type":"record","name":"Test","fields":[]}'),
 }));
 
+// Mock global fetch for ensureCompatibilityMode tests.
+const fetchMock = jest.fn();
+global.fetch = fetchMock as unknown as typeof fetch;
+
 // Reset module cache between tests to clear singleton.
 // Use require() — ESM dynamic import() does not work in ts-jest CJS mode.
 beforeEach(() => {
   jest.resetModules();
+  fetchMock.mockReset();
+  fetchMock.mockResolvedValue({
+    ok: true,
+    text: async () => '{"compatibility":"BACKWARD_TRANSITIVE"}',
+  } as Response);
 });
 
 function freshClient(): typeof import('../schema-registry.client') {
@@ -35,6 +44,40 @@ describe('getSchemaRegistry', () => {
     const r1 = getSchemaRegistry();
     const r2 = getSchemaRegistry();
     expect(r1).toBe(r2);
+  });
+});
+
+describe('ensureCompatibilityMode', () => {
+  it('calls PUT /config with BACKWARD_TRANSITIVE', async () => {
+    const { ensureCompatibilityMode } = freshClient();
+    await ensureCompatibilityMode();
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:8081/config',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ compatibility: 'BACKWARD_TRANSITIVE' }),
+      }),
+    );
+  });
+
+  it('uses SCHEMA_REGISTRY_URL env var when set', async () => {
+    process.env['SCHEMA_REGISTRY_URL'] = 'http://schema-registry:8081';
+    const { ensureCompatibilityMode } = freshClient();
+    await ensureCompatibilityMode();
+    expect(fetchMock).toHaveBeenCalledWith('http://schema-registry:8081/config', expect.anything());
+    delete process.env['SCHEMA_REGISTRY_URL'];
+  });
+
+  it('throws when registry returns non-ok status', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      text: async () => 'Internal Server Error',
+    } as Response);
+    const { ensureCompatibilityMode } = freshClient();
+    await expect(ensureCompatibilityMode()).rejects.toThrow(
+      'Schema Registry compatibility set failed: 500',
+    );
   });
 });
 

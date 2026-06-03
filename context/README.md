@@ -67,20 +67,20 @@
 
 ## File Reference
 
-| File                                                                             | Lifecycle Stage          | Description                                                                                                                                                                                                                                 | Status                         |
-| -------------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| [00_master_construction_os.md](00_master_construction_os.md)                     | MASTER                   | Authoritative platform spec: all technology decisions, architecture, RBAC, event contracts, financial precision, phase dependency graph                                                                                                     | Always current                 |
-| [01_build_priority_execution.md](01_build_priority_execution.md)                 | BUILD — Priority         | MVP Priority 0–5 execution commands; what to build in what order; exit criteria per priority                                                                                                                                                | Active                         |
-| [02_build_deep_systems.md](02_build_deep_systems.md)                             | BUILD — Deep Systems     | 9-phase deep engineering commands: Foundation → Core Domain → Workflow/Event → Data → AI → Mobile → Hardening → Ecosystem → Scale                                                                                                           | Active (parallel with 01)      |
-| [03_operationalize_execution.md](03_operationalize_execution.md)                 | OPERATIONALIZE           | 10-phase operationalization: Pilot → Adoption → Reliability → Data Governance → AI Expansion → Enterprise Ops → Ecosystem Dependency → Platformization → Scale → Infrastructure Positioning                                                 | After BUILD complete           |
-| [04_post_launch_enterprise_evolution.md](04_post_launch_enterprise_evolution.md) | POST-LAUNCH              | 12-phase enterprise evolution (Phase 0–11): Engineering Foundation → Operational → Workflow Expansion → Data → AI → Platformization → Enterprise Readiness → Ecosystem → Governance → Customer Ops → Portfolio Intelligence → Economic Moat | After OPERATIONALIZE           |
-| [05_industry_scale_transition.md](05_industry_scale_transition.md)               | INDUSTRY SCALE           | Transition from enterprise → industry infrastructure; 9 execution areas; 5 AWAITING_DECISION items (INT-001–005)                                                                                                                            | After POST-LAUNCH              |
-| [06_ecosystem_dominance.md](06_ecosystem_dominance.md)                           | ECOSYSTEM DOMINANCE      | Industry → ecosystem/market infrastructure; marketplace opens at 200 verified vendors; 5 AWAITING_DECISION items (ECO-001–005)                                                                                                              | After INDUSTRY SCALE           |
-| [07_industry_coordination.md](07_industry_coordination.md)                       | INDUSTRY COORDINATION    | Industry → economic infrastructure; 10 execution areas; 5 AWAITING_DECISION items (COORD-001–005)                                                                                                                                           | After ECOSYSTEM DOMINANCE      |
-| [08_global_intelligence.md](08_global_intelligence.md)                           | GLOBAL INTELLIGENCE      | Ecosystem → civilization-scale coordination; 8 execution phases; 5 AWAITING_DECISION items (GLOB-001–005)                                                                                                                                   | After INDUSTRY COORDINATION    |
-| [09_civilization_scale.md](09_civilization_scale.md)                             | CIVILIZATION SCALE       | Industry → civilization-scale infrastructure; 9 execution areas; 5 AWAITING_DECISION items (CIV-001–005)                                                                                                                                    | After GLOBAL INTELLIGENCE      |
-| [10_civilization_stewardship.md](10_civilization_stewardship.md)                 | CIVILIZATION STEWARDSHIP | Civilization-scale → planetary resilience; 9 execution areas; 5 AWAITING_DECISION items (STEW-001–005)                                                                                                                                      | After CIVILIZATION SCALE       |
-| [11_background_civilization.md](11_background_civilization.md)                   | BACKGROUND CIVILIZATION  | Stewardship → background civilization infrastructure — **FINAL STAGE**; 8 execution areas; 5 AWAITING_DECISION items (BG-001–005)                                                                                                           | After CIVILIZATION STEWARDSHIP |
+| File                                                                             | Lifecycle Stage          | Description                                        | Status                         |
+| -------------------------------------------------------------------------------- | ------------------------ | -------------------------------------------------- | ------------------------------ |
+| [00_master_construction_os.md](00_master_construction_os.md)                     | MASTER                   | All decisions, architecture, RBAC, event contracts | Always current                 |
+| [01_build_priority_execution.md](01_build_priority_execution.md)                 | BUILD — Priority         | Priority 0–5: what to build and in what order      | Active                         |
+| [02_build_deep_systems.md](02_build_deep_systems.md)                             | BUILD — Deep Systems     | 9-phase deep engineering commands                  | Active (parallel with 01)      |
+| [03_operationalize_execution.md](03_operationalize_execution.md)                 | OPERATIONALIZE           | 10-phase production adoption and reliability       | After BUILD complete           |
+| [04_post_launch_enterprise_evolution.md](04_post_launch_enterprise_evolution.md) | POST-LAUNCH              | 12-phase enterprise evolution, phases 0–11         | After OPERATIONALIZE           |
+| [05_industry_scale_transition.md](05_industry_scale_transition.md)               | INDUSTRY SCALE           | Enterprise → industry infrastructure; 9 areas      | After POST-LAUNCH              |
+| [06_ecosystem_dominance.md](06_ecosystem_dominance.md)                           | ECOSYSTEM DOMINANCE      | Industry → ecosystem infrastructure; 5 decisions   | After INDUSTRY SCALE           |
+| [07_industry_coordination.md](07_industry_coordination.md)                       | INDUSTRY COORDINATION    | Industry → economic infrastructure; 10 areas       | After ECOSYSTEM DOMINANCE      |
+| [08_global_intelligence.md](08_global_intelligence.md)                           | GLOBAL INTELLIGENCE      | Ecosystem → civilization coordination; 8 phases    | After INDUSTRY COORDINATION    |
+| [09_civilization_scale.md](09_civilization_scale.md)                             | CIVILIZATION SCALE       | Industry → civilization infrastructure; 9 areas    | After GLOBAL INTELLIGENCE      |
+| [10_civilization_stewardship.md](10_civilization_stewardship.md)                 | CIVILIZATION STEWARDSHIP | Civilization → planetary resilience; 9 areas       | After CIVILIZATION SCALE       |
+| [11_background_civilization.md](11_background_civilization.md)                   | BACKGROUND CIVILIZATION  | Stewardship → background civilization — FINAL      | After CIVILIZATION STEWARDSHIP |
 
 ---
 
@@ -151,20 +151,20 @@ The following decisions are open across stage files. They must be resolved befor
 
 > These are **final decisions** from `00_master_construction_os.md`. Do NOT deviate.
 
-| Area                | Decision                                                                                                                                     |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend             | NestJS Modular Monolith (NOT microservices)                                                                                                  |
-| Multi-tenant        | Schema-per-tenant (PostgreSQL), `SET LOCAL search_path`                                                                                      |
-| Event bus           | Apache Kafka 3.x + Confluent Schema Registry (BACKWARD compat, Avro)                                                                         |
-| Mobile storage      | WatermelonDB 0.28.x + ExpoSQLiteAdapter (main entities); expo-sqlite directly (sync_queue only)                                              |
-| PWA offline         | IndexedDB via `idb` library                                                                                                                  |
-| API versioning      | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                                                                     |
-| Financial precision | `DECIMAL(19,4)` in DB; `decimal.js` in Node.js; Python `decimal` module                                                                      |
-| Workflow engine     | Temporal (TypeScript SDK)                                                                                                                    |
-| AI services         | FastAPI Python (LLM Gateway, Embedding Worker, OCR Pipeline)                                                                                 |
-| LLM                 | OpenAI GPT-4o via `LLMProvider` interface                                                                                                    |
-| Vector store        | pgvector + OpenSearch                                                                                                                        |
-| RBAC roles          | `SUPER_ADMIN`, `TENANT_ADMIN`, `PROJECT_MANAGER`, `PROC_MANAGER`, `PROC_OFFICER`, `FINANCE_OFFICER`, `SITE_MANAGER`, `SITE_WORKER`, `VIEWER` |
-| Platform by device  | React Native = smartphone (online+offline); PWA = tablet/laptop (offline); Web Next.js = tablet/laptop (online)                              |
+| Area                | Decision                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Backend             | NestJS Modular Monolith (NOT microservices)                                                                     |
+| Multi-tenant        | Schema-per-tenant (PostgreSQL), `SET LOCAL search_path`                                                         |
+| Event bus           | Apache Kafka 3.x + Confluent Schema Registry (BACKWARD compat, Avro)                                            |
+| Mobile storage      | WatermelonDB 0.28.x + ExpoSQLiteAdapter (main entities); expo-sqlite directly (sync_queue only)                 |
+| PWA offline         | IndexedDB via `idb` library                                                                                     |
+| API versioning      | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                                        |
+| Financial precision | `DECIMAL(19,4)` in DB; `decimal.js` in Node.js; Python `decimal` module                                         |
+| Workflow engine     | Temporal (TypeScript SDK)                                                                                       |
+| AI services         | FastAPI Python (LLM Gateway, Embedding Worker, OCR Pipeline)                                                    |
+| LLM                 | OpenAI GPT-4o via `LLMProvider` interface                                                                       |
+| Vector store        | pgvector + OpenSearch                                                                                           |
+| RBAC roles          | 9 spec roles (§6.2) + §6.8 sub-roles: PROC_MANAGER, SITE_WORKER, VIEWER                                         |
+| Platform by device  | React Native = smartphone (online+offline); PWA = tablet/laptop (offline); Web Next.js = tablet/laptop (online) |
 
 ---

@@ -9,32 +9,27 @@ Single source of truth for all role identifiers, permission mappings, and NestJS
 ## Public API
 
 ```typescript
-import { CosRole, CosSubRole, AnyRole } from '@cos/rbac';
+import { CosRole } from '@cos/rbac';
 import { Roles, RolesGuard } from '@cos/rbac';
 import { ROLE_PERMISSIONS, hasPermission } from '@cos/rbac';
 ```
 
-### Roles (spec §6.2)
+### Roles (spec §6.2 + §6.8)
 
-| Identifier                    | Description                              |
-| ----------------------------- | ---------------------------------------- |
-| `CosRole.SYSTEM_ADMIN`        | Platform admin (cross-tenant)            |
-| `CosRole.TENANT_ADMIN`        | Full access within tenant                |
-| `CosRole.EXECUTIVE`           | C-level; all projects + financials       |
-| `CosRole.PROJECT_MANAGER`     | Full access to assigned projects         |
-| `CosRole.PROCUREMENT_OFFICER` | RFQ, PO, vendors, deliveries             |
-| `CosRole.FINANCE`             | Cost, billing, payments, cash flow       |
-| `CosRole.SAFETY_OFFICER`      | Safety checklists, incidents, compliance |
-| `CosRole.SITE_ENGINEER`       | Site operations and field work           |
-| `CosRole.CRM_SALES_MANAGER`   | Leads, opportunities, accounts           |
-
-Implementation sub-roles (not in spec §6.2):
-
-| Identifier                | Description                            |
-| ------------------------- | -------------------------------------- |
-| `CosSubRole.PROC_MANAGER` | Procurement approval authority         |
-| `CosSubRole.SITE_WORKER`  | Field worker: read + report submission |
-| `CosSubRole.VIEWER`       | Read-only per project assignment       |
+| Identifier                    | Description                                     |
+| ----------------------------- | ----------------------------------------------- |
+| `CosRole.SYSTEM_ADMIN`        | Platform admin (cross-tenant)                   |
+| `CosRole.TENANT_ADMIN`        | Full access within tenant                       |
+| `CosRole.EXECUTIVE`           | C-level; all projects + financials              |
+| `CosRole.PROJECT_MANAGER`     | Full access to assigned projects                |
+| `CosRole.PROCUREMENT_OFFICER` | RFQ, PO, vendors, deliveries                    |
+| `CosRole.FINANCE`             | Cost, billing, payments, cash flow              |
+| `CosRole.SAFETY_OFFICER`      | Safety checklists, incidents, compliance        |
+| `CosRole.SITE_ENGINEER`       | Site operations and field work                  |
+| `CosRole.CRM_SALES_MANAGER`   | Leads, opportunities, accounts                  |
+| `CosRole.PROC_MANAGER`        | Procurement approval authority (spec §6.8)      |
+| `CosRole.SITE_WORKER`         | Field worker: report submission + tasks (§6.8)  |
+| `CosRole.VIEWER`              | Read-only across all modules per project (§6.8) |
 
 ### `@Roles(...roles)` decorator + `RolesGuard`
 
@@ -51,7 +46,7 @@ Checks `ROLE_PERMISSIONS` map at runtime. Permissions use `resource:action` form
 
 ## Dependencies
 
-- `@cos/types` — `CosRole`, `CosSubRole`, `AnyRole` enums
+- `@cos/types` — `CosRole` enum
 - `@nestjs/common` — `SetMetadata` for decorator
 
 ## Configuration

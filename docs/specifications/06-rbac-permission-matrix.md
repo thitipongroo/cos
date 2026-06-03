@@ -217,6 +217,72 @@ by the SaaS operator team.
 
 ---
 
+## 6.8 Implementation Sub-roles
+
+The following sub-roles are **not** in the business role taxonomy (§6.2) and are not
+provisioned at tenant creation (§6.6). They exist for implementation granularity and
+are assigned manually by Tenant Admin after provisioning.
+
+They carry a JWT `role` claim identical in structure to §6.2 roles and are enforced
+by the same RBAC guards.
+
+| Sub-role            | Code constant  | Description                                                   |
+| ------------------- | -------------- | ------------------------------------------------------------- |
+| Procurement Manager | `PROC_MANAGER` | Procurement approval authority tier above Procurement Officer |
+| Site Worker         | `SITE_WORKER`  | Field worker: site operations read + report submission        |
+| Viewer              | `VIEWER`       | Read-only across all modules, scoped to project assignment    |
+
+### Procurement Manager (`PROC_MANAGER`) — Module Permissions
+
+| Module               | Permission |
+| -------------------- | ---------- |
+| Project (view)       | R          |
+| BOQ                  | R          |
+| Purchase requests    | RWD        |
+| RFQ                  | RWD        |
+| Vendor quotations    | RWD        |
+| Purchase orders      | RW + A     |
+| Deliveries           | RWD        |
+| Vendor Invoices (AP) | RW         |
+| Inventory            | RWD        |
+| Vendor management    | RWD        |
+| Budget (view)        | R          |
+| Cost transactions    | R          |
+
+Workflow authority: may trigger `EVALUATED → AWARDED` and `EVALUATED → CANCELLED`
+on RFQ (see 32-implementation-specifications §32.6). All other workflow roles follow §32.6.
+
+### Site Worker (`SITE_WORKER`) — Module Permissions
+
+| Module               | Permission |
+| -------------------- | ---------- |
+| Project (view)       | R          |
+| Tasks                | RW         |
+| Site reports         | RW         |
+| Safety checklists    | RW         |
+| Safety incidents     | RW         |
+| Workforce attendance | R          |
+| Equipment            | R          |
+| Issues               | RW         |
+
+### Viewer (`VIEWER`) — Module Permissions
+
+Read-only across all modules assigned to the viewer's project scope.
+
+| Module            | Permission |
+| ----------------- | ---------- |
+| Project (view)    | R          |
+| BOQ               | R          |
+| Tasks             | R          |
+| Site reports      | R          |
+| Issues            | R          |
+| Procurement (all) | R          |
+| Finance (all)     | R          |
+
+Viewer does not have write, delete, or approve access on any module.
+
+---
+
 ## References
 
 | ID          | Title                                                              | Source                                                                                                 |

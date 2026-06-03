@@ -17,6 +17,7 @@ jest.mock('kafkajs', () => ({
 }));
 
 jest.mock('../schema-registry.client', () => ({
+  ensureCompatibilityMode: jest.fn().mockResolvedValue(undefined),
   registerSchema: jest.fn().mockResolvedValue(42),
   encodeAvro: jest.fn().mockResolvedValue(Buffer.from('encoded')),
 }));

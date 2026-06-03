@@ -11,15 +11,16 @@ Exempt from jest coverage requirement (Rule 36 — no executable logic).
 ## Public API
 
 ```typescript
-import { CosRole, CosSubRole, AnyRole } from '@cos/types';
+import { CosRole } from '@cos/types';
 import type { BaseEventEnvelope } from '@cos/types';
 import type { PaginationMeta, CursorPage } from '@cos/types';
 ```
 
-### Role enums
+### Role enum (spec §6.2 + §6.8)
 
 ```typescript
 enum CosRole {
+  // spec §6.2 — seeded at tenant provisioning
   SYSTEM_ADMIN = 'SYSTEM_ADMIN',
   TENANT_ADMIN = 'TENANT_ADMIN',
   EXECUTIVE = 'EXECUTIVE',
@@ -29,15 +30,11 @@ enum CosRole {
   SAFETY_OFFICER = 'SAFETY_OFFICER',
   SITE_ENGINEER = 'SITE_ENGINEER',
   CRM_SALES_MANAGER = 'CRM_SALES_MANAGER',
+  // spec §6.8 — implementation sub-roles, assigned manually post-provisioning
+  PROC_MANAGER = 'PROC_MANAGER',
+  SITE_WORKER = 'SITE_WORKER',
+  VIEWER = 'VIEWER',
 }
-
-enum CosSubRole {
-  PROC_MANAGER,
-  SITE_WORKER,
-  VIEWER,
-}
-
-type AnyRole = CosRole | CosSubRole;
 ```
 
 ### `BaseEventEnvelope`

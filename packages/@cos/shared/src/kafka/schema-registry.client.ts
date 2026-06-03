@@ -1,5 +1,6 @@
 // Confluent Schema Registry client wrapper.
-// Compatibility mode: BACKWARD_TRANSITIVE (spec §32.4; C-NEW-1 resolved 2026-05-27).
+// Compatibility mode: BACKWARD_TRANSITIVE — enforced via ensureCompatibilityMode() at producer startup.
+// Source: spec §32.4; C-NEW-1 resolved 2026-05-27; QM-9.
 // Subject naming: {topic-name}-value
 
 import { SchemaRegistry, SchemaType } from '@kafkajs/confluent-schema-registry';
@@ -17,6 +18,25 @@ export function getSchemaRegistry(): SchemaRegistry {
 
 const AVRO_DIR = join(__dirname, '../avro');
 
+/**
+ * Set global Schema Registry compatibility mode to BACKWARD_TRANSITIVE.
+ * Must be called once at KafkaProducer startup before any schema is registered.
+ * Confluent Schema Registry defaults to BACKWARD on boot — this call enforces the stricter mode.
+ * Source: spec §32.4; QM-9 (BACKWARD_TRANSITIVE: all historical consumers can read any newer schema).
+ */
+export async function ensureCompatibilityMode(): Promise<void> {
+  const url = process.env['SCHEMA_REGISTRY_URL'] ?? 'http://localhost:8081';
+  const response = await fetch(`${url}/config`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/vnd.schemaregistry.v1+json' },
+    body: JSON.stringify({ compatibility: 'BACKWARD_TRANSITIVE' }),
+  });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Schema Registry compatibility set failed: ${response.status} ${body}`);
+  }
+}
+
 /** Load .avsc file from the avro directory. */
 export function loadAvroSchema(filename: string): string {
   return readFileSync(join(AVRO_DIR, filename), 'utf-8');
@@ -27,16 +47,10 @@ export function loadAvroSchema(filename: string): string {
  * Subject naming: {topic-name}-value
  * Called once per event type at producer startup.
  */
-export async function registerSchema(
-  subject: string,
-  avscFilename: string,
-): Promise<number> {
+export async function registerSchema(subject: string, avscFilename: string): Promise<number> {
   const registry = getSchemaRegistry();
   const schema = loadAvroSchema(avscFilename);
-  const { id } = await registry.register(
-    { type: SchemaType.AVRO, schema },
-    { subject },
-  );
+  const { id } = await registry.register({ type: SchemaType.AVRO, schema }, { subject });
   return id;
 }
 

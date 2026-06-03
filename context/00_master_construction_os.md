@@ -938,8 +938,8 @@ RFQ Workflow:
     DRAFT → PUBLISHED:    triggered by procurement officer (ROLE: PROCUREMENT_OFFICER)
     PUBLISHED → CLOSED:   triggered by deadline expiry (Temporal timer) or manual
     CLOSED → EVALUATED:   triggered by system after quotation comparison complete
-    EVALUATED → AWARDED:  triggered by ROLE: PROCUREMENT_OFFICER (manual approval)
-    EVALUATED → CANCELLED:triggered by ROLE: PROCUREMENT_OFFICER
+    EVALUATED → AWARDED:  triggered by ROLE: PROCUREMENT_OFFICER or PROC_MANAGER (manual approval; spec §32.6)
+    EVALUATED → CANCELLED:triggered by ROLE: PROCUREMENT_OFFICER or PROC_MANAGER (spec §32.6)
 
 Purchase Order Workflow:
   DRAFT → PENDING_APPROVAL → APPROVED → SENT → ACKNOWLEDGED →

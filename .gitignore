@@ -38,6 +38,11 @@ Thumbs.db
 
 # TypeScript
 *.tsbuildinfo
+# Compiled JS artifacts inside src/ — outDir is dist/, never src/
+packages/*/src/**/*.js
+packages/*/src/**/*.js.map
+packages/*/src/**/*.d.ts
+packages/*/src/**/*.d.ts.map
 
 # Logs
 logs

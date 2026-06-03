@@ -6,7 +6,7 @@
 
 import { Kafka, Producer, Message, CompressionTypes, logLevel } from 'kafkajs';
 import { randomUUID } from 'crypto';
-import { registerSchema, encodeAvro } from './schema-registry.client';
+import { registerSchema, encodeAvro, ensureCompatibilityMode } from './schema-registry.client';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 
@@ -65,6 +65,9 @@ export class KafkaProducer {
   }
 
   async connect(): Promise<void> {
+    // Enforce BACKWARD_TRANSITIVE before any schema registration (spec §32.4; QM-9).
+    // Confluent Schema Registry defaults to BACKWARD on boot — must be set explicitly.
+    await ensureCompatibilityMode();
     this.producer = this.kafka.producer({
       allowAutoTopicCreation: false,
       transactionTimeout: 30000,

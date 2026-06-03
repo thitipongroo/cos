@@ -548,13 +548,13 @@ DRAFT → PUBLISHED → CLOSED → EVALUATED → AWARDED
                                         → CANCELLED
 ```
 
-| Transition            | Trigger                                      | Role                  |
-| --------------------- | -------------------------------------------- | --------------------- |
-| DRAFT → PUBLISHED     | Manual action                                | `Procurement Officer` |
-| PUBLISHED → CLOSED    | Deadline expiry (Temporal timer) or manual   | `Procurement Officer` |
-| CLOSED → EVALUATED    | System — after quotation comparison complete | System                |
-| EVALUATED → AWARDED   | Manual approval                              | `Procurement Officer` |
-| EVALUATED → CANCELLED | Manual                                       | `Procurement Officer` |
+| Transition            | Trigger                                      | Role                                           |
+| --------------------- | -------------------------------------------- | ---------------------------------------------- |
+| DRAFT → PUBLISHED     | Manual action                                | `Procurement Officer`                          |
+| PUBLISHED → CLOSED    | Deadline expiry (Temporal timer) or manual   | `Procurement Officer`                          |
+| CLOSED → EVALUATED    | System — after quotation comparison complete | System                                         |
+| EVALUATED → AWARDED   | Manual approval                              | `Procurement Officer` or `Procurement Manager` |
+| EVALUATED → CANCELLED | Manual                                       | `Procurement Officer` or `Procurement Manager` |
 
 ### Purchase Order Workflow
 

@@ -8,7 +8,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { CosRole, CosSubRole } from '@cos/types';
+import { CosRole } from '@cos/types';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'สมชาย ใจดี', description: 'Full display name' })
@@ -17,9 +17,9 @@ export class CreateUserDto {
   @MaxLength(255)
   display_name!: string;
 
-  @ApiProperty({ enum: [...Object.values(CosRole), ...Object.values(CosSubRole)] })
-  @IsEnum({ ...CosRole, ...CosSubRole })
-  role!: CosRole | CosSubRole;
+  @ApiProperty({ enum: Object.values(CosRole) })
+  @IsEnum(CosRole)
+  role!: CosRole;
 
   // Path A — SITE_WORKER / SITE_ENGINEER: phone number is the identity key
   @ApiPropertyOptional({

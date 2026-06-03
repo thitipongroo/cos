@@ -14,8 +14,8 @@ describe('ROLE_PERMISSIONS', () => {
   });
 
   it('SITE_WORKER cannot approve procurement', () => {
-    const perms = ROLE_PERMISSIONS[CosRole.SITE_ENGINEER];
-    expect(perms.some(p => p.includes('approve') && p.includes('procurement'))).toBe(false);
+    const perms = ROLE_PERMISSIONS[CosRole.SITE_WORKER];
+    expect(perms.some((p) => p.includes('approve') && p.includes('procurement'))).toBe(false);
   });
 
   it('FINANCE has finance:approve permission', () => {
@@ -24,7 +24,7 @@ describe('ROLE_PERMISSIONS', () => {
 
   it('EXECUTIVE has read-only access across modules', () => {
     const perms = ROLE_PERMISSIONS[CosRole.EXECUTIVE];
-    const writePerms = perms.filter(p => p.endsWith(':write') || p.endsWith(':manage'));
+    const writePerms = perms.filter((p) => p.endsWith(':write') || p.endsWith(':manage'));
     expect(writePerms.length).toBe(0);
   });
 
@@ -32,16 +32,55 @@ describe('ROLE_PERMISSIONS', () => {
     expect(ROLE_PERMISSIONS[CosRole.PROJECT_MANAGER]).toContain('project:write');
   });
 
-  it('all 9 spec roles are defined', () => {
-    const specRoles = [
-      CosRole.SYSTEM_ADMIN, CosRole.TENANT_ADMIN, CosRole.EXECUTIVE,
-      CosRole.PROJECT_MANAGER, CosRole.PROCUREMENT_OFFICER, CosRole.FINANCE,
-      CosRole.SAFETY_OFFICER, CosRole.SITE_ENGINEER, CosRole.CRM_SALES_MANAGER,
+  it('all 12 roles (9 spec + 3 sub-roles) are defined', () => {
+    const allRoles = [
+      CosRole.SYSTEM_ADMIN,
+      CosRole.TENANT_ADMIN,
+      CosRole.EXECUTIVE,
+      CosRole.PROJECT_MANAGER,
+      CosRole.PROCUREMENT_OFFICER,
+      CosRole.FINANCE,
+      CosRole.SAFETY_OFFICER,
+      CosRole.SITE_ENGINEER,
+      CosRole.CRM_SALES_MANAGER,
+      CosRole.PROC_MANAGER,
+      CosRole.SITE_WORKER,
+      CosRole.VIEWER,
     ];
-    specRoles.forEach(role => {
+    allRoles.forEach((role) => {
       expect(ROLE_PERMISSIONS[role]).toBeDefined();
       expect(Array.isArray(ROLE_PERMISSIONS[role])).toBe(true);
     });
+  });
+
+  it('PROC_MANAGER has procurement:approve (RFQ EVALUATED→AWARDED authority — spec §32.6)', () => {
+    expect(ROLE_PERMISSIONS[CosRole.PROC_MANAGER]).toContain('procurement:approve');
+  });
+
+  it('PROC_MANAGER has all PROCUREMENT_OFFICER permissions', () => {
+    const procOfficerPerms = ROLE_PERMISSIONS[CosRole.PROCUREMENT_OFFICER];
+    const procManagerPerms = ROLE_PERMISSIONS[CosRole.PROC_MANAGER];
+    procOfficerPerms.forEach((p) => {
+      expect(procManagerPerms).toContain(p);
+    });
+  });
+
+  it('SITE_WORKER has task:write (spec §6.8)', () => {
+    expect(ROLE_PERMISSIONS[CosRole.SITE_WORKER]).toContain('task:write');
+  });
+
+  it('SITE_WORKER does not have inspection:write', () => {
+    expect(ROLE_PERMISSIONS[CosRole.SITE_WORKER]).not.toContain('inspection:write');
+  });
+
+  it('VIEWER has finance:read (spec §6.8)', () => {
+    expect(ROLE_PERMISSIONS[CosRole.VIEWER]).toContain('finance:read');
+  });
+
+  it('VIEWER has no write or approve permissions', () => {
+    const perms = ROLE_PERMISSIONS[CosRole.VIEWER];
+    const nonReadPerms = perms.filter((p) => !p.endsWith(':read'));
+    expect(nonReadPerms).toHaveLength(0);
   });
 });
 

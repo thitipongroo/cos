@@ -1,7 +1,7 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RolesGuard } from '../roles.guard';
-import { CosRole, CosSubRole } from '@cos/types';
+import { CosRole } from '@cos/types';
 
 describe('RolesGuard', () => {
   it('allows when no roles required', () => {
@@ -13,7 +13,7 @@ describe('RolesGuard', () => {
       getHandler: jest.fn(),
       getClass: jest.fn(),
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: () => ({ user: { role: CosSubRole.SITE_WORKER } }),
+        getRequest: () => ({ user: { role: CosRole.SITE_WORKER } }),
       }),
     } as unknown as ExecutionContext;
 
@@ -45,7 +45,7 @@ describe('RolesGuard', () => {
       getHandler: jest.fn(),
       getClass: jest.fn(),
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: () => ({ user: { role: CosSubRole.SITE_WORKER, user_id: 'u1' } }),
+        getRequest: () => ({ user: { role: CosRole.SITE_WORKER, user_id: 'u1' } }),
       }),
     } as unknown as ExecutionContext;
 
@@ -77,7 +77,7 @@ describe('RolesGuard', () => {
       getHandler: jest.fn(),
       getClass: jest.fn(),
       switchToHttp: jest.fn().mockReturnValue({
-        getRequest: () => ({ user: { role: CosSubRole.SITE_WORKER, user_id: 'u1' } }),
+        getRequest: () => ({ user: { role: CosRole.SITE_WORKER, user_id: 'u1' } }),
       }),
     } as unknown as ExecutionContext;
 
