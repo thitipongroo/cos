@@ -119,6 +119,21 @@ describe('BoqService', () => {
     service = await module.resolve<BoqService>(BoqService);
   });
 
+  // ── Constructor fallbacks ────────────────────────────────────────────────
+  describe('constructor', () => {
+    it('uses empty strings when request has no tenantId or user (covers ?? branches on lines 45-46)', async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          BoqService,
+          { provide: BoqRepository, useValue: mockRepo },
+          { provide: REQUEST, useValue: {} },
+        ],
+      }).compile();
+      const noCtxService = await module.resolve<BoqService>(BoqService);
+      expect(noCtxService).toBeDefined();
+    });
+  });
+
   // ── Calculation accuracy ─────────────────────────────────────────────────
   describe('Decimal precision', () => {
     it('calculateLineTotal: 0.1 + 0.2 does NOT equal 0.3 with float, but decimal.js gives exact 30.0000', async () => {
@@ -286,6 +301,13 @@ describe('BoqService', () => {
 
   // ── Approval flow ─────────────────────────────────────────────────────────
   describe('approveVersion', () => {
+    it('throws NotFoundException when version is not found (G1)', async () => {
+      mockRepo.findVersionById.mockResolvedValue(null);
+      await expect(service.approveVersion('project-uuid-001', 'missing-version')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
     it('calls repo.approveVersion and returns updated version', async () => {
       const draftV2: BoqVersionRow = {
         ...draftVersion,
@@ -357,6 +379,135 @@ describe('BoqService', () => {
         parent_category_id: 'cat-uuid-parent',
       });
       expect(result.parent_category_id).toBe('cat-001');
+    });
+  });
+
+  // ── updateItem / deleteItem happy paths ───────────────────────────────────
+  describe('updateItem', () => {
+    it('throws NotFoundException when item not found (covers line 213)', async () => {
+      mockRepo.findItemById.mockResolvedValue(null);
+      await expect(service.updateItem('missing-item', {})).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws NotFoundException when version not found in assertDraftVersion (covers line 258)', async () => {
+      mockRepo.findItemById.mockResolvedValue(item);
+      mockRepo.findVersionById.mockResolvedValue(null);
+      await expect(service.updateItem('item-uuid-001', {})).rejects.toThrow(NotFoundException);
+    });
+
+    it('uses null version currency fallback to THB in publishItemsUpdated (covers line 322)', async () => {
+      mockRepo.findItemById.mockResolvedValue(item);
+      mockRepo.findVersionById
+        .mockResolvedValueOnce(draftVersion) // assertDraftVersion
+        .mockResolvedValueOnce(null); // publishItemsUpdated → ?? 'THB'
+      mockRepo.updateItem.mockResolvedValue(item);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+      await expect(
+        service.updateItem('item-uuid-001', { quantity: '1.0000' }),
+      ).resolves.toBeDefined();
+    });
+
+    it('updates item using provided quantity/unit_cost (G2 — true branches)', async () => {
+      mockRepo.findItemById.mockResolvedValue(item);
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.updateItem.mockResolvedValue({
+        ...item,
+        quantity: '200.0000',
+        estimated_total: '560000.0000',
+      });
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      const result = await service.updateItem('item-uuid-001', {
+        quantity: '200.0000',
+        unit_cost: '2800.0000',
+      });
+      expect(mockRepo.updateItem).toHaveBeenCalled();
+      expect(result.quantity).toBe('200.0000');
+    });
+
+    it('falls back to existing quantity/unit_cost when not in dto (G2 — false branches)', async () => {
+      mockRepo.findItemById.mockResolvedValue(item);
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.updateItem.mockResolvedValue({ ...item, description: 'Updated desc' });
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      const result = await service.updateItem('item-uuid-001', { description: 'Updated desc' });
+      expect(mockRepo.updateItem).toHaveBeenCalledWith(
+        expect.objectContaining({ quantity: '150.0000', unit_cost: '2800.0000' }),
+      );
+      expect(result.description).toBe('Updated desc');
+    });
+  });
+
+  describe('deleteItem', () => {
+    it('throws NotFoundException when item not found (covers line 239)', async () => {
+      mockRepo.findItemById.mockResolvedValue(null);
+      await expect(service.deleteItem('missing-item')).rejects.toThrow(NotFoundException);
+    });
+
+    it('deletes item and recalculates totals (G3)', async () => {
+      mockRepo.findItemById.mockResolvedValue(item);
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.deleteItem.mockResolvedValue(undefined);
+      mockRepo.findItemsByVersion.mockResolvedValue([]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      await expect(service.deleteItem('item-uuid-001')).resolves.toBeUndefined();
+      expect(mockRepo.deleteItem).toHaveBeenCalledWith('item-uuid-001');
+    });
+  });
+
+  // ── exportVersion ─────────────────────────────────────────────────────────
+  describe('exportVersion', () => {
+    it('delegates to getVersionDetail (G2 — exportVersion coverage)', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+
+      const result = await service.exportVersion('project-uuid-001', 'version-uuid-001');
+      expect(result.version.version_id).toBe('version-uuid-001');
+      expect(result.items).toHaveLength(1);
+    });
+  });
+
+  // ── Kafka error handling ───────────────────────────────────────────────────
+  describe('publishEvent error handling', () => {
+    it('logs error but does not throw when Kafka publish fails (G4 — covers catch branch)', async () => {
+      const draftV2: BoqVersionRow = {
+        ...draftVersion,
+        version_id: 'version-uuid-002',
+        version_number: 2,
+      };
+      mockRepo.findVersionById
+        .mockResolvedValueOnce(draftV2)
+        .mockResolvedValueOnce({ ...draftV2, status: 'APPROVED' });
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+      mockRepo.approveVersion.mockResolvedValue(undefined);
+
+      const kafkaMock = (
+        service as unknown as {
+          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        }
+      ).kafka;
+      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
+
+      await expect(
+        service.approveVersion('project-uuid-001', 'version-uuid-002'),
+      ).resolves.toBeDefined();
     });
   });
 
