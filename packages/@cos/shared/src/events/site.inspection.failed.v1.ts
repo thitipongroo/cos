@@ -1,5 +1,15 @@
-// Event payload stub — full payload spec in context/00_master_construction_os.md §6
-// Implemented in Phase 6 (Site Operations).
+// Canonical event: site.inspection.failed.v1
+// Source: context/00_master_construction_os.md §6 Event #6
+
 import type { BaseEventEnvelope } from '@cos/types';
-export type InspectionFailedPayload = Record<string, unknown>;
+
+export interface InspectionFailedPayload {
+  inspection_id: string; // UUID
+  project_id: string; // UUID
+  checklist_id: string; // UUID
+  failed_items: Array<{ item_id: string; description: string }>;
+  inspected_by: string; // UUID
+  inspected_at: string; // ISO 8601 UTC
+}
+
 export type InspectionFailedEvent = BaseEventEnvelope<InspectionFailedPayload>;

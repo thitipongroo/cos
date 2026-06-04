@@ -1,0 +1,665 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Site Operations API
+  version: v1
+  description: |
+    Site Operations Service — Phase 6.
+    Manages site reports, issues, inspections, and offline sync conflict resolution.
+    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    SiteReportStatus:
+      type: string
+      enum: [DRAFT, SUBMITTED, ACKNOWLEDGED]
+
+    IssueSeverity:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+
+    IssueStatus:
+      type: string
+      enum: [OPEN, IN_PROGRESS, RESOLVED, CLOSED]
+
+    InspectionStatus:
+      type: string
+      enum: [PASSED, FAILED, REQUIRES_REINSPECTION]
+
+    ConflictStatus:
+      type: string
+      enum: [ACCEPTED, CONFLICT_FLAGGED, CONFLICT_REJECTED]
+
+    ConflictType:
+      type: string
+      enum: [FIELD_CONFLICT, STATUS_CONFLICT, REJECTED]
+
+    SiteReport:
+      type: object
+      properties:
+        report_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        report_date:
+          type: string
+          format: date
+        submitted_by:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/SiteReportStatus'
+        summary:
+          type: string
+          nullable: true
+          maxLength: 2000
+        weather:
+          type: string
+          nullable: true
+          maxLength: 100
+        manpower_count:
+          type: integer
+          nullable: true
+        client_submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        server_received_at:
+          type: string
+          format: date-time
+        modified_at:
+          type: string
+          format: date-time
+
+    SiteReportMinimal:
+      type: object
+      properties:
+        report_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        report_date:
+          type: string
+          format: date
+        submitted_by:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/SiteReportStatus'
+        manpower_count:
+          type: integer
+          nullable: true
+
+    Issue:
+      type: object
+      properties:
+        issue_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        report_id:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        severity:
+          $ref: '#/components/schemas/IssueSeverity'
+        status:
+          $ref: '#/components/schemas/IssueStatus'
+        assigned_to:
+          type: string
+          format: uuid
+          nullable: true
+        resolution_note:
+          type: string
+          nullable: true
+        client_submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        modified_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    Inspection:
+      type: object
+      properties:
+        inspection_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        checklist_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/InspectionStatus'
+        inspected_by:
+          type: string
+          format: uuid
+        inspected_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+          nullable: true
+
+    ConflictRecord:
+      type: object
+      properties:
+        conflict_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+          format: uuid
+        conflict_type:
+          $ref: '#/components/schemas/ConflictType'
+        reviewed_by:
+          type: string
+          format: uuid
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    SyncResultItem:
+      type: object
+      properties:
+        client_id:
+          type: string
+          format: uuid
+        report_id:
+          type: string
+          format: uuid
+        conflict_status:
+          $ref: '#/components/schemas/ConflictStatus'
+
+    PaginatedSiteReports:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SiteReport'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    PaginatedIssues:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Issue'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-SITE-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+paths:
+  /site-reports:
+    post:
+      summary: Create or upsert a site report (offline-sync compatible)
+      operationId: createSiteReport
+      tags: [site-reports]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, report_date]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                report_date:
+                  type: string
+                  format: date
+                summary:
+                  type: string
+                  maxLength: 2000
+                weather:
+                  type: string
+                  maxLength: 100
+                manpower_count:
+                  type: integer
+                  minimum: 0
+                client_submitted_at:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Site report created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    get:
+      summary: List site reports (paginated, date range filter)
+      operationId: listSiteReports
+      tags: [site-reports]
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: minimal
+          in: query
+          description: Return reduced payload for mobile (omits summary, weather)
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Paginated site reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSiteReports'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /site-reports/{reportId}:
+    get:
+      summary: Get site report by ID
+      operationId: getSiteReport
+      tags: [site-reports]
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Site report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SiteReport'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /site-reports/sync:
+    post:
+      summary: Bulk offline sync — accepts array of reports; returns per-item conflict_status
+      operationId: syncSiteReports
+      tags: [site-reports]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [client_id, project_id, report_date]
+                    properties:
+                      client_id:
+                        type: string
+                        format: uuid
+                        description: Client-generated UUID for idempotency
+                      project_id:
+                        type: string
+                        format: uuid
+                      report_date:
+                        type: string
+                        format: date
+                      summary:
+                        type: string
+                        maxLength: 2000
+                      weather:
+                        type: string
+                      manpower_count:
+                        type: integer
+                      client_submitted_at:
+                        type: string
+                        format: date-time
+                      last_known_modified_at:
+                        type: string
+                        format: date-time
+                        description: Last server modified_at known to client; used for conflict detection
+      responses:
+        '200':
+          description: Per-item sync results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SyncResultItem'
+
+  /issues:
+    post:
+      summary: Create a site issue (offline-sync compatible)
+      operationId: createIssue
+      tags: [issues]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, title, severity]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                report_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  maxLength: 255
+                description:
+                  type: string
+                severity:
+                  $ref: '#/components/schemas/IssueSeverity'
+                assigned_to:
+                  type: string
+                  format: uuid
+                client_submitted_at:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Issue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+
+    get:
+      summary: List issues (filterable by severity, status, project)
+      operationId: listIssues
+      tags: [issues]
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: severity
+          in: query
+          schema:
+            $ref: '#/components/schemas/IssueSeverity'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/IssueStatus'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated issues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIssues'
+
+  /issues/{issueId}:
+    patch:
+      summary: Update issue — applies FIELD_LEVEL_MERGE conflict strategy
+      operationId: updateIssue
+      tags: [issues]
+      parameters:
+        - name: issueId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                description:
+                  type: string
+                severity:
+                  $ref: '#/components/schemas/IssueSeverity'
+                status:
+                  $ref: '#/components/schemas/IssueStatus'
+                assigned_to:
+                  type: string
+                  format: uuid
+                resolution_note:
+                  type: string
+                client_submitted_at:
+                  type: string
+                  format: date-time
+                last_known_modified_at:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Updated issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /inspections:
+    post:
+      summary: Submit inspection result against a safety checklist
+      operationId: submitInspection
+      tags: [inspections]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, checklist_id, status, inspected_at]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                checklist_id:
+                  type: string
+                  format: uuid
+                status:
+                  $ref: '#/components/schemas/InspectionStatus'
+                inspected_at:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Inspection submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /conflict-records:
+    get:
+      summary: List unresolved conflict records for manual review
+      operationId: listConflictRecords
+      tags: [conflict-records]
+      responses:
+        '200':
+          description: Unresolved conflict records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConflictRecord'
+
+  /conflict-records/{conflictId}/resolve:
+    patch:
+      summary: Mark conflict record as manually resolved
+      operationId: resolveConflict
+      tags: [conflict-records]
+      parameters:
+        - name: conflictId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution_note:
+                  type: string
+      responses:
+        '200':
+          description: Conflict resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictRecord'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  responses:
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

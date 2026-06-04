@@ -8,6 +8,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { ProjectModule } from './modules/project/project.module';
 import { BoqModule } from './modules/boq/boq.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
+import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 
 @Module({
@@ -19,8 +20,8 @@ import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
     ProjectModule,
     BoqModule,
     ProcurementModule,
+    SiteOpsModule,
     // Remaining modules added per phase:
-    // Phase 6: SiteOpsModule
     // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)
     // Phase 9: (FileService is a separate deployable)

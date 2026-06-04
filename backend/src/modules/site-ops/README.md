@@ -1,81 +1,115 @@
-# site-ops
-
-NestJS module for site operations: daily reports, issues, inspections, and offline sync.
+# Site Operations Module — Phase 6
 
 ## Purpose
 
-Captures structured operational data from construction sites (Phase 6).
-Implements the three offline conflict resolution strategies, the `ConflictHandler` class, and the `POST /api/v1/sync/resolve` server-side sync endpoint.
-Optimised for low-bandwidth mobile-first usage.
-
-**Status:** Module scaffolded. Full implementation in Phase 6.
+Manages daily field operations: site reports, issue tracking, safety inspections, and offline sync conflict resolution. Primary data-capture module for field workers (SITE_WORKER, SITE_ENGINEER).
 
 ## Public API
 
-```text
-POST  /api/v1/site-reports            — create or sync offline report
-GET   /api/v1/site-reports            — list (paginated, date range filter)
-GET   /api/v1/site-reports/:id        — get detail
-POST  /api/v1/site-reports/sync       — bulk sync (accepts array of offline changes)
-POST  /api/v1/sync/resolve            — single-entity conflict resolution endpoint
-POST  /api/v1/issues                  — create or sync offline issue
-PATCH /api/v1/issues/:id              — update issue
-GET   /api/v1/issues                  — list (filter by severity, status)
-POST  /api/v1/inspections             — submit inspection result
-GET   /api/v1/conflict-records        — list unresolved conflicts (SITE_ENGINEER)
-PATCH /api/v1/conflict-records/:id/resolve — manual resolution
-```
+### Site Reports
 
-## Conflict Resolution Strategies
+| Method | Path                             | Roles                                                     |
+| ------ | -------------------------------- | --------------------------------------------------------- |
+| `POST` | `/api/v1/site-reports`           | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
+| `GET`  | `/api/v1/site-reports`           | All field + management roles                              |
+| `GET`  | `/api/v1/site-reports/:reportId` | All field + management roles                              |
+| `POST` | `/api/v1/site-reports/sync`      | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
 
-| Entity              | Strategy                                                                                    |
-| ------------------- | ------------------------------------------------------------------------------------------- |
-| `site_reports`      | LAST_WRITE_WINS on `client_submitted_at`                                                    |
-| `issues`            | FIELD_LEVEL_MERGE (description/resolution: last-writer; status: server-wins; photos: union) |
-| `safety_checklists` | SERVER_WINS — always reject client version                                                  |
-| Financial entities  | NO_AUTO_RESOLUTION — held for FINANCE / PROJECT_MANAGER review                              |
+### Issues
+
+| Method  | Path                      | Roles                                                                     |
+| ------- | ------------------------- | ------------------------------------------------------------------------- |
+| `POST`  | `/api/v1/issues`          | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN                 |
+| `PATCH` | `/api/v1/issues/:issueId` | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, SAFETY_OFFICER, TENANT_ADMIN |
+| `GET`   | `/api/v1/issues`          | All roles                                                                 |
+
+### Inspections
+
+| Method | Path                  | Roles                                       |
+| ------ | --------------------- | ------------------------------------------- |
+| `POST` | `/api/v1/inspections` | SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN |
+
+### Conflict Records
+
+| Method  | Path                                           | Roles                                        |
+| ------- | ---------------------------------------------- | -------------------------------------------- |
+| `GET`   | `/api/v1/conflict-records`                     | SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
+| `PATCH` | `/api/v1/conflict-records/:conflictId/resolve` | SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
+
+## Offline Sync Conflict Strategies (QM-9)
+
+| Entity              | Strategy                                 | Notes                                                                      |
+| ------------------- | ---------------------------------------- | -------------------------------------------------------------------------- |
+| `site_reports`      | LAST_WRITE_WINS on `client_submitted_at` | Flags CONFLICT when server `modified_at` > `last_known_modified_at`        |
+| `issues`            | FIELD_LEVEL_MERGE                        | `status` = server wins; `description`/`resolution_note` = last writer wins |
+| `safety_checklists` | SERVER_WINS                              | Client version always rejected; safety data is authoritative               |
+| Financial entities  | NO_AUTO_RESOLUTION                       | Held for FINANCE/PROJECT_MANAGER review; never auto-merged                 |
 
 Sync wire protocol:
 
 ```text
-POST /api/v1/sync/resolve
-{ entity_type, entity_id, client_version, payload, client_submitted_at }
-→ { resolved_payload, conflict_status, server_version }
+POST /api/v1/site-reports/sync
+{ client_id, project_id, report_date, payload, client_submitted_at, last_known_modified_at }
+→ [{ client_id, report_id, conflict_status }]
 conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }
 ```
 
+## Kafka Events Emitted
+
+| Event                          | Trigger                                 |
+| ------------------------------ | --------------------------------------- |
+| `site.report.created.v1`       | Report created                          |
+| `site.report.submitted.v1`     | Report synced from offline              |
+| `site.issue.created.v1`        | Issue created                           |
+| `site.issue.status_changed.v1` | Issue status transitions                |
+| `site.inspection.passed.v1`    | Inspection submitted with PASSED status |
+| `site.inspection.failed.v1`    | Inspection submitted with FAILED status |
+
 ## Dependencies
 
-- `@cos/database` — `TenantPrismaService`
-- `@cos/rbac` — `SITE_WORKER`, `SITE_ENGINEER`, `PROJECT_MANAGER` guards
-- `@cos/shared` — Kafka event contracts
-- `@cos/logger`, `@cos/tracing`
-- OpenSearch — full-text search on reports and issues
-- File Service API — photo upload (HTTP call to `services/file-service/`)
+- `TenantModule` — `TenantPrismaService` for schema-per-tenant DB access (ADR-008)
+- `@cos/shared` — `KafkaProducer`, typed event interfaces
+- `@cos/logger` — structured logging
+- `@cos/rbac` — `@Roles` decorator, `RolesGuard`
 
 ## Configuration
 
-| Variable           | Description                      |
-| ------------------ | -------------------------------- |
-| `DATABASE_URL`     | PgBouncer connection string      |
-| `KAFKA_BROKERS`    | Kafka broker list                |
-| `FILE_SERVICE_URL` | Internal URL of the file service |
-| `OPENSEARCH_URL`   | OpenSearch endpoint              |
+| Variable           | Description                                          |
+| ------------------ | ---------------------------------------------------- |
+| `DATABASE_URL`     | PostgreSQL connection string (via PgBouncer — QM-18) |
+| `KAFKA_BROKERS`    | Comma-separated broker list                          |
+| `FILE_SERVICE_URL` | Internal URL of the file service (Phase 9)           |
 
-## Usage
+## Extension Points
+
+- `ep/carbon-calculation.stub.ts` — CarbonCalculationEngine (EN 15804 + GHG Protocol); trigger: tenant requests carbon reporting
+- `ep/file-service.stub.ts` — Photo upload via File Service (Phase 9)
+
+## Usage Example
 
 ```typescript
-// Offline bulk sync
-POST /api/v1/site-reports/sync
-[
-  { entity_type: "site_report", entity_id: "uuid", client_version: 1,
-    payload: { ... }, client_submitted_at: "2026-06-01T08:00:00Z" }
-]
+// Sync offline site reports
+// POST /api/v1/site-reports/sync
+// Authorization: Bearer <jwt>
+
+{
+  "items": [
+    {
+      "client_id": "550e8400-e29b-41d4-a716-446655440000",
+      "project_id": "...",
+      "report_date": "2026-06-04",
+      "summary": "Foundation work complete",
+      "manpower_count": 15,
+      "client_submitted_at": "2026-06-04T16:00:00Z",
+      "last_known_modified_at": "2026-06-04T08:00:00Z"
+    }
+  ]
+}
+
+// Response:
+// [{ "client_id": "...", "report_id": "...", "conflict_status": "ACCEPTED" }]
 ```
 
-Kafka events emitted: `site.report.created.v1`, `site.report.submitted`, `site.material.consumed.v1`, `site.inspection.failed.v1`, `issue.created`, `issue.status_changed`
+## OpenAPI Spec
 
-## Notes
-
-- Response DTOs accept `?minimal=true` query param for reduced mobile payload
-- Extension point: EP-ENV-001 `CarbonCalculationEngine` — consumes `site.material.consumed` events
+`docs/api/site-ops.openapi.yaml`
