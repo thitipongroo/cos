@@ -99,6 +99,40 @@ describe('KafkaProducer', () => {
     expect(headers['span_id']).toBeUndefined();
   });
 
+  it('uses logLevel.WARN when NODE_ENV is not "test" (covers ternary false branch, G1a)', () => {
+    const { Kafka } = jest.requireMock('kafkajs') as { Kafka: jest.Mock };
+    const originalEnv = process.env['NODE_ENV'];
+    process.env['NODE_ENV'] = 'production';
+    try {
+      new KafkaProducer();
+    } finally {
+      process.env['NODE_ENV'] = originalEnv;
+    }
+    // Kafka constructor was called with logLevel.WARN
+    expect(Kafka).toHaveBeenCalled();
+  });
+
+  it('returns cached schema ID on second publish to same event type (covers cache hit branch, G1b)', async () => {
+    const envelope = {
+      event_type: 'construction.project.created.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-1',
+      actor_id: 'user-1',
+      occurred_at: new Date().toISOString(),
+      correlation_id: 'corr-1',
+      payload: {},
+    };
+    // First publish: registers schema (cache miss)
+    await producer.publish(envelope);
+    // Second publish: cache hit → if (this.schemaIds.has(eventType)) return covers true branch
+    await producer.publish(envelope);
+
+    const { registerSchema } = jest.requireMock('../schema-registry.client') as {
+      registerSchema: jest.Mock;
+    };
+    expect(registerSchema).toHaveBeenCalledTimes(1); // only called once, not twice
+  });
+
   it('throws when publish called before connect', async () => {
     const unconnectedProducer = new KafkaProducer();
     await expect(

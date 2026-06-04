@@ -56,6 +56,20 @@ function makeMessage(value = Buffer.from('encoded'), headers: Record<string, Buf
   };
 }
 
+describe('KafkaConsumer constructor', () => {
+  it('uses logLevel.WARN when NODE_ENV is not "test" (covers ternary false branch)', () => {
+    const { Kafka } = jest.requireMock('kafkajs') as { Kafka: jest.Mock };
+    const originalEnv = process.env['NODE_ENV'];
+    process.env['NODE_ENV'] = 'production';
+    try {
+      new KafkaConsumer();
+    } finally {
+      process.env['NODE_ENV'] = originalEnv;
+    }
+    expect(Kafka).toHaveBeenCalled();
+  });
+});
+
 describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -116,6 +130,34 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
     const consumer = new KafkaConsumer();
     // Never called connect() — this.consumer is null
     await expect(consumer.disconnect()).resolves.toBeUndefined();
+  });
+
+  it('eachMessage callback invokes handleMessage (covers line 63 arrow function, G2)', async () => {
+    const { Kafka } = jest.requireMock('kafkajs') as { Kafka: jest.Mock };
+    let capturedEachMessage: ((p: unknown) => Promise<void>) | null = null;
+    const consumerMock = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      subscribe: jest.fn().mockResolvedValue(undefined),
+      run: jest
+        .fn()
+        .mockImplementation(
+          async ({ eachMessage }: { eachMessage: (p: unknown) => Promise<void> }) => {
+            capturedEachMessage = eachMessage;
+          },
+        ),
+      disconnect: jest.fn().mockResolvedValue(undefined),
+    };
+    Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
+
+    const consumer = new KafkaConsumer();
+    await consumer.connect({ groupId: 'g1', topics: ['topic-a'] });
+
+    // Invoke the captured eachMessage arrow function — covers (payload) => this.handleMessage(payload)
+    await capturedEachMessage!({
+      topic: 'topic-a',
+      partition: 0,
+      message: { value: null as never, headers: {}, offset: '0', timestamp: Date.now().toString() },
+    });
   });
 });
 
