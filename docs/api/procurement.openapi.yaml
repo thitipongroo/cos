@@ -1,0 +1,701 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — Procurement Service API
+  version: '1.0.0'
+  description: |
+    Phase 5 Procurement Service. Covers vendor management, purchase requests,
+    RFQ lifecycle, quotation comparison, PO approval chain (Temporal-backed),
+    delivery recording, and invoice receipt.
+
+    Approval thresholds (spec §15.5):
+    - ≤ 50,000 THB: PROJECT_MANAGER alone
+    - 50,001–500,000 THB: PROJECT_MANAGER + FINANCE
+    - > 500,000 THB: PROJECT_MANAGER + FINANCE + EXECUTIVE
+    - 48h timeout per approver → escalates to TENANT_ADMIN
+
+servers:
+  - url: /api/v1
+    description: Current API version
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Vendors
+    description: Vendor master data management
+  - name: Purchase Requests
+    description: Purchase request creation and tracking
+  - name: RFQs
+    description: Request-for-Quotation lifecycle (Temporal workflow)
+  - name: Quotations
+    description: Vendor quotation submission and comparison
+  - name: Purchase Orders
+    description: Purchase order lifecycle with multi-tier approval chain (Temporal workflow)
+  - name: Deliveries
+    description: Delivery recording against POs
+  - name: Invoices
+    description: Vendor invoice receipt and approval
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    VendorRow:
+      type: object
+      properties:
+        vendor_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        vendor_code: { type: string, maxLength: 50 }
+        vendor_name: { type: string, maxLength: 255 }
+        tax_id: { type: string, nullable: true }
+        contact_email: { type: string, format: email, nullable: true }
+        contact_phone: { type: string, nullable: true }
+        address: { type: string, nullable: true }
+        is_active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateVendorDto:
+      type: object
+      required: [vendor_code, vendor_name]
+      properties:
+        vendor_code: { type: string, maxLength: 50 }
+        vendor_name: { type: string, maxLength: 255 }
+        tax_id: { type: string, maxLength: 100, nullable: true }
+        contact_email: { type: string, format: email }
+        contact_phone: { type: string, maxLength: 50 }
+        address: { type: string }
+
+    PurchaseRequestRow:
+      type: object
+      properties:
+        pr_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        pr_number: { type: string }
+        status: { type: string, enum: [DRAFT, SUBMITTED, APPROVED, REJECTED, PO_CREATED] }
+        requested_by: { type: string, format: uuid }
+        required_date: { type: string, format: date, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    CreatePurchaseRequestDto:
+      type: object
+      required: [project_id, pr_number]
+      properties:
+        project_id: { type: string, format: uuid }
+        pr_number: { type: string, maxLength: 50 }
+        required_date: { type: string, format: date }
+
+    RfqRow:
+      type: object
+      properties:
+        rfq_id: { type: string, format: uuid }
+        pr_id: { type: string, format: uuid, nullable: true }
+        project_id: { type: string, format: uuid }
+        rfq_number: { type: string }
+        status: { type: string, enum: [DRAFT, PUBLISHED, CLOSED, EVALUATED, AWARDED, CANCELLED] }
+        deadline: { type: string, format: date-time }
+        temporal_workflow_id: { type: string, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+
+    CreateRfqDto:
+      type: object
+      required: [project_id, rfq_number, deadline]
+      properties:
+        project_id: { type: string, format: uuid }
+        pr_id: { type: string, format: uuid }
+        rfq_number: { type: string, maxLength: 50 }
+        deadline: { type: string, format: date-time }
+
+    QuotationRow:
+      type: object
+      properties:
+        quotation_id: { type: string, format: uuid }
+        rfq_id: { type: string, format: uuid }
+        vendor_id: { type: string, format: uuid }
+        total_amount: { type: string, description: 'DECIMAL(19,4) as string' }
+        currency_code: { type: string, maxLength: 3 }
+        validity_days: { type: integer }
+        submitted_at: { type: string, format: date-time }
+        is_selected: { type: boolean }
+
+    SubmitQuotationDto:
+      type: object
+      required: [vendor_id, total_amount, currency_code, validity_days, submitted_at]
+      properties:
+        vendor_id: { type: string, format: uuid }
+        total_amount: { type: string, description: 'DECIMAL(19,4) as string — never float' }
+        currency_code: { type: string, maxLength: 3 }
+        validity_days: { type: integer, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+
+    PoLineItemDto:
+      type: object
+      required: [description, quantity, unit, unit_price]
+      properties:
+        boq_item_id: { type: string, format: uuid }
+        description: { type: string }
+        quantity: { type: string, description: 'DECIMAL(10,4) as string' }
+        unit: { type: string, maxLength: 50 }
+        unit_price: { type: string, description: 'DECIMAL(19,4) as string' }
+
+    PoLineItemRow:
+      type: object
+      properties:
+        line_id: { type: string, format: uuid }
+        po_id: { type: string, format: uuid }
+        boq_item_id: { type: string, format: uuid, nullable: true }
+        description: { type: string }
+        quantity: { type: string }
+        unit: { type: string }
+        unit_price: { type: string }
+        line_total: { type: string }
+
+    CreatePurchaseOrderDto:
+      type: object
+      required:
+        [vendor_id, project_id, po_number, total_amount, currency_code, delivery_date, line_items]
+      properties:
+        rfq_id: { type: string, format: uuid }
+        vendor_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        po_number: { type: string, maxLength: 50 }
+        total_amount:
+          { type: string, description: 'DECIMAL(19,4) as string — must equal sum of line_items' }
+        currency_code: { type: string, maxLength: 3 }
+        delivery_date: { type: string, format: date }
+        line_items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/PoLineItemDto' }
+
+    PurchaseOrderRow:
+      type: object
+      properties:
+        po_id: { type: string, format: uuid }
+        rfq_id: { type: string, format: uuid, nullable: true }
+        vendor_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        po_number: { type: string }
+        status:
+          type: string
+          enum:
+            [
+              DRAFT,
+              PENDING_APPROVAL,
+              APPROVED,
+              SENT,
+              ACKNOWLEDGED,
+              PARTIALLY_DELIVERED,
+              FULLY_DELIVERED,
+              INVOICED,
+              PAID,
+              DISPUTED,
+            ]
+        total_amount: { type: string }
+        currency_code: { type: string }
+        delivery_date: { type: string, format: date }
+        temporal_workflow_id: { type: string, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+
+    DeliveryItemDto:
+      type: object
+      required: [line_id, quantity_received]
+      properties:
+        line_id: { type: string, format: uuid }
+        quantity_received: { type: string, description: 'DECIMAL(10,4) as string' }
+
+    RecordDeliveryDto:
+      type: object
+      required: [delivered_at, items]
+      properties:
+        delivery_note: { type: string, maxLength: 100 }
+        delivered_at: { type: string, format: date-time }
+        notes: { type: string }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/DeliveryItemDto' }
+
+    DeliveryRow:
+      type: object
+      properties:
+        delivery_id: { type: string, format: uuid }
+        po_id: { type: string, format: uuid }
+        delivery_note: { type: string, nullable: true }
+        delivered_at: { type: string, format: date-time }
+        received_by: { type: string, format: uuid }
+        notes: { type: string, nullable: true }
+
+    ReceiveInvoiceDto:
+      type: object
+      required: [invoice_number, amount, currency_code, invoice_date, due_date]
+      properties:
+        invoice_number: { type: string, maxLength: 100 }
+        amount: { type: string, description: 'DECIMAL(19,4) as string' }
+        currency_code: { type: string, maxLength: 3 }
+        invoice_date: { type: string, format: date }
+        due_date: { type: string, format: date }
+        file_id: { type: string, format: uuid }
+
+    InvoiceRow:
+      type: object
+      properties:
+        invoice_id: { type: string, format: uuid }
+        po_id: { type: string, format: uuid }
+        vendor_id: { type: string, format: uuid }
+        invoice_number: { type: string }
+        amount: { type: string }
+        currency_code: { type: string }
+        invoice_date: { type: string, format: date }
+        due_date: { type: string, format: date }
+        status: { type: string, enum: [RECEIVED, VERIFIED, APPROVED, PAID, DISPUTED] }
+        file_id: { type: string, format: uuid, nullable: true }
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: 'COS-PROC-001' }
+            message: { type: string }
+            messageKey: { type: string }
+            details: { type: object }
+            traceId: { type: string }
+            timestamp: { type: string, format: date-time }
+
+paths:
+  # ── Vendors ────────────────────────────────────────────────────────────────
+
+  /vendors:
+    post:
+      tags: [Vendors]
+      summary: Create a new vendor
+      operationId: createVendor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateVendorDto' }
+      responses:
+        '201':
+          description: Vendor created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VendorRow' }
+        '422': { description: Business rule violation }
+    get:
+      tags: [Vendors]
+      summary: List vendors
+      operationId: listVendors
+      parameters:
+        - name: active_only
+          in: query
+          required: false
+          schema: { type: boolean, default: true }
+      responses:
+        '200':
+          description: Vendor list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/VendorRow' }
+
+  /vendors/{vendorId}:
+    get:
+      tags: [Vendors]
+      summary: Get vendor by ID
+      operationId: getVendor
+      parameters:
+        - { name: vendorId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VendorRow' }
+        '404': { description: Not found }
+    delete:
+      tags: [Vendors]
+      summary: Deactivate vendor (soft delete)
+      operationId: deactivateVendor
+      parameters:
+        - { name: vendorId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deactivated }
+        '404': { description: Not found }
+
+  # ── Purchase Requests ──────────────────────────────────────────────────────
+
+  /projects/{projectId}/purchase-requests:
+    post:
+      tags: [Purchase Requests]
+      summary: Create a purchase request
+      operationId: createPurchaseRequest
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePurchaseRequestDto' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PurchaseRequestRow' }
+    get:
+      tags: [Purchase Requests]
+      summary: List purchase requests for a project
+      operationId: listPurchaseRequests
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PurchaseRequestRow' }
+
+  # ── RFQs ───────────────────────────────────────────────────────────────────
+
+  /rfqs:
+    post:
+      tags: [RFQs]
+      summary: Create RFQ and start Temporal workflow
+      operationId: createRfq
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRfqDto' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RfqRow' }
+
+  /projects/{projectId}/rfqs:
+    get:
+      tags: [RFQs]
+      summary: List RFQs for a project
+      operationId: listRfqs
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RfqRow' }
+
+  /rfqs/{rfqId}/publish:
+    post:
+      tags: [RFQs]
+      summary: Publish RFQ (DRAFT → PUBLISHED)
+      operationId: publishRfq
+      parameters:
+        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Signal sent }
+        '422': { description: Not in DRAFT state }
+
+  /rfqs/{rfqId}/close:
+    post:
+      tags: [RFQs]
+      summary: Manually close RFQ before deadline (PUBLISHED → CLOSED)
+      operationId: closeRfq
+      parameters:
+        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Signal sent }
+
+  /rfqs/{rfqId}/cancel:
+    post:
+      tags: [RFQs]
+      summary: Cancel RFQ
+      operationId: cancelRfq
+      parameters:
+        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Signal sent }
+
+  /rfqs/{rfqId}/award:
+    post:
+      tags: [RFQs]
+      summary: Award RFQ to selected quotation (EVALUATED → AWARDED)
+      operationId: awardRfq
+      parameters:
+        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quotation_id]
+              properties:
+                quotation_id: { type: string, format: uuid }
+      responses:
+        '200': { description: RFQ awarded }
+        '404': { description: Quotation not found in RFQ }
+
+  # ── Quotations ─────────────────────────────────────────────────────────────
+
+  /rfqs/{rfqId}/quotations:
+    post:
+      tags: [Quotations]
+      summary: Submit a vendor quotation for an RFQ
+      operationId: submitQuotation
+      parameters:
+        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubmitQuotationDto' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuotationRow' }
+        '422': { description: RFQ not PUBLISHED }
+    get:
+      tags: [Quotations]
+      summary: Compare quotations (sorted by price ASC, lowest auto-selected)
+      operationId: compareQuotations
+      parameters:
+        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/QuotationRow' }
+        '422': { description: RFQ not CLOSED or no quotations }
+
+  # ── Purchase Orders ────────────────────────────────────────────────────────
+
+  /purchase-orders:
+    post:
+      tags: [Purchase Orders]
+      summary: Create PO and start Temporal workflow
+      operationId: createPurchaseOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePurchaseOrderDto' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  po: { $ref: '#/components/schemas/PurchaseOrderRow' }
+                  line_items:
+                    type: array
+                    items: { $ref: '#/components/schemas/PoLineItemRow' }
+        '422': { description: Total mismatch or validation error }
+
+  /projects/{projectId}/purchase-orders:
+    get:
+      tags: [Purchase Orders]
+      summary: List purchase orders for a project
+      operationId: listPurchaseOrders
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PurchaseOrderRow' }
+
+  /purchase-orders/{poId}:
+    get:
+      tags: [Purchase Orders]
+      summary: Get PO detail with line items
+      operationId: getPurchaseOrder
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  po: { $ref: '#/components/schemas/PurchaseOrderRow' }
+                  line_items:
+                    type: array
+                    items: { $ref: '#/components/schemas/PoLineItemRow' }
+
+  /purchase-orders/{poId}/submit:
+    post:
+      tags: [Purchase Orders]
+      summary: Submit PO for approval (DRAFT → PENDING_APPROVAL)
+      operationId: submitPoForApproval
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Signal sent }
+
+  /purchase-orders/{poId}/approve:
+    post:
+      tags: [Purchase Orders]
+      summary: Approve PO for a tier (PM / FINANCE / EXECUTIVE / TENANT_ADMIN)
+      operationId: approvePo
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tier]
+              properties:
+                tier: { type: string, enum: [PM, FINANCE, EXECUTIVE, TENANT_ADMIN] }
+      responses:
+        '200': { description: Approval signal sent }
+
+  /purchase-orders/{poId}/reject:
+    post:
+      tags: [Purchase Orders]
+      summary: Reject PO — returns to DRAFT
+      operationId: rejectPo
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { description: Rejection signal sent }
+
+  /purchase-orders/{poId}/acknowledge:
+    post:
+      tags: [Purchase Orders]
+      summary: Record vendor acknowledgement (SENT → ACKNOWLEDGED)
+      operationId: acknowledgePo
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Signal sent }
+
+  /purchase-orders/{poId}/mark-paid:
+    post:
+      tags: [Purchase Orders]
+      summary: Mark PO invoice as paid (INVOICED → PAID)
+      operationId: markInvoicePaid
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Signal sent }
+
+  /purchase-orders/{poId}/dispute:
+    post:
+      tags: [Purchase Orders]
+      summary: Dispute invoice (INVOICED → DISPUTED)
+      operationId: disputeInvoice
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string }
+      responses:
+        '200': { description: Signal sent }
+
+  # ── Deliveries ─────────────────────────────────────────────────────────────
+
+  /purchase-orders/{poId}/deliveries:
+    post:
+      tags: [Deliveries]
+      summary: Record a delivery against a PO
+      operationId: recordDelivery
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RecordDeliveryDto' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  delivery: { $ref: '#/components/schemas/DeliveryRow' }
+                  is_partial: { type: boolean }
+
+  # ── Invoices ───────────────────────────────────────────────────────────────
+
+  /purchase-orders/{poId}/invoices:
+    post:
+      tags: [Invoices]
+      summary: Receive a vendor invoice (PO must be FULLY_DELIVERED)
+      operationId: receiveInvoice
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReceiveInvoiceDto' }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvoiceRow' }
+    get:
+      tags: [Invoices]
+      summary: List invoices for a PO
+      operationId: listInvoices
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/InvoiceRow' }
+
+  /purchase-orders/{poId}/invoices/{invoiceId}/approve:
+    post:
+      tags: [Invoices]
+      summary: Approve vendor invoice (RECEIVED/VERIFIED → APPROVED)
+      operationId: approveInvoice
+      parameters:
+        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: invoiceId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InvoiceRow' }

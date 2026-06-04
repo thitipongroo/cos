@@ -7,7 +7,7 @@ NestJS module for procurement workflows.
 Manages the full procurement lifecycle: Purchase Requests → RFQ → Quotations → Purchase Orders → Deliveries → Invoices (Phase 5).
 Uses Temporal for long-running RFQ and PO workflows with threshold-based approval chains.
 
-**Status:** Module scaffolded. Full implementation in Phase 5.
+**Status:** Phase 5 complete.
 
 ## Public API
 

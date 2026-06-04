@@ -6,6 +6,8 @@ import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ProjectModule } from './modules/project/project.module';
+import { BoqModule } from './modules/boq/boq.module';
+import { ProcurementModule } from './modules/procurement/procurement.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 
 @Module({
@@ -15,9 +17,9 @@ import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
     IdentityModule,
     TenantModule,
     ProjectModule,
+    BoqModule,
+    ProcurementModule,
     // Remaining modules added per phase:
-    // Phase 4: BoqModule
-    // Phase 5: ProcurementModule
     // Phase 6: SiteOpsModule
     // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)
