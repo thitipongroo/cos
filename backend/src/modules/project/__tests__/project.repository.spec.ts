@@ -250,10 +250,7 @@ describe('ProjectRepository', () => {
       const tenantPrisma = {
         run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
       };
-      const repo = new (await import('../project.repository').then((m) => m.ProjectRepository))(
-        tenantPrisma as never,
-        { tenantId: TENANT_ID } as never,
-      );
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
       await expect(repo.removeMember(PROJECT_ID, USER_ID)).resolves.toBeUndefined();
     });
   });

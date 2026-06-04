@@ -28,6 +28,8 @@ module.exports = {
     '!src/**/index.ts',
     '!src/**/*.interface.ts',
     '!src/**/*.enum.ts',
+    // EP stubs — placeholder implementations, not business logic; tested when real adapter ships
+    '!src/**/*.stub.ts',
     // Phase 16 deliverable — tests written in Phase 16 (Security hardening)
     '!src/shared/middleware/cloudflare-waf.middleware.ts',
   ],
