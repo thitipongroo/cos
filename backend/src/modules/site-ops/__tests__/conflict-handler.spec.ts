@@ -59,6 +59,15 @@ describe('resolveReportConflict — LAST_WRITE_WINS', () => {
     const result = resolveReportConflict(client, server, NEWER_TS);
     expect(result.server_version).toBe(1);
   });
+
+  it('defaults server_version to 1 when server is newer but has no version (covers line 50 ?? branch)', () => {
+    // server is NEWER than client — reaches second return block
+    const client = { summary: 'stale', last_known_modified_at: OLDER_TS };
+    const server = { summary: 'fresh', modified_at: NEWER_TS }; // no version
+    const result = resolveReportConflict(client, server, OLDER_TS);
+    expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(result.server_version).toBe(1); // ?? 1 right side
+  });
 });
 
 // ── issues: FIELD_LEVEL_MERGE ─────────────────────────────────────────────
@@ -153,6 +162,42 @@ describe('resolveIssueConflict — FIELD_LEVEL_MERGE', () => {
 
 // ── safety_checklists: SERVER_WINS ────────────────────────────────────────
 
+describe('resolveReportConflict — branch: no modified_at in serverRow (covers ?? 0)', () => {
+  it('ACCEPTED when serverRow has no modified_at (serverTs = 0)', () => {
+    // serverModifiedAt is undefined → serverTs = 0 → no conflict
+    const client = { summary: 'client summary' };
+    const server = { summary: 'server summary' }; // no modified_at
+    const result = resolveReportConflict(client, server, NEWER_TS);
+    expect(result.conflict_status).toBe('ACCEPTED');
+    expect(result.server_version).toBe(1); // ?? 1 fallback (no version)
+  });
+});
+
+describe('resolveIssueConflict — branch: server newer than client (server description wins)', () => {
+  it('uses server description when server is newer', () => {
+    const client = { description: 'client desc', status: 'OPEN' };
+    // server has NEWER modified_at than client_submitted_at
+    const server = {
+      description: 'server desc',
+      status: 'OPEN',
+      modified_at: NEWER_TS,
+      version: 3,
+    };
+    const result = resolveIssueConflict(client, server, OLDER_TS); // client is OLDER
+    expect(result.resolved_payload['description']).toBe('server desc');
+    expect(result.server_version).toBe(3); // ?? 1 true branch — version IS defined
+  });
+
+  it('no modified_at in serverRow — serverTs = 0, client wins description', () => {
+    const client = { description: 'client desc', status: 'OPEN' };
+    const server = { description: 'server desc', status: 'OPEN' }; // no modified_at
+    const result = resolveIssueConflict(client, server, OLDER_TS);
+    // serverTs = 0, clientTs > 0, so clientTs >= serverTs → client wins
+    expect(result.resolved_payload['description']).toBe('client desc');
+    expect(result.server_version).toBe(1); // ?? 1 fallback
+  });
+});
+
 describe('resolveChecklistConflict — SERVER_WINS', () => {
   it('always returns CONFLICT_REJECTED', () => {
     const server = { checklist_name: 'Safety A', items: [], version: 4 };
@@ -174,5 +219,11 @@ describe('resolveChecklistConflict — SERVER_WINS', () => {
     const server = { version: 9 };
     const result = resolveChecklistConflict(server);
     expect(result.server_version).toBe(9);
+  });
+
+  it('defaults server_version to 1 when version missing (covers line 104 ?? branch)', () => {
+    const server = { checklist_name: 'Safety C', items: [] }; // no version
+    const result = resolveChecklistConflict(server);
+    expect(result.server_version).toBe(1);
   });
 });

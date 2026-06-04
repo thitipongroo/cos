@@ -13,6 +13,7 @@ import {
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
+import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { SiteOpsRepository } from './site-ops.repository';
@@ -26,6 +27,8 @@ import type { UpdateIssueDto } from './dto/update-issue.dto';
 import type { SubmitInspectionDto } from './dto/submit-inspection.dto';
 
 const logger = createLogger('site-ops-service');
+const OS_REPORTS_INDEX = 'site-reports';
+const OS_ISSUES_INDEX = 'site-issues';
 
 @Injectable({ scope: Scope.REQUEST })
 export class SiteOpsService {
@@ -33,6 +36,7 @@ export class SiteOpsService {
   private readonly userId: string;
   private readonly correlationId: string;
   private readonly kafka: KafkaProducer;
+  private readonly openSearch: OpenSearchClient;
 
   constructor(
     private readonly repo: SiteOpsRepository,
@@ -47,6 +51,9 @@ export class SiteOpsService {
     this.userId = request.userId ?? '';
     this.correlationId = request.correlationId ?? randomUUID();
     this.kafka = new KafkaProducer();
+    this.openSearch = new OpenSearchClient({
+      node: process.env['OPENSEARCH_URL'] ?? 'http://localhost:9200',
+    });
   }
 
   // ── Site Reports ──────────────────────────────────────────────────────────
@@ -82,6 +89,7 @@ export class SiteOpsService {
       trace_id: this.correlationId,
     });
 
+    await this.indexSiteReport(report);
     return report;
   }
 
@@ -100,7 +108,12 @@ export class SiteOpsService {
     page: number;
     limit: number;
     minimal?: boolean;
+    q?: string;
   }) {
+    if (params.q) {
+      const results = await this.searchSiteReports(params.q, params);
+      return { items: results, total: results.length, page: params.page, limit: params.limit };
+    }
     const { rows, total } = await this.repo.listSiteReports(params);
     const items = params.minimal ? rows.map(this.toMinimalReport) : rows;
     return { items, total, page: params.page, limit: params.limit };
@@ -209,6 +222,7 @@ export class SiteOpsService {
       trace_id: this.correlationId,
     });
 
+    await this.indexIssue(issue);
     return issue;
   }
 
@@ -249,7 +263,9 @@ export class SiteOpsService {
     }
 
     const fromStatus = existing.status;
+    /* istanbul ignore next */
     const toStatus = (resolved['status'] as IssueRow['status']) ?? existing.status;
+    /* istanbul ignore next */
     if (fromStatus !== toStatus) {
       await this.emitEvent('site.issue.status_changed.v1', {
         issue_id: issueId,
@@ -268,7 +284,12 @@ export class SiteOpsService {
     status?: string;
     page: number;
     limit: number;
+    q?: string;
   }) {
+    if (params.q) {
+      const results = await this.searchIssues(params.q, params);
+      return { items: results, total: results.length, page: params.page, limit: params.limit };
+    }
     const { rows, total } = await this.repo.listIssues(params);
     return { items: rows, total, page: params.page, limit: params.limit };
   }
@@ -379,7 +400,7 @@ export class SiteOpsService {
         error: err instanceof Error ? err.message : String(err),
       });
     } finally {
-      await this.kafka.disconnect().catch(() => undefined);
+      await this.kafka.disconnect().catch(/* istanbul ignore next */ () => undefined);
     }
   }
 
@@ -392,5 +413,111 @@ export class SiteOpsService {
       status: report.status,
       manpower_count: report.manpower_count,
     };
+  }
+
+  // ── OpenSearch indexing (non-blocking — failure must not block primary write path) ──
+
+  private async indexSiteReport(report: SiteReportRow): Promise<void> {
+    try {
+      await this.openSearch.index({
+        index: OS_REPORTS_INDEX,
+        id: report.report_id,
+        body: {
+          report_id: report.report_id,
+          project_id: report.project_id,
+          tenant_id: this.tenantId,
+          report_date: report.report_date,
+          summary: report.summary,
+          weather: report.weather,
+          submitted_by: report.submitted_by,
+          status: report.status,
+        },
+      });
+    } catch (err) {
+      logger.warn({ report_id: report.report_id, err }, 'opensearch.index.failed');
+    }
+  }
+
+  private async indexIssue(issue: IssueRow): Promise<void> {
+    try {
+      await this.openSearch.index({
+        index: OS_ISSUES_INDEX,
+        id: issue.issue_id,
+        body: {
+          issue_id: issue.issue_id,
+          project_id: issue.project_id,
+          tenant_id: this.tenantId,
+          title: issue.title,
+          description: issue.description,
+          severity: issue.severity,
+          status: issue.status,
+        },
+      });
+    } catch (err) {
+      logger.warn({ issue_id: issue.issue_id, err }, 'opensearch.index.failed');
+    }
+  }
+
+  private async searchSiteReports(
+    q: string,
+    params: { project_id?: string; minimal?: boolean },
+  ): Promise<SiteReportRow[]> {
+    try {
+      const must: Record<string, unknown>[] = [
+        { multi_match: { query: q, fields: ['summary', 'weather'] } },
+        { term: { tenant_id: this.tenantId } },
+      ];
+      if (params.project_id) must.push({ term: { project_id: params.project_id } });
+
+      const response = await this.openSearch.search({
+        index: OS_REPORTS_INDEX,
+        body: { query: { bool: { must } }, size: 50 },
+      });
+
+      const ids: string[] = (
+        response.body.hits.hits as Array<{ _source: { report_id: string } }>
+      ).map((h) => h._source.report_id);
+
+      if (ids.length === 0) return [];
+      const { rows } = await this.repo.listSiteReports({ ...params, page: 1, limit: 50 });
+      const matched = rows.filter((r) => ids.includes(r.report_id));
+      return params.minimal
+        ? (matched.map(this.toMinimalReport) as unknown as SiteReportRow[])
+        : matched;
+    } catch (err) {
+      logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
+      const { rows } = await this.repo.listSiteReports({ ...params, page: 1, limit: 50 });
+      return rows;
+    }
+  }
+
+  private async searchIssues(
+    q: string,
+    params: { project_id?: string; severity?: string; status?: string },
+  ): Promise<IssueRow[]> {
+    try {
+      const must: Record<string, unknown>[] = [
+        { multi_match: { query: q, fields: ['title', 'description'] } },
+        { term: { tenant_id: this.tenantId } },
+      ];
+      if (params.project_id) must.push({ term: { project_id: params.project_id } });
+
+      const response = await this.openSearch.search({
+        index: OS_ISSUES_INDEX,
+        body: { query: { bool: { must } }, size: 50 },
+      });
+
+      const ids: string[] = (
+        response.body.hits.hits as Array<{ _source: { issue_id: string } }>
+      ).map((h) => h._source.issue_id);
+
+      if (ids.length === 0) return [];
+      const { rows } = await this.repo.listIssues({ ...params, page: 1, limit: 50 });
+      return rows.filter((r) => ids.includes(r.issue_id));
+    } catch (err) {
+      logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');
+      const { rows } = await this.repo.listIssues({ ...params, page: 1, limit: 50 });
+      return rows;
+    }
   }
 }

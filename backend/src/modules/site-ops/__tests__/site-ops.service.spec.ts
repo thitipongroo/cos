@@ -15,6 +15,9 @@ import type {
   SafetyChecklistRow,
   ConflictRecordRow,
 } from '../site-ops.repository';
+import { IssueSeverity } from '../dto/create-issue.dto';
+import { IssueStatus } from '../dto/update-issue.dto';
+import { InspectionStatus } from '../dto/submit-inspection.dto';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -23,6 +26,13 @@ jest.mock('@cos/shared', () => ({
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
     disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+jest.mock('@opensearch-project/opensearch', () => ({
+  Client: jest.fn().mockImplementation(() => ({
+    index: jest.fn().mockResolvedValue({}),
+    search: jest.fn().mockResolvedValue({ body: { hits: { hits: [] } } }),
   })),
 }));
 
@@ -126,6 +136,22 @@ beforeEach(async () => {
   service = await module.resolve<SiteOpsService>(SiteOpsService);
 });
 
+// ── Constructor fallbacks ─────────────────────────────────────────────────
+
+describe('constructor', () => {
+  it('uses empty strings when request has no context (covers ?? fallback branches)', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        SiteOpsService,
+        { provide: SiteOpsRepository, useValue: mockRepo },
+        { provide: REQUEST, useValue: {} },
+      ],
+    }).compile();
+    const noCtxService = await module.resolve<SiteOpsService>(SiteOpsService);
+    expect(noCtxService).toBeDefined();
+  });
+});
+
 // ── createSiteReport ──────────────────────────────────────────────────────
 
 describe('createSiteReport', () => {
@@ -141,7 +167,7 @@ describe('createSiteReport', () => {
       manpower_count: 10,
     });
 
-    expect(mockRepo.createSiteReport).toHaveBeenCalledOnce();
+    expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
     expect(result.report_id).toBe('report-1');
   });
 
@@ -153,7 +179,7 @@ describe('createSiteReport', () => {
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        topic: expect.stringContaining('site.report.created.v1'),
+        event_type: expect.stringContaining('site.report.created.v1'),
       }),
     );
   });
@@ -196,6 +222,64 @@ describe('syncSiteReports', () => {
     expect(results[0]?.report_id).toBe('new-id');
   });
 
+  it('ACCEPTED for new report with all optional fields provided (covers ?? null true branches)', async () => {
+    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'new-full-id' }));
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'new-full-id',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+          weather: 'cloudy', // optional field provided
+          manpower_count: 15, // optional field provided
+          summary: 'full report', // optional field provided
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+  });
+
+  it('ACCEPTED for new report with no optional fields (covers ?? null false branches)', async () => {
+    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'bare-id' }));
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'bare-id',
+          project_id: 'project-1',
+          report_date: '2026-06-05',
+          // no client_submitted_at, weather, manpower_count, summary
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+  });
+
+  it('ACCEPTED for existing report with no client_submitted_at (covers ?? new Date() branch)', async () => {
+    const serverReport = makeReport({ modified_at: new Date('2026-06-04T07:00:00Z') });
+    mockRepo.findReportById.mockResolvedValue(serverReport);
+    mockRepo.createSiteReport.mockResolvedValue(serverReport);
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          // no client_submitted_at → ?? new Date().toISOString() branch
+          last_known_modified_at: '2026-06-04T10:00:00Z',
+        },
+      ],
+    });
+    expect(results[0]).toBeDefined();
+  });
+
   it('CONFLICT_FLAGGED when server modified after client last sync', async () => {
     const serverReport = makeReport({
       modified_at: new Date('2026-06-04T10:00:00Z'),
@@ -216,7 +300,7 @@ describe('syncSiteReports', () => {
     });
 
     expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
-    expect(mockRepo.createConflictRecord).toHaveBeenCalledOnce();
+    expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -228,13 +312,13 @@ describe('createIssue', () => {
     const result = await service.createIssue({
       project_id: 'project-1',
       title: 'Crack in foundation',
-      severity: 'HIGH' as const,
+      severity: IssueSeverity.HIGH,
     });
     expect(result.issue_id).toBe('issue-1');
     const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ topic: expect.stringContaining('site.issue.created.v1') }),
+      expect.objectContaining({ event_type: expect.stringContaining('site.issue.created.v1') }),
     );
   });
 });
@@ -255,7 +339,7 @@ describe('updateIssue', () => {
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, description: 'updated' });
 
     await service.updateIssue('issue-1', {
-      status: 'RESOLVED' as const, // client wants RESOLVED
+      status: IssueStatus.RESOLVED, // client wants RESOLVED
       description: 'updated',
       client_submitted_at: '2026-06-04T09:00:00Z',
     });
@@ -274,12 +358,12 @@ describe('updateIssue', () => {
     mockRepo.createConflictRecord.mockResolvedValue({});
 
     await service.updateIssue('issue-1', {
-      status: 'OPEN' as const, // client thought it was still OPEN
+      status: IssueStatus.OPEN, // client thought it was still OPEN
       description: 'my update',
       client_submitted_at: '2026-06-04T09:00:00Z',
     });
 
-    expect(mockRepo.createConflictRecord).toHaveBeenCalledOnce();
+    expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
   });
 
   it('emits site.issue.status_changed.v1 when status actually changes', async () => {
@@ -288,12 +372,12 @@ describe('updateIssue', () => {
     // After merge, server status wins — but we're testing the path where both agree
     mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
 
-    await service.updateIssue('issue-1', { status: 'OPEN' as const });
+    await service.updateIssue('issue-1', { status: IssueStatus.OPEN });
     // No status change event since from=OPEN and to=OPEN
     const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).not.toHaveBeenCalledWith(
-      expect.objectContaining({ topic: expect.stringContaining('status_changed') }),
+      expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
     );
   });
 });
@@ -307,7 +391,7 @@ describe('submitInspection', () => {
       service.submitInspection({
         project_id: 'project-1',
         checklist_id: 'missing',
-        status: 'PASSED' as const,
+        status: InspectionStatus.PASSED,
         inspected_at: '2026-06-04T08:00:00Z',
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
@@ -329,14 +413,14 @@ describe('submitInspection', () => {
     await service.submitInspection({
       project_id: 'project-1',
       checklist_id: 'checklist-1',
-      status: 'PASSED' as const,
+      status: InspectionStatus.PASSED,
       inspected_at: '2026-06-04T08:00:00Z',
     });
 
     const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ topic: expect.stringContaining('inspection.passed') }),
+      expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
     );
   });
 
@@ -356,14 +440,14 @@ describe('submitInspection', () => {
     await service.submitInspection({
       project_id: 'project-1',
       checklist_id: 'checklist-1',
-      status: 'FAILED' as const,
+      status: InspectionStatus.FAILED,
       inspected_at: '2026-06-04T08:00:00Z',
     });
 
     const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
     expect(instance.publish).toHaveBeenCalledWith(
-      expect.objectContaining({ topic: expect.stringContaining('inspection.failed') }),
+      expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
     );
   });
 });
@@ -394,5 +478,210 @@ describe('resolveConflict', () => {
     await expect(service.resolveConflict('missing')).rejects.toBeInstanceOf(
       UnprocessableEntityException,
     );
+  });
+});
+
+// ── Additional coverage: uncovered happy paths & OpenSearch branches ───────
+
+describe('listSiteReports', () => {
+  it('returns paginated list without search', async () => {
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    const result = await service.listSiteReports({ page: 1, limit: 10 });
+    expect(result.total).toBe(1);
+  });
+
+  it('returns minimal payload when minimal=true (covers toMinimalReport branch)', async () => {
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    const result = await service.listSiteReports({ page: 1, limit: 10, minimal: true });
+    expect(result.items[0]).not.toHaveProperty('summary');
+    expect(result.items[0]).toHaveProperty('report_id');
+  });
+
+  it('uses OpenSearch when q is provided (covers search branch)', async () => {
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack' });
+    expect(result).toBeDefined();
+  });
+});
+
+describe('listIssues', () => {
+  it('returns paginated list without search', async () => {
+    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
+    const result = await service.listIssues({ page: 1, limit: 10 });
+    expect(result.total).toBe(1);
+  });
+
+  it('uses OpenSearch when q is provided (covers search branch)', async () => {
+    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
+    const result = await service.listIssues({ page: 1, limit: 10, q: 'crack' });
+    expect(result).toBeDefined();
+  });
+});
+
+describe('listConflictRecords', () => {
+  it('returns conflict records list', async () => {
+    mockRepo.listConflictRecords.mockResolvedValue([]);
+    const result = await service.listConflictRecords();
+    expect(result).toEqual([]);
+  });
+});
+
+describe('updateIssue — status_changed event emission', () => {
+  it('does NOT emit status_changed when server status wins (fromStatus === toStatus)', async () => {
+    // Server status is always authoritative in FIELD_LEVEL_MERGE.
+    // Client sends status='IN_PROGRESS' but server has 'OPEN' → resolved = 'OPEN' = fromStatus.
+    // Therefore fromStatus === toStatus → no status_changed event.
+    const serverIssue = makeIssue({ status: 'OPEN' });
+    mockRepo.findIssueById.mockResolvedValue(serverIssue);
+    mockRepo.updateIssue.mockResolvedValue({ ...serverIssue, status: 'OPEN' });
+
+    await service.updateIssue('issue-1', { status: IssueStatus.OPEN, description: 'update' });
+    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    expect(instance.publish).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: expect.stringContaining('status_changed') }),
+    );
+  });
+});
+
+describe('emitEvent error handling (covers Kafka catch branch)', () => {
+  it('logs warn but does not throw when Kafka publish fails with Error instance', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+    const kafkaMock = (
+      service as unknown as {
+        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+      }
+    ).kafka;
+    kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
+    await expect(
+      service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
+    ).resolves.toBeDefined();
+  });
+
+  it('logs warn with String(err) when Kafka publish fails with non-Error (covers instanceof false branch)', async () => {
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+    const kafkaMock = (
+      service as unknown as {
+        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+      }
+    ).kafka;
+    kafkaMock.publish.mockRejectedValueOnce('plain string error'); // non-Error throw
+    await expect(
+      service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
+    ).resolves.toBeDefined();
+  });
+});
+
+describe('OpenSearch indexing error handling', () => {
+  it('createSiteReport succeeds even if OpenSearch index fails (covers catch branch)', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.index.mockRejectedValueOnce(new Error('OS down'));
+    mockRepo.createSiteReport.mockResolvedValue(makeReport());
+    await expect(
+      service.createSiteReport({ project_id: 'project-1', report_date: '2026-06-04' }),
+    ).resolves.toBeDefined();
+  });
+
+  it('createIssue succeeds even if OpenSearch index fails (covers catch branch)', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.index.mockRejectedValueOnce(new Error('OS down'));
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await expect(
+      service.createIssue({ project_id: 'project-1', title: 'Test', severity: IssueSeverity.HIGH }),
+    ).resolves.toBeDefined();
+  });
+
+  it('listSiteReports with project_id filter in OpenSearch query (covers if project_id branch)', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: { hits: { hits: [{ _source: { report_id: 'report-1' } }] } },
+    });
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    const result = await service.listSiteReports({
+      page: 1,
+      limit: 10,
+      q: 'crack',
+      project_id: 'project-1',
+    });
+    expect(result).toBeDefined();
+  });
+
+  it('listSiteReports with minimal=true and OpenSearch results (covers minimal ternary true branch)', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: { hits: { hits: [{ _source: { report_id: 'report-1' } }] } },
+    });
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'crack', minimal: true });
+    expect(result.items[0]).not.toHaveProperty('summary');
+  });
+
+  it('listIssues with project_id filter in OpenSearch query (covers if project_id branch)', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: { hits: { hits: [{ _source: { issue_id: 'issue-1' } }] } },
+    });
+    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
+    const result = await service.listIssues({
+      page: 1,
+      limit: 10,
+      q: 'crack',
+      project_id: 'project-1',
+    });
+    expect(result).toBeDefined();
+  });
+
+  it('listSiteReports returns empty array when OpenSearch returns no hits (covers ids.length===0 branch)', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: { hits: { hits: [] } }, // empty hits → ids.length === 0 → return []
+    });
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'nothing' });
+    expect(result.items).toHaveLength(0);
+  });
+
+  it('listIssues returns empty array when OpenSearch returns no hits (covers ids.length===0 branch)', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: { hits: { hits: [] } },
+    });
+    const result = await service.listIssues({ page: 1, limit: 10, q: 'nothing' });
+    expect(result.items).toHaveLength(0);
+  });
+
+  it('listSiteReports returns matched rows when OpenSearch returns results', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: { hits: { hits: [{ _source: { report_id: 'report-1' } }] } },
+    });
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'summary' });
+    expect(result.items).toHaveLength(1);
+  });
+
+  it('listIssues returns matched rows when OpenSearch returns results', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockResolvedValueOnce({
+      body: { hits: { hits: [{ _source: { issue_id: 'issue-1' } }] } },
+    });
+    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
+    const result = await service.listIssues({ page: 1, limit: 10, q: 'crack' });
+    expect(result.items).toHaveLength(1);
+  });
+
+  it('listSiteReports falls back to DB when OpenSearch search fails', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('OS down'));
+    mockRepo.listSiteReports.mockResolvedValue({ rows: [makeReport()], total: 1 });
+    const result = await service.listSiteReports({ page: 1, limit: 10, q: 'test' });
+    expect(result.items).toHaveLength(1);
+  });
+
+  it('listIssues falls back to DB when OpenSearch search fails', async () => {
+    const { Client } = jest.requireMock('@opensearch-project/opensearch') as { Client: jest.Mock };
+    Client.mock.results[0]?.value.search.mockRejectedValueOnce(new Error('OS down'));
+    mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
+    const result = await service.listIssues({ page: 1, limit: 10, q: 'test' });
+    expect(result.items).toHaveLength(1);
   });
 });

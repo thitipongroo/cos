@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "IssueStatusChangedEvent",
+  "namespace": "com.constructionos.events.site",
+  "doc": "site.issue.status_changed.v1 — Phase 6 Site Operations",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "IssueStatusChangedPayload",
+      "fields": [
+        { "name": "issue_id",     "type": "string" },
+        { "name": "project_id",   "type": "string" },
+        { "name": "from_status", "type": { "type": "enum", "name": "IssueStatus",
+            "symbols": ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"] } },
+        { "name": "to_status",    "type": "IssueStatus" }
+      ]
+    }}
+  ]
+}
