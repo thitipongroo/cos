@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "BoqItemsUpdatedV1",
+  "namespace": "com.constructionos.boq",
+  "doc": "Emitted after BOQ items are added/updated/deleted in a DRAFT version. Phase 4.",
+  "fields": [
+    { "name": "event_id",      "type": "string" },
+    { "name": "event_type",    "type": "string" },
+    { "name": "event_version", "type": "string" },
+    { "name": "tenant_id",     "type": "string" },
+    { "name": "actor_id",      "type": "string" },
+    { "name": "occurred_at",   "type": "string" },
+    { "name": "correlation_id","type": "string" },
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "BoqItemsUpdatedPayload",
+        "fields": [
+          { "name": "version_id",                   "type": "string" },
+          { "name": "project_id",                   "type": "string" },
+          { "name": "changed_items_count",           "type": "int"    },
+          { "name": "new_total_estimated_amount",    "type": "string" },
+          { "name": "new_total_estimated_currency",  "type": "string" }
+        ]
+      }
+    }
+  ]
+}

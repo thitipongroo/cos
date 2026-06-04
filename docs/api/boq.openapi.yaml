@@ -1,0 +1,539 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — BOQ Service API
+  version: '1.0.0'
+  description: |
+    Bill of Quantities (BOQ) Service — Phase 4.
+    Financial precision: all monetary fields are DECIMAL(19,4) returned as string.
+    All calculations use decimal.js ROUND_HALF_UP.
+
+servers:
+  - url: /api/v1
+    description: Production
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: boq-versions
+    description: BOQ version management
+  - name: boq-categories
+    description: BOQ category management
+  - name: boq-items
+    description: BOQ line item management
+
+paths:
+  /projects/{projectId}/boq/versions:
+    post:
+      tags: [boq-versions]
+      operationId: createBoqVersion
+      summary: Create a new BOQ version
+      description: |
+        Creates a new DRAFT BOQ version. Only one DRAFT allowed per project.
+        If previous APPROVED version exists, copies all items to the new DRAFT.
+      parameters:
+        - $ref: '#/components/parameters/projectId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBoqVersionDto'
+      responses:
+        '201':
+          description: BOQ version created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoqVersion'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    get:
+      tags: [boq-versions]
+      operationId: listBoqVersions
+      summary: List all BOQ versions for a project
+      parameters:
+        - $ref: '#/components/parameters/projectId'
+      responses:
+        '200':
+          description: List of BOQ versions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BoqVersion'
+
+  /projects/{projectId}/boq/versions/{versionId}:
+    get:
+      tags: [boq-versions]
+      operationId: getBoqVersionDetail
+      summary: Get BOQ version with all categories and items
+      parameters:
+        - $ref: '#/components/parameters/projectId'
+        - $ref: '#/components/parameters/versionId'
+      responses:
+        '200':
+          description: BOQ version detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoqVersionDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/boq/versions/{versionId}/approve:
+    post:
+      tags: [boq-versions]
+      operationId: approveBoqVersion
+      summary: Approve a DRAFT BOQ version
+      description: |
+        Approves the DRAFT version. Sets any existing APPROVED version to SUPERSEDED.
+        APPROVED and SUPERSEDED versions become immutable.
+      parameters:
+        - $ref: '#/components/parameters/projectId'
+        - $ref: '#/components/parameters/versionId'
+      responses:
+        '200':
+          description: Version approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoqVersion'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /boq/versions/{versionId}/categories:
+    post:
+      tags: [boq-categories]
+      operationId: addBoqCategory
+      summary: Add a category to a DRAFT BOQ version
+      parameters:
+        - $ref: '#/components/parameters/versionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddBoqCategoryDto'
+      responses:
+        '201':
+          description: Category added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoqCategory'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /boq/versions/{versionId}/items:
+    post:
+      tags: [boq-items]
+      operationId: addBoqItem
+      summary: Add a line item to a DRAFT BOQ version
+      description: estimated_total is calculated server-side as ROUND(quantity × unit_cost, 4) HALF_UP.
+      parameters:
+        - $ref: '#/components/parameters/versionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddBoqItemDto'
+      responses:
+        '201':
+          description: Item added; category subtotal and version total recalculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoqItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /boq/items/{itemId}:
+    patch:
+      tags: [boq-items]
+      operationId: updateBoqItem
+      summary: Update a BOQ line item (DRAFT version only)
+      parameters:
+        - $ref: '#/components/parameters/itemId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateBoqItemDto'
+      responses:
+        '200':
+          description: Item updated; totals recalculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoqItem'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    delete:
+      tags: [boq-items]
+      operationId: deleteBoqItem
+      summary: Delete a BOQ line item (DRAFT version only)
+      parameters:
+        - $ref: '#/components/parameters/itemId'
+      responses:
+        '204':
+          description: Item deleted; totals recalculated
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /boq/versions/{versionId}/export:
+    get:
+      tags: [boq-versions]
+      operationId: exportBoqVersion
+      summary: Export BOQ version as structured JSON
+      parameters:
+        - $ref: '#/components/parameters/versionId'
+      responses:
+        '200':
+          description: Full BOQ export with categories and items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BoqVersionDetail'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    projectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    versionId:
+      name: versionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    itemId:
+      name: itemId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    BoqVersion:
+      type: object
+      required:
+        - version_id
+        - project_id
+        - tenant_id
+        - version_number
+        - status
+        - total_estimated_amount
+        - total_estimated_currency
+        - created_by
+        - created_at
+        - updated_at
+      properties:
+        version_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        version_number:
+          type: integer
+          minimum: 1
+        version_name:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [DRAFT, APPROVED, SUPERSEDED]
+        total_estimated_amount:
+          type: string
+          description: DECIMAL(19,4) as string — never float
+          example: '420000.0000'
+        total_estimated_currency:
+          type: string
+          example: THB
+        approved_by:
+          type: string
+          format: uuid
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    BoqCategory:
+      type: object
+      required:
+        [
+          category_id,
+          version_id,
+          tenant_id,
+          category_code,
+          category_name,
+          sort_order,
+          subtotal_amount,
+        ]
+      properties:
+        category_id:
+          type: string
+          format: uuid
+        version_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        parent_category_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_code:
+          type: string
+        category_name:
+          type: string
+        sort_order:
+          type: integer
+        subtotal_amount:
+          type: string
+          description: DECIMAL(19,4) as string — computed sum of items
+          example: '420000.0000'
+
+    BoqItem:
+      type: object
+      required:
+        - item_id
+        - category_id
+        - version_id
+        - description
+        - unit
+        - quantity
+        - unit_cost
+        - estimated_total
+        - currency_code
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        category_id:
+          type: string
+          format: uuid
+        version_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+          nullable: true
+        description:
+          type: string
+        unit:
+          type: string
+        quantity:
+          type: string
+          description: DECIMAL(10,4) as string
+          example: '150.0000'
+        unit_cost:
+          type: string
+          description: DECIMAL(19,4) as string
+          example: '2800.0000'
+        estimated_total:
+          type: string
+          description: ROUND(quantity × unit_cost, 4) HALF_UP as string
+          example: '420000.0000'
+        currency_code:
+          type: string
+          example: THB
+        sort_order:
+          type: integer
+        carbon_factor_kg_co2e:
+          type: string
+          nullable: true
+          description: kgCO2e per unit; NULL until CarbonCalculationEngine activated
+        carbon_total_kg_co2e:
+          type: string
+          nullable: true
+          description: ROUND(quantity × carbon_factor, 4); NULL if factor is NULL
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    BoqVersionDetail:
+      type: object
+      required: [version, categories, items]
+      properties:
+        version:
+          $ref: '#/components/schemas/BoqVersion'
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoqCategory'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BoqItem'
+
+    CreateBoqVersionDto:
+      type: object
+      properties:
+        version_name:
+          type: string
+          maxLength: 100
+          example: 'Revised estimate Q3'
+        currency_code:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          default: THB
+
+    AddBoqCategoryDto:
+      type: object
+      required: [category_code, category_name]
+      properties:
+        parent_category_id:
+          type: string
+          format: uuid
+          nullable: true
+        category_code:
+          type: string
+          maxLength: 50
+          example: STR-01
+        category_name:
+          type: string
+          maxLength: 255
+          example: Structural Works
+        sort_order:
+          type: integer
+          minimum: 0
+          default: 0
+
+    AddBoqItemDto:
+      type: object
+      required: [category_id, description, unit, quantity, unit_cost]
+      properties:
+        category_id:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+          maxLength: 100
+          nullable: true
+        description:
+          type: string
+        unit:
+          type: string
+          maxLength: 50
+        quantity:
+          type: string
+          pattern: '^\d{1,19}(\.\d{1,4})?$'
+          example: '150.0000'
+        unit_cost:
+          type: string
+          pattern: '^\d{1,19}(\.\d{1,4})?$'
+          example: '2800.0000'
+        currency_code:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          default: THB
+        sort_order:
+          type: integer
+          minimum: 0
+          default: 0
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, traceId, timestamp]
+          properties:
+            code:
+              type: string
+              example: COS-BOQ-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+    UpdateBoqItemDto:
+      type: object
+      properties:
+        description:
+          type: string
+        unit:
+          type: string
+          maxLength: 50
+        quantity:
+          type: string
+          pattern: '^\d{1,19}(\.\d{1,4})?$'
+        unit_cost:
+          type: string
+          pattern: '^\d{1,19}(\.\d{1,4})?$'
+        sort_order:
+          type: integer
+          minimum: 0
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict — e.g. DRAFT version already exists
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Operation forbidden — version is not DRAFT
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

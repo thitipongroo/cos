@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "BoqVersionApprovedV1",
+  "namespace": "com.constructionos.boq",
+  "doc": "Emitted when a BOQ version is approved. Phase 4.",
+  "fields": [
+    { "name": "event_id",      "type": "string" },
+    { "name": "event_type",    "type": "string" },
+    { "name": "event_version", "type": "string" },
+    { "name": "tenant_id",     "type": "string" },
+    { "name": "actor_id",      "type": "string" },
+    { "name": "occurred_at",   "type": "string" },
+    { "name": "correlation_id","type": "string" },
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "BoqVersionApprovedPayload",
+        "fields": [
+          { "name": "version_id",                  "type": "string" },
+          { "name": "project_id",                  "type": "string" },
+          { "name": "version_number",               "type": "int"    },
+          { "name": "total_estimated_amount",       "type": "string" },
+          { "name": "total_estimated_currency",     "type": "string" },
+          { "name": "approved_by",                  "type": "string" }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,383 @@
+// Unit tests — BOQ Service (Phase 4)
+// Focus: calculation accuracy, versioning rules, immutability enforcement, Kafka events.
+
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { REQUEST } from '@nestjs/core';
+import { BoqService } from '../boq.service';
+import { BoqRepository } from '../boq.repository';
+import type { BoqVersionRow, BoqCategoryRow, BoqItemRow } from '../boq.repository';
+
+// ── Mocks ─────────────────────────────────────────────────────────────────
+jest.mock('@cos/shared', () => ({
+  KafkaProducer: jest.fn().mockImplementation(() => ({
+    connect: jest.fn().mockResolvedValue(undefined),
+    publish: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
+
+const mockRepo = {
+  createVersion: jest.fn(),
+  findVersionsByProject: jest.fn(),
+  findVersionById: jest.fn(),
+  findDraftVersion: jest.fn(),
+  findLatestApprovedVersion: jest.fn(),
+  findMaxVersionNumber: jest.fn(),
+  approveVersion: jest.fn(),
+  updateVersionTotal: jest.fn(),
+  addCategory: jest.fn(),
+  findCategoriesByVersion: jest.fn(),
+  updateCategorySubtotal: jest.fn(),
+  addItem: jest.fn(),
+  updateItem: jest.fn(),
+  deleteItem: jest.fn(),
+  findItemsByVersion: jest.fn(),
+  findItemById: jest.fn(),
+  findItemsByCategoryIds: jest.fn(),
+  copyVersionContents: jest.fn(),
+};
+
+const mockRequest = {
+  tenantId: 'tenant-uuid-001',
+  user: { user_id: 'user-uuid-001', role: 'PROJECT_MANAGER' },
+};
+
+// ── Fixtures ──────────────────────────────────────────────────────────────
+const draftVersion: BoqVersionRow = {
+  version_id: 'version-uuid-001',
+  project_id: 'project-uuid-001',
+  tenant_id: 'tenant-uuid-001',
+  version_number: 1,
+  version_name: null,
+  status: 'DRAFT',
+  total_estimated_amount: '0.0000',
+  total_estimated_currency: 'THB',
+  approved_by: null,
+  approved_at: null,
+  created_by: 'user-uuid-001',
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+const approvedVersion: BoqVersionRow = {
+  ...draftVersion,
+  version_id: 'version-uuid-000',
+  version_number: 1,
+  status: 'APPROVED',
+  total_estimated_amount: '420000.0000',
+};
+
+const category: BoqCategoryRow = {
+  category_id: 'cat-uuid-001',
+  version_id: 'version-uuid-001',
+  tenant_id: 'tenant-uuid-001',
+  parent_category_id: null,
+  category_code: 'STR-01',
+  category_name: 'Structural Works',
+  sort_order: 0,
+  subtotal_amount: '0.0000',
+};
+
+const item: BoqItemRow = {
+  item_id: 'item-uuid-001',
+  category_id: 'cat-uuid-001',
+  version_id: 'version-uuid-001',
+  tenant_id: 'tenant-uuid-001',
+  item_code: null,
+  description: 'Concrete C30',
+  unit: 'm3',
+  quantity: '150.0000',
+  unit_cost: '2800.0000',
+  estimated_total: '420000.0000',
+  currency_code: 'THB',
+  sort_order: 0,
+  carbon_factor_kg_co2e: null,
+  carbon_total_kg_co2e: null,
+  created_at: new Date(),
+  updated_at: new Date(),
+};
+
+// ── Tests ─────────────────────────────────────────────────────────────────
+describe('BoqService', () => {
+  let service: BoqService;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        BoqService,
+        { provide: BoqRepository, useValue: mockRepo },
+        { provide: REQUEST, useValue: mockRequest },
+      ],
+    }).compile();
+    service = await module.resolve<BoqService>(BoqService);
+  });
+
+  // ── Calculation accuracy ─────────────────────────────────────────────────
+  describe('Decimal precision', () => {
+    it('calculateLineTotal: 0.1 + 0.2 does NOT equal 0.3 with float, but decimal.js gives exact 30.0000', async () => {
+      // This test demonstrates why decimal.js is required
+      // Native JS: 0.1 * 300 = 30.000000000000004 (float error)
+      // decimal.js: exactly 30.0000
+      mockRepo.findDraftVersion.mockResolvedValue(null);
+      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
+      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
+
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addItem.mockImplementation(async (p) => ({
+        ...item,
+        quantity: p.quantity,
+        unit_cost: p.unit_cost,
+        estimated_total: p.estimated_total,
+      }));
+      mockRepo.findItemsByVersion.mockResolvedValue([]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      const result = await service.addItem('version-uuid-001', {
+        category_id: 'cat-uuid-001',
+        description: 'Test item',
+        unit: 'unit',
+        quantity: '0.1', // 0.1 × 300 = 30 exactly with decimal.js
+        unit_cost: '300.0000',
+        currency_code: 'THB',
+      });
+
+      // estimated_total must be exactly 30.0000, not 30.000000000000004
+      expect(result.estimated_total).toBe('30.0000');
+    });
+
+    it('calculateLineTotal: 150 × 2800 = 420000.0000 (exact HALF_UP)', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addItem.mockImplementation(async (p) => ({
+        ...item,
+        quantity: p.quantity,
+        unit_cost: p.unit_cost,
+        estimated_total: p.estimated_total,
+      }));
+      mockRepo.findItemsByVersion.mockResolvedValue([]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      const result = await service.addItem('version-uuid-001', {
+        category_id: 'cat-uuid-001',
+        description: 'Concrete C30',
+        unit: 'm3',
+        quantity: '150.0000',
+        unit_cost: '2800.0000',
+        currency_code: 'THB',
+      });
+
+      expect(result.estimated_total).toBe('420000.0000');
+    });
+
+    it('calculateLineTotal: rounds 1.12345 × 3 = 3.3704 (HALF_UP on 4th decimal)', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addItem.mockImplementation(async (p) => ({
+        ...item,
+        quantity: p.quantity,
+        unit_cost: p.unit_cost,
+        estimated_total: p.estimated_total,
+      }));
+      mockRepo.findItemsByVersion.mockResolvedValue([]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      const result = await service.addItem('version-uuid-001', {
+        category_id: 'cat-uuid-001',
+        description: 'Rounding test',
+        unit: 'unit',
+        quantity: '3.0000',
+        unit_cost: '1.12345', // 3 × 1.12345 = 3.37035 → ROUND_HALF_UP(4dp) = 3.3704
+        currency_code: 'THB',
+      });
+
+      expect(result.estimated_total).toBe('3.3704');
+    });
+  });
+
+  // ── Versioning rules ─────────────────────────────────────────────────────
+  describe('Version creation', () => {
+    it('creates first version with version_number = 1', async () => {
+      mockRepo.findDraftVersion.mockResolvedValue(null);
+      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
+      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
+
+      const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
+      expect(result.version_number).toBe(1);
+      expect(mockRepo.createVersion).toHaveBeenCalledWith(
+        expect.objectContaining({ version_number: 1 }),
+      );
+    });
+
+    it('throws ConflictException if DRAFT already exists', async () => {
+      mockRepo.findDraftVersion.mockResolvedValue(draftVersion);
+
+      await expect(
+        service.createVersion('project-uuid-001', { currency_code: 'THB' }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('creates version_number = 2 when version 1 exists', async () => {
+      mockRepo.findDraftVersion.mockResolvedValue(null);
+      mockRepo.findMaxVersionNumber.mockResolvedValue(1);
+      mockRepo.createVersion.mockResolvedValue({ ...draftVersion, version_number: 2 });
+      mockRepo.findLatestApprovedVersion.mockResolvedValue(approvedVersion);
+      mockRepo.copyVersionContents.mockResolvedValue(undefined);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+
+      const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
+      expect(result.version_number).toBe(2);
+      expect(mockRepo.copyVersionContents).toHaveBeenCalled();
+    });
+  });
+
+  // ── Immutability ─────────────────────────────────────────────────────────
+  describe('Immutability — APPROVED/SUPERSEDED versions cannot be modified', () => {
+    it('addItem throws ForbiddenException on APPROVED version', async () => {
+      mockRepo.findVersionById.mockResolvedValue({ ...approvedVersion });
+      await expect(
+        service.addItem('version-uuid-000', {
+          category_id: 'cat-uuid-001',
+          description: 'Test',
+          unit: 'm3',
+          quantity: '1.0000',
+          unit_cost: '100.0000',
+          currency_code: 'THB',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('updateItem throws ForbiddenException on APPROVED version', async () => {
+      mockRepo.findItemById.mockResolvedValue({ ...item, version_id: 'version-uuid-000' });
+      mockRepo.findVersionById.mockResolvedValue({ ...approvedVersion });
+      await expect(service.updateItem('item-uuid-001', { description: 'Changed' })).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    it('deleteItem throws ForbiddenException on APPROVED version', async () => {
+      mockRepo.findItemById.mockResolvedValue({ ...item, version_id: 'version-uuid-000' });
+      mockRepo.findVersionById.mockResolvedValue({ ...approvedVersion });
+      await expect(service.deleteItem('item-uuid-001')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('approveVersion throws UnprocessableEntityException on non-DRAFT', async () => {
+      mockRepo.findVersionById.mockResolvedValue({ ...approvedVersion });
+      await expect(service.approveVersion('project-uuid-001', 'version-uuid-000')).rejects.toThrow(
+        UnprocessableEntityException,
+      );
+    });
+  });
+
+  // ── Approval flow ─────────────────────────────────────────────────────────
+  describe('approveVersion', () => {
+    it('calls repo.approveVersion and returns updated version', async () => {
+      const draftV2: BoqVersionRow = {
+        ...draftVersion,
+        version_id: 'version-uuid-002',
+        version_number: 2,
+      };
+      mockRepo.findVersionById
+        .mockResolvedValueOnce(draftV2) // initial check
+        .mockResolvedValueOnce({ ...draftV2, status: 'APPROVED' }); // final fetch
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateVersionTotal.mockResolvedValue(undefined);
+      mockRepo.approveVersion.mockResolvedValue(undefined);
+
+      const result = await service.approveVersion('project-uuid-001', 'version-uuid-002');
+      expect(result.status).toBe('APPROVED');
+      expect(mockRepo.approveVersion).toHaveBeenCalledWith(
+        expect.objectContaining({ version_id: 'version-uuid-002', approved_by: 'user-uuid-001' }),
+      );
+    });
+  });
+
+  // ── listVersions ──────────────────────────────────────────────────────────
+  describe('listVersions', () => {
+    it('returns empty array when no versions exist', async () => {
+      mockRepo.findVersionsByProject.mockResolvedValue([]);
+      const result = await service.listVersions('project-uuid-001');
+      expect(result).toEqual([]);
+    });
+
+    it('returns list of versions', async () => {
+      mockRepo.findVersionsByProject.mockResolvedValue([draftVersion]);
+      const result = await service.listVersions('project-uuid-001');
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  // ── addCategory ───────────────────────────────────────────────────────────
+  describe('addCategory', () => {
+    it('throws ForbiddenException when version is not DRAFT', async () => {
+      mockRepo.findVersionById.mockResolvedValue({ ...approvedVersion });
+      await expect(
+        service.addCategory('version-uuid-000', {
+          category_code: 'STR-01',
+          category_name: 'Structural',
+        }),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('adds category to DRAFT version', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.addCategory.mockResolvedValue(category);
+      const result = await service.addCategory('version-uuid-001', {
+        category_code: 'STR-01',
+        category_name: 'Structural',
+        sort_order: 0,
+      });
+      expect(result.category_code).toBe('STR-01');
+    });
+
+    it('adds category with parent_category_id', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      const childCat = { ...category, category_id: 'cat-002', parent_category_id: 'cat-001' };
+      mockRepo.addCategory.mockResolvedValue(childCat);
+      const result = await service.addCategory('version-uuid-001', {
+        category_code: 'STR-01-A',
+        category_name: 'Sub-structural',
+        parent_category_id: 'cat-uuid-parent',
+      });
+      expect(result.parent_category_id).toBe('cat-001');
+    });
+  });
+
+  // ── Category and item listing ─────────────────────────────────────────────
+  describe('getVersionDetail', () => {
+    it('returns version, categories, items', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+
+      const detail = await service.getVersionDetail('project-uuid-001', 'version-uuid-001');
+      expect(detail.version.version_id).toBe('version-uuid-001');
+      expect(detail.categories).toHaveLength(1);
+      expect(detail.items).toHaveLength(1);
+    });
+
+    it('throws NotFoundException when version does not belong to project', async () => {
+      mockRepo.findVersionById.mockResolvedValue({ ...draftVersion, project_id: 'other-project' });
+      await expect(
+        service.getVersionDetail('project-uuid-001', 'version-uuid-001'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+});
