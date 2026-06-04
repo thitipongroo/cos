@@ -1,0 +1,76 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-26-check-imports.sh",
+            "timeout": 10,
+            "statusMessage": "Rule 26: checking imports vs package.json..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-29-check-adrs.sh",
+            "timeout": 10,
+            "statusMessage": "Rule 29: verifying ADR references..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-38-check-approval.sh",
+            "timeout": 5,
+            "statusMessage": "Rule 38: checking PO approval..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-27-check-turbo.sh",
+            "timeout": 10,
+            "statusMessage": "Rule 27: checking turbo.json sync..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-28-check-lockfile.sh",
+            "timeout": 10,
+            "statusMessage": "Rule 28: checking pnpm-lock.yaml..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-32-check-jest-config.sh",
+            "timeout": 10,
+            "statusMessage": "Rule 32: checking jest config..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-35-check-test-infra.sh",
+            "timeout": 10,
+            "statusMessage": "Rule 35: checking @cos test infrastructure..."
+          },
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/rule-37-check-spec-drift.sh",
+            "timeout": 15,
+            "statusMessage": "Rule 37: checking spec/context drift..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git diff --name-only HEAD 2>/dev/null | grep -qE '\\.(ts|tsx|sql)$' && printf '{\"systemMessage\":\"RULE 36: Did you verify completion per spec? Read spec line by line → ls/grep/cat each item → show output.\\nRULE 38: Did PO approve the todo list before you started? If not: stop, present list, wait for approval.\"}' || true"
+          }
+        ]
+      }
+    ]
+  }
+}
