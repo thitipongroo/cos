@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "VarianceAlertEvent",
+  "namespace": "com.constructionos.events.finance",
+  "doc": "finance.variance.alert.v1 — Phase 7 Finance Service",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "VarianceAlertPayload",
+      "fields": [
+        { "name": "project_id",          "type": "string" },
+        { "name": "budget_id",           "type": "string" },
+        { "name": "variance_percentage", "type": "string" },
+        { "name": "threshold_exceeded",  "type": "string" },
+        { "name": "actual_amount",       "type": "string" },
+        { "name": "committed_amount",    "type": "string" },
+        { "name": "allocated_amount",    "type": "string" },
+        { "name": "currency_code",       "type": "string" }
+      ]
+    }}
+  ]
+}
