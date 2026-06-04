@@ -58,7 +58,7 @@ export class SiteOpsController {
     CosRole.TENANT_ADMIN,
   )
   @ApiOperation({ summary: 'List site reports (paginated, date range filter)' })
-  @ApiQuery({ name: 'project_id', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'from_date', required: false, type: String, example: '2026-06-01' })
   @ApiQuery({ name: 'to_date', required: false, type: String, example: '2026-06-30' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -149,7 +149,7 @@ export class SiteOpsController {
     CosRole.TENANT_ADMIN,
   )
   @ApiOperation({ summary: 'List issues (filterable by severity, status, project)' })
-  @ApiQuery({ name: 'project_id', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'severity', required: false, enum: ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] })
   @ApiQuery({
     name: 'status',

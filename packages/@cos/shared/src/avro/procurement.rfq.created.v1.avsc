@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "RfqCreatedEvent",
+  "namespace": "com.constructionos.events.procurement",
+  "doc": "procurement.rfq.created.v1 — Phase 5 Procurement Service",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "RfqCreatedPayload",
+      "fields": [
+        { "name": "rfq_id",      "type": "string" },
+        { "name": "pr_id",       "type": ["null", "string"], "default": null },
+        { "name": "project_id",  "type": "string" },
+        { "name": "rfq_number",  "type": "string" },
+        { "name": "deadline",    "type": "string" },
+        { "name": "created_by",  "type": "string" }
+      ]
+    }}
+  ]
+}

@@ -186,7 +186,7 @@ beforeEach(async () => {
     ],
   }).compile();
 
-  service = module.get<ProcurementService>(ProcurementService);
+  service = await module.resolve<ProcurementService>(ProcurementService);
 });
 
 // ── Vendor tests ───────────────────────────────────────────────────────────
@@ -471,5 +471,424 @@ describe('Delivery recording', () => {
     });
 
     expect(result.is_partial).toBe(true);
+  });
+
+  it('recordDelivery — throws NotFoundException when PO not found', async () => {
+    mockRepo.findPoById.mockResolvedValue(null);
+    await expect(
+      service.recordDelivery('missing-po', {
+        delivered_at: new Date().toISOString(),
+        items: [{ line_id: 'l-001', quantity_received: '5.0000' }],
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('recordDelivery — complete delivery (is_partial = false)', async () => {
+    const acknowledgedPo = { ...poFixture, status: 'ACKNOWLEDGED' as const };
+    mockRepo.findPoById.mockResolvedValue(acknowledgedPo);
+    mockRepo.createDelivery.mockResolvedValue({
+      delivery: {
+        delivery_id: 'del-uuid-001',
+        po_id: 'po-uuid-001',
+        tenant_id: 'tenant-uuid-001',
+        delivery_note: null,
+        delivered_at: new Date(),
+        received_by: 'user-uuid-001',
+        notes: null,
+      },
+      items: [
+        {
+          delivery_item_id: 'di-001',
+          delivery_id: 'del-uuid-001',
+          line_id: 'line-uuid-001',
+          tenant_id: 'tenant-uuid-001',
+          quantity_received: '10.0000',
+        },
+      ],
+    });
+    mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
+    mockRepo.sumDeliveredQuantity.mockResolvedValue('10.0000'); // 10 of 10 = complete
+
+    const result = await service.recordDelivery('po-uuid-001', {
+      delivered_at: new Date().toISOString(),
+      items: [{ line_id: 'line-uuid-001', quantity_received: '10.0000' }],
+    });
+    expect(result.is_partial).toBe(false);
+  });
+});
+
+// ── Additional coverage: uncovered happy paths ─────────────────────────────
+
+describe('listVendors', () => {
+  it('returns vendor list', async () => {
+    mockRepo.listVendors.mockResolvedValue([vendorFixture]);
+    const result = await service.listVendors();
+    expect(result).toHaveLength(1);
+  });
+});
+
+describe('getVendor (found)', () => {
+  it('returns vendor when found', async () => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    const result = await service.getVendor('vendor-uuid-001');
+    expect(result.vendor_id).toBe('vendor-uuid-001');
+  });
+});
+
+describe('deactivateVendor', () => {
+  it('deactivates vendor', async () => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.deactivateVendor.mockResolvedValue(undefined);
+    await expect(service.deactivateVendor('vendor-uuid-001')).resolves.toBeUndefined();
+    expect(mockRepo.deactivateVendor).toHaveBeenCalledWith('vendor-uuid-001');
+  });
+});
+
+describe('Purchase Requests', () => {
+  it('createPurchaseRequest returns PR', async () => {
+    const pr = {
+      pr_id: 'pr-001',
+      project_id: 'p-001',
+      tenant_id: 'tenant-uuid-001',
+      pr_number: 'PR-001',
+      status: 'DRAFT' as const,
+      requested_by: 'user-uuid-001',
+      required_date: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    mockRepo.createPurchaseRequest.mockResolvedValue(pr);
+    const result = await service.createPurchaseRequest({
+      project_id: 'p-001',
+      pr_number: 'PR-001',
+    });
+    expect(result.pr_id).toBe('pr-001');
+  });
+
+  it('listPurchaseRequests returns list', async () => {
+    mockRepo.listPurchaseRequests.mockResolvedValue([]);
+    const result = await service.listPurchaseRequests('p-001');
+    expect(result).toEqual([]);
+  });
+});
+
+describe('createRfq', () => {
+  it('creates RFQ and starts Temporal workflow', async () => {
+    const rfq = { ...rfqDraftFixture };
+    mockRepo.createRfq.mockResolvedValue(rfq);
+    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+
+    const result = await service.createRfq({
+      project_id: 'project-uuid-001',
+      rfq_number: 'RFQ-001',
+      deadline: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
+    });
+    expect(result.rfq_id).toBe('rfq-uuid-001');
+    expect(mockRepo.setRfqWorkflowId).toHaveBeenCalled();
+  });
+});
+
+describe('RFQ — additional happy paths', () => {
+  it('publishRfq — throws NotFoundException when RFQ not found', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    await expect(service.publishRfq('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('closeRfq — signals workflow when PUBLISHED', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    await expect(service.closeRfq('rfq-uuid-001')).resolves.toBeUndefined();
+  });
+
+  it('cancelRfq — throws NotFoundException when RFQ not found', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    await expect(service.cancelRfq('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('cancelRfq — throws when RFQ is CANCELLED terminal', async () => {
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, status: 'CANCELLED' });
+    await expect(service.cancelRfq('rfq-uuid-001')).rejects.toBeInstanceOf(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('cancelRfq — signals workflow when DRAFT', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
+    await expect(service.cancelRfq('rfq-uuid-001')).resolves.toBeUndefined();
+  });
+
+  it('awardRfq — happy path marks selected and signals', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+    await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-001')).resolves.toBeUndefined();
+  });
+
+  it('listRfqs returns list', async () => {
+    mockRepo.listRfqs.mockResolvedValue([rfqDraftFixture]);
+    const result = await service.listRfqs('project-uuid-001');
+    expect(result).toHaveLength(1);
+  });
+});
+
+describe('submitQuotation', () => {
+  it('submits quotation for PUBLISHED RFQ', async () => {
+    const q = { ...quotationFixtures[0]! };
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    mockRepo.createQuotation.mockResolvedValue(q);
+
+    const result = await service.submitQuotation('rfq-uuid-001', {
+      vendor_id: 'vendor-uuid-002',
+      total_amount: '150000.0000',
+      currency_code: 'THB',
+      validity_days: 30,
+      submitted_at: new Date().toISOString(),
+    });
+    expect(result.quotation_id).toBe('quot-uuid-002');
+  });
+
+  it('throws NotFoundException when RFQ not found', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    await expect(
+      service.submitQuotation('missing', {
+        vendor_id: 'v-001',
+        total_amount: '1.0000',
+        currency_code: 'THB',
+        validity_days: 30,
+        submitted_at: new Date().toISOString(),
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('throws UnprocessableEntityException when RFQ not PUBLISHED', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
+    await expect(
+      service.submitQuotation('rfq-uuid-001', {
+        vendor_id: 'v-001',
+        total_amount: '1.0000',
+        currency_code: 'THB',
+        validity_days: 30,
+        submitted_at: new Date().toISOString(),
+      }),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  });
+});
+
+describe('PO — additional happy paths', () => {
+  it('submitPoForApproval — signals workflow when DRAFT', async () => {
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    await expect(service.submitPoForApproval('po-uuid-001')).resolves.toBeUndefined();
+  });
+
+  it('approvePo — signals workflow when PENDING_APPROVAL', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'PENDING_APPROVAL' });
+    await expect(service.approvePo('po-uuid-001', 'PM')).resolves.toBeUndefined();
+  });
+
+  it('rejectPo — signals workflow when PENDING_APPROVAL', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'PENDING_APPROVAL' });
+    await expect(service.rejectPo('po-uuid-001', 'Price too high')).resolves.toBeUndefined();
+  });
+
+  it('acknowledgePo — signals workflow when SENT', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'SENT' });
+    await expect(service.acknowledgePo('po-uuid-001')).resolves.toBeUndefined();
+  });
+
+  it('listPurchaseOrders returns list', async () => {
+    mockRepo.listPurchaseOrders.mockResolvedValue([poFixture]);
+    const result = await service.listPurchaseOrders('project-uuid-001');
+    expect(result).toHaveLength(1);
+  });
+
+  it('getPurchaseOrder returns PO with line items', async () => {
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
+    const result = await service.getPurchaseOrder('po-uuid-001');
+    expect(result.po.po_id).toBe('po-uuid-001');
+    expect(result.line_items).toHaveLength(1);
+  });
+
+  it('getPurchaseOrder — throws NotFoundException when not found', async () => {
+    mockRepo.findPoById.mockResolvedValue(null);
+    await expect(service.getPurchaseOrder('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('receiveInvoice', () => {
+  const invoiceDto = {
+    invoice_number: 'INV-001',
+    amount: '60000.0000',
+    currency_code: 'THB',
+    invoice_date: '2026-09-05',
+    due_date: '2026-09-20',
+  };
+  const invoiceRow = {
+    invoice_id: 'inv-uuid-001',
+    po_id: 'po-uuid-001',
+    vendor_id: 'vendor-uuid-001',
+    tenant_id: 'tenant-uuid-001',
+    invoice_number: 'INV-001',
+    amount: '60000.0000',
+    currency_code: 'THB',
+    invoice_date: new Date('2026-09-05'),
+    due_date: new Date('2026-09-20'),
+    status: 'RECEIVED' as const,
+    file_id: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  it('receives invoice for FULLY_DELIVERED PO', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'FULLY_DELIVERED' });
+    mockRepo.createInvoice.mockResolvedValue(invoiceRow);
+    const result = await service.receiveInvoice('po-uuid-001', invoiceDto);
+    expect(result.invoice_id).toBe('inv-uuid-001');
+  });
+});
+
+describe('approveInvoice', () => {
+  const invoiceRow = {
+    invoice_id: 'inv-uuid-001',
+    po_id: 'po-uuid-001',
+    vendor_id: 'vendor-uuid-001',
+    tenant_id: 'tenant-uuid-001',
+    invoice_number: 'INV-001',
+    amount: '60000.0000',
+    currency_code: 'THB',
+    invoice_date: new Date(),
+    due_date: new Date(),
+    status: 'RECEIVED' as const,
+    file_id: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  it('approves RECEIVED invoice', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(invoiceRow);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    const result = await service.approveInvoice('po-uuid-001', 'inv-uuid-001');
+    expect(result.status).toBe('APPROVED');
+  });
+
+  it('throws NotFoundException when invoice not found', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(null);
+    await expect(service.approveInvoice('po-uuid-001', 'missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('throws NotFoundException when invoice belongs to different PO', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue({ ...invoiceRow, po_id: 'other-po' });
+    await expect(service.approveInvoice('po-uuid-001', 'inv-uuid-001')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it('throws UnprocessableEntityException when status is not RECEIVED or VERIFIED', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue({ ...invoiceRow, status: 'APPROVED' });
+    await expect(service.approveInvoice('po-uuid-001', 'inv-uuid-001')).rejects.toBeInstanceOf(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('approves invoice when po is null (covers po?.project_id ?? "" branch)', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(invoiceRow);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.findPoById.mockResolvedValue(null); // po is null → project_id = ''
+    const result = await service.approveInvoice('po-uuid-001', 'inv-uuid-001');
+    expect(result.status).toBe('APPROVED');
+  });
+
+  it('approves invoice when due_date is a string not a Date (covers instanceof false branch)', async () => {
+    const invoiceWithStringDate = { ...invoiceRow, due_date: '2026-09-20' as unknown as Date };
+    mockRepo.findInvoiceById.mockResolvedValue(invoiceWithStringDate);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    const result = await service.approveInvoice('po-uuid-001', 'inv-uuid-001');
+    expect(result.status).toBe('APPROVED');
+  });
+});
+
+describe('listInvoicesByPo / markInvoicePaid / disputeInvoice', () => {
+  it('listInvoicesByPo returns list', async () => {
+    mockRepo.findInvoicesByPo.mockResolvedValue([]);
+    const result = await service.listInvoicesByPo('po-uuid-001');
+    expect(result).toEqual([]);
+  });
+
+  it('markInvoicePaid — signals workflow when INVOICED', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'INVOICED' });
+    await expect(service.markInvoicePaid('po-uuid-001')).resolves.toBeUndefined();
+  });
+
+  it('disputeInvoice — signals workflow when INVOICED', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'INVOICED' });
+    await expect(service.disputeInvoice('po-uuid-001', 'Wrong amount')).resolves.toBeUndefined();
+  });
+});
+
+describe('private helper branches', () => {
+  it('assertRfqStatus — throws NotFoundException when rfq not found', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    // publishRfq calls assertRfqStatus internally
+    await expect(service.publishRfq('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('assertPoStatus — throws NotFoundException when po not found', async () => {
+    mockRepo.findPoById.mockResolvedValue(null);
+    await expect(service.submitPoForApproval('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('getRfqWorkflowHandle — throws when no temporal_workflow_id', async () => {
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, temporal_workflow_id: null });
+    await expect(service.publishRfq('rfq-uuid-001')).rejects.toBeInstanceOf(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('getPoWorkflowHandle — throws when no temporal_workflow_id', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, temporal_workflow_id: null });
+    await expect(service.submitPoForApproval('po-uuid-001')).rejects.toBeInstanceOf(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('constructor uses empty strings when request has no context', async () => {
+    const module = await (
+      await import('@nestjs/testing')
+    ).Test.createTestingModule({
+      providers: [
+        (await import('../procurement.service')).ProcurementService,
+        {
+          provide: (await import('../procurement.repository')).ProcurementRepository,
+          useValue: mockRepo,
+        },
+        { provide: (await import('@nestjs/core')).REQUEST, useValue: {} },
+      ],
+    }).compile();
+    const svc = await module.resolve<ProcurementService>(
+      (await import('../procurement.service')).ProcurementService,
+    );
+    expect(svc).toBeDefined();
+  });
+
+  it('publishEvent — logs error but does not throw when Kafka fails (covers catch branch)', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
+    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+    mockRepo.createRfq.mockResolvedValue(rfqDraftFixture);
+    const kafkaMock = (
+      service as unknown as {
+        kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+      }
+    ).kafka;
+    kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka down'));
+    await expect(
+      service.createRfq({
+        project_id: 'project-uuid-001',
+        rfq_number: 'RFQ-001',
+        deadline: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
+      }),
+    ).resolves.toBeDefined();
   });
 });

@@ -42,21 +42,23 @@ describe('RFQ Workflow — state transitions', () => {
 
   beforeAll(async () => {
     testEnv = await TestWorkflowEnvironment.createTimeSkipping();
-    worker = await Worker.create({
-      connection: testEnv.nativeConnection,
-      taskQueue: 'test-rfq',
-      workflows: { rfqWorkflow },
-      activities: mockActivities,
-    });
   });
 
   afterAll(async () => {
     await testEnv.teardown();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockUpdateRfqStatus.mockClear();
     mockMarkQuotationsEvaluated.mockClear();
+    // Fresh worker per test — runUntil() shuts down the worker on completion,
+    // so each test needs its own instance.
+    worker = await Worker.create({
+      connection: testEnv.nativeConnection,
+      taskQueue: 'test-rfq',
+      workflowsPath: require.resolve('../workflows/rfq.workflow'),
+      activities: mockActivities,
+    });
   });
 
   it('DRAFT → PUBLISHED → CLOSED → EVALUATED → AWARDED (happy path)', async () => {

@@ -66,22 +66,24 @@ describe('PO Workflow — state transitions', () => {
 
   beforeAll(async () => {
     testEnv = await TestWorkflowEnvironment.createTimeSkipping();
-    worker = await Worker.create({
-      connection: testEnv.nativeConnection,
-      taskQueue: 'test-po',
-      workflows: { poWorkflow },
-      activities: mockActivities,
-    });
   });
 
   afterAll(async () => {
     await testEnv.teardown();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockUpdatePoStatus.mockClear();
     mockNotifyApprover.mockClear();
     mockCompensateCancelledPo.mockClear();
+    // Fresh worker per test — runUntil() shuts down the worker on completion,
+    // so each test needs its own instance.
+    worker = await Worker.create({
+      connection: testEnv.nativeConnection,
+      taskQueue: 'test-po',
+      workflowsPath: require.resolve('../workflows/po.workflow'),
+      activities: mockActivities,
+    });
   });
 
   it('Happy path: DRAFT → PAID (PM tier only, ≤ 50K THB)', async () => {
@@ -93,10 +95,15 @@ describe('PO Workflow — state transitions', () => {
       });
 
       await handle.signal(submitPoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: DRAFT → PENDING_APPROVAL
       await handle.signal(approvePoSignal, { approver_id: 'pm-uuid-001', tier: 'PM' });
+      await testEnv.sleep('100ms'); // advance: PENDING_APPROVAL → APPROVED → SENT
       await handle.signal(acknowledgePoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: SENT → ACKNOWLEDGED
       await handle.signal(recordDeliverySignal, { delivery_id: 'del-001', is_partial: false });
+      await testEnv.sleep('100ms'); // advance: ACKNOWLEDGED → FULLY_DELIVERED
       await handle.signal(receiveInvoiceSignal, { invoice_id: 'inv-001' });
+      await testEnv.sleep('100ms'); // advance: FULLY_DELIVERED → INVOICED
       await handle.signal(markPaidSignal, { actor_id: 'finance-001' });
       await handle.result();
 
@@ -143,12 +150,19 @@ describe('PO Workflow — state transitions', () => {
       });
 
       await handle.signal(submitPoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: DRAFT → PENDING_APPROVAL
       await handle.signal(approvePoSignal, { approver_id: 'pm-uuid-001', tier: 'PM' });
+      await testEnv.sleep('100ms'); // advance through PM tier
       await handle.signal(approvePoSignal, { approver_id: 'finance-uuid-001', tier: 'FINANCE' });
+      await testEnv.sleep('100ms'); // advance through FINANCE tier
       await handle.signal(approvePoSignal, { approver_id: 'exec-uuid-001', tier: 'EXECUTIVE' });
+      await testEnv.sleep('100ms'); // advance: PENDING_APPROVAL → APPROVED → SENT
       await handle.signal(acknowledgePoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: SENT → ACKNOWLEDGED
       await handle.signal(recordDeliverySignal, { delivery_id: 'del-001', is_partial: false });
+      await testEnv.sleep('100ms'); // advance: ACKNOWLEDGED → FULLY_DELIVERED
       await handle.signal(receiveInvoiceSignal, { invoice_id: 'inv-001' });
+      await testEnv.sleep('100ms'); // advance: FULLY_DELIVERED → INVOICED
       await handle.signal(markPaidSignal, { actor_id: 'finance-001' });
       await handle.result();
 
@@ -189,6 +203,7 @@ describe('PO Workflow — state transitions', () => {
       });
 
       await handle.signal(submitPoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: DRAFT → PENDING_APPROVAL
       await handle.signal(rejectPoSignal, { approver_id: 'pm-uuid-001', reason: 'Price too high' });
       await handle.result();
 
@@ -210,10 +225,15 @@ describe('PO Workflow — state transitions', () => {
       });
 
       await handle.signal(submitPoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: DRAFT → PENDING_APPROVAL
       await handle.signal(approvePoSignal, { approver_id: 'pm-uuid-001', tier: 'PM' });
+      await testEnv.sleep('100ms'); // advance: PENDING_APPROVAL → APPROVED → SENT
       await handle.signal(acknowledgePoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: SENT → ACKNOWLEDGED
       await handle.signal(recordDeliverySignal, { delivery_id: 'del-001', is_partial: false });
+      await testEnv.sleep('100ms'); // advance: ACKNOWLEDGED → FULLY_DELIVERED
       await handle.signal(receiveInvoiceSignal, { invoice_id: 'inv-001' });
+      await testEnv.sleep('100ms'); // advance: FULLY_DELIVERED → INVOICED
       await handle.signal(disputeInvoiceSignal, {
         actor_id: 'finance-001',
         reason: 'Amount mismatch',
@@ -233,15 +253,20 @@ describe('PO Workflow — state transitions', () => {
       });
 
       await handle.signal(submitPoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: DRAFT → PENDING_APPROVAL
 
       // Skip 48 hours — PM did not approve → escalate
       await testEnv.sleep('49h');
 
-      // TENANT_ADMIN approves after escalation
+      // TENANT_ADMIN approves after escalation (status still PENDING_APPROVAL)
       await handle.signal(approvePoSignal, { approver_id: 'admin-uuid-001', tier: 'PM' });
+      await testEnv.sleep('100ms'); // advance: PENDING_APPROVAL → APPROVED → SENT
       await handle.signal(acknowledgePoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: SENT → ACKNOWLEDGED
       await handle.signal(recordDeliverySignal, { delivery_id: 'del-001', is_partial: false });
+      await testEnv.sleep('100ms'); // advance: ACKNOWLEDGED → FULLY_DELIVERED
       await handle.signal(receiveInvoiceSignal, { invoice_id: 'inv-001' });
+      await testEnv.sleep('100ms'); // advance: FULLY_DELIVERED → INVOICED
       await handle.signal(markPaidSignal, { actor_id: 'finance-001' });
       await handle.result();
 
@@ -266,15 +291,21 @@ describe('PO Workflow — state transitions', () => {
       });
 
       await handle.signal(submitPoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: DRAFT → PENDING_APPROVAL
       await handle.signal(approvePoSignal, { approver_id: 'pm-uuid-001', tier: 'PM' });
+      await testEnv.sleep('100ms'); // advance: PENDING_APPROVAL → APPROVED → SENT
       await handle.signal(acknowledgePoSignal, { actor_id: 'user-001' });
+      await testEnv.sleep('100ms'); // advance: SENT → ACKNOWLEDGED
 
       // First delivery: partial
       await handle.signal(recordDeliverySignal, { delivery_id: 'del-001', is_partial: true });
+      await testEnv.sleep('100ms'); // advance: ACKNOWLEDGED → PARTIALLY_DELIVERED
       // Second delivery: complete
       await handle.signal(recordDeliverySignal, { delivery_id: 'del-002', is_partial: false });
+      await testEnv.sleep('100ms'); // advance: PARTIALLY_DELIVERED → FULLY_DELIVERED
 
       await handle.signal(receiveInvoiceSignal, { invoice_id: 'inv-001' });
+      await testEnv.sleep('100ms'); // advance: FULLY_DELIVERED → INVOICED
       await handle.signal(markPaidSignal, { actor_id: 'finance-001' });
       await handle.result();
 

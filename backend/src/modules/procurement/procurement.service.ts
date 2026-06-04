@@ -68,7 +68,6 @@ export class ProcurementService {
   private readonly tenantId: string;
   private readonly tenantCode: string;
   private readonly userId: string;
-  private readonly userRole: string;
   private readonly correlationId: string;
   private readonly kafka: KafkaProducer;
 
@@ -84,7 +83,6 @@ export class ProcurementService {
     this.tenantId = request.tenantId ?? '';
     this.tenantCode = request.tenantCode ?? '';
     this.userId = request.user?.user_id ?? '';
-    this.userRole = request.user?.role ?? '';
     this.correlationId = randomUUID();
     this.kafka = new KafkaProducer();
   }

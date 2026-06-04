@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "PurchaseOrderStatusChangedEvent",
+  "namespace": "com.constructionos.events.procurement",
+  "doc": "procurement.po.status_changed.v1 — Phase 5 Procurement Service",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "PurchaseOrderStatusChangedPayload",
+      "fields": [
+        { "name": "po_id",       "type": "string" },
+        { "name": "from_status", "type": { "type": "enum", "name": "PoStatus",
+            "symbols": ["DRAFT","PENDING_APPROVAL","APPROVED","SENT","ACKNOWLEDGED",
+                        "PARTIALLY_DELIVERED","FULLY_DELIVERED","INVOICED","PAID","DISPUTED"] } },
+        { "name": "to_status",   "type": "PoStatus" }
+      ]
+    }}
+  ]
+}
