@@ -8,7 +8,7 @@
 // OutboxPoller runs as a background process (started in main.ts).
 
 // Minimal Prisma-compatible interface — avoids importing @prisma/client at the package level.
-// @cos/shared must remain framework-agnostic (Rule 35): no Node.js-only runtime imports.
+// @cos/shared must remain framework-agnostic (Rule 34): no Node.js-only runtime imports.
 // Callers pass a real PrismaClient instance; this interface covers the methods OutboxPoller uses.
 interface OutboxPrismaClient {
   $queryRaw<T = unknown>(strings: TemplateStringsArray, ...values: unknown[]): Promise<T>;

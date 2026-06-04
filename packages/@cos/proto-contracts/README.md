@@ -60,4 +60,4 @@ const vendors = await client.getProjectVendors({ projectId, tenantId });
 
 - gRPC is READ/query path only — write/ingestion path uses Kafka events (no direct HTTP between modules; Global Execution Rule)
 - Generated files (`src/generated/`) are gitignored — they are rebuilt in CI via `pnpm proto-gen`
-- Exempt from jest coverage requirement (Rule 36 — no executable logic in this package; only type stubs)
+- Exempt from jest coverage requirement (Rule 35 — no executable logic in this package; only type stubs)

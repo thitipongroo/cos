@@ -6,7 +6,7 @@ Typed Kafka event interfaces, Avro schemas, and the Kafka SDK used by all servic
 
 Single source of truth for all cross-service event contracts (Phase 1 types; Phase 8 adds Avro schemas + Kafka SDK). Every service that produces or consumes Kafka events must use this package — never import `kafkajs` directly.
 
-**Framework-agnostic:** imported by mobile (React Native/Metro), PWA (Service Worker), and Node.js services. No server-only runtime imports. See Rule 35.
+**Framework-agnostic:** imported by mobile (React Native/Metro), PWA (Service Worker), and Node.js services. No server-only runtime imports. See Rule 34.
 
 ## Public API
 
@@ -64,5 +64,5 @@ await outbox.publish(tenantId, 'construction.project.created.v1', payload); // w
 
 - Schema compatibility: `BACKWARD_TRANSITIVE` — new schema must be readable by ALL previous versions
 - Avro schemas live in `src/avro/` — registered in Schema Registry before first producer deployment
-- `OutboxPoller` (DB polling loop) lives in `backend/src/` NOT here — Node.js-only, would break mobile bundle (Rule 35)
+- `OutboxPoller` (DB polling loop) lives in `backend/src/` NOT here — Node.js-only, would break mobile bundle (Rule 34)
 - Integration tests: `test/kafka/kafka.integration.spec.ts` using `@testcontainers/kafka`

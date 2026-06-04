@@ -68,4 +68,4 @@ if (!hasPermission(user.role, 'finance:write')) {
 
 - ABAC (project_membership, tenant_match, resource_ownership) enforced via `PolicyGuard` in `backend/src/` — this package covers RBAC only
 - Advanced configurable ABAC policies: EP-AUTH-001 stub — Post-MVP
-- Mobile: import `CosRole` type-only where possible to avoid bundling guard code (Rule 34)
+- Mobile: import `CosRole` type-only where possible to avoid bundling guard code (Rule 33)

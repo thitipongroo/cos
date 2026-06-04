@@ -1,7 +1,7 @@
 // Unit tests — RFQ Temporal Workflow (Phase 5)
 // Uses @temporalio/testing TestWorkflowEnvironment for deterministic workflow execution.
 // Focus: all state transitions, cancellation compensation, deadline expiry.
-// Rule 31: uses jest.useFakeTimers / jest.useRealTimers + jest.runAllTimersAsync for async timers.
+// Rule 30: uses jest.useFakeTimers / jest.useRealTimers + jest.runAllTimersAsync for async timers.
 
 import { TestWorkflowEnvironment } from '@temporalio/testing';
 import { Worker } from '@temporalio/worker';

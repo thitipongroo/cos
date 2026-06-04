@@ -28,7 +28,7 @@ Wraps a Prisma operation with exponential backoff. Retries on `P1001` (connectio
 
 ## Dependencies
 
-- `@prisma/client` — type import only (runtime client is injected — Rule 34)
+- `@prisma/client` — type import only (runtime client is injected — Rule 33)
 - `@paralleldrive/cuid2` — ID generation
 - `@cos/logger` — logs retry attempts at WARN level
 
@@ -58,5 +58,5 @@ const project = await withRetry(() =>
 ## Notes
 
 - ADR-015: retry helpers exist because PgBouncer transaction mode can cause transient `ECONNRESET` on pool exhaustion — callers should not handle retry logic themselves
-- Use `jest.useFakeTimers()` + `await jest.runAllTimersAsync()` in tests for retry chains (Rule 31)
-- `import type { PrismaClient }` in test helpers — prevents mobile bundle failure (Rule 34)
+- Use `jest.useFakeTimers()` + `await jest.runAllTimersAsync()` in tests for retry chains (Rule 30)
+- `import type { PrismaClient }` in test helpers — prevents mobile bundle failure (Rule 33)

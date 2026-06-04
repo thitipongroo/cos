@@ -1119,12 +1119,12 @@ Generate:
   add only mobile-compatible @cos/* paths: types, types/*, financial, financial/*, validation,
   validation/*, rbac, rbac/*, shared, shared/* — do NOT add logger, tracing, config, database,
   proto-contracts (Node.js-only packages)
-- jest.config.js per TypeScript package/service with coverage thresholds (Rule 27+28, 2026-05-31):
+- jest.config.js per TypeScript package/service with coverage thresholds (Rule 26+28, 2026-05-31):
     coverage thresholds: { lines: 80, branches: 70 } per QM-1 (spec §30.3)
     collectCoverageFrom: exclude *.module.ts, *.dto.ts, *.payload.ts, index.ts, main.ts,
       event interface files (pure types — no executable code)
     moduleNameMapper: map all @cos/* workspace paths to source (not dist)
-    packages requiring jest.config (Rule 36 — all packages with executable logic):
+    packages requiring jest.config (Rule 35 — all packages with executable logic):
       backend/
       packages/@cos/shared/         — kafka SDK, event types
       packages/@cos/database/        — retry, pagination, id
@@ -1137,7 +1137,7 @@ Generate:
     packages EXEMPT (no executable logic — types/interfaces only):
       packages/@cos/types/, packages/@cos/proto-contracts/
     Note: Phase 18 adds testcontainers setup and @cos/test-utils — jest.config is a Phase 1 deliverable
-- pnpm lock file: run `pnpm install` after initial setup and commit pnpm-lock.yaml (Rule 29);
+- pnpm lock file: run `pnpm install` after initial setup and commit pnpm-lock.yaml (Rule 28);
     pnpm-lock.yaml must be committed before CI `--frozen-lockfile` can pass;
     order: (1) create all package.json files, (2) run `pnpm install`, (3) commit pnpm-lock.yaml,
     (4) change CI from `pnpm install` to `pnpm install --frozen-lockfile`
@@ -1149,7 +1149,7 @@ Constraints:
 - no demo code, no placeholder business logic
 - all services must start with Docker Compose from day one
 - Before marking Phase 1 complete: read every Generate item above line by line, run ls/grep
-  to verify each exists on disk, show output — Rule 37
+  to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -1351,7 +1351,7 @@ Generate:
     user.created       { tenant_id, user_id, email, role }  ← emitted from POST /api/v1/users
     user.role_changed  { tenant_id, user_id, old_role, new_role }  ← emitted from PATCH /api/v1/users/:userId/role
 
-npm packages required in backend/package.json — add BEFORE implementing (Rule 27):
+npm packages required in backend/package.json — add BEFORE implementing (Rule 26):
   dependencies:    @nestjs/passport, @nestjs/jwt, passport, passport-jwt, @aws-sdk/client-sns
   devDependencies: @types/passport-jwt, @types/passport, @types/express
 
@@ -1362,7 +1362,7 @@ Constraints:
 - Enterprise-ready: stateless JWT validation, no server-side session store
 - Keycloak must be the single source of truth for authentication
 - Before marking Phase 2 complete: read every Generate item above line by line, run ls/grep
-  to verify each exists on disk, show output — Rule 37
+  to verify each exists on disk, show output — Rule 36
 
 Decisions in Phase 2 (documented in spec):
 
@@ -1506,7 +1506,7 @@ Decisions in Phase 3 (generate stub — implement when triggered):
 Constraints:
 
 - Before marking Phase 3 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -1627,7 +1627,7 @@ Decisions in Phase 4 (generate stub — implement when triggered):
 Constraints:
 
 - Before marking Phase 4 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -1800,7 +1800,7 @@ Decisions in Phase 5 (documented in spec):
 Constraints:
 
 - Before marking Phase 5 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -1972,7 +1972,7 @@ Decision in Phase 6 (documented in spec):
 Constraints:
 
 - Before marking Phase 6 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -2133,7 +2133,7 @@ Decisions in Phase 7 (documented in spec):
     Candidates: Funding Societies (SEA), Validus (SEA) — per-partner adapter implemented on first tenant request
 
 - Before marking Phase 7 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 ```
 
 ---
@@ -2249,8 +2249,8 @@ Generate:
 - Confluent Schema Registry client integration
 - Unit tests: producer, consumer, outbox pattern, idempotency
 - Integration tests: packages/@cos/shared/test/kafka/kafka.integration.spec.ts
-    - Add to @cos/shared devDependencies: testcontainers ^10.9.0, @testcontainers/kafka ^10.9.0 (Rule 27)
-    - Add script to @cos/shared package.json: "test:integration": "jest --testPathPattern='test/'" (Rule 28)
+    - Add to @cos/shared devDependencies: testcontainers ^10.9.0, @testcontainers/kafka ^10.9.0 (Rule 26)
+    - Add script to @cos/shared package.json: "test:integration": "jest --testPathPattern='test/'" (Rule 27)
       Note: turbo.json test:integration task already exists — no change needed
     - Use @testcontainers/kafka KafkaContainer for a real single-broker Kafka instance
     - Mock Schema Registry (Avro encoding covered in src/kafka/__tests__/schema-registry.client.spec.ts)
@@ -2262,7 +2262,7 @@ Constraints:
 
 - Schema Registry must be running before first KafkaProducer deployment (QM-9 BACKWARD_TRANSITIVE)
 - Before marking Phase 8 complete: read every Generate item above line by line, run ls/grep
-  to verify each exists on disk, show output — Rule 37
+  to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -2374,7 +2374,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 9 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -2624,7 +2624,7 @@ Sync Engine Architecture:
 Constraints:
 
 - Before marking Phase 10 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -2794,7 +2794,7 @@ Stubs in Phase 11 (generate stub, do NOT implement yet):
 Constraints:
 
 - Before marking Phase 11 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -2918,7 +2918,7 @@ Stubs in Phase 12 (generate stub, do NOT implement yet):
               source: spec §22-ai-architecture §22.6
 
 - Before marking Phase 12 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 ```
 
 ---
@@ -3029,7 +3029,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 13 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3125,7 +3125,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 14 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3194,7 +3194,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 15 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3306,7 +3306,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 16 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3450,7 +3450,7 @@ Decisions in Phase 17 (documented in spec):
 Constraints:
 
 - Before marking Phase 17 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3533,7 +3533,7 @@ Generate:
 - Test data factories (TypeScript class-factory-boy equivalent) per entity
 - Database reset utility for integration tests (truncate + reseed)
 
-Async fake timer test pattern (Rule 31 — required for retry helpers, pollers, backoff logic):
+Async fake timer test pattern (Rule 30 — required for retry helpers, pollers, backoff logic):
   Use jest.runAllTimersAsync() NOT jest.runAllTimers() for async functions that sleep internally.
   Correct pattern:
     beforeEach(() => jest.useFakeTimers())
@@ -3547,7 +3547,7 @@ Async fake timer test pattern (Rule 31 — required for retry helpers, pollers, 
 Constraints:
 
 - Before marking Phase 18 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3711,7 +3711,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 19 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3807,7 +3807,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 20 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -3919,7 +3919,7 @@ Stub in Phase 21 (generate stub — implement when triggered):
 Constraints:
 
 - Before marking Phase 21 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -4014,7 +4014,7 @@ Generate:
 Constraints:
 
 - Before marking Phase 22 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -4146,7 +4146,7 @@ Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-archite
 Constraints:
 
 - Before marking Phase 23 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -4232,7 +4232,7 @@ Constraints:
 - Phase 24 MUST NOT block Phase 15–19 (deploy as post-production layer)
 
 - Before marking Phase 24 complete: read every Generate item above line by line,
-  run ls/grep to verify each exists on disk, show output — Rule 37
+  run ls/grep to verify each exists on disk, show output — Rule 36
 
 ```
 
@@ -4270,30 +4270,30 @@ GLOBAL EXECUTION RULES:
     Type B (IoT only, as specified in §32.9) — log WARN + return safe defaults.
 ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
 
-  Rule 27 — Package dependency sync (prevents Bug-class-A: missing package.json deps):
+  Rule 26 — Package dependency sync (prevents Bug-class-A: missing package.json deps):
     Before adding any `import { X } from 'package-name'` to a package's source file,
     verify 'package-name' is listed in that package's package.json (dependencies or
     devDependencies as appropriate). Never add imports without updating package.json first.
     Check: grep the package.json of the package being modified, not the root or another package.
 
-  Rule 28 — turbo.json sync (prevents Bug-class-B: missing turbo task):
+  Rule 27 — turbo.json sync (prevents Bug-class-B: missing turbo task):
     When adding ANY new script to ANY package.json (build/test/lint/dev family),
     add the corresponding task to root turbo.json before committing.
     If the task is already covered by an existing turbo task, add a comment explaining why.
 
-  Rule 29 — pnpm lock file (prevents Bug-class-C: CI frozen-lockfile failing):
+  Rule 28 — pnpm lock file (prevents Bug-class-C: CI frozen-lockfile failing):
     After ANY package.json change (add/remove/update dependency), run `pnpm install`
     locally to regenerate pnpm-lock.yaml and commit it in the same PR.
     pnpm-lock.yaml must exist and be up-to-date before CI `--frozen-lockfile` will pass.
     If pnpm-lock.yaml does not exist: run `pnpm install` immediately before any other work.
 
-  Rule 30 — ADR reference verification (prevents Bug-class-D: referencing non-existent ADRs):
+  Rule 29 — ADR reference verification (prevents Bug-class-D: referencing non-existent ADRs):
     Before writing `(see ADR-NNN)` in ANY spec file or code comment, verify:
     (a) `docs/architecture/adr/NNN-*.md` exists on disk, AND
     (b) its content covers the topic being referenced.
     If the ADR does not exist yet, create it first or write `(ADR-NNN — TO BE CREATED)`.
 
-  Rule 31 — Async fake timer test pattern (prevents Bug-class-E: wrong jest timer pattern):
+  Rule 30 — Async fake timer test pattern (prevents Bug-class-E: wrong jest timer pattern):
     When testing async functions that use setTimeout internally (retry helpers, pollers,
     backoff logic), use this pattern in Jest (requires jest ^29.1.0):
       beforeEach(() => jest.useFakeTimers())
@@ -4303,7 +4303,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     queue between retries — subsequent retries haven't queued their timers yet, causing tests
     to hang. jest.runAllTimersAsync() correctly interleaves timer firing with microtask draining.
 
-  Rule 32 — Generate section completeness (prevents Bug-class-F: incomplete scope):
+  Rule 31 — Generate section completeness (prevents Bug-class-F: incomplete scope):
     Every Phase spec Generate section MUST be exhaustive. Specifically:
     (a) "Generate: complete directory structure with placeholder README per service" means
         EVERY service/package directory listed in the Directory Structure section above it,
@@ -4314,7 +4314,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     (c) Any tsconfig.json exception (e.g., React Native cannot extend CommonJS base) must be
         documented inline in the Generate section before implementation begins.
 
-  Rule 33 — Single source of truth for jest config (prevents duplicate/conflicting jest config):
+  Rule 32 — Single source of truth for jest config (prevents duplicate/conflicting jest config):
     jest configuration MUST live in ONE place per package: the external `jest.config.js` file.
     NEVER embed jest configuration under a "jest" key in package.json when jest.config.js exists
     in the same package — jest uses jest.config.js first, creating a silent conflict where the
@@ -4322,7 +4322,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     Check: before committing, verify each package has AT MOST ONE of: jest.config.js OR "jest"
     key in package.json — never both.
 
-  Rule 34 — `import type` for non-runtime dependencies (prevents bundling Node.js-only packages):
+  Rule 33 — `import type` for non-runtime dependencies (prevents bundling Node.js-only packages):
     When a TypeScript file imports from an external package ONLY for type annotations
     (no runtime usage — the imported symbol is only used in type positions), use
     `import type { X } from 'package'` instead of `import { X } from 'package'`.
@@ -4332,11 +4332,11 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     Examples requiring `import type`: PrismaClient in @cos/shared, express types in NestJS services
     using Fastify, any server-only type in packages imported by mobile.
 
-  Rule 35 — @cos/shared must remain framework-agnostic (prevents mobile bundle failures):
+  Rule 34 — @cos/shared must remain framework-agnostic (prevents mobile bundle failures):
     @cos/shared is imported by ALL platforms: mobile (React Native/Metro), PWA (Service Worker),
     and Node.js services. Therefore:
     (a) NO runtime import of Node.js-only packages (PrismaClient, native addons, file system).
-        Use `import type` when types are needed (Rule 34).
+        Use `import type` when types are needed (Rule 33).
     (b) NO runtime import of server-framework packages (express, fastify, NestJS decorators).
     (c) Classes/functions that require a Node.js runtime (e.g., OutboxPoller which polls a DB)
         must be moved to backend/src/ — NOT placed in @cos/shared.
@@ -4344,7 +4344,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     Verify: check @cos/shared/package.json — every package listed in dependencies must be
     mobile-safe (pure JS, no native addons, no Node.js built-in-dependent runtime behavior).
 
-  Rule 36 — Every @cos package with executable logic must have unit tests in CI (prevents untested logic):
+  Rule 35 — Every @cos package with executable logic must have unit tests in CI (prevents untested logic):
     Definition of "executable logic": any exported function, method, or class with a body
     (not just TypeScript type aliases, interfaces, or enum declarations).
     Packages with executable logic MUST have:
@@ -4360,7 +4360,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     @cos/config (loadConfig, getConfig).
     Packages exempt (no executable logic — only types/interfaces): @cos/types, @cos/proto-contracts.
 
-  Rule 37 — Exhaustive verification before claiming completion (prevents overstating completion confidence):
+  Rule 36 — Exhaustive verification before claiming completion (prevents overstating completion confidence):
     Before reporting any Phase, task, or bug-fix set as "complete" or "all done":
     (a) Read the relevant spec section (Generate / Constraints / Exit Criteria) LINE BY LINE
     (b) For EACH item: run ls/grep/cat to verify it exists on disk — show the actual output
@@ -4369,7 +4369,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     The distinction that must be maintained: "I verified X" ≠ "everything is complete".
     This rule is the mandatory check at the end of EVERY Phase — not optional.
 
-  Rule 38 — After modifying any file in docs/specifications/, immediately grep context.md and
+  Rule 37 — After modifying any file in docs/specifications/, immediately grep context.md and
     context/00_master_construction_os.md for the changed section number, technology name, or keyword:
       grep -n "<changed-keyword>" context.md context/00_master_construction_os.md
     If grep finds a match:
@@ -4381,6 +4381,24 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     or the specific concept changed (e.g. tenant_id, WAF, protocol mapper).
     (prevents spec/context drift — root cause of WAF on-premise gap and JWT claim name
     inconsistency discovered 2026-06-01; agent had to be explicitly reminded both times)
+
+  Rule 38 — Pre-implementation spec extraction with mandatory product owner approval:
+    BEFORE writing the first line of code for any Phase, task, or multi-step deliverable:
+    (a) Read the Generate / Deliverables / Constraints section of the spec LINE BY LINE
+    (b) Create one TodoWrite task per line item — before writing any code;
+        tag each item as either READY or NEEDS_ESCALATION: <reason>
+    (c) PRESENT the full list to the product owner — do NOT begin implementing until
+        the product owner has reviewed and explicitly approved the list
+    (d) For any item tagged NEEDS_ESCALATION — wait for product owner decision;
+        do not implement a stub, do not skip, do not proceed unilaterally
+    (e) Mark each task complete ONLY when it has filesystem evidence (ls/grep/cat output);
+        Rule 36 is the per-item gate — not a single post-hoc check at the end
+    Never begin implementation with a mental model of "what seems needed" —
+    the spec Generate list is the complete and exhaustive obligation list.
+    The product owner approval in step (c) is the human gate that closes the reasoning
+    gap that automation cannot close.
+    (root cause of Phase 6 gaps: OpenSearch indexing, integration tests,
+    ConflictRecord notification, site.material.consumed; discovered 2026-06-04)
 
 25. When a rule in this document conflicts with a command in a Phase:
 

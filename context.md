@@ -667,26 +667,26 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Inject runtime secrets via **AWS Secrets Manager** (cloud/AWS EKS) or **HashiCorp Vault** (on-premise/hybrid) per spec §5.2 and ADR-013; store Kubernetes Secret objects in git only as **SealedSecret** via kubeseal (QM-4)
 - Emit a Kafka event for every workflow state transition — all transitions in RFQ and PO state machines must produce a typed event via `@cos/shared` (master §9; spec §32.6)
 
-**ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 27–36, 2026-05-31):**
+**ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–38):**
 
-- Rule 27 — Before adding `import { X } from 'pkg'` to any source file, verify 'pkg' is in that package's own `package.json` (not root or another package). Add it if missing. (prevents missing runtime deps)
-- Rule 28 — When adding any new script to any `package.json`, add the corresponding task to root `turbo.json` in the same commit. (prevents missing turbo tasks)
-- Rule 29 — After any `package.json` change, run `pnpm install` locally and commit `pnpm-lock.yaml` in the same PR. CI `--frozen-lockfile` will fail without it. (prevents CI lockfile failure)
-- Rule 30 — Before writing `(see ADR-NNN)` in any spec or code comment, verify `docs/architecture/adr/NNN-*.md` exists. Create the ADR first if it does not. (prevents dangling ADR references)
-- Rule 31 — For async functions using `setTimeout` internally (retry, poller, backoff), use `jest.useFakeTimers()` in `beforeEach`, `jest.useRealTimers()` in `afterEach`, and `await jest.runAllTimersAsync()` — NOT `jest.runAllTimers()`. (prevents test hangs on multi-step retry chains)
-- Rule 32 — "Generate: complete directory structure with placeholder README per service" means EVERY directory in the spec, including all `services/` and `packages/@cos/*`. "Tooling: X" means fully initialized (e.g., Husky = `.husky/pre-commit` exists, not just declared in `package.json`). tsconfig exceptions must be documented inline. (prevents incomplete scope)
-- Rule 33 — `jest.config.js` is the single source of truth per package. Never add a `"jest"` key to `package.json` when `jest.config.js` exists in the same package. (prevents duplicate/conflicting jest config)
-- Rule 34 — Use `import type { X } from 'pkg'` when X is only used for TypeScript type annotations (not runtime). Prevents Metro/webpack from bundling Node.js-only packages into mobile/browser builds. (prevents mobile bundle failures)
-- Rule 35 — `@cos/shared` is imported by ALL platforms (mobile, PWA, Node.js). Never add a runtime import of any Node.js-only package (PrismaClient, native addons, server frameworks). Use `import type` for type-only references. (prevents mobile bundle failures)
-- Rule 36 — Every `@cos/*` package with executable logic (functions/methods with a body) must have: `jest.config.js`, `test:cov` script, `jest`+`ts-jest` in devDeps, unit tests, and CI coverage. Packages with only types/interfaces are exempt. (prevents untested logic in shared packages)
-- Rule 37 — **Exhaustive verification before claiming completion** — Before reporting any Phase, task, or bug-fix set as "complete" or "all done":
+- Rule 26 — Before adding `import { X } from 'pkg'` to any source file, verify 'pkg' is in that package's own `package.json` (not root or another package). Add it if missing. (prevents missing runtime deps)
+- Rule 27 — When adding any new script to any `package.json`, add the corresponding task to root `turbo.json` in the same commit. (prevents missing turbo tasks)
+- Rule 28 — After any `package.json` change, run `pnpm install` locally and commit `pnpm-lock.yaml` in the same PR. CI `--frozen-lockfile` will fail without it. (prevents CI lockfile failure)
+- Rule 29 — Before writing `(see ADR-NNN)` in any spec or code comment, verify `docs/architecture/adr/NNN-*.md` exists. Create the ADR first if it does not. (prevents dangling ADR references)
+- Rule 30 — For async functions using `setTimeout` internally (retry, poller, backoff), use `jest.useFakeTimers()` in `beforeEach`, `jest.useRealTimers()` in `afterEach`, and `await jest.runAllTimersAsync()` — NOT `jest.runAllTimers()`. (prevents test hangs on multi-step retry chains)
+- Rule 31 — "Generate: complete directory structure with placeholder README per service" means EVERY directory in the spec, including all `services/` and `packages/@cos/*`. "Tooling: X" means fully initialized (e.g., Husky = `.husky/pre-commit` exists, not just declared in `package.json`). tsconfig exceptions must be documented inline. (prevents incomplete scope)
+- Rule 32 — `jest.config.js` is the single source of truth per package. Never add a `"jest"` key to `package.json` when `jest.config.js` exists in the same package. (prevents duplicate/conflicting jest config)
+- Rule 33 — Use `import type { X } from 'pkg'` when X is only used for TypeScript type annotations (not runtime). Prevents Metro/webpack from bundling Node.js-only packages into mobile/browser builds. (prevents mobile bundle failures)
+- Rule 34 — `@cos/shared` is imported by ALL platforms (mobile, PWA, Node.js). Never add a runtime import of any Node.js-only package (PrismaClient, native addons, server frameworks). Use `import type` for type-only references. (prevents mobile bundle failures)
+- Rule 35 — Every `@cos/*` package with executable logic (functions/methods with a body) must have: `jest.config.js`, `test:cov` script, `jest`+`ts-jest` in devDeps, unit tests, and CI coverage. Packages with only types/interfaces are exempt. (prevents untested logic in shared packages)
+- Rule 36 — **Exhaustive verification before claiming completion** — Before reporting any Phase, task, or bug-fix set as "complete" or "all done":
   (a) Read the relevant spec section (Generate / Constraints / Exit Criteria) **line by line**
   (b) For **each item**: run `ls`/`grep`/`cat` to verify it exists on disk — show the actual command output
   (c) Only then summarize — any item without ✅ filesystem evidence = NOT complete
   Never claim "complete" based on memory, partial checks, or only verifying known issues.
   The distinction that must be maintained: "I verified X" ≠ "everything is complete".
   (prevents overstating completion confidence — root cause of recurring missed deliverables)
-- Rule 38 — **After modifying any file in `docs/specifications/`**, immediately grep `context.md` and `context/00_master_construction_os.md` for the changed section number, technology name, or keyword:
+- Rule 37 — **After modifying any file in `docs/specifications/`**, immediately grep `context.md` and `context/00_master_construction_os.md` for the changed section number, technology name, or keyword:
 
   ```bash
   grep -n "<changed-keyword>" context.md context/00_master_construction_os.md
@@ -696,6 +696,25 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   If grep finds no match → no context update needed, proceed.
   Keywords to grep: section number (e.g. `§5.5`), technology name (e.g. `Cloudflare`), or the specific concept changed (e.g. `tenant_id`, `WAF`).
   (prevents spec/context drift — root cause of WAF on-premise gap and JWT claim name inconsistency discovered 2026-06-01; agent had to be explicitly reminded both times)
+
+- Rule 38 — **Pre-implementation spec extraction with mandatory product owner approval**
+  BEFORE writing the first line of code for any Phase, task, or multi-step deliverable:
+  (a) Read the Generate / Deliverables / Constraints section of the spec **line by line**
+  (b) Create one `TodoWrite` task per line item — **before writing any code**;
+  tag each item as either `READY` or `NEEDS_ESCALATION: <reason>`
+  (c) **Present the full list to the product owner** — do NOT begin implementing until
+  the product owner has reviewed and explicitly approved the list
+  (d) For any item tagged `NEEDS_ESCALATION` — **wait for product owner decision**;
+  do not implement a stub, do not skip, do not proceed unilaterally
+  (e) Mark each task complete **only** when it has filesystem evidence
+  (`ls`/`grep`/`cat` output); Rule 36 is the per-item gate
+  Never begin implementation with a mental model of "what seems needed" —
+  the spec Generate list is the complete and exhaustive obligation list.
+  The product owner approval in step (c) is the human gate that closes the reasoning gap
+  that automation cannot close.
+  (prevents silent scope reduction — root cause of Phase 6 gaps: OpenSearch indexing,
+  integration tests, ConflictRecord notification, `site.material.consumed`;
+  discovered 2026-06-04)
 
 ### Never
 
