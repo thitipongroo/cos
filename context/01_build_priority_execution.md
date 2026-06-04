@@ -364,7 +364,7 @@ EXIT CRITERIA (Priority 0 is complete when):
   [ ] API /health returns 200 with version info
   [ ] RBAC: a SITE_WORKER role cannot call a finance endpoint
     (verified by automated test)
-  [ ] Unit tests pass with coverage ≥ 80% lines / ≥ 70% branches for all new modules
+  [ ] Unit tests pass with coverage 100% lines / 100% branches for all new modules
     (command: pnpm test:cov in backend/, packages/@cos/shared/, packages/@cos/database/)
     (Decision 5, 2026-05-31 — per QM-1 spec §30.3)
   [ ] Exhaustive verification complete (Rule 36): read every Generate item in this Priority's spec
@@ -621,7 +621,7 @@ EXIT CRITERIA (Priority 1 is complete when):
   [ ] Daily report submission rate > 50% of active project-days by day 14 of pilot
   [ ] RBAC: SITE_WORKER cannot view another tenant's reports (automated test)
   [ ] All Kafka events are published on submission and visible in event log
-  [ ] Unit tests pass with coverage ≥ 80% lines / ≥ 70% branches for all new modules in this priority
+  [ ] Unit tests pass with coverage 100% lines / 100% branches for all new modules in this priority
   [ ] Exhaustive verification complete (Rule 36): read every Generate item in this Priority's spec
     line by line, run ls/grep for each, confirm ✅ or ❌ with actual output — no summary without evidence
 ```
@@ -794,7 +794,7 @@ EXIT CRITERIA (Priority 2 is complete when):
       (four-eyes enforcement tested)
   [ ] At least 10 real procurement transactions tracked in pilot
     with zero data loss
-  [ ] Unit tests pass with coverage ≥ 80% lines / ≥ 70% branches for all new modules in this priority
+  [ ] Unit tests pass with coverage 100% lines / 100% branches for all new modules in this priority
   [ ] Exhaustive verification complete (Rule 36): read every Generate item in this Priority's spec
     line by line, run ls/grep for each, confirm ✅ or ❌ with actual output — no summary without evidence
     Mutation testing required for approval flow logic (stryker score ≥ 70%)
@@ -945,7 +945,7 @@ EXIT CRITERIA (Priority 3 is complete when):
   [ ] Cost data is attributable (every entry has created_by and source)
   [ ] RBAC: PROJECT_MANAGER cannot view cost data from another project
       they are not assigned to
-  [ ] Unit tests pass with coverage ≥ 80% lines / ≥ 70% branches for all new modules in this priority
+  [ ] Unit tests pass with coverage 100% lines / 100% branches for all new modules in this priority
   [ ] Exhaustive verification complete (Rule 36): read every Generate item in this Priority's spec
     line by line, run ls/grep for each, confirm ✅ or ❌ with actual output — no summary without evidence
     Mutation testing required for financial calculation logic (stryker score ≥ 70%)
@@ -1066,7 +1066,7 @@ EXIT CRITERIA (Priority 4 is complete when):
   [ ] Accessibility: all interactive elements have accessible labels
       (tested with VoiceOver on iOS)
   [ ] Design system is documented and used consistently across P1, P2, P3
-  [ ] Unit tests pass with coverage ≥ 80% lines / ≥ 70% branches for all new modules in this priority
+  [ ] Unit tests pass with coverage 100% lines / 100% branches for all new modules in this priority
   [ ] Exhaustive verification complete (Rule 36): read every Generate item in this Priority's spec
     line by line, run ls/grep for each, confirm ✅ or ❌ with actual output — no summary without evidence
 ```
@@ -1185,7 +1185,7 @@ EXIT CRITERIA (Priority 5 is complete when):
   [ ] Embedding ID columns exist on all text-rich tables (nullable, empty)
   [ ] AI readiness checklist is documented and reviewed
   [ ] At least 30 days of clean warehouse data exists before Stage 1 AI begins
-  [ ] Unit tests pass with coverage ≥ 80% lines / ≥ 70% branches for all new modules in this priority
+  [ ] Unit tests pass with coverage 100% lines / 100% branches for all new modules in this priority
   [ ] Exhaustive verification complete (Rule 36): read every Generate item in this Priority's spec
     line by line, run ls/grep for each, confirm ✅ or ❌ with actual output — no summary without evidence
 ```

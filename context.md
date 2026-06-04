@@ -77,7 +77,7 @@ If the user cannot answer → default to stage 1 (BUILD) and inform the user.
 **Stage 2 → 3:**
 
 - All 8 production adoption gates show GREEN in Grafana for ≥ 14 consecutive days
-- p95 API latency: read < **300ms**, write < **500ms** on production (source: spec §31.6 SLO targets; M-7 resolved 2026-05-27; measured via Grafana)
+- p95 API latency: read < **300ms**, write < **500ms** on production (source: spec §31.6 SLO targets; measured via Grafana)
 - Zero P0/P1 incidents open
 - All SLO targets in QM-14 met for ≥ 14 consecutive days
 
@@ -142,7 +142,7 @@ Before starting any implementation task:
 
 ### QM-1 — Test Coverage
 
-- Unit test coverage ≥ **80% lines and ≥ 70% branches** for all new modules (source: spec §30.3, §30.12; M-1 resolved 2026-05-27); measured by `jest --coverage` with thresholds `{"global":{"lines":80,"branches":70}}` or `pytest --cov` with `--cov-fail-under=80` for lines (branch coverage enforced in jest config)
+- Unit test coverage **100% lines and 100% branches** for all new modules (source: spec §30.3, §30.12); measured by `jest --coverage` with thresholds `{"global":{"lines":100,"branches":100}}` or `pytest --cov` with `--cov-fail-under=99` for lines (branch coverage enforced in jest config)
 - Integration tests required for every public API endpoint
 - Contract tests required whenever a new inter-service HTTP/gRPC contract is introduced
 - E2E tests required for every critical user workflow (site report, procurement approval, cost tracking)
@@ -159,7 +159,7 @@ Before starting any implementation task:
   - changing an endpoint's URL
   - changing an authentication mechanism
 - Non-breaking additions (new optional fields, new endpoints) do not require a version bump
-- Old versions must remain functional for ≥ **12 months** after a new version is published (minimum deprecation notice before version sunset — source: spec §14.4; M-9 resolved 2026-05-27)
+- Old versions must remain functional for ≥ **12 months** after a new version is published (minimum deprecation notice before version sunset — source: spec §14.4)
 - OpenAPI 3.1 spec must be generated per service under `docs/api/{service}.openapi.yaml` (e.g., `docs/api/auth.openapi.yaml`) — one file per service, not one combined file
 - When deprecating an API version: notify tenants via email + in-app banner ≥ 90 days before sunset; record sunset date in `docs/api/deprecation-schedule.md`
 
@@ -182,7 +182,7 @@ Before starting any implementation task:
 
 ### QM-4 — Security
 
-- **No secrets in code or git history** — runtime secrets injected via **AWS Secrets Manager** (cloud/AWS EKS; External Secrets Operator syncs SM secrets → K8s Secret → pod env) or **HashiCorp Vault** (on-premise/hybrid; Vault Agent sidecar) per spec §5.2; C-02 resolved 2026-05-27; ADR-013. Kubernetes Secret objects that must exist in git committed only as **SealedSecret** via `sealed-secrets` (kubeseal); never commit `.env` files; never commit `*.pem`, `*.key`, or `*.pfx` files; pre-commit hook must block secret patterns (`git-secrets` or `gitleaks`). Source of truth: `context/00_master_construction_os.md` §Phase 2 Secret Management
+- **No secrets in code or git history** — runtime secrets injected via **AWS Secrets Manager** (cloud/AWS EKS; External Secrets Operator syncs SM secrets → K8s Secret → pod env) or **HashiCorp Vault** (on-premise/hybrid; Vault Agent sidecar) per spec §5.2; ADR-013. Kubernetes Secret objects that must exist in git committed only as **SealedSecret** via `sealed-secrets` (kubeseal); never commit `.env` files; never commit `*.pem`, `*.key`, or `*.pfx` files; pre-commit hook must block secret patterns (`git-secrets` or `gitleaks`). Source of truth: `context/00_master_construction_os.md` §Phase 2 Secret Management
 - **Secrets rotation** — all secrets must have a rotation schedule defined in `docs/security/secrets-rotation-policy.md`; cloud: database credentials rotated via AWS SM automated rotation (Lambda rotation function per resource type); on-premise: database credentials rotated every 24h via **Vault database secrets engine** (dynamic secrets, lease TTL — see Vault secret rotation policy); JWT signing keys rotate every 180 days via JWKS endpoint rotation (zero-downtime); rotation tested in staging before each Stage transition
 - **Authentication — TWO PATHS (Phase 2 authoritative):**
   - **Path B (email/password — office/management roles):** uses Keycloak OIDC — never implement custom email/password auth; JWT is RS256-signed by Keycloak
@@ -201,17 +201,17 @@ Before starting any implementation task:
 - **TLS policy** — TLS 1.3 minimum on all ingress endpoints (source: master §Phase 16 + spec §05 §5.2); TLS 1.0, TLS 1.1, TLS 1.2 explicitly disabled on ingress; certificate rotation automated via cert-manager (Kubernetes) + AWS ACM (cloud)
 - **mTLS** — required for all service-to-service communication that crosses VPC/node boundaries; internal calls within the same NestJS process are exempt; mTLS managed via **Istio 1.21+** service mesh (source: master tech stack — Istio handles mTLS certificate lifecycle via cert-manager integration; no separate AWS Private CA required)
 - **WAF** — solution depends on deployment type (source: spec §05-security-compliance §5.5 + §08-enterprise-deployment §8.7):
-  - **Cloud deployments** (Shared SaaS, Dedicated Tenant): **Cloudflare WAF** (decided 2026-05-26)
+  - **Cloud deployments** (Shared SaaS, Dedicated Tenant): **Cloudflare WAF**
     - Architecture: `Internet → Cloudflare Edge → AWS ALB → EKS Ingress → NestJS`
     - Plan: Cloudflare Pro minimum
     - Rule sets: Cloudflare Managed Ruleset + OWASP CRS (paranoia level 2) + Custom Construction OS rules
-    - Rate limits (paths `/api/v*/...`): auth 10 req/min/IP · general API 100 req/min/user · file upload **20 req/min/user** (spec §05 §5.5 v1.4.0, confirmed 2026-05-26)
+    - Rate limits (paths `/api/v*/...`): auth 10 req/min/IP · general API 100 req/min/user · file upload **20 req/min/user** (spec §05 §5.5)
     - **Origin protection MANDATORY**: AWS ALB SG must allow port 443 from Cloudflare IPs only → `infrastructure/terraform/cloudflare/`
     - **App integration MANDATORY**: use `CF-Connecting-IP` as real IP; validate `CF-Ray` present; log `CF-Ray` → `backend/src/shared/middleware/cloudflare-waf.middleware.ts`
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
 - **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets: SSE-KMS with customer-managed key (CMK); all RDS/Aurora: storage encryption enabled at creation; all ElastiCache nodes: encryption-at-rest enabled; CMK definitions in `infrastructure/terraform/aws/kms.tf`
 - **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
-- SAST and code quality scan must pass in CI via **SonarQube** before merge — **C-04 RESOLVED (2026-05-27; ADR-011):** spec §30.10 and §30.12 mandate SonarQube; semgrep removed from CI pipeline once SonarQube is operational; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, ≥80% line coverage, ≥70% branch coverage, ≤3% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
+- SAST and code quality scan must pass in CI via **SonarQube** before merge — spec §30.10 and §30.12 mandate SonarQube; semgrep removed from CI pipeline once SonarQube is operational; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, 100% line coverage, 100% branch coverage, 0% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
 - Dependency vulnerability scan in CI (`npm audit --audit-level=high` / `pip-audit`) — no HIGH/CRITICAL unresolved
 - Rate limiting required on all public-facing endpoints (see QM-7)
 - CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/security/cors-policy.md`
@@ -237,7 +237,7 @@ Before starting any implementation task:
 ### QM-6 — Performance Budgets
 
 These are enforced targets. If an implementation does not meet them, do not ship — optimize or escalate.
-Source: spec §31.6 (M-7 resolved 2026-05-27 — targets corrected to match spec SLO definitions)
+Source: spec §31.6 (targets corrected to match spec SLO definitions)
 
 | Metric                                       | Target                                         | Measurement                                  |
 | -------------------------------------------- | ---------------------------------------------- | -------------------------------------------- |
@@ -259,8 +259,8 @@ The k6 load test runs as a CI gate on every PR that modifies an API endpoint, da
 - All public API endpoints: 100 req/min per tenant by default; burst allowance: 150 req/min for ≤ 10 consecutive seconds
 - Authentication endpoints: 10 req/min per IP (brute force protection); account lockout after 5 consecutive failures for 15 minutes
 - AI/LLM endpoints: 20 req/min per tenant (cost protection)
-- File upload endpoints (`/api/v*/files/*`): **20 req/min per user** (spec §05 §5.5 v1.4.0, confirmed 2026-05-26)
-- Rate limiting via **Kong Gateway** (open-source, Kubernetes-native) at the infrastructure level — C-01 RESOLVED (2026-05-27; spec §4.8; ADR-010); Kong enforces rate limits before requests reach NestJS, reducing compute waste on blocked requests; Kong also handles JWT validation, tenant routing, and API analytics per spec §4.8; API monetization covers billing/quota metering only — Kong is now the gateway infrastructure
+- File upload endpoints (`/api/v*/files/*`): **20 req/min per user** (spec §05 §5.5)
+- Rate limiting via **Kong Gateway** (open-source, Kubernetes-native) at the infrastructure level — C-01 RESOLVED (spec §4.8; ADR-010); Kong enforces rate limits before requests reach NestJS, reducing compute waste on blocked requests; Kong also handles JWT validation, tenant routing, and API analytics per spec §4.8; API monetization covers billing/quota metering only — Kong is now the gateway infrastructure
 - Tenants that require higher limits → expose via `TenantQuotaService`
 - Rate limit headers in every response: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
 - `429` responses must include `Retry-After` header with seconds until reset
@@ -290,14 +290,14 @@ Every new service, module, or background job must include:
 - Never use `console.log` — always use the platform logger (`@cos/logger`)
 - PII must never appear in log fields — use IDs only
 - Log level discipline: DEBUG = dev only, INFO = business events, WARN = recoverable anomaly, ERROR = requires investigation
-- **Log retention** — production logs stored in **Loki** (30 days hot on S3 object storage); 1 year cold; compliance archive retained 7 years (source: spec §31.2 + master Phase 15; M-10 resolved 2026-05-27 — CloudWatch Logs removed; Loki is the authoritative log store); retention schedule defined in `docs/compliance/log-retention-policy.md`
+- **Log retention** — production logs stored in **Loki** (30 days hot on S3 object storage); 1 year cold; compliance archive retained 7 years (source: spec §31.2 + master Phase 15; CloudWatch Logs removed; Loki is the authoritative log store); retention schedule defined in `docs/compliance/log-retention-policy.md`
 
 **Distributed Tracing:**
 
 - All HTTP requests must propagate `traceparent` header (W3C Trace Context)
 - All Kafka events must carry `trace_id` and `span_id` in headers
 - All cross-service calls must create child spans
-- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5; m-2 resolved 2026-05-27 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector-config.yaml` (sampling section)
+- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector-config.yaml` (sampling section)
 
 **Metrics:**
 
@@ -308,7 +308,7 @@ Every new service, module, or background job must include:
 
 **Alerts:**
 
-- Every new service must have corresponding **Alertmanager** alert rules defined (Prometheus ecosystem — source: spec §31.7 + master Phase 15; M-11 resolved 2026-05-27 — CloudWatch alarms removed; Alertmanager is the authoritative alerting system); alert YAML in `infrastructure/monitoring/`
+- Every new service must have corresponding **Alertmanager** alert rules defined (Prometheus ecosystem — source: spec §31.7 + master Phase 15; M-11 — CloudWatch alarms removed; Alertmanager is the authoritative alerting system); alert YAML in `infrastructure/monitoring/`
 - Minimum alerts: error rate > 1% for > 5 min, p99 latency > 3s for > 5 min, job failure rate > 5%
 - **Synthetic monitoring** — health-check probes run every 60 seconds from ≥ 2 AWS regions against all public endpoints; implemented via OpenTelemetry Collector + Grafana Synthetic Monitoring (source: spec §31.7 + master Phase 15; probe definitions in `infrastructure/synthetics/`)
 
@@ -323,7 +323,7 @@ Every new service, module, or background job must include:
 - **API backward compatibility** — old clients must not break during upgrades
   - Never remove a JSON field from a response — mark as deprecated with `@deprecated` in OpenAPI, keep for 6 months
   - Never change a field's type in the same version
-- **Kafka schema backward compatibility** — Confluent Schema Registry is **required** infrastructure (not optional); all Kafka schemas must be registered before first producer use; compatibility mode: `BACKWARD_TRANSITIVE` (new schema can read messages from ALL previous versions — not just the immediately preceding one; source: spec §32.4; C-NEW-1 resolved 2026-05-27); CI must validate schema compatibility against the registry before deployment
+- **Kafka schema backward compatibility** — Confluent Schema Registry is **required** infrastructure (not optional); all Kafka schemas must be registered before first producer use; compatibility mode: `BACKWARD_TRANSITIVE` (new schema can read messages from ALL previous versions — not just the immediately preceding one; source: spec §32.4) CI must validate schema compatibility against the registry before deployment
 - **Mobile backward compatibility** — the backend must support the previous 2 major mobile app versions
 - **Offline sync conflict resolution** — conflict strategy is entity-specific (authoritative spec: `context/00_master_construction_os.md` §Phase 6 Offline Conflict Resolution Strategy); agents must implement exactly the strategies below — never invent a different strategy without an ADR:
   - `site_reports`: **LAST_WRITE_WINS** on `client_submitted_at`; flag as `CONFLICT_FLAGGED` for `SITE_ENGINEER` manual review when server `modified_at` differs from client's `last_known_modified_at`
@@ -411,7 +411,7 @@ DR drills must be executed before every Stage transition; drill results recorded
 ### QM-14 — SLI / SLO / Error Budget
 
 SLOs are non-negotiable production targets. Error budget is consumed when an SLO is violated.
-Source: spec §31.6 (M-7 latency fix + M-8 availability tiers resolved 2026-05-27)
+Source: spec §31.6
 
 **API Availability SLO (three tiers — source: spec §31.6):**
 
@@ -542,8 +542,8 @@ If any FAILED → do not proceed to Step 2. Fix failed items first, then re-run.
 **Additional automated checks (9 global-scale additions — all must pass before Step 2):**
 
 ```bash
-# 1. Test coverage gate (80% lines + 70% branches — source: spec §30.3; M-1 resolved 2026-05-27)
-npx jest --coverage --coverageThreshold='{"global":{"lines":80,"branches":70}}'
+# 1. Test coverage gate (100% lines + 100% branches — source: spec §30.3)
+npx jest --coverage --coverageThreshold='{"global":{"lines":100,"branches":100}}'
 
 # 2. Node dependency vulnerability check
 npm audit --audit-level=high
@@ -551,13 +551,13 @@ npm audit --audit-level=high
 # 3. Python dependency vulnerability check
 pip-audit --requirement ai/requirements.txt
 
-# 4. SAST + code quality scan (SonarQube — C-04 resolved 2026-05-27; ADR-011)
+# 4. SAST + code quality scan
 sonar-scanner \
   -Dsonar.projectKey=construction-os \
   -Dsonar.sources=. \
   -Dsonar.host.url=$SONAR_HOST_URL \
   -Dsonar.login=$SONAR_TOKEN
-# Quality gate must be GREEN (0 bugs, 0 vulnerabilities, ≥80% line coverage, ≥70% branch coverage)
+# Quality gate must be GREEN (0 bugs, 0 vulnerabilities, 100% line coverage, 100% branch coverage)
 
 # 5. OpenAPI spec freshness
 ./scripts/readiness/check-openapi-freshness.sh
@@ -695,7 +695,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   If grep finds a match → read that section, check consistency with the spec change, update in the same commit.
   If grep finds no match → no context update needed, proceed.
   Keywords to grep: section number (e.g. `§5.5`), technology name (e.g. `Cloudflare`), or the specific concept changed (e.g. `tenant_id`, `WAF`).
-  (prevents spec/context drift — root cause of WAF on-premise gap and JWT claim name inconsistency discovered 2026-06-01; agent had to be explicitly reminded both times)
+  (prevents spec/context drift — root cause of WAF on-premise gap and JWT claim name inconsistency; agent had to be explicitly reminded both times)
 
 - Rule 38 — **Pre-implementation spec extraction with mandatory product owner approval**
   BEFORE writing the first line of code for any Phase, task, or multi-step deliverable:
@@ -713,8 +713,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   The product owner approval in step (c) is the human gate that closes the reasoning gap
   that automation cannot close.
   (prevents silent scope reduction — root cause of Phase 6 gaps: OpenSearch indexing,
-  integration tests, ConflictRecord notification, `site.material.consumed`;
-  discovered 2026-06-04)
+  integration tests, ConflictRecord notification, `site.material.consumed`)
 
 ### Never
 

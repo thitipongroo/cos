@@ -9,7 +9,7 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts', '!src/index.ts'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
-  coverageThreshold: { global: { lines: 80, branches: 70 } },
+  coverageThreshold: { global: { lines: 100, branches: 100 } },
   testEnvironment: 'node',
   moduleNameMapper: {
     '^@cos/types$': '<rootDir>/../types/src/index.ts',

@@ -1,5 +1,5 @@
 // backend jest.config.js — Phase 1 deliverable (Decision 2: moved from Phase 18)
-// Coverage thresholds: 80% lines / 70% branches per QM-1 (spec §30.3)
+// Coverage thresholds: 100% lines / 100% branches per QM-1 (spec §30.3)
 
 /** @type {import('jest').Config} */
 module.exports = {

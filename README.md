@@ -98,7 +98,7 @@ make setup
 ### Running Tests
 
 ```bash
-# All tests with coverage (enforced: ≥80% lines / ≥70% branches per QM-1)
+# All tests with coverage (enforced: 100% lines / 100% branches per QM-1)
 pnpm test:cov
 
 # Unit tests only (fast, no Docker required)

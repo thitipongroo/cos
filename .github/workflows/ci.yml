@@ -52,9 +52,9 @@ jobs:
 
   # ─── Step 3: Unit Tests + Coverage Enforcement ─────────────────────────────
   # Decision 2/7 (2026-05-31): jest.config created in Phase 1; coverage enforced
-  # from Phase 1 onwards per QM-1 (spec §30.3): ≥80% lines / ≥70% branches.
+  # from Phase 1 onwards per QM-1 (spec §30.3): 100% lines / 100% branches.
   unit-tests:
-    name: Unit Tests (coverage ≥80% lines / ≥70% branches)
+    name: Unit Tests (coverage 100% lines / 100% branches)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

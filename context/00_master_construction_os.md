@@ -1119,8 +1119,8 @@ Generate:
   add only mobile-compatible @cos/* paths: types, types/*, financial, financial/*, validation,
   validation/*, rbac, rbac/*, shared, shared/* — do NOT add logger, tracing, config, database,
   proto-contracts (Node.js-only packages)
-- jest.config.js per TypeScript package/service with coverage thresholds (Rule 26+28, 2026-05-31):
-    coverage thresholds: { lines: 80, branches: 70 } per QM-1 (spec §30.3)
+- jest.config.js per TypeScript package/service with coverage thresholds:
+    coverage thresholds: { lines: 100, branches: 100 } per QM-1 (spec §30.3)
     collectCoverageFrom: exclude *.module.ts, *.dto.ts, *.payload.ts, index.ts, main.ts,
       event interface files (pure types — no executable code)
     moduleNameMapper: map all @cos/* workspace paths to source (not dist)
@@ -3252,11 +3252,11 @@ WAF:
     - OWASP Core Rule Set (CRS) paranoia level 2
     - Custom: Construction OS rules (API path patterns, tenant header validation)
 
-  Rate limits (spec §05 §5.5, confirmed 2026-05-26):
+  Rate limits (spec §05 §5.5):
     Note: API path convention is /api/v1/ — backend setGlobalPrefix('api/v1') confirmed (source: main.ts)
     Auth endpoints (/api/v*/auth/*):   10 req/min per IP — block 429
     General API  (/api/v*/):          100 req/min per user — block 429
-    File upload  (/api/v*/files/*):    20 req/min per user — block 429 (spec §05 §5.5, confirmed 2026-05-26)
+    File upload  (/api/v*/files/*):    20 req/min per user — block 429 (spec §05 §5.5)
     Health/metrics:                    60 req/min per IP — block 429
 
   Origin protection (MANDATORY):
@@ -3479,7 +3479,7 @@ Testing Pyramid:
   Load tests:         5% — SLA validation per Phase 14
 
 Required Unit Test Coverage:
-  Minimum: 80% line coverage AND 70% branch coverage for all NestJS services (source: spec §30.3)
+  Minimum: 100% line coverage AND 100% branch coverage for all NestJS services (source: spec §30.3)
   Mandatory coverage for:
     - All state machine transitions (Phase 3, Phase 5)
     - All financial calculations (Phase 4, Phase 7) — include decimal edge cases
@@ -3522,7 +3522,7 @@ Testcontainers Setup:
 
 Generate:
 
-- Jest config per service (coverage thresholds: 80% lines + 70% branches — source: spec §30.3)
+- Jest config per service (coverage thresholds: 100% lines + 100% branches — source: spec §30.3)
   Note: jest.config.js is a Phase 1 deliverable — Phase 18 adds testcontainers and @cos/test-utils only
 - pytest config for Python services
 - Shared testcontainers setup utility (@cos/test-utils package)
@@ -3626,7 +3626,7 @@ Data:
                → kafka-topics.sh --describe --bootstrap-server kafka:9092 | grep -E "ReplicationFactor|Isr"
 
 Disaster Recovery:
-  [AUTO]   [ ] RTO target: 30 minutes (production SLA — confirmed by product owner 2026-05-25)
+  [AUTO]   [ ] RTO target: 30 minutes (production SLA — confirmed by product owner)
                Requires: automated failover via Kubernetes + health checks, not manual intervention
                PostgreSQL: RDS Multi-AZ automatic failover (~60 seconds)
                Application: Kubernetes liveness probe triggers pod restart automatically
@@ -4251,7 +4251,7 @@ GLOBAL EXECUTION RULES:
 8.  Never invent approval flows beyond those defined in WORKFLOW ENGINE SPEC.
 9.  Always use typed contracts (TypeScript interfaces + Avro schemas).
 10. Always emit events via shared @construction-os/shared package.
-11. Always generate tests (minimum 80% line coverage AND 70% branch coverage — source: spec §30.3).
+11. Always generate tests (minimum 100% line coverage AND 100% branch coverage — source: spec §30.3).
 12. Always support scalability.
 13. Always support observability (metrics, logs, traces from day one).
 14. Always support containerization (every service must have Dockerfile).
@@ -4268,7 +4268,7 @@ GLOBAL EXECUTION RULES:
 25. Always follow the Integration Stub Pattern when generating stubs (source: spec §32.9):
     Type A (CRM, BIM, ERP and all integration stubs not listed as Type B) — log WARN + fail-fast.
     Type B (IoT only, as specified in §32.9) — log WARN + return safe defaults.
-ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
+ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
 
   Rule 26 — Package dependency sync (prevents Bug-class-A: missing package.json deps):
     Before adding any `import { X } from 'package-name'` to a package's source file,
@@ -4348,7 +4348,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     Definition of "executable logic": any exported function, method, or class with a body
     (not just TypeScript type aliases, interfaces, or enum declarations).
     Packages with executable logic MUST have:
-    (a) jest.config.js with coverage thresholds { lines: 80, branches: 70 } (QM-1)
+    (a) jest.config.js with coverage thresholds { lines: 100, branches: 100 } (QM-1)
     (b) test:cov script in package.json
     (c) jest + ts-jest in devDependencies
     (d) Unit test files covering all exported functions/methods
@@ -4380,7 +4380,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     Keywords to grep: section number (e.g. §5.5), technology name (e.g. Cloudflare),
     or the specific concept changed (e.g. tenant_id, WAF, protocol mapper).
     (prevents spec/context drift — root cause of WAF on-premise gap and JWT claim name
-    inconsistency discovered 2026-06-01; agent had to be explicitly reminded both times)
+    inconsistency agent had to be explicitly reminded both times)
 
   Rule 38 — Pre-implementation spec extraction with mandatory product owner approval:
     BEFORE writing the first line of code for any Phase, task, or multi-step deliverable:
@@ -4398,7 +4398,7 @@ ROOT CAUSE PREVENTION RULES (added 2026-05-31 — prevent recurring bugs):
     The product owner approval in step (c) is the human gate that closes the reasoning
     gap that automation cannot close.
     (root cause of Phase 6 gaps: OpenSearch indexing, integration tests,
-    ConflictRecord notification, site.material.consumed; discovered 2026-06-04)
+    ConflictRecord notification, site.material.consumed)
 
 25. When a rule in this document conflicts with a command in a Phase:
 

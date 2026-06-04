@@ -18,8 +18,8 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'json-summary'],
   coverageThreshold: {
     global: {
-      lines: 80,
-      branches: 70,
+      lines: 100,
+      branches: 100,
     },
   },
   testEnvironment: 'node',

@@ -1,8 +1,8 @@
 ---
-title: "Testing Strategy"
-version: "1.4.0"
+title: 'Testing Strategy'
+version: '1.4.0'
 status: Active
-last_updated: "2026-05-28"
+last_updated: '2026-05-28'
 authors:
   - thitipongroo
 related_docs:
@@ -60,13 +60,13 @@ defined in section 30.12.
 
 Target coverage by layer:
 
-| Layer | Target | Tooling |
-| --- | --- | --- |
-| Unit | ≥ 80% line coverage per service | Jest (Node.js/NestJS), pytest (Python) |
-| Integration | Key service boundaries and DB queries | Jest + Testcontainers |
-| E2E | Critical user journeys (10–20 scenarios) | Playwright (web), Detox (mobile) |
-| Contract | All public API endpoints | Pact.io (consumer-driven contracts) |
-| Load | Peak usage scenarios | k6 |
+| Layer       | Target                                   | Tooling                                |
+| ----------- | ---------------------------------------- | -------------------------------------- |
+| Unit        | ≥ 80% line coverage per service          | Jest (Node.js/NestJS), pytest (Python) |
+| Integration | Key service boundaries and DB queries    | Jest + Testcontainers                  |
+| E2E         | Critical user journeys (10–20 scenarios) | Playwright (web), Detox (mobile)       |
+| Contract    | All public API endpoints                 | Pact.io (consumer-driven contracts)    |
+| Load        | Peak usage scenarios                     | k6                                     |
 
 ---
 
@@ -84,7 +84,7 @@ Target coverage by layer:
 
 - Each service has a `__tests__/unit/` directory
 - Mocks: Jest auto-mocking for external dependencies (DB, Kafka, Redis)
-- Coverage gate: 80% lines, 70% branches — enforced in CI (see section 30.12)
+- Coverage gate: 100% lines, 100% branches — enforced in CI (see section 30.12)
 - No network calls in unit tests — all I/O is mocked
 
 ### Key Invariants to Test
@@ -114,13 +114,13 @@ Target coverage by layer:
 
 ### Critical Integration Tests
 
-| Test | What It Validates |
-| --- | --- |
-| Tenant isolation at DB layer | Cross-tenant query returns zero results |
-| Outbox pattern | DB write + event publish succeed atomically; no event emitted on DB rollback |
-| Approval workflow step | Temporal.io activity correctly transitions workflow state |
-| RBAC middleware | Requests without valid `tenant_id` in JWT return 403 |
-| Soft delete | Deleted records excluded from all list endpoints |
+| Test                         | What It Validates                                                            |
+| ---------------------------- | ---------------------------------------------------------------------------- |
+| Tenant isolation at DB layer | Cross-tenant query returns zero results                                      |
+| Outbox pattern               | DB write + event publish succeed atomically; no event emitted on DB rollback |
+| Approval workflow step       | Temporal.io activity correctly transitions workflow state                    |
+| RBAC middleware              | Requests without valid `tenant_id` in JWT return 403                         |
+| Soft delete                  | Deleted records excluded from all list endpoints                             |
 
 ---
 
@@ -163,13 +163,13 @@ This is a mandatory test category. Cross-tenant data access is a **Critical Secu
 
 ### Required Tests
 
-| Isolation Layer | Test | Pass Criteria |
-| --- | --- | --- |
-| PostgreSQL (shared DB) | Query Tenant B data using Tenant A JWT | Zero rows returned |
-| Neo4j | Graph traversal from Tenant A node into Tenant B subgraph | Zero results |
-| Kafka | Consumer receives message from another tenant's topic | Message rejected; DLQ not populated with cross-tenant message |
-| S3 | Pre-signed URL for Tenant A used to access Tenant B file | 403 Forbidden |
-| API | Tenant A `tenant_id` in JWT used to access Tenant B API resource | 403 Forbidden |
+| Isolation Layer        | Test                                                             | Pass Criteria                                                 |
+| ---------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- |
+| PostgreSQL (shared DB) | Query Tenant B data using Tenant A JWT                           | Zero rows returned                                            |
+| Neo4j                  | Graph traversal from Tenant A node into Tenant B subgraph        | Zero results                                                  |
+| Kafka                  | Consumer receives message from another tenant's topic            | Message rejected; DLQ not populated with cross-tenant message |
+| S3                     | Pre-signed URL for Tenant A used to access Tenant B file         | 403 Forbidden                                                 |
+| API                    | Tenant A `tenant_id` in JWT used to access Tenant B API resource | 403 Forbidden                                                 |
 
 ### Automation
 
@@ -185,14 +185,14 @@ Tests for the React Native offline sync engine (see `17-offline-mobile-sync`).
 
 ### Test Scenarios
 
-| Scenario | Expected Behavior |
-| --- | --- |
-| Device goes offline, user submits task update | Record queued in local FIFO queue |
-| Connectivity restored | Queue flushes in priority order (safety → attendance → inspections → tasks) |
-| Sync fails 5 times for safety incident | Moved to tenant admin review queue; push alert sent to PM |
-| Conflict: two users update same task offline | Last-write-wins applied; lower-timestamp record discarded |
-| Conflict: safety incident (human review) | Both versions preserved; presented to admin for manual resolution |
-| Device local DB exceeds 500 MB | LRU eviction triggered; drawing cache cleared first |
+| Scenario                                      | Expected Behavior                                                           |
+| --------------------------------------------- | --------------------------------------------------------------------------- |
+| Device goes offline, user submits task update | Record queued in local FIFO queue                                           |
+| Connectivity restored                         | Queue flushes in priority order (safety → attendance → inspections → tasks) |
+| Sync fails 5 times for safety incident        | Moved to tenant admin review queue; push alert sent to PM                   |
+| Conflict: two users update same task offline  | Last-write-wins applied; lower-timestamp record discarded                   |
+| Conflict: safety incident (human review)      | Both versions preserved; presented to admin for manual resolution           |
+| Device local DB exceeds 500 MB                | LRU eviction triggered; drawing cache cleared first                         |
 
 ### Tooling
 
@@ -227,13 +227,13 @@ using **Pact.io** (consumer-driven contract testing).
 
 ### Target Scenarios
 
-| Scenario | Load Profile | Pass Criteria |
-| --- | --- | --- |
-| Daily site report bulk submit | 100 concurrent Site Engineers submitting simultaneously at 07:00 | p95 latency < 500 ms |
-| Executive dashboard load | 50 concurrent Executive users loading dashboard | p95 latency < 1 s; ClickHouse query < 200 ms |
-| Procurement PO approval | 20 concurrent Finance + PM approvals | p95 latency < 300 ms |
-| Kafka consumer throughput | 10,000 events/second sustained | Consumer lag < 5 seconds |
-| Mobile sync burst | 500 devices syncing simultaneously on connectivity restore | Zero data loss; sync completes in < 30 s per device |
+| Scenario                      | Load Profile                                                     | Pass Criteria                                       |
+| ----------------------------- | ---------------------------------------------------------------- | --------------------------------------------------- |
+| Daily site report bulk submit | 100 concurrent Site Engineers submitting simultaneously at 07:00 | p95 latency < 500 ms                                |
+| Executive dashboard load      | 50 concurrent Executive users loading dashboard                  | p95 latency < 1 s; ClickHouse query < 200 ms        |
+| Procurement PO approval       | 20 concurrent Finance + PM approvals                             | p95 latency < 300 ms                                |
+| Kafka consumer throughput     | 10,000 events/second sustained                                   | Consumer lag < 5 seconds                            |
+| Mobile sync burst             | 500 devices syncing simultaneously on connectivity restore       | Zero data loss; sync completes in < 30 s per device |
 
 ### Schedule
 
@@ -272,12 +272,12 @@ using **Pact.io** (consumer-driven contract testing).
 
 ### Layer A (MVP) — Assistive AI
 
-| Feature | Test Method | Pass Criteria |
-| --- | --- | --- |
+| Feature                 | Test Method                                                   | Pass Criteria                                  |
+| ----------------------- | ------------------------------------------------------------- | ---------------------------------------------- |
 | Daily report generation | Compare AI output against 50 golden examples (Thai + English) | ROUGE-L score ≥ 0.7; no hallucinated BOQ items |
-| OCR accuracy | Test against 100 construction drawing samples | Character error rate < 5% |
-| Voice transcription | Test against 50 Thai construction site recordings | Word error rate < 10% |
-| RAG retrieval | Query 50 known questions; verify top-3 retrieved chunks | Recall@3 ≥ 0.8 |
+| OCR accuracy            | Test against 100 construction drawing samples                 | Character error rate < 5%                      |
+| Voice transcription     | Test against 50 Thai construction site recordings             | Word error rate < 10%                          |
+| RAG retrieval           | Query 50 known questions; verify top-3 retrieved chunks       | Recall@3 ≥ 0.8                                 |
 
 ### Layer B (Post-MVP) — Analytical AI
 
@@ -296,33 +296,33 @@ using **Pact.io** (consumer-driven contract testing).
 
 CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.9:
 
-| Gate | Trigger | Blocks |
-| --- | --- | --- |
-| Lint + type check | Every PR | PR merge |
-| Unit tests | Every PR | PR merge |
-| Unit coverage ≥ 80% lines + ≥ 70% branches | Every PR | PR merge |
-| Integration tests | Every PR | PR merge |
-| Multi-tenant isolation tests | Every PR | PR merge |
-| API contract tests (Pact) | Every PR | PR merge |
-| Security SAST (SonarQube) | Every PR | PR merge (High severity) |
-| E2E tests (Playwright) | Merge to `main` | Staging deploy |
-| Load tests (k6) | Weekly scheduled | Alert only (not blocking) |
-| DAST (OWASP ZAP) | Weekly scheduled | Alert only (not blocking) |
+| Gate                                     | Trigger          | Blocks                    |
+| ---------------------------------------- | ---------------- | ------------------------- |
+| Lint + type check                        | Every PR         | PR merge                  |
+| Unit tests                               | Every PR         | PR merge                  |
+| Unit coverage 100% lines + 100% branches | Every PR         | PR merge                  |
+| Integration tests                        | Every PR         | PR merge                  |
+| Multi-tenant isolation tests             | Every PR         | PR merge                  |
+| API contract tests (Pact)                | Every PR         | PR merge                  |
+| Security SAST (SonarQube)                | Every PR         | PR merge (High severity)  |
+| E2E tests (Playwright)                   | Merge to `main`  | Staging deploy            |
+| Load tests (k6)                          | Weekly scheduled | Alert only (not blocking) |
+| DAST (OWASP ZAP)                         | Weekly scheduled | Alert only (not blocking) |
 
 ---
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [ISTQB] | ISTQB Glossary of Testing Terms | International Software Testing Qualifications Board |
-| [Pact] | Pact Contract Testing Documentation | [docs.pact.io](https://docs.pact.io/) |
-| [k6] | k6 Load Testing Documentation | [k6.io/docs](https://k6.io/docs/) |
-| [Playwright] | Playwright End-to-End Testing Documentation | [playwright.dev/docs/intro](https://playwright.dev/docs/intro) |
-| [SonarQube] | SonarQube Static Analysis Documentation | [docs.sonarqube.org](https://docs.sonarqube.org/) |
-| [OWASP-ZAP] | OWASP ZAP Dynamic Application Security Testing | [zaproxy.org/docs](https://www.zaproxy.org/docs/) |
-| [Jest] | Jest JavaScript Testing Framework | [jestjs.io/docs/getting-started](https://jestjs.io/docs/getting-started) |
+| ID           | Title                                                              | Source                                                                   |
+| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| [IEEE 830]   | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                        |
+| [ISTQB]      | ISTQB Glossary of Testing Terms                                    | International Software Testing Qualifications Board                      |
+| [Pact]       | Pact Contract Testing Documentation                                | [docs.pact.io](https://docs.pact.io/)                                    |
+| [k6]         | k6 Load Testing Documentation                                      | [k6.io/docs](https://k6.io/docs/)                                        |
+| [Playwright] | Playwright End-to-End Testing Documentation                        | [playwright.dev/docs/intro](https://playwright.dev/docs/intro)           |
+| [SonarQube]  | SonarQube Static Analysis Documentation                            | [docs.sonarqube.org](https://docs.sonarqube.org/)                        |
+| [OWASP-ZAP]  | OWASP ZAP Dynamic Application Security Testing                     | [zaproxy.org/docs](https://www.zaproxy.org/docs/)                        |
+| [Jest]       | Jest JavaScript Testing Framework                                  | [jestjs.io/docs/getting-started](https://jestjs.io/docs/getting-started) |
 
 ---
 
