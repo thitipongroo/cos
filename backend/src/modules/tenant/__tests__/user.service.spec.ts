@@ -188,4 +188,33 @@ describe('UserService', () => {
       );
     });
   });
+
+  // ─── publishEvent error handling ─────────────────────────────────────────
+
+  describe('publishEvent error handling', () => {
+    it('logs error but does not throw when Kafka publish fails (covers catch branch)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValueOnce([mockUserRow]).mockResolvedValueOnce([{}]),
+          };
+          return fn(tx);
+        },
+      );
+      const kafkaMock = (
+        service as unknown as {
+          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        }
+      ).kafka;
+      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka unavailable'));
+
+      const dto = {
+        display_name: 'สมชาย',
+        phone_number: '+66812345678',
+        role: CosRole.SITE_ENGINEER,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).resolves.toBeDefined();
+    });
+  });
 });

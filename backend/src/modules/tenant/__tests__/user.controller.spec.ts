@@ -50,6 +50,17 @@ describe('UserController', () => {
       expect(mockUserService.createUser).toHaveBeenCalledWith(dto, TENANT_ID, 'actor-1');
       expect(result).toBe(created);
     });
+
+    it('falls back to "system" actor when req.userId is undefined', async () => {
+      const dto = {
+        display_name: 'สมชาย',
+        phone_number: '+66812345678',
+        role: CosRole.SITE_ENGINEER,
+      };
+      mockUserService.createUser.mockResolvedValue({});
+      await controller.create(dto as never, { tenantId: TENANT_ID, userId: undefined } as never);
+      expect(mockUserService.createUser).toHaveBeenCalledWith(dto, TENANT_ID, 'system');
+    });
   });
 
   describe('changeRole', () => {
@@ -59,6 +70,17 @@ describe('UserController', () => {
       await controller.changeRole(USER_ID, dto as never, fakeReq());
       expect(mockUserService.changeRole).toHaveBeenCalledWith(USER_ID, dto, TENANT_ID, 'actor-1');
     });
+
+    it('falls back to "system" actor when req.userId is undefined', async () => {
+      mockUserService.changeRole.mockResolvedValue(undefined);
+      const dto = { role: CosRole.FINANCE };
+      await controller.changeRole(
+        USER_ID,
+        dto as never,
+        { tenantId: TENANT_ID, userId: undefined } as never,
+      );
+      expect(mockUserService.changeRole).toHaveBeenCalledWith(USER_ID, dto, TENANT_ID, 'system');
+    });
   });
 
   describe('deactivate', () => {
@@ -66,6 +88,12 @@ describe('UserController', () => {
       mockUserService.deactivateUser.mockResolvedValue(undefined);
       await controller.deactivate(USER_ID, fakeReq());
       expect(mockUserService.deactivateUser).toHaveBeenCalledWith(USER_ID, TENANT_ID, 'actor-1');
+    });
+
+    it('falls back to "system" actor when req.userId is undefined', async () => {
+      mockUserService.deactivateUser.mockResolvedValue(undefined);
+      await controller.deactivate(USER_ID, { tenantId: TENANT_ID, userId: undefined } as never);
+      expect(mockUserService.deactivateUser).toHaveBeenCalledWith(USER_ID, TENANT_ID, 'system');
     });
   });
 });

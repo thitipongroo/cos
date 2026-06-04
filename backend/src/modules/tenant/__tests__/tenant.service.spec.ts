@@ -110,4 +110,36 @@ describe('TenantService', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('publishEvent error handling', () => {
+    it('logs error but does not throw when Kafka publish fails (covers catch branch)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
+          };
+          return fn(tx);
+        },
+      );
+      const kafkaMock = (
+        service as unknown as {
+          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        }
+      ).kafka;
+      kafkaMock.publish.mockRejectedValueOnce(new Error('Kafka unavailable'));
+
+      await expect(
+        service.createTenant(
+          {
+            tenantCode: 'acme_corp',
+            tenantName: 'ACME Construction',
+            planType: 'STARTER' as never,
+          },
+          'admin-1',
+        ),
+      ).resolves.toBeDefined();
+    });
+  });
 });
