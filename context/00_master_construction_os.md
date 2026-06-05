@@ -3741,7 +3741,7 @@ Channels (source: spec §19.2):
 
 Notification triggers (consumed from Kafka — canonical event names per spec §32.4):
   site.inspection.failed.v1                 → notify: SITE_ENGINEER, PROJECT_MANAGER
-  construction.issue.created.v1 (CRITICAL)  → notify: SITE_ENGINEER, PROJECT_MANAGER
+  site.issue.created.v1 (CRITICAL)           → notify: SITE_ENGINEER, PROJECT_MANAGER
   procurement.purchase_order.status_changed.v1 → notify: PROCUREMENT_OFFICER (actor)
   finance.variance.alert.v1                 → notify: FINANCE, TENANT_ADMIN
   site.report.created.v1                    → notify: PROJECT_MANAGER (spec §32.4 #5; corrected from construction.site_report.submitted.v1)
@@ -3894,9 +3894,9 @@ Generate:
 - Unit tests: status transitions, assignment logic
 - Kafka event producers:
 
-    equipment.assigned  { equipment_id, project_id, assigned_by }
-    equipment.returned  { equipment_id, project_id }
-    equipment.maintenance_scheduled { equipment_id, scheduled_at }
+    equipment.unit.assigned.v1              { equipment_id, project_id, assigned_by }
+    equipment.unit.returned.v1              { equipment_id, project_id }
+    equipment.unit.maintenance_scheduled.v1 { equipment_id, scheduled_at }
 
 Stub in Phase 21 (generate stub — implement when triggered):
 
@@ -4007,9 +4007,9 @@ Generate:
 - Integration tests: check-in/out cycle
 - Kafka event producers:
 
-    workforce.checkin   { worker_id, project_id, checked_in_at }
-    workforce.checkout  { worker_id, project_id, hours_worked }
-    workforce.timesheet_approved { worker_id, project_id, period_date, total_hours }
+    workforce.checkin.created.v1    { worker_id, project_id, checked_in_at }
+    workforce.checkout.created.v1   { worker_id, project_id, hours_worked }
+    workforce.timesheet.approved.v1 { worker_id, project_id, period_date, total_hours }
 
 Constraints:
 
