@@ -57,3 +57,7 @@ export type * from './events/identity.tenant.created.v1';
 export type * from './events/identity.tenant.deactivated.v1';
 export type * from './events/identity.user.created.v1';
 export type * from './events/identity.user.role_changed.v1';
+
+// Phase 9 file events (canonical names — spec §Phase 9 Kafka events)
+export type * from './events/file.document.uploaded.v1';
+export type * from './events/file.document.quarantined.v1';

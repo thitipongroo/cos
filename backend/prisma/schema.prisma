@@ -12,7 +12,7 @@ datasource db {
   provider = "postgresql"
   // Application connects via PgBouncer (QM-18) — never directly to port 5432
   url      = env("DATABASE_URL")
-  schemas  = ["platform"]
+  schemas  = ["platform", "files"]
 }
 
 // ─── PLATFORM SCHEMA (cross-tenant system tables) ─────────────────────────
@@ -126,4 +126,55 @@ model AuditLog {
   @@index([tenantId, occurredAt(sort: Desc)])
   @@map("audit_logs")
   @@schema("platform")
+}
+
+// ─── FILES SCHEMA (Phase 9 — File Service) ────────────────────────────────
+// Shared schema for all tenant file metadata. Tenant isolation is enforced
+// at the application layer via tenant_id column filtering.
+
+enum FileStatus {
+  PENDING_SCAN
+  CLEAN
+  QUARANTINED
+
+  @@schema("files")
+}
+
+// @pdpa(category: "operational") — original_filename may contain personal data (e.g. ID-card-john.pdf)
+model StoredFile {
+  fileId           String     @id @default(dbgenerated("gen_random_uuid()")) @map("file_id") @db.Uuid
+  tenantId         String     @map("tenant_id") @db.Uuid
+  originalFilename String     @map("original_filename") @db.VarChar(512)
+  storedKey        String     @map("stored_key") @db.VarChar(1024)
+  bucketName       String     @map("bucket_name") @db.VarChar(255)
+  mimeType         String     @map("mime_type") @db.VarChar(255)
+  fileSizeBytes    BigInt     @map("file_size_bytes")
+  fileStatus       FileStatus @default(PENDING_SCAN) @map("file_status")
+  uploadedBy       String     @map("uploaded_by") @db.Uuid
+  uploadedAt       DateTime   @default(now()) @map("uploaded_at") @db.Timestamptz()
+  deletedAt        DateTime?  @map("deleted_at") @db.Timestamptz()
+
+  metadata FileMetadata[]
+
+  @@index([tenantId, uploadedBy])
+  @@index([tenantId, fileStatus])
+  @@map("files")
+  @@schema("files")
+}
+
+model FileMetadata {
+  metadataId    String  @id @default(dbgenerated("gen_random_uuid()")) @map("metadata_id") @db.Uuid
+  fileId        String  @map("file_id") @db.Uuid
+  tenantId      String  @map("tenant_id") @db.Uuid
+  entityType    String? @map("entity_type") @db.VarChar(100)
+  entityId      String? @map("entity_id") @db.Uuid
+  metadataKey   String  @map("metadata_key") @db.VarChar(255)
+  metadataValue String? @map("metadata_value") @db.Text
+
+  file StoredFile @relation(fields: [fileId], references: [fileId])
+
+  @@index([fileId])
+  @@index([entityType, entityId])
+  @@map("file_metadata")
+  @@schema("files")
 }

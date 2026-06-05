@@ -1,0 +1,270 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — File Service
+  description: |
+    File upload, storage, retrieval, and soft-delete for all tenant files.
+    Phase 9 — File + Document System.
+    Runtime: Fastify (extracted for multipart throughput).
+  version: '1.0.0'
+  contact:
+    name: Construction OS Engineering
+
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Local development
+
+security:
+  - KongJWT: []
+
+components:
+  securitySchemes:
+    KongJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT validated by Kong Gateway. Kong forwards X-Tenant-ID and X-User-ID headers.
+
+  headers:
+    X-Tenant-ID:
+      description: Tenant UUID injected by Kong after JWT validation
+      schema:
+        type: string
+        format: uuid
+    X-User-ID:
+      description: User UUID injected by Kong after JWT validation
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    FileStatus:
+      type: string
+      enum: [PENDING_SCAN, CLEAN, QUARANTINED]
+      description: |
+        PENDING_SCAN — file stored, antivirus scan in progress
+        CLEAN        — scan completed, no threat found
+        QUARANTINED  — threat detected, file blocked
+
+    FileDto:
+      type: object
+      required:
+        [
+          file_id,
+          original_filename,
+          mime_type,
+          file_size_bytes,
+          file_status,
+          uploaded_by,
+          uploaded_at,
+        ]
+      properties:
+        file_id: { type: string, format: uuid }
+        original_filename: { type: string }
+        mime_type: { type: string }
+        file_size_bytes: { type: string, description: 'BIGINT as string' }
+        file_status: { $ref: '#/components/schemas/FileStatus' }
+        uploaded_by: { type: string, format: uuid }
+        uploaded_at: { type: string, format: date-time }
+        deleted_at: { type: string, format: date-time, nullable: true }
+
+    UploadResponse:
+      type: object
+      required: [file_id, original_filename, mime_type, file_size_bytes, file_status, uploaded_at]
+      properties:
+        file_id: { type: string, format: uuid }
+        original_filename: { type: string }
+        mime_type: { type: string }
+        file_size_bytes: { type: string }
+        file_status: { $ref: '#/components/schemas/FileStatus' }
+        uploaded_at: { type: string, format: date-time }
+
+    SignedUrlResponse:
+      type: object
+      required: [url, expires_in_seconds]
+      properties:
+        url: { type: string, format: uri }
+        expires_in_seconds: { type: integer, example: 3600 }
+
+    ListFilesResponse:
+      type: object
+      required: [data, limit, offset]
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/FileDto' } }
+        limit: { type: integer }
+        offset: { type: integer }
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, traceId, timestamp]
+          properties:
+            code: { type: string, example: 'COS-FILE-005' }
+            message: { type: string }
+            traceId: { type: string }
+            timestamp: { type: string, format: date-time }
+
+paths:
+  /files/upload:
+    post:
+      operationId: uploadFile
+      summary: Upload a file
+      description: |
+        Accepts multipart/form-data upload. File is stored in MinIO immediately
+        (status: PENDING_SCAN), then scanned asynchronously by ClamAV.
+        Response is returned before scan completes.
+        Optional query params: entity_type, entity_id to associate with a business entity.
+      tags: [Files]
+      parameters:
+        - in: query
+          name: entity_type
+          schema: { type: string }
+          description: e.g. "site_report", "purchase_order"
+        - in: query
+          name: entity_id
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: File stored (scan in progress)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadResponse' }
+        '401':
+          description: Missing tenant headers
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '422':
+          description: Validation error (MIME type, size, extension)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Upload failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /files/{fileId}/url:
+    get:
+      operationId: getSignedUrl
+      summary: Get a pre-signed download URL (TTL 1 hour)
+      tags: [Files]
+      parameters:
+        - in: path
+          name: fileId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Signed URL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SignedUrlResponse' }
+        '404':
+          description: File not found or deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Failed to generate URL
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /files/{fileId}:
+    get:
+      operationId: getFileMetadata
+      summary: Get file metadata
+      tags: [Files]
+      parameters:
+        - in: path
+          name: fileId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: File metadata
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileDto' }
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+    delete:
+      operationId: softDeleteFile
+      summary: Soft-delete a file (hard-deleted after 30 days)
+      tags: [Files]
+      parameters:
+        - in: path
+          name: fileId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: File soft-deleted
+        '404':
+          description: File not found or already deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /files:
+    get:
+      operationId: listFiles
+      summary: List files for the authenticated tenant (paginated)
+      tags: [Files]
+      parameters:
+        - in: query
+          name: limit
+          schema: { type: integer, default: 20, maximum: 100 }
+        - in: query
+          name: offset
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: Paginated file list
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ListFilesResponse' }
+
+  /files/by-entity/{entityType}/{entityId}:
+    get:
+      operationId: listFilesByEntity
+      summary: List files associated with a specific business entity
+      tags: [Files]
+      parameters:
+        - in: path
+          name: entityType
+          required: true
+          schema: { type: string }
+          description: e.g. "site_report", "purchase_order"
+        - in: path
+          name: entityId
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Files for the entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/FileDto' } }

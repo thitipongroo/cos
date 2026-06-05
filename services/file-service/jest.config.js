@@ -1,0 +1,31 @@
+/** @type {import('jest').Config} */
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  rootDir: '.',
+  testMatch: ['<rootDir>/src/**/*.spec.ts'],
+  globals: {
+    'ts-jest': {
+      diagnostics: { ignoreCodes: [151002] }, // suppress Node16 module warning
+      isolatedModules: true,
+    },
+  },
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/main.ts',
+    '!src/cleanup/worker.ts',
+    '!src/cleanup/workflows/file-cleanup.workflow.ts', // Temporal workflow — requires TestWorkflowEnvironment
+    '!src/**/*.d.ts',
+  ],
+  coverageThreshold: {
+    global: {
+      lines: 100,
+      branches: 100,
+    },
+  },
+  moduleNameMapper: {
+    '^@cos/shared$': '<rootDir>/../../packages/@cos/shared/src/index.ts',
+    '^@cos/logger$': '<rootDir>/../../packages/@cos/logger/src/index.ts',
+    '^@cos/types$': '<rootDir>/../../packages/@cos/types/src/index.ts',
+  },
+};

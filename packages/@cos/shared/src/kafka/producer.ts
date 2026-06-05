@@ -38,6 +38,9 @@ const EVENT_AVSC_MAP: Record<string, string> = {
   'identity.tenant.deactivated.v1': 'identity.tenant.deactivated.v1.avsc',
   'identity.user.created.v1': 'identity.user.created.v1.avsc',
   'identity.user.role_changed.v1': 'identity.user.role_changed.v1.avsc',
+  // Phase 9 — File Service
+  'file.document.uploaded.v1': 'file.document.uploaded.v1.avsc',
+  'file.document.quarantined.v1': 'file.document.quarantined.v1.avsc',
 };
 
 // topic naming: {service}.{entity}.{action} — derived from canonical event type

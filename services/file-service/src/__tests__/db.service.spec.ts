@@ -1,0 +1,166 @@
+import { DbService } from '../services/db.service';
+import type { FileServiceConfig } from '../config';
+
+const mockQuery = jest.fn();
+const mockEnd = jest.fn().mockResolvedValue(undefined);
+
+jest.mock('pg', () => ({
+  Pool: jest.fn().mockImplementation(() => ({ query: mockQuery, end: mockEnd })),
+}));
+
+const config = {
+  database: { url: 'postgresql://test' },
+} as FileServiceConfig;
+
+const FILE_ROW = {
+  file_id: 'fid-1',
+  tenant_id: 'tid-1',
+  original_filename: 'test.jpg',
+  stored_key: '2026/01/fid-1/test.jpg',
+  bucket_name: 'cos-tid-1',
+  mime_type: 'image/jpeg',
+  file_size_bytes: '1024',
+  file_status: 'CLEAN' as const,
+  uploaded_by: 'uid-1',
+  uploaded_at: new Date(),
+  deleted_at: null,
+};
+
+describe('DbService', () => {
+  let db: DbService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    db = new DbService(config);
+  });
+
+  describe('insertFile', () => {
+    it('inserts and returns the row', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const result = await db.insertFile({
+        fileId: 'fid-1',
+        tenantId: 'tid-1',
+        originalFilename: 'test.jpg',
+        storedKey: '2026/01/fid-1/test.jpg',
+        bucketName: 'cos-tid-1',
+        mimeType: 'image/jpeg',
+        fileSizeBytes: 1024,
+        uploadedBy: 'uid-1',
+      });
+      expect(result.file_id).toBe('fid-1');
+      expect(mockQuery).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('updateFileStatus', () => {
+    it('executes UPDATE query', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      await db.updateFileStatus('fid-1', 'CLEAN');
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('UPDATE files.files'), [
+        'CLEAN',
+        'fid-1',
+      ]);
+    });
+  });
+
+  describe('findFileById', () => {
+    it('returns row when found', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const result = await db.findFileById('fid-1', 'tid-1');
+      expect(result).toEqual(FILE_ROW);
+    });
+
+    it('returns null when not found', async () => {
+      mockQuery.mockResolvedValue({ rows: [] });
+      const result = await db.findFileById('missing', 'tid-1');
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('softDeleteFile', () => {
+    it('returns true when row updated', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      expect(await db.softDeleteFile('fid-1', 'tid-1')).toBe(true);
+    });
+
+    it('returns false when row not found', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 0 });
+      expect(await db.softDeleteFile('missing', 'tid-1')).toBe(false);
+    });
+
+    it('returns false when rowCount is null (pg edge case)', async () => {
+      mockQuery.mockResolvedValue({ rowCount: null });
+      expect(await db.softDeleteFile('fid-1', 'tid-1')).toBe(false);
+    });
+  });
+
+  describe('listFiles', () => {
+    it('returns array of rows', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const result = await db.listFiles({ tenantId: 'tid-1', limit: 10, offset: 0 });
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('listFilesByEntity', () => {
+    it('returns array of rows for entity', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const result = await db.listFilesByEntity({
+        tenantId: 'tid-1',
+        entityType: 'site_report',
+        entityId: 'eid-1',
+      });
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('insertMetadata', () => {
+    it('executes INSERT query', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      await db.insertMetadata({
+        metadataId: 'mid-1',
+        fileId: 'fid-1',
+        tenantId: 'tid-1',
+        entityType: 'site_report',
+        entityId: 'eid-1',
+      });
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO files.file_metadata'),
+        expect.any(Array),
+      );
+    });
+  });
+
+  describe('findExpiredFiles', () => {
+    it('returns expired file rows', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const result = await db.findExpiredFiles();
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('hardDeleteFile', () => {
+    it('deletes metadata then file', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      await db.hardDeleteFile('fid-1');
+      expect(mockQuery).toHaveBeenCalledTimes(2);
+      expect(mockQuery).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('DELETE FROM files.file_metadata'),
+        ['fid-1'],
+      );
+      expect(mockQuery).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('DELETE FROM files.files'),
+        ['fid-1'],
+      );
+    });
+  });
+
+  describe('end', () => {
+    it('closes the pool', async () => {
+      await db.end();
+      expect(mockEnd).toHaveBeenCalledTimes(1);
+    });
+  });
+});

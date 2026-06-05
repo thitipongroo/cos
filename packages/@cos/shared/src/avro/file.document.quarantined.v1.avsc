@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "FileDocumentQuarantinedEvent",
+  "namespace": "com.constructionos.events.file",
+  "doc": "file.document.quarantined.v1 — Phase 9 File Service",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record",
+      "name": "FileDocumentQuarantinedPayload",
+      "fields": [
+        { "name": "file_id",     "type": "string", "doc": "UUID" },
+        { "name": "tenant_id",   "type": "string", "doc": "UUID" },
+        { "name": "threat_type", "type": ["null", "string"], "default": null }
+      ]
+    }}
+  ]
+}
