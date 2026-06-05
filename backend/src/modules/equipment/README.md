@@ -52,7 +52,7 @@ POST /api/v1/equipment/uuid/utilization
   "operator_id": "uuid" }
 ```
 
-Kafka events emitted: `equipment.assigned`, `equipment.returned`, `equipment.maintenance_scheduled`
+Kafka events emitted: `equipment.unit.assigned.v1`, `equipment.unit.returned.v1`, `equipment.unit.maintenance_scheduled.v1`
 
 ## Notes
 

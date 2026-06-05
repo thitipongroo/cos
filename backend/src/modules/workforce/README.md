@@ -52,7 +52,7 @@ PATCH /api/v1/workers/uuid/attendance/latest
 { "check_out_at": "2026-06-01T17:00:00Z" }
 ```
 
-Kafka events emitted: `workforce.checkin.created.v1`, `workforce.checkout`, `workforce.timesheet_approved`
+Kafka events emitted: `workforce.checkin.created.v1`, `workforce.checkout.created.v1`, `workforce.timesheet.approved.v1`
 
 ## Notes
 
