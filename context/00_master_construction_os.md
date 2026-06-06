@@ -1116,7 +1116,7 @@ Generate:
 - root README with architecture overview and getting started
 - Git hooks: initialize Husky (husky init); create .husky/pre-commit running lint-staged;
   lint-staged config: eslint --fix + prettier --write on staged .ts/.tsx/.js/.jsx files;
-  prettier --write on staged .json/.md/.yaml/.yml files
+  prettier --write on staged .json/.yaml/.yml files
 - Mobile tsconfig exception: apps/mobile extends expo/tsconfig.base (NOT root tsconfig.base.json —
   root base uses "module": "CommonJS" which is incompatible with React Native Metro bundler);
   add only mobile-compatible @cos/* paths: types, types/*, financial, financial/*, validation,
