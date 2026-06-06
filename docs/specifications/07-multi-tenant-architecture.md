@@ -18,7 +18,6 @@ related_docs:
 
 - [7.1 Tenant Isolation Model](#71-tenant-isolation-model)
   - [Shared DB + tenant_id](#shared-db--tenant_id)
-  - [Schema-per-tenant](#schema-per-tenant)
   - [Dedicated DB](#dedicated-db)
 - [7.2 Isolation Layers](#72-isolation-layers)
 - [7.3 Kafka Topic Isolation](#73-kafka-topic-isolation)
@@ -42,12 +41,6 @@ Implementation standard:
 - PostgreSQL Row Level Security (RLS) MUST be enabled on every domain table — see §7.7
 - Application layer MUST also filter by `tenant_id` in every query as defense-in-depth
 - Unqualified table names in SQL are prohibited
-
-### Schema-per-tenant
-
-Not used in Construction OS. SMB and mid-market tiers both use Shared DB + tenant_id.
-The upgrade path from mid-market to enterprise is Dedicated DB — not schema-per-tenant.
-Schema-per-tenant is documented here for completeness; it is not an active upgrade path.
 
 ### Dedicated DB
 

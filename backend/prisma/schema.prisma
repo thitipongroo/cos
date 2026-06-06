@@ -1,6 +1,6 @@
 // Construction OS — Prisma Schema
 // Phase 2: Platform schema (cross-tenant system tables)
-// Schema-per-tenant: TenantPrismaService sets SET LOCAL search_path = {tenant_code}
+// Tenant isolation: Shared DB + tenant_id + PostgreSQL RLS (ADR-008)
 // All tenant entity schemas are defined and migrated per-phase
 
 generator client {
@@ -18,8 +18,8 @@ datasource db {
 // ─── PLATFORM SCHEMA (cross-tenant system tables) ─────────────────────────
 // These tables live in the "platform" schema (not a tenant schema).
 // Identity module tables are cross-tenant by design.
-// Tenant-scoped entities (Phase 3+) live in {tenant_code} schemas
-// managed via TenantPrismaService (SET LOCAL search_path = {tenant_code}).
+// Tenant-scoped entities use named domain schemas (e.g. projects, boq, procurement)
+// with tenant_id + RLS enforced by TenantPrismaService (SET LOCAL app.current_tenant_id).
 
 enum PlanType {
   STARTER

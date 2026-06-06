@@ -99,7 +99,7 @@ RLS is enforced by PostgreSQL unconditionally, even when queries are issued outs
 **Why not schema-per-tenant for the MVP?**
 Schema-per-tenant requires running migrations for every tenant at onboarding and every schema change.
 At hundreds of tenants this becomes a multi-hour operation. Shared DB + RLS runs migrations once.
-Construction OS can upgrade tenants to schema-per-tenant when they move to the mid-market tier.
+Construction OS upgrades tenants to Dedicated DB when they move to the enterprise tier.
 
 ## Consequences
 

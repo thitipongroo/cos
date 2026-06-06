@@ -13,8 +13,8 @@ Prisma ORM calls against PostgreSQL can fail transiently due to write conflicts 
 
 The `@cos/database` package is the shared Prisma utility layer used by all NestJS modules. A centralized retry helper here ensures consistent retry behavior across the entire monolith without each module implementing its own retry logic.
 
-The original `@cos/database` spec reference "(see ADR-008)" was incorrect — that reference was to the superseded
-schema-per-tenant ORM pattern. Retry helpers are a separate concern documented here in ADR-015.
+The original `@cos/database` spec reference "(see ADR-008)" was incorrect — ADR-008 covers tenant isolation,
+not retry helpers. Retry helpers are a separate concern documented here in ADR-015.
 
 ## Decision
 

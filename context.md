@@ -855,7 +855,6 @@ docs/api/error-codes.md                             — Error code registry (COS
 docs/api/deprecation-schedule.md                    — API version sunset dates and tenant notification log (Phase 18)
 docs/architecture/adr/                              — Architecture Decision Records (see directory for current list)
 docs/architecture/adr/000-template.md              — ADR template
-docs/architecture/adr/008-tenantprismaservice-schema-per-tenant.md — SUPERSEDED by ADR-008 (schema-per-tenant → shared-db + tenant_id + RLS)
 docs/architecture/adr/008-shared-db-tenant-id-rls.md               — Shared DB + tenant_id + PostgreSQL RLS standard (current, Phase 2 revision)
 docs/architecture/adr/015-database-retry-helpers.md               — Database retry helper pattern for Prisma transient errors (Phase 1)
 

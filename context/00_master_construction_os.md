@@ -3412,7 +3412,7 @@ Data Scaling Strategy (source §24.2):
     Raw files (photos, PDFs): MinIO lifecycle policy → S3 Glacier after 1 year
 
   Partition strategy:
-    PostgreSQL: partition large tables by tenant_schema + month
+    PostgreSQL: partition large tables by tenant_id + month
       (e.g. site_reports, cost_transactions, audit_logs — all high-volume tables)
     ClickHouse: partition by tenant_id + toYYYYMM(date)
     TimescaleDB: hypertable chunk interval = 1 day (equipment), 1 week (workforce)
@@ -3642,7 +3642,7 @@ Disaster Recovery:
                ClickHouse: daily backup + re-ingest from Kafka (acceptable — analytics is derived data)
                Redis: AOF persistence (sub-second RPO for cache)
                → aws rds describe-db-instances --query 'DBInstances[*].BackupRetentionPeriod'
-  [MANUAL] [ ] Failover procedure: documented in docs/03-runbooks/disaster-recovery.md
+  [MANUAL] [ ] Failover procedure: documented in docs/runbooks/disaster-recovery.md
   [MANUAL] [ ] Database restore test: performed and documented
 
 CI/CD (ArgoCD GitOps):
@@ -3699,11 +3699,11 @@ Proceed to post-launch evolution (04_post_launch_enterprise_evolution.md — Sta
 
 Generate:
 
-- Production readiness checklist markdown (docs/03-runbooks/production-readiness.md)
-- Deployment checklist per environment (docs/03-runbooks/deployment.md)
-- Rollback runbook (docs/03-runbooks/rollback.md)
-- Incident response runbook (docs/03-runbooks/incident-response.md)
-- Architecture documentation with service interaction diagram (docs/01-architecture/)
+- Production readiness checklist markdown (docs/runbooks/production-readiness.md)
+- Deployment checklist per environment (docs/runbooks/deployment.md)
+- Rollback runbook (docs/runbooks/rollback.md)
+- Incident response runbook (docs/runbooks/incident-response.md)
+- Architecture documentation with service interaction diagram (docs/architecture/)
 - ADR (Architecture Decision Record) for each major technology choice
 
   (runtime mapping, Keycloak, Temporal, k6, ClickHouse strategy)
