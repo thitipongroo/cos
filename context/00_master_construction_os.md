@@ -33,42 +33,43 @@ covers_stages: 01–11
 
 ## TABLE OF CONTENTS
 
-| Section                                                                                | Line |
-| -------------------------------------------------------------------------------------- | ---- |
-| [AGENT ROLE](#agent-role)                                                              | §1   |
-| [PHASE DEPENDENCY GRAPH](#phase-dependency-graph)                                      | §2   |
-| [GLOBAL TECHNOLOGY DECISION MAP](#global-technology-decision-map)                      | §3   |
-| [GLOBAL SYSTEM CONTEXT COMMAND](#global-system-context-command)                        | §4   |
-| [CROSS-SERVICE EVENT CONTRACT SPEC](#cross-service-event-contract-spec)                | §5   |
-| [FINANCIAL PRECISION SPEC](#financial-precision-spec)                                  | §7   |
-| [DESIGN TOKEN SPECIFICATION](#design-token-specification)                              | §8   |
-| [WORKFLOW ENGINE SPEC](#workflow-engine-spec)                                          | §9   |
-| **— Phase Commands —**                                                                 |      |
-| [Phase 1 — Foundation Repository](#phase-1--foundation-repository-command)             | §10  |
-| [Phase 2 — Auth + Tenant System](#phase-2--authentication--tenant-system-command)      | §11  |
-| [Phase 3 — Project Service](#phase-3--project-service-command)                         | §12  |
-| [Phase 4 — BOQ Service](#phase-4--boq-service-command)                                 | §13  |
-| [Phase 5 — Procurement Service](#phase-5--procurement-service-command)                 | §14  |
-| [Phase 6 — Site Operations](#phase-6--site-operations-command)                         | §15  |
-| [Phase 7 — Finance Service](#phase-7--finance-service-command)                         | §16  |
-| [Phase 8 — Event-driven Infrastructure](#phase-8--event-driven-infrastructure-command) | §17  |
-| [Phase 9 — File + Document System](#phase-9--file--document-system-command)            | §18  |
-| [Phase 10 — Mobile Offline Engine](#phase-10--mobile-offline-engine-command)           | §19  |
-| [Phase 11 — AI Foundation](#phase-11--ai-foundation-command)                           | §20  |
-| [Phase 12 — AI Report Assistant](#phase-12--ai-report-assistant-command)               | §21  |
-| [Phase 13 — Knowledge Graph](#phase-13--knowledge-graph-command)                       | §22  |
-| [Phase 14 — Analytics + Dashboard](#phase-14--analytics--dashboard-command)            | §23  |
-| [Phase 15 — Observability](#phase-15--observability-command)                           | §24  |
-| [Phase 16 — Security](#phase-16--security-command)                                     | §25  |
-| [Phase 17 — DevOps + Deployment](#phase-17--devops--deployment-command)                | §26  |
-| [Phase 18 — Testing](#phase-18--testing-command)                                       | §27  |
-| [Phase 19 — Final Production Readiness](#phase-19--final-production-readiness-command) | §28  |
-| [Phase 20 — Notification Service](#phase-20--notification-service-command)             | §29  |
-| [Phase 21 — Equipment Service](#phase-21--equipment-service-command)                   | §30  |
-| [Phase 22 — Workforce Service](#phase-22--workforce-service-command)                   | §31  |
-| [Phase 23 — MLOps Pipeline](#phase-23--mlops-pipeline-command)                         | §32  |
-| [Phase 24 — Digital Twin](#phase-24--digital-twin-command)                             | §33  |
-| [FINAL EXECUTION ORDER](#final-execution-order)                                        | §34  |
+| Section                                                                                |
+| -------------------------------------------------------------------------------------- |
+| [AGENT ROLE](#agent-role)                                                              |
+| [PHASE DEPENDENCY GRAPH](#phase-dependency-graph)                                      |
+| [GLOBAL TECHNOLOGY DECISION MAP](#global-technology-decision-map)                      |
+| [GLOBAL SYSTEM CONTEXT COMMAND](#global-system-context-command)                        |
+| [CROSS-SERVICE EVENT CONTRACT SPEC](#cross-service-event-contract-spec)                |
+| [FINANCIAL PRECISION SPEC](#financial-precision-spec)                                  |
+| [DESIGN TOKEN SPECIFICATION](#design-token-specification)                              |
+| [WORKFLOW ENGINE SPEC](#workflow-engine-spec)                                          |
+| **— Phase Commands —**                                                                 |
+| [Phase 1 — Foundation Repository](#phase-1--foundation-repository-command)             |
+| [Phase 2 — Auth + Tenant System](#phase-2--authentication--tenant-system-command)      |
+| [Phase 3 — Project Service](#phase-3--project-service-command)                         |
+| [Phase 4 — BOQ Service](#phase-4--boq-service-command)                                 |
+| [Phase 5 — Procurement Service](#phase-5--procurement-service-command)                 |
+| [Phase 6 — Site Operations](#phase-6--site-operations-command)                         |
+| [Phase 7 — Finance Service](#phase-7--finance-service-command)                         |
+| [Phase 8 — Event-driven Infrastructure](#phase-8--event-driven-infrastructure-command) |
+| [Phase 9 — File + Document System](#phase-9--file--document-system-command)            |
+| [Phase 10 — Mobile Offline Engine](#phase-10--mobile-offline-engine-command)           |
+| [Phase 11 — AI Foundation](#phase-11--ai-foundation-command)                           |
+| [Phase 12 — AI Report Assistant](#phase-12--ai-report-assistant-command)               |
+| [Phase 13 — Knowledge Graph](#phase-13--knowledge-graph-command)                       |
+| [Phase 14 — Analytics + Dashboard](#phase-14--analytics--dashboard-command)            |
+| [Phase 15 — Observability](#phase-15--observability-command)                           |
+| [Phase 16 — Security](#phase-16--security-command)                                     |
+| [Phase 17 — DevOps + Deployment](#phase-17--devops--deployment-command)                |
+| [Phase 18 — Testing](#phase-18--testing-command)                                       |
+| [Phase 19 — Final Production Readiness](#phase-19--final-production-readiness-command) |
+| [Phase 20 — Notification Service](#phase-20--notification-service-command)             |
+| [Phase 21 — Equipment Service](#phase-21--equipment-service-command)                   |
+| [Phase 22 — Workforce Service](#phase-22--workforce-service-command)                   |
+| [Phase 23 — MLOps Pipeline](#phase-23--mlops-pipeline-command)                         |
+| [Phase 24 — Digital Twin](#phase-24--digital-twin-command)                             |
+| [Phase 25 — Enterprise Provisioning](#phase-25--enterprise-provisioning-command)       |
+| [FINAL EXECUTION ORDER](#final-execution-order)                                        |
 
 ---
 
@@ -133,7 +134,9 @@ Dependency Order (must complete before dependent can start):
         │           │                                                   │
         ├──► [Phase 21: Equipment Service] ◄─── depends on Ph2, Ph3  │
         │           │                                                   │
-        └──► [Phase 22: Workforce Service] ◄─── depends on Ph2, Ph3  │
+        ├──► [Phase 22: Workforce Service] ◄─── depends on Ph2, Ph3  │
+        │           │                                                   │
+        └──► [Phase 25: Enterprise Provisioning] ◄─── Ph2, Ph3, Ph20 │
                     │                                                   │
                     ▼                                                   │
          [Phase 9: File Service] ◄─── depends on Ph2 (tenant)        │
@@ -157,7 +160,7 @@ Dependency Order (must complete before dependent can start):
          [Phase 23: MLOps Pipeline] ◄─── depends on Ph11, Ph14       │
                     │                                                   │
                     ▼                                                   │
-         [Phase 15: Observability] ◄─── depends on Ph1–14, Ph20–23  │
+         [Phase 15: Observability] ◄─── depends on Ph1–14, Ph20–25  │
                     │                                                   │
                     ▼                                                   │
          [Phase 16: Security] ◄─── depends on Ph2, Ph15             │
@@ -166,7 +169,7 @@ Dependency Order (must complete before dependent can start):
          [Phase 17: DevOps] ◄─── depends on Ph1, Ph15, Ph16         │
                     │                                                   │
                     ▼                                                   │
-         [Phase 18: Testing] ◄─── depends on Ph1–17, Ph20–23        │
+         [Phase 18: Testing] ◄─── depends on Ph1–17, Ph20–25        │
                     │                                                   │
                     ▼                                                   │
          [Phase 19: Production Readiness] ◄─── depends on Ph1–18    │
@@ -179,11 +182,11 @@ SAAS MATURITY MODEL — Phase to Stage mapping (source §32.1):
 
   Stage 1 — Multi-tenant MVP          → Phase 1–2   (Foundation + Auth)
   Stage 2 — Multi-project SaaS       → Phase 3–7   (Core Domains)
-  Stage 3 — Multi-company Enterprise → Phase 8–14  (Events + AI + Analytics)
+  Stage 3 — Multi-company Enterprise → Phase 8–14, 25  (Events + AI + Analytics + Enterprise Provisioning)
   Stage 4 — Cross-region Deployment  → Phase 17 (DevOps + Multi-region)
   Stage 5 — AI-native Ecosystem      → Phase 23–24 (MLOps + Digital Twin)
 
-  Note: Stage command files 06–11 (ECOSYSTEM DOMINANCE through BACKGROUND CIVILIZATION) are beyond the spec Phase 24 scope. They operate under the AWAITING_DECISION protocol defined in each stage file.
+  Note: Stage command files 06–11 (ECOSYSTEM DOMINANCE through BACKGROUND CIVILIZATION) are beyond the spec Phase 25 scope. They operate under the AWAITING_DECISION protocol defined in each stage file.
 
   Agent rule: If a feature request maps to Stage N, implement it in Stage N phases.
   Example: "Add multi-region support" → Stage 4 = Phase 17 (MultiRegionDeploy), not earlier.
@@ -352,7 +355,7 @@ API Gateway Responsibilities (source §4.8, §16.2):
   Rate limiting:     Kong Gateway per tenant and per API key (spec §4.8)
                      Default limits enforced at Kong: auth 10/min/IP, general 100/min/user,
                      file upload 20/min/user, AI 20/min/tenant (spec §05 §5.5, QM-7)
-  Tenant routing:    Kong routes to upstream; NestJS middleware sets search_path from JWT (Phase 2)
+  Tenant routing:    Kong routes to upstream; NestJS middleware sets app.current_tenant_id from JWT (ADR-008)
   API analytics:     Kong plugin collects usage; ClickHouse for aggregation (Phase 14)
   Request validation:class-validator (NestJS) + Pydantic (FastAPI) — per endpoint (business logic)
   API monetization:  Kong usage plans plugin — quota per tenant tier (SMB 10K/month, Mid-market 100K/month, Enterprise configurable)
@@ -362,7 +365,7 @@ API Gateway Responsibilities (source §4.8, §16.2):
 Mandatory architectural rules:
 
 - Architecture: modular monolith — do NOT split into microservices prematurely
-- every entity must include tenant schema isolation (schema-per-tenant via SET LOCAL search_path — PRIMARY mechanism). tenant_id+RLS is SECONDARY defense-in-depth only (Phase 16), never the primary isolation strategy
+- every entity must include tenant isolation: `tenant_id UUID NOT NULL` on every domain table + PostgreSQL RLS policy (PRIMARY mechanism, spec §7.7). All SQL must use schema-qualified names (e.g., `finance.project_budgets`). Application-layer `WHERE tenant_id = $1` is SECONDARY defense-in-depth.
 - all modules must emit events via shared Kafka SDK (Phase 8 output)
 - all APIs must be versioned (/api/v1/, /api/v2/) — NestJS global prefix `api/v1` set in backend/src/main.ts
 - APIs must be OpenAPI 3.1 compliant
@@ -1208,7 +1211,7 @@ RBAC Role Definitions (authoritative — all modules must use these):
 
 Permission granularity: resource:action (e.g. project:read, boq:write)
 RBAC enforcement: NestJS Guards using JWT claims
-Tenant isolation: schema-per-tenant (see below) — middleware sets active schema
+Tenant isolation: shared-db + tenant_id + RLS (see below) — middleware sets app.current_tenant_id
 
 Authorization: RBAC + ABAC (from source §13.2):
   RBAC (Role-Based Access Control):
@@ -1223,34 +1226,32 @@ Authorization: RBAC + ABAC (from source §13.2):
     - Implementation: NestJS PolicyGuard (custom, separate from RolesGuard)
     - Advanced configurable policies: custom NestJS PolicyGuard (swap in via DI when triggered)
 
-Tenant Isolation Model (FINAL — from file 01 §B):
-  Model: Schema-per-tenant FROM MVP (NOT shared schema + RLS)
-  Rationale (file 01): "Shared database, schema-per-tenant —
-                         Lowest operational complexity for MVP scale.
-                         Sufficient isolation for construction company data."
+Tenant Isolation Model (FINAL — spec §7, §7.7, §21-mvp-scope):
+  Model: Shared DB + tenant_id + PostgreSQL RLS (SMB tier, MVP baseline)
+  Rationale: Industry-standard SaaS pattern. Simpler operations (one migration run).
+             Enables cross-tenant analytics for AI features. RLS enforces isolation at DB level.
 
   Implementation:
-    - One PostgreSQL database (shared)
-    - Each tenant gets one PostgreSQL schema: {tenant_code}
-      e.g., schema "acme_corp", "riverside_const"
-    - Schema provisioned on tenant creation: CREATE SCHEMA IF NOT EXISTS {tenant_code}
-    - Prisma: schema-aware via TenantPrismaService — each request sets SET LOCAL search_path = {tenant_code}
-    - Service: TenantPrismaService (request-scoped) enforces schema via SET LOCAL inside $transaction
-    - All migrations run per-schema (not global)
-    - identity module tables live in schema "platform" (cross-tenant system tables)
+    - One PostgreSQL database (shared across all tenants)
+    - One named PostgreSQL schema per domain module (global, not per-tenant):
+        platform, projects, boq, procurement, site_ops, finance, files,
+        notifications, equipment, workforce, ai, equipment_telemetry, workforce_telemetry
+    - tenant_id UUID NOT NULL on every domain table (platform tables exempt)
+    - All SQL must use schema-qualified names: procurement.vendors, finance.project_budgets
+    - PostgreSQL RLS enabled on every domain table (MANDATORY, spec §7.7):
+        SET LOCAL app.current_tenant_id = '{tenant_id}' at request start
+        POLICY: USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
+    - Application layer also filters WHERE tenant_id = $1 as secondary defense-in-depth
+    - Migrations run once (not per-tenant) — CREATE SCHEMA IF NOT EXISTS {schema}
+    - identity module tables live in schema "platform" (cross-tenant, no RLS needed)
 
   ORM configuration (Prisma):
-    - Default schema: set per-request via TenantPrismaService.run() using SET LOCAL search_path
-    - Pattern: request-scoped TenantPrismaService wraps every DB call in a schema-pinned transaction
-    - SET LOCAL is transaction-scoped — safe with PgBouncer connection pooling (reverts on commit/rollback)
-    - Migration runner: prisma migrate deploy with SET search_path per tenant schema
+    - Prisma multiSchema: schemas listed in datasource.schemas
+    - Raw SQL via $queryRaw / $executeRaw using schema-qualified table names
+    - No TenantPrismaService search_path routing — tenant isolation via RLS + tenant_id
 
   Future model — Dedicated DB (ENTERPRISE plan):
-    DedicatedDBIsolation — still Post-MVP
-    Trigger: tenant.plan_type = ENTERPRISE AND dedicated_db_requested = true
-
-  Note: SchemaTenantIsolation is NO LONGER an extension point —
-        schema-per-tenant is now the baseline implementation, not an upgrade path.
+    Trigger: tenant.dedicated_db_url IS NOT NULL
 
 Secret Management: conditional per deployment type (spec §5.2)
   Cloud (AWS EKS):   AWS Secrets Manager — External Secrets Operator syncs SM secrets → K8s Secret → pod env
@@ -1261,14 +1262,15 @@ Secret Management: conditional per deployment type (spec §5.2)
 
 Entities (PostgreSQL — all in schema: identity):
   tenants:
-    tenant_id       UUID PK DEFAULT gen_random_uuid()
-    tenant_code     VARCHAR(50) UNIQUE NOT NULL
-    tenant_name     VARCHAR(255) NOT NULL
-    keycloak_realm  VARCHAR(100) UNIQUE NOT NULL
-    plan_type       ENUM('STARTER','PROFESSIONAL','ENTERPRISE') NOT NULL
-    is_active       BOOLEAN DEFAULT true
-    created_at      TIMESTAMPTZ DEFAULT now()
-    updated_at      TIMESTAMPTZ DEFAULT now()
+    tenant_id        UUID PK DEFAULT gen_random_uuid()
+    tenant_code      VARCHAR(50) UNIQUE NOT NULL
+    tenant_name      VARCHAR(255) NOT NULL
+    keycloak_realm   VARCHAR(100) UNIQUE NOT NULL
+    plan_type        ENUM('STARTER','PROFESSIONAL','ENTERPRISE') NOT NULL
+    is_active        BOOLEAN DEFAULT true
+    dedicated_db_url VARCHAR(500) NULL  -- NULL = shared DB; non-NULL = enterprise dedicated DB URL
+    created_at       TIMESTAMPTZ DEFAULT now()
+    updated_at       TIMESTAMPTZ DEFAULT now()
 
   users:
     user_id         UUID PK DEFAULT gen_random_uuid()
@@ -1346,8 +1348,10 @@ Generate:
 
 - Kafka events:
 
-    tenant.created     { tenant_id, tenant_code, tenant_name, plan_type }
-    tenant.deactivated { tenant_id }
+    tenant.created                     { tenant_id, tenant_code, tenant_name, plan_type, dedicated_db_url? }
+    tenant.deactivated                 { tenant_id }
+    platform.enterprise.contract_signed  { tenant_id, contract_reference? }  ← Phase 25; Admin Panel OR CRM webhook
+    platform.enterprise.db_provisioned   { tenant_id, rds_endpoint }         ← Phase 25; EnterpriseProvisioningWorkflow completion
     user.created       { tenant_id, user_id, email, role }  ← emitted from POST /api/v1/users
     user.role_changed  { tenant_id, user_id, old_role, new_role }  ← emitted from PATCH /api/v1/users/:userId/role
 
@@ -3232,10 +3236,10 @@ Security Requirements:
     No plaintext secrets in code, ConfigMaps, or environment files
   Tenant isolation: validated at middleware layer (every request)
     Cross-tenant data access: IMPOSSIBLE via API layer
-    PostgreSQL RLS: secondary defense-in-depth on public schema tables
-      Purpose: prevents cross-tenant data access if TenantPrismaService (search_path) is bypassed
-      Policy: USING (tenant_id = current_setting('app.current_tenant_id', TRUE))
-      Note: PRIMARY isolation is schema-per-tenant (SET LOCAL search_path). RLS is a safety net only.
+    PostgreSQL RLS: PRIMARY enforcement on all domain schema tables (mandatory from MVP, spec §7.7)
+      Purpose: prevents cross-tenant data access at DB level — enforced even if application layer is bypassed
+      Policy: USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
+      Note: RLS is PRIMARY isolation. Application-layer WHERE tenant_id = $1 is SECONDARY defense-in-depth.
 
 WAF:
   Solution: Cloudflare WAF — CLOUD DEPLOYMENTS ONLY (Shared SaaS, Dedicated Tenant)
@@ -4238,6 +4242,59 @@ Constraints:
 
 ---
 
+## PHASE 25 — ENTERPRISE PROVISIONING COMMAND
+
+```text
+Automate end-to-end dedicated DB provisioning for Enterprise tenants upon contract signing.
+
+Triggers (both paths start the same Temporal workflow):
+  Path A: SYSTEM_ADMIN → PATCH /api/v1/admin/tenants/:tenantId/mark-contracted
+  Path B: CRM webhook  → POST /api/v1/platform/webhooks/enterprise-contract-signed
+          (generic payload: { tenant_id, contract_reference? } — CRM-agnostic)
+
+Workflow: EnterpriseProvisioningWorkflow (Temporal, task queue: enterprise-provisioning)
+  Activity 1 — createRdsActivity:         AWS SDK CreateDBInstance
+                                           class: db.t3.medium, 100 GB GP3, per-tenant KMS key
+  Activity 2 — runMigrationsActivity:     prisma migrate deploy against new DB URL
+  Activity 3 — assignDedicatedDbActivity: SET platform.tenants.dedicated_db_url
+  [HUMAN GATE] notify SYSTEM_ADMIN; wait for signal (approve / abort) — no timeout
+  Activity 4 — migrateDataActivity:       pg_dump + psql from shared DB
+                                           (conditional: only if tenant has existing data AND signal = approve)
+  Activity 5 — verifyRoutingActivity:     test query against dedicated DB; assert connectivity
+
+Compensation (rollback per activity):
+  createRds        → AWS SDK DeleteDBInstance
+  assignDedicatedDb → SET dedicated_db_url = NULL
+  migrateData      → no auto-rollback; SYSTEM_ADMIN must coordinate manually
+
+Events emitted:
+  platform.enterprise.contract_signed.v1  { tenant_id, contract_reference? }
+  platform.enterprise.db_provisioned.v1   { tenant_id, rds_endpoint }
+
+npm packages required in backend/package.json — add BEFORE implementing (Rule 26):
+  dependencies: @aws-sdk/client-rds
+
+Generate:
+
+- PATCH /api/v1/admin/tenants/:tenantId/mark-contracted (NestJS controller + service + DTO)
+- POST /api/v1/platform/webhooks/enterprise-contract-signed (new module: platform-webhook)
+- EnterpriseProvisioningWorkflow + 5 activities + compensation + worker (enterprise-provisioning)
+- Avro schemas: platform.enterprise.contract_signed.v1.avsc + platform.enterprise.db_provisioned.v1.avsc
+- Terraform module: infrastructure/terraform/modules/rds-tenant/ (main.tf + variables.tf + outputs.tf)
+- Unit tests: 100% line + branch coverage (Rule 11)
+
+Constraints:
+- Workflow MUST be idempotent — re-triggering for same tenant_id must not create duplicate RDS
+- Human gate (before Activity 4) must NOT timeout — wait indefinitely for approve/abort signal
+- platform.* tables always stay on shared DB — never moved to dedicated (platform isolation rule)
+- CRM webhook: generic payload only — no CRM-specific adapter in Phase 25
+- Before marking Phase 25 complete: read every Generate item above line by line,
+  run ls/grep to verify each exists on disk, show output — Rule 36
+
+```
+
+---
+
 ```text
 GLOBAL EXECUTION RULES:
 
@@ -4416,7 +4473,7 @@ RULE CONFLICT RESOLUTION (Structural Fix #3):
 
 ## FINAL EXECUTION ORDER
 
-> [v3 — อัปเดต Execution Order รวม Phase 20–23]
+> [v4 — อัปเดต Execution Order รวม Phase 24–25]
 
 ```text
 Execution Order (respects dependency graph above):
@@ -4425,7 +4482,7 @@ Execution Order (respects dependency graph above):
 2.  Auth + Tenant            — depends on: Phase 1
 3.  Event Infrastructure     — depends on: Phase 2
 
-      *** BLOCKING: Phases 4–8, 20–22 cannot start until Phase 3 is complete ***
+      *** BLOCKING: Phases 4–8, 20–22, 25 cannot start until Phase 3 is complete ***
 
 4.  Project Service          — depends on: Phase 2, 3
 5.  BOQ Service              — depends on: Phase 2, 3, 4
@@ -4441,13 +4498,17 @@ Execution Order (respects dependency graph above):
 20. Notification Service     — depends on: Phase 2, 3 (parallel with Phase 4–9)
 21. Equipment Service        — depends on: Phase 2, 3 (parallel with Phase 4–9)
 22. Workforce Service        — depends on: Phase 2, 3 (parallel with Phase 4–9)
+25. Enterprise Provisioning  — depends on: Phase 2, 3, 20
 23. MLOps Pipeline           — depends on: Phase 11, 14
-15. Observability            — depends on: Phase 1–14, 20–23
+24. Digital Twin             — depends on: Phase 13, 21, 23
+15. Observability            — depends on: Phase 1–14, 20–25
 16. Security                 — depends on: Phase 2, 15
 17. DevOps                   — depends on: Phase 1, 15, 16
-18. Testing                  — depends on: Phase 1–17, 20–23
-19. Production Readiness     — depends on: Phase 1–18, 20–23
+18. Testing                  — depends on: Phase 1–17, 20–25
+19. Production Readiness     — depends on: Phase 1–18, 20–25
 
-Note: Phases 20, 21, 22 can be built in parallel with Phases 4–9
+Note: Phases 20, 21, 22, 25 can be built in parallel with Phases 4–9
       after Phase 3 (Event Infrastructure) is complete.
+      Phase 25 additionally requires Phase 20 (Notification Service).
+      Phase 24 can be built after Phase 23 (MLOps Pipeline) completes.
 ```

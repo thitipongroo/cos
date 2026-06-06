@@ -35,25 +35,25 @@ Construction OS is a **modular monolith** — one NestJS deployable containing a
 
 ### Key Technology Decisions
 
-| Area                     | Decision                                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------------------- |
-| Backend                  | NestJS Modular Monolith — extract services only with team boundary + scaling evidence         |
-| Multi-tenant             | Schema-per-tenant (`SET LOCAL search_path = {tenant_code}`), one PostgreSQL schema per tenant |
-| API versioning           | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                      |
-| Event bus                | Apache Kafka 3.x + Confluent Schema Registry (Avro, `BACKWARD_TRANSITIVE` compat)             |
-| Mobile storage           | WatermelonDB 0.28.x + ExpoSQLiteAdapter (business entities); expo-sqlite (sync_queue only)    |
-| PWA offline              | IndexedDB via `idb` library                                                                   |
-| Financial precision      | `DECIMAL(19,4)` in DB; `decimal.js` (Node.js); Python `decimal` module — never `float`        |
-| Workflow engine          | Temporal (TypeScript SDK)                                                                     |
-| Auth — field workers     | Phone + SMS OTP via custom NestJS module + AWS SNS                                            |
-| Auth — office/management | Email + password via Keycloak OIDC (RS256 JWT)                                                |
-| AI services              | FastAPI Python: LLM Gateway, Embedding Worker, OCR Pipeline                                   |
-| LLM                      | OpenAI GPT-4o via `LLMProvider` interface — never call OpenAI SDK directly                    |
-| Vector store             | pgvector + OpenSearch                                                                         |
-| Connection pooler        | PgBouncer (transaction mode) — application NEVER connects to PostgreSQL port 5432 directly    |
-| WAF (cloud)              | Cloudflare WAF (Pro+) → AWS ALB → EKS                                                         |
-| Observability            | OpenTelemetry → Grafana + Loki + Prometheus + Alertmanager                                    |
-| Secret management        | AWS Secrets Manager (cloud/EKS); HashiCorp Vault (on-premise)                                 |
+| Area                     | Decision                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| Backend                  | NestJS Modular Monolith — extract services only with team boundary + scaling evidence      |
+| Multi-tenant             | Shared DB + tenant_id + PostgreSQL RLS (`SET LOCAL app.current_tenant_id`) — ADR-008       |
+| API versioning           | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                   |
+| Event bus                | Apache Kafka 3.x + Confluent Schema Registry (Avro, `BACKWARD_TRANSITIVE` compat)          |
+| Mobile storage           | WatermelonDB 0.28.x + ExpoSQLiteAdapter (business entities); expo-sqlite (sync_queue only) |
+| PWA offline              | IndexedDB via `idb` library                                                                |
+| Financial precision      | `DECIMAL(19,4)` in DB; `decimal.js` (Node.js); Python `decimal` module — never `float`     |
+| Workflow engine          | Temporal (TypeScript SDK)                                                                  |
+| Auth — field workers     | Phone + SMS OTP via custom NestJS module + AWS SNS                                         |
+| Auth — office/management | Email + password via Keycloak OIDC (RS256 JWT)                                             |
+| AI services              | FastAPI Python: LLM Gateway, Embedding Worker, OCR Pipeline                                |
+| LLM                      | OpenAI GPT-4o via `LLMProvider` interface — never call OpenAI SDK directly                 |
+| Vector store             | pgvector + OpenSearch                                                                      |
+| Connection pooler        | PgBouncer (transaction mode) — application NEVER connects to PostgreSQL port 5432 directly |
+| WAF (cloud)              | Cloudflare WAF (Pro+) → AWS ALB → EKS                                                      |
+| Observability            | OpenTelemetry → Grafana + Loki + Prometheus + Alertmanager                                 |
+| Secret management        | AWS Secrets Manager (cloud/EKS); HashiCorp Vault (on-premise)                              |
 
 ---
 

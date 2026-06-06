@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "EnterpriseDbProvisionedEvent",
+  "namespace": "com.constructionos.events.platform",
+  "doc": "platform.enterprise.db_provisioned.v1 — spec §15.7; emitted by EnterpriseProvisioningWorkflow after verifyRoutingActivity passes",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "actor_id",       "type": "string", "doc": "Always 'system' — emitted by Temporal workflow" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "EnterpriseDbProvisionedPayload",
+      "fields": [
+        { "name": "tenant_id",     "type": "string", "doc": "UUID of the tenant whose dedicated DB is now live" },
+        { "name": "rds_endpoint",  "type": "string", "doc": "RDS hostname e.g. cos-tenant-acme-prod.xxx.rds.amazonaws.com" }
+      ]
+    }}
+  ]
+}

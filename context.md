@@ -22,9 +22,9 @@ Before doing anything else, read `context/00_master_construction_os.md` in full.
 
 This document contains:
 
-- Architecture decisions (monolith, schema-per-tenant, 3-platform mobile)
+- Architecture decisions (monolith, shared-db-tenant-id+RLS for STARTER/PROFESSIONAL; dedicated-db per tenant for ENTERPRISE via `platform.tenants.dedicated_db_url`, 3-platform mobile)
 - Full technology stack (AWS, ClickHouse, OpenAI GPT-4o, Keycloak, Temporal, etc.)
-- Phase 1–24 implementation specs
+- Phase 1–25 implementation specs
 - All EP (Extension Point) resolutions
 - GLOBAL EXECUTION RULES (numbered rules)
 - SaaS Maturity Model — Phase-to-Stage mapping (§32.1)
@@ -53,8 +53,8 @@ Ask the user exactly this question (bilingual — Thai primary, English in paren
 
 > "ระบบ Construction OS ตอนนี้อยู่ที่ stage ไหนครับ? (Which stage is the system currently at?)"
 >
-> 1. BUILD — กำลัง implement Phase 1–24 อยู่ (Implementing phases)
-> 2. OPERATIONALIZE — Phase 1–24 เสร็จแล้ว กำลัง deploy และ adopt จริง (Deploying & adopting)
+> 1. BUILD — กำลัง implement Phase 1–25 อยู่ (Implementing phases)
+> 2. OPERATIONALIZE — Phase 1–25 เสร็จแล้ว กำลัง deploy และ adopt จริง (Deploying & adopting)
 > 3. POST-LAUNCH — ผ่าน 8 production adoption gates แล้ว (8 adoption gates passed)
 > 4. INDUSTRY SCALE — POST-LAUNCH stage (file 04) เสร็จแล้ว
 > 5. ECOSYSTEM DOMINANCE — INDUSTRY SCALE stage (file 05) เสร็จแล้ว
@@ -489,13 +489,21 @@ Every production deployment must follow this protocol:
 
 ### QM-18 — Connection Pool Management
 
-Schema-per-tenant uses `SET LOCAL search_path = {tenant_code}` per request — where `{tenant_code}` is the tenant's schema name (e.g., `acme_corp`, `riverside_const`), NOT `tenant_{id}` (source: master §Phase 2: "Each tenant gets one PostgreSQL schema: {tenant_code}"). Direct application-to-PostgreSQL connections do not scale: each pod holds a connection pool, and with many tenants and replicas, PostgreSQL `max_connections` is exhausted before reaching meaningful tenant count. A connection pooler is mandatory.
+Isolation model:
+
+- **STARTER/PROFESSIONAL** — Shared DB + tenant_id + RLS (spec §7.7). `app.current_tenant_id` set at
+  request start; RLS enforces tenant isolation at DB level.
+- **ENTERPRISE** — Dedicated DB per tenant. `platform.tenants.dedicated_db_url` non-NULL routes all
+  domain queries to the tenant's own PostgreSQL instance (spec §7.1).
+
+Direct application-to-PostgreSQL connections do not scale: each pod holds a connection pool, and with
+many tenants and replicas, PostgreSQL `max_connections` is exhausted. A connection pooler is mandatory.
 
 - **PgBouncer is the required connection pooler** for all environments (staging + production); deployed as a Kubernetes `Deployment` (not a sidecar) with a `PodDisruptionBudget` of `minAvailable: 1`; configuration committed to `infrastructure/kubernetes/pgbouncer/` (Phase 17)
-- **Transaction mode is required** — `SET LOCAL search_path` is transaction-scoped and reverts on `COMMIT`/`ROLLBACK`, making transaction pooling safe for tenant routing; do NOT use session mode or statement mode
+- **Transaction mode is required** — `SET LOCAL app.current_tenant_id` is transaction-scoped and reverts on `COMMIT`/`ROLLBACK`, making transaction pooling safe; do NOT use session mode or statement mode
 - **Session mode is prohibited** — incompatible with horizontal pod autoscaling (connections are pinned to a pod)
 - **Statement mode is prohibited** — incompatible with multi-statement transactions
-- Application layer (`TenantPrismaService`) must connect to PgBouncer address — never directly to PostgreSQL port `5432`; integration test must assert connection string resolves to PgBouncer, not the database host
+- Application layer must connect to PgBouncer address — never directly to PostgreSQL port `5432`; integration test must assert connection string resolves to PgBouncer, not the database host
 - **Baseline configuration** (tune before Stage 2 go-live based on Grafana observations):
   - `default_pool_size = 25` per database
   - `max_client_conn = 1000`
@@ -722,7 +730,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   (a) team ownership boundary clear AND (b) independent scaling pressure with evidence
 - Add direct HTTP or gRPC calls between NestJS modules inside the monolith — use NestJS DI for synchronous cross-module calls and Kafka events for async; HTTP is only for cross-deployable communication (master §3; rule 3)
 - Query another module's database tables directly from application code — cross-module data access must go through the owning module's service layer or via Kafka events (master §4)
-- **Rely on `tenant_id` column filtering + RLS as the ONLY isolation mechanism** — schema-per-tenant (`SET LOCAL search_path = {tenant_code}`, where `{tenant_code}` is the tenant's schema name, e.g., `acme_corp`) is the mandatory baseline (source: master §Phase 2); row-level security (RLS) may be added as secondary defense-in-depth only at Phase 16; never replace schema isolation with RLS alone
+- **Skip RLS on domain tables** — PostgreSQL Row Level Security is MANDATORY on every domain table from MVP (primary isolation mechanism, spec §7.7); `app.current_tenant_id` must be set at request start before any query; application-layer `WHERE tenant_id = $1` is secondary defense-in-depth, not a replacement for RLS
 - Implement BigQuery or Snowflake — analytics uses ClickHouse only
 - Use IndexedDB in React Native — smartphone uses **WatermelonDB 0.28.x + ExpoSQLiteAdapter** for all main business entities (site_reports, issues, local_photos, etc.); `expo-sqlite` directly is allowed **only** for the `sync_queue` infrastructure table; plain `expo-sqlite` for any other entity is prohibited (Phase 10 authoritative)
 - Skip hallucination guard on AI report endpoints
@@ -847,7 +855,8 @@ docs/api/error-codes.md                             — Error code registry (COS
 docs/api/deprecation-schedule.md                    — API version sunset dates and tenant notification log (Phase 18)
 docs/architecture/adr/                              — Architecture Decision Records (see directory for current list)
 docs/architecture/adr/000-template.md              — ADR template
-docs/architecture/adr/008-tenantprismaservice-schema-per-tenant.md — TenantPrismaService schema-per-tenant ORM pattern (Phase 2)
+docs/architecture/adr/008-tenantprismaservice-schema-per-tenant.md — SUPERSEDED by ADR-008 (schema-per-tenant → shared-db + tenant_id + RLS)
+docs/architecture/adr/008-shared-db-tenant-id-rls.md               — Shared DB + tenant_id + PostgreSQL RLS standard (current, Phase 2 revision)
 docs/architecture/adr/015-database-retry-helpers.md               — Database retry helper pattern for Prisma transient errors (Phase 1)
 
 # SLO & Reliability

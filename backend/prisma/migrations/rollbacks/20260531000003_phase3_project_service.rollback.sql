@@ -1,5 +1,5 @@
 -- Rollback: Phase 3 Project Service migration
--- Run ONCE per tenant schema: SET search_path = {tenant_code}; then execute this file.
+-- Run AFTER reverting migration 20260605000004 (ADR-008 refactor). Tables now live in projects schema.
 -- This drops all Phase 3 tables and enums. Data loss is irreversible.
 
 DROP TABLE IF EXISTS outbox_events;

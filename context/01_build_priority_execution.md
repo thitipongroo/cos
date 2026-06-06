@@ -189,10 +189,10 @@ Primary objective:
 Establish multi-tenant isolation before any data is written.
 
 Tenant model decision:
-  Strategy: Shared database, schema-per-tenant
+  Strategy: Shared database, tenant_id column, PostgreSQL RLS (ADR-008)
   Rationale: Lowest operational complexity for MVP scale.
              Sufficient isolation for construction company data.
-             Migrate to DB-per-tenant if compliance requires it later.
+             Large-tenant upgrade path: Dedicated DB tier (not schema-per-tenant).
 
 Tenant identity:
   - tenant_id: UUID, assigned at provisioning
@@ -204,7 +204,7 @@ Generate:
 MUST-HAVE:
   - Tenant provisioning flow (admin creates tenant, assigns TENANT_ADMIN role)
   - Tenant context middleware (inject tenant_id into every request)
-  - Schema-per-tenant setup scripts
+  - Tenant provisioning (no per-tenant schema — tenant_id already in all tables)
   - Tenant isolation enforcement (query-level: all queries must include
     tenant_id filter — enforced by ORM base class, not per-developer)
   - Tenant provisioning API: POST /admin/tenants

@@ -1,4 +1,4 @@
-// Unit tests for TenantPrismaService — assertSafeTenantCode, run(), onModuleDestroy
+// Unit tests for TenantPrismaService — assertSafeTenantId, run(), onModuleDestroy
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
@@ -19,36 +19,42 @@ import { UnauthorizedException } from '@nestjs/common';
 import { TenantPrismaService } from '../prisma/tenant-prisma.service';
 import { PrismaClient } from '@prisma/client';
 
-function makeService(tenantCode: string): TenantPrismaService {
-  const request = { tenantCode } as never;
+const VALID_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
+function makeService(tenantId: string): TenantPrismaService {
+  const request = { tenantId } as never;
   return new TenantPrismaService(request);
 }
 
 describe('TenantPrismaService', () => {
   describe('constructor', () => {
-    it('throws UnauthorizedException when tenantCode is missing', () => {
+    it('throws UnauthorizedException when tenantId is missing', () => {
       expect(() => new TenantPrismaService({} as never)).toThrow(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException for invalid tenant code (uppercase)', () => {
+    it('throws UnauthorizedException for non-UUID string (uppercase word)', () => {
       expect(() => makeService('INVALID')).toThrow(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException for tenant code with special chars', () => {
-      expect(() => makeService('tenant-code!')).toThrow(UnauthorizedException);
+    it('throws UnauthorizedException for tenant code format (not a UUID)', () => {
+      expect(() => makeService('acme_corp')).toThrow(UnauthorizedException);
     });
 
-    it('constructs successfully for valid tenant code', () => {
-      expect(() => makeService('acme_corp')).not.toThrow();
+    it('throws UnauthorizedException for alphanumeric non-UUID', () => {
+      expect(() => makeService('tenant123')).toThrow(UnauthorizedException);
     });
 
-    it('constructs successfully for alphanumeric tenant code', () => {
-      expect(() => makeService('tenant123')).not.toThrow();
+    it('constructs successfully for valid UUID tenant id', () => {
+      expect(() => makeService(VALID_UUID)).not.toThrow();
+    });
+
+    it('constructs successfully for UUID with uppercase hex', () => {
+      expect(() => makeService('A1B2C3D4-E5F6-7890-ABCD-EF1234567890')).not.toThrow();
     });
   });
 
   describe('run', () => {
-    it('executes fn inside a transaction with SET LOCAL search_path', async () => {
+    it('executes fn inside a transaction with SET LOCAL app.current_tenant_id', async () => {
       const executeRawUnsafe = jest.fn().mockResolvedValue(undefined);
       const txMock = { $executeRawUnsafe: executeRawUnsafe };
       // Set up BEFORE constructing service so the new PrismaClient() picks it up
@@ -57,11 +63,13 @@ describe('TenantPrismaService', () => {
         $disconnect: jest.fn().mockResolvedValue(undefined),
       }));
 
-      const service = makeService('acme');
+      const service = makeService(VALID_UUID);
       const fn = jest.fn().mockResolvedValue('result');
       const result = await service.run(fn);
 
-      expect(executeRawUnsafe).toHaveBeenCalledWith('SET LOCAL search_path = "acme", public');
+      expect(executeRawUnsafe).toHaveBeenCalledWith(
+        `SET LOCAL app.current_tenant_id = '${VALID_UUID}'`,
+      );
       expect(fn).toHaveBeenCalledWith(txMock);
       expect(result).toBe('result');
     });
@@ -74,7 +82,7 @@ describe('TenantPrismaService', () => {
         $transaction: jest.fn(),
         $disconnect: disconnectMock,
       }));
-      const service = makeService('acme');
+      const service = makeService(VALID_UUID);
       await service.onModuleDestroy();
       expect(disconnectMock).toHaveBeenCalledTimes(1);
     });

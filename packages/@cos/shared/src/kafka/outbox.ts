@@ -3,7 +3,7 @@
 // Pattern: write to outbox_events in same transaction as business entity,
 //          OutboxPoller polls every 500ms and publishes unpublished rows.
 //
-// outbox_events table is created per schema in the outbox migration.
+// outbox_events table lives in the platform schema (single table, no per-tenant schema — ADR-008).
 // Service code calls OutboxPublisher.write() inside $transaction.
 // OutboxPoller runs as a background process (started in main.ts).
 
@@ -39,8 +39,8 @@ export interface OutboxRecord {
  *
  * @example
  * await prisma.$transaction(async (tx) => {
- *   await tx.$executeRaw`SET LOCAL search_path = ${tenantCode}`;
- *   await tx.project.create({ data: projectData });
+ *   await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+ *   await tx.$executeRaw`INSERT INTO projects.projects (...) VALUES (...)`;
  *   await OutboxPublisher.write(tx, event);
  * });
  */
@@ -99,8 +99,7 @@ export class OutboxPoller {
 
   private async poll(): Promise<void> {
     try {
-      // Fetch unpublished events across ALL schemas (platform + tenant schemas)
-      // For platform schema (identity events)
+      // Fetch unpublished events from platform.outbox_events
       const rows = await this.prisma.$queryRaw<OutboxRecord[]>`
         SELECT id, event_type, payload, published, created_at, published_at
         FROM platform.outbox_events

@@ -7,29 +7,31 @@ import { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 
+import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
+
 const logger = createLogger('rfq-activities');
 
-// Activities receive tenantCode + tenantId separately from the workflow params
-// so they can SET LOCAL search_path without a full NestJS request scope.
+// Activities receive tenant_id from the workflow params and set app.current_tenant_id
+// per ADR-008 — no tenant_code or search_path routing.
 
 export interface RfqActivityParams {
   rfq_id: string;
   tenant_id: string;
-  tenant_code: string;
   correlation_id: string;
 }
 
 async function withTenantTx<T>(
-  tenantCode: string,
+  tenantId: string,
   fn: (prisma: PrismaClient) => Promise<T>,
 ): Promise<T> {
+  const dbUrl = await getDbUrlForTenant(tenantId);
   const prisma = new PrismaClient({
-    datasources: { db: { url: process.env['DATABASE_URL'] } },
+    datasources: { db: { url: dbUrl } },
   });
   try {
     return await prisma.$transaction(async (tx) => {
       await (tx as PrismaClient).$executeRawUnsafe(
-        `SET LOCAL search_path = "${tenantCode}", public`,
+        `SET LOCAL app.current_tenant_id = '${tenantId}'`,
       );
       return fn(tx as PrismaClient);
     });
@@ -68,9 +70,9 @@ export async function updateRfqStatus(
   from_status: string,
   to_status: string,
 ): Promise<void> {
-  await withTenantTx(params.tenant_code, async (prisma) => {
+  await withTenantTx(params.tenant_id, async (prisma) => {
     await prisma.$executeRaw`
-      UPDATE rfqs SET status = ${to_status}, updated_at = now()
+      UPDATE procurement.rfqs SET status = ${to_status}, updated_at = now()
       WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid`;
   });
 
@@ -90,9 +92,9 @@ export async function updateRfqStatus(
 export async function markQuotationsEvaluated(params: RfqActivityParams): Promise<void> {
   // System automatically marks RFQ as EVALUATED after quotation comparison.
   // The service layer selects the winning quotation before this activity runs.
-  await withTenantTx(params.tenant_code, async (prisma) => {
+  await withTenantTx(params.tenant_id, async (prisma) => {
     await prisma.$executeRaw`
-      UPDATE rfqs SET status = 'EVALUATED', updated_at = now()
+      UPDATE procurement.rfqs SET status = 'EVALUATED', updated_at = now()
       WHERE rfq_id = ${params.rfq_id}::uuid AND tenant_id = ${params.tenant_id}::uuid`;
   });
 

@@ -1,8 +1,8 @@
 ---
 title: 'Multi-tenant Architecture'
-version: '1.4.0'
+version: '1.5.0'
 status: Active
-last_updated: '2026-05-27'
+last_updated: '2026-06-05'
 authors:
   - thitipongroo
 related_docs:
@@ -25,6 +25,7 @@ related_docs:
 - [7.4 Neo4j Multi-tenancy](#74-neo4j-multi-tenancy)
 - [7.5 S3 File Isolation](#75-s3-file-isolation)
 - [7.6 Tenant Provisioning Workflow](#76-tenant-provisioning-workflow)
+- [7.7 PostgreSQL Schema Convention](#77-postgresql-schema-convention)
 
 ---
 
@@ -32,25 +33,144 @@ related_docs:
 
 ### Shared DB + tenant_id
 
-For SMB scale.
+For SMB scale. **This is the MVP baseline and the standard implementation for all domain modules.**
+
+Implementation standard:
+
+- Every domain table MUST include `tenant_id UUID NOT NULL`
+- All SQL queries MUST use schema-qualified table names (e.g., `procurement.vendors`, `projects.projects`)
+- PostgreSQL Row Level Security (RLS) MUST be enabled on every domain table — see §7.7
+- Application layer MUST also filter by `tenant_id` in every query as defense-in-depth
+- Unqualified table names in SQL are prohibited
 
 ### Schema-per-tenant
 
-For mid-market.
+Not used in Construction OS. SMB and mid-market tiers both use Shared DB + tenant_id.
+The upgrade path from mid-market to enterprise is Dedicated DB — not schema-per-tenant.
+Schema-per-tenant is documented here for completeness; it is not an active upgrade path.
 
 ### Dedicated DB
 
-For enterprise.
+For enterprise. Activated per tenant on contract — not automatic at plan upgrade.
 
 Deployment-to-isolation mapping :
 
 | Deployment Option        | Isolation Model       |
 | ------------------------ | --------------------- |
 | Shared SaaS — SMB        | Shared DB + tenant_id |
-| Shared SaaS — Mid-market | Schema-per-tenant     |
+| Shared SaaS — Mid-market | Shared DB + tenant_id |
 | Dedicated Tenant         | Dedicated DB          |
 | Hybrid                   | Dedicated DB          |
 | Fully On-premise         | Dedicated DB          |
+
+#### dedicated_db_url column
+
+`platform.tenants.dedicated_db_url VARCHAR(500) NULL`
+
+- `NULL` — tenant uses shared DB (`DATABASE_URL` environment variable)
+- non-`NULL` — tenant uses its own dedicated PostgreSQL instance at the stored URL
+
+The column is set by SYSTEM_ADMIN at one of two points:
+
+- **At tenant creation** (`POST /api/v1/admin/tenants`) — optional field; use when the dedicated DB is
+  already provisioned before the tenant record is created.
+- **After creation** (`PATCH /api/v1/admin/tenants/{tenantId}/dedicated-db`) — use when upgrading an
+  existing tenant from shared DB to dedicated DB.
+
+See runbook: `docs/runbooks/dedicated-db-provisioning.md`.
+
+#### Routing mechanism — HTTP requests
+
+Every HTTP request passes through `TenantMiddleware` before reaching any controller:
+
+1. `TenantMiddleware` queries `platform.tenants` for `tenant_code` and `dedicated_db_url`
+2. Sets `req.dedicatedDbUrl` on the request object (undefined if NULL)
+3. `TenantPrismaService` (request-scoped) reads `request.dedicatedDbUrl ?? process.env['DATABASE_URL']`
+4. All domain queries in that request use the resolved DB URL
+
+`platform.*` tables are always accessed via `DATABASE_URL` regardless of tier — platform schema
+never moves to a dedicated DB.
+
+#### Routing mechanism — non-HTTP paths (Temporal activities, Kafka consumers)
+
+Temporal activities and Kafka consumers have no HTTP request context. They resolve the DB URL
+by calling `getDbUrlForTenant(tenantId: string): Promise<string>` (utility in
+`backend/src/modules/tenant/utils/get-db-url.ts`):
+
+1. Queries `platform.tenants.dedicated_db_url` using `DATABASE_URL` (platform DB — always shared)
+2. Returns `dedicated_db_url` if non-NULL, else `DATABASE_URL`
+3. PrismaClient is created with the resolved URL for that activity/consumer invocation
+
+#### Platform schema isolation rule
+
+`platform.*` tables (`platform.tenants`, `platform.users`, `platform.tenant_memberships`,
+`platform.audit_logs`) are **always** on the shared DB. They are never replicated to or
+accessed from a dedicated DB.
+
+---
+
+## 7.3 Enterprise Provisioning Workflow (Phase 25)
+
+When an Enterprise tenant signs a contract, `EnterpriseProvisioningWorkflow` automates the
+full dedicated DB setup. Defined in spec §15.7, Phase 25 command, and [34-enterprise-tenant-provisioning.md](34-enterprise-tenant-provisioning.md).
+
+### Trigger paths
+
+| Path        | Mechanism                                                                     |
+| ----------- | ----------------------------------------------------------------------------- |
+| Admin Panel | `PATCH /api/v1/admin/tenants/:tenantId/mark-contracted` (SYSTEM_ADMIN)        |
+| CRM webhook | `POST /api/v1/platform/webhooks/enterprise-contract-signed` (generic payload) |
+
+Both paths start the Temporal workflow directly via `TemporalClient.start()` and emit
+`platform.enterprise.contract_signed.v1`.
+
+### Workflow state machine
+
+```text
+PENDING
+  → [createRdsActivity]       AWS SDK CreateDBInstance
+      db.t3.medium, 100 GB GP3, per-tenant KMS key, VPC dedicated subnet group
+      Compensation: DeleteDBInstance
+PENDING
+  → [runMigrationsActivity]   prisma migrate deploy against new DB URL
+PENDING
+  → [assignDedicatedDbActivity] SET platform.tenants.dedicated_db_url
+      Compensation: SET dedicated_db_url = NULL
+AWAITING_APPROVAL
+  ← notify SYSTEM_ADMIN (in-app + email)
+  ← wait for signal: approve | abort  (no timeout — waits indefinitely)
+  → abort signal  → ABORTED  (compensation: assignDedicatedDb)
+  → approve signal
+PENDING
+  → [migrateDataActivity]     pg_dump + psql from shared DB
+      Conditional: skipped if tenant has no existing domain data
+      No auto-compensation — SYSTEM_ADMIN must coordinate manually
+PENDING
+  → [verifyRoutingActivity]   test query against dedicated DB; assert non-NULL response
+COMPLETED
+  → emit platform.enterprise.db_provisioned.v1 { tenant_id, rds_endpoint }
+```
+
+### Idempotency requirement
+
+Before starting the workflow, the service MUST check whether a workflow for the same
+`tenant_id` is already running or completed. If so, reject with `409 Conflict`.
+Use Temporal `workflowId = enterprise-provisioning-{tenant_id}` — Temporal enforces
+uniqueness per workflow ID.
+
+### RDS parameters (defaults — override per contract)
+
+| Parameter         | Default value                            |
+| ----------------- | ---------------------------------------- |
+| Instance class    | `db.t3.medium`                           |
+| Storage           | 100 GB GP3, auto-scale to 1 TB           |
+| Backup retention  | 7 days                                   |
+| Encryption        | Per-tenant KMS key (not shared)          |
+| Naming convention | `cos-tenant-{tenant_code}-{environment}` |
+| VPC               | Same VPC; dedicated subnet group         |
+| Security group    | Allow EKS node SG on port 5432 only      |
+
+See Terraform module: `infrastructure/terraform/modules/rds-tenant/`
 
 ---
 
@@ -155,7 +275,7 @@ Steps :
    **Protocol mappers MUST be configured** on every realm (shared or dedicated) per `05-security-compliance` §5.4.2 — mappers for `tenant_id`, `user_id`, and `role` are required before any user can authenticate. Missing mappers cause Kong Gateway to reject all requests.
 4. Database provisioning:
    - SMB: no migration needed — `tenant_id` already in all tables
-   - Mid-market: new schema created and migrated
+   - Mid-market: no migration needed — same Shared DB + tenant_id model as SMB
    - Enterprise: new database provisioned and migrated
 5. Kafka namespace initialized
 6. S3 prefix initialized (zero-byte marker object written to confirm access)
@@ -163,6 +283,58 @@ Steps :
 8. Default roles seeded per RBAC matrix (see 06-rbac-permission-matrix)
 9. Provisioning event published: `platform.tenant.provisioned.v1`
 10. Welcome notification dispatched to tenant admin (see 19-notification-architecture)
+
+---
+
+## 7.7 PostgreSQL Schema Convention
+
+One named PostgreSQL schema per domain module. All schemas are global (shared across tenants); tenant isolation is enforced by `tenant_id` column + RLS.
+
+### Schema registry
+
+| PostgreSQL Schema     | Module / Purpose                     | tenant_id required                                                  | Notes                                          |
+| --------------------- | ------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------- |
+| `platform`            | Identity, Tenant system              | No (cross-tenant)                                                   | Holds `tenants`, `users`, `tenant_memberships` |
+| `projects`            | Project Management                   | Yes                                                                 |                                                |
+| `boq`                 | Bill of Quantities                   | Yes                                                                 |                                                |
+| `procurement`         | Procurement                          | Yes                                                                 |                                                |
+| `site_ops`            | Site Operations                      | Yes                                                                 |                                                |
+| `finance`             | Finance                              | Yes                                                                 |                                                |
+| `files`               | File Service                         | Yes                                                                 |                                                |
+| `notifications`       | Notification Service                 | Yes (nullable on `notification_templates` — null = system template) |                                                |
+| `equipment`           | Equipment Service                    | Yes                                                                 |                                                |
+| `workforce`           | Workforce Service                    | Yes                                                                 |                                                |
+| `ai`                  | AI Token Tracking                    | Yes                                                                 |                                                |
+| `equipment_telemetry` | IoT Telemetry (TimescaleDB)          | Yes                                                                 | Hypertable — partitioned by `recorded_at`      |
+| `workforce_telemetry` | Attendance / Biometric (TimescaleDB) | Yes                                                                 | Hypertable — partitioned by `recorded_at`      |
+
+### RLS policy standard
+
+Every domain table (all schemas except `platform`) MUST have RLS enabled:
+
+```sql
+ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
+ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON {schema}.{table}
+  AS RESTRICTIVE
+  USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+```
+
+`app.current_tenant_id` is set by the application at the start of every request before any query executes.
+
+### Query convention
+
+All SQL in repositories MUST use schema-qualified names:
+
+```sql
+-- Correct
+SELECT * FROM procurement.vendors WHERE tenant_id = $1;
+INSERT INTO finance.project_budgets (tenant_id, ...) VALUES ($1, ...);
+
+-- Prohibited
+SELECT * FROM vendors WHERE tenant_id = $1;
+```
 
 ---
 

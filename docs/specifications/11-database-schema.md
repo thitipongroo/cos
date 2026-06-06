@@ -1,8 +1,8 @@
 ---
 title: 'Database Schema'
-version: '1.3.0'
+version: '1.4.0'
 status: Active
-last_updated: '2026-05-27'
+last_updated: '2026-06-05'
 authors:
   - thitipongroo
 related_docs:
@@ -16,10 +16,55 @@ related_docs:
 
 ## Table of Contents
 
+- [11.0 Schema Convention and Isolation Standard](#110-schema-convention-and-isolation-standard)
 - [11.1 Multi-tenant Foundation](#111-multi-tenant-foundation)
 - [11.2 Core Entities](#112-core-entities)
 - [11.3 CRM Entity Lifecycle](#113-crm-entity-lifecycle)
 - [11.4 Architectural Principle](#114-architectural-principle)
+
+---
+
+## 11.0 Schema Convention and Isolation Standard
+
+Isolation model: **Shared DB + tenant_id** (SMB tier, MVP baseline) — see §7 for tier mapping.
+
+### Rules — apply to every domain table without exception
+
+1. `tenant_id UUID NOT NULL` on every domain table (`platform` cross-tenant tables are exempt)
+2. All SQL MUST use schema-qualified names: `procurement.vendors`, `finance.project_budgets` — never unqualified
+3. RLS MUST be enabled on every domain table (see template below)
+4. Application layer MUST also pass `tenant_id` in every query (`WHERE tenant_id = $1`) as defense-in-depth
+
+### RLS policy template
+
+```sql
+ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
+ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON {schema}.{table}
+  AS RESTRICTIVE
+  USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+```
+
+`app.current_tenant_id` is set by the application at the start of each request.
+
+### Schema registry — full list
+
+| Schema                | Owner module              | tenant_id | Notes                                                                    |
+| --------------------- | ------------------------- | --------- | ------------------------------------------------------------------------ |
+| `platform`            | Identity / Tenant         | exempt    | Cross-tenant system tables — no RLS needed                               |
+| `projects`            | Project Management        | NOT NULL  |                                                                          |
+| `boq`                 | Bill of Quantities        | NOT NULL  |                                                                          |
+| `procurement`         | Procurement               | NOT NULL  |                                                                          |
+| `site_ops`            | Site Operations           | NOT NULL  |                                                                          |
+| `finance`             | Finance                   | NOT NULL  |                                                                          |
+| `files`               | File Service              | NOT NULL  |                                                                          |
+| `notifications`       | Notification Service      | NOT NULL  | `notification_templates` has nullable tenant_id (null = system template) |
+| `equipment`           | Equipment Service         | NOT NULL  |                                                                          |
+| `workforce`           | Workforce Service         | NOT NULL  |                                                                          |
+| `ai`                  | AI Services               | NOT NULL  |                                                                          |
+| `equipment_telemetry` | IoT Telemetry (Timescale) | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
+| `workforce_telemetry` | Attendance (Timescale)    | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
 
 ---
 
@@ -32,6 +77,29 @@ Core :
 - users
 - roles
 - permissions
+
+### platform.tenants
+
+| Column             | Type                                        | Constraints                  | Notes                                                    |
+| ------------------ | ------------------------------------------- | ---------------------------- | -------------------------------------------------------- |
+| `tenant_id`        | UUID                                        | PK DEFAULT gen_random_uuid() |                                                          |
+| `tenant_code`      | VARCHAR(50)                                 | UNIQUE NOT NULL              |                                                          |
+| `tenant_name`      | VARCHAR(255)                                | NOT NULL                     |                                                          |
+| `keycloak_realm`   | VARCHAR(100)                                | UNIQUE NOT NULL              |                                                          |
+| `plan_type`        | ENUM('STARTER','PROFESSIONAL','ENTERPRISE') | NOT NULL                     |                                                          |
+| `is_active`        | BOOLEAN                                     | NOT NULL DEFAULT true        |                                                          |
+| `dedicated_db_url` | VARCHAR(500)                                | NULL                         | NULL = shared DB; non-NULL = enterprise dedicated DB URL |
+| `created_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()       |                                                          |
+| `updated_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()       |                                                          |
+
+`dedicated_db_url` is set by SYSTEM_ADMIN at one of two points:
+
+- **At tenant creation** (`POST /api/v1/admin/tenants`) — optional; use when dedicated DB is already
+  provisioned before the tenant record is created.
+- **After creation** (`PATCH /api/v1/admin/tenants/{tenantId}/dedicated-db`) — use when upgrading an
+  existing tenant from shared DB to dedicated DB.
+
+See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisioning.md`.
 
 ---
 

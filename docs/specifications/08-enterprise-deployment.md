@@ -38,11 +38,11 @@ Multi-tenant cloud, shared database.
 
 ### Shared SaaS — Mid-market
 
-Multi-tenant cloud, schema-per-tenant isolation.
+Multi-tenant cloud, shared database.
 
-- Isolation: Schema-per-tenant (see 07-multi-tenant-architecture section 7.1)
+- Isolation: Shared DB + tenant_id (see 07-multi-tenant-architecture section 7.1)
 - Infrastructure: AWS EKS (ap-southeast-1) managed by the platform operator
-- Keycloak: shared realm, dedicated schema isolation
+- Keycloak: shared realm, per-tenant isolation by tenant_id claim in JWT
 - Suitable for: contractors with 5–20 concurrent projects, 50–500 users
 
 ### Dedicated Tenant

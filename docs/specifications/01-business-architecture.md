@@ -1,8 +1,8 @@
 ---
-title: "Business Architecture"
-version: "1.1.0"
+title: 'Business Architecture'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -29,18 +29,18 @@ related_docs:
 
 ปัญหาหลักของอุตสาหกรรมก่อสร้าง :
 
-|Problem|Root Cause|
-| --- | --- |
-|Cost overrun|ไม่มี real-time cost visibility|
-|Delay|Planning disconnected from field reality|
-|Rework|Drawing/version mismatch|
-|Procurement waste|ไม่มี demand forecasting|
-|Cash flow collapse|Billing/progress mismatch|
-|Knowledge loss|ทุกอย่างอยู่ในคน|
-|Site chaos|Communication fragmented|
-|Quality inconsistency|ไม่มี process standardization|
-|Executive blindness|ไม่มี unified dashboard|
-|Multi-project scaling failure|System ไม่ scale|
+| Problem                       | Root Cause                               |
+| ----------------------------- | ---------------------------------------- |
+| Cost overrun                  | ไม่มี real-time cost visibility          |
+| Delay                         | Planning disconnected from field reality |
+| Rework                        | Drawing/version mismatch                 |
+| Procurement waste             | ไม่มี demand forecasting                 |
+| Cash flow collapse            | Billing/progress mismatch                |
+| Knowledge loss                | ทุกอย่างอยู่ในคน                         |
+| Site chaos                    | Communication fragmented                 |
+| Quality inconsistency         | ไม่มี process standardization            |
+| Executive blindness           | ไม่มี unified dashboard                  |
+| Multi-project scaling failure | System ไม่ scale                         |
 
 ระบบนี้ต้องแก้ "ทั้งระบบ" ไม่ใช่ optimize เฉพาะส่วนใดส่วนหนึ่ง
 

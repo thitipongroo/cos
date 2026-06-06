@@ -67,6 +67,6 @@ make migrate
 ## Architecture notes
 
 - Connects to PostgreSQL **via PgBouncer** in transaction pool mode — never directly to port 5432 (QM-18)
-- All request-scoped DB calls use `TenantPrismaService` with `SET LOCAL search_path = {tenant_code}` (Phase 2)
+- All request-scoped DB calls use `TenantPrismaService` with `SET LOCAL app.current_tenant_id = '{tenant_id}'` (ADR-008)
 - Cross-module calls: NestJS DI for sync, Kafka for async — no direct HTTP between modules (master rule §3)
 - All monetary calculations use `@cos/financial` (Decimal.js) — never native float (QM-7, FINANCIAL PRECISION SPEC)

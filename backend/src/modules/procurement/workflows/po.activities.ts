@@ -7,6 +7,8 @@ import { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 
+import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
+
 const logger = createLogger('po-activities');
 
 export interface PoActivityParams {
@@ -14,21 +16,21 @@ export interface PoActivityParams {
   project_id: string;
   vendor_id: string;
   tenant_id: string;
-  tenant_code: string;
   correlation_id: string;
 }
 
 async function withTenantTx<T>(
-  tenantCode: string,
+  tenantId: string,
   fn: (prisma: PrismaClient) => Promise<T>,
 ): Promise<T> {
+  const dbUrl = await getDbUrlForTenant(tenantId);
   const prisma = new PrismaClient({
-    datasources: { db: { url: process.env['DATABASE_URL'] } },
+    datasources: { db: { url: dbUrl } },
   });
   try {
     return await prisma.$transaction(async (tx) => {
       await (tx as PrismaClient).$executeRawUnsafe(
-        `SET LOCAL search_path = "${tenantCode}", public`,
+        `SET LOCAL app.current_tenant_id = '${tenantId}'`,
       );
       return fn(tx as PrismaClient);
     });
@@ -67,9 +69,9 @@ export async function updatePoStatus(
   from_status: string,
   to_status: string,
 ): Promise<void> {
-  await withTenantTx(params.tenant_code, async (prisma) => {
+  await withTenantTx(params.tenant_id, async (prisma) => {
     await prisma.$executeRaw`
-      UPDATE purchase_orders SET status = ${to_status}, updated_at = now()
+      UPDATE procurement.purchase_orders SET status = ${to_status}, updated_at = now()
       WHERE po_id = ${params.po_id}::uuid AND tenant_id = ${params.tenant_id}::uuid`;
   });
 

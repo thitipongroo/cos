@@ -66,7 +66,6 @@ const PROCUREMENT_TASK_QUEUE = 'procurement';
 @Injectable({ scope: Scope.REQUEST })
 export class ProcurementService {
   private readonly tenantId: string;
-  private readonly tenantCode: string;
   private readonly userId: string;
   private readonly correlationId: string;
   private readonly kafka: KafkaProducer;
@@ -76,12 +75,10 @@ export class ProcurementService {
     @Inject(REQUEST)
     request: Request & {
       tenantId?: string;
-      tenantCode?: string;
       user?: { user_id?: string; role?: string };
     },
   ) {
     this.tenantId = request.tenantId ?? '';
-    this.tenantCode = request.tenantCode ?? '';
     this.userId = request.user?.user_id ?? '';
     this.correlationId = randomUUID();
     this.kafka = new KafkaProducer();
@@ -158,7 +155,6 @@ export class ProcurementService {
     const workflowParams: RfqWorkflowParams = {
       rfq_id: rfq.rfq_id,
       tenant_id: this.tenantId,
-      tenant_code: this.tenantCode,
       correlation_id: this.correlationId,
       deadline_ms: deadlineMs,
     };
@@ -355,7 +351,6 @@ export class ProcurementService {
       project_id: po.project_id,
       vendor_id: po.vendor_id,
       tenant_id: this.tenantId,
-      tenant_code: this.tenantCode,
       correlation_id: this.correlationId,
       total_amount_thb: po.total_amount, // Assuming THB; currency conversion would be done here in full implementation
       po_number: po.po_number,

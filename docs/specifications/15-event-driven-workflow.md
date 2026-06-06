@@ -206,6 +206,49 @@ Versioning Rules :
 
 ---
 
+## 15.7 Platform-Level Events (Phase 25)
+
+Platform-level events are emitted by the Construction OS platform itself (not by tenant domain
+services). They use the `platform.` namespace and are NOT scoped to a single tenant's Kafka topic —
+they are published to a shared `platform.events` topic consumed only by SYSTEM_ADMIN services.
+
+### platform.enterprise.contract_signed.v1
+
+Emitted when an Enterprise tenant's contract is marked as signed, triggering the
+`EnterpriseProvisioningWorkflow`.
+
+**Triggers:**
+
+- `PATCH /api/v1/admin/tenants/:tenantId/mark-contracted` (SYSTEM_ADMIN via Admin Panel)
+- `POST /api/v1/platform/webhooks/enterprise-contract-signed` (generic CRM webhook)
+
+**Payload:**
+
+| Field                | Type   | Required | Description                             |
+| -------------------- | ------ | -------- | --------------------------------------- |
+| `tenant_id`          | UUID   | Yes      | Tenant being provisioned                |
+| `contract_reference` | string | No       | External contract ID from CRM or system |
+
+**Avro schema:** `packages/@cos/shared/src/avro/platform.enterprise.contract_signed.v1.avsc`
+
+---
+
+### platform.enterprise.db_provisioned.v1
+
+Emitted when `EnterpriseProvisioningWorkflow` completes successfully (after Activity 5 —
+`verifyRoutingActivity` passes).
+
+**Payload:**
+
+| Field          | Type   | Required | Description                                    |
+| -------------- | ------ | -------- | ---------------------------------------------- |
+| `tenant_id`    | UUID   | Yes      | Tenant whose dedicated DB is now live          |
+| `rds_endpoint` | string | Yes      | RDS hostname (e.g. `cos-tenant-acme-prod.xxx`) |
+
+**Avro schema:** `packages/@cos/shared/src/avro/platform.enterprise.db_provisioned.v1.avsc`
+
+---
+
 ## References
 
 | ID            | Title                                                              | Source                                                                                                                      |

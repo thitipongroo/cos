@@ -140,11 +140,11 @@ CREATE INDEX ON document_embeddings (tenant_id, source_type, created_at DESC);
 
 #### Tier-by-Tier Isolation Strategy
 
-| Tenant Tier                    | Isolation Method                                                                                                 | pgvector Location                                         |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| SMB (Shared DB)                | Row-level `WHERE tenant_id = $tenantId` on **every** query — enforced at application layer                       | Shared `document_embeddings` table with `tenant_id` index |
-| Mid-market (Schema-per-tenant) | Separate `{tenant_schema}.document_embeddings` table per schema — no cross-schema query possible by construction | Per-tenant schema                                         |
-| Enterprise (Dedicated DB)      | Separate PostgreSQL instance with pgvector — no shared infrastructure                                            | Dedicated PostgreSQL database                             |
+| Tenant Tier               | Isolation Method                                                                                         | pgvector Location                                         |
+| ------------------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| SMB (Shared DB)           | Row-level `WHERE tenant_id = $tenantId` on **every** query — enforced at application layer               | Shared `document_embeddings` table with `tenant_id` index |
+| Mid-market (Shared DB)    | Row-level `WHERE tenant_id = $tenantId` — same as SMB; escalate to Dedicated DB if upgrade trigger fires | Shared `document_embeddings` table with `tenant_id` index |
+| Enterprise (Dedicated DB) | Separate PostgreSQL instance with pgvector — no shared infrastructure                                    | Dedicated PostgreSQL database                             |
 
 #### Enforcement Rules
 
@@ -153,15 +153,14 @@ CREATE INDEX ON document_embeddings (tenant_id, source_type, created_at DESC);
    `tenant_id` than the requesting user's. A single mis-scoped query is a security incident.
 3. **SMB shared HNSW index trade-off:** The shared HNSW index covers all tenants for write
    performance; `tenant_id` acts as a post-filter. Accepted risk: a very large SMB tenant
-   inflating the shared index is the trigger to upgrade that tenant to mid-market tier.
+   inflating the shared index is the trigger to escalate that tenant to the Dedicated DB tier.
    **Upgrade trigger (quantified):** If any single SMB tenant's embedding row count exceeds
    **500,000 rows**, OR if RAG p95 query latency for that tenant exceeds **200 ms** measured
-   over a 7-day rolling window, that tenant MUST be migrated to the mid-market
-   (schema-per-tenant) tier. Monitor via the metric `rag_retrieval_duration_seconds` per tenant
+   over a 7-day rolling window, that tenant MUST be escalated to the Dedicated DB tier.
+   Monitor via the metric `rag_retrieval_duration_seconds` per tenant
    (see 31-monitoring-observability section 31.3). Migration path: `pg_dump` the tenant's
-   rows from the shared table → restore to a dedicated `{tenant_schema}.document_embeddings`
-   table → update the tenant's isolation tier in the `tenants` table → rebuild the HNSW index
-   on the new table.
+   rows from the shared table → restore to a dedicated DB → update the tenant's isolation
+   tier in the `tenants` table → rebuild the HNSW index.
 4. **Content dedup is per-tenant:** `content_hash` dedup is scoped per `(tenant_id, source_id)`
    — two tenants storing identical documents is not a cross-tenant leak.
 5. **Audit logging:** All embedding reads must emit a structured log entry with `tenant_id`,

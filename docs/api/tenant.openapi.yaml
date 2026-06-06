@@ -27,7 +27,7 @@ components:
         tenantCode:
           type: string
           pattern: '^[a-z0-9_]{2,50}$'
-          description: Unique slug used as PostgreSQL schema name (e.g. acme_corp)
+          description: Unique slug identifier for the tenant (e.g. acme_corp)
           example: acme_corp
         tenantName:
           type: string
@@ -37,6 +37,15 @@ components:
         planType:
           type: string
           enum: [STARTER, PROFESSIONAL, ENTERPRISE]
+        dedicatedDbUrl:
+          type: string
+          maxLength: 500
+          description: |
+            Optional. PostgreSQL connection URL for the tenant's dedicated database.
+            For ENTERPRISE tenants where the dedicated DB is already provisioned at creation time.
+            If omitted, the tenant uses the shared DB.
+            Can also be assigned later via PATCH /admin/tenants/{tenantId}/dedicated-db.
+          example: 'postgresql://user:pass@enterprise-db.example.com:5432/tenantdb'
 
     TenantResponse:
       type: object
@@ -61,6 +70,30 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    MarkContractedRequest:
+      type: object
+      properties:
+        contractReference:
+          type: string
+          maxLength: 255
+          description: |
+            Optional. External contract ID from CRM or contract management system.
+            Stored as-is and included in the platform.enterprise.contract_signed.v1 Kafka event.
+          example: CRM-CONTRACT-2026-00142
+
+    AssignDedicatedDbRequest:
+      type: object
+      required: [dedicatedDbUrl]
+      properties:
+        dedicatedDbUrl:
+          type: string
+          maxLength: 500
+          description: |
+            PostgreSQL connection URL for the tenant's dedicated database instance.
+            Format: `postgresql://user:password@host:5432/dbname`
+            Must point to a pre-provisioned and migrated PostgreSQL instance.
+          example: postgresql://cos_user:secret@rds-acme.ap-southeast-1.rds.amazonaws.com:5432/cos_acme_corp
 
     Error:
       type: object
@@ -88,8 +121,7 @@ paths:
     post:
       summary: Provision a new tenant (SYSTEM_ADMIN only)
       description: |
-        Creates a tenant record, provisions a PostgreSQL schema `{tenantCode}`,
-        and queues Keycloak realm creation.
+        Creates a tenant record and queues Keycloak realm creation.
 
         Emits Kafka event: `identity.tenant.created.v1`
       tags: [tenants]
@@ -103,7 +135,7 @@ paths:
               $ref: '#/components/schemas/CreateTenantRequest'
       responses:
         '201':
-          description: Tenant provisioned — schema created, Kafka event emitted
+          description: Tenant provisioned — Kafka event emitted
           content:
             application/json:
               schema:
@@ -148,6 +180,144 @@ paths:
                     example: Tenant deactivated
         '404':
           description: Tenant not found or already inactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/{tenantId}/dedicated-db:
+    patch:
+      summary: Assign dedicated DB to a tenant (SYSTEM_ADMIN only)
+      description: |
+        Sets `dedicated_db_url` on the tenant record. Once set, all domain queries
+        for this tenant route to the dedicated PostgreSQL instance instead of the shared DB.
+
+        Prerequisites (must be completed before calling this endpoint):
+        1. Dedicated PostgreSQL instance provisioned and reachable
+        2. All Prisma migrations applied to the dedicated DB (`prisma migrate deploy`)
+        3. Existing tenant data migrated if upgrading from shared DB
+
+        See `docs/runbooks/dedicated-db-provisioning.md` for the full provisioning runbook.
+
+        Emits Kafka event: `identity.tenant.dedicated_db_assigned.v1`
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignDedicatedDbRequest'
+      responses:
+        '200':
+          description: Dedicated DB URL assigned — tenant now routes to dedicated instance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Dedicated DB assigned
+                  tenantId:
+                    type: string
+                    format: uuid
+        '400':
+          description: Invalid dedicatedDbUrl format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
+
+  /admin/tenants/{tenantId}/mark-contracted:
+    patch:
+      summary: Mark Enterprise tenant as contracted (SYSTEM_ADMIN only)
+      description: |
+        Signals that an Enterprise tenant has signed a contract requiring dedicated DB isolation.
+        Starts `EnterpriseProvisioningWorkflow` via Temporal (task queue: enterprise-provisioning).
+
+        Prerequisites (enforced server-side):
+        - Tenant plan_type must be ENTERPRISE
+        - Tenant must be active (is_active = true)
+        - dedicated_db_url must be NULL (workflow not already started)
+
+        The workflow is idempotent — Temporal rejects duplicate starts for the same tenant
+        using workflowId `enterprise-provisioning-{tenantId}`.
+
+        Emits Kafka event: `platform.enterprise.contract_signed.v1`
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkContractedRequest'
+      responses:
+        '202':
+          description: Provisioning workflow started — processing asynchronously
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Enterprise provisioning workflow started
+                  workflowId:
+                    type: string
+                    example: enterprise-provisioning-550e8400-e29b-41d4-a716-446655440000
+                  tenantId:
+                    type: string
+                    format: uuid
+        '400':
+          description: |
+            Precondition failed. Possible reasons:
+            - Tenant is not ENTERPRISE plan
+            - Tenant is inactive
+            - dedicated_db_url is already set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Provisioning workflow already running or completed for this tenant
           content:
             application/json:
               schema:

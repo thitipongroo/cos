@@ -46,7 +46,6 @@ export const rfqStatusQuery = defineQuery<string>('status');
 export interface RfqWorkflowParams {
   rfq_id: string;
   tenant_id: string;
-  tenant_code: string;
   correlation_id: string;
   deadline_ms: number; // absolute epoch ms — workflow sleeps until this
 }
@@ -57,7 +56,6 @@ export async function rfqWorkflow(params: RfqWorkflowParams): Promise<void> {
   const actParams = {
     rfq_id: params.rfq_id,
     tenant_id: params.tenant_id,
-    tenant_code: params.tenant_code,
     correlation_id: params.correlation_id,
   };
 

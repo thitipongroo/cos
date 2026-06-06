@@ -39,6 +39,29 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
+  // Capture raw body for webhook HMAC verification — Phase 25
+  // Overrides Fastify's built-in JSON parser to attach rawBody Buffer on the request.
+  const fastify = app.getHttpAdapter().getInstance() as {
+    addContentTypeParser: (
+      type: string,
+      opts: { parseAs: string },
+      fn: (
+        req: Record<string, unknown>,
+        body: string,
+        done: (err: Error | null, payload?: unknown) => void,
+      ) => void,
+    ) => void;
+  };
+  fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+    (req as Record<string, unknown>)['rawBody'] = Buffer.from(body ?? '', 'utf8');
+    try {
+      done(null, JSON.parse(body ?? '{}'));
+    } catch (err) {
+      (err as NodeJS.ErrnoException).statusCode = 400;
+      done(err as Error);
+    }
+  });
+
   const port = parseInt(process.env['PORT'] ?? '3000', 10);
   await app.listen(port, '0.0.0.0');
 }

@@ -1,5 +1,5 @@
 // SiteOps Repository — Phase 6
-// All DB access via TenantPrismaService (SET LOCAL search_path per request).
+// All DB access via TenantPrismaService (SET LOCAL app.current_tenant_id per request — ADR-008).
 // Uses $queryRaw (parameterized tagged template) — never raw string interpolation.
 
 import { Injectable, Scope, Inject } from '@nestjs/common';
@@ -111,7 +111,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SiteReportRow[]>`
-        INSERT INTO site_reports
+        INSERT INTO site_ops.site_reports
           (report_id, project_id, tenant_id, report_date, submitted_by,
            summary, weather, manpower_count, client_submitted_at)
         VALUES
@@ -137,7 +137,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SiteReportRow[]>`
-        SELECT * FROM site_reports
+        SELECT * FROM site_ops.site_reports
         WHERE report_id = ${reportId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
       `,
@@ -156,7 +156,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SiteReportRow[]>`
-        SELECT * FROM site_reports
+        SELECT * FROM site_ops.site_reports
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
@@ -171,7 +171,7 @@ export class SiteOpsRepository {
     const countRows = await this.db.run(
       (tx) =>
         tx.$queryRaw<[{ count: bigint }]>`
-        SELECT COUNT(*)::bigint AS count FROM site_reports
+        SELECT COUNT(*)::bigint AS count FROM site_ops.site_reports
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
@@ -188,7 +188,7 @@ export class SiteOpsRepository {
     await this.db.run(
       (tx) =>
         tx.$queryRaw`
-        UPDATE site_reports
+        UPDATE site_ops.site_reports
         SET status = ${status}, modified_at = now()
         WHERE report_id = ${reportId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
@@ -211,7 +211,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IssueRow[]>`
-        INSERT INTO issues
+        INSERT INTO site_ops.issues
           (issue_id, project_id, tenant_id, report_id, title, description,
            severity, assigned_to, client_submitted_at)
         VALUES
@@ -231,7 +231,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IssueRow[]>`
-        SELECT * FROM issues
+        SELECT * FROM site_ops.issues
         WHERE issue_id = ${issueId}::uuid
           AND tenant_id = ${this.tenantId}::uuid
       `,
@@ -250,7 +250,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IssueRow[]>`
-        SELECT * FROM issues
+        SELECT * FROM site_ops.issues
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
@@ -265,7 +265,7 @@ export class SiteOpsRepository {
     const countRows = await this.db.run(
       (tx) =>
         tx.$queryRaw<[{ count: bigint }]>`
-        SELECT COUNT(*)::bigint AS count FROM issues
+        SELECT COUNT(*)::bigint AS count FROM site_ops.issues
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
@@ -292,7 +292,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IssueRow[]>`
-        UPDATE issues SET
+        UPDATE site_ops.issues SET
           description         = COALESCE(${patch.description ?? null},    description),
           severity            = COALESCE(${patch.severity ?? null},        severity),
           status              = COALESCE(${patch.status ?? null},          status),
@@ -322,7 +322,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<InspectionRow[]>`
-        INSERT INTO inspections
+        INSERT INTO site_ops.inspections
           (inspection_id, project_id, tenant_id, checklist_id, status,
            inspected_by, inspected_at, notes)
         VALUES
@@ -340,7 +340,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SafetyChecklistRow[]>`
-        SELECT * FROM safety_checklists
+        SELECT * FROM site_ops.safety_checklists
         WHERE checklist_id = ${checklistId}::uuid
           AND tenant_id    = ${this.tenantId}::uuid
       `,
@@ -363,7 +363,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ConflictRecordRow[]>`
-        INSERT INTO conflict_records
+        INSERT INTO site_ops.conflict_records
           (conflict_id, tenant_id, entity_type, entity_id,
            client_payload, server_payload, conflict_type)
         VALUES
@@ -381,7 +381,7 @@ export class SiteOpsRepository {
     return this.db.run(
       (tx) =>
         tx.$queryRaw<ConflictRecordRow[]>`
-        SELECT * FROM conflict_records
+        SELECT * FROM site_ops.conflict_records
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (NOT ${unresolvedOnly} OR reviewed_at IS NULL)
         ORDER BY created_at DESC
@@ -396,7 +396,7 @@ export class SiteOpsRepository {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ConflictRecordRow[]>`
-        UPDATE conflict_records
+        UPDATE site_ops.conflict_records
         SET reviewed_by  = ${reviewedBy}::uuid,
             reviewed_at  = now()
         WHERE conflict_id = ${conflictId}::uuid

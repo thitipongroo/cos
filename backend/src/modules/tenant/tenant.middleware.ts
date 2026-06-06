@@ -1,6 +1,6 @@
 // Tenant middleware — injects tenant context into every request.
 // Runs after JWT guard — tenant_id comes from validated JWT claim.
-// Sets req.tenantCode from the tenant record for TenantPrismaService.
+// Verifies tenant is active; sets req.tenantId, req.tenantCode, req.userId, req.userRole.
 
 import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
 // @types/express added to devDeps — NestJS uses express-compatible types even with Fastify adapter
@@ -15,6 +15,7 @@ export interface TenantRequest extends Request {
   tenantCode?: string;
   userId?: string;
   userRole?: string;
+  dedicatedDbUrl?: string;
 }
 
 @Injectable()
@@ -39,9 +40,11 @@ export class TenantMiddleware implements NestMiddleware {
       throw new UnauthorizedException('Missing tenant context in JWT');
     }
 
-    // Look up tenantCode — needed to set search_path
-    const tenant = await this.platformPrisma.$queryRaw<Array<{ tenant_code: string }>>`
-      SELECT tenant_code FROM platform.tenants
+    // Verify tenant exists and is active (security check — also fetches tenant_code for audit logs)
+    const tenant = await this.platformPrisma.$queryRaw<
+      Array<{ tenant_code: string; dedicated_db_url: string | null }>
+    >`
+      SELECT tenant_code, dedicated_db_url FROM platform.tenants
       WHERE tenant_id = ${jwtPayload.tenant_id}::uuid
         AND is_active = true
       LIMIT 1
@@ -56,8 +59,9 @@ export class TenantMiddleware implements NestMiddleware {
     req.tenantCode = tenant[0]!.tenant_code;
     req.userId = jwtPayload.user_id;
     req.userRole = jwtPayload.role;
+    req.dedicatedDbUrl = tenant[0]!.dedicated_db_url ?? undefined;
 
-    logger.debug({ tenantCode: req.tenantCode, userId: req.userId }, 'Tenant context injected');
+    logger.debug({ tenantId: req.tenantId, userId: req.userId }, 'Tenant context injected');
     next();
   }
 }

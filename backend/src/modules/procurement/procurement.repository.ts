@@ -1,5 +1,5 @@
 // Procurement Repository — Phase 5
-// All DB access via TenantPrismaService (SET LOCAL search_path per request).
+// All DB access via TenantPrismaService (SET LOCAL app.current_tenant_id per request — ADR-008).
 // Uses $queryRaw (parameterized tagged template) — never raw string interpolation.
 // Financial fields stored as DECIMAL(19,4); returned as string by Prisma for precision.
 
@@ -159,7 +159,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<VendorRow[]>`
-        INSERT INTO vendors (tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, address)
+        INSERT INTO procurement.vendors (tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, address)
         VALUES (${this.tenantId}::uuid, ${params.vendor_code}, ${params.vendor_name},
                 ${params.tax_id ?? null}, ${params.contact_email ?? null},
                 ${params.contact_phone ?? null}, ${params.address ?? null})
@@ -172,7 +172,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<VendorRow[]>`
-        SELECT * FROM vendors
+        SELECT * FROM procurement.vendors
         WHERE vendor_id = ${vendor_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
@@ -182,11 +182,11 @@ export class ProcurementRepository {
     return this.db.run((prisma) =>
       active_only
         ? prisma.$queryRaw<VendorRow[]>`
-            SELECT * FROM vendors
+            SELECT * FROM procurement.vendors
             WHERE tenant_id = ${this.tenantId}::uuid AND is_active = true
             ORDER BY vendor_name`
         : prisma.$queryRaw<VendorRow[]>`
-            SELECT * FROM vendors
+            SELECT * FROM procurement.vendors
             WHERE tenant_id = ${this.tenantId}::uuid
             ORDER BY vendor_name`,
     );
@@ -196,7 +196,7 @@ export class ProcurementRepository {
     await this.db.run(
       (prisma) =>
         prisma.$executeRaw`
-        UPDATE vendors SET is_active = false, updated_at = now()
+        UPDATE procurement.vendors SET is_active = false, updated_at = now()
         WHERE vendor_id = ${vendor_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
   }
@@ -212,7 +212,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<PurchaseRequestRow[]>`
-        INSERT INTO purchase_requests (project_id, tenant_id, pr_number, requested_by, required_date)
+        INSERT INTO procurement.purchase_requests (project_id, tenant_id, pr_number, requested_by, required_date)
         VALUES (${params.project_id}::uuid, ${this.tenantId}::uuid, ${params.pr_number},
                 ${params.requested_by}::uuid, ${params.required_date ?? null}::date)
         RETURNING *`,
@@ -224,7 +224,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<PurchaseRequestRow[]>`
-        SELECT * FROM purchase_requests
+        SELECT * FROM procurement.purchase_requests
         WHERE pr_id = ${pr_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
@@ -234,7 +234,7 @@ export class ProcurementRepository {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<PurchaseRequestRow[]>`
-        SELECT * FROM purchase_requests
+        SELECT * FROM procurement.purchase_requests
         WHERE project_id = ${project_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC`,
     );
@@ -244,7 +244,7 @@ export class ProcurementRepository {
     await this.db.run(
       (prisma) =>
         prisma.$executeRaw`
-        UPDATE purchase_requests
+        UPDATE procurement.purchase_requests
         SET status = ${status}, updated_at = now()
         WHERE pr_id = ${pr_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
@@ -262,7 +262,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<RfqRow[]>`
-        INSERT INTO rfqs (pr_id, project_id, tenant_id, rfq_number, deadline, created_by)
+        INSERT INTO procurement.rfqs (pr_id, project_id, tenant_id, rfq_number, deadline, created_by)
         VALUES (${params.pr_id ?? null}::uuid, ${params.project_id}::uuid, ${this.tenantId}::uuid,
                 ${params.rfq_number}, ${params.deadline}::timestamptz, ${params.created_by}::uuid)
         RETURNING *`,
@@ -274,7 +274,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<RfqRow[]>`
-        SELECT * FROM rfqs
+        SELECT * FROM procurement.rfqs
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
@@ -284,7 +284,7 @@ export class ProcurementRepository {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<RfqRow[]>`
-        SELECT * FROM rfqs
+        SELECT * FROM procurement.rfqs
         WHERE project_id = ${project_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC`,
     );
@@ -294,7 +294,7 @@ export class ProcurementRepository {
     await this.db.run(
       (prisma) =>
         prisma.$executeRaw`
-        UPDATE rfqs SET status = ${status}, updated_at = now()
+        UPDATE procurement.rfqs SET status = ${status}, updated_at = now()
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
   }
@@ -303,7 +303,7 @@ export class ProcurementRepository {
     await this.db.run(
       (prisma) =>
         prisma.$executeRaw`
-        UPDATE rfqs SET temporal_workflow_id = ${workflow_id}, updated_at = now()
+        UPDATE procurement.rfqs SET temporal_workflow_id = ${workflow_id}, updated_at = now()
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
   }
@@ -321,7 +321,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<QuotationRow[]>`
-        INSERT INTO quotations (rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at)
+        INSERT INTO procurement.quotations (rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at)
         VALUES (${params.rfq_id}::uuid, ${params.vendor_id}::uuid, ${this.tenantId}::uuid,
                 ${params.total_amount}::decimal, ${params.currency_code},
                 ${params.validity_days}, ${params.submitted_at}::timestamptz)
@@ -334,7 +334,7 @@ export class ProcurementRepository {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<QuotationRow[]>`
-        SELECT * FROM quotations
+        SELECT * FROM procurement.quotations
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         ORDER BY total_amount ASC`,
     );
@@ -344,10 +344,10 @@ export class ProcurementRepository {
     // Clear previous selection, then set new one — single transaction via db.run
     await this.db.run(async (prisma) => {
       await prisma.$executeRaw`
-        UPDATE quotations SET is_selected = false
+        UPDATE procurement.quotations SET is_selected = false
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
       await prisma.$executeRaw`
-        UPDATE quotations SET is_selected = true
+        UPDATE procurement.quotations SET is_selected = true
         WHERE quotation_id = ${quotation_id}::uuid AND tenant_id = ${this.tenantId}::uuid`;
     });
   }
@@ -367,7 +367,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<PurchaseOrderRow[]>`
-        INSERT INTO purchase_orders (rfq_id, vendor_id, project_id, tenant_id, po_number,
+        INSERT INTO procurement.purchase_orders (rfq_id, vendor_id, project_id, tenant_id, po_number,
                                      total_amount, currency_code, delivery_date, created_by)
         VALUES (${params.rfq_id ?? null}::uuid, ${params.vendor_id}::uuid,
                 ${params.project_id}::uuid, ${this.tenantId}::uuid, ${params.po_number},
@@ -382,7 +382,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<PurchaseOrderRow[]>`
-        SELECT * FROM purchase_orders
+        SELECT * FROM procurement.purchase_orders
         WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
@@ -392,7 +392,7 @@ export class ProcurementRepository {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<PurchaseOrderRow[]>`
-        SELECT * FROM purchase_orders
+        SELECT * FROM procurement.purchase_orders
         WHERE project_id = ${project_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC`,
     );
@@ -402,7 +402,7 @@ export class ProcurementRepository {
     await this.db.run(
       (prisma) =>
         prisma.$executeRaw`
-        UPDATE purchase_orders SET status = ${status}, updated_at = now()
+        UPDATE procurement.purchase_orders SET status = ${status}, updated_at = now()
         WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
   }
@@ -411,7 +411,7 @@ export class ProcurementRepository {
     await this.db.run(
       (prisma) =>
         prisma.$executeRaw`
-        UPDATE purchase_orders SET temporal_workflow_id = ${workflow_id}, updated_at = now()
+        UPDATE procurement.purchase_orders SET temporal_workflow_id = ${workflow_id}, updated_at = now()
         WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
   }
@@ -434,7 +434,7 @@ export class ProcurementRepository {
       const rows = await this.db.run(
         (prisma) =>
           prisma.$queryRaw<PoLineItemRow[]>`
-          INSERT INTO po_line_items (po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
+          INSERT INTO procurement.po_line_items (po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
           VALUES (${po_id}::uuid, ${this.tenantId}::uuid, ${item.boq_item_id ?? null}::uuid,
                   ${item.description}, ${item.quantity}::decimal, ${item.unit},
                   ${item.unit_price}::decimal, ${item.line_total}::decimal)
@@ -449,7 +449,7 @@ export class ProcurementRepository {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<PoLineItemRow[]>`
-        SELECT * FROM po_line_items
+        SELECT * FROM procurement.po_line_items
         WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
   }
@@ -466,7 +466,7 @@ export class ProcurementRepository {
   }): Promise<{ delivery: DeliveryRow; items: DeliveryItemRow[] }> {
     return this.db.run(async (prisma) => {
       const deliveries = await prisma.$queryRaw<DeliveryRow[]>`
-        INSERT INTO deliveries (po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
+        INSERT INTO procurement.deliveries (po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
         VALUES (${params.po_id}::uuid, ${this.tenantId}::uuid,
                 ${params.delivery_note ?? null}, ${params.delivered_at}::timestamptz,
                 ${params.received_by}::uuid, ${params.notes ?? null})
@@ -476,7 +476,7 @@ export class ProcurementRepository {
       const deliveryItems: DeliveryItemRow[] = [];
       for (const item of params.items) {
         const rows = await prisma.$queryRaw<DeliveryItemRow[]>`
-          INSERT INTO delivery_items (delivery_id, line_id, tenant_id, quantity_received)
+          INSERT INTO procurement.delivery_items (delivery_id, line_id, tenant_id, quantity_received)
           VALUES (${delivery.delivery_id}::uuid, ${item.line_id}::uuid,
                   ${this.tenantId}::uuid, ${item.quantity_received}::decimal)
           RETURNING *`;
@@ -491,7 +491,7 @@ export class ProcurementRepository {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<DeliveryRow[]>`
-        SELECT * FROM deliveries
+        SELECT * FROM procurement.deliveries
         WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         ORDER BY delivered_at DESC`,
     );
@@ -512,7 +512,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<InvoiceRow[]>`
-        INSERT INTO invoices (po_id, vendor_id, tenant_id, invoice_number, amount, currency_code,
+        INSERT INTO procurement.invoices (po_id, vendor_id, tenant_id, invoice_number, amount, currency_code,
                               invoice_date, due_date, file_id)
         VALUES (${params.po_id}::uuid, ${params.vendor_id}::uuid, ${this.tenantId}::uuid,
                 ${params.invoice_number}, ${params.amount}::decimal, ${params.currency_code},
@@ -527,7 +527,7 @@ export class ProcurementRepository {
     const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<InvoiceRow[]>`
-        SELECT * FROM invoices
+        SELECT * FROM procurement.invoices
         WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
@@ -537,7 +537,7 @@ export class ProcurementRepository {
     return this.db.run(
       (prisma) =>
         prisma.$queryRaw<InvoiceRow[]>`
-        SELECT * FROM invoices
+        SELECT * FROM procurement.invoices
         WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid
         ORDER BY invoice_date DESC`,
     );
@@ -547,7 +547,7 @@ export class ProcurementRepository {
     await this.db.run(
       (prisma) =>
         prisma.$executeRaw`
-        UPDATE invoices SET status = ${status}
+        UPDATE procurement.invoices SET status = ${status}
         WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
   }
@@ -559,8 +559,8 @@ export class ProcurementRepository {
       (prisma) =>
         prisma.$queryRaw<Array<{ total: string }>>`
         SELECT COALESCE(SUM(quantity_received), 0)::text AS total
-        FROM delivery_items di
-        JOIN deliveries d ON di.delivery_id = d.delivery_id
+        FROM procurement.delivery_items di
+        JOIN procurement.deliveries d ON di.delivery_id = d.delivery_id
         WHERE di.line_id = ${line_id}::uuid AND di.tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0]?.total ?? '0';

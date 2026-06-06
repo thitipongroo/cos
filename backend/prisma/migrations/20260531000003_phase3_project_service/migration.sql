@@ -1,6 +1,5 @@
--- Phase 3: Project Service — tenant-scoped tables
--- These tables are created in EACH tenant schema by the migration runner,
--- which sets search_path per tenant before executing.
+-- Phase 3: Project Service — originally created in public schema (ADR-008).
+-- Moved to projects.* schema by migration 20260605000004 (ADR-008 refactor).
 -- Backward-compatible: new tables only, no changes to existing schemas.
 -- Rollback: migrations/rollbacks/20260531000003_phase3_project_service.rollback.sql
 

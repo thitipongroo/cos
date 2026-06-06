@@ -21,6 +21,7 @@
     "studio": "prisma studio"
   },
   "dependencies": {
+    "@aws-sdk/client-rds": "^3.600.0",
     "@aws-sdk/client-sns": "^3.600.0",
     "@confluentinc/schemaregistry": "^1.0.0",
     "@nestjs/cache-manager": "^2.2.0",
@@ -57,7 +58,11 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.0",
     "otplib": "^12.0.1",
-    "zod": "^3.22.0"
+    "zod": "^3.22.0",
+    "expo-server-sdk": "^3.3.0",
+    "handlebars": "^4.7.0",
+    "@sendgrid/mail": "^8.1.0",
+    "@line/bot-sdk": "^9.4.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",

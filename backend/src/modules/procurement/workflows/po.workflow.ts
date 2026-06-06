@@ -77,7 +77,6 @@ export interface PoWorkflowParams {
   project_id: string;
   vendor_id: string;
   tenant_id: string;
-  tenant_code: string;
   correlation_id: string;
   total_amount_thb: string; // Amount in THB for approval threshold comparison
   po_number: string;
@@ -139,7 +138,6 @@ export async function poWorkflow(params: PoWorkflowParams): Promise<void> {
     project_id: params.project_id,
     vendor_id: params.vendor_id,
     tenant_id: params.tenant_id,
-    tenant_code: params.tenant_code,
     correlation_id: params.correlation_id,
   };
 

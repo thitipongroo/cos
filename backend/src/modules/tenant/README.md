@@ -1,12 +1,16 @@
 # tenant
 
-NestJS module for tenant provisioning and multi-tenant schema isolation.
+NestJS module for tenant provisioning and multi-tenant isolation.
 
 ## Purpose
 
-Implements the schema-per-tenant isolation model (ADR-008).
-Each tenant gets one PostgreSQL schema (`{tenant_code}`, e.g. `acme_corp`).
-All requests are routed to the correct schema via `TenantMiddleware`, which sets `SET LOCAL search_path = {tenant_code}` inside a PgBouncer transaction.
+Implements shared-DB tenant isolation (ADR-008: tenant_id column + PostgreSQL RLS).
+All domain tables carry a `tenant_id UUID` column. RLS policies enforce isolation at the
+PostgreSQL layer — no per-tenant schema is created.
+
+All requests are routed via `TenantMiddleware`, which extracts `tenantId` from the JWT
+and sets `SET LOCAL app.current_tenant_id = '{tenant_id}'` at the start of every
+transaction. PostgreSQL RLS enforces that queries only touch rows belonging to that tenant.
 
 Also handles Keycloak realm provisioning when a new tenant is created.
 
@@ -19,11 +23,11 @@ PATCH /api/v1/admin/tenants/:id     — update tenant metadata
 POST /api/v1/admin/tenants/:id/deactivate — deactivate tenant
 ```
 
-Middleware (applied globally): `TenantMiddleware` — extracts `tenantId` from JWT, sets `search_path`.
+Middleware (applied globally): `TenantMiddleware` — extracts `tenantId` from JWT, sets `req.tenantId`.
 
 ## Dependencies
 
-- `@cos/database` — `TenantPrismaService` pattern for schema-pinned transactions
+- `@cos/database` — `TenantPrismaService` pattern for RLS-scoped transactions (ADR-008)
 - `@cos/rbac` — `SYSTEM_ADMIN` guard for admin endpoints
 - `@cos/logger` — structured logging
 - Keycloak — realm creation on tenant provisioning
@@ -45,19 +49,21 @@ All downstream modules use `TenantPrismaService` instead of raw `PrismaClient`:
 // In any module's service:
 constructor(private readonly db: TenantPrismaService) {}
 
-async findProjects(tenantId: string) {
-  return this.db.run(tenantId, (prisma) => prisma.project.findMany());
+async findProjects() {
+  return this.db.run((tx) =>
+    tx.$queryRaw`SELECT * FROM projects.projects WHERE tenant_id = current_setting('app.current_tenant_id')::uuid`
+  );
 }
 ```
 
 Provisioning flow:
 
-1. `POST /api/v1/admin/tenants` → creates PostgreSQL schema + runs migrations + creates Keycloak realm
+1. `POST /api/v1/admin/tenants` → creates tenant record in `platform.tenants` + creates Keycloak realm
 2. Emits `tenant.created` Kafka event
 
 ## Notes
 
-- Schema naming: `{tenant_code}` (e.g. `acme_corp`) — NOT `tenant_{id}`
-- `identity` module tables live in schema `platform` (cross-tenant system tables)
+- `tenant_code` is a data field (e.g. `acme_corp`) — no per-tenant PostgreSQL schema is created
+- `platform.tenants` lives in schema `platform` (cross-tenant system tables)
 - `TenantMiddleware` enforces tenant context on every request — developers cannot bypass via ORM base class
-- See ADR-008 for the full schema-per-tenant design rationale
+- See ADR-008 for the shared-DB tenant isolation design rationale

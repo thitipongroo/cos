@@ -1,6 +1,6 @@
 // TenantPrismaService — ADR-008
 // Request-scoped service. Wraps every Prisma call in:
-//   BEGIN; SET LOCAL search_path = {tenant_code}; <query>; COMMIT;
+//   BEGIN; SET LOCAL app.current_tenant_id = '{tenant_id}'; <query>; COMMIT;
 // SET LOCAL reverts on COMMIT/ROLLBACK — safe with PgBouncer transaction mode (QM-18).
 // NEVER use singleton scope — tenant context is per-request.
 
@@ -13,46 +13,48 @@ import { createLogger } from '@cos/logger';
 
 const logger = createLogger('tenant-prisma');
 
-// Allowlist of valid tenant_code characters — prevents SQL injection via search_path
-const TENANT_CODE_PATTERN = /^[a-z0-9_]{1,50}$/;
+// UUID validation — prevents injection via app.current_tenant_id
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function assertSafeTenantCode(code: string): void {
-  if (!TENANT_CODE_PATTERN.test(code)) {
-    throw new UnauthorizedException(`Invalid tenant code format: ${code}`);
+function assertSafeTenantId(id: string): void {
+  if (!UUID_PATTERN.test(id)) {
+    throw new UnauthorizedException(`Invalid tenant_id format: ${id}`);
   }
 }
 
 @Injectable({ scope: Scope.REQUEST })
 export class TenantPrismaService {
   private readonly prisma: PrismaClient;
-  private readonly tenantCode: string;
+  private readonly tenantId: string;
 
-  constructor(@Inject(REQUEST) request: Request & { tenantCode?: string }) {
-    const code = request.tenantCode;
-    if (!code) {
+  constructor(@Inject(REQUEST) request: Request & { tenantId?: string; dedicatedDbUrl?: string }) {
+    const id = request.tenantId;
+    if (!id) {
       throw new UnauthorizedException('Tenant context missing from request');
     }
-    assertSafeTenantCode(code);
-    this.tenantCode = code;
+    assertSafeTenantId(id);
+    this.tenantId = id;
     this.prisma = new PrismaClient({
-      datasources: { db: { url: process.env['DATABASE_URL'] } },
+      datasources: { db: { url: request.dedicatedDbUrl ?? process.env['DATABASE_URL'] } },
     });
   }
 
   /**
-   * Execute fn inside a transaction with SET LOCAL search_path = {tenant_code}.
+   * Execute fn inside a transaction with SET LOCAL app.current_tenant_id = '{tenant_id}'.
    * All tenant-scoped DB calls MUST go through this method.
    */
-  async run<T>(fn: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>): Promise<T> {
+  async run<T>(
+    fn: (
+      tx: Omit<
+        PrismaClient,
+        '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+      >,
+    ) => Promise<T>,
+  ): Promise<T> {
     return withRetry(() =>
       this.prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(
-          `SET LOCAL search_path = "${this.tenantCode}", public`,
-        );
-        logger.debug(
-          { tenantCode: this.tenantCode },
-          'TenantPrismaService: search_path set',
-        );
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${this.tenantId}'`);
+        logger.debug({ tenantId: this.tenantId }, 'TenantPrismaService: tenant_id set');
         return fn(tx);
       }),
     );

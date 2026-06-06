@@ -64,7 +64,9 @@ prerequisites are complete and CI is green.
         │           │                                                       │
         ├──► [Phase 21: Equipment Service] ◄─── depends on Ph 2, Ph 3    │
         │           │                                                       │
-        └──► [Phase 22: Workforce Service] ◄─── depends on Ph 2, Ph 3    │
+        ├──► [Phase 22: Workforce Service] ◄─── depends on Ph 2, Ph 3    │
+        │           │                                                       │
+        └──► [Phase 25: Enterprise Provisioning] ◄─── depends on Ph 2, Ph 3, Ph 20 │
                     │                                                       │
                     ▼                                                       │
          [Phase 9: File Service] ◄─── depends on Ph 2 (tenant)           │
@@ -88,7 +90,7 @@ prerequisites are complete and CI is green.
          [Phase 23: MLOps Pipeline] ◄─── depends on Ph 11, Ph 14         │
                     │                                                       │
                     ▼                                                       │
-         [Phase 15: Observability] ◄─── depends on Ph 1–14, Ph 20–23    │
+         [Phase 15: Observability] ◄─── depends on Ph 1–14, Ph 20–25    │
                     │                                                       │
                     ▼                                                       │
          [Phase 16: Security] ◄─── depends on Ph 2, Ph 15               │
@@ -97,7 +99,7 @@ prerequisites are complete and CI is green.
          [Phase 17: DevOps] ◄─── depends on Ph 1, Ph 15, Ph 16          │
                     │                                                       │
                     ▼                                                       │
-         [Phase 18: Testing] ◄─── depends on Ph 1–17, Ph 20–23          │
+         [Phase 18: Testing] ◄─── depends on Ph 1–17, Ph 20–25          │
                     │                                                       │
                     ▼                                                       │
          [Phase 19: Production Readiness] ◄─── depends on Ph 1–18       │
@@ -112,7 +114,7 @@ All domain services depend on the shared event SDK output from Phase 8.
 | ------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
 | Stage 1 | Multi-tenant MVP         | Phase 1–2 (Foundation + Auth)                                                                               |
 | Stage 2 | Multi-project SaaS       | Phase 3–7 (Core Domains)                                                                                    |
-| Stage 3 | Multi-company Enterprise | Phase 8–14 (Events + AI + Analytics)                                                                        |
+| Stage 3 | Multi-company Enterprise | Phase 8–14, 25 (Events + AI + Analytics + Enterprise Provisioning)                                          |
 | Stage 4 | Cross-region Deployment  | Phase 17 + multi-region Terraform module (active-passive, primary ap-southeast-1, Route 53 latency routing) |
 | Stage 5 | AI-native Ecosystem      | Phase 23–24 (MLOps + Digital Twin)                                                                          |
 
@@ -125,6 +127,14 @@ All domain services depend on the shared event SDK output from Phase 8.
 > it may not begin until Phase 4 (Financial Infrastructure) achieves its entry criteria and the
 > IoT hardware partner relationship is confirmed (see 33-digital-twin-iot.md §33.2 for full
 > entry criteria).
+>
+> **Phase 25 — Enterprise Provisioning:** Automates end-to-end dedicated RDS provisioning for
+> Enterprise tenants upon contract signing via `EnterpriseProvisioningWorkflow` (Temporal).
+> Full specification is defined in **[34-enterprise-tenant-provisioning.md](34-enterprise-tenant-provisioning.md)**.
+> Phase 25 is a Stage 3 capability — it automates the enterprise tenant dedicated-DB model
+> already established in Stage 3 (see §7 multi-tenant-architecture §7.3). It depends on
+> Phase 2 (Auth + Tenant), Phase 8 (Event Infrastructure — Temporal + Kafka), and
+> Phase 20 (Notification Service).
 
 Agent rule: implement a feature in the stage its phase belongs to.
 Never implement a Stage N+1 feature during Stage N work.

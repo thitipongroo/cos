@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "EnterpriseContractSignedEvent",
+  "namespace": "com.constructionos.events.platform",
+  "doc": "platform.enterprise.contract_signed.v1 — spec §15.7; triggered by Admin Panel or CRM webhook",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "actor_id",       "type": "string", "doc": "SYSTEM_ADMIN user_id or 'system' for CRM webhook trigger" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "EnterpriseContractSignedPayload",
+      "fields": [
+        { "name": "tenant_id",           "type": "string", "doc": "UUID of the tenant whose contract was signed" },
+        { "name": "contract_reference",  "type": ["null", "string"], "default": null, "doc": "External contract ID from CRM or contract system" }
+      ]
+    }}
+  ]
+}

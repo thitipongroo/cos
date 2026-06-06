@@ -154,7 +154,7 @@ The following decisions are open across stage files. They must be resolved befor
 | Area                | Decision                                                                                                        |
 | ------------------- | --------------------------------------------------------------------------------------------------------------- |
 | Backend             | NestJS Modular Monolith (NOT microservices)                                                                     |
-| Multi-tenant        | Schema-per-tenant (PostgreSQL), `SET LOCAL search_path`                                                         |
+| Multi-tenant        | Shared DB + tenant_id + PostgreSQL RLS, `SET LOCAL app.current_tenant_id` (ADR-008)                             |
 | Event bus           | Apache Kafka 3.x + Confluent Schema Registry (BACKWARD compat, Avro)                                            |
 | Mobile storage      | WatermelonDB 0.28.x + ExpoSQLiteAdapter (main entities); expo-sqlite directly (sync_queue only)                 |
 | PWA offline         | IndexedDB via `idb` library                                                                                     |

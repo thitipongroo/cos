@@ -1,8 +1,8 @@
 ---
 title: 'Notification Architecture'
-version: '1.2.0'
+version: '1.3.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-06-06'
 authors:
   - thitipongroo
 related_docs:
@@ -26,6 +26,7 @@ related_docs:
 - [19.5 Notification Record Schema](#195-notification-record-schema)
 - [19.6 Notification Preferences](#196-notification-preferences)
 - [19.7 Infrastructure](#197-infrastructure)
+- [19.8 Platform-Level Event Routing (Phase 25)](#198-platform-level-event-routing-phase-25)
 
 ---
 
@@ -152,6 +153,41 @@ Critical safety notifications (SafetyIncidentReported, SafetyViolationDetected) 
 - Email delivery: SendGrid (MVP) — migrates to AWS SES (with bounce/complaint handling) before production release
 - In-app delivery: Server-Sent Events (SSE) endpoint per authenticated user session
 - Notification records persisted to PostgreSQL before delivery — delivery is at-least-once
+
+---
+
+## 19.8 Platform-Level Event Routing (Phase 25)
+
+Platform-level events (see §15.7) are emitted by Construction OS platform services, not by
+tenant domain services. They are published to the shared `platform.events` Kafka topic and
+consumed by the Notification Service to alert **all active SYSTEM_ADMIN users**.
+
+These notifications are NOT project-scoped and NOT subject to quiet-hours suppression — they
+represent operational platform state that SYSTEM_ADMIN must act on.
+
+### Routing table
+
+| Event                                    | Recipients   | In-app | Email | Push |
+| ---------------------------------------- | ------------ | ------ | ----- | ---- |
+| `platform.enterprise.contract_signed.v1` | SYSTEM_ADMIN | Yes    | Yes   | —    |
+| `platform.enterprise.db_provisioned.v1`  | SYSTEM_ADMIN | Yes    | Yes   | —    |
+| Workflow human gate (AWAITING_APPROVAL)  | SYSTEM_ADMIN | Yes    | Yes   | —    |
+
+### Notification content
+
+| Trigger                                  | Title                            | Body                                                                              |
+| ---------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- |
+| `platform.enterprise.contract_signed.v1` | Enterprise provisioning started  | Automated DB provisioning workflow started for `{tenant_name}` (`{tenant_code}`). |
+| Workflow reaches AWAITING_APPROVAL       | Data migration approval required | Dedicated DB provisioned for `{tenant_name}`. Approve or abort data migration.    |
+| `platform.enterprise.db_provisioned.v1`  | Enterprise provisioning complete | Dedicated DB for `{tenant_name}` is live. Routing is active.                      |
+
+### Implementation notes
+
+- Recipients: query all users where `role = SYSTEM_ADMIN` at notification send time
+- Event source: `platform.events` Kafka topic (not `{tenant_id}.…` scoped topics)
+- Notification records: stored with `tenant_id = NULL` (platform-level, not tenant-scoped)
+- The human gate notification (`AWAITING_APPROVAL`) is sent directly by
+  `EnterpriseProvisioningWorkflow` via the Notification Service API — it is NOT a Kafka event
 
 ---
 

@@ -1,5 +1,5 @@
 // Project Repository — Phase 3
-// All DB access via TenantPrismaService (SET LOCAL search_path per request).
+// All DB access via TenantPrismaService (SET LOCAL app.current_tenant_id per request — ADR-008).
 // Uses $queryRaw (parameterized tagged template) — never raw string interpolation.
 // Callbacks are `async` so TypeScript unwraps PrismaPromise<T> → T, giving
 // TenantPrismaService.run<T>() clean type inference under Node16 resolution.
@@ -93,7 +93,7 @@ export class ProjectRepository {
     const rows = await this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<ProjectRow[]>`
-        INSERT INTO projects (
+        INSERT INTO projects.projects (
           tenant_id, project_code, project_name, project_type,
           budget_amount, budget_currency, start_date, end_date, created_by
         ) VALUES (
@@ -115,7 +115,7 @@ export class ProjectRepository {
     const rows = await this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<ProjectRow[]>`
-        SELECT * FROM projects
+        SELECT * FROM projects.projects
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
       `,
@@ -132,7 +132,7 @@ export class ProjectRepository {
     const items = await this.tenantPrisma.run(async (tx): Promise<ProjectRow[]> => {
       if (opts.status && opts.type && parsed) {
         return await tx.$queryRaw<ProjectRow[]>`
-          SELECT * FROM projects
+          SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND status = ${opts.status}::"ProjectStatus"
             AND project_type = ${opts.type}::"ProjectType"
@@ -143,7 +143,7 @@ export class ProjectRepository {
       }
       if (opts.status && parsed) {
         return await tx.$queryRaw<ProjectRow[]>`
-          SELECT * FROM projects
+          SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND status = ${opts.status}::"ProjectStatus"
             AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.projectId}::uuid)
@@ -153,7 +153,7 @@ export class ProjectRepository {
       }
       if (opts.type && parsed) {
         return await tx.$queryRaw<ProjectRow[]>`
-          SELECT * FROM projects
+          SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND project_type = ${opts.type}::"ProjectType"
             AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.projectId}::uuid)
@@ -163,7 +163,7 @@ export class ProjectRepository {
       }
       if (opts.status && opts.type) {
         return await tx.$queryRaw<ProjectRow[]>`
-          SELECT * FROM projects
+          SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND status = ${opts.status}::"ProjectStatus"
             AND project_type = ${opts.type}::"ProjectType"
@@ -173,7 +173,7 @@ export class ProjectRepository {
       }
       if (opts.status) {
         return await tx.$queryRaw<ProjectRow[]>`
-          SELECT * FROM projects
+          SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND status = ${opts.status}::"ProjectStatus"
           ORDER BY created_at DESC, project_id DESC
@@ -182,7 +182,7 @@ export class ProjectRepository {
       }
       if (opts.type) {
         return await tx.$queryRaw<ProjectRow[]>`
-          SELECT * FROM projects
+          SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND project_type = ${opts.type}::"ProjectType"
           ORDER BY created_at DESC, project_id DESC
@@ -191,7 +191,7 @@ export class ProjectRepository {
       }
       if (parsed) {
         return await tx.$queryRaw<ProjectRow[]>`
-          SELECT * FROM projects
+          SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.projectId}::uuid)
           ORDER BY created_at DESC, project_id DESC
@@ -199,7 +199,7 @@ export class ProjectRepository {
         `;
       }
       return await tx.$queryRaw<ProjectRow[]>`
-        SELECT * FROM projects
+        SELECT * FROM projects.projects
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC, project_id DESC
         LIMIT ${limit + 1}
@@ -220,7 +220,7 @@ export class ProjectRepository {
     const rows = await this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<ProjectRow[]>`
-        UPDATE projects SET
+        UPDATE projects.projects SET
           project_name    = COALESCE(${dto.project_name ?? null}, project_name),
           budget_amount   = COALESCE(${dto.budget_amount ?? null}::decimal, budget_amount),
           budget_currency = COALESCE(${dto.budget_currency ?? null}, budget_currency),
@@ -248,7 +248,7 @@ export class ProjectRepository {
     const rows = await this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<ProjectRow[]>`
-        UPDATE projects SET
+        UPDATE projects.projects SET
           status              = ${toStatus}::"ProjectStatus",
           on_hold_reason      = COALESCE(${meta.on_hold_reason ?? null}, on_hold_reason),
           on_hold_at          = COALESCE(${meta.on_hold_at ?? null}::timestamptz, on_hold_at),
@@ -272,7 +272,7 @@ export class ProjectRepository {
     const rows = await this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<ProjectMemberRow[]>`
-        INSERT INTO project_members (project_id, tenant_id, user_id, role, assigned_by)
+        INSERT INTO projects.project_members (project_id, tenant_id, user_id, role, assigned_by)
         VALUES (${projectId}::uuid, ${this.tenantId}::uuid, ${userId}::uuid,
                 ${role}::"ProjectMemberRole", ${assignedBy}::uuid)
         ON CONFLICT (project_id, user_id)
@@ -286,7 +286,7 @@ export class ProjectRepository {
   async removeMember(projectId: string, userId: string): Promise<void> {
     await this.tenantPrisma.run(async (tx) => {
       await tx.$executeRaw`
-        DELETE FROM project_members
+        DELETE FROM projects.project_members
         WHERE project_id = ${projectId}::uuid
           AND user_id    = ${userId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
@@ -298,7 +298,7 @@ export class ProjectRepository {
     return this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<ProjectMemberRow[]>`
-        SELECT * FROM project_members
+        SELECT * FROM projects.project_members
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         ORDER BY assigned_at ASC
@@ -310,7 +310,7 @@ export class ProjectRepository {
     return this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<ProjectDocumentRow[]>`
-        SELECT * FROM project_documents
+        SELECT * FROM projects.project_documents
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         ORDER BY uploaded_at DESC

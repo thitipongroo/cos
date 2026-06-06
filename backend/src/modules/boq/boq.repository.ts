@@ -1,5 +1,5 @@
 // BOQ Repository — Phase 4
-// All DB access via TenantPrismaService (SET LOCAL search_path per request).
+// All DB access via TenantPrismaService (SET LOCAL app.current_tenant_id per request — ADR-008).
 // Uses $queryRaw (parameterized tagged template) — never raw string interpolation.
 // Financial fields stored as DECIMAL(19,4); returned as string by Prisma for precision.
 
@@ -76,7 +76,7 @@ export class BoqRepository {
   }): Promise<BoqVersionRow> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqVersionRow[]>`
-        INSERT INTO boq_versions (
+        INSERT INTO boq.boq_versions (
           project_id, tenant_id, version_number, version_name,
           total_estimated_currency, created_by
         )
@@ -94,7 +94,7 @@ export class BoqRepository {
   async findVersionsByProject(project_id: string): Promise<BoqVersionRow[]> {
     return this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqVersionRow[]>`
-        SELECT * FROM boq_versions
+        SELECT * FROM boq.boq_versions
         WHERE project_id = ${project_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         ORDER BY version_number ASC
@@ -105,7 +105,7 @@ export class BoqRepository {
   async findVersionById(version_id: string): Promise<BoqVersionRow | null> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqVersionRow[]>`
-        SELECT * FROM boq_versions
+        SELECT * FROM boq.boq_versions
         WHERE version_id = ${version_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
       `;
@@ -116,7 +116,7 @@ export class BoqRepository {
   async findDraftVersion(project_id: string): Promise<BoqVersionRow | null> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqVersionRow[]>`
-        SELECT * FROM boq_versions
+        SELECT * FROM boq.boq_versions
         WHERE project_id = ${project_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
           AND status     = 'DRAFT'
@@ -129,7 +129,7 @@ export class BoqRepository {
   async findLatestApprovedVersion(project_id: string): Promise<BoqVersionRow | null> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqVersionRow[]>`
-        SELECT * FROM boq_versions
+        SELECT * FROM boq.boq_versions
         WHERE project_id = ${project_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
           AND status     = 'APPROVED'
@@ -143,7 +143,7 @@ export class BoqRepository {
   async findMaxVersionNumber(project_id: string): Promise<number> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<[{ max: number | null }]>`
-        SELECT MAX(version_number) AS max FROM boq_versions
+        SELECT MAX(version_number) AS max FROM boq.boq_versions
         WHERE project_id = ${project_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
       `;
@@ -159,17 +159,17 @@ export class BoqRepository {
     await this.db.run(async (prisma) => {
       // Supersede previous APPROVED version
       await prisma.$executeRaw`
-        UPDATE boq_versions
+        UPDATE boq.boq_versions
         SET status = 'SUPERSEDED', updated_at = now()
         WHERE project_id = (
-          SELECT project_id FROM boq_versions WHERE version_id = ${params.version_id}::uuid
+          SELECT project_id FROM boq.boq_versions WHERE version_id = ${params.version_id}::uuid
         )
           AND tenant_id = ${this.tenantId}::uuid
           AND status    = 'APPROVED'
       `;
       // Approve the target version
       await prisma.$executeRaw`
-        UPDATE boq_versions
+        UPDATE boq.boq_versions
         SET status                   = 'APPROVED',
             approved_by              = ${params.approved_by}::uuid,
             approved_at              = now(),
@@ -184,7 +184,7 @@ export class BoqRepository {
   async updateVersionTotal(version_id: string, total: string): Promise<void> {
     await this.db.run(async (prisma) => {
       await prisma.$executeRaw`
-        UPDATE boq_versions
+        UPDATE boq.boq_versions
         SET total_estimated_amount = ${total}::decimal, updated_at = now()
         WHERE version_id = ${version_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
@@ -203,7 +203,7 @@ export class BoqRepository {
   }): Promise<BoqCategoryRow> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqCategoryRow[]>`
-        INSERT INTO boq_categories (
+        INSERT INTO boq.boq_categories (
           version_id, tenant_id, parent_category_id,
           category_code, category_name, sort_order
         )
@@ -221,7 +221,7 @@ export class BoqRepository {
   async findCategoriesByVersion(version_id: string): Promise<BoqCategoryRow[]> {
     return this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqCategoryRow[]>`
-        SELECT * FROM boq_categories
+        SELECT * FROM boq.boq_categories
         WHERE version_id = ${version_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         ORDER BY sort_order ASC, category_code ASC
@@ -232,7 +232,7 @@ export class BoqRepository {
   async updateCategorySubtotal(category_id: string, subtotal: string): Promise<void> {
     await this.db.run(async (prisma) => {
       await prisma.$executeRaw`
-        UPDATE boq_categories
+        UPDATE boq.boq_categories
         SET subtotal_amount = ${subtotal}::decimal
         WHERE category_id = ${category_id}::uuid
           AND tenant_id   = ${this.tenantId}::uuid
@@ -256,7 +256,7 @@ export class BoqRepository {
   }): Promise<BoqItemRow> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqItemRow[]>`
-        INSERT INTO boq_items (
+        INSERT INTO boq.boq_items (
           category_id, version_id, tenant_id,
           item_code, description, unit,
           quantity, unit_cost, estimated_total, currency_code, sort_order
@@ -284,7 +284,7 @@ export class BoqRepository {
   }): Promise<BoqItemRow> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqItemRow[]>`
-        UPDATE boq_items
+        UPDATE boq.boq_items
         SET
           description     = COALESCE(${params.description ?? null}, description),
           unit            = COALESCE(${params.unit ?? null}, unit),
@@ -304,7 +304,7 @@ export class BoqRepository {
   async deleteItem(item_id: string): Promise<void> {
     await this.db.run(async (prisma) => {
       await prisma.$executeRaw`
-        DELETE FROM boq_items
+        DELETE FROM boq.boq_items
         WHERE item_id   = ${item_id}::uuid
           AND tenant_id = ${this.tenantId}::uuid
       `;
@@ -314,7 +314,7 @@ export class BoqRepository {
   async findItemsByVersion(version_id: string): Promise<BoqItemRow[]> {
     return this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqItemRow[]>`
-        SELECT * FROM boq_items
+        SELECT * FROM boq.boq_items
         WHERE version_id = ${version_id}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
         ORDER BY sort_order ASC
@@ -325,7 +325,7 @@ export class BoqRepository {
   async findItemById(item_id: string): Promise<BoqItemRow | null> {
     const rows = await this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqItemRow[]>`
-        SELECT * FROM boq_items
+        SELECT * FROM boq.boq_items
         WHERE item_id   = ${item_id}::uuid
           AND tenant_id = ${this.tenantId}::uuid
       `;
@@ -337,7 +337,7 @@ export class BoqRepository {
     if (category_ids.length === 0) return [];
     return this.db.run(async (prisma) => {
       return prisma.$queryRaw<BoqItemRow[]>`
-        SELECT * FROM boq_items
+        SELECT * FROM boq.boq_items
         WHERE category_id = ANY(${category_ids}::uuid[])
           AND tenant_id   = ${this.tenantId}::uuid
       `;
@@ -349,20 +349,20 @@ export class BoqRepository {
     await this.db.run(async (prisma) => {
       // Copy root categories first (parent_category_id IS NULL)
       await prisma.$executeRaw`
-        INSERT INTO boq_categories (
+        INSERT INTO boq.boq_categories (
           version_id, tenant_id, parent_category_id,
           category_code, category_name, sort_order, subtotal_amount
         )
         SELECT ${to_version_id}::uuid, tenant_id, NULL,
                category_code, category_name, sort_order, subtotal_amount
-        FROM boq_categories
+        FROM boq.boq_categories
         WHERE version_id          = ${from_version_id}::uuid
           AND tenant_id           = ${this.tenantId}::uuid
           AND parent_category_id IS NULL
       `;
       // Copy child categories (simple 1-level hierarchy copy)
       await prisma.$executeRaw`
-        INSERT INTO boq_categories (
+        INSERT INTO boq.boq_categories (
           version_id, tenant_id, parent_category_id,
           category_code, category_name, sort_order, subtotal_amount
         )
@@ -370,10 +370,10 @@ export class BoqRepository {
                new_parent.category_id,
                child.category_code, child.category_name,
                child.sort_order, child.subtotal_amount
-        FROM boq_categories child
-        JOIN boq_categories old_parent
+        FROM boq.boq_categories child
+        JOIN boq.boq_categories old_parent
           ON child.parent_category_id = old_parent.category_id
-        JOIN boq_categories new_parent
+        JOIN boq.boq_categories new_parent
           ON new_parent.version_id  = ${to_version_id}::uuid
          AND new_parent.category_code = old_parent.category_code
         WHERE child.version_id = ${from_version_id}::uuid
@@ -382,7 +382,7 @@ export class BoqRepository {
       `;
       // Copy items
       await prisma.$executeRaw`
-        INSERT INTO boq_items (
+        INSERT INTO boq.boq_items (
           category_id, version_id, tenant_id,
           item_code, description, unit,
           quantity, unit_cost, estimated_total, currency_code,
@@ -392,9 +392,9 @@ export class BoqRepository {
                i.item_code, i.description, i.unit,
                i.quantity, i.unit_cost, i.estimated_total, i.currency_code,
                i.sort_order, i.carbon_factor_kg_co2e, i.carbon_total_kg_co2e
-        FROM boq_items i
-        JOIN boq_categories old_cat ON i.category_id = old_cat.category_id
-        JOIN boq_categories new_cat
+        FROM boq.boq_items i
+        JOIN boq.boq_categories old_cat ON i.category_id = old_cat.category_id
+        JOIN boq.boq_categories new_cat
           ON new_cat.version_id   = ${to_version_id}::uuid
          AND new_cat.category_code = old_cat.category_code
         WHERE i.version_id = ${from_version_id}::uuid

@@ -1,5 +1,5 @@
 // Finance Repository — Phase 7
-// All DB access via TenantPrismaService (SET LOCAL search_path per request).
+// All DB access via TenantPrismaService (SET LOCAL app.current_tenant_id per request — ADR-008).
 // Financial fields stored as DECIMAL(19,4); returned as string by Prisma.
 
 import { Injectable, Scope, Inject } from '@nestjs/common';

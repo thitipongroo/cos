@@ -1,0 +1,151 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — Platform Webhooks API
+  version: '1.0.0'
+  description: |
+    Generic webhook receivers for external system integrations.
+    These endpoints are called by external systems (CRM, contract management) to signal
+    platform-level events. Authentication uses a pre-shared HMAC-SHA256 secret.
+
+    All endpoints are unauthenticated at the JWT level — callers present an HMAC-SHA256
+    signature in the `X-Webhook-Signature` header instead.
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    webhookHmac:
+      type: apiKey
+      in: header
+      name: X-Webhook-Signature
+      description: |
+        HMAC-SHA256 signature of the raw request body, hex-encoded.
+        Secret is configured in PLATFORM_WEBHOOK_SECRET environment variable.
+        Format: `sha256=<hex-digest>`
+
+  schemas:
+    EnterpriseContractSignedPayload:
+      type: object
+      required: [tenant_id]
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          description: ID of the tenant whose contract was signed
+          example: 550e8400-e29b-41d4-a716-446655440000
+        contract_reference:
+          type: string
+          maxLength: 255
+          description: |
+            Optional. External contract ID from the calling system (CRM deal ID,
+            contract management reference, etc.). Stored as-is and forwarded in the
+            platform.enterprise.contract_signed.v1 Kafka event.
+          example: CRM-CONTRACT-2026-00142
+
+    WebhookAcceptedResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Webhook accepted
+        workflowId:
+          type: string
+          description: Temporal workflow ID started as a result of this webhook
+          example: enterprise-provisioning-550e8400-e29b-41d4-a716-446655440000
+        tenantId:
+          type: string
+          format: uuid
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-WEBHOOK-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+paths:
+  /platform/webhooks/enterprise-contract-signed:
+    post:
+      summary: Receive enterprise contract-signed signal from external system
+      description: |
+        Generic webhook endpoint. Called by any external system (CRM, contract management
+        platform) when an Enterprise tenant signs a contract requiring dedicated DB isolation.
+
+        Starts `EnterpriseProvisioningWorkflow` via Temporal (task queue: enterprise-provisioning).
+        Behavior is identical to calling `PATCH /api/v1/admin/tenants/{tenantId}/mark-contracted`
+        via the Admin Panel — both paths start the same workflow.
+
+        **Authentication:** HMAC-SHA256 signature verification.
+        Header: `X-Webhook-Signature: sha256=<hex(HMAC-SHA256(body, PLATFORM_WEBHOOK_SECRET))>`
+        Server rejects requests where the signature does not match.
+
+        **Idempotency:** Temporal rejects duplicate workflow starts for the same tenant_id.
+        Returns 409 if a workflow is already running or completed.
+
+        **Prerequisites (enforced server-side):**
+        - Tenant with `tenant_id` must exist
+        - Tenant plan_type must be ENTERPRISE
+        - Tenant must be active (is_active = true)
+        - dedicated_db_url must be NULL
+
+        Emits Kafka event: `platform.enterprise.contract_signed.v1`
+      tags: [platform-webhooks]
+      security:
+        - webhookHmac: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnterpriseContractSignedPayload'
+      responses:
+        '202':
+          description: Webhook accepted — provisioning workflow started asynchronously
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookAcceptedResponse'
+        '400':
+          description: |
+            Precondition failed. Possible reasons:
+            - Tenant is not ENTERPRISE plan
+            - Tenant is inactive
+            - dedicated_db_url is already set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid X-Webhook-Signature header
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Tenant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Provisioning workflow already running or completed for this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
