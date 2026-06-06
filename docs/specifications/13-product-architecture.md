@@ -285,11 +285,27 @@ For stub implementation behaviour (Type A — fail-fast), see `32-implementation
 
 | Tier       | Monthly API call quota           | Overage action                    |
 | ---------- | -------------------------------- | --------------------------------- |
-| SMB        | 10,000 calls/month               | Block (429) + notify TENANT_ADMIN |
+| SMB        | 50,000 calls/month               | Block (429) + notify TENANT_ADMIN |
 | Mid-market | 100,000 calls/month              | Block (429) + notify TENANT_ADMIN |
 | Enterprise | Configurable (default 1,000,000) | Configurable (warn or block)      |
 
 Quota tracked via Kong usage plans plugin; metering data fed to ClickHouse for billing analytics (Phase 14).
+
+**Per-API-key quota (marketplace integrations):**
+
+Each OAuth2 client credentials API key is subject to an additional per-key monthly cap, independent of the tenant total. No single key may consume more than 20% of the tenant's monthly quota.
+
+| Tier       | Per-API-key monthly limit                    | Overage action                    |
+| ---------- | -------------------------------------------- | --------------------------------- |
+| SMB        | 10,000 calls/month per key                   | Block (429) + notify TENANT_ADMIN |
+| Mid-market | 20,000 calls/month per key                   | Block (429) + notify TENANT_ADMIN |
+| Enterprise | Configurable (default 200,000/month per key) | Configurable (warn or block)      |
+
+Kong enforces both limits simultaneously: tenant total quota and per-key quota. A request is rejected if either is exceeded.
+
+> **Scope:** Monthly quota applies to **external API traffic only** — third-party integrations authenticating via OAuth2 client credentials flow (ERP adapters, CRM webhooks, marketplace integrations, developer API keys). Internal web and mobile app traffic (authenticated via user JWT from Keycloak/COS identity service) is **not subject to monthly quota** and is governed solely by the per-minute rate limits in `14-api-architecture` §14.2.
+>
+> Kong distinguishes traffic by auth method: requests using OAuth2 client credentials (`client_id` + `client_secret`) are metered against the quota; requests using user Bearer JWTs are not.
 
 ---
 
@@ -304,6 +320,9 @@ Quota tracked via Kong usage plans plugin; metering data fed to ClickHouse for b
 | Interface       | `ConstructionFinancing.submitFactoringApplication(invoiceId, tenantId): Promise<FinancingRef>` |
 | Trigger         | Implement when first tenant requests invoice factoring with a specific fintech partner         |
 | Fintech partner | PO decision required — per-partner adapter (Strategy pattern, same as ERP integration)         |
+
+For stub implementation behaviour (Type A — fail-fast until fintech partner is contracted),
+see `32-implementation-specifications` §32.9.
 
 ---
 

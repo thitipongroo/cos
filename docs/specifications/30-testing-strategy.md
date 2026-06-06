@@ -90,7 +90,7 @@ Target coverage by layer:
 ### Key Invariants to Test
 
 - `tenant_id` is always injected into DB queries — never accepts null
-- Soft delete filter (`WHERE deleted_at IS NULL`) is applied in all list queries
+- Soft delete filter (`WHERE deleted_at IS NULL`) is applied in all queries (including GET by ID — soft-deleted records return 404)
 - Approval threshold logic returns the correct approver chain for all THB ranges
 - Event naming convention follows `{domain}.{entity}.{action}.{version}` format
 
@@ -120,7 +120,7 @@ Target coverage by layer:
 | Outbox pattern               | DB write + event publish succeed atomically; no event emitted on DB rollback |
 | Approval workflow step       | Temporal.io activity correctly transitions workflow state                    |
 | RBAC middleware              | Requests without valid `tenant_id` in JWT return 403                         |
-| Soft delete                  | Deleted records excluded from all list endpoints                             |
+| Soft delete                  | Deleted records excluded from all queries; GET by ID returns 404             |
 
 ---
 
@@ -282,7 +282,14 @@ using **Pact.io** (consumer-driven contract testing).
 ### Layer B (Post-MVP) — Analytical AI
 
 > ⚠️ Layer B test strategy to be defined when Layer B development begins.
-> Placeholder: delay prediction model — RMSE and MAE against held-out project history.
+>
+> **Minimum framework (established at sprint start):**
+>
+> - Evaluation metrics: RMSE + MAE
+> - Test split: 20% held-out set from production project history
+> - Evaluation cadence: monthly
+> - Pass threshold: defined after 90-day production baseline (no target set before baseline)
+>
 > **Owner:** AI/Platform Lead. **Trigger:** Layer B enters active development sprint.
 
 ### Evaluation Schedule

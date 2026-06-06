@@ -402,6 +402,23 @@ From **28-ecosystem-expansion section 28.2 Phase 5**:
 
 Success metrics for Phase 24 are defined at the **Phase 24 planning gate** — not pre-specified in this document.
 
+**Planning gate definition:**
+
+The Phase 24 planning gate is triggered when both conditions are met:
+
+1. Phase 4 entry criteria achieved (see [28-ecosystem-expansion §28.5](28-ecosystem-expansion.md))
+2. ≥ 12 months remain before the Phase 24 target start date
+
+**Gate outputs — all must be produced before Phase 24 begins:**
+
+- Success metrics for §33.10 (IoT connectivity, twin confidence, BIM coverage,
+  divergence detection latency, carbon report adoption)
+- TimescaleDB chunk interval — sized from IoT write frequency profiling (see §33.7)
+- IoT message throughput budget — sized from device count × sensor sampling rate at gate time
+- Hardware partner confirmation — IoT device vendor and BIM integration partner both contracted
+
+**Owner:** thitipongroo
+
 28-ecosystem-expansion §28.4 defines metrics for Phases 1–4 only. No Phase 5 (Smart Infrastructure) metrics are specified in this document.
 
 Metrics MUST be defined before Phase 24 begins, covering at minimum:

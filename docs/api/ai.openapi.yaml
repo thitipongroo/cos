@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — AI API
+  version: v1
+  description: |
+    AI Gateway Service — Phase 11 (Foundation) and Phase 12 (Report Assistant).
+    Exposes AI Copilot, report generation, risk scoring, and LLM proxy endpoints.
+    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+    **STUB** — endpoints to be defined when Phase 11 development begins.
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths: {}

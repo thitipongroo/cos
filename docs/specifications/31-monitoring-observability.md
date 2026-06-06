@@ -302,7 +302,7 @@ Operational runbooks for on-call response live in `docs/runbooks/`:
 | Service deployment / rollout | [deployment.md](../runbooks/deployment.md) |
 | Service rollback | [rollback.md](../runbooks/rollback.md) |
 | P1/P2 incident management | [incident-response.md](../runbooks/incident-response.md) |
-| Full disaster recovery | [disaster-recovery.md](../runbooks/disaster-recovery.md) |
+| Full disaster recovery | [disaster-recovery/](../runbooks/disaster-recovery/) |
 | Production readiness gate | [production-readiness.md](../runbooks/production-readiness.md) |
 | AI feature activation | [ai-readiness-checklist.md](../runbooks/ai-readiness-checklist.md) |
 | DB failover (PostgreSQL RDS Multi-AZ) | [db-failover.md](../runbooks/db-failover.md) |

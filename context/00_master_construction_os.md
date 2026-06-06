@@ -2665,7 +2665,7 @@ AI Provider Decision:
     Consuming: Embedding Worker — ทุก embedding call ผ่าน interface นี้
     Embedding storage: pgvector (vector(1536)) + OpenSearch k-NN index
 
-  LangChain: langchain==0.2.*, langchain-openai==0.1.*, langgraph==0.1.*
+  LangChain: langchain>=0.3, langchain-openai>=0.2 (langgraph: candidate only — LAYER-C-001 decision pending)
     LangChainProviderConfig
     Interface: { getProviderPackage(): str, getModelClass(): type }
 

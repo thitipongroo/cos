@@ -371,6 +371,7 @@ Financials — Retention :
 - contract_id (FK → Contract)
 - amount_retained
 - retention_percent — DECIMAL(5,2); set by TENANT_ADMIN per PO in UI; no system default; nullable
+  (NULL = 0%: no retention clause applies to this PO)
 - scheduled_release_date
 - status (held / partially_released / released)
 
@@ -636,6 +637,10 @@ PII-bearing entities and the fields subject to erasure:
 | Vendor        | `contact_name`, `contact_email`, `contact_phone` |
 | CRM — Lead    | `contact_name`                                   |
 | CRM — Contact | `name`, `email`, `phone`                         |
+
+> **Note on `lead_id` FK:** `Contact.lead_id` is intentionally retained after PII erasure.
+> It is a business relationship identifier (non-PII) required for audit trail integrity and
+> FK consistency. Only the PII fields listed above are nullified.
 
 Erasure procedure :
 

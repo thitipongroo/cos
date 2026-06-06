@@ -216,6 +216,11 @@ Each expansion phase accelerates the flywheel:
 | Invoice factoring volume | ≥ 200M THB per year | Year 4 |
 | AI risk score accuracy | ≥ 80% default prediction precision | Year 4 |
 
+### Phase 5 Metrics
+
+Defined at Phase 24 planning gate (see [33-digital-twin-iot.md](33-digital-twin-iot.md)
+§33.10 and §28.5 entry criteria for Phase 5 — IoT/Digital Twin). Target: Year 5+.
+
 ---
 
 ## 28.5 Phase Dependencies and Entry Criteria

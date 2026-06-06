@@ -48,6 +48,14 @@ Principles :
 | API Security         | Rate limiting + **Cloudflare WAF** (see §5.5)                                                                                    |
 | File Upload Security | MIME type validation server-side + **ClamAV** antivirus scan before file marked CLEAN; quarantine on threat detection (Phase 9+) |
 
+> **ClamAV quarantine procedure (Phase 9+):** Infected files are moved to a dedicated
+> `cos-quarantine/{tenant_id}/` MinIO bucket (separate from `cos-files`); quarantine bucket
+> retention: 30 days; event emitted on detection: `file.scan.quarantined.v1`
+> (payload: `{ file_id, tenant_id, threat_name, quarantined_at }`);
+> SYSTEM_ADMIN notified via `file.scan.quarantined.v1` event; recovery from quarantine is
+> SYSTEM_ADMIN-only action via platform admin API; files automatically deleted after
+> 30-day retention period.
+
 Note : AWS Secrets Manager is the default for cloud deployments on AWS. HashiCorp Vault is used
 for on-premise and hybrid deployments. See 04-tech-stack section 4.7 for the AWS Services list.
 
@@ -186,6 +194,8 @@ Keycloak Admin REST API during user provisioning) and mapped to the JWT access t
 
 Path A (phone/OTP): claims are set directly by COS identity service at JWT issuance.
 Path B (Keycloak): attributes must be set via Keycloak Admin REST API during provisioning (currently deferred — see Phase 2 constraints in master spec).
+
+> **Timeline note:** Protocol mapper *configuration* on the Keycloak realm (the JSON above) is required at tenant provisioning in Phase 1 — configure once per realm. Keycloak user *attribute provisioning* (`tenant_id`, `user_id`, `role` values set per user via Keycloak Admin REST API) is required before each Path B user can authenticate, and is deferred to Phase 2. Phase 1 MVP uses Path A only; Path A JWTs are issued by COS directly and are not affected by realm mapper configuration.
 
 SSO / SAML :
 

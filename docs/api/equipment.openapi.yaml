@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Equipment API
+  version: v1
+  description: |
+    Equipment Service — Phase 21.
+    Manages equipment registry, assignments, maintenance schedules, and IoT telemetry.
+    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+    **STUB** — endpoints to be defined when Phase 21 development begins.
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths: {}

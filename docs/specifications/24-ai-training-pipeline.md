@@ -132,7 +132,9 @@ Thai Language :
 - Thai is first-class — evaluation benchmarks include Thai construction domain queries
 - text-embedding-3-small supports Thai adequately for construction domain queries
 - LLM output quality in Thai evaluated monthly against a golden dataset of construction terms
-- Fallback: if primary model Thai accuracy falls below threshold, auto-route via `LLMProvider` interface
+- Fallback: if primary model Thai accuracy falls below threshold, auto-route via `LLMProvider`
+  interface; threshold = 85% on a golden dataset of ≥ 100 construction-domain Thai queries,
+  evaluated monthly
 
 ---
 

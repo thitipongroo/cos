@@ -22,6 +22,7 @@ related_docs:
   - [Standard Response Envelope](#standard-response-envelope)
   - [Canonical Endpoint Patterns by Category](#canonical-endpoint-patterns-by-category)
 - [14.4 API Versioning](#144-api-versioning)
+- [14.5 Kong Traffic Authentication and Quota Enforcement](#145-kong-traffic-authentication-and-quota-enforcement)
 
 ---
 
@@ -61,6 +62,8 @@ Rate Limiting Defaults (Kong Gateway, configurable per tenant tier) :
 - AI API endpoints (`/api/v1/ai/*`) have separate per-tenant token-per-minute limits
   defined in the AI usage quota (see 26-pricing-model section 26.1)
 - Limits are tunable per tenant by the Tenant Admin via platform admin API
+
+> **Relationship to monthly quota:** These per-minute rate limits apply to **all API traffic** (internal web/mobile app + external integrations) as a burst/anti-abuse control. The monthly cumulative quota defined in `13-product-architecture` §13.5 applies to **external API traffic only** (OAuth2 client credentials). The two controls operate on different traffic scopes and are enforced independently by Kong: user JWT requests are subject to per-minute limits only; OAuth2 client credential requests are subject to both per-minute limits and the monthly quota.
 
 ---
 
@@ -111,15 +114,15 @@ are maintained in `docs/api/`:
 | ------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Authentication     | [auth.openapi.yaml](../api/auth.openapi.yaml)                   | MVP                                                                                                                                                                                      |
 | Tenant Management  | [tenant.openapi.yaml](../api/tenant.openapi.yaml)               | MVP                                                                                                                                                                                      |
-| Projects           | [projects.openapi.yaml](../api/projects.openapi.yaml)           | MVP                                                                                                                                                                                      |
+| Projects           | [project.openapi.yaml](../api/project.openapi.yaml)             | MVP                                                                                                                                                                                      |
 | Procurement        | [procurement.openapi.yaml](../api/procurement.openapi.yaml)     | MVP                                                                                                                                                                                      |
 | Financial          | [finance.openapi.yaml](../api/finance.openapi.yaml)             | MVP                                                                                                                                                                                      |
 | Bill of Quantities | [boq.openapi.yaml](../api/boq.openapi.yaml)                     | MVP                                                                                                                                                                                      |
 | Workforce          | [workforce.openapi.yaml](../api/workforce.openapi.yaml)         | MVP                                                                                                                                                                                      |
 | Equipment          | [equipment.openapi.yaml](../api/equipment.openapi.yaml)         | MVP                                                                                                                                                                                      |
-| Files              | [files.openapi.yaml](../api/files.openapi.yaml)                 | MVP                                                                                                                                                                                      |
-| Notifications      | [notifications.openapi.yaml](../api/notifications.openapi.yaml) | MVP                                                                                                                                                                                      |
-| Site               | [site.openapi.yaml](../api/site.openapi.yaml)                   | Planned — MVP                                                                                                                                                                            |
+| Files              | [file.openapi.yaml](../api/file.openapi.yaml)                   | MVP                                                                                                                                                                                      |
+| Notifications      | [notification.openapi.yaml](../api/notification.openapi.yaml)   | MVP                                                                                                                                                                                      |
+| Site               | [site-ops.openapi.yaml](../api/site-ops.openapi.yaml)           | Planned — MVP                                                                                                                                                                            |
 | Safety             | [safety.openapi.yaml](../api/safety.openapi.yaml)               | Planned — MVP                                                                                                                                                                            |
 | AI                 | [ai.openapi.yaml](../api/ai.openapi.yaml)                       | Planned — MVP                                                                                                                                                                            |
 | CRM                | [crm.openapi.yaml](../api/crm.openapi.yaml)                     | Planned — MVP                                                                                                                                                                            |
@@ -373,6 +376,82 @@ Breaking vs Non-breaking :
 
 - Non-breaking (new optional fields, new endpoints) — same version, no notice required
 - Breaking (remove field, rename field, change response shape) — new major version required
+
+---
+
+## 14.5 Kong Traffic Authentication and Quota Enforcement
+
+### Authentication Plugin
+
+Kong Gateway uses the `jwt` plugin on all `/api/v1/*` routes. The plugin validates JWT
+signatures against two JWKS endpoints:
+
+| Issuer | JWKS Endpoint | Token Type |
+| ------ | ------------- | ---------- |
+| COS identity service | `https://api.cos.io/.well-known/jwks.json` | Path A user JWT (phone/OTP) |
+| Keycloak realm | `{keycloak_base}/realms/{realm}/protocol/openid-connect/certs` | Path B JWT; client credentials |
+
+Both endpoints are configured in the same `jwt` plugin instance. Token `iss` claim is
+validated against the JWKS endpoint that issued the signing key.
+
+### Traffic Type Distinction
+
+Kong identifies external OAuth2 client credential traffic by Consumer lookup on the `azp`
+(Authorized Party) claim:
+
+| Traffic Type | `iss` | `azp` | `session_state` | Kong Consumer |
+| --- | --- | --- | --- | --- |
+| Internal — Path A (field worker) | COS identity service | absent | absent | No — anonymous consumer |
+| Internal — Path B (office user) | Keycloak realm | `cos-web` or `cos-mobile` | Present | No — anonymous consumer |
+| External — marketplace / ERP | Keycloak realm | registered `client_id` | Absent | Yes — matched consumer |
+
+`jwt` plugin is configured with:
+
+```yaml
+key_claim_name: azp
+anonymous: <anonymous-consumer-id>
+```
+
+When `azp` is absent or does not match a registered Kong Consumer, Kong assigns the request
+to the anonymous consumer. The anonymous consumer has per-minute rate limiting only —
+monthly quota plugin does not fire.
+
+> **Provisioning requirement:** The Kong Consumer for a given `client_id` MUST be registered
+> before the API key is distributed. An external client whose `client_id` is not yet
+> registered as a Kong Consumer will fall to the anonymous consumer (no monthly quota enforced).
+
+### Kong Consumer and Consumer Group Model
+
+External API clients (marketplace integrations, ERP adapters) are provisioned as Kong
+Consumers at API key issuance. Each consumer maps to one Keycloak `client_id`.
+
+**Provisioning sequence (at marketplace API key issuance):**
+
+1. Create Keycloak OAuth2 client (client credentials grant) → generate `client_id` + `client_secret`
+2. Create Kong Consumer: `username = {client_id}`, `custom_id = {tenant_id}:{client_id}`
+3. Register JWT credential on consumer: `key = {client_id}`, validated via Keycloak JWKS
+4. Add consumer to Consumer Group `external-{tenant_id}` (create group if it does not exist)
+5. Apply per-API-key monthly `rate-limiting` plugin to the consumer (§13.5 per-key quota table)
+
+Tenant-level monthly quota is enforced at the Consumer Group level — one group per tenant,
+covering all external consumers of that tenant:
+
+| Limit | Enforced at | Config source |
+| ----- | ----------- | ------------- |
+| Per-minute | Route `/api/v1/*` (all traffic) | §14.2 rate limit table |
+| Monthly tenant quota | Consumer Group `external-{tenant_id}` | §13.5 monthly quota table |
+| Monthly per-API-key quota | Consumer (per `client_id`) | §13.5 per-API-key table |
+
+A request is rejected (HTTP 429) if **any** of the three limits is exceeded.
+
+### Plugin Stack Summary
+
+| Plugin | Applied at | Traffic scope |
+| ------ | ---------- | ------------- |
+| `jwt` | Route (all `/api/v1/*`) | All traffic — validates signature, `iss`, expiry |
+| `rate-limiting` (per-minute) | Route (all `/api/v1/*`) | All traffic — burst / anti-abuse |
+| `rate-limiting` (monthly tenant quota) | Consumer Group `external-{tenant_id}` | External client credentials only |
+| `rate-limiting` (monthly per-key quota) | Consumer (per `client_id`) | External client credentials only |
 
 ---
 

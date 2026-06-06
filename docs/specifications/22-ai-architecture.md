@@ -69,7 +69,7 @@ Layer C — Autonomous AI :
 
 | Component          | Responsibility                                                                                                                                                                                                                                    |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LLM Gateway        | Multi-model routing — implemented via LangChain (`langchain==0.2.*`, `langchain-openai==0.1.*`); provider interface abstracted via `LLMProvider`; primary: OpenAI GPT-4o / gpt-4o-mini (cost fallback); no direct SDK coupling in domain services |
+| LLM Gateway        | Multi-model routing — implemented via LangChain (`langchain>=0.3`, `langchain-openai>=0.2`); provider interface abstracted via `LLMProvider`; primary: OpenAI GPT-4o / gpt-4o-mini (cost fallback); no direct SDK coupling in domain services |
 | RAG Engine         | Context retrieval                                                                                                                                                                                                                                 |
 | Vector DB          | Embeddings                                                                                                                                                                                                                                        |
 | Knowledge Graph    | Construction relationships                                                                                                                                                                                                                        |
@@ -96,12 +96,12 @@ agent must plan, invoke tools, and act across multiple services.
 > selected. Candidates: LangGraph, CrewAI, AutoGen, or custom Temporal.io activity chains.
 > **Decision trigger:** Layer B deployed to production and first Analytical AI feature is
 > stable for ≥ 30 days.
-> **Owner:** AI/Platform Lead (thitipongroo — update when role is assigned).
+> **Owner:** thitipongroo (interim AI/Platform Lead).
 > **Decision deadline:** No later than 4 weeks after Layer B goes live in production.
 > **Leading candidate:** Temporal.io (already in use for approval workflows — see
 > 15-event-driven-workflow section 15.4); evaluate against LangGraph before committing.
 > **Evaluation rubric** (apply when trigger fires — see §22.5 LAYER-C-001 Evaluation Rubric):
-> rank each candidate on 5 axes: (1) LangChain 0.2.\* compatibility, (2) Temporal.io co-existence,
+> rank each candidate on 5 axes: (1) LangChain compatibility (>=0.3), (2) Temporal.io co-existence,
 > (3) Thai-language tool-calling accuracy, (4) durable execution / human-in-the-loop support,
 > (5) operational complexity. Select the highest scorer; document rationale in a one-page ADR.
 > **Action:** Open a spec issue tagged `layer-c-decision` when Layer B stabilises.
@@ -254,7 +254,7 @@ Thai Language :
 | Candidate       | Description                                                                                                                                                   |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Temporal.io** | Already deployed for approval workflows (15-event-driven-workflow §15.4). Durable execution, human-in-the-loop, retry semantics. Not an LLM-native framework. |
-| **LangGraph**   | LangChain ecosystem. Stateful agent graphs, native tool-calling, compatible with `langchain==0.2.*` already in use.                                           |
+| **LangGraph**   | LangChain ecosystem. Stateful agent graphs, native tool-calling, compatible with `langchain>=0.3` already in use.                                             |
 | **CrewAI**      | Role-based agent collaboration. Simple to prototype, limited enterprise durability features.                                                                  |
 | **AutoGen**     | Microsoft multi-agent conversation framework. Good for reasoning chains; less proven for production durable workflows.                                        |
 
@@ -262,7 +262,7 @@ Thai Language :
 
 | Axis                                  | Weight | What to evaluate                                                                                                                      |
 | ------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| LangChain 0.2.\* compatibility        | 25%    | Can agents use the existing `LLMProvider` / `EmbeddingProvider` interfaces without wrapping or replacing them?                        |
+| LangChain compatibility (>=0.3)       | 25%    | Can agents use the existing `LLMProvider` / `EmbeddingProvider` interfaces without wrapping or replacing them?                        |
 | Temporal.io co-existence              | 20%    | Can agent workflows be durably orchestrated via Temporal activities, or does the framework require its own persistence layer?         |
 | Thai-language tool-calling accuracy   | 20%    | Run the standard Thai construction scenario benchmark (see below) — measure correct tool selection rate and output accuracy           |
 | Durable execution + human-in-the-loop | 20%    | Does the framework natively support: retry on failure, pause-for-human-approval, resume from checkpoint?                              |
@@ -298,7 +298,7 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 
 ---
 
-## 22.6 AI Integration Decisions
+## 22.7 AI Integration Decisions
 
 ### LLM Provider
 

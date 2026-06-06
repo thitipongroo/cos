@@ -224,7 +224,7 @@ Not visible to tenant users.
 > Once assigned, all new requests for this tenant will route to the dedicated DB.
 > Ensure data migration is complete before proceeding.
 
-### 20.4.5 Mark as Enterprise Contracted
+### 20.4.4 Mark as Enterprise Contracted
 
 **Purpose:** Signal that an Enterprise tenant has signed a contract requiring dedicated DB
 isolation, triggering `EnterpriseProvisioningWorkflow` via Temporal.
@@ -261,7 +261,7 @@ when workflow reaches the human gate (before data migration step).
 > See runbook: `docs/runbooks/dedicated-db-provisioning.md` for the full provisioning steps
 > that the automated workflow executes.
 
-### 20.4.4 Deactivate Tenant
+### 20.4.5 Deactivate Tenant
 
 **Purpose:** Suspend a tenant — prevents all logins and API access.
 

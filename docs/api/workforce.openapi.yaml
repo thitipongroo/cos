@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Workforce API
+  version: v1
+  description: |
+    Workforce Service — Phase 22.
+    Manages worker profiles, attendance, biometric check-in, skills, and certifications.
+    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+    **STUB** — endpoints to be defined when Phase 22 development begins.
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths: {}

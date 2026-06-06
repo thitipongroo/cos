@@ -370,8 +370,8 @@ class EmbeddingProvider(ABC):
 
 | Interface           | Implementation class      | Resolved via                  | Package                                                                           |
 | ------------------- | ------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
-| `LLMProvider`       | `OpenAILangChainProvider` | OpenAI GPT-4o                 | `langchain-openai==0.1.*` — default model: `gpt-4o`, cost fallback: `gpt-4o-mini` |
-| `EmbeddingProvider` | `OpenAIEmbeddingProvider` | OpenAI text-embedding-3-small | `langchain-openai==0.1.*` — model: `text-embedding-3-small`, 1536 dimensions      |
+| `LLMProvider`       | `OpenAILangChainProvider` | OpenAI GPT-4o                 | `langchain-openai>=0.2` — default model: `gpt-4o`, cost fallback: `gpt-4o-mini` |
+| `EmbeddingProvider` | `OpenAIEmbeddingProvider` | OpenAI text-embedding-3-small | `langchain-openai>=0.2` — model: `text-embedding-3-small`, 1536 dimensions      |
 
 > **Rule:** If a new LLM or embedding provider is evaluated, it must implement the abstract class above — never swap the implementation by monkey-patching the resolved class.
 
@@ -788,6 +788,10 @@ Path B users created this way cannot log in via Keycloak until step 1–3 are co
 
 **Unblocks when:** Keycloak Admin API credentials are provisioned and `@keycloak/keycloak-admin-client` is added
 
+> **Implementation milestone:** Must be completed as part of Phase 2 before any Path B feature
+> can be tested end-to-end. Path B users created with the current placeholder
+> (`email` stored as `keycloak_user_id`) cannot authenticate via Keycloak until implemented.
+
 ---
 
 ## 32.9 Integration Stub Pattern
@@ -826,9 +830,11 @@ phase spec does not state Type B, the integration is Type A.
 
 Currently specified as Type B:
 
-| Integration            | Specified in                   |
-| ---------------------- | ------------------------------ |
-| IoT Device (Phase 21+) | `33-digital-twin-iot.md` §33.7 |
+| Integration                              | Specified in                   |
+| ---------------------------------------- | ------------------------------ |
+| IoT Device (Phase 21+)                   | `33-digital-twin-iot.md` §33.7 |
+| Digital Twin — IoT ingestion (Phase 24)  | `33-digital-twin-iot.md` §33.2 |
+| Digital Twin — BIM import (Phase 24)     | `33-digital-twin-iot.md` §33.2 |
 
 ### Stub Implementation Rules
 

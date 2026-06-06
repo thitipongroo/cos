@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Safety API
+  version: v1
+  description: |
+    Safety Service — MVP scope.
+    Manages safety checklists, incidents, near-miss reports, and compliance records.
+    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+    **STUB** — endpoints to be defined when Safety module development begins.
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths: {}

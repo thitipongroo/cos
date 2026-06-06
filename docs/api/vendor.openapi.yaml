@@ -1,0 +1,25 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Vendor Portal API
+  version: v1
+  description: |
+    Vendor Portal Service — Phase 2 (Vendor Portal Expansion).
+    Exposes vendor self-service endpoints: RFQ responses, quotation submission,
+    PO acknowledgement, and delivery confirmation.
+    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+    **STUB** — endpoints to be defined when Phase 2 Vendor Portal development begins.
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths: {}

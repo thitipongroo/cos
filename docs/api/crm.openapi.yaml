@@ -1,0 +1,24 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — CRM API
+  version: v1
+  description: |
+    CRM Service — MVP scope.
+    Manages leads, contacts, opportunities, and CRM webhook integrations.
+    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
+    **STUB** — endpoints to be defined when CRM module development begins.
+servers:
+  - url: /api/v1
+    description: Current version
+
+security:
+  - bearerAuth: []
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths: {}

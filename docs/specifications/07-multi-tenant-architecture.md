@@ -25,6 +25,7 @@ related_docs:
 - [7.5 S3 File Isolation](#75-s3-file-isolation)
 - [7.6 Tenant Provisioning Workflow](#76-tenant-provisioning-workflow)
 - [7.7 PostgreSQL Schema Convention](#77-postgresql-schema-convention)
+- [7.8 Enterprise Provisioning Workflow (Phase 25)](#78-enterprise-provisioning-workflow-phase-25)
 
 ---
 
@@ -102,7 +103,7 @@ accessed from a dedicated DB.
 
 ---
 
-## 7.3 Enterprise Provisioning Workflow (Phase 25)
+## 7.8 Enterprise Provisioning Workflow (Phase 25)
 
 When an Enterprise tenant signs a contract, `EnterpriseProvisioningWorkflow` automates the
 full dedicated DB setup. Defined in spec §15.7, Phase 25 command, and [34-enterprise-tenant-provisioning.md](34-enterprise-tenant-provisioning.md).
@@ -169,13 +170,15 @@ See Terraform module: `infrastructure/terraform/modules/rds-tenant/`
 
 ## 7.2 Isolation Layers
 
-Layers :
+Each isolation layer is fully specified in its authoritative section — this table is a summary with cross-references only.
 
-- Authentication isolation
-- Data isolation
-- Queue isolation
-- File isolation
-- Encryption keys per tenant
+| Layer | Mechanism | Authoritative spec |
+| --- | --- | --- |
+| Authentication isolation | Keycloak realm per tier; `tenant_id` + `role` claims enforced in JWT | §5.4 |
+| Data isolation | `tenant_id` column on every domain table + PostgreSQL RLS | §7.1, §7.7 |
+| Queue isolation | Kafka topic prefix `{tenant_id}.` on all topics; `tenant_id` in message headers | §7.3 |
+| File isolation | S3/MinIO key prefix `{tenant_id}/{project_id}/` on all objects | §7.5 |
+| Encryption keys | Per-tenant key stored in AWS Secrets Manager (cloud) / HashiCorp Vault (on-premise) | §7.6 step 7 |
 
 ---
 
@@ -211,7 +214,8 @@ Topic lifecycle management :
 | --------------------------------- | ----------------------------------------------------- | ------------------- | ---------------------------- |
 | SMB / Mid-market (shared cluster) | 7 days (`log.retention.hours=168`)                    | 10 GB per partition | AWS MSK topic-level config   |
 | Enterprise (dedicated namespace)  | 30 days (default); negotiable per contract            | 50 GB per partition | Dedicated MSK cluster config |
-| DLQ topics (all tiers)            | 14 days (double normal — extends reprocessing window) | Same as tier        | Same as tier                 |
+| DLQ — SMB / Mid-market            | 14 days (2× the 7-day standard)                       | Same as SMB tier    | AWS MSK topic-level config   |
+| DLQ — Enterprise                  | 60 days (2× the 30-day standard)                      | Same as Enterprise tier | Dedicated MSK cluster config |
 
 **Tenant offboarding — topic cleanup procedure:**
 

@@ -87,7 +87,11 @@ Unstructured Data :
 File Lifecycle Policy :
 
 - Soft delete: `deleted_at` timestamp set on delete request — file remains in MinIO storage
-- Hard delete: 30 days after soft delete (`deleted_at + 30 days`) — file purged from MinIO; implemented as a Temporal scheduled workflow running daily
+- Hard delete: 30 days after soft delete (`deleted_at + 30 days`) — file purged from MinIO;
+  implemented as a Temporal scheduled workflow running daily at 02:00 UTC
+  (`workflow_id = file-hard-delete-{YYYY-MM-DD}`); retry policy: 3 attempts (60s / 120s / 240s backoff);
+  on exhaustion: emit `file.hard_delete.failed.v1` → SYSTEM_ADMIN alert; no compensation
+  (manual recovery required)
 - Files with active project references are not hard-deleted regardless of soft delete timestamp
 
 AI Data :
