@@ -340,14 +340,14 @@ SELECT * FROM vendors WHERE tenant_id = $1;
 
 ## References
 
-| ID               | Title                                                              | Source                                                                                                           |
-| ---------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| [IEEE 830]       | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                |
-| [PostgreSQL-RLS] | PostgreSQL Row Security Policies                                   | [postgresql.org/docs/current/ddl-rowsecurity.html](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
-| [Kafka]          | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                                        |
-| [Neo4j]          | Neo4j Graph Database Documentation                                 | [neo4j.com/docs](https://neo4j.com/docs/)                                                                        |
-| [Keycloak]       | Keycloak Server Documentation                                      | [keycloak.org/documentation](https://www.keycloak.org/documentation)                                             |
-| [MinIO]          | MinIO Object Storage Documentation                                 | [min.io/docs/minio/linux/index.html](https://min.io/docs/minio/linux/index.html)                                 |
-| [Kubernetes]     | Kubernetes Documentation                                           | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/)                                                      |
+| ID | Title | Source |
+| --- | --- | --- |
+| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
+| [PostgreSQL-RLS] | PostgreSQL Row Security Policies | [postgresql.org/docs/current/ddl-rowsecurity.html](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
+| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
+| [Neo4j] | Neo4j Graph Database Documentation | [neo4j.com/docs](https://neo4j.com/docs/) |
+| [Keycloak] | Keycloak Server Documentation | [keycloak.org/documentation](https://www.keycloak.org/documentation) |
+| [MinIO] | MinIO Object Storage Documentation | [min.io/docs/minio/linux/index.html](https://min.io/docs/minio/linux/index.html) |
+| [Kubernetes] | Kubernetes Documentation | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/) |
 
 > 📎 See also: [05-security-compliance](05-security-compliance.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [11-database-schema](11-database-schema.md)
