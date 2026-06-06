@@ -11,7 +11,9 @@ import { ProcurementModule } from './modules/procurement/procurement.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PlatformWebhookModule } from './modules/platform-webhook/platform-webhook.module';
+import { MasterDataModule } from './modules/master-data/master-data.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
+import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
 
 @Module({
   imports: [
@@ -25,6 +27,7 @@ import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
     SiteOpsModule,
     NotificationModule,
     PlatformWebhookModule,
+    MasterDataModule,
     // Remaining modules added per phase:
     // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)
@@ -34,6 +37,8 @@ import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
   ],
   controllers: [HealthController],
   providers: [
+    // RequestIdInterceptor must be first — sets request.requestId before AuditInterceptor runs
+    { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
     // Global audit interceptor — logs all mutating operations (QM-4, Phase 16 RLS)
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],

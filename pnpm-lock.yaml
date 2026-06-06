@@ -47,6 +47,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.35.0
         version: 5.100.14(react@18.2.0)
+      axios:
+        specifier: ^1.7.0
+        version: 1.16.1(debug@4.4.3)
       expo:
         specifier: ~51.0.0
         version: 51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.0(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.29)(react@18.2.0))(react@18.2.0)
@@ -182,6 +185,33 @@ importers:
       '@confluentinc/schemaregistry':
         specifier: ^1.0.0
         version: 1.9.0(@azure/core-client@1.10.1)
+      '@cos/config':
+        specifier: workspace:*
+        version: link:../packages/@cos/config
+      '@cos/database':
+        specifier: workspace:*
+        version: link:../packages/@cos/database
+      '@cos/financial':
+        specifier: workspace:*
+        version: link:../packages/@cos/financial
+      '@cos/logger':
+        specifier: workspace:*
+        version: link:../packages/@cos/logger
+      '@cos/rbac':
+        specifier: workspace:*
+        version: link:../packages/@cos/rbac
+      '@cos/shared':
+        specifier: workspace:*
+        version: link:../packages/@cos/shared
+      '@cos/tracing':
+        specifier: workspace:*
+        version: link:../packages/@cos/tracing
+      '@cos/types':
+        specifier: workspace:*
+        version: link:../packages/@cos/types
+      '@cos/validation':
+        specifier: workspace:*
+        version: link:../packages/@cos/validation
       '@line/bot-sdk':
         specifier: ^9.4.0
         version: 9.9.0

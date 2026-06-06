@@ -27,7 +27,8 @@
     "@nozbe/watermelondb": "^0.28.0",
     "zustand": "^4.5.0",
     "@tanstack/react-query": "^5.35.0",
-    "@cos/types": "workspace:*"
+    "@cos/types": "workspace:*",
+    "axios": "^1.7.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",

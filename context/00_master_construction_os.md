@@ -358,9 +358,11 @@ API Gateway Responsibilities (source §4.8, §16.2):
   Tenant routing:    Kong routes to upstream; NestJS middleware sets app.current_tenant_id from JWT (ADR-008)
   API analytics:     Kong plugin collects usage; ClickHouse for aggregation (Phase 14)
   Request validation:class-validator (NestJS) + Pydantic (FastAPI) — per endpoint (business logic)
-  API monetization:  Kong usage plans plugin — quota per tenant tier (SMB 10K/month, Mid-market 100K/month, Enterprise configurable)
+  API monetization:  Kong usage plans plugin — quota per tenant tier (SMB 50K/month, Mid-market 100K/month, Enterprise configurable)
     Kong enforces quota; metering data → ClickHouse for billing analytics (Phase 14)
     Trigger: first API-as-a-product customer or marketplace launch
+    Per-API-key quota (marketplace/ERP integrations only): SMB 10K/month per key, Mid-market 20K/month per key, Enterprise configurable (default 200K/month per key); no single key may exceed 20% of tenant total
+    Kong traffic distinction (spec §14.5): user JWT (Path A/B) → per-minute limits only; OAuth2 client credentials (azp = registered Kong Consumer) → per-minute + monthly quota; absent/unregistered azp → anonymous consumer, per-minute only
 
 Mandatory architectural rules:
 
@@ -2298,7 +2300,7 @@ File Constraints (authoritative):
   NOT allowed: executable files (.exe, .sh, .bat, .js), BLOCKED at upload
 
   Antivirus scanning: ClamAV (no EP — implementation known)
-    Implementation: ClamAV open-source scanner; scan every uploaded file before marking CLEAN; QUARANTINE on threat detected
+    Implementation: ClamAV open-source scanner; scan every uploaded file before marking CLEAN; QUARANTINE on threat detected — infected files moved to cos-quarantine/{tenant_id}/ bucket (separate from cos-files; 30-day retention); emit file.scan.quarantined.v1 event; SYSTEM_ADMIN notified; recovery is SYSTEM_ADMIN-only action via platform admin API; files auto-deleted after 30-day retention
     interface AntivirusHook { scan(fileId: UUID): Promise<ScanResult> }
     ScanResult: { clean: boolean, threat?: string }
     Upload flow: upload → store → scan (async) → update file status
@@ -2373,7 +2375,7 @@ Generate:
 - Kafka event producers:
 
     file.uploaded   { file_id, tenant_id, entity_type, entity_id, mime_type }
-    file.quarantined { file_id, tenant_id, threat_type }
+    file.scan.quarantined.v1 { file_id, tenant_id, threat_name, quarantined_at }
 
 Constraints:
 

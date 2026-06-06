@@ -3,6 +3,7 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -12,6 +13,9 @@ async function bootstrap(): Promise<void> {
 
   // Global prefix — source: backend/src/main.ts (C-04 resolved 2026-05-26)
   app.setGlobalPrefix('api/v1');
+
+  // Global exception filter — QM-10: all errors formatted as {error: {code, message, traceId, timestamp}}
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Global validation pipe — QM-4: all inputs validated at API layer
   app.useGlobalPipes(
