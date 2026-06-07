@@ -110,24 +110,24 @@ Error response:
 The patterns below define the shape for each API category. OpenAPI 3.x specs
 are maintained in `docs/api/`:
 
-| Domain             | OpenAPI File                                                    | Scope                                                                                                                                                                                    |
-| ------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication     | [auth.openapi.yaml](../api/auth.openapi.yaml)                   | MVP                                                                                                                                                                                      |
-| Tenant Management  | [tenant.openapi.yaml](../api/tenant.openapi.yaml)               | MVP                                                                                                                                                                                      |
-| Projects           | [project.openapi.yaml](../api/project.openapi.yaml)             | MVP                                                                                                                                                                                      |
-| Procurement        | [procurement.openapi.yaml](../api/procurement.openapi.yaml)     | MVP                                                                                                                                                                                      |
-| Financial          | [finance.openapi.yaml](../api/finance.openapi.yaml)             | MVP                                                                                                                                                                                      |
-| Bill of Quantities | [boq.openapi.yaml](../api/boq.openapi.yaml)                     | MVP                                                                                                                                                                                      |
-| Workforce          | [workforce.openapi.yaml](../api/workforce.openapi.yaml)         | MVP                                                                                                                                                                                      |
-| Equipment          | [equipment.openapi.yaml](../api/equipment.openapi.yaml)         | MVP                                                                                                                                                                                      |
-| Files              | [file.openapi.yaml](../api/file.openapi.yaml)                   | MVP                                                                                                                                                                                      |
-| Notifications      | [notification.openapi.yaml](../api/notification.openapi.yaml)   | MVP                                                                                                                                                                                      |
-| Site               | [site-ops.openapi.yaml](../api/site-ops.openapi.yaml)           | Planned — MVP                                                                                                                                                                            |
-| Safety             | [safety.openapi.yaml](../api/safety.openapi.yaml)               | Planned — MVP                                                                                                                                                                            |
-| AI                 | [ai.openapi.yaml](../api/ai.openapi.yaml)                       | Planned — MVP                                                                                                                                                                            |
-| CRM                | [crm.openapi.yaml](../api/crm.openapi.yaml)                     | Planned — MVP                                                                                                                                                                            |
-| Vendor             | [vendor.openapi.yaml](../api/vendor.openapi.yaml)               | Planned — MVP                                                                                                                                                                            |
-| Digital Twin       | [digital-twin.openapi.yaml](../api/digital-twin.openapi.yaml)   | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (see 28-ecosystem-expansion section 28.2 and 33-digital-twin-iot.md §33.2 entry criteria — not created before Phase 24 begins) |
+| Domain             | OpenAPI File                                       | Scope                                                                                          |
+| ------------------ | -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Authentication     | [auth](../api/auth.openapi.yaml)                   | MVP                                                                                            |
+| Tenant Management  | [tenant](../api/tenant.openapi.yaml)               | MVP                                                                                            |
+| Projects           | [project](../api/project.openapi.yaml)             | MVP                                                                                            |
+| Procurement        | [procurement](../api/procurement.openapi.yaml)     | MVP                                                                                            |
+| Financial          | [finance](../api/finance.openapi.yaml)             | MVP                                                                                            |
+| Bill of Quantities | [BOQ](../api/boq.openapi.yaml)                     | MVP                                                                                            |
+| Workforce          | [workforce](../api/workforce.openapi.yaml)         | MVP                                                                                            |
+| Equipment          | [equipment](../api/equipment.openapi.yaml)         | MVP                                                                                            |
+| Files              | [file](../api/file.openapi.yaml)                   | MVP                                                                                            |
+| Notifications      | [notification](../api/notification.openapi.yaml)   | MVP                                                                                            |
+| Site               | [site-ops](../api/site-ops.openapi.yaml)           | Planned — MVP                                                                                  |
+| Safety             | [safety](../api/safety.openapi.yaml)               | Planned — MVP                                                                                  |
+| AI                 | [ai](../api/ai.openapi.yaml)                       | Planned — MVP                                                                                  |
+| CRM                | [crm](../api/crm.openapi.yaml)                     | Planned — MVP                                                                                  |
+| Vendor             | [vendor](../api/vendor.openapi.yaml)               | Planned — MVP                                                                                  |
+| Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml)   | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins) |
 
 The endpoint patterns below serve as the canonical reference; OpenAPI files are the
 machine-readable contracts derived from these patterns.
@@ -231,12 +231,12 @@ POST /api/v1/projects
 
 #### Files APIs
 
-| Method   | Path                                  | Description                                                                                                                                                  | Auth         |
-| -------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
-| `POST`   | `/api/v1/files/upload`                | Upload file; returns `file_id` and signed download URL                                                                                                       | Any role     |
-| `GET`    | `/api/v1/files/{file_id}`             | Get file metadata and a short-lived download URL                                                                                                             | Any role     |
-| `DELETE` | `/api/v1/files/{file_id}`             | Soft-delete file (`deleted_at` set); automatic hard-delete from MinIO 30 days later via Temporal workflow (see `09-data-architecture` File Lifecycle Policy) | Tenant Admin |
-| `GET`    | `/api/v1/projects/{project_id}/files` | List files attached to a project (filterable by type, uploader)                                                                                              | Any role     |
+| Method   | Path                                  | Description                                                                                                         | Auth         |
+| -------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------ |
+| `POST`   | `/api/v1/files/upload`                | Upload file; returns `file_id` and signed download URL                                                              | Any role     |
+| `GET`    | `/api/v1/files/{file_id}`             | Get file metadata and a short-lived download URL                                                                    | Any role     |
+| `DELETE` | `/api/v1/files/{file_id}`             | Soft-delete file; automatic hard-delete from MinIO 30 days later (see `09-data-architecture` File Lifecycle Policy) | Tenant Admin |
+| `GET`    | `/api/v1/projects/{project_id}/files` | List files attached to a project (filterable by type, uploader)                                                     | Any role     |
 
 ---
 

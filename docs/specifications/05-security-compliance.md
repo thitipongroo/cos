@@ -211,17 +211,17 @@ API Auth :
 
 ## References
 
-| ID            | Title                                                              | Source                                                                                                 |
-| ------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| [IEEE 830]    | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                      |
-| [ISO 27001]   | Information Security Management Systems                            | ISO/IEC 27001:2022                                                                                     |
-| [OWASP-TOP10] | OWASP Top Ten Web Application Security Risks                       | [owasp.org/Top10](https://owasp.org/www-project-top-ten/)                                              |
-| [PDPA]        | Personal Data Protection Act B.E. 2562 (2019)                      | Thailand PDPA                                                                                          |
-| [GDPR]        | General Data Protection Regulation                                 | EU Regulation 2016/679                                                                                 |
-| [SOC2]        | SOC 2 Type II Trust Service Criteria                               | AICPA TSC 2017                                                                                         |
-| [TLS13]       | The Transport Layer Security (TLS) Protocol Version 1.3            | RFC 8446                                                                                               |
-| [OAuth2]      | The OAuth 2.0 Authorization Framework                              | RFC 6749                                                                                               |
-| [OIDC]        | OpenID Connect Core 1.0                                            | [openid.net/specs/openid-connect-core-1_0.html](https://openid.net/specs/openid-connect-core-1_0.html) |
+| ID            | Title                                                              | Source                                                                           |
+| ------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| [IEEE 830]    | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                |
+| [ISO 27001]   | Information Security Management Systems                            | ISO/IEC 27001:2022                                                               |
+| [OWASP-TOP10] | OWASP Top Ten Web Application Security Risks                       | [owasp.org/Top10](https://owasp.org/www-project-top-ten/)                        |
+| [PDPA]        | Personal Data Protection Act B.E. 2562 (2019)                      | Thailand PDPA                                                                    |
+| [GDPR]        | General Data Protection Regulation                                 | EU Regulation 2016/679                                                           |
+| [SOC2]        | SOC 2 Type II Trust Service Criteria                               | AICPA TSC 2017                                                                   |
+| [TLS13]       | The Transport Layer Security (TLS) Protocol Version 1.3            | RFC 8446                                                                         |
+| [OAuth2]      | The OAuth 2.0 Authorization Framework                              | RFC 6749                                                                         |
+| [OIDC]        | OpenID Connect Core 1.0                                            | [openid-connect-core-1_0](https://openid.net/specs/openid-connect-core-1_0.html) |
 
 ---
 

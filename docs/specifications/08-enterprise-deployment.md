@@ -114,14 +114,14 @@ deliverable at all times.
 
 ### Cloud Deployment (AWS)
 
-| Data Store               | Backup Method                                                                    | Frequency                       | Retention                                          |
-| ------------------------ | -------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
-| PostgreSQL (RDS)         | Automated RDS snapshots + continuous WAL archival to S3                          | Daily snapshot + continuous WAL | 30 days snapshots, 7 days WAL                      |
-| S3 (files and data lake) | S3 versioning + cross-region replication (Enterprise tier)                       | Continuous versioning           | 10 years (Iceberg archive), 90 days (active files) |
-| TimescaleDB              | Continuous archival to S3 Iceberg after 90-day hot window                        | Continuous                      | 90 days hot, then cold archive                     |
-| Redis                    | AOF persistence; cache rebuilt from DB on failure — no long-term backup required | —                               | Cache-only                                         |
-| ClickHouse               | Weekly full snapshot to S3                                                       | Weekly                          | 30 days                                            |
-| Neo4j                    | Weekly backup to S3                                                              | Weekly                          | 30 days                                            |
+| Data Store               | Backup Method                                              | Frequency                       | Retention                                          |
+| ------------------------ | ---------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
+| PostgreSQL (RDS)         | Automated RDS snapshots + continuous WAL archival to S3    | Daily snapshot + continuous WAL | 30 days snapshots, 7 days WAL                      |
+| S3 (files and data lake) | S3 versioning + cross-region replication (Enterprise tier) | Continuous versioning           | 10 years (Iceberg archive), 90 days (active files) |
+| TimescaleDB              | Continuous archival to S3 Iceberg after 90-day hot window  | Continuous                      | 90 days hot, then cold archive                     |
+| Redis                    | AOF persistence; cache rebuilt from DB on failure          | —                               | Cache-only                                         |
+| ClickHouse               | Weekly full snapshot to S3                                 | Weekly                          | 30 days                                            |
+| Neo4j                    | Weekly backup to S3                                        | Weekly                          | 30 days                                            |
 
 Multi-region disaster recovery :
 
@@ -146,7 +146,7 @@ Multi-region disaster recovery :
 For a production-grade single-site on-premise deployment supporting up to 200 concurrent
 users and 20 active projects :
 
-| Component               | Minimum Specification                     | Notes                                 |
+| Component.              | Minimum Specification                     | Notes                                 |
 | ----------------------- | ----------------------------------------- | ------------------------------------- |
 | Kubernetes worker nodes | 3 × 16 vCPU / 64 GB RAM / 500 GB NVMe SSD | HA cluster; 3-node minimum for quorum |
 | PostgreSQL primary      | 8 vCPU / 32 GB RAM / 1 TB NVMe SSD        | Primary relational DB                 |
@@ -224,15 +224,15 @@ at the network ingress level before traffic reaches Kong.
 
 ## References
 
-| ID           | Title                                                              | Source                                                                                                       |
-| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| [IEEE 830]   | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                            |
-| [Kubernetes] | Kubernetes Documentation                                           | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/)                                                  |
-| [Helm]       | Helm Package Manager Documentation                                 | [helm.sh/docs](https://helm.sh/docs/)                                                                        |
-| [ArgoCD]     | Argo CD GitOps Documentation                                       | [argo-cd.readthedocs.io](https://argo-cd.readthedocs.io/)                                                    |
-| [AWS-EKS]    | Amazon Elastic Kubernetes Service Documentation                    | [docs.aws.amazon.com/eks](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html)                 |
-| [AWS-RDS]    | Amazon RDS for PostgreSQL Documentation                            | [docs.aws.amazon.com/AmazonRDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html) |
-| [SOC2]       | SOC 2 Type II Trust Service Criteria                               | AICPA TSC 2017                                                                                               |
-| [ISO27001]   | Information Security Management Systems                            | ISO/IEC 27001:2022                                                                                           |
+| ID           | Title                                               | Source                                                                                                       |
+| ------------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [IEEE 830]   | IEEE Recommended Practice for Software Requirements | IEEE Std 830-1998                                                                                            |
+| [Kubernetes] | Kubernetes Documentation                            | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/)                                                  |
+| [Helm]       | Helm Package Manager Documentation                  | [helm.sh/docs](https://helm.sh/docs/)                                                                        |
+| [ArgoCD]     | Argo CD GitOps Documentation                        | [argo-cd.readthedocs.io](https://argo-cd.readthedocs.io/)                                                    |
+| [AWS-EKS]    | Amazon Elastic Kubernetes Service Documentation     | [docs.aws.amazon.com/eks](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html)                 |
+| [AWS-RDS]    | Amazon RDS for PostgreSQL Documentation             | [docs.aws.amazon.com/AmazonRDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html) |
+| [SOC2]       | SOC 2 Type II Trust Service Criteria                | AICPA TSC 2017                                                                                               |
+| [ISO27001]   | Information Security Management Systems             | ISO/IEC 27001:2022                                                                                           |
 
 > 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [18-enterprise-saas-scaling](18-enterprise-saas-scaling.md)

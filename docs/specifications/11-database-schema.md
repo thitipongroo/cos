@@ -675,13 +675,13 @@ See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strat
 
 ## References
 
-| ID               | Title                                                                | Source                                                                                                           |
-| ---------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| [IEEE 830]       | IEEE Recommended Practice for Software Requirements Specifications   | IEEE Std 830-1998                                                                                                |
-| [PostgreSQL]     | PostgreSQL Documentation                                             | [postgresql.org/docs](https://www.postgresql.org/docs/)                                                          |
-| [UUID-RFC]       | A Universally Unique Identifier (UUID) URN Namespace                 | RFC 4122                                                                                                         |
-| [Avro]           | Apache Avro Specification                                            | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html)                         |
-| [PostgreSQL-RLS] | PostgreSQL Row Security Policies                                     | [postgresql.org/docs/current/ddl-rowsecurity.html](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
-| [ISO-8601]       | Data Elements and Interchange Formats — Date and Time Representation | ISO 8601:2004                                                                                                    |
+| ID               | Title                                                                | Source                                                                          |
+| ---------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| [IEEE 830]       | IEEE Recommended Practice for Software Requirements                  | IEEE Std 830-1998                                                               |
+| [PostgreSQL]     | PostgreSQL Documentation                                             | [postgresql/docs](https://www.postgresql.org/docs/)                             |
+| [UUID-RFC]       | A Universally Unique Identifier (UUID) URN Namespace                 | RFC 4122                                                                        |
+| [Avro]           | Apache Avro Specification                                            | [avro/docs/current](https://avro.apache.org/docs/current/spec.html)             |
+| [PostgreSQL-RLS] | PostgreSQL Row Security Policies                                     | [postgresql/docs](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
+| [ISO-8601]       | Data Elements and Interchange Formats — Date and Time Representation | ISO 8601:2004                                                                   |
 
 > 📎 See also: [09-data-architecture](09-data-architecture.md) · [10-construction-ontology](10-construction-ontology.md) · [12-construction-knowledge-graph](12-construction-knowledge-graph.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [05-security-compliance](05-security-compliance.md)

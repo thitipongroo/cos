@@ -67,15 +67,15 @@ Layer C — Autonomous AI :
 
 ## 22.3 AI System Components
 
-| Component          | Responsibility                                                                                                                                                                                                                                    |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LLM Gateway        | Multi-model routing — implemented via LangChain (`langchain>=0.3`, `langchain-openai>=0.2`); provider interface abstracted via `LLMProvider`; primary: OpenAI GPT-4o / gpt-4o-mini (cost fallback); no direct SDK coupling in domain services |
-| RAG Engine         | Context retrieval                                                                                                                                                                                                                                 |
-| Vector DB          | Embeddings                                                                                                                                                                                                                                        |
-| Knowledge Graph    | Construction relationships                                                                                                                                                                                                                        |
-| Feature Store      | ML features                                                                                                                                                                                                                                       |
-| Training Pipeline  | Continuous learning                                                                                                                                                                                                                               |
-| Agent Orchestrator | Multi-step AI workflows — see note below                                                                                                                                                                                                          |
+| Component          | Responsibility                                                                                                                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LLM Gateway        | Multi-model routing — implemented via LangChain latest; provider interface abstracted via `LLMProvider`; primary: OpenAI GPT-4o / gpt-4o-mini (cost fallback); no direct SDK coupling in domain services |
+| RAG Engine         | Context retrieval                                                                                                                                                                                        |
+| Vector DB          | Embeddings                                                                                                                                                                                               |
+| Knowledge Graph    | Construction relationships                                                                                                                                                                               |
+| Feature Store      | ML features                                                                                                                                                                                              |
+| Training Pipeline  | Continuous learning                                                                                                                                                                                      |
+| Agent Orchestrator | Multi-step AI workflows — see note below                                                                                                                                                                 |
 
 Note on Agent Orchestrator :
 

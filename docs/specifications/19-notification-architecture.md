@@ -193,14 +193,14 @@ represent operational platform state that SYSTEM_ADMIN must act on.
 
 ## References
 
-| ID           | Title                                                              | Source                                                                                                                   |
-| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| [IEEE 830]   | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                        |
-| [FCM]        | Firebase Cloud Messaging Documentation                             | [firebase.google.com/docs/cloud-messaging](https://firebase.google.com/docs/cloud-messaging)                             |
-| [APNs]       | Apple Push Notification service Documentation                      | [developer.apple.com/documentation/usernotifications](https://developer.apple.com/documentation/usernotifications)       |
-| [WebSocket]  | The WebSocket Protocol                                             | RFC 6455                                                                                                                 |
-| [SSE]        | Server-Sent Events — W3C Recommendation                            | [html.spec.whatwg.org/multipage/server-sent-events.html](https://html.spec.whatwg.org/multipage/server-sent-events.html) |
-| [PostgreSQL] | PostgreSQL Documentation                                           | [postgresql.org/docs](https://www.postgresql.org/docs/)                                                                  |
-| [Kafka]      | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                                                |
+| ID           | Title                                                              | Source                                                                               |
+| ------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| [IEEE 830]   | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                    |
+| [FCM]        | Firebase Cloud Messaging Documentation                             | [cloud-messaging](https://firebase.google.com/docs/cloud-messaging)                  |
+| [APNs]       | Apple Push Notification service Documentation                      | [usernotifications](https://developer.apple.com/documentation/usernotifications)     |
+| [WebSocket]  | The WebSocket Protocol                                             | RFC 6455                                                                             |
+| [SSE]        | Server-Sent Events — W3C Recommendation                            | [server-sent-events](https://html.spec.whatwg.org/multipage/server-sent-events.html) |
+| [PostgreSQL] | PostgreSQL Documentation                                           | [postgresql/docs](https://www.postgresql.org/docs/)                                  |
+| [Kafka]      | Apache Kafka Documentation                                         | [kafka/documentation](https://kafka.apache.org/documentation/)                       |
 
 > 📎 See also: [03-system-design](03-system-design.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md)

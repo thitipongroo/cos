@@ -251,14 +251,14 @@ Emitted when `EnterpriseProvisioningWorkflow` completes successfully (after Acti
 
 ## References
 
-| ID            | Title                                                              | Source                                                                                                                      |
-| ------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| [IEEE 830]    | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                                                           |
-| [CloudEvents] | CloudEvents Specification v1.0.2                                   | [cloudevents.io](https://cloudevents.io/)                                                                                   |
-| [Kafka]       | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                                                   |
-| [Avro]        | Apache Avro Specification                                          | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html)                                    |
-| [ConfluentSR] | Confluent Schema Registry Documentation                            | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
-| [Temporal]    | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                                                                               |
-| [MQTT5]       | MQTT Version 5.0                                                   | OASIS Standard, 2019                                                                                                        |
+| ID            | Title                                               | Source                                                                                   |
+| ------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [IEEE 830]    | IEEE Recommended Practice for Software Requirements | IEEE Std 830-1998                                                                        |
+| [CloudEvents] | CloudEvents Specification v1.0.2                    | [cloudevents.io](https://cloudevents.io/)                                                |
+| [Kafka]       | Apache Kafka Documentation                          | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)                |
+| [Avro]        | Apache Avro Specification                           | [avro.apache.org/docs/current/spec.html](https://avro.apache.org/docs/current/spec.html) |
+| [ConfluentSR] | Confluent Schema Registry Documentation             | [schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
+| [Temporal]    | Temporal Workflow Documentation                     | [docs.temporal.io](https://docs.temporal.io/)                                            |
+| [MQTT5]       | MQTT Version 5.0                                    | OASIS Standard, 2019                                                                     |
 
 > 📎 See also: [04-tech-stack](04-tech-stack.md) · [09-data-architecture](09-data-architecture.md) · [14-api-architecture](14-api-architecture.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md) · [19-notification-architecture](19-notification-architecture.md)
