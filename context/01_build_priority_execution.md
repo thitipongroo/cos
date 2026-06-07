@@ -171,7 +171,7 @@ MUST-HAVE:
   - Role definitions: SYSTEM_ADMIN, TENANT_ADMIN, PROJECT_MANAGER,
     PROC_MANAGER, PROCUREMENT_OFFICER, FINANCE, SITE_ENGINEER, SITE_WORKER, VIEWER
   - RBAC middleware (enforce role on every API endpoint)
-  - Auth API: POST /auth/request-otp, POST /auth/verify-otp,
+  - Auth API: POST /auth/otp/request, POST /auth/otp/verify,
     POST /auth/refresh, POST /auth/logout
 
 NICE-TO-HAVE:

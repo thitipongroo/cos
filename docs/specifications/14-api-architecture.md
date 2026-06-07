@@ -138,6 +138,32 @@ machine-readable contracts derived from these patterns.
 
 ---
 
+#### Authentication APIs
+
+Two authentication paths (source: `context/00_master_construction_os.md` §Phase 2;
+`05-security-compliance` §5.3):
+
+- **Path A** — SMS OTP for field workers (`SITE_WORKER`, `SITE_ENGINEER`): phone + 6-digit OTP →
+  JWT issued by COS identity service (RS256).
+- **Path B** — Email + password for office roles via Keycloak OIDC: JWT issued by Keycloak
+  (RS256). MFA (TOTP) required for `TENANT_ADMIN` and `FINANCE`.
+
+| Method | Path | Description | Auth |
+| ------ | ---- | ----------- | ---- |
+| `POST` | `/api/v1/auth/otp/request` | Request SMS OTP — Path A field workers | Public |
+| `POST` | `/api/v1/auth/otp/verify` | Verify OTP; returns `access_token` + `refresh_token` | Public |
+| `POST` | `/api/v1/auth/refresh` | Refresh access token using refresh token | Public |
+| `POST` | `/api/v1/auth/logout` | Revoke refresh token | Bearer token |
+| `POST` | `/api/v1/auth/mfa/enroll` | Initiate TOTP enrollment — returns `otpauth://` URI for QR code | Bearer token |
+| `POST` | `/api/v1/auth/mfa/verify` | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true` | Bearer token |
+| `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login — Path B only (`TENANT_ADMIN`, `FINANCE`) | Bearer token |
+
+> OTP constraints: 6-digit numeric, TTL 5 minutes, max 3 attempts per session,
+> rate-limited to 10 requests per phone per day (Kong Gateway — `05-security-compliance` §5.5).
+> Full request/response schemas: [`docs/api/auth.openapi.yaml`](../api/auth.openapi.yaml).
+
+---
+
 #### Project APIs
 
 | Method  | Path                                  | Description                            | Auth                        |

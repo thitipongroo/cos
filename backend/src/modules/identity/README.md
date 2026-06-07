@@ -14,8 +14,8 @@ Manages OTP generation, token issuance, JWT validation, refresh token rotation, 
 ## Public API
 
 ```text
-POST /api/v1/auth/request-otp       — request SMS OTP (Path A)
-POST /api/v1/auth/verify-otp        — verify OTP, returns JWT + refresh token
+POST /api/v1/auth/otp/request       — request SMS OTP (Path A)
+POST /api/v1/auth/otp/verify        — verify OTP, returns JWT + refresh token
 POST /api/v1/auth/refresh           — rotate refresh token
 POST /api/v1/auth/logout            — invalidate refresh token
 POST /api/v1/auth/mfa/enroll        — initiate TOTP setup (returns QR URI)
@@ -59,8 +59,8 @@ findAll(@TenantId() tenantId: string) { ... }
 
 OTP flow (Path A):
 
-1. `POST /api/v1/auth/request-otp` with `{ phoneNumber: "+66812345678" }`
-2. `POST /api/v1/auth/verify-otp` with `{ phoneNumber, otp }` → returns `{ accessToken, refreshToken }`
+1. `POST /api/v1/auth/otp/request` with `{ phoneNumber: "+66812345678" }`
+2. `POST /api/v1/auth/otp/verify` with `{ phoneNumber, otp }` → returns `{ accessToken, refreshToken }`
 
 ## Notes
 
