@@ -2295,7 +2295,7 @@ File Constraints (authoritative):
   NOT allowed: executable files (.exe, .sh, .bat, .js), BLOCKED at upload
 
   Antivirus scanning: ClamAV (no EP — implementation known)
-    Implementation: ClamAV open-source scanner; scan every uploaded file before marking CLEAN; QUARANTINE on threat detected — infected files moved to cos-quarantine/{tenant_id}/ bucket (separate from cos-files; 30-day retention); emit file.scan.quarantined.v1 event; SYSTEM_ADMIN notified; recovery is SYSTEM_ADMIN-only action via platform admin API; files auto-deleted after 30-day retention
+    Implementation: ClamAV open-source scanner; scan every uploaded file before marking CLEAN; QUARANTINE on threat detected — infected files moved to cos-quarantine/{tenant_id}/ bucket (separate from cos-files; 30-day retention); emit file.document.quarantined.v1 event; SYSTEM_ADMIN notified; recovery is SYSTEM_ADMIN-only action via platform admin API; files auto-deleted after 30-day retention
     interface AntivirusHook { scan(fileId: UUID): Promise<ScanResult> }
     ScanResult: { clean: boolean, threat?: string }
     Upload flow: upload → store → scan (async) → update file status
@@ -2369,8 +2369,8 @@ Generate:
 - Integration tests: full upload → MinIO → metadata → signed URL flow
 - Kafka event producers:
 
-    file.uploaded   { file_id, tenant_id, entity_type, entity_id, mime_type }
-    file.scan.quarantined.v1 { file_id, tenant_id, threat_name, quarantined_at }
+    file.document.uploaded.v1   { file_id, tenant_id, entity_type, entity_id, mime_type }
+    file.document.quarantined.v1 { file_id, tenant_id, threat_type }
 
 Constraints:
 

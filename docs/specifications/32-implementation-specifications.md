@@ -434,6 +434,8 @@ compatibility) before first producer deployment.
 | 14 | `finance.cashflow_risk.detected.v1` | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE) |
 | 15 | `ai.risk_prediction.generated.v1` | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version` |
 | 16 | `finance.budget.variance_detected.v1` | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at` |
+| 17 | `file.document.uploaded.v1` | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type` |
+| 18 | `file.document.quarantined.v1` | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown) |
 
 ### Schema Registry Rules
 
@@ -466,8 +468,6 @@ Each legacy file below requires a canonical spec entry in §32.4 before migratio
 | `procurement.po.status_changed.avsc`   | `procurement.po.status_changed.v1`               | No rename required                                                                              |
 | `procurement.delivery.delayed.avsc`    | `procurement.delivery.delayed.v1`                | Version suffix only                                                                             |
 | `procurement.inventory.low.avsc`       | `procurement.inventory.low_threshold_reached.v1` | Rename for clarity                                                                              |
-| `file.uploaded.avsc`                   | `file.document.uploaded.v1`                      | Entity name added                                                                               |
-| `file.quarantined.avsc`                | `file.document.quarantined.v1`                   | Entity name added                                                                               |
 | `project.updated.avsc`                 | `construction.project.updated.v1`                | Domain prefix added                                                                             |
 | `project.status_changed.avsc`          | `construction.project.status_changed.v1`         | Domain prefix added                                                                             |
 | `boq.created.avsc`                     | `construction.boq.created.v1`                    | Distinct from boq.version.created                                                               |
