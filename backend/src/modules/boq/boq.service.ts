@@ -102,6 +102,14 @@ export class BoqService {
       created_by: this.userId,
     });
 
+    if (newVersionNumber === 1) {
+      await this.publishEvent('construction.boq.created.v1', {
+        project_id,
+        version_id: version.version_id,
+        version_number: version.version_number,
+      });
+    }
+
     return version;
   }
 
@@ -314,7 +322,7 @@ export class BoqService {
     new_total: string,
   ): Promise<void> {
     const version = await this.repo.findVersionById(version_id);
-    await this.publishEvent('construction.boq.items_updated.v1', {
+    await this.publishEvent('construction.boq.updated.v1', {
       version_id,
       project_id,
       changed_items_count: changed_count,

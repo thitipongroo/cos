@@ -244,7 +244,27 @@ describe('BoqService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('creates version_number = 2 when version 1 exists', async () => {
+    it('publishes boq.created.v1 on first version (version_number === 1 branch)', async () => {
+      mockRepo.findDraftVersion.mockResolvedValue(null);
+      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
+      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
+
+      const kafkaMock = (
+        service as unknown as {
+          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        }
+      ).kafka;
+
+      await service.createVersion('project-uuid-001', { currency_code: 'THB' });
+
+      const eventTypes = kafkaMock.publish.mock.calls.map(
+        (c: [{ event_type: string }]) => c[0].event_type,
+      );
+      expect(eventTypes).toContain('construction.boq.created.v1');
+    });
+
+    it('does NOT publish boq.created.v1 on subsequent versions (version_number > 1 branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
       mockRepo.findMaxVersionNumber.mockResolvedValue(1);
       mockRepo.createVersion.mockResolvedValue({ ...draftVersion, version_number: 2 });
@@ -255,9 +275,31 @@ describe('BoqService', () => {
       mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
+      const kafkaMock = (
+        service as unknown as {
+          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        }
+      ).kafka;
+
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(2);
       expect(mockRepo.copyVersionContents).toHaveBeenCalled();
+
+      const eventTypes = kafkaMock.publish.mock.calls.map(
+        (c: [{ event_type: string }]) => c[0].event_type,
+      );
+      expect(eventTypes).not.toContain('construction.boq.created.v1');
+    });
+
+    it('creates version_number = 2 when no approved version to copy from (G5 — inner if false branch)', async () => {
+      mockRepo.findDraftVersion.mockResolvedValue(null);
+      mockRepo.findMaxVersionNumber.mockResolvedValue(1);
+      mockRepo.createVersion.mockResolvedValue({ ...draftVersion, version_number: 2 });
+      mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
+
+      const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
+      expect(result.version_number).toBe(2);
+      expect(mockRepo.copyVersionContents).not.toHaveBeenCalled();
     });
   });
 
