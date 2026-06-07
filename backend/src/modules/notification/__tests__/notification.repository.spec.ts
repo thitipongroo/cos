@@ -1,6 +1,13 @@
 // Unit tests — Notification Repository (Phase 20)
 // The mock calls the callback so SQL template-literal lambdas are covered.
 
+// PrismaClient is instantiated as a class field at construction time.
+// Mock @prisma/client so the constructor doesn't require a real DATABASE_URL.
+jest.mock('@prisma/client', () => ({
+  PrismaClient: jest.fn(),
+}));
+
+import { PrismaClient } from '@prisma/client';
 import { NotificationRepository } from '../notification.repository';
 
 // The db.run mock actually executes the callback with mockTx,
@@ -8,17 +15,25 @@ import { NotificationRepository } from '../notification.repository';
 const mockQueryRaw = jest.fn();
 const mockExecuteRaw = jest.fn();
 const mockTx = { $queryRaw: mockQueryRaw, $executeRaw: mockExecuteRaw };
-const mockRun = jest.fn().mockImplementation((fn: (tx: typeof mockTx) => unknown) => fn(mockTx));
+const mockRun = jest.fn();
 const mockDb = { run: mockRun };
+
+const mockPlatformQueryRaw = jest.fn();
+const mockPrismaTransaction = jest.fn();
 
 let repo: NotificationRepository;
 
 beforeEach(() => {
   jest.resetAllMocks();
-  mockRun.mockImplementation((fn: (tx: typeof mockTx) => unknown) => fn(mockTx));
-});
-
-beforeEach(() => {
+  // Re-establish db.run implementation after resetAllMocks clears it
+  mockRun.mockImplementation((_tenantId: string, fn: (tx: typeof mockTx) => unknown) => fn(mockTx));
+  // Re-establish platformPrisma.$transaction after resetAllMocks clears it
+  mockPrismaTransaction.mockImplementation((fn: (tx: { $queryRaw: jest.Mock }) => unknown) =>
+    fn({ $queryRaw: mockPlatformQueryRaw }),
+  );
+  (PrismaClient as jest.Mock).mockImplementation(() => ({
+    $transaction: mockPrismaTransaction,
+  }));
   repo = new NotificationRepository(mockDb as never);
 });
 
@@ -176,7 +191,7 @@ describe('markAllRead', () => {
 describe('markSent', () => {
   it('calls $executeRaw once', async () => {
     mockExecuteRaw.mockResolvedValueOnce(1);
-    await repo.markSent('notif-001');
+    await repo.markSent('tenant-001', 'notif-001');
     expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
   });
 });
@@ -186,7 +201,7 @@ describe('markSent', () => {
 describe('markFailed', () => {
   it('calls $executeRaw once', async () => {
     mockExecuteRaw.mockResolvedValueOnce(1);
-    await repo.markFailed('notif-001');
+    await repo.markFailed('tenant-001', 'notif-001');
     expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
   });
 });
@@ -345,7 +360,7 @@ describe('findUsersByRole', () => {
       { user_id: 'u1', email: 'eng@example.com' },
       { user_id: 'u2', email: 'pm@example.com' },
     ];
-    mockQueryRaw.mockResolvedValueOnce(rows);
+    mockPlatformQueryRaw.mockResolvedValueOnce(rows);
     const result = await repo.findUsersByRole('tenant-001', ['SITE_ENGINEER', 'PROJECT_MANAGER']);
     expect(result).toHaveLength(2);
     expect(result[0].email).toBe('eng@example.com');

@@ -1,7 +1,7 @@
 // Unit tests — PlatformWebhookService (Phase 25)
 // Tests HMAC signature verification and delegation to TenantService.
 
-jest.mock('../tenant/tenant.service');
+jest.mock('../../tenant/tenant.service');
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException, InternalServerErrorException } from '@nestjs/common';

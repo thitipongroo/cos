@@ -3,6 +3,8 @@
 const mockTenantService = {
   createTenant: jest.fn(),
   deactivateTenant: jest.fn(),
+  assignDedicatedDb: jest.fn(),
+  markAsEnterpriseContracted: jest.fn(),
 };
 
 import { TenantController } from '../tenant.controller';
@@ -55,6 +57,71 @@ describe('TenantController', () => {
 
       await controller.deactivate(TENANT_ID, req);
       expect(mockTenantService.deactivateTenant).toHaveBeenCalledWith(TENANT_ID, 'system');
+    });
+  });
+
+  describe('assignDedicatedDb', () => {
+    it('delegates to tenantService and returns success message', async () => {
+      const dto = { dedicatedDbUrl: 'postgresql://host/db' } as never;
+      const req = { userId: 'admin-user' } as never;
+      mockTenantService.assignDedicatedDb.mockResolvedValue(undefined);
+
+      const result = await controller.assignDedicatedDb(TENANT_ID, dto, req);
+      expect(mockTenantService.assignDedicatedDb).toHaveBeenCalledWith(
+        TENANT_ID,
+        'postgresql://host/db',
+        'admin-user',
+      );
+      expect(result).toEqual({ message: 'Dedicated DB assigned' });
+    });
+
+    it('falls back to "system" when userId missing', async () => {
+      const dto = { dedicatedDbUrl: 'postgresql://host/db' } as never;
+      const req = {} as never;
+      mockTenantService.assignDedicatedDb.mockResolvedValue(undefined);
+
+      await controller.assignDedicatedDb(TENANT_ID, dto, req);
+      expect(mockTenantService.assignDedicatedDb).toHaveBeenCalledWith(
+        TENANT_ID,
+        'postgresql://host/db',
+        'system',
+      );
+    });
+  });
+
+  describe('markContracted', () => {
+    it('delegates to tenantService and returns workflowId response', async () => {
+      const dto = { contractReference: 'CRM-001' } as never;
+      const req = { userId: 'admin-user' } as never;
+      const WORKFLOW_ID = `enterprise-provisioning-${TENANT_ID}`;
+      mockTenantService.markAsEnterpriseContracted.mockResolvedValue({ workflowId: WORKFLOW_ID });
+
+      const result = await controller.markContracted(TENANT_ID, dto, req);
+      expect(mockTenantService.markAsEnterpriseContracted).toHaveBeenCalledWith(
+        TENANT_ID,
+        'CRM-001',
+        'admin-user',
+      );
+      expect(result).toEqual({
+        message: 'Enterprise provisioning workflow started',
+        workflowId: WORKFLOW_ID,
+        tenantId: TENANT_ID,
+      });
+    });
+
+    it('falls back to "system" when userId missing', async () => {
+      const dto = { contractReference: undefined } as never;
+      const req = {} as never;
+      mockTenantService.markAsEnterpriseContracted.mockResolvedValue({
+        workflowId: `enterprise-provisioning-${TENANT_ID}`,
+      });
+
+      await controller.markContracted(TENANT_ID, dto, req);
+      expect(mockTenantService.markAsEnterpriseContracted).toHaveBeenCalledWith(
+        TENANT_ID,
+        undefined,
+        'system',
+      );
     });
   });
 });

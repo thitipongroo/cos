@@ -29,7 +29,6 @@ const mockActivities = {
 const baseParams: RfqWorkflowParams = {
   rfq_id: 'rfq-uuid-001',
   tenant_id: 'tenant-uuid-001',
-  tenant_code: 'acme_corp',
   correlation_id: 'corr-uuid-001',
   deadline_ms: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days from now
 };

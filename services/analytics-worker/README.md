@@ -13,6 +13,37 @@ Responsibilities:
 - Write to ClickHouse fact tables (`project_cost_daily`, `procurement_activity_daily`, `site_activity_daily`)
 - Maintain materialized view aggregations (`AggregatingMergeTree`)
 
+## Public API
+
+This service has no HTTP API. It exposes two interfaces:
+
+### Kafka Consumer
+
+Consumer group: `analytics-consumer-group`
+
+| Topic | Event type | Description |
+| --- | --- | --- |
+| `project.project.created.v1` | `ProjectCreatedEvent` | New project created |
+| `project.project.updated.v1` | `ProjectUpdatedEvent` | Project metadata updated |
+| `procurement.purchase_order.created.v1` | `PurchaseOrderCreatedEvent` | PO created |
+| `procurement.po.status_changed` | `PoStatusChangedEvent` | PO status transition |
+| `procurement.delivery.received.v1` | `DeliveryReceivedEvent` | Delivery recorded |
+| `procurement.vendor_invoice.received.v1` | `VendorInvoiceReceivedEvent` | Invoice received |
+| `site-ops.daily_report.submitted.v1` | `DailyReportSubmittedEvent` | Site daily report submitted |
+| `site-ops.issue.created.v1` | `IssueCreatedEvent` | Site issue raised |
+| `finance.budget.updated.v1` | `BudgetUpdatedEvent` | Budget line updated |
+| `finance.cost_entry.created.v1` | `CostEntryCreatedEvent` | Cost entry recorded |
+
+All schemas registered in Confluent Schema Registry (Avro, `BACKWARD_TRANSITIVE` — Phase 8).
+
+### Health Endpoint
+
+```http
+GET /healthz → 200 OK  {"status":"ok"}
+```
+
+Checked by Kubernetes liveness probe every 30s.
+
 ## Dependencies
 
 - Kafka (consumer group: `analytics-consumer-group`)

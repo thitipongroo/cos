@@ -37,7 +37,6 @@ const baseParams: PoWorkflowParams = {
   project_id: 'project-uuid-001',
   vendor_id: 'vendor-uuid-001',
   tenant_id: 'tenant-uuid-001',
-  tenant_code: 'acme_corp',
   correlation_id: 'corr-uuid-001',
   total_amount_thb: '40000', // ≤ 50,000 THB → PM tier only
   po_number: 'PO-001',
@@ -63,6 +62,7 @@ const paramsHighValue: PoWorkflowParams = {
 describe('PO Workflow — state transitions', () => {
   let testEnv: TestWorkflowEnvironment;
   let worker: Worker;
+  let testTaskQueue: string;
 
   beforeAll(async () => {
     testEnv = await TestWorkflowEnvironment.createTimeSkipping();
@@ -76,11 +76,12 @@ describe('PO Workflow — state transitions', () => {
     mockUpdatePoStatus.mockClear();
     mockNotifyApprover.mockClear();
     mockCompensateCancelledPo.mockClear();
-    // Fresh worker per test — runUntil() shuts down the worker on completion,
-    // so each test needs its own instance.
+    // Unique task queue per test avoids Temporal worker deregistration race conditions
+    // when Worker.create() is called before the previous worker fully deregisters.
+    testTaskQueue = `test-po-${Math.random().toString(36).slice(2)}`;
     worker = await Worker.create({
       connection: testEnv.nativeConnection,
-      taskQueue: 'test-po',
+      taskQueue: testTaskQueue,
       workflowsPath: require.resolve('../workflows/po.workflow'),
       activities: mockActivities,
     });
@@ -89,7 +90,7 @@ describe('PO Workflow — state transitions', () => {
   it('Happy path: DRAFT → PAID (PM tier only, ≤ 50K THB)', async () => {
     await worker.runUntil(async () => {
       const handle = await testEnv.client.workflow.start(poWorkflow, {
-        taskQueue: 'test-po',
+        taskQueue: testTaskQueue,
         workflowId: 'po-test-1',
         args: [baseParams],
       });
@@ -144,7 +145,7 @@ describe('PO Workflow — state transitions', () => {
   it('High value (> 500K THB): requires PM + FINANCE + EXECUTIVE approval chain', async () => {
     await worker.runUntil(async () => {
       const handle = await testEnv.client.workflow.start(poWorkflow, {
-        taskQueue: 'test-po',
+        taskQueue: testTaskQueue,
         workflowId: 'po-test-2',
         args: [paramsHighValue],
       });
@@ -197,7 +198,7 @@ describe('PO Workflow — state transitions', () => {
   it('PENDING_APPROVAL → DRAFT on rejection with compensation', async () => {
     await worker.runUntil(async () => {
       const handle = await testEnv.client.workflow.start(poWorkflow, {
-        taskQueue: 'test-po',
+        taskQueue: testTaskQueue,
         workflowId: 'po-test-3',
         args: [baseParams],
       });
@@ -219,7 +220,7 @@ describe('PO Workflow — state transitions', () => {
   it('INVOICED → DISPUTED', async () => {
     await worker.runUntil(async () => {
       const handle = await testEnv.client.workflow.start(poWorkflow, {
-        taskQueue: 'test-po',
+        taskQueue: testTaskQueue,
         workflowId: 'po-test-4',
         args: [baseParams],
       });
@@ -247,7 +248,7 @@ describe('PO Workflow — state transitions', () => {
   it('48h timeout escalates to TENANT_ADMIN', async () => {
     await worker.runUntil(async () => {
       const handle = await testEnv.client.workflow.start(poWorkflow, {
-        taskQueue: 'test-po',
+        taskQueue: testTaskQueue,
         workflowId: 'po-test-5',
         args: [baseParams],
       });
@@ -285,7 +286,7 @@ describe('PO Workflow — state transitions', () => {
   it('partial delivery transitions to PARTIALLY_DELIVERED then FULLY_DELIVERED', async () => {
     await worker.runUntil(async () => {
       const handle = await testEnv.client.workflow.start(poWorkflow, {
-        taskQueue: 'test-po',
+        taskQueue: testTaskQueue,
         workflowId: 'po-test-6',
         args: [baseParams],
       });

@@ -215,7 +215,7 @@ describe('IN_APP channel dispatch', () => {
       'u1',
       expect.objectContaining({ notification_id: 'notif-001' }),
     );
-    expect(mockRepo.markSent).toHaveBeenCalledWith('notif-001');
+    expect(mockRepo.markSent).toHaveBeenCalledWith('tenant-001', 'notif-001');
   });
 
   it('marks failed when SSE push throws', async () => {
@@ -245,7 +245,7 @@ describe('IN_APP channel dispatch', () => {
       payload: {},
     });
 
-    expect(mockRepo.markFailed).toHaveBeenCalledWith('notif-001');
+    expect(mockRepo.markFailed).toHaveBeenCalledWith('tenant-001', 'notif-001');
   });
 
   it('swallows markFailed rejection without rethrowing', async () => {
@@ -344,7 +344,7 @@ describe('Expo push alongside IN_APP', () => {
       payload: {},
     });
 
-    expect(mockRepo.markSent).toHaveBeenCalledWith('notif-001');
+    expect(mockRepo.markSent).toHaveBeenCalledWith('tenant-001', 'notif-001');
   });
 });
 
@@ -424,7 +424,7 @@ describe('LINE channel dispatch', () => {
     expect(mockLine.send).toHaveBeenCalledWith(
       expect.objectContaining({ lineUserId: 'U_line_user_001' }),
     );
-    expect(mockRepo.markSent).toHaveBeenCalledWith('notif-001');
+    expect(mockRepo.markSent).toHaveBeenCalledWith('tenant-001', 'notif-001');
   });
 
   it('skips LINE send when LINE_USER_ID env var is not set', async () => {

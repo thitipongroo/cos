@@ -2,7 +2,7 @@
 // PrismaClient is created per run() call, not in constructor.
 // getDbUrlForTenant is mocked to avoid real DB connections.
 
-jest.mock('../tenant/utils/get-db-url', () => ({
+jest.mock('../../tenant/utils/get-db-url', () => ({
   getDbUrlForTenant: jest.fn().mockResolvedValue('postgresql://tenant-db/testdb'),
 }));
 
@@ -27,7 +27,7 @@ const { _mocks } = jest.requireMock('@prisma/client') as {
 };
 
 import { PrismaClient } from '@prisma/client';
-import { getDbUrlForTenant } from '../tenant/utils/get-db-url';
+import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
 import { NotificationPrismaService } from '../notification-prisma.service';
 
 let svc: NotificationPrismaService;

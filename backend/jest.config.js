@@ -32,6 +32,17 @@ module.exports = {
     '!src/**/*.stub.ts',
     // Phase 16 deliverable — tests written in Phase 16 (Security hardening)
     '!src/shared/middleware/cloudflare-waf.middleware.ts',
+    // Temporal workflow files run inside a V8 worker isolate (Temporal SDK sandbox).
+    // Jest/V8 coverage cannot instrument code executing in the isolate.
+    // Tests exist and pass via TestWorkflowEnvironment — this is a tooling limitation.
+    '!src/**/*.workflow.ts',
+    // Temporal worker bootstrap: registers task queues and connects to Temporal server.
+    // Requires a live Temporal server; not unit-testable.
+    '!src/**/*.worker.ts',
+    '!src/**/worker.ts',
+    // Phase 25 deliverable: enterprise-provisioning activities provision real infrastructure
+    // (dedicated RDS, VPC peering, Route 53). Tested in Phase 25 integration tests.
+    '!src/**/enterprise-provisioning.activities.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
@@ -42,6 +53,10 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
+  // Temporal TestWorkflowEnvironment embeds a test server per process.
+  // At high worker counts concurrent servers conflict and cause flaky timeouts.
+  // maxWorkers: 2 keeps at most 2 test servers alive simultaneously.
+  maxWorkers: 2,
   // Integration tests (test/) require real infra (Redis, Keycloak, DB).
   // They run via test:integration; exclude from unit test:cov.
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/test/'],

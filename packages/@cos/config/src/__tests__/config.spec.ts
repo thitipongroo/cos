@@ -51,6 +51,14 @@ describe('loadConfig', () => {
     if (prev !== undefined) process.env['DATABASE_URL'] = prev;
   });
 
+  it('returns cached instance on second call (no re-parse)', () => {
+    Object.assign(process.env, validEnv);
+    const { loadConfig } = freshConfig();
+    const first = loadConfig();
+    const second = loadConfig();
+    expect(second).toBe(first);
+  });
+
   it('applies default PORT=3000 when PORT not set', () => {
     const env = { ...validEnv };
     delete (env as Partial<typeof env>).PORT;
