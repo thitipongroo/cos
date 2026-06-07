@@ -420,8 +420,8 @@ compatibility) before first producer deployment.
 | --- | --- | --- |
 | 1 | `construction.project.created.v1` | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by` |
 | 2 | `construction.boq.version_created.v1` | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by` |
-| 3 | `procurement.purchase_order.created.v1` | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)} |
-| 4 | `procurement.vendor_invoice.received.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date` |
+| 3 | `procurement.po.created.v1` | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)} |
+| 4 | `procurement.invoice.received.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date` |
 | 5 | `site.report.created.v1` | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count` |
 | 6 | `site.inspection.failed.v1` | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at` |
 | 7 | `construction.task.completed.v1` | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days` |
@@ -463,7 +463,7 @@ Each legacy file below requires a canonical spec entry in §32.4 before migratio
 | -------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
 | `procurement.rfq.created.avsc`         | `procurement.rfq.created.v1`                     | Core procurement event — high priority                                                          |
 | `procurement.rfq.alert.avsc`           | `procurement.rfq.deadline_approaching.v1`        | Rename for clarity                                                                              |
-| `procurement.po.status_changed.avsc`   | `procurement.purchase_order.status_changed.v1`   | Entity name aligned                                                                             |
+| `procurement.po.status_changed.avsc`   | `procurement.po.status_changed.v1`               | No rename required                                                                              |
 | `procurement.delivery.delayed.avsc`    | `procurement.delivery.delayed.v1`                | Version suffix only                                                                             |
 | `procurement.inventory.low.avsc`       | `procurement.inventory.low_threshold_reached.v1` | Rename for clarity                                                                              |
 | `file.uploaded.avsc`                   | `file.document.uploaded.v1`                      | Entity name added                                                                               |
@@ -790,6 +790,33 @@ Path B users created this way cannot log in via Keycloak until step 1–3 are co
 > **Implementation milestone:** Must be completed as part of Phase 2 before any Path B feature
 > can be tested end-to-end. Path B users created with the current placeholder
 > (`email` stored as `keycloak_user_id`) cannot authenticate via Keycloak until implemented.
+
+### Phase 6 — Site Operations
+
+#### KD-SITE-001: site.material.consumed.v1 Event Emission
+
+**Status:** Deferred — triggering entities not implemented in Phase 6
+
+**What is deferred:**
+Emitting the `site.material.consumed.v1` Kafka event when materials are consumed on a job site.
+The spec §32 defines the event payload as `task_id`, `material_id`, `quantity_consumed`,
+`project_id`, and `site_report_id`.
+
+**Why deferred:**
+Phase 6 does not implement the Task or Inventory/Material entities. Neither `task_id` nor
+`material_id` exist in the Phase 6 data model. No API endpoint or service method triggers material
+consumption in Phase 6. Emitting the event without a real triggering entity would produce
+structurally invalid payloads.
+
+**What is needed to implement:**
+
+- Task entity (scoped to a future phase)
+- Inventory / Material catalogue entity
+- A material consumption API endpoint that validates task and material, records the deduction, and
+  emits `site.material.consumed.v1`
+
+**Unblocks when:** Task entity and Inventory/Material entity are implemented in a future phase and
+a consumption API is defined in the spec.
 
 ---
 
