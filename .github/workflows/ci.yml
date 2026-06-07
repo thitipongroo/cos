@@ -181,7 +181,7 @@ jobs:
         run: |
           docker tag cos/backend:$IMAGE_TAG $ECR_REGISTRY/cos-backend:$IMAGE_TAG
           docker push $ECR_REGISTRY/cos-backend:$IMAGE_TAG
-          # Update image tag in GitOps repo to trigger ArgoCD sync (ADR-012)
+          # Update image tag in GitOps repo to trigger ArgoCD sync
           echo "$IMAGE_TAG" > .argocd-image-tag
       - name: Update ArgoCD image tag (GitOps trigger)
         run: |

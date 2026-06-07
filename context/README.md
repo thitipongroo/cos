@@ -151,20 +151,20 @@ The following decisions are open across stage files. They must be resolved befor
 
 > These are **final decisions** from `00_master_construction_os.md`. Do NOT deviate.
 
-| Area                | Decision                                                                                                        |
-| ------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Backend             | NestJS Modular Monolith (NOT microservices)                                                                     |
-| Multi-tenant        | Shared DB + tenant_id + PostgreSQL RLS, `SET LOCAL app.current_tenant_id` (ADR-008)                             |
-| Event bus           | Apache Kafka 3.x + Confluent Schema Registry (BACKWARD compat, Avro)                                            |
-| Mobile storage      | WatermelonDB 0.28.x + ExpoSQLiteAdapter (main entities); expo-sqlite directly (sync_queue only)                 |
-| PWA offline         | IndexedDB via `idb` library                                                                                     |
-| API versioning      | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                                        |
-| Financial precision | `DECIMAL(19,4)` in DB; `decimal.js` in Node.js; Python `decimal` module                                         |
-| Workflow engine     | Temporal (TypeScript SDK)                                                                                       |
-| AI services         | FastAPI Python (LLM Gateway, Embedding Worker, OCR Pipeline)                                                    |
-| LLM                 | OpenAI GPT-4o via `LLMProvider` interface                                                                       |
-| Vector store        | pgvector + OpenSearch                                                                                           |
-| RBAC roles          | 9 spec roles (§6.2) + §6.8 sub-roles: PROC_MANAGER, SITE_WORKER, VIEWER                                         |
-| Platform by device  | React Native = smartphone (online+offline); PWA = tablet/laptop (offline); Web Next.js = tablet/laptop (online) |
+| Area | Decision |
+| --- | --- |
+| Backend | NestJS Modular Monolith (NOT microservices) |
+| Multi-tenant | Shared DB + tenant_id + PostgreSQL RLS, `SET LOCAL app.current_tenant_id` |
+| Event bus | Apache Kafka 3.x + Confluent Schema Registry (BACKWARD compat, Avro) |
+| Mobile storage | WatermelonDB 0.28.x + ExpoSQLiteAdapter (main entities); expo-sqlite directly (sync_queue only) |
+| Web offline (PWA) | next-pwa (Workbox) + IndexedDB via `idb` — unified in apps/web/ |
+| API versioning | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts` |
+| Financial precision | `DECIMAL(19,4)` in DB; `decimal.js` in Node.js; Python `decimal` module |
+| Workflow engine | Temporal (TypeScript SDK) |
+| AI services | FastAPI Python (LLM Gateway, Embedding Worker, OCR Pipeline) |
+| LLM | OpenAI GPT-4o via `LLMProvider` interface |
+| Vector store | pgvector + OpenSearch |
+| RBAC roles | 9 spec roles (§6.2) + §6.8 sub-roles: PROC_MANAGER, SITE_WORKER, VIEWER |
+| Platform by device | React Native = smartphone (online+offline); Web/PWA = tablet/laptop (online+offline) |
 
 ---

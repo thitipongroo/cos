@@ -12,7 +12,7 @@ Construction OS is a **modular monolith** — one NestJS deployable containing a
 ┌─────────────────────────────────────────────────────────────┐
 │                  Construction OS Platform                   │
 ├──────────────────────┬──────────────────┬───────────────────┤
-│  apps/web (Next.js)  │  apps/pwa (PWA)  │ apps/mobile (RN)  │
+│  apps/web (Next.js + next-pwa)   │  apps/mobile (RN)  │
 ├──────────────────────┴──────────────────┴───────────────────┤
 │              Kong API Gateway (rate limiting, JWT, routing)  │
 ├─────────────────────────────────────────────────────────────┤
@@ -42,7 +42,7 @@ Construction OS is a **modular monolith** — one NestJS deployable containing a
 | API versioning           | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                   |
 | Event bus                | Apache Kafka 3.x + Confluent Schema Registry (Avro, `BACKWARD_TRANSITIVE` compat)          |
 | Mobile storage           | WatermelonDB 0.28.x + ExpoSQLiteAdapter (business entities); expo-sqlite (sync_queue only) |
-| PWA offline              | IndexedDB via `idb` library                                                                |
+| Web offline (PWA)        | next-pwa (Workbox) + IndexedDB via `idb`; unified in apps/web/ (ADR-016)                   |
 | Financial precision      | `DECIMAL(19,4)` in DB; `decimal.js` (Node.js); Python `decimal` module — never `float`     |
 | Workflow engine          | Temporal (TypeScript SDK)                                                                  |
 | Auth — field workers     | Phone + SMS OTP via custom NestJS module + AWS SNS                                         |
@@ -121,8 +121,7 @@ make proto-gen
 
 ```text
 apps/
-  web/                   — Next.js web app (tablet/laptop, online)
-  pwa/                   — Next.js + PWA (tablet/laptop, offline-capable)
+  web/                   — Next.js + next-pwa unified app (tablet/laptop, online + offline)
   mobile/                — React Native + Expo (smartphone, online + offline)
 
 backend/                 — NestJS Modular Monolith (all domain modules)

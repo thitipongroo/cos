@@ -155,18 +155,17 @@ Never implement a Stage N+1 feature during Stage N work.
 
 The platform deploys as distinct units. Do **not** merge runtimes or split prematurely.
 
-| Deployable                                            | Runtime             | Contents                                                                                           |
-| ----------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------- |
-| Main Application (`backend/`)                         | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce |
-| File Service (`services/file-service/`)               | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                |
-| AI Gateway (`services/ai-gateway/`)                   | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                   |
-| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python)    | Embedding generation                                                                               |
-| AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                     |
-| Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                             |
-| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion                                                                                    |
-| Web Frontend (`apps/web/`)                            | Next.js             | Desktop/tablet web app                                                                             |
-| PWA (`apps/pwa/`)                                     | Next.js + PWA       | Offline tablet/laptop                                                                              |
-| Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                              |
+| Deployable | Runtime | Contents |
+| --- | --- | --- |
+| Main Application (`backend/`) | NestJS (monolith) | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce |
+| File Service (`services/file-service/`) | Fastify | Multipart upload I/O (extracted for I/O throughput) |
+| AI Gateway (`services/ai-gateway/`) | FastAPI (Python) | LLM routing, RAG, token tracking |
+| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python) | Embedding generation |
+| AI OCR Pipeline (`services/ai-ocr-pipeline/`) | FastAPI (Python) | OCR processing |
+| Analytics Worker (`services/analytics-worker/`) | Go | ClickHouse aggregation |
+| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go | Neo4j ingestion |
+| Web App (`apps/web/`) | Next.js + next-pwa | Tablet/laptop browser — online + offline unified |
+| Mobile (`apps/mobile/`) | React Native + Expo | Smartphone native app |
 
 ### Service Extraction Rules
 
@@ -613,7 +612,7 @@ DRAFT → PENDING_APPROVAL → APPROVED → SENT → ACKNOWLEDGED
 Prohibited in all visual work: building/crane/hard hat/blueprint/gear icons;
 orange/amber colour; rounded playful shapes; gradients or glow effects.
 
-### Brand Colour Tokens (web + desktop + PWA)
+### Brand Colour Tokens (web/PWA + desktop)
 
 | Token         | Hex       | Usage                                                |
 | ------------- | --------- | ---------------------------------------------------- |

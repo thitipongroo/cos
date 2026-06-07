@@ -254,8 +254,7 @@ DEPLOYABLE UNITS (derived from: docs/specifications/32-implementation-specificat
 │ KG Ingestion Worker            │ Go               │ Neo4j ingestion            │
 │ (services/*-worker/)           │                  │                            │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ Web Frontend (apps/web/)       │ Next.js          │ Desktop/tablet web app     │
-│ PWA (apps/pwa/)                │ Next.js + PWA    │ Offline tablet/laptop      │
+│ Web App (apps/web/)            │ Next.js+next-pwa │ Tablet/laptop online+offline│
 │ Mobile (apps/mobile/)          │ React Native     │ Smartphone native app      │
 └────────────────────────────────┴──────────────────┴────────────────────────────┘
 
@@ -355,7 +354,7 @@ API Gateway Responsibilities (source §4.8, §16.2):
   Rate limiting:     Kong Gateway per tenant and per API key (spec §4.8)
                      Default limits enforced at Kong: auth 10/min/IP, general 100/min/user,
                      file upload 20/min/user, AI 20/min/tenant (spec §05 §5.5, QM-7)
-  Tenant routing:    Kong routes to upstream; NestJS middleware sets app.current_tenant_id from JWT (ADR-008)
+  Tenant routing:    Kong routes to upstream; NestJS middleware sets app.current_tenant_id from JWT
   API analytics:     Kong plugin collects usage; ClickHouse for aggregation (Phase 14)
   Request validation:class-validator (NestJS) + Pydantic (FastAPI) — per endpoint (business logic)
   API monetization:  Kong usage plans plugin — quota per tenant tier (SMB 50K/month, Mid-market 100K/month, Enterprise configurable)
@@ -707,7 +706,7 @@ Avoid in all visual work:
   ✗ Gradients or glow effects
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-BRAND COLOR TOKENS (global — web + mobile + PWA)
+BRAND COLOR TOKENS (global — web/PWA + mobile)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Source: construction_os_wordmark_brand_palette_v_1.md §5
@@ -755,7 +754,7 @@ DESIGN DECISION — Mobile primary vs brand blue:
   Rationale: field workers use the app in direct sunlight — #0066FF has higher
   outdoor visibility than #2563EB. Desktop/web uses --cos-blue for brand consistency.
   Rule: use --mobile-primary for tap targets and CTAs in React Native only.
-        use --cos-blue for all web (Next.js) and PWA surfaces.
+        use --cos-blue for all web/PWA (Next.js) surfaces.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TYPOGRAPHY TOKENS
@@ -763,7 +762,7 @@ TYPOGRAPHY TOKENS
 
 Brand font (source: brand_palette §7):
   Primary:     Inter Tight
-  Package:     @fontsource/inter-tight (via npm — add to web + PWA)
+  Package:     @fontsource/inter-tight (via npm — add to web/PWA)
                React Native: expo-font with Inter Tight from Google Fonts
   Fallback:    Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif
   Weight used: 400 (body), 500 (labels/UI), 600 (headings), 700 (wordmark OS)
@@ -913,9 +912,6 @@ REACT NATIVE DARK MODE TOKENS
     const { colors } = useTheme()  — expo-navigation theme provider
     style={{ backgroundColor: colors.surface }}
 
-PWADesignTokens — no-op:
-  Rationale: PWA is Next.js — shares identical CSS token file with web app
-             No separate token file needed
 ```
 
 ---
@@ -1000,9 +996,8 @@ Naming Conventions:
 
 Directory Structure (authoritative — monolith architecture):
 apps/
-  web/                    — Next.js web application (@cos/web)
+  web/                    — Next.js + next-pwa unified web app (@cos/web) — online + offline
   mobile/                 — React Native + Expo application (@cos/mobile)
-  pwa/                    — PWA (Next.js + next-pwa) (@cos/pwa)
 
 backend/                  — NestJS Modular Monolith (ONE deployable)
   src/
@@ -1091,7 +1086,7 @@ Generate:
 - complete directory structure with placeholder README per service AND per package:
     services/: file-service, ai-gateway, ai-embedding-worker, ai-ocr-pipeline,
                analytics-worker, kg-ingestion-worker
-    apps/: web, mobile, pwa
+    apps/: web, mobile
     backend/ (root README)
     backend/src/modules/: identity, tenant, project, boq, procurement, site-ops,
                           finance, notification, equipment, workforce
@@ -2394,48 +2389,40 @@ Build offline-first mobile sync engine.
 ARCHITECTURE DECISION (resolves previous contradiction — aligned with source §18.2):
   Source file §8.1 specifies BOTH React Native AND IndexedDB in same section.
   Source file §18.2 clarifies: "IndexedDB (PWA-native; IndexedDB for web/PWA builds)"
-  — meaning PWA is a SEPARATE build target using IndexedDB, not the same app as React Native.
+  — meaning Web App (apps/web/) uses IndexedDB for offline via next-pwa, not React Native.
 
   PLATFORM DECISION — FINAL (confirmed by product owner):
-  ทุก role สามารถใช้ได้ทุก platform โดยเลือกตามอุปกรณ์และสถานการณ์:
+  ทุก role สามารถใช้ได้ทุก platform โดยเลือกตามอุปกรณ์:
 
   ┌──────────────────────────────┬─────────────────────────────────┐
-  │ อุปกรณ์ + สถานการณ์         │ Platform                        │
+  │ อุปกรณ์                        │ Platform                        │
   ├──────────────────────────────┼─────────────────────────────────┤
-  │ Smartphone (online/offline)  │ React Native เท่านั้น           │
-  │ Tablet/laptop + offline      │ PWA เท่านั้น                    │
-  │ Tablet/laptop + online       │ Web (Next.js)                   │
+  │ Smartphone (online/offline)  │ React Native เท่านั้น              │
+  │ Tablet/laptop                │ Web App (Next.js + next-pwa)    │
   └──────────────────────────────┴─────────────────────────────────┘
 
   Rules:
   - React Native: smartphone เท่านั้น — ทั้ง online และ offline
-  - PWA:          tablet/laptop เท่านั้น — offline เท่านั้น
-  - Web (Next.js):tablet/laptop เท่านั้น — online เท่านั้น
-  - ไม่มี overlap ระหว่าง platform — แต่ละ device/state มี platform เดียว
+  - Web App:      tablet/laptop เท่านั้น — online AND offline (unified, no switching)
+  - ไม่มี overlap ระหว่าง platform — แต่ละ device มี platform เดียว
 
-  THREE PLATFORMS (ทุก role เข้าถึงได้ทุก platform ตาม device/state):
+  TWO PLATFORMS (ทุก role เข้าถึงได้ทุก platform ตาม device):
 
   Target A: React Native App (Expo) — smartphone only, online + offline
     Users:         ALL roles
     Device:        iOS/Android smartphone — ไม่รองรับ tablet browser
-    Connectivity:  offline-first, sync เมื่อ online (ไม่ switch ไป platform อื่น)
+    Connectivity:  offline-first, sync เมื่อ online
     Local Storage: WatermelonDB 0.28.x with custom ExpoSQLiteAdapter
                    (expo-sqlite ~15.x underneath, WAL mode enabled)
                    NOT plain expo-sqlite — WatermelonDB provides observable queries,
                    lazy loading, and batch writes required for offline construction data
 
-  Target B: PWA (Next.js + next-pwa) — tablet/laptop browser, offline only
+  Target B: Web App (Next.js + next-pwa) — tablet/laptop browser, online + offline
     Users:         ALL roles
     Device:        tablet/laptop browser — ไม่รองรับ smartphone
-    Connectivity:  offline เท่านั้น — เมื่อ online ให้ switch ไป Web (Target C)
-    Local Storage: IndexedDB via idb library
-    Behavior:      เมื่อ device กลับมา online → prompt ให้ user switch ไป Web
-
-  Target C: Web (Next.js) — tablet/laptop browser, online only
-    Users:         ALL roles
-    Device:        tablet/laptop browser — ไม่รองรับ smartphone
-    Connectivity:  online เท่านั้น — ไม่มี offline support
-    Preferred:     default platform สำหรับ tablet/laptop เมื่อ online
+    Connectivity:  online AND offline — Service Worker handles both transparently
+    Local Storage: IndexedDB via idb library (offline entity cache)
+    Background sync: Background Sync API via Workbox — mutation replay on reconnect
 
   SCOPE IMPACT — สำคัญมาก:
     React Native ต้องรองรับ ALL roles ไม่ใช่แค่ on-site roles
@@ -2513,19 +2500,16 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Background sync: expo-background-fetch + expo-task-manager
     Network detect: @react-native-community/netinfo
 
-  PWA Stack (Target B — apps/pwa/ directory):
-    Framework:      Next.js with next-pwa plugin (Workbox-based)
+  Web App Stack (Target B — apps/web/ directory):
+    Framework:      Next.js + next-pwa plugin (Workbox-based)
     Local Storage:  IndexedDB via idb library (typed wrapper)
-    State:          Zustand + React Query (same as web)
+    State:          Zustand + React Query
     Background sync: Service Worker + Background Sync API
     Offline pages:  precached via Workbox during build
     Target users:   ALL roles — tablet/laptop browser ONLY
     Device:         NOT smartphone (product owner confirmed)
-    Connectivity:   offline ONLY
-                    เมื่อ online restored → แสดง banner prompt ให้ switch ไป Web
-                    "คุณออนไลน์แล้ว — เปิด Web เพื่อใช้งานเต็มรูปแบบ" + open link
+    Connectivity:   online + offline — no app switching; Service Worker handles transparently
     Sync engine:    same REST API endpoints as React Native (shared server-side)
-    Note:           SEPARATE app from apps/web/ — own service worker + IndexedDB
 
   Generate (React Native):
     - expo-sqlite schema setup and migration utility
@@ -2539,7 +2523,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - Unit tests: SyncManager, ConflictHandler, DeltaSyncClient
     - UI components: SyncStatusBar, ConflictBadge, OfflineBanner
 
-  Generate (PWA):
+  Generate (Web App — apps/web/):
     - next-pwa configuration with Workbox strategies
     - IndexedDB schema using idb library (typed, versioned)
     - PWA sync service using Background Sync API + IndexedDB queue

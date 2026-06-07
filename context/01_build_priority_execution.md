@@ -189,7 +189,7 @@ Primary objective:
 Establish multi-tenant isolation before any data is written.
 
 Tenant model decision:
-  Strategy: Shared database, tenant_id column, PostgreSQL RLS (ADR-008)
+  Strategy: Shared database, tenant_id column, PostgreSQL RLS
   Rationale: Lowest operational complexity for MVP scale.
              Sufficient isolation for construction company data.
              Large-tenant upgrade path: Dedicated DB tier (not schema-per-tenant).

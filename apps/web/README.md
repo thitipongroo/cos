@@ -1,23 +1,35 @@
-# Construction OS — Web App (Next.js)
+# Construction OS — Web App (Next.js + PWA)
 
-**Runtime:** Next.js 14 + TypeScript  
-**Platform:** Tablet / laptop browser — **online only**  
-**Phase:** Phase 10 (UI scaffolding), Phase 3–7 (feature screens)
+**Runtime:** Next.js 14 + next-pwa (Workbox) + TypeScript
+**Platform:** Tablet / laptop browser — **online + offline** (unified)
+**Phase:** Phase 10 (UI scaffolding + PWA offline engine), Phase 3–7 (feature screens)
 
 ## Purpose
 
-Desktop/tablet web application for online-only use.
-All roles can access this platform when on tablet or laptop with internet connectivity.
-When offline on tablet/laptop → use the PWA (`apps/pwa`).
+Unified tablet/laptop web application for all roles. Supports both online and offline use in a
+single app — no manual app switching required. When online, API calls are made directly to the
+backend. When offline, the Service Worker intercepts requests and serves cached data; mutations
+are queued in IndexedDB and replayed when connectivity is restored.
+
+See ADR-016 for the architectural decision to merge the original `apps/web` (online-only) and
+`apps/pwa` (offline-only) into this single app.
 
 ## Public API
 
 None — consumes backend REST API at `NEXT_PUBLIC_API_URL`.
 
+## Local storage (offline)
+
+- **IndexedDB** via `idb` library (typed, versioned schema) — offline entity cache
+- **Background Sync API** via Workbox — mutation queue replay on reconnect
+- **Service Worker** via `next-pwa` (Workbox) — asset + API response caching
+
 ## Dependencies
 
 - Backend REST API (`/api/v1/*`)
 - Keycloak OIDC for auth (Phase 2)
+- `next-pwa` — Workbox-based service worker generation
+- `idb` — typed IndexedDB wrapper
 
 ## Configuration
 
@@ -41,4 +53,4 @@ Uses `@cos/types` design tokens (spec §32.7):
 
 - Primary font: Inter Tight
 - Base unit: 14px body, 4px spacing grid
-- Brand blue: `#2563EB` (not mobile primary `#0066FF`)
+- Brand blue: `#2563EB`

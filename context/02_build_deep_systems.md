@@ -757,15 +757,10 @@ Platform decision (confirmed by product owner — see 00_master_construction_os.
     Users: ALL roles on smartphone
     Authority: 00_master_construction_os.md Phase 10 (final decision)
 
-  Target B: PWA (tablet/laptop browser — offline only)
+  Target B: Web App — apps/web/ (tablet/laptop browser — online + offline)
     Local storage: IndexedDB via idb library (typed wrapper)
-    Background sync: Service Worker + Background Sync API
-    Users: ALL roles on tablet/laptop when offline
-    Behavior: when device comes back online → prompt to switch to Web
-
-  Target C: Web (tablet/laptop browser — online only)
-    No offline storage required
-    Users: ALL roles on tablet/laptop when online
+    Background sync: Service Worker + Background Sync API (next-pwa / Workbox)
+    Users: ALL roles on tablet/laptop — online AND offline, no app switching required
 
 Requirements (apply to Target A and Target B):
 
@@ -779,7 +774,7 @@ Generate:
 
 - React Native sync engine (WatermelonDB 0.28.x via ExpoSQLiteAdapter + SyncManager class;
                             expo-sqlite directly for sync_queue table only)
-- PWA sync engine (IndexedDB + Service Worker queue)
+- Web App sync engine (IndexedDB + Service Worker queue via next-pwa/Workbox)
 - shared sync API endpoints (same REST API, shared server-side)
 - merge strategies per entity type
 - retry orchestration
@@ -790,7 +785,7 @@ Constraints:
 - preserve data integrity
 - avoid silent conflict corruption
 - smartphone must NEVER use IndexedDB
-- PWA must NEVER use expo-sqlite
+- apps/web/ must NEVER use expo-sqlite
 
 ```
 
