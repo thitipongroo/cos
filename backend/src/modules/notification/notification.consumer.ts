@@ -13,10 +13,10 @@ const logger = createLogger('notification-consumer');
 const SUBSCRIBED_TOPICS = [
   'site.inspection.failed',
   'site.issue.created',
-  'procurement.purchase_order.status_changed',
+  'procurement.po.status_changed',
   'finance.variance.alert',
   'site.report.created',
-  'procurement.vendor_invoice.received',
+  'procurement.invoice.received',
 ];
 
 @Injectable()

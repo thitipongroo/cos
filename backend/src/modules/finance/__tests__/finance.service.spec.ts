@@ -96,6 +96,7 @@ const paymentRow: PaymentRow = {
   currency_code: 'THB',
   payment_date: new Date(),
   payment_reference: null,
+  wht_certificate_ref: null,
   status: 'PENDING',
   recorded_by: 'user-uuid-001',
   created_at: new Date(),

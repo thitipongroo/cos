@@ -59,9 +59,19 @@ export interface PaymentRow {
   currency_code: string;
   payment_date: Date;
   payment_reference: string | null;
+  wht_certificate_ref: string | null;
   status: 'PENDING' | 'PROCESSED' | 'FAILED';
   recorded_by: string;
   created_at: Date;
+}
+
+export interface WhtRuleRow {
+  rule_id: string;
+  tenant_id: string;
+  jurisdiction_code: string;
+  service_type: string;
+  rate: string; // DECIMAL returned as string by Prisma
+  is_active: boolean;
 }
 
 // ── Repository ─────────────────────────────────────────────────────────────
@@ -303,6 +313,23 @@ export class FinanceRepository {
         ORDER BY payment_date DESC
       `,
     );
+  }
+
+  // ── wht_rules ─────────────────────────────────────────────────────────────
+
+  async findWhtRule(jurisdiction_code: string, service_type: string): Promise<WhtRuleRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<WhtRuleRow[]>`
+        SELECT * FROM finance.wht_rules
+        WHERE tenant_id        = ${this.tenantId}::uuid
+          AND jurisdiction_code = ${jurisdiction_code}
+          AND service_type      = ${service_type}
+          AND is_active         = true
+        LIMIT 1
+      `,
+    );
+    return rows[0] ?? null;
   }
 
   // ── variance report ───────────────────────────────────────────────────────

@@ -60,9 +60,19 @@ const paymentRow = {
   currency_code: 'THB',
   payment_date: new Date(),
   payment_reference: null,
+  wht_certificate_ref: null,
   status: 'PENDING' as const,
   recorded_by: 'user-uuid-001',
   created_at: new Date(),
+};
+
+const whtRuleRow = {
+  rule_id: 'rule-uuid-001',
+  tenant_id: 'tenant-uuid-001',
+  jurisdiction_code: 'TH',
+  service_type: 'services',
+  rate: '3.00',
+  is_active: true,
 };
 
 describe('FinanceRepository', () => {
@@ -252,5 +262,18 @@ describe('FinanceRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValue([budgetRow]);
     const result = await repo.findAllBudgets();
     expect(result).toHaveLength(1);
+  });
+
+  it('findWhtRule returns matching rule', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([whtRuleRow]);
+    const result = await repo.findWhtRule('TH', 'services');
+    expect(result?.rule_id).toBe('rule-uuid-001');
+    expect(result?.rate).toBe('3.00');
+  });
+
+  it('findWhtRule returns null when no rule found', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.findWhtRule('TH', 'unknown-type');
+    expect(result).toBeNull();
   });
 });
