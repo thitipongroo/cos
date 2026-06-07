@@ -371,7 +371,7 @@ export class ProcurementService {
 
     await this.repo.setPoWorkflowId(po.po_id, workflowId);
 
-    await this.publishEvent('procurement.purchase_order.created.v1', {
+    await this.publishEvent('procurement.po.created.v1', {
       po_id: po.po_id,
       project_id: po.project_id,
       vendor_id: po.vendor_id,
@@ -525,7 +525,7 @@ export class ProcurementService {
     const handle = await this.getPoWorkflowHandle(po);
     await handle.signal(receiveInvoiceSignal, { invoice_id: invoice.invoice_id });
 
-    await this.publishEvent('procurement.vendor_invoice.received.v1', {
+    await this.publishEvent('procurement.invoice.received.v1', {
       invoice_id: invoice.invoice_id,
       po_id,
       project_id: po.project_id,

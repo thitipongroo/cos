@@ -81,7 +81,7 @@ export async function updatePoStatus(
   );
 
   await publishEvent(
-    'procurement.purchase_order.status_changed.v1',
+    'procurement.po.status_changed.v1',
     { po_id: params.po_id, from_status, to_status },
     params.tenant_id,
     params.correlation_id,
@@ -127,7 +127,7 @@ export async function notifyApprover(
 
 export async function compensateCancelledPo(params: PoActivityParams): Promise<void> {
   // Compensation: emit event for Finance Service to roll back committed cost.
-  // Finance listens to procurement.purchase_order.status_changed.v1 with DRAFT (rejection)
+  // Finance listens to procurement.po.status_changed.v1 with DRAFT (rejection)
   // or handle via dedicated compensation event.
   logger.info(
     { po_id: params.po_id, correlation_id: params.correlation_id },
@@ -135,7 +135,7 @@ export async function compensateCancelledPo(params: PoActivityParams): Promise<v
   );
 
   await publishEvent(
-    'procurement.purchase_order.status_changed.v1',
+    'procurement.po.status_changed.v1',
     { po_id: params.po_id, from_status: 'PENDING_APPROVAL', to_status: 'DRAFT' },
     params.tenant_id,
     params.correlation_id,
