@@ -462,7 +462,7 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
      created_by:     UUID
    }
 
-3. procurement.po.created → [procurement.purchase_order.created.v1]
+3. procurement.purchase_order.created → [procurement.po.created.v1]
 
    payload: {
      po_id:        UUID
@@ -475,7 +475,7 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
                            unit: string, unit_price: decimal(19,4) }>
    }
 
-4. procurement.invoice.received → [procurement.vendor_invoice.received.v1]
+4. procurement.vendor_invoice.received → [procurement.invoice.received.v1]
 
    payload: {
      invoice_id:  UUID
@@ -3732,10 +3732,10 @@ Channels (source: spec §19.2):
 Notification triggers (consumed from Kafka — canonical event names per spec §32.4):
   site.inspection.failed.v1                 → notify: SITE_ENGINEER, PROJECT_MANAGER
   site.issue.created.v1 (CRITICAL)           → notify: SITE_ENGINEER, PROJECT_MANAGER
-  procurement.purchase_order.status_changed.v1 → notify: PROCUREMENT_OFFICER (actor)
+  procurement.po.status_changed.v1             → notify: PROCUREMENT_OFFICER (actor)
   finance.variance.alert.v1                 → notify: FINANCE, TENANT_ADMIN
   site.report.created.v1                    → notify: PROJECT_MANAGER (spec §32.4 #5; corrected from construction.site_report.submitted.v1)
-  procurement.vendor_invoice.received.v1    → notify: FINANCE
+  procurement.invoice.received.v1           → notify: FINANCE
 
 Entities (PostgreSQL — schema: notifications):
   notification_templates:

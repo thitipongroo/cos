@@ -14,6 +14,7 @@ const logger = createLogger('kafka-producer');
 
 // Avsc filename mapping: event_type → file basename
 const EVENT_AVSC_MAP: Record<string, string> = {
+  // Construction
   'construction.project.created.v1': 'construction.project.created.v1.avsc',
   'construction.project.updated.v1': 'construction.project.updated.v1.avsc',
   'construction.project.status_changed.v1': 'construction.project.status_changed.v1.avsc',
@@ -21,24 +22,43 @@ const EVENT_AVSC_MAP: Record<string, string> = {
   'construction.boq.version_created.v1': 'construction.boq.version_created.v1.avsc',
   'construction.boq.version_approved.v1': 'construction.boq.version_approved.v1.avsc',
   'construction.boq.items_updated.v1': 'construction.boq.items_updated.v1.avsc',
-  'procurement.purchase_order.created.v1': 'procurement.purchase_order.created.v1.avsc',
-  'procurement.vendor_invoice.received.v1': 'procurement.vendor_invoice.received.v1.avsc',
-  'procurement.vendor_invoice.approved.v1': 'procurement.vendor_invoice.approved.v1.avsc',
-  'procurement.delivery.received.v1': 'procurement.delivery.received.v1.avsc',
-  'site.report.created.v1': 'site.report.created.v1.avsc',
-  'site.inspection.failed.v1': 'site.inspection.failed.v1.avsc',
-  'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
   'construction.task.completed.v1': 'construction.task.completed.v1.avsc',
   'construction.delay.detected.v1': 'construction.delay.detected.v1.avsc',
-  'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
+  // Procurement
+  'procurement.po.created.v1': 'procurement.po.created.v1.avsc',
+  'procurement.po.status_changed.v1': 'procurement.po.status_changed.v1.avsc',
+  'procurement.invoice.received.v1': 'procurement.invoice.received.v1.avsc',
+  'procurement.rfq.created.v1': 'procurement.rfq.created.v1.avsc',
+  'procurement.rfq.status_changed.v1': 'procurement.rfq.status_changed.v1.avsc',
+  'procurement.vendor_invoice.approved.v1': 'procurement.vendor_invoice.approved.v1.avsc',
+  'procurement.delivery.received.v1': 'procurement.delivery.received.v1.avsc',
+  // Site Ops
+  'site.report.created.v1': 'site.report.created.v1.avsc',
+  'site.report.submitted.v1': 'site.report.submitted.v1.avsc',
+  'site.inspection.failed.v1': 'site.inspection.failed.v1.avsc',
+  'site.inspection.passed.v1': 'site.inspection.passed.v1.avsc',
+  'site.issue.created.v1': 'site.issue.created.v1.avsc',
+  'site.issue.status_changed.v1': 'site.issue.status_changed.v1.avsc',
+  'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
+  // Finance
+  'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
   'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',
+  'finance.payment.processed.v1': 'finance.payment.processed.v1.avsc',
+  'finance.variance.alert.v1': 'finance.variance.alert.v1.avsc',
   'finance.cashflow_risk.detected.v1': 'finance.cashflow_risk.detected.v1.avsc',
-  'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
+  // Workforce
+  'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
+  // Identity
   'identity.tenant.created.v1': 'identity.tenant.created.v1.avsc',
   'identity.tenant.deactivated.v1': 'identity.tenant.deactivated.v1.avsc',
   'identity.user.created.v1': 'identity.user.created.v1.avsc',
   'identity.user.role_changed.v1': 'identity.user.role_changed.v1.avsc',
-  // Phase 9 — File Service
+  // Platform
+  'platform.enterprise.contract_signed.v1': 'platform.enterprise.contract_signed.v1.avsc',
+  'platform.enterprise.db_provisioned.v1': 'platform.enterprise.db_provisioned.v1.avsc',
+  // AI
+  'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
+  // File Service
   'file.document.uploaded.v1': 'file.document.uploaded.v1.avsc',
   'file.document.quarantined.v1': 'file.document.quarantined.v1.avsc',
 };

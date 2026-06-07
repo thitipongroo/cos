@@ -1,8 +1,8 @@
 {
   "type": "record",
-  "name": "PurchaseOrderCreatedEvent",
+  "name": "InvoiceReceivedEvent",
   "namespace": "com.constructionos.events.procurement",
-  "doc": "procurement.purchase_order.created.v1 — spec §32.4 event #3",
+  "doc": "procurement.invoice.received.v1 — spec §32.4 event #4",
   "fields": [
     { "name": "event_id",       "type": "string" },
     { "name": "event_type",     "type": "string" },
@@ -14,32 +14,21 @@
     { "name": "trace_id",       "type": ["null", "string"], "default": null },
     { "name": "span_id",        "type": ["null", "string"], "default": null },
     { "name": "payload", "type": {
-      "type": "record", "name": "PurchaseOrderCreatedPayload",
+      "type": "record", "name": "InvoiceReceivedPayload",
       "fields": [
+        { "name": "invoice_id",   "type": "string" },
         { "name": "po_id",        "type": "string" },
         { "name": "project_id",   "type": "string" },
         { "name": "vendor_id",    "type": "string" },
-        { "name": "po_number",    "type": "string" },
-        { "name": "total_amount", "type": {
-          "type": "record", "name": "POMoneyAmount",
+        { "name": "amount", "type": {
+          "type": "record", "name": "InvoiceMoney",
           "fields": [
             { "name": "amount",        "type": "string" },
             { "name": "currency_code", "type": "string" }
           ]
         }},
-        { "name": "delivery_date", "type": "string" },
-        { "name": "line_items", "type": {
-          "type": "array",
-          "items": {
-            "type": "record", "name": "POLineItem",
-            "fields": [
-              { "name": "item_id",    "type": "string" },
-              { "name": "quantity",   "type": "string" },
-              { "name": "unit",       "type": "string" },
-              { "name": "unit_price", "type": "string" }
-            ]
-          }
-        }}
+        { "name": "invoice_date", "type": "string" },
+        { "name": "due_date",     "type": "string" }
       ]
     }}
   ]

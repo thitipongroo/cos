@@ -1,0 +1,46 @@
+{
+  "type": "record",
+  "name": "PoCreatedEvent",
+  "namespace": "com.constructionos.events.procurement",
+  "doc": "procurement.po.created.v1 — spec §32.4 event #3",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "PoCreatedPayload",
+      "fields": [
+        { "name": "po_id",        "type": "string" },
+        { "name": "project_id",   "type": "string" },
+        { "name": "vendor_id",    "type": "string" },
+        { "name": "po_number",    "type": "string" },
+        { "name": "total_amount", "type": {
+          "type": "record", "name": "POMoneyAmount",
+          "fields": [
+            { "name": "amount",        "type": "string" },
+            { "name": "currency_code", "type": "string" }
+          ]
+        }},
+        { "name": "delivery_date", "type": "string" },
+        { "name": "line_items", "type": {
+          "type": "array",
+          "items": {
+            "type": "record", "name": "POLineItem",
+            "fields": [
+              { "name": "item_id",    "type": "string" },
+              { "name": "quantity",   "type": "string" },
+              { "name": "unit",       "type": "string" },
+              { "name": "unit_price", "type": "string" }
+            ]
+          }
+        }}
+      ]
+    }}
+  ]
+}

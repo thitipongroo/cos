@@ -162,3 +162,52 @@ describe('KafkaProducer', () => {
     ).rejects.toThrow('No Avro schema');
   });
 });
+
+describe('EVENT_AVSC_MAP completeness — regression for Phase 5/6/7 shorthand event names', () => {
+  let producer: KafkaProducer;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    producer = new KafkaProducer();
+    await producer.connect();
+  });
+
+  afterEach(async () => {
+    await producer.disconnect();
+  });
+
+  const requiredEventTypes = [
+    // Procurement shorthand (Phase 5) — previously missing
+    'procurement.po.created.v1',
+    'procurement.po.status_changed.v1',
+    'procurement.invoice.received.v1',
+    'procurement.rfq.created.v1',
+    'procurement.rfq.status_changed.v1',
+    // Site Ops (Phase 6) — previously missing
+    'site.inspection.passed.v1',
+    'site.issue.created.v1',
+    'site.issue.status_changed.v1',
+    'site.report.submitted.v1',
+    // Finance (Phase 7) — previously missing
+    'finance.budget.created.v1',
+    'finance.payment.processed.v1',
+    'finance.variance.alert.v1',
+    // Platform — previously missing
+    'platform.enterprise.contract_signed.v1',
+    'platform.enterprise.db_provisioned.v1',
+  ];
+
+  it.each(requiredEventTypes)('resolves without throwing for %s', async (eventType) => {
+    await expect(
+      producer.publish({
+        event_type: eventType,
+        event_version: '1.0',
+        tenant_id: 'tenant-1',
+        actor_id: 'user-1',
+        occurred_at: new Date().toISOString(),
+        correlation_id: 'corr-1',
+        payload: {},
+      }),
+    ).resolves.not.toThrow();
+  });
+});
