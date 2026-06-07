@@ -2,6 +2,9 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "moduleResolution": "bundler",
+    "experimentalDecorators": true,
+    "types": ["node"],
     "paths": {
       "@cos/types": ["../../packages/@cos/types/src/index.ts"],
       "@cos/types/*": ["../../packages/@cos/types/src/*"],

@@ -16,20 +16,20 @@ export default class SiteReport extends Model {
   @field('report_date') reportDate!: string;
   @field('summary') summary!: string | null;
   @field('status') status!: SiteReportStatus;
-  @field('sync_status') syncStatus!: SyncStatus;
+  @field('sync_status') offlineSyncStatus!: SyncStatus;
 
   @writer
   async markSynced(serverReportId: string): Promise<void> {
     await this.update((record) => {
       record.reportId = serverReportId;
-      (record as SiteReport).syncStatus = 'SYNCED';
+      (record as SiteReport).offlineSyncStatus = 'SYNCED';
     });
   }
 
   @writer
   async markConflict(): Promise<void> {
     await this.update((record) => {
-      (record as SiteReport).syncStatus = 'CONFLICT';
+      (record as SiteReport).offlineSyncStatus = 'CONFLICT';
     });
   }
 }

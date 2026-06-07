@@ -18,20 +18,20 @@ export default class Issue extends Model {
   @field('description') description!: string | null;
   @field('severity') severity!: IssueSeverity;
   @field('status') status!: IssueStatus;
-  @field('sync_status') syncStatus!: SyncStatus;
+  @field('sync_status') offlineSyncStatus!: SyncStatus;
 
   @writer
   async markSynced(serverIssueId: string): Promise<void> {
     await this.update((record) => {
       record.issueId = serverIssueId;
-      (record as Issue).syncStatus = 'SYNCED';
+      (record as Issue).offlineSyncStatus = 'SYNCED';
     });
   }
 
   @writer
   async markConflict(): Promise<void> {
     await this.update((record) => {
-      (record as Issue).syncStatus = 'CONFLICT';
+      (record as Issue).offlineSyncStatus = 'CONFLICT';
     });
   }
 }
