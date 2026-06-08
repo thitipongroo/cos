@@ -18,7 +18,7 @@ export class GraphController {
   @Get('graph/projects/:projectId/vendors')
   @ApiOperation({ summary: 'All vendors supplying to a project' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  @ApiQuery({ name: 'tenantId', type: 'string', format: 'uuid' })
+  @ApiQuery({ name: 'tenantId', type: 'string' })
   getVendors(@Param('projectId') projectId: string, @Query('tenantId') tenantId: string) {
     return this.svc.getVendorsForProject(projectId, tenantId);
   }
@@ -27,7 +27,7 @@ export class GraphController {
   @Get('graph/projects/:projectId/supply-chain')
   @ApiOperation({ summary: 'Material supply chain for a project' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  @ApiQuery({ name: 'tenantId', type: 'string', format: 'uuid' })
+  @ApiQuery({ name: 'tenantId', type: 'string' })
   getSupplyChain(@Param('projectId') projectId: string, @Query('tenantId') tenantId: string) {
     return this.svc.getSupplyChain(projectId, tenantId);
   }
@@ -36,7 +36,7 @@ export class GraphController {
   @Get('graph/projects/:projectId/inspections')
   @ApiOperation({ summary: 'All inspections for a project (pass/fail summary)' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  @ApiQuery({ name: 'tenantId', type: 'string', format: 'uuid' })
+  @ApiQuery({ name: 'tenantId', type: 'string' })
   getInspections(@Param('projectId') projectId: string, @Query('tenantId') tenantId: string) {
     return this.svc.getInspectionsForProject(projectId, tenantId);
   }
@@ -45,7 +45,7 @@ export class GraphController {
   @Get('graph/vendors/:vendorId/projects')
   @ApiOperation({ summary: 'Vendor relationship map — projects sharing this vendor' })
   @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
-  @ApiQuery({ name: 'tenantId', type: 'string', format: 'uuid' })
+  @ApiQuery({ name: 'tenantId', type: 'string' })
   getVendorProjects(@Param('vendorId') vendorId: string, @Query('tenantId') tenantId: string) {
     return this.svc.getProjectsForVendor(vendorId, tenantId);
   }
@@ -54,7 +54,7 @@ export class GraphController {
   @Get('graph/vendors/:vendorId/invoices')
   @ApiOperation({ summary: 'All invoices submitted by a vendor' })
   @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
-  @ApiQuery({ name: 'tenantId', type: 'string', format: 'uuid' })
+  @ApiQuery({ name: 'tenantId', type: 'string' })
   getVendorInvoices(@Param('vendorId') vendorId: string, @Query('tenantId') tenantId: string) {
     return this.svc.getInvoicesForVendor(vendorId, tenantId);
   }

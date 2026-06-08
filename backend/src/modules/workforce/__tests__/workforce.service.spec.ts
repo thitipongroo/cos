@@ -189,4 +189,145 @@ describe('WorkforceService', () => {
       expect(repo.recordAttendance).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('createWorker', () => {
+    it('delegates to repo.createWorker and returns row', async () => {
+      const row = { worker_id: 'w-new', full_name: 'Bob' };
+      repo.createWorker.mockResolvedValue(row);
+      const result = await service.createWorker({
+        employee_code: 'EMP-001',
+        full_name: 'Bob',
+        trade_type: 'CARPENTER',
+        employment_type: 'FULL_TIME',
+      } as never);
+      expect(result).toBe(row);
+    });
+  });
+
+  describe('listWorkers', () => {
+    it('returns all active workers', async () => {
+      repo.findAllWorkers.mockResolvedValue([{ worker_id: 'w1' }, { worker_id: 'w2' }]);
+      const result = await service.listWorkers();
+      expect(result).toHaveLength(2);
+    });
+  });
+
+  describe('allocateToProject', () => {
+    it('allocates worker and returns allocation row', async () => {
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.allocateWorker.mockResolvedValue({ allocation_id: 'alloc-1' });
+      const result = await service.allocateToProject('proj-1', {
+        worker_id: 'w1',
+        start_date: '2026-06-01',
+      } as never);
+      expect(result).toEqual({ allocation_id: 'alloc-1' });
+    });
+
+    it('throws NotFoundException if worker does not exist', async () => {
+      repo.findWorkerById.mockResolvedValue(null);
+      await expect(
+        service.allocateToProject('proj-1', {
+          worker_id: 'unknown',
+          start_date: '2026-06-01',
+        } as never),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('getProjectWorkforce', () => {
+    it('returns workforce allocations for project', async () => {
+      repo.getProjectWorkforce.mockResolvedValue([{ allocation_id: 'a1' }]);
+      const result = await service.getProjectWorkforce('proj-1');
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('getAttendanceHistory', () => {
+    it('returns attendance logs for worker in date range', async () => {
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.getAttendanceHistory.mockResolvedValue([{ log_id: 'log-1' }]);
+      const result = await service.getAttendanceHistory('w1', '2026-06-01', '2026-06-30');
+      expect(result).toHaveLength(1);
+      expect(repo.getAttendanceHistory).toHaveBeenCalledWith('w1', '2026-06-01', '2026-06-30');
+    });
+  });
+
+  describe('getManpowerSummary', () => {
+    it('returns aggregated daily summary', async () => {
+      repo.getManpowerSummary.mockResolvedValue([
+        { date: new Date('2026-06-08'), total_workers: 5, total_hours: '40' },
+      ]);
+      const result = await service.getManpowerSummary('proj-1');
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('emitEvent error path', () => {
+    it('does not throw when Kafka publish fails', async () => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared');
+      KafkaProducer.mockImplementation(() => ({
+        connect: jest.fn().mockResolvedValue(undefined),
+        publish: jest.fn().mockRejectedValue(new Error('Kafka down')),
+      }));
+      repo = makeRepo();
+      service = new WorkforceService(
+        req as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
+
+      await expect(
+        service.recordAttendance('w1', {
+          project_id: 'proj-1',
+          check_in_at: '2026-06-08T08:00:00Z',
+        }),
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('userId fallback to system', () => {
+    it('uses "system" as actor_id when req.user is undefined', async () => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared');
+      const kafkaMock = {
+        connect: jest.fn().mockResolvedValue(undefined),
+        publish: jest.fn().mockResolvedValue(undefined),
+      };
+      KafkaProducer.mockImplementation(() => kafkaMock);
+      const noUserReq = { tenantId: 'tenant-1' };
+      repo = makeRepo();
+      service = new WorkforceService(
+        noUserReq as unknown as ConstructorParameters<typeof WorkforceService>[0],
+        repo as unknown as WorkforceRepository,
+      );
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.recordAttendance.mockResolvedValue({ log_id: 'log-1' });
+
+      await service.recordAttendance('w1', {
+        project_id: 'proj-1',
+        check_in_at: '2026-06-08T08:00:00Z',
+      });
+
+      expect(kafkaMock.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ actor_id: 'system' }),
+      );
+    });
+  });
+
+  describe('submitTimesheet with no regular_hours', () => {
+    it('defaults regular_hours to 0 when not provided', async () => {
+      repo.findWorkerById.mockResolvedValue({ worker_id: 'w1' });
+      repo.submitTimesheet.mockResolvedValue({ timesheet_id: 'ts-1', status: 'SUBMITTED' });
+
+      await service.submitTimesheet({
+        worker_id: 'w1',
+        project_id: 'proj-1',
+        period_date: '2026-06-01',
+      } as never);
+
+      expect(repo.submitTimesheet).toHaveBeenCalledWith(
+        expect.objectContaining({ regular_hours: 0 }),
+      );
+    });
+  });
 });

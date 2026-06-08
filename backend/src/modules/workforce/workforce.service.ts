@@ -167,6 +167,7 @@ export class WorkforceService {
         event_version: '1.0',
         tenant_id: this.tenantId,
         actor_id: this.userId,
+        correlation_id: randomUUID(),
         occurred_at: new Date().toISOString(),
         payload,
       });

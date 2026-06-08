@@ -135,6 +135,9 @@ describe('RFQ Workflow — state transitions', () => {
       });
 
       await handle.signal(publishRfqSignal, { actor_id: 'user-001' });
+      // publishRfqSignal handler is async (awaits activity) — wait for it to complete
+      // before sending close, otherwise close arrives while status is still 'DRAFT' and is dropped.
+      await testEnv.sleep('100ms');
       await handle.signal(closeRfqSignal, { actor_id: 'user-001' });
 
       await testEnv.sleep('100ms');

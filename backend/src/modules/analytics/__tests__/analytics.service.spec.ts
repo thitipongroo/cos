@@ -160,6 +160,126 @@ describe('AnalyticsService — invalidate()', () => {
   });
 });
 
+// ── PM Dashboard ─────────────────────────────────────────────────────────────
+describe('AnalyticsService — getPmDashboard', () => {
+  const TENANT = 'tenant-pm';
+  const PROJECT = 'proj-pm';
+  const DATE_RANGE = '2026-01-01,2026-06-30';
+
+  it('returns cached value without querying ClickHouse when cache hits', async () => {
+    const cached = [{ eventDate: '2026-01-01', manpowerTotal: 10 }];
+    const cache = makeCacheManager(cached);
+    const ch = makeClickHouseClient();
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getPmDashboard(TENANT, PROJECT, DATE_RANGE);
+    expect(result).toBe(cached);
+    expect(ch.query).not.toHaveBeenCalled();
+  });
+
+  it('queries ClickHouse on cache miss and stores result', async () => {
+    const rows = [{ eventDate: '2026-01-01', manpowerTotal: 20 }];
+    const cache = makeCacheManager(null);
+    const ch = makeClickHouseClient(rows);
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getPmDashboard(TENANT, PROJECT, DATE_RANGE);
+    expect(result).toEqual(rows);
+    expect(ch.query).toHaveBeenCalledTimes(1);
+    expect(cache.set).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws ServiceUnavailableException when ClickHouse fails', async () => {
+    const cache = makeCacheManager(null);
+    const ch = { query: jest.fn().mockRejectedValue(new Error('timeout')) };
+    const svc = await buildService(ch, cache);
+
+    await expect(svc.getPmDashboard(TENANT, PROJECT, DATE_RANGE)).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+  });
+});
+
+// ── Executive dashboard — error handling ─────────────────────────────────────
+describe('AnalyticsService — getExecutiveDashboard error handling', () => {
+  it('throws ServiceUnavailableException when ClickHouse fails', async () => {
+    const cache = makeCacheManager(null);
+    const ch = { query: jest.fn().mockRejectedValue(new Error('connection refused')) };
+    const svc = await buildService(ch, cache);
+
+    await expect(
+      svc.getExecutiveDashboard('t1', ['p1'], '2026-01-01,2026-06-30', 10),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+});
+
+// ── getSiteTrend success path ─────────────────────────────────────────────────
+describe('AnalyticsService — getSiteTrend success path', () => {
+  it('queries ClickHouse and caches result on cache miss', async () => {
+    const rows = [{ eventDate: '2026-01-01', manpowerTotal: 5 }];
+    const cache = makeCacheManager(null);
+    const ch = makeClickHouseClient(rows);
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getSiteTrend('t1', 'p1', '2026-01-01,2026-03-31');
+    expect(result).toEqual(rows);
+    expect(cache.set).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── Executive dashboard — cache hit ──────────────────────────────────────────
+describe('AnalyticsService — getExecutiveDashboard cache hit', () => {
+  it('returns cached value without querying ClickHouse', async () => {
+    const cached = [{ projectId: 'p1', atRisk: false }];
+    const cache = makeCacheManager(cached);
+    const ch = makeClickHouseClient();
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getExecutiveDashboard('t1', ['p1'], '2026-01-01,2026-06-30', 10);
+    expect(result).toBe(cached);
+    expect(ch.query).not.toHaveBeenCalled();
+  });
+});
+
+// ── getProcurementTrend cache hit ─────────────────────────────────────────────
+describe('AnalyticsService — getProcurementTrend cache hit', () => {
+  it('returns cached value without querying ClickHouse', async () => {
+    const cached = [{ eventDate: '2026-01-01', poCount: 3 }];
+    const cache = makeCacheManager(cached);
+    const ch = makeClickHouseClient();
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getProcurementTrend('t1', 'p1', '2026-01-01,2026-06-30');
+    expect(result).toBe(cached);
+    expect(ch.query).not.toHaveBeenCalled();
+  });
+});
+
+// ── getSiteTrend cache hit ────────────────────────────────────────────────────
+describe('AnalyticsService — getSiteTrend cache hit', () => {
+  it('returns cached value without querying ClickHouse', async () => {
+    const cached = [{ eventDate: '2026-01-01', reportCount: 2 }];
+    const cache = makeCacheManager(cached);
+    const ch = makeClickHouseClient();
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getSiteTrend('t1', 'p1', '2026-01-01,2026-06-30');
+    expect(result).toBe(cached);
+    expect(ch.query).not.toHaveBeenCalled();
+  });
+});
+
+// ── parseDateRange error path ─────────────────────────────────────────────────
+describe('AnalyticsService — parseDateRange invalid input', () => {
+  it('throws when dateRange has no comma separator', async () => {
+    const cache = makeCacheManager(null);
+    const ch = makeClickHouseClient([]);
+    const svc = await buildService(ch, cache);
+
+    await expect(svc.getCostTrend('t1', 'p1', '2026-01-01')).rejects.toThrow('Invalid dateRange');
+  });
+});
+
 // ── Executive dashboard — riskThresholdPct param ─────────────────────────────
 describe('AnalyticsService — getExecutiveDashboard riskThreshold', () => {
   it('passes riskThreshold to ClickHouse query params', async () => {

@@ -3,20 +3,6 @@ import type { Producer, Message, EachMessagePayload } from 'kafkajs';
 
 const _metrics = createMetrics();
 
-type ObservableGaugeCallback = (topic: string, group: string, lag: number) => void;
-
-// Registry for observable gauge callbacks (consumer lag, DLQ depth)
-const _lagCallbacks: ObservableGaugeCallback[] = [];
-const _dlqCallbacks: Array<(topic: string, depth: number) => void> = [];
-
-_metrics.kafkaConsumerLag.addCallback((result) => {
-  _lagCallbacks.forEach((cb) => {
-    // Callbacks registered externally via registerConsumerLagGauge
-    void cb;
-    void result;
-  });
-});
-
 /**
  * Wraps a KafkaJS Producer.send() call to:
  * - Inject W3C trace context into message headers

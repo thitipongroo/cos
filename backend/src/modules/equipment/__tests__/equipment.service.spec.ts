@@ -175,4 +175,106 @@ describe('EquipmentService', () => {
       expect(result).toHaveLength(2);
     });
   });
+
+  describe('createEquipment', () => {
+    it('delegates to repo.createEquipment and returns the row', async () => {
+      const row = { equipment_id: 'eq-new', status: 'AVAILABLE' };
+      repo.createEquipment.mockResolvedValue(row);
+
+      const result = await service.createEquipment({
+        equipment_code: 'EQ-001',
+        equipment_name: 'Excavator',
+        equipment_type: 'EXCAVATOR',
+      } as never);
+      expect(result).toBe(row);
+    });
+  });
+
+  describe('listEquipment', () => {
+    it('delegates to repo.findAll with filters', async () => {
+      repo.findAll.mockResolvedValue([]);
+      await service.listEquipment({ status: 'AVAILABLE' });
+      expect(repo.findAll).toHaveBeenCalledWith({ status: 'AVAILABLE' });
+    });
+  });
+
+  describe('emitEvent error path', () => {
+    it('does not throw when Kafka publish fails', async () => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared');
+      KafkaProducer.mockImplementation(() => ({
+        connect: jest.fn().mockResolvedValue(undefined),
+        publish: jest.fn().mockRejectedValue(new Error('Kafka down')),
+      }));
+      repo = makeRepo();
+      service = new EquipmentService(
+        req as unknown as ConstructorParameters<typeof EquipmentService>[0],
+        repo as unknown as EquipmentRepository,
+      );
+      repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
+      repo.createAssignment.mockResolvedValue({ assignment_id: 'a-1', equipment_id: 'eq-1' });
+      repo.updateStatus.mockResolvedValue({ equipment_id: 'eq-1', status: 'IN_USE' });
+
+      await expect(
+        service.assignToProject('eq-1', { project_id: 'p-1' } as never),
+      ).resolves.not.toThrow();
+    });
+  });
+
+  describe('userId fallback to system', () => {
+    it('uses "system" as actor_id when req.user is undefined', async () => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared');
+      const kafkaMock = {
+        connect: jest.fn().mockResolvedValue(undefined),
+        publish: jest.fn().mockResolvedValue(undefined),
+      };
+      KafkaProducer.mockImplementation(() => kafkaMock);
+      const noUserReq = { tenantId: 'tenant-1' };
+      repo = makeRepo();
+      service = new EquipmentService(
+        noUserReq as unknown as ConstructorParameters<typeof EquipmentService>[0],
+        repo as unknown as EquipmentRepository,
+      );
+      repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'AVAILABLE' });
+      repo.createAssignment.mockResolvedValue({ assignment_id: 'a-1', equipment_id: 'eq-1' });
+      repo.updateStatus.mockResolvedValue({ equipment_id: 'eq-1', status: 'IN_USE' });
+
+      await service.assignToProject('eq-1', { project_id: 'p-1' } as never);
+
+      expect(kafkaMock.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ actor_id: 'system' }),
+      );
+    });
+  });
+
+  describe('listEquipment with no args (default filter)', () => {
+    it('calls repo.findAll with empty object when no filter passed', async () => {
+      repo.findAll.mockResolvedValue([]);
+      await service.listEquipment();
+      expect(repo.findAll).toHaveBeenCalledWith({});
+    });
+  });
+
+  describe('updateStatus with unknown current status', () => {
+    it('throws UnprocessableEntityException when current status is not in transition map', async () => {
+      repo.findById.mockResolvedValue({ equipment_id: 'eq-1', status: 'UNKNOWN_STATUS' });
+      await expect(service.updateStatus('eq-1', 'AVAILABLE')).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+    });
+  });
+
+  describe('recordUtilization with null optional fields', () => {
+    it('passes null for hours_operated and fuel_consumed when not provided', async () => {
+      repo.findById.mockResolvedValue({ equipment_id: 'eq-1' });
+      repo.recordUtilization.mockResolvedValue(undefined);
+
+      await service.recordUtilization('eq-1', {
+        recorded_at: '2026-06-08T06:00:00Z',
+      } as never);
+
+      expect(repo.recordUtilization).toHaveBeenCalledWith(
+        expect.objectContaining({ hours_operated: null, fuel_consumed: null }),
+      );
+    });
+  });
 });

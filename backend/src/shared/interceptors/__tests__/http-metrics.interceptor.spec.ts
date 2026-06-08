@@ -88,4 +88,68 @@ describe('HttpMetricsInterceptor', () => {
         },
       });
   });
+
+  it('falls back to req.url when routerPath is undefined', (done) => {
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => ({ method: 'GET', url: '/fallback-url' }),
+        getResponse: () => ({ statusCode: 200 }),
+      }),
+    } as unknown as ExecutionContext;
+    interceptor.intercept(ctx, makeHandler(of({}))).subscribe({
+      complete: () => {
+        const [, attrs] = mockRecord.mock.calls[0];
+        expect(attrs.path).toBe('/fallback-url');
+        done();
+      },
+    });
+  });
+
+  it('falls back to "unknown" when both routerPath and url are undefined', (done) => {
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => ({ method: 'GET' }),
+        getResponse: () => ({ statusCode: 200 }),
+      }),
+    } as unknown as ExecutionContext;
+    interceptor.intercept(ctx, makeHandler(of({}))).subscribe({
+      complete: () => {
+        const [, attrs] = mockRecord.mock.calls[0];
+        expect(attrs.path).toBe('unknown');
+        done();
+      },
+    });
+  });
+
+  it('uses "UNKNOWN" when req.method is undefined', (done) => {
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => ({ routerPath: '/api' }),
+        getResponse: () => ({ statusCode: 200 }),
+      }),
+    } as unknown as ExecutionContext;
+    interceptor.intercept(ctx, makeHandler(of({}))).subscribe({
+      complete: () => {
+        const [, attrs] = mockRecord.mock.calls[0];
+        expect(attrs.method).toBe('UNKNOWN');
+        done();
+      },
+    });
+  });
+
+  it('defaults statusCode to 200 when response statusCode is undefined', (done) => {
+    const ctx = {
+      switchToHttp: () => ({
+        getRequest: () => ({ method: 'GET', routerPath: '/api' }),
+        getResponse: () => ({}),
+      }),
+    } as unknown as ExecutionContext;
+    interceptor.intercept(ctx, makeHandler(of({}))).subscribe({
+      complete: () => {
+        const [, attrs] = mockRecord.mock.calls[0];
+        expect(attrs.status).toBe('200');
+        done();
+      },
+    });
+  });
 });
