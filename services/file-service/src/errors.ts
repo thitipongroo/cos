@@ -31,6 +31,12 @@ export const FILE_ERRORS = {
     httpStatus: 500,
   },
   SCAN_FAILED: { code: 'COS-FILE-009', message: 'Antivirus scan failed', httpStatus: 500 },
+  FILE_NOT_QUARANTINED: {
+    code: 'COS-FILE-010',
+    message: 'File is not in quarantine status',
+    httpStatus: 422,
+  },
+  FORBIDDEN: { code: 'COS-FILE-011', message: 'Insufficient permissions', httpStatus: 403 },
 } as const;
 
 export type FileErrorKey = keyof typeof FILE_ERRORS;

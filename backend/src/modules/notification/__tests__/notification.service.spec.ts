@@ -153,6 +153,17 @@ describe('handleEvent — routing', () => {
     });
     expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', ['FINANCE']);
   });
+
+  it('routes file.document.quarantined to SYSTEM_ADMIN', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([]);
+    await svc.handleEvent({
+      event_type: 'file.document.quarantined.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: { file_id: 'fid-1', threat_type: 'Eicar' },
+    });
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', ['SYSTEM_ADMIN']);
+  });
 });
 
 // ── preference filtering ───────────────────────────────────────────────────

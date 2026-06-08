@@ -18,5 +18,6 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
 
     request.tenantId = tenantId;
     request.userId = userId;
+    request.userRole = (request.headers['x-user-role'] as string | undefined) ?? '';
   });
 });

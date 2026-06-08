@@ -6,6 +6,7 @@ const mockMakeBucket = jest.fn();
 const mockPutObject = jest.fn();
 const mockPresignedGet = jest.fn();
 const mockRemoveObject = jest.fn();
+const mockCopyObject = jest.fn();
 
 jest.mock('minio', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -14,6 +15,7 @@ jest.mock('minio', () => ({
     putObject: mockPutObject,
     presignedGetObject: mockPresignedGet,
     removeObject: mockRemoveObject,
+    copyObject: mockCopyObject,
   })),
 }));
 
@@ -36,6 +38,12 @@ describe('MinioService', () => {
     });
   });
 
+  describe('quarantineBucketName', () => {
+    it('returns cos-quarantine-{tenantId}', () => {
+      expect(svc.quarantineBucketName('tid-1')).toBe('cos-quarantine-tid-1');
+    });
+  });
+
   describe('ensureBucket', () => {
     it('creates bucket when it does not exist', async () => {
       mockBucketExists.mockResolvedValue(false);
@@ -47,6 +55,21 @@ describe('MinioService', () => {
     it('skips creation when bucket already exists', async () => {
       mockBucketExists.mockResolvedValue(true);
       await svc.ensureBucket('tid-1');
+      expect(mockMakeBucket).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('ensureQuarantineBucket', () => {
+    it('creates quarantine bucket when it does not exist', async () => {
+      mockBucketExists.mockResolvedValue(false);
+      mockMakeBucket.mockResolvedValue(undefined);
+      await svc.ensureQuarantineBucket('tid-1');
+      expect(mockMakeBucket).toHaveBeenCalledWith('cos-quarantine-tid-1', 'ap-southeast-1');
+    });
+
+    it('skips creation when quarantine bucket already exists', async () => {
+      mockBucketExists.mockResolvedValue(true);
+      await svc.ensureQuarantineBucket('tid-1');
       expect(mockMakeBucket).not.toHaveBeenCalled();
     });
   });
@@ -90,6 +113,63 @@ describe('MinioService', () => {
       mockRemoveObject.mockResolvedValue(undefined);
       await svc.deleteFile('tid-1', 'key');
       expect(mockRemoveObject).toHaveBeenCalledWith('cos-tid-1', 'key');
+    });
+  });
+
+  describe('moveToQuarantine', () => {
+    it('ensures quarantine bucket, copies object, then removes from original', async () => {
+      mockBucketExists.mockResolvedValue(true);
+      mockCopyObject.mockResolvedValue(undefined);
+      mockRemoveObject.mockResolvedValue(undefined);
+
+      await svc.moveToQuarantine('tid-1', '2026/06/fid-1/test.jpg');
+
+      expect(mockCopyObject).toHaveBeenCalledWith(
+        'cos-quarantine-tid-1',
+        '2026/06/fid-1/test.jpg',
+        '/cos-tid-1/2026/06/fid-1/test.jpg',
+      );
+      expect(mockRemoveObject).toHaveBeenCalledWith('cos-tid-1', '2026/06/fid-1/test.jpg');
+    });
+
+    it('propagates copyObject error', async () => {
+      mockBucketExists.mockResolvedValue(true);
+      mockCopyObject.mockRejectedValue(new Error('copy failed'));
+      await expect(svc.moveToQuarantine('tid-1', 'key')).rejects.toThrow('copy failed');
+    });
+  });
+
+  describe('moveFromQuarantine', () => {
+    it('ensures regular bucket, copies from quarantine, then removes quarantine copy', async () => {
+      mockBucketExists.mockResolvedValue(true);
+      mockCopyObject.mockResolvedValue(undefined);
+      mockRemoveObject.mockResolvedValue(undefined);
+
+      await svc.moveFromQuarantine('tid-1', '2026/06/fid-1/test.jpg');
+
+      expect(mockCopyObject).toHaveBeenCalledWith(
+        'cos-tid-1',
+        '2026/06/fid-1/test.jpg',
+        '/cos-quarantine-tid-1/2026/06/fid-1/test.jpg',
+      );
+      expect(mockRemoveObject).toHaveBeenCalledWith(
+        'cos-quarantine-tid-1',
+        '2026/06/fid-1/test.jpg',
+      );
+    });
+
+    it('propagates copyObject error', async () => {
+      mockBucketExists.mockResolvedValue(true);
+      mockCopyObject.mockRejectedValue(new Error('copy failed'));
+      await expect(svc.moveFromQuarantine('tid-1', 'key')).rejects.toThrow('copy failed');
+    });
+  });
+
+  describe('deleteFromQuarantine', () => {
+    it('removes object from quarantine bucket', async () => {
+      mockRemoveObject.mockResolvedValue(undefined);
+      await svc.deleteFromQuarantine('tid-1', 'key');
+      expect(mockRemoveObject).toHaveBeenCalledWith('cos-quarantine-tid-1', 'key');
     });
   });
 });

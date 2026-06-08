@@ -17,6 +17,7 @@ const SUBSCRIBED_TOPICS = [
   'finance.variance.alert',
   'site.report.created',
   'procurement.invoice.received',
+  'file.document.quarantined',
 ];
 
 @Injectable()

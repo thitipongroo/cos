@@ -16,20 +16,27 @@ const FILE_ROW = {
   uploaded_by: 'uid-1',
   uploaded_at: new Date(),
   deleted_at: null,
+  quarantined_at: null,
 };
 
 function makeApp(overrides?: {
   scan?: jest.Mock;
   updateFileStatus?: jest.Mock;
+  markFileQuarantined?: jest.Mock;
   findFileById?: jest.Mock;
   indexFile?: jest.Mock;
   publishFileQuarantined?: jest.Mock;
+  moveToQuarantine?: jest.Mock;
 }): FastifyInstance {
   return {
     antivirus: { scan: overrides?.scan ?? jest.fn().mockResolvedValue({ clean: true }) },
     db: {
       updateFileStatus: overrides?.updateFileStatus ?? jest.fn().mockResolvedValue(undefined),
+      markFileQuarantined: overrides?.markFileQuarantined ?? jest.fn().mockResolvedValue(undefined),
       findFileById: overrides?.findFileById ?? jest.fn().mockResolvedValue(FILE_ROW),
+    },
+    minio: {
+      moveToQuarantine: overrides?.moveToQuarantine ?? jest.fn().mockResolvedValue(undefined),
     },
     opensearch: { indexFile: overrides?.indexFile ?? jest.fn().mockResolvedValue(undefined) },
     kafka: {
@@ -43,7 +50,7 @@ describe('runAntivirusScan', () => {
   it('marks file CLEAN and indexes in OpenSearch when scan is clean', async () => {
     const indexFile = jest.fn().mockResolvedValue(undefined);
     const app = makeApp({ indexFile });
-    await runAntivirusScan(app, 'fid-1', 'tid-1', 'uid-1', 'trace-1', Buffer.from('safe'));
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('safe'));
     expect(app.db.updateFileStatus as jest.Mock).toHaveBeenCalledWith('fid-1', 'CLEAN');
     expect(indexFile).toHaveBeenCalledWith(FILE_ROW);
   });
@@ -54,18 +61,23 @@ describe('runAntivirusScan', () => {
       findFileById: jest.fn().mockResolvedValue(null),
       indexFile,
     });
-    await runAntivirusScan(app, 'fid-1', 'tid-1', 'uid-1', 'trace-1', Buffer.from('safe'));
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('safe'));
     expect(indexFile).not.toHaveBeenCalled();
   });
 
-  it('marks file QUARANTINED and publishes event when virus detected', async () => {
+  it('moves file to quarantine, marks QUARANTINED, and publishes event when virus detected', async () => {
+    const moveToQuarantine = jest.fn().mockResolvedValue(undefined);
+    const markFileQuarantined = jest.fn().mockResolvedValue(undefined);
     const publishFileQuarantined = jest.fn().mockResolvedValue(undefined);
     const app = makeApp({
       scan: jest.fn().mockResolvedValue({ clean: false, threat: 'Eicar' }),
+      moveToQuarantine,
+      markFileQuarantined,
       publishFileQuarantined,
     });
-    await runAntivirusScan(app, 'fid-1', 'tid-1', 'uid-1', 'trace-1', Buffer.from('virus'));
-    expect(app.db.updateFileStatus as jest.Mock).toHaveBeenCalledWith('fid-1', 'QUARANTINED');
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('virus'));
+    expect(moveToQuarantine).toHaveBeenCalledWith('tid-1', 'key');
+    expect(markFileQuarantined).toHaveBeenCalledWith('fid-1');
     expect(publishFileQuarantined).toHaveBeenCalledWith(
       expect.objectContaining({ payload: expect.objectContaining({ threat_type: 'Eicar' }) }),
     );
@@ -77,7 +89,7 @@ describe('runAntivirusScan', () => {
       scan: jest.fn().mockResolvedValue({ clean: false, threat: undefined }),
       publishFileQuarantined,
     });
-    await runAntivirusScan(app, 'fid-1', 'tid-1', 'uid-1', 'trace-1', Buffer.from('virus'));
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('virus'));
     expect(publishFileQuarantined).toHaveBeenCalledWith(
       expect.objectContaining({ payload: expect.objectContaining({ threat_type: null }) }),
     );
@@ -87,9 +99,8 @@ describe('runAntivirusScan', () => {
     const app = makeApp({
       scan: jest.fn().mockRejectedValue(new Error('clamav unreachable')),
     });
-    // Should not throw even when scan fails
     await expect(
-      runAntivirusScan(app, 'fid-1', 'tid-1', 'uid-1', 'trace-1', Buffer.from('data')),
+      runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('data')),
     ).resolves.toBeUndefined();
   });
 });

@@ -20,6 +20,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     tenantId: string;
     userId: string;
+    userRole: string;
     traceId: string;
   }
 }
@@ -38,6 +39,7 @@ export interface StoredFileRow {
   uploaded_by: string;
   uploaded_at: Date;
   deleted_at: Date | null;
+  quarantined_at: Date | null;
 }
 
 export interface FileMetadataRow {

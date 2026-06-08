@@ -28,6 +28,8 @@ const EVENT_ROLE_MAP: Record<string, string[] | 'actor'> = {
   // Phase 25 — platform-level events (tenant_id='platform', routed to all SYSTEM_ADMINs)
   'platform.enterprise.contract_signed.v1': ['SYSTEM_ADMIN'],
   'platform.enterprise.db_provisioned.v1': ['SYSTEM_ADMIN'],
+  // Phase 9 — file quarantine alert routed to SYSTEM_ADMIN for the affected tenant
+  'file.document.quarantined.v1': ['SYSTEM_ADMIN'],
 };
 
 @Injectable()

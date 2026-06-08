@@ -153,6 +153,7 @@ model StoredFile {
   uploadedBy       String     @map("uploaded_by") @db.Uuid
   uploadedAt       DateTime   @default(now()) @map("uploaded_at") @db.Timestamptz()
   deletedAt        DateTime?  @map("deleted_at") @db.Timestamptz()
+  quarantinedAt    DateTime?  @map("quarantined_at") @db.Timestamptz()
 
   metadata FileMetadata[]
 

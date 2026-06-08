@@ -50,6 +50,21 @@ export class DbService {
     ]);
   }
 
+  async markFileQuarantined(fileId: string): Promise<void> {
+    await this.pool.query(
+      `UPDATE files.files SET file_status = 'QUARANTINED', quarantined_at = now() WHERE file_id = $1`,
+      [fileId],
+    );
+  }
+
+  async findFileByIdAdmin(fileId: string): Promise<StoredFileRow | null> {
+    const { rows } = await this.pool.query<StoredFileRow>(
+      `SELECT * FROM files.files WHERE file_id = $1`,
+      [fileId],
+    );
+    return rows[0] ?? null;
+  }
+
   async findFileById(fileId: string, tenantId: string): Promise<StoredFileRow | null> {
     const { rows } = await this.pool.query<StoredFileRow>(
       `SELECT * FROM files.files WHERE file_id = $1 AND tenant_id = $2`,
@@ -129,6 +144,16 @@ export class DbService {
       `SELECT * FROM files.files
        WHERE deleted_at IS NOT NULL
          AND deleted_at + INTERVAL '30 days' < now()`,
+    );
+    return rows;
+  }
+
+  async findExpiredQuarantinedFiles(): Promise<StoredFileRow[]> {
+    const { rows } = await this.pool.query<StoredFileRow>(
+      `SELECT * FROM files.files
+       WHERE file_status = 'QUARANTINED'
+         AND quarantined_at IS NOT NULL
+         AND quarantined_at + INTERVAL '30 days' < now()`,
     );
     return rows;
   }

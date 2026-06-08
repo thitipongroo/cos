@@ -35,6 +35,7 @@ const EXPECTED_TOPICS = [
   'finance.variance.alert',
   'site.report.created',
   'procurement.invoice.received',
+  'file.document.quarantined',
 ];
 
 let consumer: NotificationConsumer;
@@ -47,9 +48,9 @@ beforeEach(() => {
 // ── onModuleInit ────────────────────────────────────────────────────────────
 
 describe('onModuleInit', () => {
-  it('registers a handler for each of the 6 subscribed topics', async () => {
+  it('registers a handler for each of the 7 subscribed topics', async () => {
     await consumer.onModuleInit();
-    expect(mockOn).toHaveBeenCalledTimes(6);
+    expect(mockOn).toHaveBeenCalledTimes(7);
     const registeredEventTypes = mockOn.mock.calls.map((c: unknown[]) => c[0]);
     for (const topic of EXPECTED_TOPICS) {
       expect(registeredEventTypes).toContain(`${topic}.v1`);
@@ -65,7 +66,7 @@ describe('onModuleInit', () => {
       }),
     );
     const callArgs = mockConnect.mock.calls[0][0] as { topics: string[] };
-    expect(callArgs.topics).toHaveLength(6);
+    expect(callArgs.topics).toHaveLength(7);
   });
 
   it('connects with fromBeginning = false', async () => {

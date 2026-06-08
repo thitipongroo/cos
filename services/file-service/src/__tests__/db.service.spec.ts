@@ -24,6 +24,7 @@ const FILE_ROW = {
   uploaded_by: 'uid-1',
   uploaded_at: new Date(),
   deleted_at: null,
+  quarantined_at: null,
 };
 
 describe('DbService', () => {
@@ -131,11 +132,52 @@ describe('DbService', () => {
     });
   });
 
+  describe('markFileQuarantined', () => {
+    it('sets file_status to QUARANTINED and sets quarantined_at', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      await db.markFileQuarantined('fid-1');
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('QUARANTINED'), ['fid-1']);
+    });
+  });
+
+  describe('findFileByIdAdmin', () => {
+    it('returns row without tenant filter', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const result = await db.findFileByIdAdmin('fid-1');
+      expect(result).toEqual(FILE_ROW);
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('WHERE file_id = $1'), [
+        'fid-1',
+      ]);
+    });
+
+    it('returns null when not found', async () => {
+      mockQuery.mockResolvedValue({ rows: [] });
+      const result = await db.findFileByIdAdmin('missing');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('findExpiredFiles', () => {
     it('returns expired file rows', async () => {
       mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
       const result = await db.findExpiredFiles();
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('findExpiredQuarantinedFiles', () => {
+    it('returns quarantined files past 30-day retention', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const result = await db.findExpiredQuarantinedFiles();
+      expect(result).toHaveLength(1);
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining("file_status = 'QUARANTINED'"),
+      );
+    });
+
+    it('returns empty array when no expired quarantined files', async () => {
+      mockQuery.mockResolvedValue({ rows: [] });
+      expect(await db.findExpiredQuarantinedFiles()).toEqual([]);
     });
   });
 

@@ -32,6 +32,14 @@ const FILE_ROW = {
   uploaded_by: USER,
   uploaded_at: new Date('2026-01-01'),
   deleted_at: null,
+  quarantined_at: null,
+};
+
+const QUARANTINED_ROW = {
+  ...FILE_ROW,
+  file_id: 'fid-quarantined',
+  file_status: 'QUARANTINED' as const,
+  quarantined_at: new Date('2026-01-01'),
 };
 
 function buildMockServices() {
@@ -39,16 +47,20 @@ function buildMockServices() {
     insertFile: jest.fn().mockResolvedValue(FILE_ROW),
     insertMetadata: jest.fn().mockResolvedValue(undefined),
     findFileById: jest.fn().mockResolvedValue(FILE_ROW),
+    findFileByIdAdmin: jest.fn().mockResolvedValue(QUARANTINED_ROW),
     softDeleteFile: jest.fn().mockResolvedValue(true),
     listFiles: jest.fn().mockResolvedValue([FILE_ROW]),
     listFilesByEntity: jest.fn().mockResolvedValue([FILE_ROW]),
     updateFileStatus: jest.fn().mockResolvedValue(undefined),
+    markFileQuarantined: jest.fn().mockResolvedValue(undefined),
   };
   const minio: Partial<MinioService> = {
     bucketName: jest.fn().mockReturnValue('cos-tid-test'),
     uploadFile: jest.fn().mockResolvedValue(undefined),
     getSignedUrl: jest.fn().mockResolvedValue('https://minio/signed-url'),
     deleteFile: jest.fn().mockResolvedValue(undefined),
+    moveToQuarantine: jest.fn().mockResolvedValue(undefined),
+    moveFromQuarantine: jest.fn().mockResolvedValue(undefined),
   };
   const antivirus: Partial<AntivirusService> = {
     scan: jest.fn().mockResolvedValue({ clean: true }),
@@ -380,6 +392,60 @@ describe('Files routes (integration)', () => {
       expect(res.statusCode).toBe(200);
       const data = JSON.parse(res.body).data[0];
       expect(typeof data.uploaded_at).toBe('string');
+    });
+  });
+
+  describe('POST /api/v1/files/admin/:fileId/recover', () => {
+    const ADMIN_HEADERS = { ...AUTH_HEADERS, 'x-user-role': 'SYSTEM_ADMIN' };
+
+    it('200 — recovers a quarantined file as SYSTEM_ADMIN', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/admin/fid-quarantined/recover',
+        headers: ADMIN_HEADERS,
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.file_status).toBe('CLEAN');
+    });
+
+    it('403 — returns FORBIDDEN when caller is not SYSTEM_ADMIN', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/admin/fid-quarantined/recover',
+        headers: AUTH_HEADERS,
+      });
+      expect(res.statusCode).toBe(403);
+      expect(JSON.parse(res.body).error.code).toBe('COS-FILE-011');
+    });
+
+    it('404 — returns FILE_NOT_FOUND when file does not exist', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileByIdAdmin as jest.Mock).mockResolvedValue(null);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/admin/missing-id/recover',
+        headers: ADMIN_HEADERS,
+      });
+      expect(res.statusCode).toBe(404);
+      expect(JSON.parse(res.body).error.code).toBe('COS-FILE-005');
+    });
+
+    it('422 — returns FILE_NOT_QUARANTINED when file is not in QUARANTINED status', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileByIdAdmin as jest.Mock).mockResolvedValue({
+        ...FILE_ROW,
+        file_status: 'CLEAN',
+      });
+      const res = await app.inject({
+        method: 'POST',
+        url: `/api/v1/files/admin/${FILE_ID}/recover`,
+        headers: ADMIN_HEADERS,
+      });
+      expect(res.statusCode).toBe(422);
+      expect(JSON.parse(res.body).error.code).toBe('COS-FILE-010');
     });
   });
 });

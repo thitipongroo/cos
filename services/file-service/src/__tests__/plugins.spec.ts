@@ -60,11 +60,33 @@ describe('tracePlugin', () => {
 // ── Auth plugin ─────────────────────────────────────────────────────────────
 
 describe('authPlugin', () => {
-  it('passes when both tenant headers are present', async () => {
+  it('passes when both tenant headers are present and reads userRole', async () => {
     const app = Fastify();
     await app.register(tracePlugin);
     await app.register(authPlugin);
-    app.get('/test', async (req) => ({ tenantId: req.tenantId, userId: req.userId }));
+    app.get('/test', async (req) => ({
+      tenantId: req.tenantId,
+      userId: req.userId,
+      userRole: req.userRole,
+    }));
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/test',
+      headers: { 'x-tenant-id': 'tid-1', 'x-user-id': 'uid-1', 'x-user-role': 'SYSTEM_ADMIN' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.tenantId).toBe('tid-1');
+    expect(body.userId).toBe('uid-1');
+    expect(body.userRole).toBe('SYSTEM_ADMIN');
+  });
+
+  it('sets userRole to empty string when x-user-role header is absent', async () => {
+    const app = Fastify();
+    await app.register(tracePlugin);
+    await app.register(authPlugin);
+    app.get('/test', async (req) => ({ userRole: req.userRole }));
 
     const res = await app.inject({
       method: 'GET',
@@ -72,9 +94,7 @@ describe('authPlugin', () => {
       headers: { 'x-tenant-id': 'tid-1', 'x-user-id': 'uid-1' },
     });
     expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.body);
-    expect(body.tenantId).toBe('tid-1');
-    expect(body.userId).toBe('uid-1');
+    expect(JSON.parse(res.body).userRole).toBe('');
   });
 
   it('returns 401 when X-Tenant-ID is missing', async () => {

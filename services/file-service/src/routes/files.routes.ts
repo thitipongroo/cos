@@ -37,16 +37,14 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 
     const validationError = validateFile(filename, mimeType, size);
     if (validationError) {
-      return reply
-        .status(validationError.httpStatus)
-        .send({
-          error: {
-            code: validationError.code,
-            message: validationError.message,
-            traceId: request.traceId,
-            timestamp: new Date().toISOString(),
-          },
-        });
+      return reply.status(validationError.httpStatus).send({
+        error: {
+          code: validationError.code,
+          message: validationError.message,
+          traceId: request.traceId,
+          timestamp: new Date().toISOString(),
+        },
+      });
     }
 
     const fileId = uuidv4();
@@ -99,7 +97,15 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 
     // Async antivirus scan — fire and forget (upload response is immediate)
     setImmediate(() => {
-      void runAntivirusScan(app, fileId, request.tenantId, request.userId, request.traceId, buffer);
+      void runAntivirusScan(
+        app,
+        fileId,
+        storedKey,
+        request.tenantId,
+        request.userId,
+        request.traceId,
+        buffer,
+      );
     });
 
     logger.info(
@@ -197,6 +203,38 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       return reply.send({ data: files.map(toFileDto) });
     },
   );
+
+  // POST /api/v1/files/admin/:fileId/recover  — SYSTEM_ADMIN only
+  // Moves a quarantined file back to the regular bucket and resets status to CLEAN.
+  app.post('/admin/:fileId/recover', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (request.userRole !== 'SYSTEM_ADMIN') {
+      return reply.status(403).send(buildError('FORBIDDEN', request.traceId));
+    }
+
+    const { fileId } = request.params as { fileId: string };
+    const file = await app.db.findFileByIdAdmin(fileId);
+
+    if (!file) {
+      return reply.status(404).send(buildError('FILE_NOT_FOUND', request.traceId));
+    }
+    if (file.file_status !== 'QUARANTINED') {
+      return reply.status(422).send(buildError('FILE_NOT_QUARANTINED', request.traceId));
+    }
+
+    await app.minio.moveFromQuarantine(file.tenant_id, file.stored_key);
+    await app.db.updateFileStatus(fileId, 'CLEAN');
+
+    logger.info(
+      {
+        file_id: fileId,
+        tenant_id: file.tenant_id,
+        actor_id: request.userId,
+        traceId: request.traceId,
+      },
+      'file.quarantine.recovered',
+    );
+    return reply.send({ file_id: fileId, file_status: 'CLEAN' });
+  });
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -204,6 +242,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 export async function runAntivirusScan(
   app: FastifyInstance,
   fileId: string,
+  storedKey: string,
   tenantId: string,
   actorId: string,
   traceId: string,
@@ -219,7 +258,8 @@ export async function runAntivirusScan(
       }
       logger.info({ file_id: fileId, traceId }, 'file.scan.clean');
     } else {
-      await app.db.updateFileStatus(fileId, 'QUARANTINED');
+      await app.minio.moveToQuarantine(tenantId, storedKey);
+      await app.db.markFileQuarantined(fileId);
       await app.kafka.publishFileQuarantined({
         tenantId,
         actorId,

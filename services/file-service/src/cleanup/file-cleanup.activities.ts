@@ -12,6 +12,8 @@ const logger = createLogger('file-service.cleanup');
 export interface FileCleanupActivities {
   findExpiredFiles(): Promise<string[]>;
   hardDeleteFile(fileId: string): Promise<void>;
+  findExpiredQuarantinedFiles(): Promise<string[]>;
+  purgeQuarantinedFile(fileId: string): Promise<void>;
 }
 
 export function createFileCleanupActivities(
@@ -43,6 +45,31 @@ export function createFileCleanupActivities(
       }
       await db.hardDeleteFile(fileId);
       logger.info({ file_id: fileId }, 'file.cleanup.hard_deleted');
+    },
+
+    async findExpiredQuarantinedFiles(): Promise<string[]> {
+      const rows = await db.findExpiredQuarantinedFiles();
+      return rows.map((r) => r.file_id);
+    },
+
+    async purgeQuarantinedFile(fileId: string): Promise<void> {
+      const rows = await db.findExpiredQuarantinedFiles();
+      const file = rows.find((r) => r.file_id === fileId);
+      if (!file) {
+        return; // Already purged or not found — idempotent no-op
+      }
+      try {
+        await minio.deleteFromQuarantine(file.tenant_id, file.stored_key);
+      } catch (err) {
+        logger.warn({ err, file_id: fileId }, 'file.cleanup.quarantine_minio_delete_failed');
+      }
+      try {
+        await opensearch.deleteFileIndex(file.tenant_id, fileId);
+      } catch (err) {
+        logger.warn({ err, file_id: fileId }, 'file.cleanup.quarantine_opensearch_delete_failed');
+      }
+      await db.hardDeleteFile(fileId);
+      logger.info({ file_id: fileId }, 'file.cleanup.quarantine_purged');
     },
   };
 }
