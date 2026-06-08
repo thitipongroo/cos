@@ -429,6 +429,10 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 
 **Implementation:** `AutonomousWorkflowExecutor.execute(action)` — checks action type against whitelist before executing; throws `GovernanceViolationError` for disallowed actions.
 
+> ⚠️ **NOT implemented in Phase 11–12.** Interface is specified here as a decision record only.
+> Implementation deferred to Phase 13+ when Layer B (Analytical AI) is deployed and stable.
+> Source: `context/00_master_construction_os.md §Phase 11 AI Operating Modes`.
+
 ---
 
 ### ML Models (Phase 23)

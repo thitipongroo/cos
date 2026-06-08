@@ -2672,7 +2672,18 @@ AI Services (FastAPI — all in ai/ directory):
      - Token usage tracking (persisted to PostgreSQL for billing/monitoring)
      - Prompt template rendering (Jinja2 templates from ai/prompts/)
      - Response caching (Redis, TTL configurable per template)
+     - RAG Pipeline (LangChain chain — implemented inside ai-gateway, not a separate service;
+       see spec §22-ai-architecture §22.7 LangChain Configuration):
+         Retrieval: hybrid search (keyword via OpenSearch + vector via pgvector)
+         Reranking: sentence-transformers cross-encoder/ms-marco-MiniLM-L-6-v2; activate when RAG p95 relevance < 0.7
+         Context assembly: top-k=5 chunks, max context 4000 tokens
+         Chunking strategy:
+           - Documents: recursive character splitter, chunk_size=500, overlap=100
+           - Site reports: treat each report as one chunk (typically <500 tokens)
+         Chain config: stored in ai/chains/ as YAML per chain type
+         Interface: LangChainProviderConfig.buildChain(chainType, tenantId): Chain
    API: POST /api/v1/ai/completions  { template_name, variables, model_hint? }
+        POST /api/v1/rag/query       { query, tenant_id, entity_types?, top_k? }
 
 2. Embedding Worker (ai-embedding-worker):
 
@@ -2684,17 +2695,7 @@ AI Services (FastAPI — all in ai/ directory):
      - Batch processing: Kafka consumer on file.uploaded and report.submitted events
    API: POST /api/v1/embeddings/generate  { text, entity_type, entity_id, tenant_id }
 
-3. RAG Pipeline:
-
-   Retrieval: hybrid search (keyword via OpenSearch + vector via pgvector)
-   Reranking: sentence-transformers cross-encoder/ms-marco-MiniLM-L-6-v2; activate when RAG p95 relevance < 0.7 (see spec §22.6)
-   Context assembly: top-k=5 chunks, max context 4000 tokens
-   Chunking strategy:
-     - Documents: recursive character splitter, chunk_size=500, overlap=100
-     - Site reports: treat each report as one chunk (typically <500 tokens)
-   API: POST /api/v1/rag/query  { query, tenant_id, entity_types?, top_k? }
-
-4. OCR Pipeline (ai-ocr-pipeline):
+3. OCR Pipeline (ai-ocr-pipeline):
 
    Input: file_id (fetch from File Service signed URL)
    Process: pdf2image → pytesseract → extracted text → embedding worker
@@ -2737,7 +2738,7 @@ Generate:
 - Token usage logger (middleware on every LLM call — logs model_used as string)
 - Prompt template loader (Jinja2 — provider-agnostic)
 - Redis response cache for LLM Gateway
-- PostgreSQL migration for ai_usage_logs
+- PostgreSQL migration for ai_usage_logs (Prisma — add to backend/prisma/migrations/ consistent with all other schemas)
 - Unit tests: chunking, RAG retrieval logic, OCR, stub provider behavior
 - Integration tests: full RAG query pipeline using StubLLMProvider (no real API call)
 

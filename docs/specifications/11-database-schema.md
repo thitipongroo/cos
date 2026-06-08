@@ -62,7 +62,7 @@ CREATE POLICY tenant_isolation ON {schema}.{table}
 | `notifications`       | Notification Service      | NOT NULL  | `notification_templates` has nullable tenant_id (null = system template) |
 | `equipment`           | Equipment Service         | NOT NULL  |                                                                          |
 | `workforce`           | Workforce Service         | NOT NULL  |                                                                          |
-| `ai`                  | AI Services               | NOT NULL  |                                                                          |
+| `ai`                  | AI Services               | NOT NULL  | Migration tool: Prisma (`backend/prisma/migrations/`)                    |
 | `equipment_telemetry` | IoT Telemetry (Timescale) | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
 | `workforce_telemetry` | Attendance (Timescale)    | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
 

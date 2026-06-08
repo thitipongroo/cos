@@ -1,0 +1,23 @@
+# LLM Gateway routing table — two-tier configurable routing
+# Source: context/00_master_construction_os.md §Phase 11 LLM Gateway
+# Rule: never hardcode model names in source code — all routing via this file
+
+tiers:
+  POWERFUL:
+    model: '${OPENAI_POWERFUL_MODEL}' # default: gpt-4o
+    model_hints:
+      - report-generation
+      - risk-analysis
+      - document-extraction
+
+  FAST:
+    model: '${OPENAI_FAST_MODEL}' # default: gpt-4o-mini
+    model_hints:
+      - summarization
+      - classification
+      - autocomplete
+
+defaults:
+  fallback_tier: FAST
+  max_retries: 3
+  timeout_seconds: 30
