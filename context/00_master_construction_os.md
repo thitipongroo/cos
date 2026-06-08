@@ -2857,7 +2857,9 @@ APIs:
   GET  /api/v1/ai/reports/history             { project_id }  — past generated reports
 
 Orchestration:
-  Framework: LangGraph (for chained retrieval + generation)
+  Framework: plain Python sequential pipeline (no Agent Orchestrator — Layer A scope;
+             LangGraph deferred to LAYER-C-001 decision for Layer C autonomous AI;
+             see docs/specifications/22-ai-architecture.md §22.3)
   Step 1: RAG retrieval (via Phase 11 RAG API)
   Step 2: Context assembly and token budget check
   Step 3: LLM generation with structured output (JSON mode)

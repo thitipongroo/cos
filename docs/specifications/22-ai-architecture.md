@@ -83,8 +83,11 @@ The Agent Orchestrator is responsible for coordinating multi-step AI workflows w
 agent must plan, invoke tools, and act across multiple services.
 
 - MVP scope (Layer A only) : no Agent Orchestrator required. Layer A features (report
-  generation, summarization, OCR, voice transcription) are single-step LLM calls — no
-  orchestration needed.
+  generation, summarization, OCR, voice transcription) use plain Python sequential
+  pipelines — no Agent Orchestrator framework (LangGraph, CrewAI, etc.) needed.
+  "No orchestration" means no Agent Orchestrator, not that the pipeline has one function.
+  A 6-step sequential pipeline (RAG → context → LLM → guard → persist → return) is
+  implemented as plain Python function calls.
 - Post-MVP Layer B/C : durable multi-step AI workflows (e.g., AI-triggered procurement,
   auto-schedule generation) MUST be orchestrated via Temporal.io (see 15-event-driven-workflow
   section 15.4). Temporal.io provides durable execution, retries, and human-in-the-loop
