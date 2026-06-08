@@ -1,0 +1,99 @@
+groups:
+  - name: cos.platform
+    interval: 60s
+    rules:
+      # ── KafkaDLQNonEmpty ──────────────────────────────────────────────────────
+      # Source: spec §Phase 15 alerting rules
+      - alert: KafkaDLQNonEmpty
+        expr: kafka_dlq_depth > 0
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: 'Kafka DLQ is not empty ({{ $labels.service }})'
+          description: 'kafka_dlq_depth={{ $value }} for service={{ $labels.service }}. Messages are failing and piling in the DLQ.'
+          runbook: 'https://docs.construction-os.internal/runbooks/kafka-dlq'
+
+      # ── APIHighErrorRate ──────────────────────────────────────────────────────
+      - alert: APIHighErrorRate
+        expr: |
+          (
+            sum by (service) (rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum by (service) (rate(http_requests_total[5m]))
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: 'High 5xx error rate on {{ $labels.service }}'
+          description: '5xx error rate is {{ $value | humanizePercentage }} (threshold: 1%) for service={{ $labels.service }}'
+          runbook: 'https://docs.construction-os.internal/runbooks/high-error-rate'
+
+      # ── APIHighLatency ────────────────────────────────────────────────────────
+      - alert: APIHighLatency
+        expr: |
+          histogram_quantile(0.99,
+            sum by (service, le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: 'P99 latency > 5s on {{ $labels.service }}'
+          description: 'P99 HTTP latency is {{ $value }}s (threshold: 5s) for service={{ $labels.service }}'
+          runbook: 'https://docs.construction-os.internal/runbooks/high-latency'
+
+      # ── DBHighQueryTime ───────────────────────────────────────────────────────
+      - alert: DBHighQueryTime
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(db_query_duration_seconds_bucket[5m]))
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: 'P95 DB query time > 1s on {{ $labels.service }}'
+          description: 'P95 DB query duration is {{ $value }}s (threshold: 1s) for service={{ $labels.service }}'
+          runbook: 'https://docs.construction-os.internal/runbooks/slow-queries'
+
+      # ── AnalyticsSLABreach ────────────────────────────────────────────────────
+      - alert: AnalyticsSLABreach
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (
+              rate(http_request_duration_seconds_bucket{path=~"/api/v1/analytics/.*"}[5m])
+            )
+          ) > 3
+        for: 0m
+        labels:
+          severity: critical
+          team: analytics
+        annotations:
+          summary: 'Analytics SLA breach: P95 > 3s'
+          description: 'Analytics API P95 latency is {{ $value }}s (SLA: 3s). Immediate investigation required.'
+          runbook: 'https://docs.construction-os.internal/runbooks/analytics-sla'
+
+      # ── AIHighTokenUsage ──────────────────────────────────────────────────────
+      # Alert FINANCE and TENANT_ADMIN when token usage exceeds 80% of monthly quota.
+      # Quota is tracked externally; this rule fires on the rolling 30d counter > threshold.
+      # Source: spec §Phase 15 + §31-monitoring-observability
+      - alert: AIHighTokenUsage
+        expr: |
+          sum by (tenant_id) (
+            increase(ai_token_usage_total[30d])
+          ) > (0.80 * on(tenant_id) group_left() cos_tenant_monthly_token_quota)
+        for: 0m
+        labels:
+          severity: warning
+          team: ai
+          notify: finance,tenant_admin
+        annotations:
+          summary: 'AI token usage > 80% of monthly quota (tenant={{ $labels.tenant_id }})'
+          description: 'Tenant {{ $labels.tenant_id }} has consumed {{ $value }} tokens (≥80% of monthly quota). Review usage or upgrade plan.'
+          runbook: 'https://docs.construction-os.internal/runbooks/ai-token-quota'

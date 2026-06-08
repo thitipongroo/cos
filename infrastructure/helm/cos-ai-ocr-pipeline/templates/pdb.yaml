@@ -1,0 +1,11 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "cos-ai-ocr-pipeline.fullname" . }}
+  labels: {{ include "cos-ai-ocr-pipeline.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{ include "cos-ai-ocr-pipeline.selectorLabels" . | nindent 6 }}
+{{- end }}

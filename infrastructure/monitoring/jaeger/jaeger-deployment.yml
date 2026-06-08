@@ -1,0 +1,121 @@
+---
+# Jaeger all-in-one deployment (development / staging)
+# Production: use Jaeger Operator with Cassandra/Elasticsearch backend
+# Source: spec §Phase 15 — Jaeger 1.x
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: monitoring
+  labels:
+    app: jaeger
+    app.kubernetes.io/name: jaeger
+    app.kubernetes.io/component: all-in-one
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '14269'
+    spec:
+      containers:
+        - name: jaeger
+          image: jaegertracing/all-in-one:1.58
+          ports:
+            - containerPort: 16686 # Query UI
+              name: query
+            - containerPort: 4317 # OTLP gRPC receiver
+              name: otlp-grpc
+            - containerPort: 4318 # OTLP HTTP receiver
+              name: otlp-http
+            - containerPort: 14269 # Admin / health
+              name: admin
+          env:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: 'true'
+            - name: SPAN_STORAGE_TYPE
+              value: 'memory'
+            - name: MEMORY_MAX_TRACES
+              value: '100000'
+          resources:
+            requests:
+              cpu: '250m'
+              memory: '256Mi'
+            limits:
+              cpu: '500m'
+              memory: '512Mi'
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 14269
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 14269
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-query
+  namespace: monitoring
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: query
+      port: 16686
+      targetPort: 16686
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger-collector
+  namespace: monitoring
+  labels:
+    app: jaeger
+spec:
+  selector:
+    app: jaeger
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+---
+# Production Jaeger: replace the Deployment above with the Jaeger Operator CRD below
+# and set storage.type to elasticsearch + secretName pointing to sealed secret.
+# ---
+# apiVersion: jaegertracing.io/v1
+# kind: Jaeger
+# metadata:
+#   name: cos-jaeger
+#   namespace: monitoring
+# spec:
+#   strategy: production
+#   storage:
+#     type: elasticsearch
+#     secretName: jaeger-elasticsearch-secret
+#     options:
+#       es:
+#         server-urls: https://elasticsearch:9200
+#         index-prefix: cos-jaeger
+#   collector:
+#     maxReplicas: 3
+#     resources:
+#       requests: { cpu: 500m, memory: 512Mi }
+#   query:
+#     replicas: 2

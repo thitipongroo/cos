@@ -1,3 +1,10 @@
+// OTel SDK must be initialized before any other imports so auto-instrumentation patches apply.
+import { initTracing } from '@cos/tracing';
+initTracing({
+  serviceName: process.env['OTEL_SERVICE_NAME'] ?? 'cos-backend',
+  prometheusPort: parseInt(process.env['PROMETHEUS_PORT'] ?? '9464', 10),
+});
+
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { ValidationPipe } from '@nestjs/common';

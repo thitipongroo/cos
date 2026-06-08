@@ -4,15 +4,274 @@ info:
   version: v1
   description: |
     Workforce Service — Phase 22.
-    Manages worker profiles, attendance, biometric check-in, skills, and certifications.
+    Manages worker profiles, project allocations, attendance logs, and timesheets.
     All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
-    **STUB** — endpoints to be defined when Phase 22 development begins.
+    Tenant isolation via RLS — tenant_id injected from JWT, never accepted as input.
 servers:
   - url: /api/v1
     description: Current version
 
 security:
   - bearerAuth: []
+
+tags:
+  - name: Workers
+    description: Worker profile management
+  - name: Attendance
+    description: Check-in / check-out recording and history
+  - name: Project Workforce
+    description: Worker allocation to projects and manpower analytics
+  - name: Timesheets
+    description: Timesheet submission and approval
+
+paths:
+  # ─── Workers ─────────────────────────────────────────────────────────────────
+
+  /workers:
+    post:
+      tags: [Workers]
+      operationId: createWorker
+      summary: Create a worker profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkerRequest'
+      responses:
+        '201':
+          description: Worker created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Worker'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    get:
+      tags: [Workers]
+      operationId: listWorkers
+      summary: List all workers for the current tenant
+      responses:
+        '200':
+          description: Worker list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Worker'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /workers/{workerId}:
+    parameters:
+      - $ref: '#/components/parameters/workerId'
+
+    get:
+      tags: [Workers]
+      operationId: getWorker
+      summary: Get a worker by ID
+      responses:
+        '200':
+          description: Worker detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Worker'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Attendance ───────────────────────────────────────────────────────────────
+
+  /workers/{workerId}/attendance:
+    parameters:
+      - $ref: '#/components/parameters/workerId'
+
+    post:
+      tags: [Attendance]
+      operationId: recordAttendance
+      summary: Record check-in or check-out for a worker
+      description: |
+        Provide `check_in_at` for check-in, `check_out_at` for check-out.
+        `hours_worked` is calculated automatically from timestamps when not supplied.
+        Emits `workforce.checkin.created.v1` or `workforce.checkout.created.v1`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordAttendanceRequest'
+      responses:
+        '201':
+          description: Attendance log created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttendanceLog'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      tags: [Attendance]
+      operationId: getAttendanceHistory
+      summary: Get attendance history for a worker within a date range
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Range start (ISO 8601)
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+          description: Range end (ISO 8601)
+      responses:
+        '200':
+          description: Attendance log list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttendanceLog'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ─── Project Workforce ────────────────────────────────────────────────────────
+
+  /projects/{projectId}/workforce:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+
+    post:
+      tags: [Project Workforce]
+      operationId: allocateWorker
+      summary: Allocate a worker to a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AllocateWorkerRequest'
+      responses:
+        '201':
+          description: Allocation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkforceAllocation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    get:
+      tags: [Project Workforce]
+      operationId: listProjectWorkforce
+      summary: List all workers allocated to a project
+      responses:
+        '200':
+          description: Allocation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkforceAllocation'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects/{projectId}/workforce/summary:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+
+    get:
+      tags: [Project Workforce]
+      operationId: getManpowerSummary
+      summary: Manpower summary for a project (analytics)
+      responses:
+        '200':
+          description: Manpower summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManpowerSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ─── Timesheets ───────────────────────────────────────────────────────────────
+
+  /timesheets:
+    post:
+      tags: [Timesheets]
+      operationId: submitTimesheet
+      summary: Submit a timesheet for a period
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitTimesheetRequest'
+      responses:
+        '201':
+          description: Timesheet submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timesheet'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /timesheets/{timesheetId}/approve:
+    parameters:
+      - $ref: '#/components/parameters/timesheetId'
+
+    patch:
+      tags: [Timesheets]
+      operationId: approveTimesheet
+      summary: Approve a submitted timesheet
+      description: |
+        Required role: SITE_ENGINEER or higher.
+        Emits `workforce.timesheet.approved.v1` with `total_hours` (regular + overtime).
+      responses:
+        '200':
+          description: Timesheet approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Timesheet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ─── Components ───────────────────────────────────────────────────────────────
 
 components:
   securitySchemes:
@@ -21,4 +280,345 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
-paths: {}
+  parameters:
+    workerId:
+      name: workerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    projectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    timesheetId:
+      name: timesheetId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid Bearer token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Insufficient role
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    # ─── Enums ────────────────────────────────────────────────────────────────
+
+    EmploymentType:
+      type: string
+      enum: [PERMANENT, CONTRACT, SUBCONTRACT]
+
+    TimesheetStatus:
+      type: string
+      enum: [DRAFT, SUBMITTED, APPROVED]
+
+    # ─── Core entities ────────────────────────────────────────────────────────
+
+    Worker:
+      type: object
+      required:
+        [
+          worker_id,
+          tenant_id,
+          employee_code,
+          full_name,
+          trade_type,
+          employment_type,
+          is_active,
+          created_at,
+        ]
+      properties:
+        worker_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        employee_code:
+          type: string
+          example: EMP-001
+        full_name:
+          type: string
+          example: Somchai Jaidee
+        trade_type:
+          type: string
+          example: Carpenter
+        employment_type:
+          $ref: '#/components/schemas/EmploymentType'
+        contact_phone:
+          type: string
+          nullable: true
+          example: '+66812345678'
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+
+    WorkforceAllocation:
+      type: object
+      required: [allocation_id, project_id, worker_id, tenant_id, start_date]
+      properties:
+        allocation_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        worker_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        role_on_project:
+          type: string
+          nullable: true
+          example: Foreman
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        daily_rate:
+          type: number
+          format: double
+          nullable: true
+          example: 850.00
+        currency_code:
+          type: string
+          nullable: true
+          example: THB
+
+    AttendanceLog:
+      type: object
+      required: [log_id, recorded_at, worker_id, project_id, tenant_id]
+      properties:
+        log_id:
+          type: string
+          format: uuid
+        recorded_at:
+          type: string
+          format: date-time
+        worker_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        check_in_at:
+          type: string
+          format: date-time
+          nullable: true
+        check_out_at:
+          type: string
+          format: date-time
+          nullable: true
+        hours_worked:
+          type: number
+          format: double
+          nullable: true
+          example: 9.00
+
+    Timesheet:
+      type: object
+      required:
+        [
+          timesheet_id,
+          period_date,
+          worker_id,
+          project_id,
+          tenant_id,
+          regular_hours,
+          overtime_hours,
+          status,
+        ]
+      properties:
+        timesheet_id:
+          type: string
+          format: uuid
+        period_date:
+          type: string
+          format: date
+          example: '2026-06-01'
+        worker_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        regular_hours:
+          type: number
+          format: double
+          example: 160.00
+        overtime_hours:
+          type: number
+          format: double
+          example: 8.00
+        status:
+          $ref: '#/components/schemas/TimesheetStatus'
+
+    ManpowerSummary:
+      type: object
+      required: [project_id, total_workers, by_employment_type]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        total_workers:
+          type: integer
+          example: 45
+        by_employment_type:
+          type: object
+          additionalProperties:
+            type: integer
+          example:
+            PERMANENT: 20
+            CONTRACT: 15
+            SUBCONTRACT: 10
+
+    # ─── Request bodies ───────────────────────────────────────────────────────
+
+    CreateWorkerRequest:
+      type: object
+      required: [employee_code, full_name, trade_type, employment_type]
+      properties:
+        employee_code:
+          type: string
+          example: EMP-001
+        full_name:
+          type: string
+          example: Somchai Jaidee
+        trade_type:
+          type: string
+          example: Carpenter
+        employment_type:
+          $ref: '#/components/schemas/EmploymentType'
+        contact_phone:
+          type: string
+          example: '+66812345678'
+
+    AllocateWorkerRequest:
+      type: object
+      required: [worker_id, start_date]
+      properties:
+        worker_id:
+          type: string
+          format: uuid
+        role_on_project:
+          type: string
+          example: Foreman
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        daily_rate:
+          type: number
+          format: double
+          example: 850.00
+        currency_code:
+          type: string
+          example: THB
+
+    RecordAttendanceRequest:
+      type: object
+      required: [project_id]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        check_in_at:
+          type: string
+          format: date-time
+        check_out_at:
+          type: string
+          format: date-time
+        hours_worked:
+          type: number
+          format: double
+          description: Explicit hours override. Calculated from timestamps when omitted.
+          example: 9.00
+
+    SubmitTimesheetRequest:
+      type: object
+      required: [worker_id, project_id, period_date, regular_hours]
+      properties:
+        worker_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        period_date:
+          type: string
+          format: date
+          example: '2026-06-01'
+        regular_hours:
+          type: number
+          format: double
+          example: 160.00
+        overtime_hours:
+          type: number
+          format: double
+          default: 0
+          example: 8.00
+
+    # ─── Error ────────────────────────────────────────────────────────────────
+
+    ErrorResponse:
+      type: object
+      required: [statusCode, message]
+      properties:
+        statusCode:
+          type: integer
+          example: 404
+        message:
+          type: string
+          example: Worker abc-123 not found
+        error:
+          type: string
+          example: Not Found

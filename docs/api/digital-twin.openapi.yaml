@@ -1,0 +1,334 @@
+openapi: 3.1.0
+info:
+  title: Construction OS — Digital Twin API
+  version: v1
+  description: |
+    Digital Twin query endpoints — Phase 24.
+    READ-OPTIMIZED. All state writes arrive via Kafka from source systems (IoT, inspection, schedule).
+    Current state served from Redis cache (TTL 5 min).
+    Point-in-time queries bypass cache and hit TimescaleDB directly.
+    All endpoints require Bearer JWT (Keycloak RS256). tenant_id from JWT.
+servers:
+  - url: /api/v1/twin
+    description: Digital Twin API (mounted on AI Gateway service)
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Twin State
+    description: Query current and historical twin state
+  - name: Divergence
+    description: Planned vs actual divergence detection
+  - name: Entities
+    description: Twin entity registration and listing
+
+paths:
+  /projects/{projectId}/state:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+
+    get:
+      tags: [Twin State]
+      operationId: getTwinState
+      summary: Get current twin snapshot for a project
+      description: |
+        Returns current state from Redis cache (5-min TTL).
+        Pass `timestamp` to bypass cache and query TimescaleDB directly.
+      parameters:
+        - name: entity_type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/EntityType'
+          description: Filter by entity type
+        - name: timestamp
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Point-in-time query; bypasses Redis cache
+        - $ref: '#/components/parameters/tenantId'
+      responses:
+        '200':
+          description: Current twin snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwinSnapshot'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/divergence:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+
+    get:
+      tags: [Divergence]
+      operationId: getDivergenceReport
+      summary: Get divergence report (planned vs actual) for a project
+      description: |
+        Compares latest actual twin state vs planned state (BIM/schedule).
+        BIM Integration (IFC.js parser per spec §13.4) required for non-empty planned states.
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+      responses:
+        '200':
+          description: Divergence report
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DivergenceReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /projects/{projectId}/entities:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+
+    get:
+      tags: [Entities]
+      operationId: listEntities
+      summary: List twin entities for a project
+      parameters:
+        - name: entity_type
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/EntityType'
+        - $ref: '#/components/parameters/tenantId'
+      responses:
+        '200':
+          description: Entity list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TwinEntity'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Entities]
+      operationId: registerEntity
+      summary: Register a twin entity (device provisioning or BIM element import)
+      description: |
+        Direct API writes only for entity registration.
+        All state updates must arrive via Kafka from IoT/inspection/schedule systems.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterEntityRequest'
+      parameters:
+        - $ref: '#/components/parameters/tenantId'
+      responses:
+        '201':
+          description: Entity registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TwinEntity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    projectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    tenantId:
+      name: tenant_id
+      in: query
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Tenant ID (injected from JWT in production)
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid Bearer token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    EntityType:
+      type: string
+      enum: [STRUCTURE, EQUIPMENT, MATERIAL_STOCK, WORKFORCE_ZONE, INSPECTION_ZONE]
+
+    StateSource:
+      type: string
+      enum: [IOT, MANUAL, AI_INFERRED]
+
+    SeverityLevel:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+
+    TwinEntity:
+      type: object
+      required: [entity_id, tenant_id, project_id, entity_type, confidence, created_at, updated_at]
+      properties:
+        entity_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+        physical_ref:
+          type: string
+          nullable: true
+          description: IoT device ID, GPS tracker ID, or sensor ID
+          example: equip-crane-01
+        digital_ref:
+          type: string
+          nullable: true
+          description: IFC GlobalId (22-char base64 GUID per ISO 16739-1:2018) or WBS node ID
+          example: 2O2Fr$t4X7Zf8NOew3FLOH
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+        confidence:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+          description: |
+            Confidence score [0.0, 1.0].
+            1.0 = live IoT (≤60s); 0.7–0.9 = recent telemetry; <0.7 = AI-inferred.
+          example: 0.95
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TwinSnapshot:
+      type: object
+      required: [project_id, as_of, entities, overall_confidence, divergence_score]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        as_of:
+          type: string
+          format: date-time
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/TwinEntity'
+        overall_confidence:
+          type: number
+          format: double
+          minimum: 0.0
+          maximum: 1.0
+        divergence_score:
+          type: number
+          format: double
+          minimum: 0.0
+          description: Mean divergence score across all entities with planned states
+
+    Divergence:
+      type: object
+      required: [entity_id, planned_state, actual_state, gap, severity]
+      properties:
+        entity_id:
+          type: string
+          format: uuid
+        planned_state:
+          type: object
+          additionalProperties: true
+          description: State from BIM/schedule (empty until BIM Integration is complete)
+        actual_state:
+          type: object
+          additionalProperties: true
+          description: Latest state from IoT/inspections
+        gap:
+          type: number
+          format: double
+          minimum: 0.0
+          description: Mean absolute deviation [0.0, ∞) across state attributes
+        severity:
+          $ref: '#/components/schemas/SeverityLevel'
+
+    DivergenceReport:
+      type: object
+      required: [project_id, generated_at, divergences, risk_level]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        generated_at:
+          type: string
+          format: date-time
+        divergences:
+          type: array
+          items:
+            $ref: '#/components/schemas/Divergence'
+        risk_level:
+          type: string
+          enum: [LOW, MEDIUM, HIGH, CRITICAL]
+
+    RegisterEntityRequest:
+      type: object
+      required: [entity_type]
+      properties:
+        entity_type:
+          $ref: '#/components/schemas/EntityType'
+        physical_ref:
+          type: string
+          description: IoT device ID or sensor ID
+          example: equip-crane-01
+        digital_ref:
+          type: string
+          description: IFC GlobalId (22 chars) or WBS node ID
+          example: 2O2Fr$t4X7Zf8NOew3FLOH
+
+    ErrorResponse:
+      type: object
+      required: [status_code, detail]
+      properties:
+        status_code:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: No twin entities found for project abc-123

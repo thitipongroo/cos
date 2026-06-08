@@ -1,0 +1,26 @@
+replicaCount: 2
+
+image:
+  repository: '' # ECR_REGISTRY/cos-backend — set by CI
+  tag: 'staging'
+
+ingress:
+  enabled: true
+  host: 'api-staging.construction-os.io'
+
+resources:
+  requests:
+    cpu: '200m'
+    memory: '384Mi'
+  limits:
+    cpu: '750m'
+    memory: '768Mi'
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+
+env:
+  NODE_ENV: 'staging'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.monitoring:4318'

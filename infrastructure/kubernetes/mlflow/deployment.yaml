@@ -1,0 +1,114 @@
+# MLflow Tracking Server — Kubernetes deployment
+# Namespace: cos
+# Backend store: PostgreSQL (RDS — connection via sealed-secret)
+# Artifact store: MinIO (S3-compatible — IRSA bucket access)
+# CLOUD: AWS — replace bucket/endpoint for GCP/on-prem
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mlflow
+  namespace: cos
+  annotations:
+    # IRSA: replace with actual OIDC role ARN from Terraform output
+    eks.amazonaws.com/role-arn: 'arn:aws:iam::ACCOUNT_ID:role/cos-mlflow-s3-role'
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  namespace: cos
+  labels:
+    app: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      serviceAccountName: mlflow
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+        - name: mlflow
+          image: ghcr.io/mlflow/mlflow:v2.14.1
+          command:
+            - mlflow
+            - server
+            - --backend-store-uri
+            - $(MLFLOW_BACKEND_STORE_URI)
+            - --artifacts-destination
+            - $(MLFLOW_ARTIFACT_ROOT)
+            - --host
+            - '0.0.0.0'
+            - --port
+            - '5000'
+          ports:
+            - containerPort: 5000
+              name: http
+          env:
+            - name: MLFLOW_BACKEND_STORE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mlflow-secrets
+                  key: backend_store_uri
+            - name: MLFLOW_ARTIFACT_ROOT
+              value: 's3://cos-mlflow-artifacts/'
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mlflow
+  namespace: cos
+spec:
+  selector:
+    app: mlflow
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+
+---
+# Sealed secret placeholder — replace with actual sealed values from kubeseal
+# Required key: backend_store_uri (postgresql://user:pass@rds-host:5432/mlflow)
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: mlflow-secrets
+  namespace: cos
+spec:
+  encryptedData:
+    backend_store_uri: 'REPLACE_WITH_SEALED_VALUE'
+  template:
+    metadata:
+      name: mlflow-secrets
+      namespace: cos

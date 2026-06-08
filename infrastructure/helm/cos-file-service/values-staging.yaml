@@ -1,0 +1,6 @@
+replicaCount: 2
+image:
+  repository: ''
+  tag: 'staging'
+env:
+  NODE_ENV: 'staging'

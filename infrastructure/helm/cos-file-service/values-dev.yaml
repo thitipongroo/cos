@@ -1,0 +1,10 @@
+replicaCount: 1
+image:
+  repository: 'cos-file-service'
+  tag: 'dev'
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+env:
+  NODE_ENV: 'development'

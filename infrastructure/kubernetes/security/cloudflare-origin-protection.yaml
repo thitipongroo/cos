@@ -1,0 +1,98 @@
+# Cloudflare origin protection — restrict AWS ALB port 443 to Cloudflare IPs only
+# Source: spec §Phase 16 — "Origin protection (MANDATORY)"
+# "AWS ALB security group MUST restrict port 443 inbound to Cloudflare IP ranges only"
+#
+# This manifest creates a NetworkPolicy that restricts inbound HTTPS to
+# the Cloudflare IP ranges. The actual AWS ALB security group rule is managed
+# via Terraform in infrastructure/terraform/cloudflare/waf.tf.
+#
+# Cloudflare IPv4: https://www.cloudflare.com/ips-v4
+# Cloudflare IPv6: https://www.cloudflare.com/ips-v6
+# Updated: 2026-06-08 — refresh quarterly at https://api.cloudflare.com/client/v4/ips
+
+---
+# NetworkPolicy: only allow ingress traffic from Cloudflare IP ranges to the backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloudflare-origin-protection
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: cloudflare-origin-protection
+    app.kubernetes.io/component: security
+spec:
+  podSelector:
+    matchLabels:
+      cos.io/cloudflare-protected: 'true'
+  policyTypes:
+    - Ingress
+  ingress:
+    # Cloudflare IPv4 ranges (as of 2026-06)
+    - from:
+        - ipBlock:
+            cidr: 103.21.244.0/22
+        - ipBlock:
+            cidr: 103.22.200.0/22
+        - ipBlock:
+            cidr: 103.31.4.0/22
+        - ipBlock:
+            cidr: 104.16.0.0/13
+        - ipBlock:
+            cidr: 104.24.0.0/14
+        - ipBlock:
+            cidr: 108.162.192.0/18
+        - ipBlock:
+            cidr: 131.0.72.0/22
+        - ipBlock:
+            cidr: 141.101.64.0/18
+        - ipBlock:
+            cidr: 162.158.0.0/15
+        - ipBlock:
+            cidr: 172.64.0.0/13
+        - ipBlock:
+            cidr: 173.245.48.0/20
+        - ipBlock:
+            cidr: 188.114.96.0/20
+        - ipBlock:
+            cidr: 190.93.240.0/20
+        - ipBlock:
+            cidr: 197.234.240.0/22
+        - ipBlock:
+            cidr: 198.41.128.0/17
+    # Internal cluster traffic (health checks, internal services)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cos
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+        - ipBlock:
+            cidr: 10.0.0.0/8 # VPC private range
+
+---
+# ConfigMap: Cloudflare IP ranges for runtime injection into Kong/application
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-ip-ranges
+  namespace: cos
+  labels:
+    app.kubernetes.io/component: security
+data:
+  ipv4: |
+    103.21.244.0/22
+    103.22.200.0/22
+    103.31.4.0/22
+    104.16.0.0/13
+    104.24.0.0/14
+    108.162.192.0/18
+    131.0.72.0/22
+    141.101.64.0/18
+    162.158.0.0/15
+    172.64.0.0/13
+    173.245.48.0/20
+    188.114.96.0/20
+    190.93.240.0/20
+    197.234.240.0/22
+    198.41.128.0/17

@@ -1,6 +1,7 @@
 // Construction OS — KG Ingestion Worker
 // Phase 13: Knowledge Graph — Kafka consumer + Neo4j writer + admin rebuild endpoint.
-// Source: context/00_master_construction_os.md §Phase 13
+// Phase 15: OpenTelemetry — OTLP trace exporter, W3C propagation, Kafka header injection.
+// Source: context/00_master_construction_os.md §Phase 13, §Phase 15
 package main
 
 import (
@@ -16,10 +17,21 @@ import (
 
 	"github.com/construction-os/kg-ingestion-worker/internal/consumer"
 	"github.com/construction-os/kg-ingestion-worker/internal/graph"
+	cosOtel "github.com/construction-os/kg-ingestion-worker/internal/otel"
 	neo4j "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	otelShutdown, err := cosOtel.Configure(ctx)
+	if err != nil {
+		log.Printf("otel init warning (non-fatal): %v", err)
+	} else {
+		defer func() { _ = otelShutdown(context.Background()) }()
+	}
+
 	neo4jURI := getEnv("NEO4J_URI", "bolt://localhost:7687")
 	neo4jUser := getEnv("NEO4J_USERNAME", "neo4j")
 	neo4jPass := getEnv("NEO4J_PASSWORD", "")
@@ -31,9 +43,6 @@ func main() {
 		log.Fatalf("neo4j driver: %v", err)
 	}
 	defer driver.Close(context.Background())
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	if err := graph.ApplyConstraints(ctx, driver); err != nil {
 		log.Fatalf("apply constraints: %v", err)

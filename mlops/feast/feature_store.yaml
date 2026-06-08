@@ -1,0 +1,27 @@
+# Feast Feature Store Configuration — Phase 23
+# Online store: Redis (existing cluster)
+# Offline store: PostgreSQL (existing RDS)
+# Registry: PostgreSQL (reuses existing RDS, separate schema)
+# Project: construction-os
+
+project: construction-os
+provider: local
+registry:
+  registry_type: sql
+  path: postgresql://${FEAST_DB_USER}:${FEAST_DB_PASS}@${FEAST_DB_HOST}:5432/cos_feast
+  cache_ttl_seconds: 600
+
+online_store:
+  type: redis
+  connection_string: '${REDIS_HOST}:${REDIS_PORT},password=${REDIS_PASSWORD},ssl=true'
+
+offline_store:
+  type: postgres
+  host: ${FEAST_DB_HOST}
+  port: 5432
+  database: cos_feast
+  db_schema: feast_offline
+  user: ${FEAST_DB_USER}
+  password: ${FEAST_DB_PASS}
+
+entity_key_serialization_version: 3

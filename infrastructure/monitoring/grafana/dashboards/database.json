@@ -1,0 +1,73 @@
+{
+  "title": "COS — Database",
+  "uid": "cos-database",
+  "tags": ["cos", "database", "postgres"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(db_query_duration_seconds_count, service)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true
+      },
+      {
+        "name": "interval",
+        "type": "interval",
+        "options": [{ "value": "1m" }, { "value": "5m" }, { "value": "15m" }],
+        "current": { "value": "5m" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "DB Query Duration P50 / P95",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (service, le) (rate(db_query_duration_seconds_bucket{service=~\"$service\"}[$interval])))",
+          "legendFormat": "{{service}} P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(db_query_duration_seconds_bucket{service=~\"$service\"}[$interval])))",
+          "legendFormat": "{{service}} P95"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Slow Query Count (P95 > 1s)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (service) (rate(db_query_duration_seconds_count{service=~\"$service\"}[$interval]))",
+          "legendFormat": "{{service}} total queries/s"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "PgBouncer Connection Pool (via Postgres exporter)",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "pg_stat_database_numbackends",
+          "legendFormat": "{{datname}} connections"
+        }
+      ]
+    }
+  ]
+}

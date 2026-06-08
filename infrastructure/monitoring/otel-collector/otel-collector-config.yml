@@ -1,0 +1,117 @@
+# OpenTelemetry Collector configuration
+# Receives traces + metrics from all COS services via OTLP/HTTP (port 4318)
+# Exports: traces → Jaeger, metrics → Prometheus remote-write
+# Source: spec §Phase 15
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: '0.0.0.0:4318'
+      grpc:
+        endpoint: '0.0.0.0:4317'
+
+processors:
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Memory limiter — prevents OOM under spike load
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 75
+    spike_limit_percentage: 20
+
+  # Tail-based sampling: 1% of normal traces, 100% of error traces
+  # Source: spec §31.5 — production 1% baseline, 100% errors
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100000
+    expected_new_traces_per_sec: 1000
+    policies:
+      - name: errors-policy
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: ai-llm-policy
+        type: string_attribute
+        string_attribute:
+          key: 'cos.span.type'
+          values: ['llm_call', 'embedding_call']
+      - name: financial-policy
+        type: string_attribute
+        string_attribute:
+          key: 'cos.span.type'
+          values: ['financial_transaction']
+      - name: probabilistic-policy
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 1
+
+  # Attach environment resource attributes
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: ${ENV:-production}
+        action: upsert
+
+exporters:
+  # Traces → Jaeger
+  otlp/jaeger:
+    endpoint: 'jaeger-collector:4317'
+    tls:
+      insecure: true
+
+  # Metrics → Prometheus (via Prometheus remote-write or direct scrape on port 9090)
+  prometheus:
+    endpoint: '0.0.0.0:9090'
+    namespace: cos
+    send_timestamps: true
+    metric_expiration: 180m
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # Logs → Loki via OTLP
+  loki:
+    endpoint: 'http://loki:3100/loki/api/v1/push'
+    labels:
+      resource:
+        service.name: 'service'
+        deployment.environment: 'env'
+      attributes:
+        level: 'level'
+        tenant_id: 'tenant_id'
+
+  # Debug logging (disabled in production; enable for local dev)
+  debug:
+    verbosity: normal
+
+extensions:
+  health_check:
+    endpoint: '0.0.0.0:13133'
+  pprof:
+    endpoint: '0.0.0.0:1777'
+  zpages:
+    endpoint: '0.0.0.0:55679'
+
+service:
+  extensions: [health_check, pprof, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, tail_sampling, resource, batch]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [loki]
+
+  telemetry:
+    metrics:
+      address: '0.0.0.0:8888'
+      level: detailed

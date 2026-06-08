@@ -1,0 +1,157 @@
+# Kubeflow Pipeline — MLOps Model Training Workflow
+# Phase 23: Kubernetes-native ML workflow execution
+# Each step runs as a separate container; artifacts passed via MinIO (S3)
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: cos-training-pipeline-
+  namespace: cos
+  labels:
+    app: mlops
+    pipeline: training
+spec:
+  entrypoint: training-pipeline
+  serviceAccountName: mlflow
+  arguments:
+    parameters:
+      - name: model-name
+        value: 'delay-forecast-model'
+      - name: data-date
+        value: '2026-06-01'
+      - name: minio-bucket
+        value: 'cos-datalake'
+
+  templates:
+    - name: training-pipeline
+      dag:
+        tasks:
+          - name: check-data-threshold
+            template: check-data-threshold
+            arguments:
+              parameters:
+                - name: model-name
+                  value: '{{workflow.parameters.model-name}}'
+
+          - name: load-features
+            template: load-features
+            dependencies: [check-data-threshold]
+            arguments:
+              parameters:
+                - name: model-name
+                  value: '{{workflow.parameters.model-name}}'
+                - name: data-date
+                  value: '{{workflow.parameters.data-date}}'
+
+          - name: train-model
+            template: train-model
+            dependencies: [load-features]
+            arguments:
+              parameters:
+                - name: model-name
+                  value: '{{workflow.parameters.model-name}}'
+
+          - name: evaluate-model
+            template: evaluate-model
+            dependencies: [train-model]
+            arguments:
+              parameters:
+                - name: model-name
+                  value: '{{workflow.parameters.model-name}}'
+
+          - name: promote-model
+            template: promote-model
+            dependencies: [evaluate-model]
+            arguments:
+              parameters:
+                - name: model-name
+                  value: '{{workflow.parameters.model-name}}'
+
+    # ─── Step templates ───────────────────────────────────────────────────────
+
+    - name: check-data-threshold
+      inputs:
+        parameters:
+          - name: model-name
+      container:
+        image: cos-mlops-runner:latest
+        command: [python, -m, mlops.pipeline.check_data_threshold]
+        args: ['--model-name', '{{inputs.parameters.model-name}}']
+        env:
+          - name: MLFLOW_TRACKING_URI
+            value: 'http://mlflow.cos.svc.cluster.local:5000'
+          - name: POSTGRES_URI
+            valueFrom:
+              secretKeyRef:
+                name: mlflow-secrets
+                key: backend_store_uri
+
+    - name: load-features
+      inputs:
+        parameters:
+          - name: model-name
+          - name: data-date
+      container:
+        image: cos-mlops-runner:latest
+        command: [python, -m, mlops.pipeline.load_features]
+        args:
+          - '--model-name'
+          - '{{inputs.parameters.model-name}}'
+          - '--data-date'
+          - '{{inputs.parameters.data-date}}'
+        env:
+          - name: FEAST_REDIS_HOST
+            valueFrom:
+              secretKeyRef:
+                name: feast-secrets
+                key: redis_host
+
+    - name: train-model
+      inputs:
+        parameters:
+          - name: model-name
+      container:
+        image: cos-mlops-runner:latest
+        command: [python, -m, mlops.pipeline.train]
+        args: ['--model-name', '{{inputs.parameters.model-name}}']
+        resources:
+          requests:
+            cpu: '2'
+            memory: '4Gi'
+          limits:
+            cpu: '4'
+            memory: '8Gi'
+        env:
+          - name: MLFLOW_TRACKING_URI
+            value: 'http://mlflow.cos.svc.cluster.local:5000'
+          - name: WANDB_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: wandb-secrets
+                key: api_key
+
+    - name: evaluate-model
+      inputs:
+        parameters:
+          - name: model-name
+      container:
+        image: cos-mlops-runner:latest
+        command: [python, -m, mlops.pipeline.evaluate]
+        args: ['--model-name', '{{inputs.parameters.model-name}}']
+        env:
+          - name: MLFLOW_TRACKING_URI
+            value: 'http://mlflow.cos.svc.cluster.local:5000'
+
+    - name: promote-model
+      inputs:
+        parameters:
+          - name: model-name
+      container:
+        image: cos-mlops-runner:latest
+        command: [python, -m, mlops.pipeline.promote]
+        args: ['--model-name', '{{inputs.parameters.model-name}}']
+        env:
+          - name: MLFLOW_TRACKING_URI
+            value: 'http://mlflow.cos.svc.cluster.local:5000'
+          - name: AI_GATEWAY_URL
+            value: 'http://cos-ai-gateway.cos.svc.cluster.local:8000'

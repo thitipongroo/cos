@@ -1,0 +1,69 @@
+replicaCount: 2
+
+image:
+  repository: ''
+  tag: 'latest'
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3001
+  metricsPort: 9464
+
+resources:
+  requests:
+    cpu: '200m'
+    memory: '256Mi'
+  limits:
+    cpu: '500m'
+    memory: '512Mi'
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+env:
+  NODE_ENV: 'production'
+  OTEL_SERVICE_NAME: 'file-service'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+
+envFrom:
+  - secretRef:
+      name: cos-file-service-secrets
+
+serviceAccount:
+  create: true
+  name: 'cos-file-service'
+  annotations:
+    eks.amazonaws.com/role-arn: '' # Set to S3 IRSA role ARN
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cos-file-service
+          topologyKey: kubernetes.io/hostname
+
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 3001
+  initialDelaySeconds: 20
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 3001
+  initialDelaySeconds: 10
+  periodSeconds: 5

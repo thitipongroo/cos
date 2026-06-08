@@ -1,0 +1,115 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: cos
+    env: ${ENV:-production}
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+scrape_configs:
+  # ── NestJS backend (Prometheus exporter via @cos/tracing PrometheusExporter) ──
+  - job_name: cos-backend
+    static_configs:
+      - targets: ['cos-backend:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: cos-backend
+
+  # ── FastAPI ai-gateway ──────────────────────────────────────────────────────
+  - job_name: ai-gateway
+    static_configs:
+      - targets: ['ai-gateway:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: ai-gateway
+
+  # ── Fastify file-service ────────────────────────────────────────────────────
+  - job_name: file-service
+    static_configs:
+      - targets: ['file-service:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: file-service
+
+  # ── Go workers ──────────────────────────────────────────────────────────────
+  - job_name: kg-ingestion-worker
+    static_configs:
+      - targets: ['kg-ingestion-worker:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: kg-ingestion-worker
+
+  - job_name: analytics-worker
+    static_configs:
+      - targets: ['analytics-worker:9464']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: analytics-worker
+
+  # ── OTel Collector self-metrics ─────────────────────────────────────────────
+  - job_name: otel-collector
+    static_configs:
+      - targets: ['otel-collector:8888']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: otel-collector
+
+  # ── Kafka (JMX exporter on port 9101 per Kafka statefulset annotation) ──────
+  - job_name: kafka
+    static_configs:
+      - targets: ['kafka:9101']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: service
+        replacement: kafka
+
+  # ── Kubernetes node metrics (via kube-prometheus-stack node-exporter) ────────
+  - job_name: node-exporter
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - action: labelmap
+        regex: __meta_kubernetes_node_label_(.+)
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/metrics
+
+  # ── Kubernetes pod annotation-based discovery ───────────────────────────────
+  - job_name: kubernetes-pods
+    kubernetes_sd_configs:
+      - role: pod
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: 'true'
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: ${1}:${2}
+        target_label: __address__
+      - action: labelmap
+        regex: __meta_kubernetes_pod_label_(.+)
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: kubernetes_namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: kubernetes_pod_name

@@ -1,18 +1,21 @@
 """Construction OS — AI Gateway (FastAPI)
 Phase 11: AI Foundation — LLM completions + RAG query endpoints.
 Phase 12: AI Report Assistant — 4 report types + history.
-Source: context/00_master_construction_os.md §Phase 11–12
+Phase 15: OpenTelemetry — OTLP trace exporter, FastAPI + HTTPX auto-instrumentation.
+Source: context/00_master_construction_os.md §Phase 11–12, §Phase 15
 """
 import os
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+from otel import configure_telemetry
 from providers.llm_provider import Message, StubLLMProvider
 from reports.pipeline import generate_report
 from templates.loader import render_template
 
 app = FastAPI(title="COS AI Gateway", version="0.2.0")
+configure_telemetry(app)
 
 _provider = StubLLMProvider()
 _db_pool = None  # injected at startup in production

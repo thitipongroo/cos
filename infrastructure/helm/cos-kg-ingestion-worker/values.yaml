@@ -1,0 +1,53 @@
+replicaCount: 2
+image:
+  repository: ''
+  tag: 'latest'
+  pullPolicy: IfNotPresent
+service:
+  type: ClusterIP
+  port: 8080
+  metricsPort: 9464
+resources:
+  requests:
+    cpu: '200m'
+    memory: '256Mi'
+  limits:
+    cpu: '1000m'
+    memory: '1Gi'
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+env:
+  OTEL_SERVICE_NAME: 'kg-ingestion-worker'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+envFrom:
+  - secretRef:
+      name: cos-kg-ingestion-worker-secrets
+serviceAccount:
+  create: true
+  name: 'cos-kg-ingestion-worker'
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cos-kg-ingestion-worker
+          topologyKey: kubernetes.io/hostname
+livenessProbe:
+  exec:
+    command: ['/bin/sh', '-c', 'pgrep kg-ingestion-worker']
+  initialDelaySeconds: 10
+  periodSeconds: 15
+readinessProbe:
+  exec:
+    command: ['/bin/sh', '-c', 'pgrep kg-ingestion-worker']
+  initialDelaySeconds: 5
+  periodSeconds: 10

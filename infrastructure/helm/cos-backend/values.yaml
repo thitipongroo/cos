@@ -1,0 +1,76 @@
+replicaCount: 2
+
+image:
+  repository: ''
+  tag: 'latest'
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 3000
+  metricsPort: 9464
+
+ingress:
+  enabled: false
+  className: 'kong'
+  host: ''
+  tlsSecretName: 'cos-tls'
+
+resources:
+  requests:
+    cpu: '250m'
+    memory: '512Mi'
+  limits:
+    cpu: '1000m'
+    memory: '1Gi'
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+env:
+  NODE_ENV: 'production'
+  PORT: '3000'
+  OTEL_SERVICE_NAME: 'cos-backend'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+
+envFrom:
+  - secretRef:
+      name: cos-backend-secrets
+
+serviceAccount:
+  create: true
+  name: 'cos-backend'
+
+nodeSelector: {}
+tolerations: []
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: cos-backend
+          topologyKey: kubernetes.io/hostname
+
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 3000
+  initialDelaySeconds: 15
+  periodSeconds: 5

@@ -139,7 +139,48 @@ jobs:
           cache-to: type=gha,mode=max
           tags: cos/${{ matrix.service }}:${{ github.sha }}
 
-  # ─── Step 5: Security Scan (Trivy) ──────────────────────────────────────────
+  # ─── Step 5a: Dependency Audit (OWASP / pnpm audit) ────────────────────────
+  # Source: spec §Phase 16 — "OWASP dependency check in CI pipeline"
+  dependency-audit:
+    name: Dependency Audit (pnpm audit + govulncheck)
+    runs-on: ubuntu-latest
+    needs: [lint, type-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Node.js dependency audit — fail on HIGH or CRITICAL
+      - name: pnpm audit (Node.js dependencies)
+        run: pnpm audit --audit-level=high
+      # Go vulnerability check for kg-ingestion-worker
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+      - name: govulncheck — kg-ingestion-worker
+        working-directory: services/kg-ingestion-worker
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+      - name: govulncheck — analytics-worker
+        working-directory: services/analytics-worker
+        run: govulncheck ./...
+      # Python safety check for ai-gateway
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pip-audit — ai-gateway
+        working-directory: services/ai-gateway
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --severity high
+
+  # ─── Step 5b: Security Scan (Trivy) ─────────────────────────────────────────
   security-scan:
     name: Security Scan (Trivy)
     runs-on: ubuntu-latest
@@ -147,11 +188,19 @@ jobs:
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     steps:
       - uses: actions/checkout@v4
-      - name: Run Trivy vulnerability scanner
+      - name: Run Trivy vulnerability scanner (filesystem)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+      - name: Run Trivy — container image scan (backend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: cos/backend:${{ github.sha }}
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
@@ -187,3 +236,60 @@ jobs:
         run: |
           echo "Image tag ${{ github.sha }} pushed — ArgoCD will sync automatically on staging"
           echo "Production requires manual sync gate in ArgoCD UI"
+
+  # ─── Step 7: E2E Tests (staging only) ───────────────────────────────────────
+  # Source: spec §Phase 18 — "Playwright E2E test for: login, project create, report submit, dashboard view"
+  e2e-tests:
+    name: E2E Tests (Playwright)
+    runs-on: ubuntu-latest
+    needs: [push-ecr]
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run E2E tests
+        working-directory: tests/e2e
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+        run: pnpm exec playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: tests/e2e/playwright-report/
+
+  # ─── Step 8: Load Tests (staging only) ───────────────────────────────────────
+  # Source: spec §Phase 18 — "load tests on staging deploy"
+  load-tests:
+    name: Load Tests (k6)
+    runs-on: ubuntu-latest
+    needs: [push-ecr]
+    if: github.ref == 'refs/heads/staging'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install k6
+        run: |
+          curl https://github.com/grafana/k6/releases/download/v0.50.0/k6-v0.50.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
+          sudo mv k6 /usr/local/bin/
+      - name: Run API baseline load test
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+          API_TOKEN: ${{ secrets.STAGING_API_TOKEN }}
+          TENANT_ID: ${{ secrets.STAGING_TENANT_ID }}
+        run: k6 run tests/load/api-baseline.js --out json=k6-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-results
+          path: k6-results.json

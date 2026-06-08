@@ -1,5 +1,3 @@
-// Unit tests for @cos/tracing
-
 const startMock = jest.fn();
 const shutdownMock = jest.fn().mockResolvedValue(undefined);
 
@@ -14,31 +12,61 @@ jest.mock('@opentelemetry/auto-instrumentations-node', () => ({
   getNodeAutoInstrumentations: jest.fn().mockReturnValue([]),
 }));
 
-import { initTracing, shutdownTracing, getTraceId } from '../otel';
+jest.mock('@opentelemetry/exporter-trace-otlp-http', () => ({
+  OTLPTraceExporter: jest.fn().mockImplementation(() => ({})),
+}));
+
+jest.mock('@opentelemetry/exporter-prometheus', () => ({
+  PrometheusExporter: jest.fn().mockImplementation(() => ({})),
+}));
+
+jest.mock('@opentelemetry/resources', () => ({
+  Resource: jest.fn().mockImplementation((attrs: Record<string, unknown>) => attrs),
+}));
+
+const mockGetSpan = jest.fn();
+jest.mock('@opentelemetry/api', () => ({
+  context: { active: jest.fn().mockReturnValue({}) },
+  trace: { getSpan: mockGetSpan },
+  metrics: {
+    getMeter: jest
+      .fn()
+      .mockReturnValue({
+        createHistogram: jest.fn(),
+        createCounter: jest.fn(),
+        createObservableGauge: jest.fn(),
+      }),
+  },
+  propagation: {
+    inject: jest.fn(),
+    extract: jest.fn().mockReturnValue({}),
+  },
+}));
+
+import { initTracing, shutdownTracing, getTraceId, getSpanId } from '../otel';
 
 describe('initTracing', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // Reset sdk singleton between tests by re-importing
-    jest.resetModules();
+  beforeEach(() => jest.clearAllMocks());
+
+  it('starts the OTel SDK', () => {
+    initTracing('test-service');
+    expect(startMock).toHaveBeenCalledTimes(1);
   });
 
-  it('starts the OTel SDK with the given service name', () => {
-    initTracing('test-service');
+  it('accepts TracingOptions object', () => {
+    initTracing({ serviceName: 'my-svc', serviceVersion: '1.2.3', prometheusPort: 9100 });
     expect(startMock).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('shutdownTracing', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  beforeEach(() => jest.clearAllMocks());
 
   it('resolves without error when SDK not initialized', async () => {
     await expect(shutdownTracing()).resolves.toBeUndefined();
   });
 
-  it('calls shutdown when SDK is initialized', async () => {
+  it('calls SDK shutdown when initialized', async () => {
     initTracing('test-service');
     await shutdownTracing();
     expect(shutdownMock).toHaveBeenCalledTimes(1);
@@ -46,9 +74,35 @@ describe('shutdownTracing', () => {
 });
 
 describe('getTraceId', () => {
-  it('returns a string (stub returns unset before Phase 15)', () => {
-    const id = getTraceId();
-    expect(typeof id).toBe('string');
-    expect(id).toBe('unset'); // Phase 15 will wire real OTel context
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns 32-zero string when no active span', () => {
+    mockGetSpan.mockReturnValue(null);
+    expect(getTraceId()).toBe('0'.repeat(32));
+  });
+
+  it('returns the traceId from the active span context', () => {
+    const traceId = 'abcd1234abcd1234abcd1234abcd1234';
+    mockGetSpan.mockReturnValue({
+      spanContext: () => ({ traceId, spanId: '0000000000000001', traceFlags: 1 }),
+    });
+    expect(getTraceId()).toBe(traceId);
+  });
+});
+
+describe('getSpanId', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns 16-zero string when no active span', () => {
+    mockGetSpan.mockReturnValue(null);
+    expect(getSpanId()).toBe('0'.repeat(16));
+  });
+
+  it('returns the spanId from the active span context', () => {
+    const spanId = 'abcd1234abcd1234';
+    mockGetSpan.mockReturnValue({
+      spanContext: () => ({ traceId: '0'.repeat(32), spanId, traceFlags: 1 }),
+    });
+    expect(getSpanId()).toBe(spanId);
   });
 });

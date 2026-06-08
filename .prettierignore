@@ -6,3 +6,5 @@ coverage
 *.avsc
 *.proto
 pnpm-lock.yaml
+# Helm templates contain Go template syntax ({{ }}) — not valid YAML
+infrastructure/helm/**/templates/**

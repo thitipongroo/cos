@@ -6,7 +6,6 @@ info:
     Equipment Service — Phase 21.
     Manages equipment registry, assignments, maintenance schedules, and IoT telemetry.
     All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
-    **STUB** — endpoints to be defined when Phase 21 development begins.
 servers:
   - url: /api/v1
     description: Current version
@@ -21,4 +20,210 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
-paths: {}
+  schemas:
+    Equipment:
+      type: object
+      properties:
+        equipment_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        equipment_code: { type: string }
+        equipment_name: { type: string }
+        equipment_type:
+          {
+            type: string,
+            enum: [CRANE, EXCAVATOR, CONCRETE_MIXER, GENERATOR, SCAFFOLD, VEHICLE, OTHER],
+          }
+        status: { type: string, enum: [AVAILABLE, IN_USE, MAINTENANCE, RETIRED] }
+        purchase_date: { type: string, format: date, nullable: true }
+        purchase_cost: { type: string, nullable: true }
+        currency_code: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    CreateEquipmentRequest:
+      type: object
+      required: [equipment_code, equipment_name, equipment_type]
+      properties:
+        equipment_code: { type: string }
+        equipment_name: { type: string }
+        equipment_type:
+          {
+            type: string,
+            enum: [CRANE, EXCAVATOR, CONCRETE_MIXER, GENERATOR, SCAFFOLD, VEHICLE, OTHER],
+          }
+        purchase_date: { type: string, format: date }
+        purchase_cost: { type: number }
+        currency_code: { type: string }
+
+    AssignEquipmentRequest:
+      type: object
+      required: [project_id]
+      properties:
+        project_id: { type: string, format: uuid }
+        notes: { type: string }
+
+    LogMaintenanceRequest:
+      type: object
+      required: [maintenance_type, scheduled_at]
+      properties:
+        maintenance_type: { type: string, enum: [SCHEDULED, UNSCHEDULED, REPAIR] }
+        scheduled_at: { type: string, format: date-time }
+        cost: { type: number }
+        currency_code: { type: string }
+        performed_by: { type: string }
+        notes: { type: string }
+
+    RecordUtilizationRequest:
+      type: object
+      required: [recorded_at]
+      properties:
+        recorded_at: { type: string, format: date-time }
+        project_id: { type: string, format: uuid }
+        hours_operated: { type: number }
+        fuel_consumed: { type: number }
+        operator_id: { type: string, format: uuid }
+
+paths:
+  /equipment:
+    post:
+      operationId: createEquipment
+      summary: Create equipment
+      tags: [Equipment]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateEquipmentRequest' }
+      responses:
+        '201':
+          description: Equipment created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Equipment' }
+    get:
+      operationId: listEquipment
+      summary: List equipment
+      tags: [Equipment]
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+        - { name: type, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Equipment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Equipment' }
+
+  /equipment/{id}:
+    get:
+      operationId: getEquipment
+      summary: Get equipment detail
+      tags: [Equipment]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Equipment detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Equipment' }
+
+  /equipment/{id}/status:
+    patch:
+      operationId: updateEquipmentStatus
+      summary: Update equipment status
+      tags: [Equipment]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [AVAILABLE, IN_USE, MAINTENANCE, RETIRED] }
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Equipment' }
+
+  /equipment/{id}/assignments:
+    post:
+      operationId: assignEquipment
+      summary: Assign equipment to project
+      tags: [Equipment]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AssignEquipmentRequest' }
+      responses:
+        '201':
+          description: Assignment created
+
+  /equipment/{id}/assignments/{aid}/return:
+    patch:
+      operationId: returnEquipment
+      summary: Return equipment from project
+      tags: [Equipment]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: aid, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Equipment returned
+
+  /equipment/{id}/maintenance:
+    post:
+      operationId: logMaintenance
+      summary: Log maintenance record
+      tags: [Equipment]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LogMaintenanceRequest' }
+      responses:
+        '201':
+          description: Maintenance logged
+
+  /equipment/{id}/utilization:
+    post:
+      operationId: recordUtilization
+      summary: Record daily utilization
+      tags: [Equipment]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RecordUtilizationRequest' }
+      responses:
+        '201':
+          description: Utilization recorded
+
+  /projects/{projectId}/equipment:
+    get:
+      operationId: getProjectEquipment
+      summary: Get equipment assigned to a project
+      tags: [Equipment]
+      parameters:
+        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Equipment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Equipment' }

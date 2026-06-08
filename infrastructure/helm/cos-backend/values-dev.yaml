@@ -1,0 +1,23 @@
+replicaCount: 1
+
+image:
+  repository: 'cos-backend'
+  tag: 'dev'
+
+resources:
+  requests:
+    cpu: '100m'
+    memory: '256Mi'
+  limits:
+    cpu: '500m'
+    memory: '512Mi'
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+env:
+  NODE_ENV: 'development'
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector.monitoring:4318'

@@ -1,0 +1,97 @@
+{
+  "title": "COS — AI & LLM",
+  "uid": "cos-ai",
+  "tags": ["cos", "ai", "llm"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "model",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(ai_token_usage_total, model)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true
+      },
+      {
+        "name": "tenant_id",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(ai_token_usage_total, tenant_id)",
+        "refresh": 2,
+        "multi": true,
+        "includeAll": true
+      },
+      {
+        "name": "interval",
+        "type": "interval",
+        "options": [{ "value": "5m" }, { "value": "15m" }, { "value": "1h" }, { "value": "24h" }],
+        "current": { "value": "1h" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Token Usage per Tenant",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (tenant_id) (rate(ai_token_usage_total{tenant_id=~\"$tenant_id\"}[$interval]))",
+          "legendFormat": "{{tenant_id}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Token Usage per Model",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(ai_token_usage_total{model=~\"$model\"}[$interval]))",
+          "legendFormat": "{{model}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "AI Request Latency P50 / P95",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (model, le) (rate(ai_request_duration_seconds_bucket{model=~\"$model\"}[$interval])))",
+          "legendFormat": "{{model}} P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (model, le) (rate(ai_request_duration_seconds_bucket{model=~\"$model\"}[$interval])))",
+          "legendFormat": "{{model}} P95"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "AI Error Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(http_requests_total{service=\"ai-gateway\",status=~\"5..\"}[$interval])) / sum by (model) (rate(http_requests_total{service=\"ai-gateway\"}[$interval])) * 100",
+          "legendFormat": "ai-gateway error %"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent" } }
+    }
+  ]
+}

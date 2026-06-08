@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { TerminusModule } from '@nestjs/terminus';
@@ -15,7 +15,10 @@ import { MasterDataModule } from './modules/master-data/master-data.module';
 import { GraphModule } from './modules/graph/graph.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
+import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
+import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
+import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
 
 @Module({
   imports: [
@@ -43,8 +46,15 @@ import { RequestIdInterceptor } from './shared/interceptors/request-id.intercept
   providers: [
     // RequestIdInterceptor must be first — sets request.requestId before AuditInterceptor runs
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
+    // HTTP metrics — records http_request_duration_seconds and http_requests_total (Phase 15)
+    { provide: APP_INTERCEPTOR, useClass: HttpMetricsInterceptor },
     // Global audit interceptor — logs all mutating operations (QM-4, Phase 16 RLS)
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(SecureHeadersMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
+    consumer.apply(CloudflareWafMiddleware).forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}
