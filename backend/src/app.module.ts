@@ -12,6 +12,7 @@ import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PlatformWebhookModule } from './modules/platform-webhook/platform-webhook.module';
 import { MasterDataModule } from './modules/master-data/master-data.module';
+import { GraphModule } from './modules/graph/graph.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
 
@@ -28,6 +29,7 @@ import { RequestIdInterceptor } from './shared/interceptors/request-id.intercept
     NotificationModule,
     PlatformWebhookModule,
     MasterDataModule,
+    GraphModule,
     // Remaining modules added per phase:
     // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)

@@ -50,6 +50,7 @@ Operational Objects :
 | Procurement | procurement_id, stage (PR/RFQ/PO/Delivery/Vendor Invoice), status, total_value |
 | Delivery | delivery_id, po_id, quantity_delivered, delivery_date, received_by |
 | Incident | incident_id, type, severity (low/medium/high/critical), reported_by |
+| Delay | delay_id (= event_id from CloudEvents envelope, UUID), project_id, task_id (nullable), delay_days, cause (PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), detected_by (AI_FORECAST/MANUAL_REPORT), severity (LOW/MEDIUM/HIGH/CRITICAL), tenant_id, occurred_at |
 
 Note on Procurement :
 
@@ -114,6 +115,8 @@ Worker resolves to Employee via the Workforce record.
 | DEPENDS_ON | Task | Task | N:M |
 | VALIDATED_BY | Task | Inspection | 1:N |
 | IMPACTS | Incident | Task | N:M |
+| IMPACTS | Delay | Project | N:1 |
+| IMPACTS | Delay | Task | N:M (nullable — task-level delay only) |
 | DELIVERED_BY | Material | Vendor | N:1 |
 | FULFILLED_BY | Procurement | Vendor | N:1 |
 | BELONGS_TO | Contract | Vendor | N:1 |

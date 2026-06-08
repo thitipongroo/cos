@@ -163,7 +163,7 @@ The platform deploys as distinct units. Do **not** merge runtimes or split prema
 | AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python) | Embedding generation |
 | AI OCR Pipeline (`services/ai-ocr-pipeline/`) | FastAPI (Python) | OCR processing |
 | Analytics Worker (`services/analytics-worker/`) | Go | ClickHouse aggregation |
-| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go | Neo4j ingestion |
+| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go | Neo4j ingestion — Kafka client: `github.com/IBM/sarama` (pure Go; consumer group: `kg-consumer-group`) |
 | Web App (`apps/web/`) | Next.js + next-pwa | Tablet/laptop browser — online + offline unified |
 | Mobile (`apps/mobile/`) | React Native + Expo | Smartphone native app |
 

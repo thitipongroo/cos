@@ -2931,7 +2931,11 @@ Neo4j Sync Strategy (authoritative):
 
   Consumer groups for kg-ingestion-worker:
     kg-consumer-group: subscribes to all cross-service events
-    Topics consumed: project.*, procurement.*, site.*, finance.*
+    Topics consumed (regex): ^[^.]+\.(construction|procurement|site|finance)\..*
+      (cross-tenant wildcard — all tenant-scoped topics for these domains;
+       see docs/specifications/07-multi-tenant-architecture §7.3 and
+       docs/specifications/15-event-driven-workflow §15.6)
+  Go Kafka client: github.com/IBM/sarama (pure Go; see docs/specifications/32-implementation-specifications)
 
   Conflict handling: last-event-wins (graph is derived, not authoritative)
   Replay: on kg-worker restart, replay from last committed offset
@@ -2972,6 +2976,18 @@ Neo4j Node Labels and Properties:
 
   (:Contract)
     contract_id:   String  — maps to po_id of APPROVED Purchase Orders (APPROVED PO = contractual agreement; no separate Contract module needed)
+
+  (:Delay)
+    delay_id:    String (UUID — maps to event_id from CloudEvents envelope; MERGE key)
+    project_id:  String (UUID)
+    task_id:     String (UUID, nullable — may be project-level only)
+    delay_days:  Integer
+    cause:       String (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER)
+    detected_by: String (enum: AI_FORECAST/MANUAL_REPORT)
+    severity:    String (enum: LOW/MEDIUM/HIGH/CRITICAL — LOW=1-2d, MEDIUM=3-6d, HIGH=7-13d, CRITICAL=14+d)
+    tenant_id:   String
+    occurred_at: DateTime
+    Source: construction.delay.detected.v1 payload (see docs/specifications/32-implementation-specifications §32.4)
 
 Relationships:
   (:Project)-[:HAS_MATERIAL]->(:Material)

@@ -64,6 +64,7 @@ Entities :
 - Inspection
 - Incident
 - Invoice
+- Delay
 
 Note on Worker :
 
@@ -111,6 +112,8 @@ Examples :
 - Contract BELONGS_TO Customer
 - Inspection VALIDATES Task
 - Incident IMPACTS Task
+- Delay IMPACTS Project
+- Delay IMPACTS Task (nullable — may be project-level only)
 - Invoice BELONGS_TO Contract
 
 ---
