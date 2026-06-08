@@ -201,6 +201,8 @@ services:
       - '${CLICKHOUSE_NATIVE_PORT:-9000}:9000'
     volumes:
       - clickhouse_data:/var/lib/clickhouse
+      - ./infrastructure/clickhouse/users.d:/etc/clickhouse-server/users.d:ro
+      - ./infrastructure/clickhouse/initdb.d:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:
         [

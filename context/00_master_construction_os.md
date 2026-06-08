@@ -1023,7 +1023,7 @@ services/                 — Separately deployed services (non-monolith)
   ai-gateway/             — FastAPI AI Gateway (@cos/ai-gateway)
   ai-embedding-worker/    — FastAPI Embedding Worker (@cos/ai-embedding-worker)
   ai-ocr-pipeline/        — FastAPI OCR Pipeline (@cos/ai-ocr-pipeline)
-  analytics-worker/       — Go Analytics Aggregation (@cos/analytics-worker)
+  analytics-worker/       — Go Analytics Aggregation (@cos/analytics-worker; Phase 24 — carbon analytics module; stub only until Phase 24; see docs/specifications/33-digital-twin-iot §33.3)
   kg-ingestion-worker/    — Go Knowledge Graph Ingestion (@cos/kg-worker)
 
 packages/                 — Shared packages (ONLY code used by 2+ apps/services)
@@ -4231,6 +4231,9 @@ Generate:
 - OpenAPI 3.1 spec for twin query endpoints
 - Unit tests: divergence calculation, state merge logic
 - Integration tests: end-to-end IoT event → twin state → divergence alert
+- services/analytics-worker/ — carbon analytics module: consumes carbon.record.created.v1
+    → aggregates carbon_kgco2e to ClickHouse (GHG Protocol Scope 1/2/3);
+    source: docs/specifications/33-digital-twin-iot §33.3 Service Assignment
 
 Constraints:
 

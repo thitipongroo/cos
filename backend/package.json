@@ -21,6 +21,7 @@
     "studio": "prisma studio"
   },
   "dependencies": {
+    "@clickhouse/client": "^1.8.0",
     "@cos/config": "workspace:*",
     "@cos/database": "workspace:*",
     "@cos/financial": "workspace:*",

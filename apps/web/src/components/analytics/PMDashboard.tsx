@@ -1,0 +1,146 @@
+'use client';
+
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
+
+export interface PmDashboardRow {
+  eventDate: string;
+  manpowerTotal: number;
+  issueOpenCount: number;
+  inspectionFailCount: number;
+  reportCount: number;
+}
+
+export interface CostTrendRow {
+  eventDate: string;
+  committed: string;
+  actual: string;
+}
+
+export interface ProcurementTrendRow {
+  eventDate: string;
+  poCount: number;
+  rfqCount: number;
+  invoiceCount: number;
+  overdueInvoiceCount: number;
+}
+
+export interface SiteTrendRow {
+  eventDate: string;
+  reportCount: number;
+  issueOpenCount: number;
+  inspectionFailCount: number;
+  manpowerTotal: number;
+}
+
+interface Props {
+  costTrend: CostTrendRow[];
+  procurementTrend: ProcurementTrendRow[];
+  siteTrend: SiteTrendRow[];
+  isLoading?: boolean;
+}
+
+export function PMDashboard({ costTrend, procurementTrend, siteTrend, isLoading }: Props) {
+  if (isLoading) return <div className="h-96 animate-pulse rounded-lg bg-gray-100" />;
+
+  return (
+    <div className="space-y-8">
+      <Section title="Cost Trend — Committed vs Actual">
+        <ResponsiveContainer width="100%" height={240}>
+          <LineChart
+            data={costTrend.map((r) => ({
+              date: r.eventDate.slice(5),
+              committed: parseFloat(r.committed),
+              actual: parseFloat(r.actual),
+            }))}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="committed" stroke="#6366f1" dot={false} />
+            <Line type="monotone" dataKey="actual" stroke="#f59e0b" dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </Section>
+
+      <Section title="Procurement Activity">
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart
+            data={procurementTrend.map((r) => ({
+              date: r.eventDate.slice(5),
+              po: r.poCount,
+              rfq: r.rfqCount,
+              invoice: r.invoiceCount,
+              overdue: r.overdueInvoiceCount,
+            }))}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="po" name="PO" fill="#3b82f6" />
+            <Bar dataKey="rfq" name="RFQ" fill="#a855f7" />
+            <Bar dataKey="invoice" name="Invoice" fill="#22c55e" />
+            <Bar dataKey="overdue" name="Overdue Invoice" fill="#ef4444" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Section>
+
+      <Section title="Site Activity">
+        <ResponsiveContainer width="100%" height={220}>
+          <LineChart
+            data={siteTrend.map((r) => ({
+              date: r.eventDate.slice(5),
+              manpower: r.manpowerTotal,
+              issues: r.issueOpenCount,
+              inspectionFail: r.inspectionFailCount,
+            }))}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Legend />
+            <Line type="monotone" dataKey="manpower" name="Manpower" stroke="#0ea5e9" dot={false} />
+            <Line
+              type="monotone"
+              dataKey="issues"
+              name="Open Issues"
+              stroke="#f97316"
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="inspectionFail"
+              name="Inspection Fail"
+              stroke="#ef4444"
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </Section>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-medium text-gray-600">{title}</p>
+      {children}
+    </div>
+  );
+}

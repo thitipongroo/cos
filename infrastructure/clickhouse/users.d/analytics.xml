@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- Phase 14 — Analytics: set Avro schema registry URL for all AvroConfluent Kafka engine tables.
+     Mounted at /etc/clickhouse-server/users.d/ — merged into default user profile on startup. -->
+<clickhouse>
+    <profiles>
+        <default>
+            <format_avro_schema_registry_url>http://schema-registry:8081</format_avro_schema_registry_url>
+        </default>
+    </profiles>
+</clickhouse>

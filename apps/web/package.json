@@ -15,7 +15,8 @@
     "idb": "^8.0.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "@cos/types": "workspace:*"
+    "@cos/types": "workspace:*",
+    "recharts": "^2.12.0"
   },
   "devDependencies": {
     "typescript": "^5.4.0",

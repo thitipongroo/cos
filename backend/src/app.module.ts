@@ -13,6 +13,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { PlatformWebhookModule } from './modules/platform-webhook/platform-webhook.module';
 import { MasterDataModule } from './modules/master-data/master-data.module';
 import { GraphModule } from './modules/graph/graph.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
 
@@ -30,6 +31,7 @@ import { RequestIdInterceptor } from './shared/interceptors/request-id.intercept
     PlatformWebhookModule,
     MasterDataModule,
     GraphModule,
+    AnalyticsModule,
     // Remaining modules added per phase:
     // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)
