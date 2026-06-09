@@ -4,7 +4,7 @@
     "strict": true,
     "moduleResolution": "bundler",
     "experimentalDecorators": true,
-    "types": ["node"],
+    "types": ["node", "jest"],
     "paths": {
       "@cos/types": ["../../packages/@cos/types/src/index.ts"],
       "@cos/types/*": ["../../packages/@cos/types/src/*"],
