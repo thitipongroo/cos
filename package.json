@@ -4,10 +4,10 @@
   "private": true,
   "description": "AI-Native Construction Operating System",
   "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=24.0.0",
+    "pnpm": ">=11.0.0"
   },
-  "packageManager": "pnpm@9.1.0",
+  "packageManager": "pnpm@11.5.2",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
@@ -36,47 +36,6 @@
     "prettier": "^3.8.3",
     "turbo": "^2.9.16",
     "typescript": "^6.0.3"
-  },
-  "pnpm": {
-    "overrides": {
-      "multer": "^2.1.1",
-      "lodash": "^4.18.1",
-      "picomatch@>=4.0.0 <4.0.4": "4.0.4",
-      "glob@>=10.2.0 <10.5.0": "10.5.0",
-      "@xmldom/xmldom@<0.8.12": "^0.9.10",
-      "protobufjs@<=7.5.5": "^7.5.6",
-      "tmp@<0.2.6": "^0.2.7",
-      "@remix-run/server-runtime@<2.17.5": "2.17.5",
-      "turbo-stream@<3.0.0": "^3.2.0"
-    },
-    "auditConfig": {
-      "ignoreCves": [
-        "GHSA-72c6-fx6q-fr5w",
-        "GHSA-cxrg-g7r8-w69p",
-        "GHSA-8p85-9qpw-fwgw",
-        "GHSA-v9ww-2j6r-98q6",
-        "GHSA-jx2c-rxcm-jvmq",
-        "GHSA-r4wm-x892-vjmx",
-        "GHSA-wf42-42fg-fg84",
-        "GHSA-q3j6-qgpj-74h6",
-        "GHSA-v39h-62p7-jpjc",
-        "GHSA-h25m-26qc-wcjf",
-        "GHSA-q4gf-8mx6-v5v3",
-        "GHSA-8h8q-6873-q5fj",
-        "GHSA-c4j6-fc7j-m34r",
-        "GHSA-36qx-fr4f-26g5",
-        "GHSA-q7rr-3cgh-j5r3",
-        "GHSA-34x7-hfp2-rc4v",
-        "GHSA-8qq5-rm4j-mr97",
-        "GHSA-83g3-92jg-28cx",
-        "GHSA-qffp-2rhf-9h96",
-        "GHSA-9ppj-qmqm-q256",
-        "GHSA-r6q2-hw4h-h46w",
-        "GHSA-vrm6-8vpv-qv8q",
-        "GHSA-v9p9-hfj2-hcw8",
-        "GHSA-5c6j-r48x-rmvq"
-      ]
-    }
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

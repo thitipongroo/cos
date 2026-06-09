@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PNPM_VERSION: 9.1.0
-  NODE_VERSION: '20'
+  PNPM_VERSION: '11'
+  NODE_VERSION: '24'
 
 jobs:
   # ─── Step 1: Lint ───────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
@@ -155,7 +155,7 @@ jobs:
     needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
@@ -258,7 +258,7 @@ jobs:
     if: github.ref == 'refs/heads/staging'
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v3
+      - uses: pnpm/action-setup@v4
         with:
           version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4

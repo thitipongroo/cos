@@ -4,6 +4,17 @@ packages:
   - 'services/*'
   - 'packages/@cos/*'
 
+overrides:
+  multer: '^2.1.1'
+  lodash: '^4.18.1'
+  'picomatch@>=4.0.0 <4.0.4': '4.0.4'
+  'glob@>=10.2.0 <10.5.0': '10.5.0'
+  '@xmldom/xmldom@<0.8.12': '^0.9.10'
+  'protobufjs@<=7.5.5': '^7.5.6'
+  'tmp@<0.2.6': '^0.2.7'
+  '@remix-run/server-runtime@<2.17.5': '2.17.5'
+  'turbo-stream@<3.0.0': '^3.2.0'
+
 auditConfig:
   ignoreCves:
     # Locked by @nestjs/platform-fastify@10 (fastify@4) — needs NestJS 11 upgrade
@@ -31,3 +42,13 @@ auditConfig:
     # Test-only: locked by testcontainers@10.28 (undici@5)
     - CVE-2026-1526
     - CVE-2026-2229
+
+allowBuilds:
+  '@nestjs/core': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@swc/core': true
+  cpu-features: true
+  prisma: true
+  protobufjs: true
+  ssh2: true
