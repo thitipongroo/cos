@@ -141,7 +141,7 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('retries on PrismaClientInitializationError', async () => {
+  it('retries on Prisma.PrismaClientInitializationError', async () => {
     const err = new Prisma.PrismaClientInitializationError('Connection failed', '5.0');
     const fn = jest.fn().mockRejectedValueOnce(err).mockResolvedValue('ok');
 

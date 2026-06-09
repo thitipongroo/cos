@@ -48,6 +48,10 @@ jobs:
           cache: pnpm
       # pnpm-lock.yaml is committed — use --frozen-lockfile to enforce reproducible installs (Rule 29)
       - run: pnpm install --frozen-lockfile
+      # Prisma client must be generated before type-check — index.d.ts re-exports generated types
+      - name: Generate Prisma client
+        working-directory: backend
+        run: pnpm exec prisma generate
       - run: pnpm run type-check
 
   # ─── Step 3: Unit Tests + Coverage Enforcement ─────────────────────────────
@@ -67,6 +71,10 @@ jobs:
           cache: pnpm
       # pnpm-lock.yaml is committed — use --frozen-lockfile to enforce reproducible installs (Rule 29)
       - run: pnpm install --frozen-lockfile
+      # Prisma client must be generated before tests — @cos/database imports generated types
+      - name: Generate Prisma client
+        working-directory: backend
+        run: pnpm exec prisma generate
       # jest.config.js in each package enforces coverage thresholds (QM-1, Rule 36)
       - name: Unit tests + coverage — backend
         working-directory: backend
