@@ -291,7 +291,7 @@ One named PostgreSQL schema per domain module. All schemas are global (shared ac
 
 | PostgreSQL Schema     | Module / Purpose                     | tenant_id required                                                  | Notes                                          |
 | --------------------- | ------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------- |
-| `platform`            | Identity, Tenant system              | No (cross-tenant)                                                   | Holds `tenants`, `users`, `tenant_memberships` |
+| `platform`            | Identity, Tenant system              | No (cross-tenant)                                                   | Holds `tenants`, `users`, `tenant_memberships`, `audit_logs` |
 | `projects`            | Project Management                   | Yes                                                                 |                                                |
 | `boq`                 | Bill of Quantities                   | Yes                                                                 |                                                |
 | `procurement`         | Procurement                          | Yes                                                                 |                                                |

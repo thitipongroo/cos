@@ -1277,6 +1277,7 @@ Entities (PostgreSQL — all in schema: identity):
     display_name    VARCHAR(255) NOT NULL
     is_active       BOOLEAN DEFAULT true
     mfa_enabled     BOOLEAN DEFAULT false
+    mfa_totp_secret VARCHAR(255) NULL
     created_at      TIMESTAMPTZ DEFAULT now()
     updated_at      TIMESTAMPTZ DEFAULT now()
     INDEX: (tenant_id, email)
@@ -4287,6 +4288,7 @@ Generate:
 - PATCH /api/v1/admin/tenants/:tenantId/mark-contracted (NestJS controller + service + DTO)
 - POST /api/v1/platform/webhooks/enterprise-contract-signed (new module: platform-webhook)
 - EnterpriseProvisioningWorkflow + 5 activities + compensation + worker (enterprise-provisioning)
+- TypeScript interfaces: platform.enterprise.contract_signed.v1.ts + platform.enterprise.db_provisioned.v1.ts
 - Avro schemas: platform.enterprise.contract_signed.v1.avsc + platform.enterprise.db_provisioned.v1.avsc
 - Terraform module: infrastructure/terraform/modules/rds-tenant/ (main.tf + variables.tf + outputs.tf)
 - Unit tests: 100% line + branch coverage (Rule 11)

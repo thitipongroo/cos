@@ -49,14 +49,16 @@ enum CosRoleEnum {
 
 // @pdpa(category: "organizational") — tenant data is not personal data
 model Tenant {
-  tenantId      String   @id @default(dbgenerated("gen_random_uuid()")) @map("tenant_id") @db.Uuid
-  tenantCode    String   @unique @map("tenant_code") @db.VarChar(50)
-  tenantName    String   @map("tenant_name") @db.VarChar(255)
-  keycloakRealm String   @unique @map("keycloak_realm") @db.VarChar(100)
-  planType      PlanType @map("plan_type")
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  tenantId       String   @id @default(dbgenerated("gen_random_uuid()")) @map("tenant_id") @db.Uuid
+  tenantCode     String   @unique @map("tenant_code") @db.VarChar(50)
+  tenantName     String   @map("tenant_name") @db.VarChar(255)
+  keycloakRealm  String   @unique @map("keycloak_realm") @db.VarChar(100)
+  planType       PlanType @map("plan_type")
+  isActive       Boolean  @default(true) @map("is_active")
+  // NULL = shared DB (STARTER/PROFESSIONAL); non-NULL = dedicated DB URL (ENTERPRISE per spec §7.1)
+  dedicatedDbUrl String?  @map("dedicated_db_url") @db.VarChar(500)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
   users            User[]
   memberships      TenantMembership[]

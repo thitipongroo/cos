@@ -103,6 +103,58 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 
 ---
 
+### platform.users
+
+| Column              | Type         | Constraints                  | Notes                                            |
+| ------------------- | ------------ | ---------------------------- | ------------------------------------------------ |
+| `user_id`           | UUID         | PK DEFAULT gen_random_uuid() |                                                  |
+| `tenant_id`         | UUID         | FK → tenants NOT NULL        |                                                  |
+| `keycloak_user_id`  | VARCHAR(255) | UNIQUE NOT NULL              | Path A: phone_number; Path B: Keycloak UUID      |
+| `email`             | VARCHAR(255) | NOT NULL                     | Path A: empty string; Path B: actual email       |
+| `display_name`      | VARCHAR(255) | NOT NULL                     |                                                  |
+| `is_active`         | BOOLEAN      | NOT NULL DEFAULT true        |                                                  |
+| `mfa_enabled`       | BOOLEAN      | NOT NULL DEFAULT false       |                                                  |
+| `mfa_totp_secret`   | VARCHAR(255) | NULL                         | TOTP secret; NULL until MFA enrollment completes |
+| `created_at`        | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
+| `updated_at`        | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
+
+INDEX: `(tenant_id, email)`
+
+---
+
+### platform.tenant_memberships
+
+| Column          | Type        | Constraints                  | Notes |
+| --------------- | ----------- | ---------------------------- | ----- |
+| `membership_id` | UUID        | PK DEFAULT gen_random_uuid() |       |
+| `tenant_id`     | UUID        | FK → tenants NOT NULL        |       |
+| `user_id`       | UUID        | FK → users NOT NULL          |       |
+| `role`          | CosRoleEnum | NOT NULL                     |       |
+| `assigned_at`   | TIMESTAMPTZ | NOT NULL DEFAULT now()       |       |
+
+UNIQUE: `(tenant_id, user_id)`
+
+---
+
+### platform.audit_logs
+
+| Column          | Type         | Constraints                  | Notes                              |
+| --------------- | ------------ | ---------------------------- | ---------------------------------- |
+| `log_id`        | UUID         | PK DEFAULT gen_random_uuid() |                                    |
+| `tenant_id`     | UUID         | NOT NULL                     | Denormalized for query performance |
+| `actor_id`      | UUID         | NOT NULL                     | FK → users                         |
+| `action`        | VARCHAR(255) | NOT NULL                     |                                    |
+| `resource_type` | VARCHAR(100) | NOT NULL                     |                                    |
+| `resource_id`   | UUID         | NULL                         |                                    |
+| `ip_address`    | INET         | NULL                         |                                    |
+| `user_agent`    | TEXT         | NULL                         |                                    |
+| `occurred_at`   | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                    |
+| `metadata`      | JSONB        | NULL                         |                                    |
+
+INDEX: `(tenant_id, occurred_at DESC)`
+
+---
+
 ## 11.2 Core Entities
 
 Projects :

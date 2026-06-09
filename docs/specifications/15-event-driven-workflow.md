@@ -230,6 +230,7 @@ Emitted when an Enterprise tenant's contract is marked as signed, triggering the
 | `contract_reference` | string | No       | External contract ID from CRM or system |
 
 **Avro schema:** `packages/@cos/shared/src/avro/platform.enterprise.contract_signed.v1.avsc`
+**TypeScript interface:** `packages/@cos/shared/src/events/platform.enterprise.contract_signed.v1.ts`
 
 ---
 
@@ -246,6 +247,7 @@ Emitted when `EnterpriseProvisioningWorkflow` completes successfully (after Acti
 | `rds_endpoint` | string | Yes      | RDS hostname (e.g. `cos-tenant-acme-prod.xxx`) |
 
 **Avro schema:** `packages/@cos/shared/src/avro/platform.enterprise.db_provisioned.v1.avsc`
+**TypeScript interface:** `packages/@cos/shared/src/events/platform.enterprise.db_provisioned.v1.ts`
 
 ---
 
