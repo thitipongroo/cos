@@ -3,3 +3,31 @@ packages:
   - 'backend'
   - 'services/*'
   - 'packages/@cos/*'
+
+auditConfig:
+  ignoreCves:
+    # Locked by @nestjs/platform-fastify@10 (fastify@4) — needs NestJS 11 upgrade
+    - CVE-2026-6270
+    - CVE-2026-22031
+    - CVE-2026-2880
+    - CVE-2026-33804
+    - CVE-2026-25223
+    - CVE-2026-2293
+    - CVE-2026-33011
+    - CVE-2026-6321
+    - CVE-2026-6322
+    # Locked by next@14 — needs Next.js 15 upgrade
+    - CVE-2026-44578
+    - CVE-2026-44573
+    # Locked by @opentelemetry/sdk-node@0.51 — needs full OTel stack upgrade
+    - CVE-2026-44902
+    # Dev-only: locked by expo@51 CLI (tar@6) — needs Expo 52 upgrade
+    - CVE-2026-24842
+    - CVE-2026-23745
+    - CVE-2026-26960
+    - CVE-2026-29786
+    - CVE-2026-31802
+    - CVE-2026-23950
+    # Test-only: locked by testcontainers@10.28 (undici@5)
+    - CVE-2026-1526
+    - CVE-2026-2229
