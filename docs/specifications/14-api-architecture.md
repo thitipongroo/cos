@@ -110,24 +110,24 @@ Error response:
 The patterns below define the shape for each API category. OpenAPI 3.x specs
 are maintained in `docs/api/`:
 
-| Domain             | OpenAPI File                                       | Scope                                                                                          |
-| ------------------ | -------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Authentication     | [auth](../api/auth.openapi.yaml)                   | MVP                                                                                            |
-| Tenant Management  | [tenant](../api/tenant.openapi.yaml)               | MVP                                                                                            |
-| Projects           | [project](../api/project.openapi.yaml)             | MVP                                                                                            |
-| Procurement        | [procurement](../api/procurement.openapi.yaml)     | MVP                                                                                            |
-| Financial          | [finance](../api/finance.openapi.yaml)             | MVP                                                                                            |
-| Bill of Quantities | [BOQ](../api/boq.openapi.yaml)                     | MVP                                                                                            |
-| Workforce          | [workforce](../api/workforce.openapi.yaml)         | MVP                                                                                            |
-| Equipment          | [equipment](../api/equipment.openapi.yaml)         | MVP                                                                                            |
-| Files              | [file](../api/file.openapi.yaml)                   | MVP                                                                                            |
-| Notifications      | [notification](../api/notification.openapi.yaml)   | MVP                                                                                            |
-| Site               | [site-ops](../api/site-ops.openapi.yaml)           | Planned — MVP                                                                                  |
-| Safety             | [safety](../api/safety.openapi.yaml)               | Planned — MVP                                                                                  |
-| AI                 | [ai](../api/ai.openapi.yaml)                       | Planned — MVP                                                                                  |
-| CRM                | [crm](../api/crm.openapi.yaml)                     | Planned — MVP                                                                                  |
-| Vendor             | [vendor](../api/vendor.openapi.yaml)               | Planned — MVP                                                                                  |
-| Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml)   | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins) |
+| Domain             | OpenAPI File                                     | Scope                                                                                          |
+| ------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Authentication     | [auth](../api/auth.openapi.yaml)                 | MVP                                                                                            |
+| Tenant Management  | [tenant](../api/tenant.openapi.yaml)             | MVP                                                                                            |
+| Projects           | [project](../api/project.openapi.yaml)           | MVP                                                                                            |
+| Procurement        | [procurement](../api/procurement.openapi.yaml)   | MVP                                                                                            |
+| Financial          | [finance](../api/finance.openapi.yaml)           | MVP                                                                                            |
+| Bill of Quantities | [BOQ](../api/boq.openapi.yaml)                   | MVP                                                                                            |
+| Workforce          | [workforce](../api/workforce.openapi.yaml)       | MVP                                                                                            |
+| Equipment          | [equipment](../api/equipment.openapi.yaml)       | MVP                                                                                            |
+| Files              | [file](../api/file.openapi.yaml)                 | MVP                                                                                            |
+| Notifications      | [notification](../api/notification.openapi.yaml) | MVP                                                                                            |
+| Site               | [site-ops](../api/site-ops.openapi.yaml)         | Planned — MVP                                                                                  |
+| Safety             | [safety](../api/safety.openapi.yaml)             | Planned — MVP                                                                                  |
+| AI                 | [ai](../api/ai.openapi.yaml)                     | Planned — MVP                                                                                  |
+| CRM                | [crm](../api/crm.openapi.yaml)                   | Planned — MVP                                                                                  |
+| Vendor             | [vendor](../api/vendor.openapi.yaml)             | Planned — MVP                                                                                  |
+| Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml) | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins) |
 
 The endpoint patterns below serve as the canonical reference; OpenAPI files are the
 machine-readable contracts derived from these patterns.
@@ -148,15 +148,15 @@ Two authentication paths (source: `context/00_master_construction_os.md` §Phase
 - **Path B** — Email + password for office roles via Keycloak OIDC: JWT issued by Keycloak
   (RS256). MFA (TOTP) required for `TENANT_ADMIN` and `FINANCE`.
 
-| Method | Path | Description | Auth |
-| ------ | ---- | ----------- | ---- |
-| `POST` | `/api/v1/auth/otp/request` | Request SMS OTP — Path A field workers | Public |
-| `POST` | `/api/v1/auth/otp/verify` | Verify OTP; returns `access_token` + `refresh_token` | Public |
-| `POST` | `/api/v1/auth/refresh` | Refresh access token using refresh token | Public |
-| `POST` | `/api/v1/auth/logout` | Revoke refresh token | Bearer token |
-| `POST` | `/api/v1/auth/mfa/enroll` | Initiate TOTP enrollment — returns `otpauth://` URI for QR code | Bearer token |
-| `POST` | `/api/v1/auth/mfa/verify` | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true` | Bearer token |
-| `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login — Path B only (`TENANT_ADMIN`, `FINANCE`) | Bearer token |
+| Method | Path                            | Description                                                         | Auth         |
+| ------ | ------------------------------- | ------------------------------------------------------------------- | ------------ |
+| `POST` | `/api/v1/auth/otp/request`      | Request SMS OTP — Path A field workers                              | Public       |
+| `POST` | `/api/v1/auth/otp/verify`       | Verify OTP; returns `access_token` + `refresh_token`                | Public       |
+| `POST` | `/api/v1/auth/refresh`          | Refresh access token using refresh token                            | Public       |
+| `POST` | `/api/v1/auth/logout`           | Revoke refresh token                                                | Bearer token |
+| `POST` | `/api/v1/auth/mfa/enroll`       | Initiate TOTP enrollment — returns `otpauth://` URI for QR code     | Bearer token |
+| `POST` | `/api/v1/auth/mfa/verify`       | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true` | Bearer token |
+| `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login — Path B only (`TENANT_ADMIN`, `FINANCE`)  | Bearer token |
 
 > OTP constraints: 6-digit numeric, TTL 5 minutes, max 3 attempts per session,
 > rate-limited to 10 requests per phone per day (Kong Gateway — `05-security-compliance` §5.5).
@@ -412,10 +412,10 @@ Breaking vs Non-breaking :
 Kong Gateway uses the `jwt` plugin on all `/api/v1/*` routes. The plugin validates JWT
 signatures against two JWKS endpoints:
 
-| Issuer | JWKS Endpoint | Token Type |
-| ------ | ------------- | ---------- |
-| COS identity service | `https://api.cos.io/.well-known/jwks.json` | Path A user JWT (phone/OTP) |
-| Keycloak realm | `{keycloak_base}/realms/{realm}/protocol/openid-connect/certs` | Path B JWT; client credentials |
+| Issuer               | JWKS Endpoint                                                  | Token Type                     |
+| -------------------- | -------------------------------------------------------------- | ------------------------------ |
+| COS identity service | `https://api.cos.io/.well-known/jwks.json`                     | Path A user JWT (phone/OTP)    |
+| Keycloak realm       | `{keycloak_base}/realms/{realm}/protocol/openid-connect/certs` | Path B JWT; client credentials |
 
 Both endpoints are configured in the same `jwt` plugin instance. Token `iss` claim is
 validated against the JWKS endpoint that issued the signing key.
@@ -425,11 +425,11 @@ validated against the JWKS endpoint that issued the signing key.
 Kong identifies external OAuth2 client credential traffic by Consumer lookup on the `azp`
 (Authorized Party) claim:
 
-| Traffic Type | `iss` | `azp` | `session_state` | Kong Consumer |
-| --- | --- | --- | --- | --- |
-| Internal — Path A (field worker) | COS identity service | absent | absent | No — anonymous consumer |
-| Internal — Path B (office user) | Keycloak realm | `cos-web` or `cos-mobile` | Present | No — anonymous consumer |
-| External — marketplace / ERP | Keycloak realm | registered `client_id` | Absent | Yes — matched consumer |
+| Traffic Type                     | `iss`                | `azp`                     | `session_state` | Kong Consumer           |
+| -------------------------------- | -------------------- | ------------------------- | --------------- | ----------------------- |
+| Internal — Path A (field worker) | COS identity service | absent                    | absent          | No — anonymous consumer |
+| Internal — Path B (office user)  | Keycloak realm       | `cos-web` or `cos-mobile` | Present         | No — anonymous consumer |
+| External — marketplace / ERP     | Keycloak realm       | registered `client_id`    | Absent          | Yes — matched consumer  |
 
 `jwt` plugin is configured with:
 
@@ -462,22 +462,22 @@ Consumers at API key issuance. Each consumer maps to one Keycloak `client_id`.
 Tenant-level monthly quota is enforced at the Consumer Group level — one group per tenant,
 covering all external consumers of that tenant:
 
-| Limit | Enforced at | Config source |
-| ----- | ----------- | ------------- |
-| Per-minute | Route `/api/v1/*` (all traffic) | §14.2 rate limit table |
-| Monthly tenant quota | Consumer Group `external-{tenant_id}` | §13.5 monthly quota table |
-| Monthly per-API-key quota | Consumer (per `client_id`) | §13.5 per-API-key table |
+| Limit                     | Enforced at                           | Config source             |
+| ------------------------- | ------------------------------------- | ------------------------- |
+| Per-minute                | Route `/api/v1/*` (all traffic)       | §14.2 rate limit table    |
+| Monthly tenant quota      | Consumer Group `external-{tenant_id}` | §13.5 monthly quota table |
+| Monthly per-API-key quota | Consumer (per `client_id`)            | §13.5 per-API-key table   |
 
 A request is rejected (HTTP 429) if **any** of the three limits is exceeded.
 
 ### Plugin Stack Summary
 
-| Plugin | Applied at | Traffic scope |
-| ------ | ---------- | ------------- |
-| `jwt` | Route (all `/api/v1/*`) | All traffic — validates signature, `iss`, expiry |
-| `rate-limiting` (per-minute) | Route (all `/api/v1/*`) | All traffic — burst / anti-abuse |
-| `rate-limiting` (monthly tenant quota) | Consumer Group `external-{tenant_id}` | External client credentials only |
-| `rate-limiting` (monthly per-key quota) | Consumer (per `client_id`) | External client credentials only |
+| Plugin                                  | Applied at                            | Traffic scope                                    |
+| --------------------------------------- | ------------------------------------- | ------------------------------------------------ |
+| `jwt`                                   | Route (all `/api/v1/*`)               | All traffic — validates signature, `iss`, expiry |
+| `rate-limiting` (per-minute)            | Route (all `/api/v1/*`)               | All traffic — burst / anti-abuse                 |
+| `rate-limiting` (monthly tenant quota)  | Consumer Group `external-{tenant_id}` | External client credentials only                 |
+| `rate-limiting` (monthly per-key quota) | Consumer (per `client_id`)            | External client credentials only                 |
 
 ---
 

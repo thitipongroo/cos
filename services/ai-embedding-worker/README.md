@@ -9,6 +9,7 @@
 Generates and stores vector embeddings for all text content in the platform. Enables semantic search and RAG retrieval across site reports, issues, procurement records, and documents.
 
 Responsibilities:
+
 - Embed text via EP-AI-012 `EmbeddingProvider` interface (never call OpenAI SDK directly)
 - Store embeddings in pgvector (`vector(1536)` column)
 - Store embeddings in OpenSearch (`{tenant_id}-embeddings` index, k-NN)
@@ -16,8 +17,8 @@ Responsibilities:
 
 ## Public API
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path                          | Description                           |
+| ------ | ----------------------------- | ------------------------------------- |
 | `POST` | `/api/v1/embeddings/generate` | Generate and store embedding for text |
 
 ## Dependencies
@@ -29,9 +30,9 @@ Responsibilities:
 
 ## Extension points
 
-| EP | Status | Trigger |
-|----|--------|---------|
-| EP-AI-012 | STUB | Embedding Worker activation |
+| EP        | Status | Trigger                     |
+| --------- | ------ | --------------------------- |
+| EP-AI-012 | STUB   | Embedding Worker activation |
 
 ## Configuration
 

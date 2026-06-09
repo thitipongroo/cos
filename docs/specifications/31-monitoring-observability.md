@@ -1,8 +1,8 @@
 ---
-title: "Monitoring & Observability"
-version: "1.7.0"
+title: 'Monitoring & Observability'
+version: '1.7.0'
 status: Active
-last_updated: "2026-05-28"
+last_updated: '2026-05-28'
 authors:
   - thitipongroo
 related_docs:
@@ -51,13 +51,13 @@ defined in 32-implementation-specifications §32.2, not separately deployed micr
 
 Tooling from `04-tech-stack` section 4.5:
 
-| Signal | Tool | Storage | Retention |
-| --- | --- | --- | --- |
-| Metrics | Prometheus | Prometheus TSDB | 15 days hot; long-term via Thanos or Grafana Mimir |
-| Logs | Loki | Object storage (S3) | 30 days hot; 1 year cold |
-| Traces | Jaeger | Elasticsearch / S3 | 7 days hot |
-| Dashboards | Grafana | — | Persisted as code (GitOps) |
-| Instrumentation | OpenTelemetry SDK | Collector → Prometheus / Loki / Jaeger | — |
+| Signal          | Tool              | Storage                                | Retention                                          |
+| --------------- | ----------------- | -------------------------------------- | -------------------------------------------------- |
+| Metrics         | Prometheus        | Prometheus TSDB                        | 15 days hot; long-term via Thanos or Grafana Mimir |
+| Logs            | Loki              | Object storage (S3)                    | 30 days hot; 1 year cold                           |
+| Traces          | Jaeger            | Elasticsearch / S3                     | 7 days hot                                         |
+| Dashboards      | Grafana           | —                                      | Persisted as code (GitOps)                         |
+| Instrumentation | OpenTelemetry SDK | Collector → Prometheus / Loki / Jaeger | —                                                  |
 
 All services instrument via the **OpenTelemetry SDK** (Node.js, Python). The OpenTelemetry
 Collector routes signals to the appropriate backend. No direct Prometheus/Loki/Jaeger SDK
@@ -79,25 +79,25 @@ coupling in application code.
 
 Every NestJS service must expose:
 
-| Metric | Type | Labels |
-| --- | --- | --- |
-| `http_request_duration_seconds` | Histogram | service, endpoint, method, status_code, tenant_tier |
-| `http_requests_total` | Counter | service, endpoint, method, status_code |
-| `db_query_duration_seconds` | Histogram | service, query_type |
-| `kafka_messages_produced_total` | Counter | service, topic |
-| `kafka_messages_consumed_total` | Counter | service, topic, consumer_group |
-| `workflow_started_total` | Counter | workflow_type |
-| `workflow_completed_total` | Counter | workflow_type, outcome (success/failed/timeout) |
-| `approval_pending_duration_seconds` | Histogram | workflow_type |
+| Metric                              | Type      | Labels                                              |
+| ----------------------------------- | --------- | --------------------------------------------------- |
+| `http_request_duration_seconds`     | Histogram | service, endpoint, method, status_code, tenant_tier |
+| `http_requests_total`               | Counter   | service, endpoint, method, status_code              |
+| `db_query_duration_seconds`         | Histogram | service, query_type                                 |
+| `kafka_messages_produced_total`     | Counter   | service, topic                                      |
+| `kafka_messages_consumed_total`     | Counter   | service, topic, consumer_group                      |
+| `workflow_started_total`            | Counter   | workflow_type                                       |
+| `workflow_completed_total`          | Counter   | workflow_type, outcome (success/failed/timeout)     |
+| `approval_pending_duration_seconds` | Histogram | workflow_type                                       |
 
 ### AI Service Metrics
 
-| Metric | Type | Description |
-| --- | --- | --- |
-| `llm_request_duration_seconds` | Histogram | LLM API call latency per provider |
-| `llm_tokens_consumed_total` | Counter | Input + output tokens per tenant, per provider |
-| `rag_retrieval_duration_seconds` | Histogram | Vector search query latency |
-| `ocr_pages_processed_total` | Counter | OCR pages processed per tenant |
+| Metric                           | Type      | Description                                    |
+| -------------------------------- | --------- | ---------------------------------------------- |
+| `llm_request_duration_seconds`   | Histogram | LLM API call latency per provider              |
+| `llm_tokens_consumed_total`      | Counter   | Input + output tokens per tenant, per provider |
+| `rag_retrieval_duration_seconds` | Histogram | Vector search query latency                    |
+| `ocr_pages_processed_total`      | Counter   | OCR pages processed per tenant                 |
 
 ---
 
@@ -121,7 +121,6 @@ All services emit **structured JSON logs** via the OpenTelemetry log signal:
   "amount": 450000,
   "approved_by": "user_xyz"
 }
-
 ```
 
 Mandatory fields in every log line:
@@ -134,11 +133,11 @@ Mandatory fields in every log line:
 
 ### Log Levels
 
-| Level | When to Use |
-| --- | --- |
-| `debug` | Detailed diagnostic data (disabled in production by default) |
-| `info` | Normal business events (PO approved, delivery received, user logged in) |
-| `warn` | Unexpected but recoverable conditions (retry triggered, cache miss on hot path) |
+| Level   | When to Use                                                                                 |
+| ------- | ------------------------------------------------------------------------------------------- |
+| `debug` | Detailed diagnostic data (disabled in production by default)                                |
+| `info`  | Normal business events (PO approved, delivery received, user logged in)                     |
+| `warn`  | Unexpected but recoverable conditions (retry triggered, cache miss on hot path)             |
 | `error` | Failures requiring investigation (DB connection lost, Kafka publish failed, sync exhausted) |
 
 ### PII in Logs
@@ -165,11 +164,11 @@ per `05-security-compliance` section 5.2. Audit logs are never deleted.
 
 ### Sampling Strategy
 
-| Environment | Sampling Rate |
-| --- | --- |
-| Development | 100% (all requests) |
-| Staging | 10% (representative sample) |
-| Production | 1% baseline + 100% for errors (tail-based sampling) |
+| Environment | Sampling Rate                                       |
+| ----------- | --------------------------------------------------- |
+| Development | 100% (all requests)                                 |
+| Staging     | 10% (representative sample)                         |
+| Production  | 1% baseline + 100% for errors (tail-based sampling) |
 
 Tail-based sampling ensures all error traces are captured regardless of baseline rate.
 
@@ -189,24 +188,24 @@ SLOs define the target reliability for each tier. They underpin the SLAs defined
 
 ### API Availability SLO
 
-| Tier | Monthly Availability Target | Error Budget (30 days) |
-| --- | --- | --- |
-| Shared SaaS — SMB | 99.5% | 3.6 hours/month |
-| Shared SaaS — Mid-market | 99.9% | 43.8 minutes/month |
-| Dedicated / Enterprise | 99.95% | 21.9 minutes/month |
+| Tier                     | Monthly Availability Target | Error Budget (30 days) |
+| ------------------------ | --------------------------- | ---------------------- |
+| Shared SaaS — SMB        | 99.5%                       | 3.6 hours/month        |
+| Shared SaaS — Mid-market | 99.9%                       | 43.8 minutes/month     |
+| Dedicated / Enterprise   | 99.95%                      | 21.9 minutes/month     |
 
 Availability = (total requests − error requests) / total requests
 Errors: HTTP 5xx responses.
 
 ### Latency SLO
 
-| Endpoint Category | p50 | p95 | p99 |
-| --- | --- | --- | --- |
-| Read endpoints (GET) | < 100 ms | < 300 ms | < 500 ms |
-| Write endpoints (POST/PUT) | < 200 ms | < 500 ms | < 1 s |
-| Dashboard / analytics (ClickHouse) | < 500 ms | < 1 s | < 2 s |
-| AI report generation | < 2 s | < 5 s | < 10 s |
-| Notification delivery (in-app SSE) | < 200 ms | < 500 ms | < 1 s |
+| Endpoint Category                  | p50      | p95      | p99      |
+| ---------------------------------- | -------- | -------- | -------- |
+| Read endpoints (GET)               | < 100 ms | < 300 ms | < 500 ms |
+| Write endpoints (POST/PUT)         | < 200 ms | < 500 ms | < 1 s    |
+| Dashboard / analytics (ClickHouse) | < 500 ms | < 1 s    | < 2 s    |
+| AI report generation               | < 2 s    | < 5 s    | < 10 s   |
+| Notification delivery (in-app SSE) | < 200 ms | < 500 ms | < 1 s    |
 
 ### Kafka Consumer Lag SLO
 
@@ -222,24 +221,24 @@ Alerts are routed via **Alertmanager** (bundled with Prometheus) to the on-call 
 
 ### Critical Alerts (Page immediately)
 
-| Alert | Condition | Action |
-| --- | --- | --- |
-| Service down | Pod not ready for > 2 minutes | Page on-call; check pod logs |
-| DB connection exhausted | PostgreSQL connection pool > 95% | Page on-call; scale connection pool or service |
-| Kafka consumer lag critical | Lag > 50,000 on any topic | Page on-call; check consumer health |
-| Safety notification delivery failed | `safety.incident.reported` event not delivered within 5 min | Page on-call; check Notification Service |
-| Tenant isolation breach (test) | Any cross-tenant isolation test fails in prod health check | Page security lead immediately |
+| Alert                               | Condition                                                   | Action                                         |
+| ----------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| Service down                        | Pod not ready for > 2 minutes                               | Page on-call; check pod logs                   |
+| DB connection exhausted             | PostgreSQL connection pool > 95%                            | Page on-call; scale connection pool or service |
+| Kafka consumer lag critical         | Lag > 50,000 on any topic                                   | Page on-call; check consumer health            |
+| Safety notification delivery failed | `safety.incident.reported` event not delivered within 5 min | Page on-call; check Notification Service       |
+| Tenant isolation breach (test)      | Any cross-tenant isolation test fails in prod health check  | Page security lead immediately                 |
 
 ### Warning Alerts (Slack notification)
 
-| Alert | Condition |
-| --- | --- |
-| High latency | p95 API latency > 1 s for > 5 minutes |
-| High error rate | HTTP 5xx rate > 1% for > 5 minutes |
-| Kafka consumer lag warning | Lag > 5,000 on any topic for > 2 minutes |
+| Alert                      | Condition                                       |
+| -------------------------- | ----------------------------------------------- |
+| High latency               | p95 API latency > 1 s for > 5 minutes           |
+| High error rate            | HTTP 5xx rate > 1% for > 5 minutes              |
+| Kafka consumer lag warning | Lag > 5,000 on any topic for > 2 minutes        |
 | AI token budget near limit | Tenant token consumption > 80% of monthly quota |
-| Disk usage high | Any PV > 80% full |
-| Memory pressure | Pod memory > 85% of limit for > 10 minutes |
+| Disk usage high            | Any PV > 80% full                               |
+| Memory pressure            | Pod memory > 85% of limit for > 10 minutes      |
 
 ### Escalation Policy
 
@@ -286,30 +285,30 @@ All dashboards are version-controlled as Grafana JSON in the GitOps repository.
 
 ### Incident Severity Classification
 
-| Severity | Definition | Response Time | Example |
-| --- | --- | --- | --- |
-| P1 — Critical | Complete service outage or data loss risk | 15 minutes | All API endpoints returning 5xx; DB unresponsive |
-| P2 — High | Partial outage affecting a key user flow | 30 minutes | Procurement approval workflow failing; notifications not delivered |
-| P3 — Medium | Degraded performance, workaround exists | 2 hours | Dashboard slow (> 5 s p95); AI generation timing out |
-| P4 — Low | Minor issue, no user impact | Next business day | Monitoring alert misconfigured; log noise |
+| Severity      | Definition                                | Response Time     | Example                                                            |
+| ------------- | ----------------------------------------- | ----------------- | ------------------------------------------------------------------ |
+| P1 — Critical | Complete service outage or data loss risk | 15 minutes        | All API endpoints returning 5xx; DB unresponsive                   |
+| P2 — High     | Partial outage affecting a key user flow  | 30 minutes        | Procurement approval workflow failing; notifications not delivered |
+| P3 — Medium   | Degraded performance, workaround exists   | 2 hours           | Dashboard slow (> 5 s p95); AI generation timing out               |
+| P4 — Low      | Minor issue, no user impact               | Next business day | Monitoring alert misconfigured; log noise                          |
 
 ### Incident Runbooks
 
 Operational runbooks for on-call response live in `docs/runbooks/`:
 
-| Scenario | Runbook |
-| --- | --- |
-| Service deployment / rollout | [deployment.md](../runbooks/deployment.md) |
-| Service rollback | [rollback.md](../runbooks/rollback.md) |
-| P1/P2 incident management | [incident-response.md](../runbooks/incident-response.md) |
-| Full disaster recovery | [disaster-recovery/](../runbooks/disaster-recovery/) |
-| Production readiness gate | [production-readiness.md](../runbooks/production-readiness.md) |
-| AI feature activation | [ai-readiness-checklist.md](../runbooks/ai-readiness-checklist.md) |
-| DB failover (PostgreSQL RDS Multi-AZ) | [db-failover.md](../runbooks/db-failover.md) |
-| Kafka consumer lag & partition rebalance | [kafka-partition-rebalance.md](../runbooks/kafka-partition-rebalance.md) |
-| Keycloak realm recovery | [keycloak-realm-recovery.md](../runbooks/keycloak-realm-recovery.md) |
-| Keycloak realm daily backup (CronJob spec) | [keycloak-realm-backup.md](../runbooks/keycloak-realm-backup.md) |
-| Temporal.io worker restart & stuck workflows | [temporal-worker-restart.md](../runbooks/temporal-worker-restart.md) |
+| Scenario                                     | Runbook                                                                  |
+| -------------------------------------------- | ------------------------------------------------------------------------ |
+| Service deployment / rollout                 | [deployment.md](../runbooks/deployment.md)                               |
+| Service rollback                             | [rollback.md](../runbooks/rollback.md)                                   |
+| P1/P2 incident management                    | [incident-response.md](../runbooks/incident-response.md)                 |
+| Full disaster recovery                       | [disaster-recovery/](../runbooks/disaster-recovery/)                     |
+| Production readiness gate                    | [production-readiness.md](../runbooks/production-readiness.md)           |
+| AI feature activation                        | [ai-readiness-checklist.md](../runbooks/ai-readiness-checklist.md)       |
+| DB failover (PostgreSQL RDS Multi-AZ)        | [db-failover.md](../runbooks/db-failover.md)                             |
+| Kafka consumer lag & partition rebalance     | [kafka-partition-rebalance.md](../runbooks/kafka-partition-rebalance.md) |
+| Keycloak realm recovery                      | [keycloak-realm-recovery.md](../runbooks/keycloak-realm-recovery.md)     |
+| Keycloak realm daily backup (CronJob spec)   | [keycloak-realm-backup.md](../runbooks/keycloak-realm-backup.md)         |
+| Temporal.io worker restart & stuck workflows | [temporal-worker-restart.md](../runbooks/temporal-worker-restart.md)     |
 
 ### Post-incident Review
 
@@ -322,16 +321,16 @@ Operational runbooks for on-call response live in `docs/runbooks/`:
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [OpenTelemetry] | OpenTelemetry Specification | [opentelemetry.io/docs/specs/otel](https://opentelemetry.io/docs/specs/otel/) |
-| [Prometheus] | Prometheus Monitoring Documentation | [prometheus.io/docs](https://prometheus.io/docs/introduction/overview/) |
-| [Grafana] | Grafana Observability Platform Documentation | [grafana.com/docs/grafana/latest](https://grafana.com/docs/grafana/latest/) |
-| [Loki] | Grafana Loki Log Aggregation Documentation | [grafana.com/docs/loki/latest](https://grafana.com/docs/loki/latest/) |
-| [Jaeger] | Jaeger Distributed Tracing Documentation | [jaegertracing.io/docs/latest](https://www.jaegertracing.io/docs/latest/) |
-| [SRE-Book] | Site Reliability Engineering: How Google Runs Production Systems | Beyer et al., O'Reilly 2016 |
-| [PagerDuty] | PagerDuty Incident Response Documentation | [response.pagerduty.com](https://response.pagerduty.com/) |
+| ID              | Title                                                              | Source                                                                        |
+| --------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| [IEEE 830]      | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                             |
+| [OpenTelemetry] | OpenTelemetry Specification                                        | [opentelemetry.io/docs/specs/otel](https://opentelemetry.io/docs/specs/otel/) |
+| [Prometheus]    | Prometheus Monitoring Documentation                                | [prometheus.io/docs](https://prometheus.io/docs/introduction/overview/)       |
+| [Grafana]       | Grafana Observability Platform Documentation                       | [grafana.com/docs/grafana/latest](https://grafana.com/docs/grafana/latest/)   |
+| [Loki]          | Grafana Loki Log Aggregation Documentation                         | [grafana.com/docs/loki/latest](https://grafana.com/docs/loki/latest/)         |
+| [Jaeger]        | Jaeger Distributed Tracing Documentation                           | [jaegertracing.io/docs/latest](https://www.jaegertracing.io/docs/latest/)     |
+| [SRE-Book]      | Site Reliability Engineering: How Google Runs Production Systems   | Beyer et al., O'Reilly 2016                                                   |
+| [PagerDuty]     | PagerDuty Incident Response Documentation                          | [response.pagerduty.com](https://response.pagerduty.com/)                     |
 
 ---
 

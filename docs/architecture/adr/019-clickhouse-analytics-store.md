@@ -37,12 +37,12 @@ Use **ClickHouse** as the dedicated analytics and time-series store.
 
 **Why ClickHouse over alternatives?**
 
-| Option | Rejected reason |
-|--------|----------------|
-| PostgreSQL OLAP | Row-store; aggregation on large tables degrades OLTP latency |
-| TimescaleDB | Better for pure time-series, not columnar OLAP; smaller ecosystem |
-| BigQuery / Redshift | Cloud-only; per-query cost; no local dev parity |
-| Elasticsearch | Full-text search primary use case; aggregations expensive; not columnar |
+| Option              | Rejected reason                                                         |
+| ------------------- | ----------------------------------------------------------------------- |
+| PostgreSQL OLAP     | Row-store; aggregation on large tables degrades OLTP latency            |
+| TimescaleDB         | Better for pure time-series, not columnar OLAP; smaller ecosystem       |
+| BigQuery / Redshift | Cloud-only; per-query cost; no local dev parity                         |
+| Elasticsearch       | Full-text search primary use case; aggregations expensive; not columnar |
 
 ClickHouse provides: Kafka Engine for direct stream ingestion, columnar compression (10–50x vs row-store), materialized views for real-time aggregations, open-source, and self-hosted.
 
@@ -51,15 +51,18 @@ ClickHouse provides: Kafka Engine for direct stream ingestion, columnar compress
 ## Consequences
 
 ### Positive
+
 - Analytical queries isolated from PostgreSQL OLTP path
 - Kafka Engine enables sub-second dashboard refresh
 - p99 latency queries (API metering) execute in <100ms at projected data volumes
 
 ### Negative
+
 - Eventual consistency: ClickHouse lags Kafka by up to ~1s under normal load
 - Joins across ClickHouse and PostgreSQL require application-layer composition (no foreign keys)
 
 ### Neutral
+
 - ClickHouse does not replace PostgreSQL — operational data stays in PostgreSQL
 
 ---

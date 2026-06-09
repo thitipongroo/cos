@@ -4,12 +4,12 @@
 
 ## Severity Levels
 
-| Severity | Definition | Response SLA |
-| --- | --- | --- |
-| P1 — Critical | Platform down; data loss risk; security breach | 15 minutes to first response |
-| P2 — High | Core feature unavailable for ≥ 10% of users | 30 minutes to first response |
-| P3 — Medium | Degraded performance; non-critical feature down | 2 hours to first response |
-| P4 — Low | Minor issue; workaround available | Next business day |
+| Severity      | Definition                                      | Response SLA                 |
+| ------------- | ----------------------------------------------- | ---------------------------- |
+| P1 — Critical | Platform down; data loss risk; security breach  | 15 minutes to first response |
+| P2 — High     | Core feature unavailable for ≥ 10% of users     | 30 minutes to first response |
+| P3 — Medium   | Degraded performance; non-critical feature down | 2 hours to first response    |
+| P4 — Low      | Minor issue; workaround available               | Next business day            |
 
 ## Response Steps
 
@@ -34,8 +34,8 @@ If a security breach is suspected:
 
 ## Escalation
 
-| Condition | Escalate to |
-| --- | --- |
-| Data loss confirmed | thitipongroo + legal |
-| Tenant data breach suspected | thitipongroo + legal + affected TENANT_ADMIN |
-| Platform unavailable > 1 hour | thitipongroo |
+| Condition                     | Escalate to                                  |
+| ----------------------------- | -------------------------------------------- |
+| Data loss confirmed           | thitipongroo + legal                         |
+| Tenant data breach suspected  | thitipongroo + legal + affected TENANT_ADMIN |
+| Platform unavailable > 1 hour | thitipongroo                                 |

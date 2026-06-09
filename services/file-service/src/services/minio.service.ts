@@ -4,6 +4,7 @@
 // Signed URL TTL: 1 hour by default (configurable via SIGNED_URL_TTL_SECONDS).
 
 import * as Minio from 'minio';
+import { CopyConditions } from 'minio';
 import type { FileServiceConfig } from '../config';
 
 export class MinioService {
@@ -73,7 +74,12 @@ export class MinioService {
     const srcBucket = this.bucketName(tenantId);
     const destBucket = this.quarantineBucketName(tenantId);
     await this.ensureQuarantineBucket(tenantId);
-    await this.client.copyObject(destBucket, storedKey, `/${srcBucket}/${storedKey}`);
+    await this.client.copyObject(
+      destBucket,
+      storedKey,
+      `/${srcBucket}/${storedKey}`,
+      new CopyConditions(),
+    );
     await this.client.removeObject(srcBucket, storedKey);
   }
 
@@ -82,7 +88,12 @@ export class MinioService {
     const srcBucket = this.quarantineBucketName(tenantId);
     const destBucket = this.bucketName(tenantId);
     await this.ensureBucket(tenantId);
-    await this.client.copyObject(destBucket, storedKey, `/${srcBucket}/${storedKey}`);
+    await this.client.copyObject(
+      destBucket,
+      storedKey,
+      `/${srcBucket}/${storedKey}`,
+      new CopyConditions(),
+    );
     await this.client.removeObject(srcBucket, storedKey);
   }
 

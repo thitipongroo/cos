@@ -12,14 +12,14 @@ Handles all file upload and download operations. Streams multipart uploads direc
 
 All endpoints require `Authorization: Bearer <JWT>` (validated by Kong Gateway).
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/files/upload` | Upload file (multipart/form-data) |
-| `GET` | `/api/v1/files/:fileId/url` | Get signed download URL (TTL 1h) |
-| `GET` | `/api/v1/files/:fileId` | Get file metadata |
-| `DELETE` | `/api/v1/files/:fileId` | Soft delete |
-| `GET` | `/api/v1/files` | List files (tenant-scoped, paginated) |
-| `GET` | `/api/v1/files/by-entity/:entityType/:entityId` | Files for entity |
+| Method   | Path                                            | Description                           |
+| -------- | ----------------------------------------------- | ------------------------------------- |
+| `POST`   | `/api/v1/files/upload`                          | Upload file (multipart/form-data)     |
+| `GET`    | `/api/v1/files/:fileId/url`                     | Get signed download URL (TTL 1h)      |
+| `GET`    | `/api/v1/files/:fileId`                         | Get file metadata                     |
+| `DELETE` | `/api/v1/files/:fileId`                         | Soft delete                           |
+| `GET`    | `/api/v1/files`                                 | List files (tenant-scoped, paginated) |
+| `GET`    | `/api/v1/files/by-entity/:entityType/:entityId` | Files for entity                      |
 
 ## Constraints
 

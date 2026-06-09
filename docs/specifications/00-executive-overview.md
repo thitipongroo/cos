@@ -1,8 +1,8 @@
 ---
-title: "Executive Overview"
-version: "1.1.0"
+title: 'Executive Overview'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-26"
+last_updated: '2026-05-26'
 authors:
   - thitipongroo
 related_docs:
@@ -15,7 +15,7 @@ related_docs:
 # 0. Executive Overview
 
 > 📝 เอกสารนี้เขียนเป็นภาษาไทยสำหรับผู้บริหาร
-> *This document is intentionally written in Thai for the primary executive audience of the Thai-first platform.*
+> _This document is intentionally written in Thai for the primary executive audience of the Thai-first platform._
 
 เป้าหมายของระบบนี้คือสร้าง "Construction Operating System (Construction OS)" สำหรับธุรกิจ :
 

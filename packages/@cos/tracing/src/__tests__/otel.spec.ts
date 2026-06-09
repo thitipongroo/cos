@@ -29,13 +29,11 @@ jest.mock('@opentelemetry/api', () => ({
   context: { active: jest.fn().mockReturnValue({}) },
   trace: { getSpan: mockGetSpan },
   metrics: {
-    getMeter: jest
-      .fn()
-      .mockReturnValue({
-        createHistogram: jest.fn(),
-        createCounter: jest.fn(),
-        createObservableGauge: jest.fn(),
-      }),
+    getMeter: jest.fn().mockReturnValue({
+      createHistogram: jest.fn(),
+      createCounter: jest.fn(),
+      createObservableGauge: jest.fn(),
+    }),
   },
   propagation: {
     inject: jest.fn(),

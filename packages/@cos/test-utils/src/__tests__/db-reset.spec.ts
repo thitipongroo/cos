@@ -15,14 +15,14 @@ const makeClient = (tableRows: Array<{ tablename: string }> = []): MockClient =>
 describe('truncateAllTables', () => {
   it('sets and resets session_replication_role', async () => {
     const client = makeClient();
-    await truncateAllTables(client as Parameters<typeof truncateAllTables>[0]);
+    await truncateAllTables(client as unknown as Parameters<typeof truncateAllTables>[0]);
     expect(client.query).toHaveBeenCalledWith('SET session_replication_role = replica');
     expect(client.query).toHaveBeenCalledWith('SET session_replication_role = DEFAULT');
   });
 
   it('queries pg_tables for each domain schema', async () => {
     const client = makeClient();
-    await truncateAllTables(client as Parameters<typeof truncateAllTables>[0]);
+    await truncateAllTables(client as unknown as Parameters<typeof truncateAllTables>[0]);
     const schemaCalls = client.query.mock.calls.filter(
       ([sql]: [string]) => typeof sql === 'string' && sql.includes('pg_tables'),
     );
@@ -31,7 +31,7 @@ describe('truncateAllTables', () => {
 
   it('truncates each table returned for a schema', async () => {
     const client = makeClient([{ tablename: 'users' }, { tablename: 'sessions' }]);
-    await truncateAllTables(client as Parameters<typeof truncateAllTables>[0]);
+    await truncateAllTables(client as unknown as Parameters<typeof truncateAllTables>[0]);
     const truncateCalls = client.query.mock.calls.filter(
       ([sql]: [string]) => typeof sql === 'string' && sql.startsWith('TRUNCATE'),
     );
@@ -40,7 +40,7 @@ describe('truncateAllTables', () => {
 
   it('does not truncate when schema has no tables', async () => {
     const client = makeClient([]);
-    await truncateAllTables(client as Parameters<typeof truncateAllTables>[0]);
+    await truncateAllTables(client as unknown as Parameters<typeof truncateAllTables>[0]);
     const truncateCalls = client.query.mock.calls.filter(
       ([sql]: [string]) => typeof sql === 'string' && sql.startsWith('TRUNCATE'),
     );
@@ -53,7 +53,7 @@ describe('resetAndSeed', () => {
     const client = makeClient();
     const seed = jest.fn().mockResolvedValue(undefined);
     await resetAndSeed(
-      client as Parameters<typeof resetAndSeed>[0],
+      client as unknown as Parameters<typeof resetAndSeed>[0],
       seed as Parameters<typeof resetAndSeed>[1],
     );
     expect(client.query).toHaveBeenCalledWith('SET session_replication_role = replica');

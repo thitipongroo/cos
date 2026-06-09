@@ -11,32 +11,32 @@
 
 ## Incident Summary
 
-| Field | Value |
-|-------|-------|
-| **Incident ID** | INC-YYYY-MM-DD-NNN |
-| **Severity** | P0 / P1 |
-| **Date declared** | YYYY-MM-DD HH:MM ICT |
-| **Date resolved** | YYYY-MM-DD HH:MM ICT |
-| **Duration** | ___ hours ___ minutes |
-| **Incident Commander** | |
-| **Scribe** | |
-| **Affected tenants** | |
-| **User impact** | |
+| Field                  | Value                 |
+| ---------------------- | --------------------- |
+| **Incident ID**        | INC-YYYY-MM-DD-NNN    |
+| **Severity**           | P0 / P1               |
+| **Date declared**      | YYYY-MM-DD HH:MM ICT  |
+| **Date resolved**      | YYYY-MM-DD HH:MM ICT  |
+| **Duration**           | **_ hours _** minutes |
+| **Incident Commander** |                       |
+| **Scribe**             |                       |
+| **Affected tenants**   |                       |
+| **User impact**        |                       |
 
 ---
 
 ## Timeline
 
-| Time (ICT) | Event |
-|-----------|-------|
-| HH:MM | Alert fired / issue reported |
-| HH:MM | On-call paged |
-| HH:MM | IC assigned |
-| HH:MM | Mitigation started |
-| HH:MM | Tenants notified via status page |
-| HH:MM | Root cause identified |
-| HH:MM | Fix deployed |
-| HH:MM | Incident resolved |
+| Time (ICT) | Event                            |
+| ---------- | -------------------------------- |
+| HH:MM      | Alert fired / issue reported     |
+| HH:MM      | On-call paged                    |
+| HH:MM      | IC assigned                      |
+| HH:MM      | Mitigation started               |
+| HH:MM      | Tenants notified via status page |
+| HH:MM      | Root cause identified            |
+| HH:MM      | Fix deployed                     |
+| HH:MM      | Incident resolved                |
 
 ---
 
@@ -58,13 +58,13 @@
 
 ## Impact Assessment
 
-| Metric | Value |
-|--------|-------|
-| Tenants affected | |
-| Users affected (estimated) | |
-| Data loss | Yes / No — describe if Yes |
-| SLO error budget consumed | |
-| Downtime duration | |
+| Metric                     | Value                      |
+| -------------------------- | -------------------------- |
+| Tenants affected           |                            |
+| Users affected (estimated) |                            |
+| Data loss                  | Yes / No — describe if Yes |
+| SLO error budget consumed  |                            |
+| Downtime duration          |                            |
 
 ---
 
@@ -86,9 +86,9 @@
 
 ## Action Items
 
-| Action | Owner | Due Date | Ticket |
-|--------|-------|----------|--------|
-| (fill in) | | YYYY-MM-DD | |
+| Action    | Owner | Due Date   | Ticket |
+| --------- | ----- | ---------- | ------ |
+| (fill in) |       | YYYY-MM-DD |        |
 
 ---
 
@@ -102,7 +102,7 @@
 
 ## Sign-Off
 
-| Role | Name | Date |
-|------|------|------|
-| Incident Commander | | |
-| Engineering Lead | | |
+| Role               | Name | Date |
+| ------------------ | ---- | ---- |
+| Incident Commander |      |      |
+| Engineering Lead   |      |      |

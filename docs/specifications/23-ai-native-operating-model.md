@@ -1,8 +1,8 @@
 ---
-title: "AI-native Operating Model"
-version: "1.3.0"
+title: 'AI-native Operating Model'
+version: '1.3.0'
 status: Active
-last_updated: "2026-05-27"
+last_updated: '2026-05-27'
 authors:
   - thitipongroo
 related_docs:
@@ -42,15 +42,15 @@ This creates:
 
 ## 23.2 Human + AI Collaboration Model
 
-| Layer | Human Role | AI Role |
-| --- | --- | --- |
-| Executive | Strategic decisions | Forecasting & risk simulation |
-| PM | Coordination | Schedule optimization |
-| Procurement | Vendor negotiation | Cost analysis |
-| Site Engineer | Validation | Report generation |
-| Finance | Approval | Cash-flow prediction |
-| Safety Officer | Compliance validation | Safety compliance detection |
-| CRM / Sales | Client relationship | Proposal generation |
+| Layer          | Human Role            | AI Role                       |
+| -------------- | --------------------- | ----------------------------- |
+| Executive      | Strategic decisions   | Forecasting & risk simulation |
+| PM             | Coordination          | Schedule optimization         |
+| Procurement    | Vendor negotiation    | Cost analysis                 |
+| Site Engineer  | Validation            | Report generation             |
+| Finance        | Approval              | Cash-flow prediction          |
+| Safety Officer | Compliance validation | Safety compliance detection   |
+| CRM / Sales    | Client relationship   | Proposal generation           |
 
 ---
 
@@ -93,12 +93,12 @@ justifies the cost. See 24-ai-training-pipeline section 24.5 for the full strate
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [OpenAI] | OpenAI API Documentation | [platform.openai.com/docs](https://platform.openai.com/docs/) |
-| [Temporal] | Temporal Workflow Documentation | [docs.temporal.io](https://docs.temporal.io/) |
-| [HCI-AI] | Human-AI Collaboration in Decision Support Systems | ACM CHI 2023 |
-| [ISO-9001] | Quality Management Systems — Requirements | ISO 9001:2015 |
+| ID         | Title                                                              | Source                                                        |
+| ---------- | ------------------------------------------------------------------ | ------------------------------------------------------------- |
+| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                             |
+| [OpenAI]   | OpenAI API Documentation                                           | [platform.openai.com/docs](https://platform.openai.com/docs/) |
+| [Temporal] | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                 |
+| [HCI-AI]   | Human-AI Collaboration in Decision Support Systems                 | ACM CHI 2023                                                  |
+| [ISO-9001] | Quality Management Systems — Requirements                          | ISO 9001:2015                                                 |
 
 > 📎 See also: [22-ai-architecture](22-ai-architecture.md) · [24-ai-training-pipeline](24-ai-training-pipeline.md) · [21-mvp-scope](21-mvp-scope.md)

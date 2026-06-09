@@ -21,22 +21,26 @@ describe('Kafka metrics', () => {
   it('increments kafka_messages_produced_total', async () => {
     recordProduced('construction.project.created', 'construction.project.created.v1');
     const metrics = await registry.getMetricsAsJSON();
-    const counter = metrics.find(m => m.name === 'kafka_messages_produced_total');
+    const counter = metrics.find((m) => m.name === 'kafka_messages_produced_total');
     expect(counter).toBeDefined();
     expect(counter!.values[0].value).toBe(1);
   });
 
   it('increments kafka_messages_consumed_total', async () => {
-    recordConsumed('construction.project.created', 'analytics-consumer', 'construction.project.created.v1');
+    recordConsumed(
+      'construction.project.created',
+      'analytics-consumer',
+      'construction.project.created.v1',
+    );
     const metrics = await registry.getMetricsAsJSON();
-    const counter = metrics.find(m => m.name === 'kafka_messages_consumed_total');
+    const counter = metrics.find((m) => m.name === 'kafka_messages_consumed_total');
     expect(counter).toBeDefined();
   });
 
   it('increments kafka_producer_error_total', async () => {
     recordProducerError('construction.project.created');
     const metrics = await registry.getMetricsAsJSON();
-    const counter = metrics.find(m => m.name === 'kafka_producer_error_total');
+    const counter = metrics.find((m) => m.name === 'kafka_producer_error_total');
     expect(counter).toBeDefined();
     expect(counter!.values[0].value).toBe(1);
   });
@@ -44,7 +48,7 @@ describe('Kafka metrics', () => {
   it('sets consumer lag gauge', async () => {
     setConsumerLag('construction.project.created', 'analytics-consumer', 0, 42);
     const metrics = await registry.getMetricsAsJSON();
-    const gauge = metrics.find(m => m.name === 'kafka_consumer_lag');
+    const gauge = metrics.find((m) => m.name === 'kafka_consumer_lag');
     expect(gauge).toBeDefined();
     expect(gauge!.values[0].value).toBe(42);
   });
@@ -52,7 +56,7 @@ describe('Kafka metrics', () => {
   it('sets DLQ depth gauge', async () => {
     setDlqDepth('construction.project.created.dlq', 5);
     const metrics = await registry.getMetricsAsJSON();
-    const gauge = metrics.find(m => m.name === 'kafka_dlq_depth');
+    const gauge = metrics.find((m) => m.name === 'kafka_dlq_depth');
     expect(gauge).toBeDefined();
     expect(gauge!.values[0].value).toBe(5);
   });

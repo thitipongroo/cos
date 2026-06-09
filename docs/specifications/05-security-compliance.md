@@ -195,7 +195,7 @@ Keycloak Admin REST API during user provisioning) and mapped to the JWT access t
 Path A (phone/OTP): claims are set directly by COS identity service at JWT issuance.
 Path B (Keycloak): attributes must be set via Keycloak Admin REST API during provisioning (currently deferred — see Phase 2 constraints in master spec).
 
-> **Timeline note:** Protocol mapper *configuration* on the Keycloak realm (the JSON above) is required at tenant provisioning in Phase 1 — configure once per realm. Keycloak user *attribute provisioning* (`tenant_id`, `user_id`, `role` values set per user via Keycloak Admin REST API) is required before each Path B user can authenticate, and is deferred to Phase 2. Phase 1 MVP uses Path A only; Path A JWTs are issued by COS directly and are not affected by realm mapper configuration.
+> **Timeline note:** Protocol mapper _configuration_ on the Keycloak realm (the JSON above) is required at tenant provisioning in Phase 1 — configure once per realm. Keycloak user _attribute provisioning_ (`tenant_id`, `user_id`, `role` values set per user via Keycloak Admin REST API) is required before each Path B user can authenticate, and is deferred to Phase 2. Phase 1 MVP uses Path A only; Path A JWTs are issued by COS directly and are not affected by realm mapper configuration.
 
 SSO / SAML :
 

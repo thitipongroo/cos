@@ -1,8 +1,8 @@
 ---
-title: "Final Strategic Positioning"
-version: "1.1.0"
+title: 'Final Strategic Positioning'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -30,13 +30,13 @@ This platform should position itself as :
 
 ## 29.1 Comparable Strategic Layer
 
-| Industry | Dominant OS Layer |
-| --- | --- |
-| Manufacturing | SAP |
-| CRM | Salesforce |
-| Software Dev | GitHub |
-| Design | Figma |
-| Construction | (Target Positioning) |
+| Industry      | Dominant OS Layer    |
+| ------------- | -------------------- |
+| Manufacturing | SAP                  |
+| CRM           | Salesforce           |
+| Software Dev  | GitHub               |
+| Design        | Figma                |
+| Construction  | (Target Positioning) |
 
 ## 29.2 The Long-term Winner
 
@@ -54,15 +54,15 @@ Not merely another ERP or project management tool.
 
 ## 29.3 Competitive Landscape
 
-| Platform | Strength | Weakness | Construction OS Advantage |
-| --- | --- | --- | --- |
-| Procore | Dominant in US/ANZ, strong PM and field | No AI-native, US-centric pricing, weak finance | AI-first, Thai-market native, full finance integration |
-| Autodesk Construction Cloud | BIM strength, design integration | Complex, expensive, weak operations layer | Unified ops + finance + AI in one platform |
-| Oracle Primavera | Enterprise scheduling depth | Extremely complex, no field mobility, legacy UX | Mobile-first, offline-capable, modern stack |
-| Trimble (Viewpoint) | Field management, ERP integration | Fragmented products, weak AI | Single unified OS, AI-native from the start |
-| Aconex (Oracle) | Document management for large projects | Document-only, no operations | Full operational coverage, not just documents |
-| Buildertrend | SMB residential, easy to use | Residential-only, no enterprise scale | Commercial + residential, scalable to enterprise |
-| SAP S/4HANA | Full ERP depth and integration | Not construction-specific, extreme implementation cost | Construction-native, faster time to value, AI-native |
+| Platform                    | Strength                                | Weakness                                               | Construction OS Advantage                              |
+| --------------------------- | --------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| Procore                     | Dominant in US/ANZ, strong PM and field | No AI-native, US-centric pricing, weak finance         | AI-first, Thai-market native, full finance integration |
+| Autodesk Construction Cloud | BIM strength, design integration        | Complex, expensive, weak operations layer              | Unified ops + finance + AI in one platform             |
+| Oracle Primavera            | Enterprise scheduling depth             | Extremely complex, no field mobility, legacy UX        | Mobile-first, offline-capable, modern stack            |
+| Trimble (Viewpoint)         | Field management, ERP integration       | Fragmented products, weak AI                           | Single unified OS, AI-native from the start            |
+| Aconex (Oracle)             | Document management for large projects  | Document-only, no operations                           | Full operational coverage, not just documents          |
+| Buildertrend                | SMB residential, easy to use            | Residential-only, no enterprise scale                  | Commercial + residential, scalable to enterprise       |
+| SAP S/4HANA                 | Full ERP depth and integration          | Not construction-specific, extreme implementation cost | Construction-native, faster time to value, AI-native   |
 
 ---
 

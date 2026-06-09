@@ -49,15 +49,17 @@ export class DlqPublisher {
 
     await this.producer.send({
       topic: dlqTopic,
-      messages: [{
-        value: msg.originalValue,
-        headers: {
-          'dlq.original_topic': msg.originalTopic,
-          'dlq.reason':         msg.reason,
-          'dlq.failed_at':      msg.failedAt,
-          'dlq.retry_count':    String(msg.retryCount),
+      messages: [
+        {
+          value: msg.originalValue,
+          headers: {
+            'dlq.original_topic': msg.originalTopic,
+            'dlq.reason': msg.reason,
+            'dlq.failed_at': msg.failedAt,
+            'dlq.retry_count': String(msg.retryCount),
+          },
         },
-      }],
+      ],
     });
 
     logger.error(

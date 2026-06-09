@@ -23,6 +23,7 @@ This separation created significant implementation duplication and a poor UX: us
 Merge `apps/web/` and `apps/pwa/` into a single unified Next.js app at `apps/web/` (`@cos/web`).
 
 The unified app:
+
 - Uses `next-pwa` (Workbox-based) for service worker and offline caching
 - Uses `idb` for typed IndexedDB access (offline entity storage)
 - Handles both online and offline in the same codebase — no UX switching required
@@ -39,9 +40,9 @@ PWAs are designed to work in both online and offline states — this is the stan
 
 Alternatives considered:
 
-| Alternative | Rejected because |
-|-------------|-----------------|
-| Keep both apps separate | Massive duplication; confusing UX requiring manual app switching |
+| Alternative                            | Rejected because                                                       |
+| -------------------------------------- | ---------------------------------------------------------------------- |
+| Keep both apps separate                | Massive duplication; confusing UX requiring manual app switching       |
 | Keep `apps/pwa/` as unified (Option B) | `apps/web/` already had i18n content; `web` is a more descriptive name |
 
 ## Consequences

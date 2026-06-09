@@ -17,6 +17,7 @@ Smartphone-only native application for all roles. Offline-first: all actions que
 ## Offline sync
 
 `SyncManager` class (Phase 10) handles:
+
 - Delta sync: `GET /api/v1/sync/delta?since=...`
 - Queue processing: FIFO, exponential backoff, max 3 retries
 - Conflict resolution: entity-specific strategies (Phase 6 spec)

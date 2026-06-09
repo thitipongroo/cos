@@ -59,7 +59,7 @@ export async function startContainers(opts: TestContainersOptions = {}): Promise
   if (opts.neo4j) {
     promises.push(
       new Neo4jContainer('neo4j:5-community')
-        .withoutAuthentication()
+        .withPassword('test')
         .start()
         .then((c) => {
           started.neo4j = c;
@@ -102,7 +102,7 @@ export function getRedisUrl(c: StartedRedisContainer): string {
 }
 
 export function getKafkaBroker(c: StartedKafkaContainer): string {
-  return c.getBootstrapServers();
+  return `${c.getHost()}:${c.getMappedPort(9093)}`;
 }
 
 export function getNeo4jUrl(c: StartedNeo4jContainer): string {

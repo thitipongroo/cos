@@ -341,11 +341,11 @@ queries TimescaleDB directly.
 
 ## 33.7 Integrations
 
-| Integration | Description | Trigger Condition |
-| --- | --- | --- |
-| BIM Integration | Import element tree, material quantities, and planned state from BIM authoring tools. Data exchange format: **IFC4 (ISO 16739-1:2018)**, file format `.ifc` (ISO 10303-21 STEP). Element identity: IFC GlobalId mapped to `TwinEntity.digital_ref`. | IoT hardware partner contracted; BIM partner confirmed |
-| IoT Device Integration | Device SDK, authentication, device registry. Telemetry protocol: **MQTT 5.0 (OASIS)**. QoS 1 minimum for telemetry; QoS 2 for critical state events. Topic structure: `cos/v1/devices/{device_id}/telemetry`. | Phase 23 (MLOps) complete; IoT hardware partner confirmed |
-| Smart City Integration | Outbound data feeds to municipal systems, infrastructure registries | Phase 24 core (IoT + Digital Twin) live; municipal partnership established |
+| Integration            | Description                                                                                                                                                                                                                                         | Trigger Condition                                                          |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| BIM Integration        | Import element tree, material quantities, and planned state from BIM authoring tools. Data exchange format: **IFC4 (ISO 16739-1:2018)**, file format `.ifc` (ISO 10303-21 STEP). Element identity: IFC GlobalId mapped to `TwinEntity.digital_ref`. | IoT hardware partner contracted; BIM partner confirmed                     |
+| IoT Device Integration | Device SDK, authentication, device registry. Telemetry protocol: **MQTT 5.0 (OASIS)**. QoS 1 minimum for telemetry; QoS 2 for critical state events. Topic structure: `cos/v1/devices/{device_id}/telemetry`.                                       | Phase 23 (MLOps) complete; IoT hardware partner confirmed                  |
+| Smart City Integration | Outbound data feeds to municipal systems, infrastructure registries                                                                                                                                                                                 | Phase 24 core (IoT + Digital Twin) live; municipal partnership established |
 
 **Implementation rule:**
 

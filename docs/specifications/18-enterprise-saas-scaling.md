@@ -1,8 +1,8 @@
 ---
-title: "Enterprise SaaS Scaling Model"
-version: "1.2.0"
+title: 'Enterprise SaaS Scaling Model'
+version: '1.2.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -71,13 +71,13 @@ Layer 4 — AI Scaling :
 
 ## 18.3 Enterprise SaaS Maturity Model
 
-| Stage | Capability |
-| --- | --- |
+| Stage   | Capability                                         |
+| ------- | -------------------------------------------------- |
 | Stage 1 | Multi-tenant MVP (shared DB + tenant_id isolation) |
-| Stage 2 | Multi-project SaaS |
-| Stage 3 | Multi-company enterprise |
-| Stage 4 | Cross-region deployment |
-| Stage 5 | AI-native ecosystem platform |
+| Stage 2 | Multi-project SaaS                                 |
+| Stage 3 | Multi-company enterprise                           |
+| Stage 4 | Cross-region deployment                            |
+| Stage 5 | AI-native ecosystem platform                       |
 
 Note : The Stage progression above corresponds to the Ecosystem Expansion phases defined
 in 28-ecosystem-expansion section 28.2 — Stage 1 aligns with Phase 1 (Internal Operations),
@@ -91,13 +91,13 @@ business ecosystem lens.
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [Kubernetes] | Kubernetes Documentation | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/) |
-| [Kong] | Kong Gateway Documentation | [docs.konghq.com](https://docs.konghq.com/) |
-| [Redis] | Redis Documentation | [redis.io/docs](https://redis.io/docs/) |
-| [AWS-EKS] | Amazon Elastic Kubernetes Service Documentation | [docs.aws.amazon.com/eks](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html) |
-| [SRE-Book] | Site Reliability Engineering: How Google Runs Production Systems | Beyer et al., O'Reilly 2016 |
+| ID           | Title                                                              | Source                                                                                       |
+| ------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| [IEEE 830]   | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                            |
+| [Kubernetes] | Kubernetes Documentation                                           | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/)                                  |
+| [Kong]       | Kong Gateway Documentation                                         | [docs.konghq.com](https://docs.konghq.com/)                                                  |
+| [Redis]      | Redis Documentation                                                | [redis.io/docs](https://redis.io/docs/)                                                      |
+| [AWS-EKS]    | Amazon Elastic Kubernetes Service Documentation                    | [docs.aws.amazon.com/eks](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html) |
+| [SRE-Book]   | Site Reliability Engineering: How Google Runs Production Systems   | Beyer et al., O'Reilly 2016                                                                  |
 
 > 📎 See also: [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [28-ecosystem-expansion](28-ecosystem-expansion.md)

@@ -1,8 +1,8 @@
 ---
-title: "Tech Stack Detail"
-version: "1.1.0"
+title: 'Tech Stack Detail'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -174,24 +174,24 @@ Pipeline :
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [React Native] | React Native / Expo Documentation | [docs.expo.dev](https://docs.expo.dev/) |
-| [Next.js] | Next.js Documentation | [nextjs.org/docs](https://nextjs.org/docs/) |
-| [NestJS] | NestJS — A progressive Node.js framework | [docs.nestjs.com](https://docs.nestjs.com/) |
-| [PostgreSQL] | PostgreSQL Documentation | [postgresql.org/docs](https://www.postgresql.org/docs/) |
-| [TimescaleDB] | TimescaleDB Documentation | [docs.timescale.com](https://docs.timescale.com/) |
-| [Redis] | Redis Documentation | [redis.io/docs](https://redis.io/docs/) |
-| [Kafka] | Apache Kafka Documentation | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/) |
-| [Neo4j] | Neo4j Graph Database Documentation | [neo4j.com/docs](https://neo4j.com/docs/) |
-| [Keycloak] | Keycloak Server Documentation | [keycloak.org/documentation](https://www.keycloak.org/documentation) |
-| [Kong] | Kong Gateway Documentation | [docs.konghq.com](https://docs.konghq.com/) |
-| [Kubernetes] | Kubernetes Documentation | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/) |
-| [Helm] | Helm Package Manager Documentation | [helm.sh/docs](https://helm.sh/docs/) |
-| [ArgoCD] | Argo CD Documentation | [argo-cd.readthedocs.io](https://argo-cd.readthedocs.io/) |
-| [OpenTelemetry] | OpenTelemetry Specification | [opentelemetry.io/docs/specs/otel](https://opentelemetry.io/docs/specs/otel/) |
-| [Prometheus] | Prometheus Monitoring Documentation | [prometheus.io/docs](https://prometheus.io/docs/introduction/overview/) |
-| [Grafana] | Grafana Observability Platform Documentation | [grafana.com/docs/grafana/latest](https://grafana.com/docs/grafana/latest/) |
+| ID              | Title                                                              | Source                                                                        |
+| --------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| [IEEE 830]      | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                             |
+| [React Native]  | React Native / Expo Documentation                                  | [docs.expo.dev](https://docs.expo.dev/)                                       |
+| [Next.js]       | Next.js Documentation                                              | [nextjs.org/docs](https://nextjs.org/docs/)                                   |
+| [NestJS]        | NestJS — A progressive Node.js framework                           | [docs.nestjs.com](https://docs.nestjs.com/)                                   |
+| [PostgreSQL]    | PostgreSQL Documentation                                           | [postgresql.org/docs](https://www.postgresql.org/docs/)                       |
+| [TimescaleDB]   | TimescaleDB Documentation                                          | [docs.timescale.com](https://docs.timescale.com/)                             |
+| [Redis]         | Redis Documentation                                                | [redis.io/docs](https://redis.io/docs/)                                       |
+| [Kafka]         | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)     |
+| [Neo4j]         | Neo4j Graph Database Documentation                                 | [neo4j.com/docs](https://neo4j.com/docs/)                                     |
+| [Keycloak]      | Keycloak Server Documentation                                      | [keycloak.org/documentation](https://www.keycloak.org/documentation)          |
+| [Kong]          | Kong Gateway Documentation                                         | [docs.konghq.com](https://docs.konghq.com/)                                   |
+| [Kubernetes]    | Kubernetes Documentation                                           | [kubernetes.io/docs/home](https://kubernetes.io/docs/home/)                   |
+| [Helm]          | Helm Package Manager Documentation                                 | [helm.sh/docs](https://helm.sh/docs/)                                         |
+| [ArgoCD]        | Argo CD Documentation                                              | [argo-cd.readthedocs.io](https://argo-cd.readthedocs.io/)                     |
+| [OpenTelemetry] | OpenTelemetry Specification                                        | [opentelemetry.io/docs/specs/otel](https://opentelemetry.io/docs/specs/otel/) |
+| [Prometheus]    | Prometheus Monitoring Documentation                                | [prometheus.io/docs](https://prometheus.io/docs/introduction/overview/)       |
+| [Grafana]       | Grafana Observability Platform Documentation                       | [grafana.com/docs/grafana/latest](https://grafana.com/docs/grafana/latest/)   |
 
 > 📎 See also: [03-system-design](03-system-design.md) · [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [09-data-architecture](09-data-architecture.md)

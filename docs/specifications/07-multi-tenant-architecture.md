@@ -172,13 +172,13 @@ See Terraform module: `infrastructure/terraform/modules/rds-tenant/`
 
 Each isolation layer is fully specified in its authoritative section — this table is a summary with cross-references only.
 
-| Layer | Mechanism | Authoritative spec |
-| --- | --- | --- |
-| Authentication isolation | Keycloak realm per tier; `tenant_id` + `role` claims enforced in JWT | §5.4 |
-| Data isolation | `tenant_id` column on every domain table + PostgreSQL RLS | §7.1, §7.7 |
-| Queue isolation | Kafka topic prefix `{tenant_id}.` on all topics; `tenant_id` in message headers | §7.3 |
-| File isolation | S3/MinIO key prefix `{tenant_id}/{project_id}/` on all objects | §7.5 |
-| Encryption keys | Per-tenant key stored in AWS Secrets Manager (cloud) / HashiCorp Vault (on-premise) | §7.6 step 7 |
+| Layer                    | Mechanism                                                                           | Authoritative spec |
+| ------------------------ | ----------------------------------------------------------------------------------- | ------------------ |
+| Authentication isolation | Keycloak realm per tier; `tenant_id` + `role` claims enforced in JWT                | §5.4               |
+| Data isolation           | `tenant_id` column on every domain table + PostgreSQL RLS                           | §7.1, §7.7         |
+| Queue isolation          | Kafka topic prefix `{tenant_id}.` on all topics; `tenant_id` in message headers     | §7.3               |
+| File isolation           | S3/MinIO key prefix `{tenant_id}/{project_id}/` on all objects                      | §7.5               |
+| Encryption keys          | Per-tenant key stored in AWS Secrets Manager (cloud) / HashiCorp Vault (on-premise) | §7.6 step 7        |
 
 ---
 
@@ -210,12 +210,12 @@ Topic lifecycle management :
 
 **Retention policy (default):**
 
-| Tier                              | Time Retention                                        | Size Limit          | Scope                        |
-| --------------------------------- | ----------------------------------------------------- | ------------------- | ---------------------------- |
-| SMB / Mid-market (shared cluster) | 7 days (`log.retention.hours=168`)                    | 10 GB per partition | AWS MSK topic-level config   |
-| Enterprise (dedicated namespace)  | 30 days (default); negotiable per contract            | 50 GB per partition | Dedicated MSK cluster config |
-| DLQ — SMB / Mid-market            | 14 days (2× the 7-day standard)                       | Same as SMB tier    | AWS MSK topic-level config   |
-| DLQ — Enterprise                  | 60 days (2× the 30-day standard)                      | Same as Enterprise tier | Dedicated MSK cluster config |
+| Tier                              | Time Retention                             | Size Limit              | Scope                        |
+| --------------------------------- | ------------------------------------------ | ----------------------- | ---------------------------- |
+| SMB / Mid-market (shared cluster) | 7 days (`log.retention.hours=168`)         | 10 GB per partition     | AWS MSK topic-level config   |
+| Enterprise (dedicated namespace)  | 30 days (default); negotiable per contract | 50 GB per partition     | Dedicated MSK cluster config |
+| DLQ — SMB / Mid-market            | 14 days (2× the 7-day standard)            | Same as SMB tier        | AWS MSK topic-level config   |
+| DLQ — Enterprise                  | 60 days (2× the 30-day standard)           | Same as Enterprise tier | Dedicated MSK cluster config |
 
 **Tenant offboarding — topic cleanup procedure:**
 

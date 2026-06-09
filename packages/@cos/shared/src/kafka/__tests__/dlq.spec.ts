@@ -59,19 +59,21 @@ describe('DlqPublisher', () => {
 
   it('throws when publish called before connect', async () => {
     const unconnected = new DlqPublisher();
-    await expect(unconnected.publish({
-      originalTopic: 'test', originalValue: Buffer.from(''), reason: '', failedAt: '', retryCount: 0,
-    })).rejects.toThrow('not connected');
+    await expect(
+      unconnected.publish({
+        originalTopic: 'test',
+        originalValue: Buffer.from(''),
+        reason: '',
+        failedAt: '',
+        retryCount: 0,
+      }),
+    ).rejects.toThrow('not connected');
   });
 });
 
 describe('getDlqTopicNames', () => {
   it('generates DLQ topic names for given domains', () => {
     const names = getDlqTopicNames(['construction', 'site', 'procurement']);
-    expect(names).toEqual([
-      'construction.dlq',
-      'site.dlq',
-      'procurement.dlq',
-    ]);
+    expect(names).toEqual(['construction.dlq', 'site.dlq', 'procurement.dlq']);
   });
 });

@@ -7,23 +7,23 @@
 
 ## SLO Thresholds (QM-14)
 
-| State | Threshold | Action |
-|-------|-----------|--------|
-| **Normal** | < 1,000 messages per partition | No action |
-| **Alert** | > 5,000 messages for > 2 minutes | Investigate immediately (P2) |
-| **Critical** | > 50,000 messages | Declare P1 incident |
+| State        | Threshold                        | Action                       |
+| ------------ | -------------------------------- | ---------------------------- |
+| **Normal**   | < 1,000 messages per partition   | No action                    |
+| **Alert**    | > 5,000 messages for > 2 minutes | Investigate immediately (P2) |
+| **Critical** | > 50,000 messages                | Declare P1 incident          |
 
 ---
 
 ## Consumer Groups
 
-| Consumer Group | Topics consumed | Service |
-|---------------|-----------------|---------|
-| `notification-consumer-group` | `site.*`, `procurement.*`, `finance.*`, `file.document.*` | NestJS notification module |
-| `analytics-worker-group` | `site.*`, `procurement.*`, `finance.*` | Go analytics worker |
-| `kg-ingestion-group` | `site.*`, `procurement.*` | Go KG ingestion worker |
-| `embedding-worker-group` | `file.document.*` | Python embedding worker |
-| `clickhouse-kafka-engine` | all domain topics | ClickHouse Kafka Engine (internal) |
+| Consumer Group                | Topics consumed                                           | Service                            |
+| ----------------------------- | --------------------------------------------------------- | ---------------------------------- |
+| `notification-consumer-group` | `site.*`, `procurement.*`, `finance.*`, `file.document.*` | NestJS notification module         |
+| `analytics-worker-group`      | `site.*`, `procurement.*`, `finance.*`                    | Go analytics worker                |
+| `kg-ingestion-group`          | `site.*`, `procurement.*`                                 | Go KG ingestion worker             |
+| `embedding-worker-group`      | `file.document.*`                                         | Python embedding worker            |
+| `clickhouse-kafka-engine`     | all domain topics                                         | ClickHouse Kafka Engine (internal) |
 
 ---
 
@@ -44,6 +44,7 @@ done
 ```
 
 **Output to check:**
+
 - `LAG` column — number of messages behind
 - `CONSUMER-ID` — if empty, consumer is dead/not running
 
@@ -51,12 +52,12 @@ done
 
 ## Step 2 — Identify Root Cause
 
-| Symptom | Likely cause |
-|---------|-------------|
-| Consumer pod not running | Pod crash — check `kubectl logs` |
+| Symptom                               | Likely cause                           |
+| ------------------------------------- | -------------------------------------- |
+| Consumer pod not running              | Pod crash — check `kubectl logs`       |
 | Consumer running but lag growing fast | Producer rate spike; consumer too slow |
-| `CONSUMER-ID` empty | Consumer disconnected from group |
-| Partition rebalancing loop | Consumer timeout misconfiguration |
+| `CONSUMER-ID` empty                   | Consumer disconnected from group       |
+| Partition rebalancing loop            | Consumer timeout misconfiguration      |
 
 ```bash
 # Check consumer pod health
@@ -72,6 +73,7 @@ kubectl logs -n cos <pod-name> --tail=500 | grep -i "rebalanc\|partition assign\
 ## Step 3 — Remediation
 
 ### Consumer pod crashed → restart
+
 ```bash
 kubectl rollout restart deployment/<consumer-service> -n cos
 # Wait for rollout
@@ -79,6 +81,7 @@ kubectl rollout status deployment/<consumer-service> -n cos
 ```
 
 ### Consumer too slow → scale up
+
 ```bash
 kubectl scale deployment/<consumer-service> --replicas=3 -n cos
 # Monitor lag after scaling
@@ -87,11 +90,13 @@ watch kafka-consumer-groups.sh --bootstrap-server $KAFKA_BOOTSTRAP \
 ```
 
 ### Partition rebalance loop → check session timeout
+
 - Default `session.timeout.ms` = 10000 (10s)
 - If processing takes > 10s per message → increase `max.poll.interval.ms`
 - Config location: `infrastructure/kubernetes/<service>/configmap.yaml`
 
 ### Lag > 50,000 (Critical) → consider resetting offset
+
 ```bash
 # CAUTION: only use if messages are safe to skip (e.g. analytics, not financial)
 # Always get product owner approval before resetting offsets

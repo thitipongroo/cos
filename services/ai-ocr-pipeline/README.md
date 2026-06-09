@@ -9,6 +9,7 @@
 Extracts structured text from uploaded PDF and image files (scanned invoices, delivery notes, site documents). Feeds extracted text into the embedding worker for semantic search.
 
 Processing pipeline:
+
 ```
 file.uploaded (Kafka) → fetch from File Service → pdf2image → pytesseract → extracted text → Embedding Worker
 ```
@@ -18,8 +19,8 @@ Cloud OCR (AWS Textract / Google Document AI): EP-AI-003 stub — activate after
 
 ## Public API
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path                  | Description            |
+| ------ | --------------------- | ---------------------- |
 | `POST` | `/api/v1/ocr/process` | Extract text from file |
 
 ## Dependencies
@@ -31,9 +32,9 @@ Cloud OCR (AWS Textract / Google Document AI): EP-AI-003 stub — activate after
 
 ## Extension points
 
-| EP | Status | Trigger |
-|----|--------|---------|
-| EP-AI-003 | STUB | Cloud OCR — activate after production photo quality assessment |
+| EP        | Status | Trigger                                                        |
+| --------- | ------ | -------------------------------------------------------------- |
+| EP-AI-003 | STUB   | Cloud OCR — activate after production photo quality assessment |
 
 ## Configuration
 

@@ -1,8 +1,8 @@
 ---
-title: "Construction Ontology"
-version: "1.2.0"
+title: 'Construction Ontology'
+version: '1.2.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -32,25 +32,25 @@ Create machine-understandable construction knowledge.
 
 Physical Objects :
 
-| Object | Key Properties |
-| --- | --- |
-| Building | building_id, name, type, total_floors, location, status |
-| Floor | floor_id, building_id, floor_number, gross_area_sqm |
-| Room | room_id, floor_id, room_number, room_type, area_sqm |
+| Object    | Key Properties                                                                   |
+| --------- | -------------------------------------------------------------------------------- |
+| Building  | building_id, name, type, total_floors, location, status                          |
+| Floor     | floor_id, building_id, floor_number, gross_area_sqm                              |
+| Room      | room_id, floor_id, room_number, room_type, area_sqm                              |
 | Structure | structure_id, building_id, structure_type (column/beam/slab/wall), material_type |
-| Equipment | equipment_id, type, model, serial_number, status, assigned_project |
-| Material | material_id, name, category, unit, unit_cost, lead_time_days |
+| Equipment | equipment_id, type, model, serial_number, status, assigned_project               |
+| Material  | material_id, name, category, unit, unit_cost, lead_time_days                     |
 
 Operational Objects :
 
-| Object | Key Properties |
-| --- | --- |
-| Task | task_id, name, work_type, status, planned_start, planned_end, progress_percent |
-| Inspection | inspection_id, type, result (pass/fail/conditional), severity |
-| Procurement | procurement_id, stage (PR/RFQ/PO/Delivery/Vendor Invoice), status, total_value |
-| Delivery | delivery_id, po_id, quantity_delivered, delivery_date, received_by |
-| Incident | incident_id, type, severity (low/medium/high/critical), reported_by |
-| Delay | delay_id (= event_id from CloudEvents envelope, UUID), project_id, task_id (nullable), delay_days, cause (PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), detected_by (AI_FORECAST/MANUAL_REPORT), severity (LOW/MEDIUM/HIGH/CRITICAL), tenant_id, occurred_at |
+| Object      | Key Properties                                                                                                                                                                                                                                                              |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task        | task_id, name, work_type, status, planned_start, planned_end, progress_percent                                                                                                                                                                                              |
+| Inspection  | inspection_id, type, result (pass/fail/conditional), severity                                                                                                                                                                                                               |
+| Procurement | procurement_id, stage (PR/RFQ/PO/Delivery/Vendor Invoice), status, total_value                                                                                                                                                                                              |
+| Delivery    | delivery_id, po_id, quantity_delivered, delivery_date, received_by                                                                                                                                                                                                          |
+| Incident    | incident_id, type, severity (low/medium/high/critical), reported_by                                                                                                                                                                                                         |
+| Delay       | delay_id (= event_id from CloudEvents envelope, UUID), project_id, task_id (nullable), delay_days, cause (PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), detected_by (AI_FORECAST/MANUAL_REPORT), severity (LOW/MEDIUM/HIGH/CRITICAL), tenant_id, occurred_at |
 
 Note on Procurement :
 
@@ -72,21 +72,21 @@ stage-specific record appropriate to the query context.
 
 Financial Objects :
 
-| Object | Key Properties |
-| --- | --- |
-| Budget | budget_id, project_id, category, allocated_amount, spent_amount |
-| Invoice | invoice_id, contract_id, amount, status, due_date |
-| Cost Center | cost_center_id, project_id, category, period |
-| Contract | contract_id, contract_type, contract_value, customer_id (nullable), vendor_id (nullable), project_id, status |
+| Object      | Key Properties                                                                                               |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
+| Budget      | budget_id, project_id, category, allocated_amount, spent_amount                                              |
+| Invoice     | invoice_id, contract_id, amount, status, due_date                                                            |
+| Cost Center | cost_center_id, project_id, category, period                                                                 |
+| Contract    | contract_id, contract_type, contract_value, customer_id (nullable), vendor_id (nullable), project_id, status |
 
 Entity Objects :
 
-| Object | Key Properties |
-| --- | --- |
-| Project | project_id, name, type, status, budget, start_date, end_date |
-| Worker | conceptual role only — see note below |
-| Vendor | vendor_id, name, category, rating, status |
-| Customer | customer_id, name, type, contact_email |
+| Object   | Key Properties                                               |
+| -------- | ------------------------------------------------------------ |
+| Project  | project_id, name, type, status, budget, start_date, end_date |
+| Worker   | conceptual role only — see note below                        |
+| Vendor   | vendor_id, name, category, rating, status                    |
+| Customer | customer_id, name, type, contact_email                       |
 
 Note on Worker :
 
@@ -104,25 +104,25 @@ Worker resolves to Employee via the Workforce record.
 
 ## 10.3 Core Relationships and Cardinality
 
-| Relationship | From | To | Cardinality |
-| --- | --- | --- | --- |
-| HAS_FLOOR | Building | Floor | 1:N |
-| HAS_ROOM | Floor | Room | 1:N |
-| CONTAINS_STRUCTURE | Building | Structure | 1:N |
-| LOCATED_IN | Task | Floor | N:1 |
-| LOCATED_IN | Task | Room | N:1 |
-| USES | Task | Material | N:M |
-| DEPENDS_ON | Task | Task | N:M |
-| VALIDATED_BY | Task | Inspection | 1:N |
-| IMPACTS | Incident | Task | N:M |
-| IMPACTS | Delay | Project | N:1 |
-| IMPACTS | Delay | Task | N:M (nullable — task-level delay only) |
-| DELIVERED_BY | Material | Vendor | N:1 |
-| FULFILLED_BY | Procurement | Vendor | N:1 |
-| BELONGS_TO | Contract | Vendor | N:1 |
-| BELONGS_TO | Contract | Customer | N:1 |
-| BELONGS_TO | Invoice | Contract | N:1 |
-| ASSIGNED_TO | Task | Worker | N:M |
+| Relationship       | From        | To         | Cardinality                            |
+| ------------------ | ----------- | ---------- | -------------------------------------- |
+| HAS_FLOOR          | Building    | Floor      | 1:N                                    |
+| HAS_ROOM           | Floor       | Room       | 1:N                                    |
+| CONTAINS_STRUCTURE | Building    | Structure  | 1:N                                    |
+| LOCATED_IN         | Task        | Floor      | N:1                                    |
+| LOCATED_IN         | Task        | Room       | N:1                                    |
+| USES               | Task        | Material   | N:M                                    |
+| DEPENDS_ON         | Task        | Task       | N:M                                    |
+| VALIDATED_BY       | Task        | Inspection | 1:N                                    |
+| IMPACTS            | Incident    | Task       | N:M                                    |
+| IMPACTS            | Delay       | Project    | N:1                                    |
+| IMPACTS            | Delay       | Task       | N:M (nullable — task-level delay only) |
+| DELIVERED_BY       | Material    | Vendor     | N:1                                    |
+| FULFILLED_BY       | Procurement | Vendor     | N:1                                    |
+| BELONGS_TO         | Contract    | Vendor     | N:1                                    |
+| BELONGS_TO         | Contract    | Customer   | N:1                                    |
+| BELONGS_TO         | Invoice     | Contract   | N:1                                    |
+| ASSIGNED_TO        | Task        | Worker     | N:M                                    |
 
 Note on FULFILLED_BY and BELONGS_TO :
 
@@ -167,12 +167,12 @@ Enables :
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [IFC4] | Industry Foundation Classes IFC4 — ISO 16739-1:2018 | buildingSMART International |
-| [buildingSMART] | buildingSMART International Standards | [buildingsmart.org/standards](https://www.buildingsmart.org/standards/) |
-| [OWL2] | OWL 2 Web Ontology Language — W3C Recommendation | [w3.org/TR/owl2-overview](https://www.w3.org/TR/owl2-overview/) |
-| [SKOS] | SKOS Simple Knowledge Organization System | W3C Recommendation — [w3.org/TR/skos-reference](https://www.w3.org/TR/skos-reference/) |
+| ID              | Title                                                              | Source                                                                                 |
+| --------------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| [IEEE 830]      | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                      |
+| [IFC4]          | Industry Foundation Classes IFC4 — ISO 16739-1:2018                | buildingSMART International                                                            |
+| [buildingSMART] | buildingSMART International Standards                              | [buildingsmart.org/standards](https://www.buildingsmart.org/standards/)                |
+| [OWL2]          | OWL 2 Web Ontology Language — W3C Recommendation                   | [w3.org/TR/owl2-overview](https://www.w3.org/TR/owl2-overview/)                        |
+| [SKOS]          | SKOS Simple Knowledge Organization System                          | W3C Recommendation — [w3.org/TR/skos-reference](https://www.w3.org/TR/skos-reference/) |
 
 > 📎 See also: [09-data-architecture](09-data-architecture.md) · [11-database-schema](11-database-schema.md) · [12-construction-knowledge-graph](12-construction-knowledge-graph.md)

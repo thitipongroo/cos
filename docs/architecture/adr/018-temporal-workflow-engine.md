@@ -35,12 +35,12 @@ Use **Temporal** as the workflow orchestration engine.
 
 **Why Temporal over alternatives?**
 
-| Option | Rejected reason |
-|--------|----------------|
+| Option                 | Rejected reason                                                                                       |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
 | Saga pattern via Kafka | Compensating transactions must be hand-coded; no visibility; complex rollback for 8-step provisioning |
-| AWS Step Functions | Vendor lock-in; no local dev parity; per-transition cost |
-| Bull/BullMQ | Queue, not orchestrator; no wait-state, no deterministic replay |
-| Conductor (Netflix) | JVM-only workers; TypeScript SDK not production-ready at adoption date |
+| AWS Step Functions     | Vendor lock-in; no local dev parity; per-transition cost                                              |
+| Bull/BullMQ            | Queue, not orchestrator; no wait-state, no deterministic replay                                       |
+| Conductor (Netflix)    | JVM-only workers; TypeScript SDK not production-ready at adoption date                                |
 
 Temporal provides: deterministic replay, built-in retry with backoff, signal/query API for human gates, child workflows, TypeScript-native SDK, and open-source server.
 
@@ -49,16 +49,19 @@ Temporal provides: deterministic replay, built-in retry with backoff, signal/que
 ## Consequences
 
 ### Positive
+
 - Enterprise provisioning rollback is automatic (compensating activities)
 - Workflow history is queryable — ops can inspect state of any in-flight provisioning
 - Human approval gates (AWAITING_SIGNATURE) are first-class Temporal signals
 - 100% workflow coverage testable via `TestWorkflowEnvironment` without a running server
 
 ### Negative
+
 - Temporal cluster adds operational overhead (Cassandra or PostgreSQL backend)
 - Workflow determinism constraints (no random, no Date.now() inside workflow functions)
 
 ### Neutral
+
 - Workers collocated with NestJS modules — no separate deployment unit at MVP scale
 
 ---

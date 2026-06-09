@@ -155,17 +155,17 @@ Never implement a Stage N+1 feature during Stage N work.
 
 The platform deploys as distinct units. Do **not** merge runtimes or split prematurely.
 
-| Deployable | Runtime | Contents |
-| --- | --- | --- |
-| Main Application (`backend/`) | NestJS (monolith) | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce |
-| File Service (`services/file-service/`) | Fastify | Multipart upload I/O (extracted for I/O throughput) |
-| AI Gateway (`services/ai-gateway/`) | FastAPI (Python) | LLM routing, RAG, token tracking |
-| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python) | Embedding generation |
-| AI OCR Pipeline (`services/ai-ocr-pipeline/`) | FastAPI (Python) | OCR processing |
-| Analytics Worker (`services/analytics-worker/`) | Go | ClickHouse aggregation |
-| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go | Neo4j ingestion — Kafka client: `github.com/IBM/sarama` (pure Go; consumer group: `kg-consumer-group`) |
-| Web App (`apps/web/`) | Next.js + next-pwa | Tablet/laptop browser — online + offline unified |
-| Mobile (`apps/mobile/`) | React Native + Expo | Smartphone native app |
+| Deployable                                            | Runtime             | Contents                                                                                               |
+| ----------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------ |
+| Main Application (`backend/`)                         | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce     |
+| File Service (`services/file-service/`)               | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                    |
+| AI Gateway (`services/ai-gateway/`)                   | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                       |
+| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python)    | Embedding generation                                                                                   |
+| AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                         |
+| Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                                 |
+| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion — Kafka client: `github.com/IBM/sarama` (pure Go; consumer group: `kg-consumer-group`) |
+| Web App (`apps/web/`)                                 | Next.js + next-pwa  | Tablet/laptop browser — online + offline unified                                                       |
+| Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                                  |
 
 ### Service Extraction Rules
 
@@ -367,8 +367,8 @@ class EmbeddingProvider(ABC):
 
 ### Resolved Implementations (Phase 11)
 
-| Interface           | Implementation class      | Resolved via                  | Package                                                                           |
-| ------------------- | ------------------------- | ----------------------------- | --------------------------------------------------------------------------------- |
+| Interface           | Implementation class      | Resolved via                  | Package                                                                         |
+| ------------------- | ------------------------- | ----------------------------- | ------------------------------------------------------------------------------- |
 | `LLMProvider`       | `OpenAILangChainProvider` | OpenAI GPT-4o                 | `langchain-openai>=0.2` — default model: `gpt-4o`, cost fallback: `gpt-4o-mini` |
 | `EmbeddingProvider` | `OpenAIEmbeddingProvider` | OpenAI text-embedding-3-small | `langchain-openai>=0.2` — model: `text-embedding-3-small`, 1536 dimensions      |
 
@@ -416,26 +416,26 @@ compatibility) before first producer deployment.
 
 ### Event Payload Specifications
 
-| # | Event Type | Key Payload Fields |
-| --- | --- | --- |
-| 1 | `construction.project.created.v1` | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by` |
-| 2 | `construction.boq.version_created.v1` | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by` |
-| 3 | `procurement.po.created.v1` | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)} |
-| 4 | `procurement.invoice.received.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date` |
-| 5 | `site.report.created.v1` | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count` |
-| 6 | `site.inspection.failed.v1` | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at` |
-| 7 | `construction.task.completed.v1` | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days` |
-| 8 | `construction.delay.detected.v1` | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+) |
-| 9 | `workforce.checkin.created.v1` | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable) |
-| 10 | `site.material.consumed.v1` | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at` |
-| 11 | `procurement.delivery.received.v1` | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean |
-| 12 | `finance.budget.exceeded.v1` | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at` |
-| 13 | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due` |
-| 14 | `finance.cashflow_risk.detected.v1` | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE) |
-| 15 | `ai.risk_prediction.generated.v1` | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version` |
-| 16 | `finance.budget.variance_detected.v1` | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at` |
-| 17 | `file.document.uploaded.v1` | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type` |
-| 18 | `file.document.quarantined.v1` | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown) |
+| #   | Event Type                               | Key Payload Fields                                                                                                                                                                                                                                                                         |
+| --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `construction.project.created.v1`        | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by`                                                                    |
+| 2   | `construction.boq.version_created.v1`    | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by`                                                                                                                                                                                  |
+| 3   | `procurement.po.created.v1`              | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)}                                                                                               |
+| 4   | `procurement.invoice.received.v1`        | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date`                                                                                                                                                                             |
+| 5   | `site.report.created.v1`                 | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count`                                                                                                                                                                         |
+| 6   | `site.inspection.failed.v1`              | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at`                                                                                                                                                                     |
+| 7   | `construction.task.completed.v1`         | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days`                                                                                                                                                     |
+| 8   | `construction.delay.detected.v1`         | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+) |
+| 9   | `workforce.checkin.created.v1`           | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable)                                                                                                                                                     |
+| 10  | `site.material.consumed.v1`              | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at`                                                                                                                                                                  |
+| 11  | `procurement.delivery.received.v1`       | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean                                                                                                                        |
+| 12  | `finance.budget.exceeded.v1`             | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at`                                                                                                                            |
+| 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                            |
+| 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE)                                                                                                                  |
+| 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                           |
+| 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                            |
+| 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                          |
+| 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                              |
 
 ### Schema Registry Rules
 
@@ -856,11 +856,11 @@ phase spec does not state Type B, the integration is Type A.
 
 Currently specified as Type B:
 
-| Integration                              | Specified in                   |
-| ---------------------------------------- | ------------------------------ |
-| IoT Device (Phase 21+)                   | `33-digital-twin-iot.md` §33.7 |
-| Digital Twin — IoT ingestion (Phase 24)  | `33-digital-twin-iot.md` §33.2 |
-| Digital Twin — BIM import (Phase 24)     | `33-digital-twin-iot.md` §33.2 |
+| Integration                             | Specified in                   |
+| --------------------------------------- | ------------------------------ |
+| IoT Device (Phase 21+)                  | `33-digital-twin-iot.md` §33.7 |
+| Digital Twin — IoT ingestion (Phase 24) | `33-digital-twin-iot.md` §33.2 |
+| Digital Twin — BIM import (Phase 24)    | `33-digital-twin-iot.md` §33.2 |
 
 ### Stub Implementation Rules
 

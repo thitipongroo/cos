@@ -16,6 +16,7 @@ Construction OS has two primary backend runtimes: NestJS (TypeScript) and FastAP
 ## Decision
 
 **NestJS monolith (`backend/`) owns:**
+
 - All business logic (BOQ, procurement, finance, site operations, projects, tenants)
 - All persistence (PostgreSQL via Prisma, ClickHouse reads, Neo4j queries via AI Gateway graph API)
 - Authentication and authorization (JWT validation, RolesGuard, RBAC)
@@ -24,12 +25,14 @@ Construction OS has two primary backend runtimes: NestJS (TypeScript) and FastAP
 - REST API surface (all `/api/**` routes)
 
 **Python services own:**
+
 - `services/ai-gateway/` — LLM provider abstraction (OpenAI, Claude, Ollama), prompt routing, response caching, OCR, semantic search
 - `mlops/` — model training pipelines, evaluation harnesses, MLflow experiment tracking
 - `services/ai-gateway/digital_twin/` — physics simulation, real-time sensor fusion, predictive analytics
 - `workers/embedding-worker/` — vector embedding generation (pgvector, OpenSearch indexing)
 
 **Integration contract:**
+
 - NestJS → Python: HTTP only, via `LLMProvider` interface (`services/ai-gateway/`)
 - Python → NestJS: Kafka events only (Python services publish events; NestJS consumes)
 - Python services MUST NOT directly read/write PostgreSQL domain tables — all persistence goes through NestJS API or Kafka
@@ -50,15 +53,18 @@ The boundary is drawn at the AI/ML capability surface:
 ## Consequences
 
 ### Positive
+
 - LLM provider can be swapped (OpenAI → Claude → Ollama) without touching NestJS code
 - Python services can be scaled independently of NestJS monolith
 - Clear boundary makes security review tractable — PII containment is in NestJS; AI Gateway receives de-identified prompts
 
 ### Negative
+
 - Cross-service calls add network latency (HTTP vs in-process)
 - Two languages to maintain, test, and lint
 
 ### Neutral
+
 - Mobile (React Native) and Web (Next.js) are TypeScript — same language as NestJS
 
 ---

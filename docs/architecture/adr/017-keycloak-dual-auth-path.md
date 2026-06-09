@@ -23,6 +23,7 @@ A single authentication mechanism would either force field workers to manage pas
 Implement **two authentication paths** sharing a single Keycloak instance as identity store and JWT issuer:
 
 **Path A — Phone number + SMS OTP (field workers):**
+
 - Custom lightweight NestJS module inside the `identity` module
 - NOT via Keycloak extension or plugin — complexity not justified at MVP scale
 - OTP: 6-digit numeric, TTL 5 minutes, max 3 attempts per session, rate-limited to 10 requests per phone per day
@@ -30,6 +31,7 @@ Implement **two authentication paths** sharing a single Keycloak instance as ide
 - Interface: `{ sendOTP(phoneNumber, otp): Promise<void> }` — swappable SMS provider
 
 **Path B — Email + password via Keycloak OIDC (office users):**
+
 - Standard Keycloak OIDC Authorization Code Flow
 - JWT: RS256-signed by Keycloak
 - MFA: TOTP enforced for TENANT_ADMIN and FINANCE roles
@@ -45,6 +47,7 @@ Both paths produce identical RS256 JWT claims consumed by Kong and NestJS RolesG
 Keycloak custom authenticator SPI requires Java expertise, adds upgrade risk, and is harder to test. A NestJS module in TypeScript is testable at 100% coverage and replaceable without touching Keycloak.
 
 **Alternatives rejected:**
+
 - Auth0 / Cognito — adds vendor dependency and per-MAU cost; overkill for MVP
 - Custom JWT signing — diverges from JWKS standard; breaks Kong JWT plugin integration
 - Keycloak OTP via SMS extension — brittle on Keycloak upgrades
@@ -54,15 +57,18 @@ Keycloak custom authenticator SPI requires Java expertise, adds upgrade risk, an
 ## Consequences
 
 ### Positive
+
 - Field workers never manage passwords — adoption friction removed
 - Single JWT format consumed by all services — no path-specific token parsing
 - Office users get full Keycloak SSO, MFA, and future SAML federation
 
 ### Negative
+
 - Two auth code paths to maintain
 - Path A requires NestJS to call Keycloak Admin API on OTP verify
 
 ### Neutral
+
 - SMS cost scales with field worker count; budgeted per-tenant
 
 ---

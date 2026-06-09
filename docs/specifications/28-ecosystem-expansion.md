@@ -1,8 +1,8 @@
 ---
-title: "Future Ecosystem Expansion Strategy"
-version: "1.1.0"
+title: 'Future Ecosystem Expansion Strategy'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -49,7 +49,7 @@ Each expansion phase:
 
 ## 28.2 Expansion Layers
 
-### Phase 1 — Internal Operations *(MVP scope — see 21-mvp-scope)*
+### Phase 1 — Internal Operations _(MVP scope — see 21-mvp-scope)_
 
 Timeline: Year 1
 
@@ -66,7 +66,7 @@ Target customers: General contractors, 20–500 person construction companies in
 
 ---
 
-### Phase 2 — External Collaboration *(Post-MVP Stage 1–2)*
+### Phase 2 — External Collaboration _(Post-MVP Stage 1–2)_
 
 Timeline: Year 1–2
 
@@ -85,7 +85,7 @@ dependent on the platform to interact with the contractor.
 
 ---
 
-### Phase 3 — Marketplace Economy *(Post-MVP Stage 2–3)*
+### Phase 3 — Marketplace Economy _(Post-MVP Stage 2–3)_
 
 Timeline: Year 2–3
 
@@ -107,7 +107,7 @@ Platform captures a share of every construction input transaction.
 
 ---
 
-### Phase 4 — Financial Infrastructure *(Stage 3–5)*
+### Phase 4 — Financial Infrastructure _(Stage 3–5)_
 
 Timeline: Year 3–5
 
@@ -132,7 +132,7 @@ Platform becomes the financial infrastructure layer — the most defensible posi
 
 ---
 
-### Phase 5 — Smart Infrastructure Layer *(Stage 5+)*
+### Phase 5 — Smart Infrastructure Layer _(Stage 5+)_
 
 Timeline: Year 5+
 
@@ -182,39 +182,39 @@ Each expansion phase accelerates the flywheel:
 
 ### Phase 1 Metrics
 
-| Metric | Target | Timeframe |
-| --- | --- | --- |
-| Paying tenants | ≥ 10 | End of Year 1 |
-| Active projects | ≥ 50 | End of Year 1 |
-| 90-day retention | ≥ 80% | Ongoing |
-| Daily active usage | ≥ 60% of licensed users active daily | Ongoing |
+| Metric             | Target                               | Timeframe     |
+| ------------------ | ------------------------------------ | ------------- |
+| Paying tenants     | ≥ 10                                 | End of Year 1 |
+| Active projects    | ≥ 50                                 | End of Year 1 |
+| 90-day retention   | ≥ 80%                                | Ongoing       |
+| Daily active usage | ≥ 60% of licensed users active daily | Ongoing       |
 
 ### Phase 2 Metrics
 
-| Metric | Target | Timeframe |
-| --- | --- | --- |
-| Vendors with portal accounts | ≥ 200 | End of Year 2 |
-| RFQs sent via vendor portal | ≥ 70% of all RFQs | End of Year 2 |
-| Vendor quotation response rate | ≥ 60% | End of Year 2 |
-| Customer portal adoption | ≥ 30% of tenants have at least 1 client on portal | End of Year 2 |
+| Metric                         | Target                                            | Timeframe     |
+| ------------------------------ | ------------------------------------------------- | ------------- |
+| Vendors with portal accounts   | ≥ 200                                             | End of Year 2 |
+| RFQs sent via vendor portal    | ≥ 70% of all RFQs                                 | End of Year 2 |
+| Vendor quotation response rate | ≥ 60%                                             | End of Year 2 |
+| Customer portal adoption       | ≥ 30% of tenants have at least 1 client on portal | End of Year 2 |
 
 ### Phase 3 Metrics
 
-| Metric | Target | Timeframe |
-| --- | --- | --- |
-| Marketplace GMV | ≥ 100M THB per year | Year 3 |
-| Materials sourced via marketplace | ≥ 20% of platform PO volume | Year 3 |
-| Take rate | ≥ 1.5% of GMV | Year 3 |
-| Workforce placements | ≥ 1,000 per month | Year 3 |
+| Metric                            | Target                      | Timeframe |
+| --------------------------------- | --------------------------- | --------- |
+| Marketplace GMV                   | ≥ 100M THB per year         | Year 3    |
+| Materials sourced via marketplace | ≥ 20% of platform PO volume | Year 3    |
+| Take rate                         | ≥ 1.5% of GMV               | Year 3    |
+| Workforce placements              | ≥ 1,000 per month           | Year 3    |
 
 ### Phase 4 Metrics
 
-| Metric | Target | Timeframe |
-| --- | --- | --- |
-| Loan book originated | ≥ 500M THB | Year 4 |
-| Default rate | ≤ 2% (vs. industry average ~5%) | Ongoing |
-| Invoice factoring volume | ≥ 200M THB per year | Year 4 |
-| AI risk score accuracy | ≥ 80% default prediction precision | Year 4 |
+| Metric                   | Target                             | Timeframe |
+| ------------------------ | ---------------------------------- | --------- |
+| Loan book originated     | ≥ 500M THB                         | Year 4    |
+| Default rate             | ≤ 2% (vs. industry average ~5%)    | Ongoing   |
+| Invoice factoring volume | ≥ 200M THB per year                | Year 4    |
+| AI risk score accuracy   | ≥ 80% default prediction precision | Year 4    |
 
 ### Phase 5 Metrics
 
@@ -225,25 +225,25 @@ Defined at Phase 24 planning gate (see [33-digital-twin-iot.md](33-digital-twin-
 
 ## 28.5 Phase Dependencies and Entry Criteria
 
-| Phase | Entry Criteria | Key Dependency |
-| --- | --- | --- |
-| Phase 2 — Vendor Portal | ≥ 10 tenants live; ≥ 100 vendor contacts in system | Vendor portal product built; frictionless invite flow |
-| Phase 2 — Customer Portal | ≥ 5 tenants with active billing workflows | AR/Billing module live (MVP scope) |
-| Phase 3 — Marketplace | ≥ 200 vendors on portal; ≥ 500M THB annual procurement on platform | Payment infrastructure ready; marketplace trust and safety policies |
-| Phase 4 — Financial | Phase 3 live; risk scoring model accuracy validated; regulatory approval | Financial services license (BoT / SEC depending on product); legal entity for lending |
-| Phase 5 — IoT/Digital Twin | Phase 4 revenue base sustainable; IoT hardware partner | BIM integration partner; IoT device certification; digital twin rendering engine |
+| Phase                      | Entry Criteria                                                           | Key Dependency                                                                        |
+| -------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Phase 2 — Vendor Portal    | ≥ 10 tenants live; ≥ 100 vendor contacts in system                       | Vendor portal product built; frictionless invite flow                                 |
+| Phase 2 — Customer Portal  | ≥ 5 tenants with active billing workflows                                | AR/Billing module live (MVP scope)                                                    |
+| Phase 3 — Marketplace      | ≥ 200 vendors on portal; ≥ 500M THB annual procurement on platform       | Payment infrastructure ready; marketplace trust and safety policies                   |
+| Phase 4 — Financial        | Phase 3 live; risk scoring model accuracy validated; regulatory approval | Financial services license (BoT / SEC depending on product); legal entity for lending |
+| Phase 5 — IoT/Digital Twin | Phase 4 revenue base sustainable; IoT hardware partner                   | BIM integration partner; IoT device certification; digital twin rendering engine      |
 
 ---
 
 ## 28.6 Risks and Mitigations
 
-| Risk | Phase | Likelihood | Impact | Mitigation |
-| --- | --- | --- | --- | --- |
-| Vendor adoption too slow for marketplace | Phase 3 | Medium | High | Phase 2 vendor portal provides the base; marketplace is incremental for existing vendors |
-| Regulatory barrier for financial products | Phase 4 | High | High | Engage BoT early; structure initial products as B2B (corporate lending, not consumer) to reduce regulatory complexity |
-| IoT hardware complexity and cost | Phase 5 | Medium | Medium | Partner with established IoT vendors (Autodesk Construction Cloud, Trimble) rather than building hardware |
-| Phase 1 retention failure derails expansion | Phase 1 | Medium | Very High | Customer success program; executive sponsor program for Year 1 tenants; NPS monitoring at 30/60/90 days |
-| Competitor copies marketplace before moat is built | Phase 3 | Medium | Medium | Phase 3 entry requires proprietary procurement data as the trust anchor — no data = no credible marketplace |
-| Currency / macro risk in SEA expansion | Phase 2+ | Low | Medium | Start Thailand-only; expand to SEA only after Thailand market leadership confirmed (see 25-go-to-market) |
+| Risk                                               | Phase    | Likelihood | Impact    | Mitigation                                                                                                            |
+| -------------------------------------------------- | -------- | ---------- | --------- | --------------------------------------------------------------------------------------------------------------------- |
+| Vendor adoption too slow for marketplace           | Phase 3  | Medium     | High      | Phase 2 vendor portal provides the base; marketplace is incremental for existing vendors                              |
+| Regulatory barrier for financial products          | Phase 4  | High       | High      | Engage BoT early; structure initial products as B2B (corporate lending, not consumer) to reduce regulatory complexity |
+| IoT hardware complexity and cost                   | Phase 5  | Medium     | Medium    | Partner with established IoT vendors (Autodesk Construction Cloud, Trimble) rather than building hardware             |
+| Phase 1 retention failure derails expansion        | Phase 1  | Medium     | Very High | Customer success program; executive sponsor program for Year 1 tenants; NPS monitoring at 30/60/90 days               |
+| Competitor copies marketplace before moat is built | Phase 3  | Medium     | Medium    | Phase 3 entry requires proprietary procurement data as the trust anchor — no data = no credible marketplace           |
+| Currency / macro risk in SEA expansion             | Phase 2+ | Low        | Medium    | Start Thailand-only; expand to SEA only after Thailand market leadership confirmed (see 25-go-to-market)              |
 
 > 📎 See also: [27-long-term-moat](27-long-term-moat.md) · [29-final-strategic-positioning](29-final-strategic-positioning.md) · [26-pricing-model](26-pricing-model.md) · [25-go-to-market](25-go-to-market.md)

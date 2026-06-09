@@ -1,8 +1,8 @@
 ---
-title: "Go-to-market Strategy"
-version: "1.1.0"
+title: 'Go-to-market Strategy'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -36,13 +36,13 @@ because :
 
 Definition — Mid-sized Contractor :
 
-| Dimension | Target Scope |
-| --- | --- |
-| Annual construction volume | 50 million – 2 billion THB |
-| Concurrent active projects | 3 – 20 projects |
-| Headcount | 20 – 500 employees |
-| Current tooling | Excel, LINE, basic accounting software (Express, AccPac, or equivalent) |
-| Decision cycle | 2–6 weeks (owner or COO decision, no multi-month procurement committee) |
+| Dimension                  | Target Scope                                                            |
+| -------------------------- | ----------------------------------------------------------------------- |
+| Annual construction volume | 50 million – 2 billion THB                                              |
+| Concurrent active projects | 3 – 20 projects                                                         |
+| Headcount                  | 20 – 500 employees                                                      |
+| Current tooling            | Excel, LINE, basic accounting software (Express, AccPac, or equivalent) |
+| Decision cycle             | 2–6 weeks (owner or COO decision, no multi-month procurement committee) |
 
 This segment is the primary target because :
 

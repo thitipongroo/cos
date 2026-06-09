@@ -52,7 +52,7 @@ async function bootstrap(): Promise<void> {
 
   // Capture raw body for webhook HMAC verification — Phase 25
   // Overrides Fastify's built-in JSON parser to attach rawBody Buffer on the request.
-  const fastify = app.getHttpAdapter().getInstance() as {
+  const fastify = app.getHttpAdapter().getInstance() as unknown as {
     addContentTypeParser: (
       type: string,
       opts: { parseAs: string },
@@ -68,7 +68,7 @@ async function bootstrap(): Promise<void> {
     try {
       done(null, JSON.parse(body ?? '{}'));
     } catch (err) {
-      (err as NodeJS.ErrnoException).statusCode = 400;
+      (err as NodeJS.ErrnoException & { statusCode?: number }).statusCode = 400;
       done(err as Error);
     }
   });

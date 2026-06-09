@@ -59,12 +59,12 @@ tctl workflow list \
 
 ### Common stuck states
 
-| State | Cause | Resolution |
-|-------|-------|-----------|
-| Workflow waiting on activity | Activity worker crashed mid-execution | Restart worker → activity retries automatically |
-| Workflow waiting on signal | Human approval gate — no one responded | Send signal manually (see below) |
-| Workflow in backoff loop | Activity failing repeatedly | Check activity error in Temporal UI → fix root cause |
-| Workflow stuck > 24h | Worker never picked up task | Check worker is polling correct task queue |
+| State                        | Cause                                  | Resolution                                           |
+| ---------------------------- | -------------------------------------- | ---------------------------------------------------- |
+| Workflow waiting on activity | Activity worker crashed mid-execution  | Restart worker → activity retries automatically      |
+| Workflow waiting on signal   | Human approval gate — no one responded | Send signal manually (see below)                     |
+| Workflow in backoff loop     | Activity failing repeatedly            | Check activity error in Temporal UI → fix root cause |
+| Workflow stuck > 24h         | Worker never picked up task            | Check worker is polling correct task queue           |
 
 ### Send signal to unblock a waiting workflow
 

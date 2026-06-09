@@ -4,7 +4,7 @@
 import { BaseEventEnvelope } from '@cos/types';
 
 export interface TenantCreatedPayload {
-  tenant_id: string;      // UUID
+  tenant_id: string; // UUID
   tenant_code: string;
   tenant_name: string;
   plan_type: 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';

@@ -9,6 +9,7 @@
 Consumes Kafka domain events and writes nodes and relationships to Neo4j, building the Construction Knowledge Graph. The graph is eventually consistent with PostgreSQL — Neo4j is for traversal queries only, not the source of truth.
 
 Responsibilities:
+
 - Kafka consumer for all cross-service events (consumer group: `kg-consumer-group`)
 - Map event payloads to Cypher `MERGE` statements (nodes + relationships)
 - Handle full graph rebuild via admin API (replays all events from earliest offset)
@@ -23,8 +24,8 @@ Responsibilities:
 
 ## Public API
 
-| Method | Path | Description |
-|--------|------|-------------|
+| Method | Path                | Description                                    |
+| ------ | ------------------- | ---------------------------------------------- |
 | `POST` | `/admin/kg/rebuild` | Trigger full graph rebuild from Kafka offset 0 |
 
 ## Dependencies

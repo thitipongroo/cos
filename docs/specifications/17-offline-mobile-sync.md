@@ -1,8 +1,8 @@
 ---
-title: "Offline-first Mobile Sync"
-version: "1.1.0"
+title: 'Offline-first Mobile Sync'
+version: '1.1.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:
@@ -56,15 +56,15 @@ Max Retry Exhaustion Behavior :
 
 When the sync queue exhausts all 5 retries for a record, the behavior depends on entity type :
 
-| Entity Type | Behavior After Max Retries |
-| --- | --- |
-| Safety incidents | Moved to tenant admin review queue; push alert sent to PM and Safety Officer; record preserved on device |
-| Workforce attendance | Moved to tenant admin review queue; push alert sent to PM; record preserved on device |
-| Inspection results | Moved to tenant admin review queue; push alert sent to PM; record preserved on device |
-| Task progress updates | Sync attempt discarded; user notified in-app; record preserved on device for manual retry |
-| Site report drafts | Sync attempt discarded; user notified in-app; record preserved on device |
-| Material consumption | Moved to tenant admin review queue; record preserved on device |
-| Equipment usage logs | Sync attempt discarded; record preserved on device |
+| Entity Type           | Behavior After Max Retries                                                                               |
+| --------------------- | -------------------------------------------------------------------------------------------------------- |
+| Safety incidents      | Moved to tenant admin review queue; push alert sent to PM and Safety Officer; record preserved on device |
+| Workforce attendance  | Moved to tenant admin review queue; push alert sent to PM; record preserved on device                    |
+| Inspection results    | Moved to tenant admin review queue; push alert sent to PM; record preserved on device                    |
+| Task progress updates | Sync attempt discarded; user notified in-app; record preserved on device for manual retry                |
+| Site report drafts    | Sync attempt discarded; user notified in-app; record preserved on device                                 |
+| Material consumption  | Moved to tenant admin review queue; record preserved on device                                           |
+| Equipment usage logs  | Sync attempt discarded; record preserved on device                                                       |
 
 Manual review queue : a server-side queue visible to Tenant Admin where failed sync records
 can be reviewed and manually imported. Records are never deleted from the device until
@@ -122,14 +122,14 @@ These entities are cached for offline reference but not mutated offline :
 
 ## 17.5 Conflict Resolution Rules per Entity
 
-| Entity | Strategy | Reason |
-| --- | --- | --- |
-| Task progress_percent | Last-write-wins | Simple scalar, bounded 0–100 |
-| Inspection checklist | Field-level merge | Multiple inspectors may fill different fields |
-| Site report | Last-write-wins per field | One author per daily report |
-| Workforce attendance | Server wins on check_in | Prevents time manipulation |
-| Safety incident | Human review queue | Critical record — cannot auto-resolve |
-| Material consumption | Append-only | Each consumption record is a new row |
+| Entity                | Strategy                  | Reason                                        |
+| --------------------- | ------------------------- | --------------------------------------------- |
+| Task progress_percent | Last-write-wins           | Simple scalar, bounded 0–100                  |
+| Inspection checklist  | Field-level merge         | Multiple inspectors may fill different fields |
+| Site report           | Last-write-wins per field | One author per daily report                   |
+| Workforce attendance  | Server wins on check_in   | Prevents time manipulation                    |
+| Safety incident       | Human review queue        | Critical record — cannot auto-resolve         |
+| Material consumption  | Append-only               | Each consumption record is a new row          |
 
 ---
 
@@ -161,13 +161,13 @@ Local cache constraints :
 
 ## References
 
-| ID | Title | Source |
-| --- | --- | --- |
-| [IEEE 830] | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998 |
-| [CRDT] | Conflict-Free Replicated Data Types | Shapiro et al., INRIA Research Report RR-7687, 2011 |
-| [WatermelonDB] | WatermelonDB — High-performance React Native Database | [nozbe.github.io/WatermelonDB](https://nozbe.github.io/WatermelonDB/) |
-| [IndexedDB] | Indexed Database API 3.0 | W3C Recommendation — [w3.org/TR/IndexedDB](https://www.w3.org/TR/IndexedDB/) |
-| [Expo SQLite] | Expo SQLite Documentation | [docs.expo.dev/versions/latest/sdk/sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/) |
-| [JWT-RFC] | JSON Web Token (JWT) | RFC 7519 |
+| ID             | Title                                                              | Source                                                                                        |
+| -------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| [IEEE 830]     | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                             |
+| [CRDT]         | Conflict-Free Replicated Data Types                                | Shapiro et al., INRIA Research Report RR-7687, 2011                                           |
+| [WatermelonDB] | WatermelonDB — High-performance React Native Database              | [nozbe.github.io/WatermelonDB](https://nozbe.github.io/WatermelonDB/)                         |
+| [IndexedDB]    | Indexed Database API 3.0                                           | W3C Recommendation — [w3.org/TR/IndexedDB](https://www.w3.org/TR/IndexedDB/)                  |
+| [Expo SQLite]  | Expo SQLite Documentation                                          | [docs.expo.dev/versions/latest/sdk/sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/) |
+| [JWT-RFC]      | JSON Web Token (JWT)                                               | RFC 7519                                                                                      |
 
 > 📎 See also: [04-tech-stack](04-tech-stack.md) · [11-database-schema](11-database-schema.md) · [19-notification-architecture](19-notification-architecture.md)

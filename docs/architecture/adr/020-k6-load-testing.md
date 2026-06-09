@@ -36,12 +36,12 @@ Use **k6** (Grafana Labs) as the load testing and SLA validation tool.
 
 **Why k6 over alternatives?**
 
-| Option | Rejected reason |
-|--------|----------------|
-| JMeter | XML config; JVM; poor CI integration; no native TypeScript |
-| Locust | Python; heavier runtime; less idiomatic for JS-first team |
+| Option    | Rejected reason                                                         |
+| --------- | ----------------------------------------------------------------------- |
+| JMeter    | XML config; JVM; poor CI integration; no native TypeScript              |
+| Locust    | Python; heavier runtime; less idiomatic for JS-first team               |
 | Artillery | Less Grafana-native; smaller community; fewer built-in protocol support |
-| Gatling | Scala/Java; steep learning curve; not JS ecosystem |
+| Gatling   | Scala/Java; steep learning curve; not JS ecosystem                      |
 
 k6 provides: JavaScript/TypeScript scripts, Grafana-native, open-source, minimal Docker footprint, `check()`/`threshold` API for programmatic SLA assertions, and official Grafana integration.
 
@@ -50,14 +50,17 @@ k6 provides: JavaScript/TypeScript scripts, Grafana-native, open-source, minimal
 ## Consequences
 
 ### Positive
+
 - SLA validation is automated and CI-gated — regressions caught before merge
 - k6 scripts are code-reviewed alongside feature code (same repo)
 - Grafana k6 dashboard aligns with existing Grafana monitoring stack
 
 ### Negative
+
 - k6 does not simulate browser behavior — API-level only; frontend perf requires separate tooling (Lighthouse CI)
 
 ### Neutral
+
 - k6 tests run against staging, not production; staging must be representative
 
 ---

@@ -3,6 +3,7 @@ dist
 build
 .next
 coverage
+.turbo
 *.avsc
 *.proto
 pnpm-lock.yaml

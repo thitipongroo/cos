@@ -31,25 +31,25 @@ Define a single `CosRole` enum in `@cos/types` containing all twelve roles:
 
 **Spec §6.2 roles (9) — seeded at tenant provisioning:**
 
-| Role | Scope |
-| --- | --- |
-| `SYSTEM_ADMIN` | Cross-tenant platform admin; never provisioned to a tenant (§6.7) |
-| `TENANT_ADMIN` | Full access within tenant |
-| `EXECUTIVE` | Read all projects + financial data |
-| `PROJECT_MANAGER` | Full access to assigned projects |
-| `PROCUREMENT_OFFICER` | Procurement data entry, RFQ, PO, vendors, deliveries |
-| `FINANCE` | Cost, billing, payments, cash flow |
-| `SAFETY_OFFICER` | Safety checklists, incidents, compliance |
-| `SITE_ENGINEER` | Site operations and daily field work |
-| `CRM_SALES_MANAGER` | Leads, opportunities, customer accounts |
+| Role                  | Scope                                                             |
+| --------------------- | ----------------------------------------------------------------- |
+| `SYSTEM_ADMIN`        | Cross-tenant platform admin; never provisioned to a tenant (§6.7) |
+| `TENANT_ADMIN`        | Full access within tenant                                         |
+| `EXECUTIVE`           | Read all projects + financial data                                |
+| `PROJECT_MANAGER`     | Full access to assigned projects                                  |
+| `PROCUREMENT_OFFICER` | Procurement data entry, RFQ, PO, vendors, deliveries              |
+| `FINANCE`             | Cost, billing, payments, cash flow                                |
+| `SAFETY_OFFICER`      | Safety checklists, incidents, compliance                          |
+| `SITE_ENGINEER`       | Site operations and daily field work                              |
+| `CRM_SALES_MANAGER`   | Leads, opportunities, customer accounts                           |
 
 **Implementation sub-roles (3) — spec §6.8; assigned manually post-provisioning:**
 
-| Role | Purpose |
-| --- | --- |
+| Role           | Purpose                                                         |
+| -------------- | --------------------------------------------------------------- |
 | `PROC_MANAGER` | Procurement approval authority tier above `PROCUREMENT_OFFICER` |
-| `SITE_WORKER` | Site operations read + report submission (field worker) |
-| `VIEWER` | Read-only across all modules per project assignment |
+| `SITE_WORKER`  | Site operations read + report submission (field worker)         |
+| `VIEWER`       | Read-only across all modules per project assignment             |
 
 The enum is the single source of truth. `CosRoleEnum` in the PostgreSQL schema
 (`platform."CosRoleEnum"`) mirrors this list exactly.
@@ -69,10 +69,11 @@ system-level API routes can use the same `@Roles` guard. The guard is the enforc
 the provisioning process (spec §6.7) ensures `SYSTEM_ADMIN` is never granted to tenant users.
 
 **Alternatives rejected:**
-- *Separate `SpecRole` and `SubRole` enums* — requires union types in guards and permission maps;
+
+- _Separate `SpecRole` and `SubRole` enums_ — requires union types in guards and permission maps;
   increases complexity with no isolation benefit.
-- *String literals* — no compile-time safety; cannot use `@IsEnum` validation.
-- *Keycloak-only role management* — Path A (OTP) users are not managed in Keycloak realm roles;
+- _String literals_ — no compile-time safety; cannot use `@IsEnum` validation.
+- _Keycloak-only role management_ — Path A (OTP) users are not managed in Keycloak realm roles;
   the COS identity service must embed the role claim independently.
 
 ## Consequences

@@ -52,10 +52,10 @@ three incorrect NEEDS_ESCALATION items. The resolution was in the file all along
 Before tagging any item as `NEEDS_ESCALATION`, verify it meets one of these two
 definitions from context.md. If it does not match either — it is NOT an escalation.
 
-| Tag | Definition | Required action |
-| --- | --- | --- |
-| `UNSPECIFIED` | Information is absent from ALL spec files and context files | STOP — do not implement, do not stub |
-| `AWAITING_DECISION` | Spec files contain a pending decision marker (files 05–11 only) | BLOCK until product owner answers |
+| Tag                 | Definition                                                      | Required action                      |
+| ------------------- | --------------------------------------------------------------- | ------------------------------------ |
+| `UNSPECIFIED`       | Information is absent from ALL spec files and context files     | STOP — do not implement, do not stub |
+| `AWAITING_DECISION` | Spec files contain a pending decision marker (files 05–11 only) | BLOCK until product owner answers    |
 
 Items that do NOT qualify as NEEDS_ESCALATION:
 

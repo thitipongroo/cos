@@ -41,7 +41,7 @@ export async function buildApp() {
   const minio = new MinioService(config);
   const antivirus = new AntivirusService(config);
   const opensearch = new OpenSearchService(config);
-  const kafka = new KafkaService(config);
+  const kafka = new KafkaService();
 
   app.decorate('config', config);
   app.decorate('db', db);

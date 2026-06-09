@@ -56,26 +56,26 @@
 
 ## Data Store Ownership
 
-| Store | Owner Service | Purpose |
-|-------|--------------|---------|
-| PostgreSQL (shared DB) | NestJS monolith | All domain entities; RLS tenant isolation |
-| PostgreSQL (dedicated DB per enterprise tenant) | NestJS monolith (routed via `dedicated_db_url`) | Enterprise tenant isolation |
-| ClickHouse | Analytics Worker | OLAP; time-series dashboards; API usage metering |
-| Neo4j | KG Ingestion Worker | Construction knowledge graph; entity relationships |
-| MinIO | File Service | Binary object storage; `cos-{tenant_id}` buckets; `cos-quarantine-{tenant_id}` |
-| Redis | AI Gateway + NestJS | LLM response cache; session cache |
-| pgvector (PostgreSQL extension) | AI Embedding Worker | 1536-dim embeddings for semantic search |
-| OpenSearch | File Service + AI Gateway | File full-text index; RAG document index |
+| Store                                           | Owner Service                                   | Purpose                                                                        |
+| ----------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------ |
+| PostgreSQL (shared DB)                          | NestJS monolith                                 | All domain entities; RLS tenant isolation                                      |
+| PostgreSQL (dedicated DB per enterprise tenant) | NestJS monolith (routed via `dedicated_db_url`) | Enterprise tenant isolation                                                    |
+| ClickHouse                                      | Analytics Worker                                | OLAP; time-series dashboards; API usage metering                               |
+| Neo4j                                           | KG Ingestion Worker                             | Construction knowledge graph; entity relationships                             |
+| MinIO                                           | File Service                                    | Binary object storage; `cos-{tenant_id}` buckets; `cos-quarantine-{tenant_id}` |
+| Redis                                           | AI Gateway + NestJS                             | LLM response cache; session cache                                              |
+| pgvector (PostgreSQL extension)                 | AI Embedding Worker                             | 1536-dim embeddings for semantic search                                        |
+| OpenSearch                                      | File Service + AI Gateway                       | File full-text index; RAG document index                                       |
 
 ## Kafka Topic → Consumer Mapping
 
-| Topic pattern | Producer | Consumer(s) |
-|---------------|----------|-------------|
-| `site.*` | NestJS site-ops | Notification, Analytics Worker, KG Ingestion |
-| `procurement.*` | NestJS procurement | Notification, Analytics Worker, Finance (cost auto-entry) |
-| `finance.*` | NestJS finance | Notification, Analytics Worker |
-| `file.document.*` | File Service | Notification (quarantine alert to SYSTEM_ADMIN) |
-| `platform.enterprise.*` | NestJS platform-webhook / tenant | Notification (SYSTEM_ADMIN) |
+| Topic pattern           | Producer                         | Consumer(s)                                               |
+| ----------------------- | -------------------------------- | --------------------------------------------------------- |
+| `site.*`                | NestJS site-ops                  | Notification, Analytics Worker, KG Ingestion              |
+| `procurement.*`         | NestJS procurement               | Notification, Analytics Worker, Finance (cost auto-entry) |
+| `finance.*`             | NestJS finance                   | Notification, Analytics Worker                            |
+| `file.document.*`       | File Service                     | Notification (quarantine alert to SYSTEM_ADMIN)           |
+| `platform.enterprise.*` | NestJS platform-webhook / tenant | Notification (SYSTEM_ADMIN)                               |
 
 ## Cross-Service Call Rules
 

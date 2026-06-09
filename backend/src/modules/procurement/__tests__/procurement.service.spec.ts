@@ -855,21 +855,17 @@ describe('private helper branches', () => {
   });
 
   it('constructor uses empty strings when request has no context', async () => {
-    const module = await (
-      await import('@nestjs/testing')
-    ).Test.createTestingModule({
+    const module = await Test.createTestingModule({
       providers: [
-        (await import('../procurement.service')).ProcurementService,
+        ProcurementService,
         {
-          provide: (await import('../procurement.repository')).ProcurementRepository,
+          provide: ProcurementRepository,
           useValue: mockRepo,
         },
-        { provide: (await import('@nestjs/core')).REQUEST, useValue: {} },
+        { provide: REQUEST, useValue: {} },
       ],
     }).compile();
-    const svc = await module.resolve<ProcurementService>(
-      (await import('../procurement.service')).ProcurementService,
-    );
+    const svc = await module.resolve<ProcurementService>(ProcurementService);
     expect(svc).toBeDefined();
   });
 

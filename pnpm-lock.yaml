@@ -566,6 +566,9 @@ importers:
       '@testcontainers/redis':
         specifier: ^10.9.0
         version: 10.28.0
+      pg:
+        specifier: ^8.21.0
+        version: 8.21.0
       testcontainers:
         specifier: ^10.9.0
         version: 10.28.0
@@ -576,6 +579,9 @@ importers:
       '@types/node':
         specifier: ^20.14.0
         version: 20.19.41
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.41)(ts-node@10.9.2(@types/node@20.19.41)(typescript@5.9.3))

@@ -26,6 +26,7 @@ const FILE_ROW: StoredFileRow = {
   uploaded_by: 'uid-1',
   uploaded_at: new Date('2026-01-01'),
   deleted_at: null,
+  quarantined_at: null,
 };
 
 describe('OpenSearchService', () => {

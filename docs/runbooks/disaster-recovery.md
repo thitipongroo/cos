@@ -8,23 +8,23 @@
 
 ## Recovery Targets
 
-| Target | Staging | Production |
-|--------|---------|-----------|
-| RTO | 4 hours | **30 minutes** |
-| RPO | 24 hours | **15 minutes** |
-| DB backup frequency | Daily | Every 15 min (WAL streaming) |
-| Multi-AZ failover | Optional | Required |
+| Target              | Staging  | Production                   |
+| ------------------- | -------- | ---------------------------- |
+| RTO                 | 4 hours  | **30 minutes**               |
+| RPO                 | 24 hours | **15 minutes**               |
+| DB backup frequency | Daily    | Every 15 min (WAL streaming) |
+| Multi-AZ failover   | Optional | Required                     |
 
 ---
 
 ## Scenario Runbooks
 
-| Scenario | Runbook |
-|----------|---------|
-| PostgreSQL failure (RDS Multi-AZ failover) | `docs/runbooks/db-failover.md` |
-| Kafka broker failure | `docs/runbooks/disaster-recovery/kafka-broker-failure.md` |
-| Complete region failure (ap-southeast-1 down) | `docs/runbooks/disaster-recovery/region-failure.md` |
-| KMS key compromise | `docs/runbooks/disaster-recovery/kms-key-compromise.md` |
+| Scenario                                      | Runbook                                                   |
+| --------------------------------------------- | --------------------------------------------------------- |
+| PostgreSQL failure (RDS Multi-AZ failover)    | `docs/runbooks/db-failover.md`                            |
+| Kafka broker failure                          | `docs/runbooks/disaster-recovery/kafka-broker-failure.md` |
+| Complete region failure (ap-southeast-1 down) | `docs/runbooks/disaster-recovery/region-failure.md`       |
+| KMS key compromise                            | `docs/runbooks/disaster-recovery/kms-key-compromise.md`   |
 
 ---
 
@@ -46,16 +46,16 @@ For any DR event, follow this sequence regardless of scenario:
 
 Restore in this order (highest business impact first):
 
-| Priority | Service | Recovery method |
-|----------|---------|----------------|
-| 1 | PostgreSQL (RDS) | Automated Multi-AZ failover (~60s) |
-| 2 | Kong Gateway | Kubernetes self-healing (pod restart) |
-| 3 | NestJS backend | Kubernetes self-healing (pod restart) |
-| 4 | Keycloak | Kubernetes self-healing + realm restore from backup |
-| 5 | Kafka | Broker recovery (see kafka-broker-failure.md) |
-| 6 | AI Gateway | Kubernetes self-healing |
-| 7 | ClickHouse | Restore from daily backup + Kafka re-ingest |
-| 8 | Neo4j | Restore from daily backup (KG is rebuildable from events) |
+| Priority | Service          | Recovery method                                           |
+| -------- | ---------------- | --------------------------------------------------------- |
+| 1        | PostgreSQL (RDS) | Automated Multi-AZ failover (~60s)                        |
+| 2        | Kong Gateway     | Kubernetes self-healing (pod restart)                     |
+| 3        | NestJS backend   | Kubernetes self-healing (pod restart)                     |
+| 4        | Keycloak         | Kubernetes self-healing + realm restore from backup       |
+| 5        | Kafka            | Broker recovery (see kafka-broker-failure.md)             |
+| 6        | AI Gateway       | Kubernetes self-healing                                   |
+| 7        | ClickHouse       | Restore from daily backup + Kafka re-ingest               |
+| 8        | Neo4j            | Restore from daily backup (KG is rebuildable from events) |
 
 ---
 

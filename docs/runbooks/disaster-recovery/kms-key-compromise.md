@@ -9,6 +9,7 @@
 ## Context
 
 Construction OS uses AWS KMS Customer-Managed Keys (CMKs) for:
+
 - S3 bucket SSE-KMS (documents, backups, raw files)
 - RDS storage encryption
 - ElastiCache encryption at rest
@@ -92,6 +93,7 @@ echo "New key ID: $NEW_KEY_ID"
 ## Step 5 — Re-encrypt Data
 
 ### S3 buckets
+
 ```bash
 # Re-encrypt all S3 objects with new key
 for bucket in cos-prod-documents cos-prod-backups cos-prod-files; do
@@ -105,6 +107,7 @@ done
 ```
 
 ### RDS — create encrypted snapshot and restore
+
 ```bash
 # Create snapshot of current (compromised-key) instance
 aws rds create-db-snapshot \

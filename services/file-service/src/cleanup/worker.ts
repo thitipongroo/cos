@@ -3,7 +3,7 @@
 // Schedule: daily at 00:00 UTC (cron expression: '0 0 * * *').
 
 import { Worker } from '@temporalio/worker';
-import { ScheduleClient, ScheduleOverlapPolicy } from '@temporalio/client';
+import { Connection, ScheduleClient, ScheduleOverlapPolicy } from '@temporalio/client';
 import { createLogger } from '@cos/logger';
 import { loadConfig } from '../config';
 import { DbService } from '../services/db.service';
@@ -36,7 +36,9 @@ export async function runFileCleanupWorker(): Promise<void> {
 }
 
 async function ensureSchedule(temporalAddress: string): Promise<void> {
-  const scheduleClient = new ScheduleClient({ connection: { address: temporalAddress } });
+  const scheduleClient = new ScheduleClient({
+    connection: Connection.lazy({ address: temporalAddress }),
+  });
   try {
     await scheduleClient.create({
       scheduleId: SCHEDULE_ID,

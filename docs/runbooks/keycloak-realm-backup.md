@@ -26,7 +26,7 @@ metadata:
   name: keycloak-realm-backup
   namespace: cos
 spec:
-  schedule: "0 19 * * *"  # 02:00 ICT = 19:00 UTC
+  schedule: '0 19 * * *' # 02:00 ICT = 19:00 UTC
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 7
   failedJobsHistoryLimit: 3

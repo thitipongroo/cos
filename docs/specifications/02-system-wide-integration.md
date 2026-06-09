@@ -1,8 +1,8 @@
 ---
-title: "System-wide Integration View (End-to-End)"
-version: "1.2.0"
+title: 'System-wide Integration View (End-to-End)'
+version: '1.2.0'
 status: Active
-last_updated: "2026-05-25"
+last_updated: '2026-05-25'
 authors:
   - thitipongroo
 related_docs:

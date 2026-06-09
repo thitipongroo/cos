@@ -9,6 +9,7 @@
 Single entrypoint for all LLM calls from every service. No service calls OpenAI SDK directly — all LLM traffic routes through this gateway via the `LLMProvider` interface (EP-AI-001).
 
 Responsibilities:
+
 - LLM routing via configurable routing table (YAML-based — no hardcoded model names)
 - Token usage tracking per tenant (persisted to `ai.ai_usage_logs`)
 - Prompt template rendering (Jinja2 from `ai/prompts/`)
@@ -19,14 +20,14 @@ Responsibilities:
 
 All endpoints require `Authorization: Bearer <JWT>` validated by Kong Gateway.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/ai/completions` | LLM completion via template |
-| `POST` | `/api/v1/rag/query` | Hybrid RAG retrieval + generation |
-| `POST` | `/api/v1/ai/reports/site-summary` | Site report summary (Phase 12) |
-| `POST` | `/api/v1/ai/reports/procurement-summary` | Procurement summary (Phase 12) |
-| `POST` | `/api/v1/ai/reports/executive-summary` | Executive summary (Phase 12) |
-| `POST` | `/api/v1/ai/reports/delay-risk` | Delay risk detection (Phase 12) |
+| Method | Path                                     | Description                       |
+| ------ | ---------------------------------------- | --------------------------------- |
+| `POST` | `/api/v1/ai/completions`                 | LLM completion via template       |
+| `POST` | `/api/v1/rag/query`                      | Hybrid RAG retrieval + generation |
+| `POST` | `/api/v1/ai/reports/site-summary`        | Site report summary (Phase 12)    |
+| `POST` | `/api/v1/ai/reports/procurement-summary` | Procurement summary (Phase 12)    |
+| `POST` | `/api/v1/ai/reports/executive-summary`   | Executive summary (Phase 12)      |
+| `POST` | `/api/v1/ai/reports/delay-risk`          | Delay risk detection (Phase 12)   |
 
 ## Dependencies
 
@@ -37,12 +38,12 @@ All endpoints require `Authorization: Bearer <JWT>` validated by Kong Gateway.
 
 ## Extension points
 
-| EP | Status | Trigger |
-|----|--------|---------|
-| EP-AI-001 | STUB | AI Gateway activation |
-| EP-AI-002 | STUB | RAG retrieval quality insufficient |
-| EP-AI-006 | STUB | Governance review complete |
-| EP-AI-014 | STUB | Need to swap LLM provider |
+| EP        | Status | Trigger                            |
+| --------- | ------ | ---------------------------------- |
+| EP-AI-001 | STUB   | AI Gateway activation              |
+| EP-AI-002 | STUB   | RAG retrieval quality insufficient |
+| EP-AI-006 | STUB   | Governance review complete         |
+| EP-AI-014 | STUB   | Need to swap LLM provider          |
 
 ## Configuration
 

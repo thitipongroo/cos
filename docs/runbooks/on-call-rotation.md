@@ -7,12 +7,12 @@
 
 ## Incident Severity Levels
 
-| Severity | Definition | Response Target |
-|----------|-----------|----------------|
-| **P0** | Complete service outage OR data loss OR security breach | 15 minutes |
-| **P1** | Partial outage affecting > 10% of tenants OR SLO error budget burn > 10× | 30 minutes |
-| **P2** | Degraded performance, non-critical feature failure, SLO burn > 2× | 2 hours |
-| **P3** | Minor bug, cosmetic issue | Next business day |
+| Severity | Definition                                                               | Response Target   |
+| -------- | ------------------------------------------------------------------------ | ----------------- |
+| **P0**   | Complete service outage OR data loss OR security breach                  | 15 minutes        |
+| **P1**   | Partial outage affecting > 10% of tenants OR SLO error budget burn > 10× | 30 minutes        |
+| **P2**   | Degraded performance, non-critical feature failure, SLO burn > 2×        | 2 hours           |
+| **P3**   | Minor bug, cosmetic issue                                                | Next business day |
 
 ---
 
@@ -32,9 +32,9 @@ Before going on-call, the engineer must have **live access** to all of the follo
 
 ## Rotation Schedule
 
-| Week | Primary On-Call | Secondary (Backup) |
-|------|----------------|-------------------|
-| (fill before Stage 2) | — | — |
+| Week                  | Primary On-Call | Secondary (Backup) |
+| --------------------- | --------------- | ------------------ |
+| (fill before Stage 2) | —               | —                  |
 
 **Rotation cadence:** Weekly, hand-off every Monday 09:00 ICT  
 **Overlap window:** Outgoing + incoming on-call overlap for 30 minutes on hand-off day
@@ -70,20 +70,20 @@ Layer 3: Engineering Lead / Product Owner
 
 ## Escalation Contacts
 
-| Role | Name | PagerDuty handle |
-|------|------|-----------------|
-| Engineering Lead | (fill before Stage 2) | — |
-| Product Owner | (fill before Stage 2) | — |
+| Role             | Name                  | PagerDuty handle |
+| ---------------- | --------------------- | ---------------- |
+| Engineering Lead | (fill before Stage 2) | —                |
+| Product Owner    | (fill before Stage 2) | —                |
 
 ---
 
 ## Key URLs (fill before Stage 2)
 
-| Tool | URL |
-|------|-----|
-| Grafana | `https://grafana.<domain>` |
-| Alertmanager | `https://alertmanager.<domain>` |
-| Temporal UI | `https://temporal.<domain>` |
-| Argo CD | `https://argocd.<domain>` |
-| Status page | `https://status.<domain>` |
-| PagerDuty | `https://construction-os.pagerduty.com` |
+| Tool         | URL                                     |
+| ------------ | --------------------------------------- |
+| Grafana      | `https://grafana.<domain>`              |
+| Alertmanager | `https://alertmanager.<domain>`         |
+| Temporal UI  | `https://temporal.<domain>`             |
+| Argo CD      | `https://argocd.<domain>`               |
+| Status page  | `https://status.<domain>`               |
+| PagerDuty    | `https://construction-os.pagerduty.com` |

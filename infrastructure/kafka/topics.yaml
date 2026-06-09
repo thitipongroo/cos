@@ -17,7 +17,7 @@ topics:
     canonical_event: construction.project.created.v1
     partitions: 6
     replication_factor: 3
-    retention_ms: 604800000     # 7 days
+    retention_ms: 604800000 # 7 days
     cleanup_policy: delete
     max_message_bytes: 1048576
 
@@ -209,7 +209,7 @@ topics:
   - name: project.dlq
     partitions: 3
     replication_factor: 3
-    retention_ms: 2592000000    # 30 days for DLQ — manual review window
+    retention_ms: 2592000000 # 30 days for DLQ — manual review window
     cleanup_policy: delete
     max_message_bytes: 1048576
 

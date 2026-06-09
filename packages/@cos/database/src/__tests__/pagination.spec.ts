@@ -1,6 +1,7 @@
 import { buildCursorPage } from '../pagination';
 
-const items = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `id-${i}`, name: `item-${i}` }));
+const items = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({ id: `id-${i}`, name: `item-${i}` }));
 
 describe('buildCursorPage', () => {
   it('returns all items when count <= take', () => {
