@@ -12,9 +12,9 @@ Construction OS is a **modular monolith** — one NestJS deployable containing a
 ┌─────────────────────────────────────────────────────────────┐
 │                  Construction OS Platform                   │
 ├──────────────────────┬──────────────────┬───────────────────┤
-│  apps/web (Next.js + next-pwa)   │  apps/mobile (RN)  │
+│  apps/web (Next.js + next-pwa)   │  apps/mobile (RN)        │
 ├──────────────────────┴──────────────────┴───────────────────┤
-│              Kong API Gateway (rate limiting, JWT, routing)  │
+│        Kong API Gateway (rate limiting, JWT, routing)       │
 ├─────────────────────────────────────────────────────────────┤
 │           backend/ — NestJS Modular Monolith                │
 │  identity │ tenant │ project │ boq │ procurement            │
@@ -27,10 +27,10 @@ Construction OS is a **modular monolith** — one NestJS deployable containing a
 │              │ (FastAPI Python) │                           │
 ├──────────────┴──────────────────┴───────────────────────────┤
 │           Apache Kafka (internal event bus)                 │
-├───────────┬─────────┬────────────┬───────────┬─────────────┤
-│ PostgreSQL │  Redis  │ ClickHouse │  Neo4j    │  MinIO      │
-│ +TimescaleDB│       │ (analytics)│ (KG)      │ (objects)   │
-└───────────┴─────────┴────────────┴───────────┴─────────────┘
+├─--──────────┬─────────┬────────────┬───────────┬────────────┤
+│  PostgreSQL │  Redis  │ ClickHouse │  Neo4j    │  MinIO     │
+│ +TimescaleDB│         │ (analytics)│ (KG)      │ (objects)  │
+└--───────────┴─────────┴────────────┴───────────┴────────────┘
 ```
 
 ### Key Technology Decisions
