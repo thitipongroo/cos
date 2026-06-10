@@ -3,7 +3,10 @@
 // Retryable: P2034 (deadlock), P1001 (unreachable), P1002 (timeout).
 // Strategy: exponential backoff with full jitter, max 3 retries, base 100ms.
 
-import { Prisma } from '@prisma/client';
+import {
+  PrismaClientInitializationError,
+  PrismaClientKnownRequestError,
+} from '@prisma/client/runtime/library';
 
 const RETRYABLE_CODES = new Set(['P2034', 'P1001', 'P1002']);
 const DEFAULT_MAX_RETRIES = 3;
@@ -11,10 +14,10 @@ const DEFAULT_BASE_DELAY_MS = 100;
 const MAX_DELAY_MS = 5000;
 
 function isRetryable(error: unknown): boolean {
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (error instanceof PrismaClientKnownRequestError) {
     return RETRYABLE_CODES.has(error.code);
   }
-  if (error instanceof Prisma.PrismaClientInitializationError) {
+  if (error instanceof PrismaClientInitializationError) {
     return true;
   }
   return false;

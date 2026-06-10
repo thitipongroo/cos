@@ -27,10 +27,13 @@ jest.mock('@prisma/client', () => {
       this.name = 'PrismaClientInitializationError';
     }
   }
-  return { Prisma: { PrismaClientKnownRequestError, PrismaClientInitializationError } };
+  return { PrismaClientKnownRequestError, PrismaClientInitializationError };
 });
 
-import { Prisma } from '@prisma/client';
+import {
+  PrismaClientInitializationError,
+  PrismaClientKnownRequestError,
+} from '@prisma/client/runtime/library';
 
 describe('withRetry', () => {
   beforeEach(() => {
@@ -56,7 +59,7 @@ describe('withRetry', () => {
   });
 
   it('retries on P2034 (write conflict/deadlock) — 1 retry', async () => {
-    const deadlockError = new Prisma.PrismaClientKnownRequestError('write conflict', {
+    const deadlockError = new PrismaClientKnownRequestError('write conflict', {
       code: 'P2034',
       clientVersion: '5',
     });
@@ -71,7 +74,7 @@ describe('withRetry', () => {
   });
 
   it('retries on P1001 (unreachable) — 2 retries', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('unreachable', {
+    const err = new PrismaClientKnownRequestError('unreachable', {
       code: 'P1001',
       clientVersion: '5',
     });
@@ -91,7 +94,7 @@ describe('withRetry', () => {
   });
 
   it('retries on P1002 (timeout)', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('timeout', {
+    const err = new PrismaClientKnownRequestError('timeout', {
       code: 'P1002',
       clientVersion: '5',
     });
@@ -104,7 +107,7 @@ describe('withRetry', () => {
   });
 
   it('throws after max retries exceeded (3 retries)', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('write conflict', {
+    const err = new PrismaClientKnownRequestError('write conflict', {
       code: 'P2034',
       clientVersion: '5',
     });
@@ -123,7 +126,7 @@ describe('withRetry', () => {
   });
 
   it('does NOT retry on non-retryable error — P2002 unique constraint', async () => {
-    const err = new Prisma.PrismaClientKnownRequestError('unique constraint', {
+    const err = new PrismaClientKnownRequestError('unique constraint', {
       code: 'P2002',
       clientVersion: '5',
     });
@@ -141,8 +144,8 @@ describe('withRetry', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('retries on Prisma.PrismaClientInitializationError', async () => {
-    const err = new Prisma.PrismaClientInitializationError('Connection failed', '5.0');
+  it('retries on PrismaClientInitializationError', async () => {
+    const err = new PrismaClientInitializationError('Connection failed', '5.0');
     const fn = jest.fn().mockRejectedValueOnce(err).mockResolvedValue('ok');
 
     const promise = withRetry(fn, { baseDelayMs: 0 });
