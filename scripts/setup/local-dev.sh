@@ -11,11 +11,23 @@ command -v docker >/dev/null 2>&1 || { echo "ERROR: Docker not installed"; exit 
 command -v pnpm >/dev/null 2>&1 || { echo "ERROR: pnpm not installed (npm install -g pnpm)"; exit 1; }
 command -v node >/dev/null 2>&1 || { echo "ERROR: Node.js not installed"; exit 1; }
 
+# Check Docker daemon is running
+if ! docker info >/dev/null 2>&1; then
+  echo "ERROR: Docker is not running — please start Docker Desktop before running make setup"
+  exit 1
+fi
+
 # Copy .env if missing
 if [ ! -f .env ]; then
   echo "==> Creating .env from .env.example"
   cp .env.example .env
   echo "    Edit .env with your local secrets before running."
+fi
+
+# Create .cos-stage if missing (default: stage 1 — BUILD)
+if [ ! -f .cos-stage ]; then
+  echo "==> Creating .cos-stage (default: 1)"
+  echo "1" > .cos-stage
 fi
 
 # Install dependencies

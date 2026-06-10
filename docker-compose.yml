@@ -103,7 +103,7 @@ services:
       KAFKA_LOG_RETENTION_BYTES: -1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      CLUSTER_ID: cos-local-cluster-001
+      CLUSTER_ID: h-CJFTy_TE2EQva8gyOGJA
     ports:
       - '${KAFKA_PORT:-29092}:29092'
     volumes:
