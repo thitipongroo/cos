@@ -431,4 +431,59 @@ Metrics MUST be defined before Phase 24 begins, covering at minimum:
 
 ---
 
+## 33.11 Ecosystem Architecture Decisions
+
+### Industry Standardization Alignment (INT-004)
+
+**Decision:** IFC 4.3 primary + buildingSMART Digital Framework; IFC 5 alpha on watch.
+**Resolved:** 2026-06-10
+
+| Standard                        | Status (2026)           | Role in platform               |
+| ------------------------------- | ----------------------- | ------------------------------ |
+| IFC 4.3 (ISO 16739-1:2023)      | Current normative       | BIM data exchange — primary    |
+| IFC 5 alpha                     | Alpha 2026; final ~2028 | Monitor; no implementation yet |
+| ISO 19650 (DIS Mar 2026)        | DIS; final ~2027        | Information management process |
+| buildingSMART Digital Framework | Active 2026             | Interoperability alignment     |
+| CORENET-X (SG mandate Oct 2026) | Mandatory SG            | Singapore compliance layer     |
+
+**ISO 19650 DIS note:** Published March 10, 2026. Terminology shifting from "BIM" to
+"Information Management". Platform ontology aligns with this shift. Final publication ~2027.
+
+**CORENET-X:** Full mandate for ALL Singapore projects from October 1, 2026 (previously
+>30,000 m² only). BIM Integration module must emit CORENET-X-compatible IFC output.
+
+---
+
+### Planet-Scale Simulation Platform (CIV-001)
+
+**Decision:** Hybrid — physics-based FEA + ML surrogate models + real-time sensor fusion.
+**Resolved:** 2026-06-10
+
+| Component                | Approach                                          | Speed/Accuracy                 |
+| ------------------------ | ------------------------------------------------- | ------------------------------ |
+| Physics-based simulation | Finite Element Analysis (FEA) for structural twin | Slow / High accuracy           |
+| ML surrogate model       | Neural network trained on FEA outputs             | 10,000× faster / ~95% accuracy |
+| Sensor fusion            | Apache Kafka real-time IoT data ingestion         | Real-time                      |
+| Confidence scoring       | Hybrid: IoT=1.0, AI-inferred<0.7                  | See §33.3                      |
+
+**Scope boundary:** Physics-based simulation applies to structural digital twin only (Phase 24).
+General project delay / cost models use gradient boosting ML (see §22.7 INT-003).
+
+---
+
+### Multi-Civilization Interoperability (STEW-005)
+
+**Decision:** Open standards first — IFC, CityGML, OGC API Features; W3C DID for identity.
+**Resolved:** 2026-06-10
+
+- **BIM exchange:** IFC 4.3 normative (see INT-004 above); IFC 5 alpha monitored
+- **City / infrastructure:** CityGML 3.0 (OGC standard) for urban-scale digital twin data
+- **Geospatial API:** OGC API Features (REST replacement for WFS) for spatial queries
+- **Decentralised identity:** W3C DID v1.1 (Candidate Recommendation March 5, 2026) for
+  cross-organisation device and contractor identity — no vendor lock-in on identity layer
+- **Proprietary lock-in policy:** No proprietary format may be the sole exchange mechanism;
+  every integration must expose an open-standard alternative
+
+---
+
 > 📎 See also: [22-ai-architecture](22-ai-architecture.md) · [28-ecosystem-expansion](28-ecosystem-expansion.md) · [32-implementation-specifications](32-implementation-specifications.md) · [09-data-architecture](09-data-architecture.md) · [15-event-driven-workflow](15-event-driven-workflow.md)

@@ -205,6 +205,113 @@ Writes go to DB first (Path 1). Path 2 operates as a separate CDC stream.
 
 ---
 
+## 9.6 Ecosystem Intelligence Decisions
+
+### Industry Data Sharing Model (INT-002)
+
+**Decision:** Opt-in with tiered incentive structure.
+**Resolved:** 2026-06-10
+
+- **Model:** Opt-in — tenant actively chooses to contribute anonymised project data
+- **Incentive tier 1:** Contribute aggregate metrics → unlock industry benchmark reports
+- **Incentive tier 2:** Contribute detailed data → unlock AI premium scoring tier
+- **Anonymisation:** Project data anonymised before aggregation; no PII or tenant IDs shared
+- **Legal basis:** Explicit consent per PDPA Thailand §21 and Vietnam Decree 13/2023
+- **DPO requirement:** Data Processing Agreement required before data enters the benchmark pool
+- **Withdrawal:** Any time; past anonymised aggregates retained in pool
+
+**Industry precedent (2026):** Procore Benchmarking, Autodesk Construction IQ, Dodge Analytics —
+all use opt-in contribution models with incentive tiers.
+
+**PDPA enforcement context:** Thailand PDPA active enforcement since Aug 2025 — 8 fines totalling
+THB 21.5M. Vietnam PDPA effective July 2026. Opt-out or mandatory models carry regulatory risk.
+
+---
+
+### Benchmark Data Ownership (ECO-003)
+
+**Decision:** Platform stewardship with contributor attribution.
+**Resolved:** 2026-06-10
+
+| Scope                   | Ownership                                                         |
+| ----------------------- | ----------------------------------------------------------------- |
+| Individual project data | Tenant owns; platform is data processor under signed DPA          |
+| Anonymised aggregate    | Platform stewards; contributors retain attribution credit         |
+| Derived benchmarks      | Platform owns; available to all opted-in contributors as benefit  |
+| Raw tenant data         | Never shared; only anonymised aggregates cross tenant boundaries  |
+
+**Data Processing Agreement (DPA):** Required before tenant data enters the benchmark pool.
+DPA specifies: legal basis, anonymisation method, retention period, and withdrawal rights
+per PDPA §37.
+
+---
+
+### Market Intelligence Data Sources (COORD-004)
+
+**Decision:** Multi-source with confidence-weighted scoring.
+**Resolved:** 2026-06-10
+
+| Source                                    | Type         | Weight |
+| ----------------------------------------- | ------------ | ------ |
+| Dodge Analytics                           | External API | 0.90   |
+| RS Means (Gordian)                        | External API | 0.90   |
+| Bank of Thailand (BoT) price indices      | External API | 0.85   |
+| Building & Construction Authority (BCA)   | External API | 0.85   |
+| DOST / national statistics (VN, SEA)      | External API | 0.80   |
+| Platform tenant data (opt-in)             | Internal     | 1.00   |
+
+Composite confidence: `weighted_avg(source_weight × recency_decay)`. Data older than 90 days
+reduces source weight by 15% per additional 30-day period.
+
+---
+
+### Cross-Region Data Aggregation (GLOB-002)
+
+**Decision:** Federated aggregation with differential privacy.
+**Resolved:** 2026-06-10
+
+- **Data residency:** Tenant data stays in its home region by default
+- **Cross-region queries:** Aggregate-only; raw records never cross regional boundaries
+- **Privacy mechanism:** Laplace noise added to aggregated metrics before cross-region exposure
+- **Minimum cohort:** Aggregates published only when ≥ 5 tenants contribute (k-anonymity ≥ 5)
+- **Legal basis:** Separate written consent per destination region; PDPA TH + PDPA VN + PDPA SG
+
+---
+
+### Knowledge Preservation Format (STEW-002)
+
+**Decision:** Apache Iceberg v3 with temporal versioning.
+**Resolved:** 2026-06-10
+
+- **Format:** Apache Iceberg v3 (GA on Snowflake May 7, 2026; Iceberg 1.11 released June 2026)
+- **Time-travel:** Point-in-time queries to any historical snapshot supported natively
+- **Critical data retention:** Project lifecycle data — minimum 50-year retention
+- **Audit log storage:** WORM (Write-Once Read-Many) for immutable compliance records
+- **Schema evolution:** Backwards-compatible schema evolution without full table rewrite
+
+**Rationale:** Open-format specification with time-travel and partition evolution — no vendor lock-in
+for long-horizon knowledge preservation.
+
+---
+
+### Intergenerational Knowledge Transfer (BG-004)
+
+**Decision:** Distributed knowledge graphs with semantic versioning.
+**Resolved:** 2026-06-10
+
+| Component             | Technology                                                     |
+| --------------------- | -------------------------------------------------------------- |
+| Operational graph     | Neo4j (existing — real-time queries)                           |
+| Long-term archival    | Apache Jena (RDF triple store, open W3C standard)              |
+| Ontology format       | OWL 2 extending buildingSMART Data Dictionary (bSDD) and IFC   |
+| Versioning            | Semantic versioning; breaking changes require migration plan   |
+| Preservation covenant | 100-year knowledge preservation commitment in platform charter |
+| Export format         | RDF/Turtle for cross-system interoperability                   |
+
+Construction domain ontology stored in `docs/ontology/` as OWL files.
+
+---
+
 ## References
 
 | ID            | Title                                                              | Source                                                                                   |

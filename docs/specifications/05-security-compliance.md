@@ -92,6 +92,62 @@ Targets (see §5.3.1 for audit workflow spec):
 
 **Controls tracking:** `docs/compliance/soc2-controls.md` (SOC 2) · `docs/compliance/iso27001-controls.md` (ISO 27001) · `docs/compliance/pdpa-controls.md` (PDPA)
 
+### Regional Compliance Scope (COORD-003)
+
+**Decision:** Tier 1 — TH / VN / SG full compliance modules; Tier 2 — MY / ID standard.
+**Resolved:** 2026-06-10
+
+- **Tier 1 (full compliance modules):** Thailand, Vietnam, Singapore
+  - Full PDPA compliance: DPO workflow, consent management, data subject rights portal
+  - Regulatory API integrations (BoT reporting, SBV reporting, MAS notifications)
+  - Localised WHT rules and tax compliance (Avalara AvaTax TH/VN/SG jurisdiction config)
+- **Tier 2 (standard modules + local legal review):** Malaysia, Indonesia
+  - Standard GDPR-equivalent consent and data residency modules deployed
+  - Local legal review required before tenant onboarding in Tier 2 countries
+  - No regulatory API integrations until Tier 1 maturity confirmed
+- **Promotion trigger:** Country promoted to Tier 1 after ≥ 5 paying tenants and full
+  regulatory mapping confirmed by legal counsel
+
+---
+
+### Global Data Governance Framework (GLOB-003)
+
+**Decision:** Data sovereignty first — store locally, aggregate globally only with consent.
+**Resolved:** 2026-06-10
+
+| Framework                          | Tier        | Applies to                      |
+| ---------------------------------- | ----------- | ------------------------------- |
+| PDPA Thailand §21                  | Mandatory   | All TH-resident tenant data     |
+| Vietnam PDPA / Decree 13/2023      | Mandatory   | All VN-resident tenant data     |
+| PDPA Singapore (PDPA 2012 amended) | Mandatory   | All SG-resident tenant data     |
+| GDPR (EU Regulation 2016/679)      | Mandatory   | EU tenants and EU data subjects |
+| ISO/IEC 27701 (Privacy extension)  | Target cert | Privacy management system       |
+| ISO/IEC 42001:2026 (AI Management) | Target cert | AI governance path (STEW-001)   |
+
+**Data residency principle:** Tenant data processed and stored in the tenant's home region
+by default. Cross-region transfer requires explicit DPA amendment per GLOB-002 rules.
+
+**PDPA enforcement context (2026):** Thailand — 8 fines totalling THB 21.5M since Aug 2025;
+DPO appointment mandatory for data-intensive companies. Vietnam new law effective July 2026.
+
+---
+
+### Decentralised Governance Protocol (BG-001)
+
+**Decision:** W3C DID v1.1 for decentralised identity; Verifiable Credentials for credentials.
+**Resolved:** 2026-06-10
+
+- **Standard:** W3C Decentralised Identifiers (DID) v1.1 — Candidate Recommendation
+  published March 5, 2026
+- **Use cases:** Contractor licence verification, equipment certification, worker safety
+  training records — issued as W3C Verifiable Credentials (VCs)
+- **Architecture:** DID Documents stored in platform identity service; VC issuance via
+  `CredentialService.issue(subjectDid, credentialType, claims)`
+- **Scope:** DID / VC integration is an opt-in Enterprise module; core authentication
+  remains Keycloak OAuth2/OIDC (§5.4)
+- **Self-sovereign identity:** Tenant admins may issue VCs to workers; third-party
+  verification is cryptographic — no platform call required at verify time
+
 ---
 
 ## 5.4 Authentication Flow

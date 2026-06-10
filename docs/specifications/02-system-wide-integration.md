@@ -148,4 +148,20 @@ The final state becomes:
 
 > A unified AI-native Construction Operating System for the entire built-world lifecycle.
 
+### Global Standards Governance Body (CIV-005)
+
+**Decision:** Observe-and-align — participate in existing bodies; do not create a new one.
+**Resolved:** 2026-06-10
+
+- **Strategy:** Participate actively in existing international bodies; align platform to their outputs
+- **Primary bodies:** buildingSMART International, ISO TC59/SC13 (IFC 5 / ISO 19650 DIS 2026),
+  UN-Habitat Smart City working groups
+- **Secondary bodies:** ASEAN Smart Cities Network, BCA Singapore, EIC Thailand
+- **Platform alignment:** All data models, APIs, and interchange formats track published standards
+- **Rationale:** Creating a new standards body requires decade-scale political capital;
+  existing bodies (buildingSMART, ISO) already hold industry authority
+
+**ISO 19650 update (2026):** DIS published March 10, 2026. Terminology shifting from "BIM" to
+"Information Management". Final publication expected 2027 — monitor and align platform ontology.
+
 > 📎 See also: [00-executive-overview](00-executive-overview.md) · [03-system-design](03-system-design.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md)

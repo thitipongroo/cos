@@ -204,6 +204,24 @@ Versioning Rules :
 - Breaking changes (remove or rename fields) — increment version, old version deprecated with 30-day notice to consumers
 - Consumers must tolerate unknown fields (forward compatibility requirement)
 
+### Event Schema Format (ECO-001)
+
+**Decision:** Apache Avro with Confluent Schema Registry; AsyncAPI 3.1 for documentation.
+**Resolved:** 2026-06-10
+
+- **Serialisation format:** Apache Avro — binary, compact, schema-enforced
+- **Schema registry:** Confluent Schema Registry — manages schema versions and compatibility
+- **Compatibility mode:** BACKWARD_TRANSITIVE — consumers can read older schema versions
+- **Documentation standard:** AsyncAPI 3.1 (stable as of January 31, 2026) for event catalogue
+- **Envelope:** CloudEvents v1.0 (normative) wraps Avro payloads for metadata consistency
+- **External delivery:** Avro deserialised to JSON at Kong Gateway layer for webhook subscribers
+  who cannot consume Avro directly
+
+**Schema location:** `packages/@cos/shared/src/avro/{domain}.{entity}.{action}.{version}.avsc`
+
+**Industry precedent (2026):** Confluent + Avro + AsyncAPI is the standard adopted by
+Autodesk Platform Services, Procore Event API, and SAP Event Mesh.
+
 ---
 
 ## 15.7 Platform-Level Events (Phase 25)

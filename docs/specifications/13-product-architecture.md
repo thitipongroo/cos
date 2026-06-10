@@ -354,4 +354,36 @@ Vendor SDK is injected via DI at deployment time. No vendor is selected at the p
 | Interface       | `IoTIntegration.publishTelemetry(deviceId, payload): void`   |
 | Trigger         | Implement when first tenant deploys GPS-tracked equipment    |
 
+### Financial Infrastructure Provider (INT-005)
+
+**Decision:** Embedded fintech via BaaS — licensed regional banking APIs.
+**Resolved:** 2026-06-10
+
+- **Thailand (primary):** SCB API / Kasikorn Business API via Bank of Thailand Sandbox licence
+- **Vietnam (primary):** VietinBank API / BIDV API; compliant with SBV Open Banking decree
+- **Singapore:** PayNow / FAST API via MAS-licensed payment institution partnership
+- **Model:** Invoice factoring and milestone-linked draw-down loans via BaaS partners;
+  platform is data provider and origination channel — not the licensed lender
+- **Trigger:** Implement when first tenant requests invoice factoring with a confirmed partner;
+  per-partner adapter (Strategy pattern, same as ERP integration in §13.3)
+- **Regulatory path:** Bank of Thailand Sandbox enrolment required before TH launch;
+  MAS licensing guidance required before SG launch
+
+---
+
+### Post-Software Transition (BG-002)
+
+**Decision:** Platform-as-infrastructure model — API-first, AI-native, paradigm-agnostic.
+**Resolved:** 2026-06-10
+
+- **Architecture stance:** Every capability exposed via versioned REST API; no UI-only features
+- **AI-nativeness:** AI is the primary operational interface by Layer C; humans supervise,
+  not operate
+- **Paradigm agnosticism:** Compute paradigm transitions accommodated via the `LLMProvider`
+  and `EmbeddingProvider` interfaces — swap providers without replatforming
+- **Infrastructure contract:** Platform commits to open-standard data formats (Iceberg v3,
+  IFC, Avro) so tenant data is portable regardless of platform future
+
+---
+
 > 📎 See also: [03-system-design](03-system-design.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [14-api-architecture](14-api-architecture.md) · [21-mvp-scope](21-mvp-scope.md)

@@ -222,6 +222,56 @@ at the network ingress level before traffic reaches Kong.
 
 ---
 
+## 8.8 Cloud Deployment and Resilience Decisions
+
+### Global Deployment Regions (GLOB-001)
+
+**Decision:** AWS ap-southeast-7 (Bangkok) primary; ap-southeast-1 secondary; eu-west-1 for EU.
+**Resolved:** 2026-06-10
+
+| Region                         | Role              | Rationale                                                               |
+| ------------------------------ | ----------------- | ----------------------------------------------------------------------- |
+| AWS ap-southeast-7 (Bangkok)   | Primary           | PDPA-compliant; launched Jan 10, 2025; ~10% cheaper than ap-southeast-1 |
+| AWS ap-southeast-1 (Singapore) | Secondary / DR    | Established; PDPA SG; cross-region replication target                   |
+| AWS eu-west-1 (Ireland)        | EU data residency | GDPR compliance for European tenants                                    |
+
+**Thailand residency benefit (2026):** AWS ap-southeast-7 provides PDPA data residency
+within Thailand — required for government and regulated-industry tenants.
+Cross-region replication: ap-southeast-7 ↔ ap-southeast-1 active-passive failover.
+
+---
+
+### Geopolitical Risk Handling (GLOB-005)
+
+**Decision:** Active-passive multi-region with data egress controls and regional kill switch.
+**Resolved:** 2026-06-10
+
+- **Active-passive failover:** Primary region active; secondary receives continuous replication;
+  failover is manually triggered by platform operator after declaring an incident
+- **Data egress controls:** Per-region data export controls configurable per tenant; Enterprise
+  tenants can restrict data to a single region via DPA configuration
+- **Regional kill switch:** Platform operator can isolate a region (block egress, stop
+  replication) within 4 hours of incident declaration
+- **Geopolitical risk registry:** Maintained in `docs/security/geopolitical-risk-registry.md`;
+  reviewed quarterly; triggers deployment change if risk level rises to HIGH
+
+---
+
+### Planetary Resilience Scope (STEW-004)
+
+**Decision:** Climate-resilient infrastructure — IPCC AR7 scenarios; 2150 planning horizon.
+**Resolved:** 2026-06-10
+
+- **Climate scenarios:** IPCC AR7 (2026) — SSP1-2.6 (optimistic), SSP2-4.5 (middle),
+  SSP3-7.0 (pessimistic); SSP5-8.5 scenario retired per IPCC AR7 guidance
+- **Planning horizon:** Extended to 2150 for infrastructure assets with multi-decade lifespans
+- **Carbon accounting:** Per-project carbon footprint via CarbonRecord (§33-digital-twin §33.4)
+- **Net-zero pathway:** Tenant-level net-zero pathway modelling — Phase 5 premium module
+- **DR climate risk:** Data centre selection considers 2050 flood risk and temperature
+  projections; AWS ap-southeast-7 (Bangkok) has published climate resilience roadmap to 2040
+
+---
+
 ## References
 
 | ID           | Title                                               | Source                                                                                                       |

@@ -458,6 +458,164 @@ All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thr
 
 ---
 
+### Procurement Intelligence Algorithm (INT-003)
+
+**Decision:** Hybrid ML — gradient boosting for structured features + collaborative filtering
+for supplier matching.
+**Resolved:** 2026-06-10
+
+- **Cost / delay forecasting:** XGBoost / LightGBM on structured project features —
+  schedule variance, procurement lead times, workforce data, weather history
+- **Supplier matching:** Neural collaborative filtering — learns affinity from historical
+  PO-to-vendor assignments across the platform dataset
+- **Benchmarking:** Gradient boosting on market price signals from COORD-004 data sources
+  (Dodge Analytics, RS Means, BoT indices, platform opt-in data)
+- **Data requirement:** Collaborative filtering requires ≥ 500 completed POs across
+  ≥ 50 unique vendor relationships before activation
+
+**Industry precedent (2026):** Procore AI, Oracle Construction Intelligence, Autodesk Build
+use gradient boosting + collaborative filtering hybrid for procurement forecasting.
+
+---
+
+### Ecosystem Trust Scoring Algorithm (ECO-004)
+
+**Decision:** Graph-based trust with behavioral analytics.
+**Resolved:** 2026-06-10
+
+- **Algorithm:** PageRank-inspired reputation on Neo4j vendor / contractor relationship graph
+- **Behavioral signals:** On-time delivery rate, invoice dispute rate, quality score,
+  response time to RFQs
+- **Score range:** [0.0, 1.0] updated weekly; displayed on vendor and contractor profiles
+- **Credential boost:** W3C Verifiable Credential (optional) adds +0.1 to trust score
+- **Abuse detection:** Trust score increase > 0.3 within 7 days triggers human review flag
+
+---
+
+### Autonomous Coordination Governance (COORD-001)
+
+**Decision:** Human-in-the-loop with financial escalation thresholds.
+**Resolved:** 2026-06-10
+
+| Action value            | Autonomy level  | Approval required        |
+| ----------------------- | --------------- | ------------------------ |
+| < THB 50,000            | Full autonomous | None (logged)            |
+| THB 50,001 – 500,000    | Recommend only  | PM or Finance approval   |
+| THB 500,001 – 5,000,000 | Flag and pause  | Finance + Executive      |
+| > THB 5,000,000         | Block           | Executive + Board review |
+
+**Audit trail:** All AI recommendations logged with confidence score and data sources.
+**Override policy:** Any human may override; override reason must be recorded.
+**Review:** Quarterly AI behavior audit per STEW-001 governance structure (see below).
+
+---
+
+### Cross-Industry Intelligence Scope (GLOB-004)
+
+**Decision:** Modular intelligence layers with domain-specific fine-tuning.
+**Resolved:** 2026-06-10
+
+| Module                | Scope                                   | Activated      |
+| --------------------- | --------------------------------------- | -------------- |
+| Construction Core     | Project, procurement, finance AI models | Phase 1+       |
+| Infrastructure Module | Civil, roads, utilities — specialised   | COORD-002 gate |
+| Real Estate Module    | Property development, leasing, sales AI | COORD-002 gate |
+| Shared Foundation     | Cross-domain embeddings, language, risk | With Core      |
+
+Domain-specific modules fine-tune the shared foundation model on domain data.
+Tenants subscribe to modules relevant to their business — no module lock-in.
+
+---
+
+### Constitutional AI Framework (CIV-002)
+
+**Decision:** Anthropic Constitutional AI aligned; 4-tier safety hierarchy.
+**Resolved:** 2026-06-10
+
+- **Constitution basis:** Anthropic Constitutional AI — 80-page version, Jan 21, 2026 (CC0)
+- **Safety hierarchy:** Safety > Ethics > Guidelines > Helpfulness (4-tier, non-negotiable)
+- **RSP compliance:** Anthropic Responsible Scaling Policy v3.0 (effective Feb 24, 2026)
+- **Construction constraints:** AI must never autonomously approve financial disbursements,
+  safety permits, or structural design changes without human sign-off
+- **Audit schedule:** Annual Constitutional AI compliance review; findings in `docs/ai-safety/`
+
+---
+
+### Infrastructure Intelligence Economy Model (CIV-004)
+
+**Decision:** Transparent revenue sharing — platform, data contributors, ecosystem partners.
+**Resolved:** 2026-06-10
+
+| Participant        | Share | Mechanism                                   |
+| ------------------ | ----- | ------------------------------------------- |
+| Platform           | 60%   | API fees + SaaS subscription premium        |
+| Data contributors  | 30%   | Pro-rata by contribution volume and quality |
+| Ecosystem partners | 10%   | Referral and integration revenue pool       |
+
+Applies to AI intelligence products sold as API (risk score, benchmark, forecasting APIs).
+Base SaaS subscription revenue is not shared. Revenue distributed quarterly via tenant portal.
+
+---
+
+### Human-AI Governance Structure (STEW-001)
+
+**Decision:** Rotating oversight committee with quarterly AI behavior audits.
+**Resolved:** 2026-06-10
+
+- **Committee:** Product owner + 2 construction domain experts + 1 AI safety lead (permanent)
+- **Rotation:** Domain experts rotate annually
+- **Quarterly audit scope:** AI recommendation accuracy, override rates, bias metrics,
+  COORD-001 threshold compliance, COORD-004 data source confidence trends
+- **Audit output:** Published in `docs/ai-governance/quarterly-report-{YYYY}-Q{N}.md`
+- **Certification path:** ISO/IEC 42001:2026 (AI Management System — EN version published 2026)
+- **Escalation:** Any AI behavior anomaly triggers committee review within 48 hours
+
+---
+
+### Long-Term Optimization Horizon (STEW-003)
+
+**Decision:** 10-year strategic planning + rolling 2-year optimization + IPCC AR7 scenarios.
+**Resolved:** 2026-06-10
+
+- **Strategic horizon:** 10 years — construction project lifecycles require decade-scale planning
+- **Optimization cycle:** Rolling 2-year window; models retrained on fresh data every 2 years
+- **Climate integration:** IPCC AR7 (2026; SSP5-8.5 retired) applied to infrastructure risk
+  models and long-term carbon forecasting
+- **Extended horizon:** 2150 planning window for infrastructure assets with multi-decade lifespans
+- **ML tagging:** Training pipelines tagged with horizon flag (`SHORT` / `MEDIUM` / `LONG`)
+
+---
+
+### Meta-Governance Evolution (BG-003)
+
+**Decision:** Adaptive governance — AI proposes, humans decide; policy versioned as code.
+**Resolved:** 2026-06-10
+
+- **Governance model:** Constitutional constraints are immutable; operational rules adapt
+- **Proposal mechanism:** AI may flag governance inefficiencies; humans vote to update rules
+- **Versioning:** Governance policies in `docs/ai-governance/policy/` versioned with semver
+- **Democratic input:** Annual stakeholder survey informs policy updates
+- **Immutable constraints:** Safety hierarchy (CIV-002) and financial thresholds (COORD-001)
+  may only be tightened, never relaxed, by automated systems
+
+---
+
+### Human Value Alignment (BG-005)
+
+**Decision:** RLHF + Constitutional AI; alignment monitored with anomaly detection.
+**Resolved:** 2026-06-10
+
+- **Training method:** RLHF on construction domain expert annotations; Constitutional AI
+  constraints (CIV-002) enforced at inference time
+- **Value sources:** Product owner, construction domain experts, end users (PM, Site Engineer)
+  — diverse stakeholder feedback corpus
+- **Alignment monitoring:** Recommendation acceptance rate, override rate, and user correction
+  rate tracked via OpenTelemetry; anomaly detection fires at > 20% deviation from baseline
+- **RSP v3.0 compliance:** Capability evaluations required before each major model upgrade
+- **Audit:** Annual alignment audit; results in `docs/ai-governance/alignment-audit-{YYYY}.md`
+
+---
+
 ## References
 
 | ID          | Title                                                              | Source                                                                                    |

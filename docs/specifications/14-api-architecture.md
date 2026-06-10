@@ -34,7 +34,24 @@ All internal services communicate via :
 
 - gRPC
 - Event streams
-- REST/GraphQL external APIs
+- REST external APIs
+
+### 14.1.1 Ecosystem Interoperability Protocol (INT-001)
+
+**Decision:** Layered hybrid — REST + AsyncAPI 3.1 + gRPC internal only. GraphQL excluded.
+**Resolved:** 2026-06-10
+
+| Protocol           | Scope                                               | Rationale                                                                    |
+| ------------------ | --------------------------------------------------- | ---------------------------------------------------------------------------- |
+| REST (OpenAPI 3.1) | Synchronous external APIs — supplier, RFQ, document | Universal for ERP/procurement portals; OpenAPI 3.1 mandated platform-wide    |
+| AsyncAPI 3.1       | Event-based ecosystem — notifications, order status | Pairs with Confluent Schema Registry + Avro; v3.1 stable as of 31 Jan 2026   |
+| gRPC               | Internal Go worker READ paths only                  | Protobuf toolchain is a barrier for SMB suppliers in Southeast Asia          |
+| GraphQL            | Excluded                                            | Schema versioning complexity; unpredictable query cost; REST is sufficient   |
+
+**Industry precedent (2026):** Autodesk Construction Cloud, Procore API, SAP Business Network.
+
+**Webhook delivery:** Events serialised as Avro internally; deserialized to JSON at the Kong Gateway
+layer before delivery to external webhook subscribers who cannot consume Avro directly.
 
 ---
 

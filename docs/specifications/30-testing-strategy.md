@@ -281,16 +281,33 @@ using **Pact.io** (consumer-driven contract testing).
 
 ### Layer B (Post-MVP) — Analytical AI
 
-> ⚠️ Layer B test strategy to be defined when Layer B development begins.
->
-> **Minimum framework (established at sprint start):**
->
-> - Evaluation metrics: RMSE + MAE
-> - Test split: 20% held-out set from production project history
-> - Evaluation cadence: monthly
-> - Pass threshold: defined after 90-day production baseline (no target set before baseline)
->
-> **Owner:** AI/Platform Lead. **Trigger:** Layer B enters active development sprint.
+**Decision:** Time-series validation + Monte Carlo simulation + drift detection pipeline.
+**Resolved:** 2026-06-10
+
+**Evaluation framework:**
+
+| Model              | Primary Metric | Secondary Metric | Pass Threshold   |
+| ------------------ | -------------- | ---------------- | ---------------- |
+| DelayForecastModel | RMSE (days)    | MAE (days)       | RMSE ≤ 5 days    |
+| RiskClassifier     | F1-score       | AUC-ROC          | F1 ≥ 0.80        |
+| CostAnomalyModel   | Precision      | Recall           | Precision ≥ 0.85 |
+
+**Test methodology:**
+
+- **Data split:** 70% training / 30% held-out from production project history
+- **Time-series validation:** Walk-forward validation — never use future data to predict the past
+- **Monte Carlo simulation:** 1,000 iterations for uncertainty quantification on delay forecasts
+- **Drift detection:** Evidently AI monitors feature distribution shift; alert when PSI > 0.2
+- **Evaluation cadence:** Monthly (not per-PR — model performance degrades over time, not per commit)
+- **Retraining trigger:** Accuracy drops > 10% vs. previous month OR drift alert fires
+
+**Tooling:**
+
+- **Prophet:** Time-series baseline for delay and cost forecasting
+- **Evidently AI:** Data drift and model performance monitoring
+- **MLflow:** Experiment tracking and model registry (existing — see §22.7 Model Registry)
+
+**Owner:** AI/Platform Lead. **Trigger:** Layer B enters active development sprint.
 
 ### Evaluation Schedule
 
