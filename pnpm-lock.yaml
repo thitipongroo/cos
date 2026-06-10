@@ -213,6 +213,9 @@ importers:
       '@cos/validation':
         specifier: workspace:*
         version: link:../packages/@cos/validation
+      '@keycloak/keycloak-admin-client':
+        specifier: ^24.0.4
+        version: 24.0.5
       '@line/bot-sdk':
         specifier: ^9.4.0
         version: 9.9.0
@@ -349,6 +352,12 @@ importers:
       '@temporalio/testing':
         specifier: ^1.9.0
         version: 1.17.2(tslib@2.8.1)
+      '@testcontainers/postgresql':
+        specifier: ^10.9.0
+        version: 10.28.0
+      '@testcontainers/redis':
+        specifier: ^10.9.0
+        version: 10.28.0
       '@types/express':
         specifier: ^4.17.0
         version: 4.17.25
@@ -2359,6 +2368,10 @@ packages:
 
   '@kafkajs/confluent-schema-registry@3.9.0':
     resolution: {integrity: sha512-QiwinzNVlHPvylFCSiKBcTDxNDp9/xDj7ZWTxlsel5h4hwLxMLjnuJUcW/LhzNPPi/V4Vfa4Yq0uv30CYGtRnA==}
+
+  '@keycloak/keycloak-admin-client@24.0.5':
+    resolution: {integrity: sha512-SXDVtQ3ov7GQbxXq51Uq8lzhwzQwNg6XiY50ZA9whuUe2t/0zPT4Zd/LcULcjweIjSNWWgfbDyN1E3yRSL8Qqw==}
+    engines: {node: '>=18'}
 
   '@line/bot-sdk@9.9.0':
     resolution: {integrity: sha512-/jVjH7k2uMWY1O0F/zkwYD3dqDH/pWbawvDtR6DV/scruH86w9zZrMwknZLt1unUWdK+V9eX4UVP/gLAzqUocg==}
@@ -4808,6 +4821,10 @@ packages:
   camelcase@6.3.0:
     resolution: {integrity: sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==}
     engines: {node: '>=10'}
+
+  camelize-ts@3.0.0:
+    resolution: {integrity: sha512-cgRwKKavoDKLTjO4FQTs3dRBePZp/2Y9Xpud0FhuCOTE86M2cniKN4CCXgRnsyXNMmQMifVHcv6SPaMtTx6ofQ==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   caniuse-lite@1.0.30001793:
     resolution: {integrity: sha512-iwSsYWaCOoh26cV8NwNRViHlrfUvYsHDfRVcbtmw0Kg6PJIZZXwMkj1442FYLBGkeUf1juAsU3DTfxW579mrPA==}
@@ -9559,6 +9576,14 @@ packages:
   url-join@4.0.0:
     resolution: {integrity: sha512-EGXjXJZhIHiQMK2pQukuFcL303nskqIRzWvPvV5O8miOfwoUb9G+a/Cld60kUyeaybEI94wvVClT10DtfeAExA==}
 
+  url-join@5.0.0:
+    resolution: {integrity: sha512-n2huDr9h9yzd6exQVnH/jU5mr+Pfx08LRXXZhkLLetAMESRj+anQsTAh940iMrIetKAmry9coFuZQ2jY8/p3WA==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
+  url-template@3.1.1:
+    resolution: {integrity: sha512-4oszoaEKE/mQOtAmdMWqIRHmkxWkUZMnXFnjQ5i01CuRSK3uluxcH1MRVVVWmhlnzT1SCDfKxxficm2G37qzCA==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
   use-latest-callback@0.2.6:
     resolution: {integrity: sha512-FvRG9i1HSo0wagmX63Vrm8SnlUU3LMM3WyZkQ76RnslpBrX694AdG4A0zQBx2B3ZifFA0yv/BaEHGBnEax5rZg==}
     peerDependencies:
@@ -12545,6 +12570,12 @@ snapshots:
     transitivePeerDependencies:
       - diff
       - tty-table
+
+  '@keycloak/keycloak-admin-client@24.0.5':
+    dependencies:
+      camelize-ts: 3.0.0
+      url-join: 5.0.0
+      url-template: 3.1.1
 
   '@line/bot-sdk@9.9.0':
     dependencies:
@@ -15792,6 +15823,8 @@ snapshots:
   camelcase@5.3.1: {}
 
   camelcase@6.3.0: {}
+
+  camelize-ts@3.0.0: {}
 
   caniuse-lite@1.0.30001793: {}
 
@@ -21402,6 +21435,10 @@ snapshots:
       punycode: 2.3.1
 
   url-join@4.0.0: {}
+
+  url-join@5.0.0: {}
+
+  url-template@3.1.1: {}
 
   use-latest-callback@0.2.6(react@18.2.0):
     dependencies:

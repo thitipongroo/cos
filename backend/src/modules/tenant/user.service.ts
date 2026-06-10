@@ -13,7 +13,7 @@ import {
 import { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
-import { randomUUID } from 'crypto';
+import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { ChangeRoleDto } from './dto/change-role.dto';
 
@@ -34,32 +34,72 @@ export interface UserRow {
   role: string; // joined from platform.tenant_memberships
 }
 
+export interface PaginationParams {
+  limit: number;
+  offset: number;
+}
+
+export interface PaginatedUsers {
+  data: UserRow[];
+  pagination: {
+    limit: number;
+    offset: number;
+    page: number;
+    total: number;
+  };
+}
+
 @Injectable()
 export class UserService {
   // Platform PrismaClient — NOT TenantPrismaService (platform.users is cross-tenant)
   private readonly prisma = new PrismaClient();
   private readonly kafka = new KafkaProducer();
 
-  async listUsers(tenantId: string): Promise<UserRow[]> {
-    return this.prisma.$queryRaw<UserRow[]>`
-      SELECT
-        u.user_id,
-        u.tenant_id,
-        u.keycloak_user_id,
-        u.email,
-        u.display_name,
-        u.is_active,
-        u.mfa_enabled,
-        u.created_at,
-        u.updated_at,
-        m.role
-      FROM platform.users u
-      JOIN platform.tenant_memberships m
-        ON m.user_id = u.user_id AND m.tenant_id = u.tenant_id
-      WHERE u.tenant_id = ${tenantId}::uuid
-        AND u.is_active = true
-      ORDER BY u.created_at DESC
-    `;
+  constructor(private readonly keycloakAdmin: KeycloakAdminService) {}
+
+  async listUsers(tenantId: string, params: PaginationParams): Promise<PaginatedUsers> {
+    const { limit, offset } = params;
+
+    const [rows, countResult] = await Promise.all([
+      this.prisma.$queryRaw<UserRow[]>`
+        SELECT
+          u.user_id,
+          u.tenant_id,
+          u.keycloak_user_id,
+          u.email,
+          u.display_name,
+          u.is_active,
+          u.mfa_enabled,
+          u.created_at,
+          u.updated_at,
+          m.role
+        FROM platform.users u
+        JOIN platform.tenant_memberships m
+          ON m.user_id = u.user_id AND m.tenant_id = u.tenant_id
+        WHERE u.tenant_id = ${tenantId}::uuid
+          AND u.is_active = true
+        ORDER BY u.created_at DESC
+        LIMIT ${limit} OFFSET ${offset}
+      `,
+      this.prisma.$queryRaw<Array<{ count: bigint }>>`
+        SELECT COUNT(*) AS count
+        FROM platform.users u
+        WHERE u.tenant_id = ${tenantId}::uuid
+          AND u.is_active = true
+      `,
+    ]);
+
+    const total = Number(countResult[0]?.count ?? 0);
+
+    return {
+      data: rows,
+      pagination: {
+        limit,
+        offset,
+        page: Math.floor(offset / limit) + 1,
+        total,
+      },
+    };
   }
 
   async createUser(dto: CreateUserDto, tenantId: string, actorId: string): Promise<UserRow> {
@@ -70,48 +110,87 @@ export class UserService {
       throw new BadRequestException('Provide either phone_number or email — not both');
     }
 
-    // Determine keycloak_user_id and email column value per path
     const isPathA = Boolean(dto.phone_number);
-    const keycloakUserId = isPathA ? dto.phone_number! : (dto.keycloak_user_id ?? dto.email!);
     const emailValue = isPathA ? '' : dto.email!;
 
-    // Conflict guard: keycloak_user_id must be globally unique (UNIQUE constraint)
-    const existing = await this.prisma.$queryRaw<Array<{ user_id: string }>>`
-      SELECT user_id FROM platform.users
-      WHERE keycloak_user_id = ${keycloakUserId}
-      LIMIT 1
-    `;
+    // Conflict guard (parameterized — no string interpolation)
+    const existing = isPathA
+      ? await this.prisma.$queryRaw<Array<{ user_id: string }>>`
+          SELECT user_id FROM platform.users
+          WHERE phone_number = ${dto.phone_number!} LIMIT 1
+        `
+      : await this.prisma.$queryRaw<Array<{ user_id: string }>>`
+          SELECT user_id FROM platform.users
+          WHERE keycloak_user_id = ${dto.keycloak_user_id ?? dto.email!} LIMIT 1
+        `;
+
     if (existing.length) {
       throw new ConflictException(`User with this identity already exists`);
     }
 
-    const user = await this.prisma.$transaction(async (tx) => {
-      const [created] = await tx.$queryRaw<UserRow[]>`
-        INSERT INTO platform.users
-          (tenant_id, keycloak_user_id, email, display_name)
-        VALUES
-          (${tenantId}::uuid, ${keycloakUserId}, ${emailValue}, ${dto.display_name})
-        RETURNING
-          user_id, tenant_id, keycloak_user_id, email, display_name,
-          is_active, mfa_enabled, created_at, updated_at
-      `;
+    // Step 1 — get tenant realm for Keycloak provisioning
+    const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
+      SELECT keycloak_realm FROM platform.tenants
+      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
 
-      await tx.$queryRaw`
-        INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
-        VALUES (${tenantId}::uuid, ${created!.user_id}::uuid, ${dto.role}::"CosRoleEnum")
-      `;
+    // Step 2 — provision Keycloak user; get UUID for keycloak_user_id column
+    // userId placeholder: generate early so it can be set as a Keycloak attribute
+    const userIdPlaceholder = globalThis.crypto.randomUUID();
+    let keycloakUserId: string;
 
-      return created!;
-    });
-
-    if (!isPathA && !dto.keycloak_user_id) {
-      // Path B without a Keycloak UUID: email used as keycloak_user_id placeholder.
-      // Keycloak Admin API provisioning is deferred — see Phase 2 constraints (createTenant pattern).
-      logger.warn(
-        { userId: user.user_id, tenantId },
-        'user.create.keycloak_deferred — Keycloak user creation not yet implemented; ' +
-          'email stored as keycloak_user_id placeholder',
+    if (isPathA) {
+      const { keycloakUserId: kcId } = await this.keycloakAdmin.provisionPhoneUser(
+        dto.phone_number!,
+        dto.display_name,
+        tenant.keycloak_realm,
+        tenantId,
+        userIdPlaceholder,
+        dto.role,
       );
+      keycloakUserId = kcId;
+    } else {
+      const { keycloakUserId: kcId } = await this.keycloakAdmin.createEmailUser(
+        dto.email!,
+        dto.display_name,
+        tenant.keycloak_realm,
+        tenantId,
+        userIdPlaceholder,
+        dto.role,
+      );
+      keycloakUserId = kcId;
+    }
+
+    // Step 3 — create COS user record; rollback Keycloak user on failure
+    let user: UserRow;
+    try {
+      user = await this.prisma.$transaction(async (tx) => {
+        const [created] = await tx.$queryRaw<UserRow[]>`
+          INSERT INTO platform.users
+            (user_id, tenant_id, keycloak_user_id, phone_number, email, display_name)
+          VALUES
+            (${userIdPlaceholder}::uuid, ${tenantId}::uuid, ${keycloakUserId},
+             ${isPathA ? dto.phone_number! : null}, ${emailValue}, ${dto.display_name})
+          RETURNING
+            user_id, tenant_id, keycloak_user_id, email, display_name,
+            is_active, mfa_enabled, created_at, updated_at
+        `;
+
+        await tx.$queryRaw`
+          INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
+          VALUES (${tenantId}::uuid, ${created!.user_id}::uuid, ${dto.role}::"CosRoleEnum")
+        `;
+
+        return created!;
+      });
+    } catch (err) {
+      // Rollback Keycloak user to avoid orphaned account
+      await this.keycloakAdmin
+        .deleteUser(keycloakUserId, tenant.keycloak_realm)
+        .catch((e) => logger.error({ keycloakUserId, err: e }, 'keycloak.rollback.failed'));
+      throw err;
     }
 
     logger.info({ userId: user.user_id, tenantId, actorId, role: dto.role }, 'user.created');
@@ -183,7 +262,7 @@ export class UserService {
         tenant_id: 'platform',
         actor_id: 'system',
         occurred_at: new Date().toISOString(),
-        correlation_id: randomUUID(),
+        correlation_id: globalThis.crypto.randomUUID(),
         payload,
       });
       await this.kafka.disconnect();

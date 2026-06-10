@@ -12,7 +12,6 @@ import {
 import { PrismaClient, Tenant } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
-import { randomUUID } from 'crypto';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 
@@ -34,13 +33,21 @@ export class TenantService {
       throw new ConflictException(`Tenant code '${dto.tenantCode}' already exists`);
     }
 
+    if (
+      dto.dedicatedDbUrl !== undefined &&
+      !dto.dedicatedDbUrl.startsWith('postgresql://') &&
+      !dto.dedicatedDbUrl.startsWith('postgres://')
+    ) {
+      throw new BadRequestException('dedicatedDbUrl must start with postgresql:// or postgres://');
+    }
+
     const keycloakRealm = `cos-${dto.tenantCode}`;
 
     // Create tenant record (ADR-008: shared DB + tenant_id, no per-tenant schema)
     const tenant = await this.prisma.$transaction(async (tx) => {
       const [created] = await tx.$queryRaw<Tenant[]>`
-        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type)
-        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType")
+        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url)
+        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ?? null})
         RETURNING *
       `;
 
@@ -188,7 +195,7 @@ export class TenantService {
         tenant_id: 'platform',
         actor_id: 'system',
         occurred_at: new Date().toISOString(),
-        correlation_id: randomUUID(),
+        correlation_id: globalThis.crypto.randomUUID(),
         payload,
       });
       await this.kafka.disconnect();

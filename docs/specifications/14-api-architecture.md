@@ -1,8 +1,8 @@
 ---
 title: 'API Architecture'
-version: '1.2.0'
+version: '1.3.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-06-10'
 authors:
   - thitipongroo
 related_docs:
@@ -102,8 +102,9 @@ JWT must contain `tenant_id` claim — Kong Gateway rejects requests without it.
     "timestamp": "2026-05-24T08:00:00Z"
   },
   "pagination": {
+    "limit": 50,
+    "offset": 0,
     "page": 1,
-    "per_page": 50,
     "total": 234
   }
 }

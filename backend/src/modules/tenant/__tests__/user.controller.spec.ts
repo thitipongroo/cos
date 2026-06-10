@@ -28,11 +28,31 @@ describe('UserController', () => {
   });
 
   describe('list', () => {
-    it('delegates to userService.listUsers with tenantId from request', async () => {
-      mockUserService.listUsers.mockResolvedValue([]);
+    const paginatedEmpty = { data: [], pagination: { limit: 50, offset: 0, page: 1, total: 0 } };
+
+    it('uses default limit=50 offset=0 when no query params', async () => {
+      mockUserService.listUsers.mockResolvedValue(paginatedEmpty);
       const result = await controller.list(fakeReq());
-      expect(mockUserService.listUsers).toHaveBeenCalledWith(TENANT_ID);
-      expect(result).toEqual([]);
+      expect(mockUserService.listUsers).toHaveBeenCalledWith(TENANT_ID, { limit: 50, offset: 0 });
+      expect(result).toBe(paginatedEmpty);
+    });
+
+    it('passes parsed limit and offset from query string', async () => {
+      mockUserService.listUsers.mockResolvedValue(paginatedEmpty);
+      await controller.list(fakeReq(), '20', '40');
+      expect(mockUserService.listUsers).toHaveBeenCalledWith(TENANT_ID, { limit: 20, offset: 40 });
+    });
+
+    it('clamps limit to max 200', async () => {
+      mockUserService.listUsers.mockResolvedValue(paginatedEmpty);
+      await controller.list(fakeReq(), '999');
+      expect(mockUserService.listUsers).toHaveBeenCalledWith(TENANT_ID, { limit: 200, offset: 0 });
+    });
+
+    it('clamps invalid limit to default 50', async () => {
+      mockUserService.listUsers.mockResolvedValue(paginatedEmpty);
+      await controller.list(fakeReq(), 'abc');
+      expect(mockUserService.listUsers).toHaveBeenCalledWith(TENANT_ID, { limit: 50, offset: 0 });
     });
   });
 

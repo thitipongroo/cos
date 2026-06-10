@@ -1165,7 +1165,8 @@ Authentication Decision (TWO PATHS — from file 01):
     Method:   Phone number + SMS OTP
     Rationale: "No password to forget" — field workers must never be required
                to remember a password (file 01 §A)
-    Session:  JWT access token (15 min) + refresh token (30 days device-stored)
+    Session:  JWT access token (15 min) + refresh token (7 days device-stored), issued by Keycloak
+              via Direct Grant (grant_type=password) after OTP verification succeeds
     Offline:  Cached token valid 7 days without internet, re-validates on reconnect
     Biometric: OPTIONAL — device-side Face ID/fingerprint unlock after first login
 
@@ -1178,7 +1179,9 @@ Authentication Decision (TWO PATHS — from file 01):
 
   SMS OTP Service:
     Implementation: Custom lightweight NestJS module within monolith (identity module)
-    NOT via Keycloak extension (complexity not justified at MVP)
+    OTP send/verify: custom NestJS logic — NOT a Keycloak extension
+    Token issuance: Keycloak Direct Grant (grant_type=password) after successful OTP verification
+      — ephemeral credential set via Keycloak Admin API, used once, then discarded
     SMS Gateway provider: AWS SNS (ap-southeast-1)
       Implementation: AWS SDK v3 @aws-sdk/client-sns — SNSClient.publish()
       Interface: { sendOTP(phoneNumber: string, otp: string): Promise<void> }
@@ -1323,7 +1326,10 @@ Generate:
     POST /api/v1/auth/mfa/authenticate — verify TOTP during login (Path B office users only)
 - Tenant isolation middleware
 - Unit tests: guards, middleware, token validation
-- Integration tests: full auth flow with Keycloak test instance
+- Integration tests: full OTP auth flow with Testcontainers (PostgreSQL + Redis containers, real DB)
+    Implemented in Phase 2 — NOT deferred to Phase 18
+    Covers: requestOtp → verifyOtp → issueTokens (Keycloak Direct Grant) → refresh → logout
+    packages: @testcontainers/postgresql, @testcontainers/redis (devDependencies)
 - User management API (TENANT_ADMIN only — see spec §14.3 User Management APIs and §6.4):
     Module location: backend/src/modules/tenant/ (tenant module owns user lifecycle)
     Endpoints:
@@ -1334,14 +1340,20 @@ Generate:
     Service:  UserService (new — separate from TenantService)
     Guards:   JwtAuthGuard + RolesGuard (TENANT_ADMIN only)
     DTOs:     CreateUserDto, ChangeRoleDto (class-validator)
-    Path A user creation: stores phoneNumber as keycloak_user_id in platform.users; emits user.created
-    Path B user creation (TWO STEPS — Keycloak Admin REST API deferred, same pattern as createTenant realm provisioning):
-      Step 1 — Keycloak: POST /admin/realms/{realm}/users (DEFERRED — no Admin API client in Phase 2)
-               On completion: get Keycloak UUID, set user attributes tenant_id, user_id, role
-               (see spec §5.4.2 for attribute names and mapper spec)
-      Step 2 — COS: create platform.users record with keycloak_user_id = email (placeholder until Step 1 is implemented)
+    Path A user creation (TWO STEPS — via KeycloakAdminService):
+      Step 1 — Keycloak: KeycloakAdminService.provisionPhoneUser(phone, displayName, realm)
+               POST /admin/realms/{realm}/users → get keycloakUserId
+               PUT /admin/realms/{realm}/users/{id}/reset-password (ephemeral one-time credential)
+               Set user attributes: tenant_id, user_id, role (see spec §5.4.2)
+      Step 2 — COS: create platform.users record with keycloak_user_id = keycloakUserId
                create platform.tenant_memberships record; emit user.created
-    Keycloak Admin API integration is a known deferred gap — tracked as KD-AUTH-001
+    Path B user creation (TWO STEPS — via KeycloakAdminService):
+      Step 1 — Keycloak: KeycloakAdminService.createEmailUser(email, displayName, realm)
+               POST /admin/realms/{realm}/users → get keycloakUserId
+               Set user attributes: tenant_id, user_id, role (see spec §5.4.2)
+      Step 2 — COS: create platform.users record with keycloak_user_id = keycloakUserId
+               create platform.tenant_memberships record; emit user.created
+    Keycloak Admin API integration implemented in Phase 2 — KD-AUTH-001 READY
     (see spec §32-implementation-specifications §32.8 for full implementation spec)
 
 - Kafka events:
@@ -1354,8 +1366,8 @@ Generate:
     user.role_changed  { tenant_id, user_id, old_role, new_role }  ← emitted from PATCH /api/v1/users/:userId/role
 
 npm packages required in backend/package.json — add BEFORE implementing (Rule 26):
-  dependencies:    @nestjs/passport, @nestjs/jwt, passport, passport-jwt, @aws-sdk/client-sns
-  devDependencies: @types/passport-jwt, @types/passport, @types/express
+  dependencies:    @nestjs/passport, @nestjs/jwt, passport, passport-jwt, @aws-sdk/client-sns, @keycloak/keycloak-admin-client
+  devDependencies: @types/passport-jwt, @types/passport, @types/express, @testcontainers/postgresql, @testcontainers/redis
 
 Constraints:
 

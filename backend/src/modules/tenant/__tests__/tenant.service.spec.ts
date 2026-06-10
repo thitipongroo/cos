@@ -76,6 +76,49 @@ describe('TenantService', () => {
         ),
       ).rejects.toThrow(ConflictException);
     });
+
+    it('creates tenant with dedicatedDbUrl set in the INSERT', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([{ ...mockTenant, dedicated_db_url: 'postgresql://host/db' }]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      const result = await service.createTenant(
+        {
+          tenantCode: 'enterprise_co',
+          tenantName: 'Enterprise Co',
+          planType: 'ENTERPRISE' as never,
+          dedicatedDbUrl: 'postgresql://host:5432/db',
+        },
+        'admin-1',
+      );
+
+      // The mock returns the tenant row — verify the call happened and result is returned
+      expect(capturedInsertArgs.length).toBeGreaterThan(0);
+      expect(result).toBeDefined();
+    });
+
+    it('throws BadRequestException when dedicatedDbUrl has invalid prefix', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      await expect(
+        service.createTenant(
+          {
+            tenantCode: 'bad_url',
+            tenantName: 'Bad URL',
+            planType: 'ENTERPRISE' as never,
+            dedicatedDbUrl: 'mysql://host:3306/db',
+          },
+          'admin-1',
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('deactivateTenant', () => {

@@ -73,7 +73,8 @@
     "expo-server-sdk": "^3.3.0",
     "handlebars": "^4.7.0",
     "@sendgrid/mail": "^8.1.0",
-    "@line/bot-sdk": "^9.4.0"
+    "@line/bot-sdk": "^9.4.0",
+    "@keycloak/keycloak-admin-client": "^24.0.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",
@@ -90,6 +91,8 @@
     "prisma": "^5.13.0",
     "supertest": "^7.0.0",
     "testcontainers": "^10.9.0",
+    "@testcontainers/postgresql": "^10.9.0",
+    "@testcontainers/redis": "^10.9.0",
     "ts-jest": "^29.1.0",
     "@temporalio/testing": "^1.9.0",
     "ts-node": "^10.9.0"

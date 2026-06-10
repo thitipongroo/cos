@@ -9,6 +9,7 @@ import {
   Patch,
   Body,
   Param,
+  Query,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -36,8 +37,14 @@ export class UserController {
   @Get()
   @ApiOperation({ summary: 'List all active users in the tenant (TENANT_ADMIN only)' })
   @ApiResponse({ status: 200, description: 'Paginated user list with roles' })
-  async list(@Req() req: TenantRequest) {
-    return this.userService.listUsers(req.tenantId!);
+  async list(
+    @Req() req: TenantRequest,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
+  ) {
+    const limit = Math.min(Math.max(parseInt(limitStr ?? '50', 10) || 50, 1), 200);
+    const offset = Math.max(parseInt(offsetStr ?? '0', 10) || 0, 0);
+    return this.userService.listUsers(req.tenantId!, { limit, offset });
   }
 
   @Post()

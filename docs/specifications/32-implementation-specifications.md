@@ -1,8 +1,8 @@
 ---
 title: 'Implementation Specifications'
-version: '2.0.0'
+version: '2.1.0'
 status: Active
-last_updated: '2026-05-29'
+last_updated: '2026-06-10'
 authors:
   - thitipongroo
 related_docs:
@@ -759,37 +759,41 @@ implementation in the same PR.
 
 ### Phase 2 — Auth + Tenant System
 
-#### KD-AUTH-001: Keycloak Admin REST API Integration for Path B User Provisioning
+#### KD-AUTH-001: Keycloak Admin REST API Integration for Path A and Path B User Provisioning
 
-**Status:** Deferred — no Keycloak Admin API client in the codebase yet
+**Status:** READY — implemented in Phase 2 via `KeycloakAdminService`
 
-**What is deferred:**
-When a Tenant Admin creates a Path B user (email/Keycloak), the system must:
+**Scope — Path A (phone/OTP):**
 
-1. Call `POST /admin/realms/{realm}/users` (Keycloak Admin REST API) to create the Keycloak account
-2. Retrieve the Keycloak UUID from the response (`Location` header or GET by email)
-3. Set Keycloak user attributes: `tenant_id`, `user_id`, `role` (see `05-security-compliance` §5.4.2)
-4. Create the `platform.users` record with `keycloak_user_id` = Keycloak UUID
-5. Create the `platform.tenant_memberships` record
-6. Emit `identity.user.created.v1` Kafka event
+When OTP verification succeeds, before creating the COS user record:
 
-**Current placeholder behaviour:**
-`email` is stored as `keycloak_user_id` in `platform.users`. A warning is logged.
-Path B users created this way cannot log in via Keycloak until step 1–3 are completed manually.
+1. Call `POST /admin/realms/{realm}/users` with `username=phone`, `enabled=true`, custom attributes `tenant_id`, `user_id`, `role`
+2. Retrieve Keycloak UUID from `Location` response header
+3. Call `PUT /admin/realms/{realm}/users/{id}/reset-password` — set ephemeral one-time credential (`temporary: true`)
+4. Call Keycloak Direct Grant: `POST /realms/{realm}/protocol/openid-connect/token` with `grant_type=password`, username=phone, password=ephemeralCredential — returns RS256 access token + refresh token
+5. Create `platform.users` record with `keycloak_user_id` = Keycloak UUID
+6. Create `platform.tenant_memberships` record; emit `identity.user.created.v1`
 
-**What is needed to implement:**
+**Scope — Path B (email/Keycloak OIDC):**
 
-- Add `@keycloak/keycloak-admin-client` to `backend/package.json`
-- Create `KeycloakAdminService` in `backend/src/modules/identity/` with: `createUser(email, displayName, tenantRealm): Promise<{ keycloakUserId: string }>`
-- Call from `UserService.createUser()` (Path B branch) before creating the COS user record
-- Keycloak Admin credentials: client `cos-backend` with `realm-management` role in each realm — store in AWS Secrets Manager / Vault (see `05-security-compliance` §5.2)
-- Update `UserService.createUser()` to replace the email-placeholder path with the real Keycloak UUID
+When a Tenant Admin creates a Path B user:
 
-**Unblocks when:** Keycloak Admin API credentials are provisioned and `@keycloak/keycloak-admin-client` is added
+1. Call `POST /admin/realms/{realm}/users` with `username=email`, `email`, `enabled=true`, custom attributes `tenant_id`, `user_id`, `role`
+2. Retrieve Keycloak UUID from `Location` response header
+3. Set user attributes: `tenant_id`, `user_id`, `role` (see `05-security-compliance` §5.4.2)
+4. Create `platform.users` record with `keycloak_user_id` = Keycloak UUID
+5. Create `platform.tenant_memberships` record; emit `identity.user.created.v1`
 
-> **Implementation milestone:** Must be completed as part of Phase 2 before any Path B feature
-> can be tested end-to-end. Path B users created with the current placeholder
-> (`email` stored as `keycloak_user_id`) cannot authenticate via Keycloak until implemented.
+**Implementation:**
+
+- `@keycloak/keycloak-admin-client` added to `backend/package.json`
+- `KeycloakAdminService` at `backend/src/modules/identity/keycloak-admin.service.ts`:
+  - `provisionPhoneUser(phone, displayName, realm): Promise<{ keycloakUserId: string }>` — Path A
+  - `createEmailUser(email, displayName, realm): Promise<{ keycloakUserId: string }>` — Path B
+  - `getDirectGrantToken(phone, ephemeralCredential, realm): Promise<KeycloakTokenResponse>` — Path A token exchange
+  - `deleteUser(userId, realm): Promise<void>` — rollback on downstream failure
+- `directAccessGrantsEnabled: true` on `cos-backend` Keycloak client (required for Direct Grant)
+- Keycloak Admin credentials: client `cos-backend` with `realm-management` role — inject via `KEYCLOAK_ADMIN_CLIENT_SECRET` env var (AWS Secrets Manager / Vault — see `05-security-compliance` §5.2; never hardcode)
 
 ### Phase 6 — Site Operations
 

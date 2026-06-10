@@ -5,8 +5,10 @@ import { TenantMiddleware } from './tenant.middleware';
 import { TenantPrismaService } from './prisma/tenant-prisma.service';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
+import { IdentityModule } from '../identity/identity.module';
 
 @Module({
+  imports: [IdentityModule],
   providers: [TenantService, TenantPrismaService, UserService],
   controllers: [TenantController, UserController],
   exports: [TenantService, TenantPrismaService, UserService],

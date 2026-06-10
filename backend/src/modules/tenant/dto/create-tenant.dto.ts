@@ -1,5 +1,13 @@
-import { IsEnum, IsString, Matches, MaxLength, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
 import { PlanType } from '@prisma/client';
 
 export class CreateTenantDto {
@@ -19,4 +27,13 @@ export class CreateTenantDto {
   @ApiProperty({ enum: PlanType, example: 'STARTER' })
   @IsEnum(PlanType)
   planType!: PlanType;
+
+  @ApiPropertyOptional({
+    description: 'Dedicated PostgreSQL connection URL (ENTERPRISE plan only — spec §7.1)',
+    example: 'postgresql://user:pass@host:5432/db',
+  })
+  @IsOptional()
+  @IsUrl({ protocols: ['postgresql', 'postgres'], require_tld: false })
+  @MaxLength(500)
+  dedicatedDbUrl?: string;
 }

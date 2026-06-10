@@ -73,6 +73,8 @@ model User {
   userId          String   @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
   tenantId        String   @map("tenant_id") @db.Uuid
   keycloakUserId  String   @unique @map("keycloak_user_id") @db.VarChar(255)
+  // @pdpa(category: "contact") — phone_number is PII (Path A users only)
+  phoneNumber     String?  @map("phone_number") @db.VarChar(20)
   // @pdpa(category: "contact") — email is personal data
   email           String   @map("email") @db.VarChar(255)
   // @pdpa(category: "identity") — display name is personal data
@@ -88,6 +90,7 @@ model User {
   auditLogs   AuditLog[]         @relation("ActorLogs")
 
   @@index([tenantId, email])
+  @@index([phoneNumber])
   @@map("users")
   @@schema("platform")
 }

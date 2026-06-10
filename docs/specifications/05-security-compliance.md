@@ -1,8 +1,8 @@
 ---
 title: 'Security & Compliance'
-version: '1.6.0'
+version: '1.7.0'
 status: Active
-last_updated: '2026-05-28'
+last_updated: '2026-06-10'
 authors:
   - thitipongroo
 related_docs:
@@ -169,7 +169,7 @@ Multi-tenant Realm Strategy :
 
 ### 5.4.1 JWT Custom Claim Names (Authoritative)
 
-All JWTs issued by the platform (Path A — COS-signed; Path B — Keycloak-signed)
+All JWTs issued by the platform (Path A — Keycloak-signed via Direct Grant; Path B — Keycloak-signed via OIDC)
 **MUST** contain the following custom claims with exactly these names:
 
 | Claim name  | Type            | Value                                | Notes                                                                   |
@@ -248,10 +248,18 @@ Keycloak Admin REST API during user provisioning) and mapped to the JWT access t
 | `user_id`   | UUID from `platform.users.user_id` (set after COS user record is created) |
 | `role`      | CosRole enum value e.g. `FINANCE`, `PROJECT_MANAGER`                      |
 
-Path A (phone/OTP): claims are set directly by COS identity service at JWT issuance.
-Path B (Keycloak): attributes must be set via Keycloak Admin REST API during provisioning (currently deferred — see Phase 2 constraints in master spec).
+**Path A (phone/OTP via Keycloak Direct Grant):**
 
-> **Timeline note:** Protocol mapper _configuration_ on the Keycloak realm (the JSON above) is required at tenant provisioning in Phase 1 — configure once per realm. Keycloak user _attribute provisioning_ (`tenant_id`, `user_id`, `role` values set per user via Keycloak Admin REST API) is required before each Path B user can authenticate, and is deferred to Phase 2. Phase 1 MVP uses Path A only; Path A JWTs are issued by COS directly and are not affected by realm mapper configuration.
+1. OTP verification succeeds in COS identity service.
+2. `KeycloakAdminService.provisionPhoneUser(phone, displayName, realm)` creates a Keycloak user and sets an ephemeral one-time credential.
+3. COS calls `POST /realms/{realm}/protocol/openid-connect/token` with `grant_type=password`, username=phone, password=ephemeralCredential (`directAccessGrantsEnabled: true` required on `cos-backend` client).
+4. Keycloak issues RS256-signed access token (15 min) + refresh token (7 days). Ephemeral credential is discarded.
+5. All custom claims (`tenant_id`, `user_id`, `role`) are embedded by Keycloak protocol mappers (§5.4.2).
+6. Refresh: COS proxies `grant_type=refresh_token` to Keycloak — Keycloak rotates the refresh token natively (`refreshTokenMaxReuse: 0`).
+
+**Path B (Keycloak OIDC):** Keycloak user attributes must be set via Keycloak Admin REST API during provisioning (KD-AUTH-001 in `32-implementation-specifications.md`).
+
+> **Timeline note:** Protocol mapper _configuration_ on the Keycloak realm (the JSON above) is required at tenant provisioning in Phase 1 — configure once per realm. Keycloak user _attribute provisioning_ (`tenant_id`, `user_id`, `role` set via Keycloak Admin REST API) is required before each user (Path A or Path B) can authenticate — implemented in Phase 2 via `KeycloakAdminService` (KD-AUTH-001).
 
 SSO / SAML :
 

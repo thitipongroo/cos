@@ -46,7 +46,12 @@ describe('IdentityController', () => {
 
   describe('verifyOtp', () => {
     it('verifies OTP then issues tokens', async () => {
-      const tokens = { access_token: 'at', refresh_token: 'rt' };
+      const tokens = {
+        accessToken: 'at',
+        refreshToken: 'rt',
+        expiresIn: 900,
+        refreshExpiresIn: 604800,
+      };
       mockOtpService.verifyOtp.mockResolvedValue(undefined);
       mockIdentityService.issueTokensForPhone.mockResolvedValue(tokens);
 
@@ -59,11 +64,17 @@ describe('IdentityController', () => {
   });
 
   describe('refresh', () => {
-    it('delegates to identityService.refreshAccessToken', async () => {
-      mockIdentityService.refreshAccessToken.mockResolvedValue({ access_token: 'new-at' });
+    it('delegates to identityService.refreshAccessToken and returns rotated tokens', async () => {
+      const tokenResult = {
+        accessToken: 'new-at',
+        refreshToken: 'new-rt',
+        expiresIn: 900,
+        refreshExpiresIn: 604800,
+      };
+      mockIdentityService.refreshAccessToken.mockResolvedValue(tokenResult);
       const result = await controller.refresh('old-refresh-token');
       expect(mockIdentityService.refreshAccessToken).toHaveBeenCalledWith('old-refresh-token');
-      expect(result).toEqual({ access_token: 'new-at' });
+      expect(result).toEqual(tokenResult);
     });
   });
 
