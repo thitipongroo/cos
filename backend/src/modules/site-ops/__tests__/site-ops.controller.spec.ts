@@ -18,6 +18,7 @@ const mockSvc = {
   submitInspection: jest.fn(),
   listConflictRecords: jest.fn(),
   resolveConflict: jest.fn(),
+  createMaterialConsumption: jest.fn(),
 };
 
 describe('SiteOpsController', () => {
@@ -142,5 +143,11 @@ describe('SiteOpsController', () => {
     const dto = { resolution: 'use_client' };
     ctrl.resolveConflict('conflict-001', dto as never);
     expect(mockSvc.resolveConflict).toHaveBeenCalledWith('conflict-001');
+  });
+
+  it('createMaterialConsumption delegates to svc.createMaterialConsumption', () => {
+    const dto = { material_name: 'Steel', quantity: '5', unit: 'pcs', consumed_at: '2026-06-11' };
+    ctrl.createMaterialConsumption('report-001', dto as never);
+    expect(mockSvc.createMaterialConsumption).toHaveBeenCalledWith('report-001', dto);
   });
 });

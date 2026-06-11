@@ -100,6 +100,16 @@ describe('UserService', () => {
       expect(result.data).toEqual([]);
       expect(result.pagination.total).toBe(0);
     });
+
+    it('returns total=0 when count query returns empty array (covers countResult[0]?.count ?? 0 false branch)', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([]) // no rows
+        .mockResolvedValueOnce([]); // count query returns empty — countResult[0] undefined
+
+      const result = await service.listUsers(TENANT_ID, { limit: 50, offset: 0 });
+
+      expect(result.pagination.total).toBe(0);
+    });
   });
 
   // ─── createUser ──────────────────────────────────────────────────────────
@@ -177,6 +187,22 @@ describe('UserService', () => {
       expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
     });
 
+    it('logs error but still throws original error when Keycloak deleteUser also fails (covers rollback .catch branch)', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([]) // conflict guard
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // tenant lookup
+      (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB error'));
+      keycloakAdmin.deleteUser.mockRejectedValueOnce(new Error('Keycloak unreachable'));
+
+      const dto = {
+        display_name: 'สมชาย',
+        phone_number: '+66812345678',
+        role: CosRole.SITE_ENGINEER,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow('DB error');
+      expect(keycloakAdmin.deleteUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
+    });
+
     it('throws BadRequestException when neither phone_number nor email provided', async () => {
       const dto = { display_name: 'Test', role: CosRole.SITE_ENGINEER };
       await expect(service.createUser(dto as never, TENANT_ID, ACTOR_ID)).rejects.toThrow(
@@ -204,6 +230,20 @@ describe('UserService', () => {
         role: CosRole.SITE_ENGINEER,
       };
       await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(ConflictException);
+    });
+
+    it('throws BadRequestException when tenant is not found or inactive (covers !tenant branch)', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([]) // conflict guard — no existing user
+        .mockResolvedValueOnce([]); // tenant lookup returns empty — tenant not found
+      const dto = {
+        display_name: 'สมชาย',
+        phone_number: '+66812345678',
+        role: CosRole.SITE_ENGINEER,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

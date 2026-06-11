@@ -316,4 +316,34 @@ describe('SiteOpsRepository', () => {
     const result = await repo.resolveConflictRecord('conf-uuid-001', 'user-001');
     expect(result?.reviewed_by).toBe('user-001');
   });
+
+  it('insertMaterialConsumption calls $queryRaw and returns first row', async () => {
+    const materialRow = {
+      consumption_id: 'cons-uuid-001',
+      project_id: 'proj-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      report_id: 'report-uuid-001',
+      material_name: 'Steel rod',
+      material_id: 'mat-uuid-001',
+      task_id: null,
+      quantity: '10',
+      unit: 'pcs',
+      consumed_by: 'user-uuid-001',
+      consumed_at: '2026-06-11',
+    };
+    mockPrisma.$queryRaw.mockResolvedValue([materialRow]);
+    const result = await repo.insertMaterialConsumption({
+      consumption_id: 'cons-uuid-001',
+      project_id: 'proj-uuid-001',
+      report_id: 'report-uuid-001',
+      material_name: 'Steel rod',
+      material_id: 'mat-uuid-001',
+      task_id: null,
+      quantity: '10',
+      unit: 'pcs',
+      consumed_by: 'user-uuid-001',
+      consumed_at: '2026-06-11',
+    });
+    expect(result.consumption_id).toBe('cons-uuid-001');
+  });
 });

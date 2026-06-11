@@ -7,7 +7,7 @@ module.exports = {
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': [
+    '^.+\\.ts$': [
       'ts-jest',
       {
         tsconfig: {
@@ -61,6 +61,7 @@ module.exports = {
   // They run via test:integration; exclude from unit test:cov.
   testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/test/'],
   moduleNameMapper: {
+    '^@keycloak/keycloak-admin-client$': '<rootDir>/src/__mocks__/keycloak-admin-client.js',
     '^@cos/shared$': '<rootDir>/../packages/@cos/shared/src/index.ts',
     '^@cos/shared/(.*)$': '<rootDir>/../packages/@cos/shared/src/$1',
     '^@cos/rbac$': '<rootDir>/../packages/@cos/rbac/src/index.ts',

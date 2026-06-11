@@ -59,6 +59,7 @@ const mockRepo = {
   createConflictRecord: jest.fn(),
   listConflictRecords: jest.fn(),
   resolveConflictRecord: jest.fn(),
+  insertMaterialConsumption: jest.fn(),
 };
 
 const MOCK_REQUEST = {
@@ -683,5 +684,64 @@ describe('OpenSearch indexing error handling', () => {
     mockRepo.listIssues.mockResolvedValue({ rows: [makeIssue()], total: 1 });
     const result = await service.listIssues({ page: 1, limit: 10, q: 'test' });
     expect(result.items).toHaveLength(1);
+  });
+});
+
+describe('createMaterialConsumption', () => {
+  const materialRow = {
+    consumption_id: 'cons-uuid-001',
+    project_id: 'proj-uuid-001',
+    tenant_id: 'tenant-uuid-1',
+    report_id: 'report-uuid-001',
+    material_name: 'Steel rod',
+    material_id: 'mat-uuid-001',
+    task_id: null as string | null,
+    quantity: '10',
+    unit: 'pcs',
+    consumed_by: 'user-uuid-1',
+    consumed_at: '2026-06-11',
+  };
+
+  it('inserts material and emits event (task_id null — covers ?? "" branch)', async () => {
+    mockRepo.findReportById.mockResolvedValue(makeReport());
+    mockRepo.insertMaterialConsumption.mockResolvedValue(materialRow);
+    const dto = {
+      material_name: 'Steel rod',
+      task_id: undefined,
+      quantity: '10',
+      unit: 'pcs',
+      consumed_at: '2026-06-11',
+    };
+    const result = await service.createMaterialConsumption('report-uuid-001', dto as never);
+    expect(result.consumption_id).toBe('cons-uuid-001');
+    expect(mockRepo.insertMaterialConsumption).toHaveBeenCalled();
+  });
+
+  it('inserts material and emits event (task_id set — covers ?? "" false branch)', async () => {
+    const rowWithTask = { ...materialRow, task_id: 'task-uuid-001' };
+    mockRepo.findReportById.mockResolvedValue(makeReport());
+    mockRepo.insertMaterialConsumption.mockResolvedValue(rowWithTask);
+    const dto = {
+      material_name: 'Steel rod',
+      task_id: 'task-uuid-001',
+      quantity: '10',
+      unit: 'pcs',
+      consumed_at: '2026-06-11',
+    };
+    const result = await service.createMaterialConsumption('report-uuid-001', dto as never);
+    expect(result.task_id).toBe('task-uuid-001');
+  });
+
+  it('throws NotFoundException when report not found', async () => {
+    mockRepo.findReportById.mockResolvedValue(null);
+    const dto = {
+      material_name: 'Cement',
+      quantity: '5',
+      unit: 'bags',
+      consumed_at: '2026-06-11',
+    };
+    await expect(
+      service.createMaterialConsumption('missing-report', dto as never),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
