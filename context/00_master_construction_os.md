@@ -1030,7 +1030,7 @@ packages/                 — Shared packages (ONLY code used by 2+ apps/service
   @cos/shared             — Typed Kafka event interfaces (Phase 1); Avro schemas added in Phase 8 alongside KafkaProducer/Consumer/OutboxPublisher
   @cos/proto-contracts/   — gRPC proto files + generated stubs (future use)
   @cos/database/          — Prisma pagination utilities, ID generation, retry helpers
-  @cos/rbac/              — RBAC + ABAC role definitions and guard utilities
+  @cos/rbac/              — RBAC + ABAC role definitions, guard decorators and metadata keys (NOT concrete CanActivate guards — those live in backend/src/shared/guards/; see spec §06 §6.9)
   @cos/validation/        — Shared DTO validators (class-validator decorators)
   @cos/logger/            — Structured logging abstraction (Pino-based)
   @cos/tracing/           — OpenTelemetry setup and trace utilities
@@ -1313,7 +1313,12 @@ Generate:
     (see spec §05-security-compliance §5.4.2 and §07-multi-tenant-architecture §7.6 step 3)
 - NestJS Identity Service: Keycloak adapter, JWT validation middleware
 - NestJS Tenant Service: tenant CRUD, realm provisioning on tenant create
-- @cos/rbac package: role enum, permission map, NestJS guards
+- @cos/rbac package: role enum, permission map, NestJS guard decorators and metadata keys
+    (@cos/rbac contains: CosRole enum, ROLE_PERMISSIONS map, @Roles/@RequirePermissions decorators,
+     ROLES_KEY/PERMISSIONS_KEY metadata constants — NOT concrete CanActivate implementations;
+     concrete guards RolesGuard and PolicyGuard live in backend/src/shared/guards/ because they
+     depend on JwtPayload and ExecutionContext which are application-layer concerns;
+     source: spec §06-rbac-permission-matrix §6.9)
 - PostgreSQL migration files for all entities above
 - DTOs with class-validator decorators for all API inputs
 - OpenAPI 3.1 specs — two separate files (QM-2: one file per service):

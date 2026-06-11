@@ -23,6 +23,8 @@ related_docs:
 - [6.5 ABAC Supplementary Rules](#65-abac-supplementary-rules)
 - [6.6 Default Role Seeding at Tenant Provisioning](#66-default-role-seeding-at-tenant-provisioning)
 - [6.7 System Admin — Platform-level Permissions](#67-system-admin--platform-level-permissions)
+- [6.8 Implementation Sub-roles](#68-implementation-sub-roles)
+- [6.9 NestJS Guard Implementation](#69-nestjs-guard-implementation)
 
 ---
 
@@ -280,6 +282,60 @@ Read-only across all modules assigned to the viewer's project scope.
 | Finance (all)     | R          |
 
 Viewer does not have write, delete, or approve access on any module.
+
+---
+
+## 6.9 NestJS Guard Implementation
+
+This section documents the authoritative file-placement rule for NestJS `CanActivate` guards
+and the RBAC/ABAC vocabulary they consume. The split was decided during Phase 2 implementation
+based on the dependency analysis below.
+
+### Package boundary
+
+| Artifact | Location | Reason |
+| --- | --- | --- |
+| `CosRole` enum | `packages/@cos/rbac/src/` (re-exported from `@cos/types`) | Used by every platform (mobile, web, Node.js) — belongs in shared layer |
+| `ROLE_PERMISSIONS` map | `packages/@cos/rbac/src/permissions.ts` | Pure data; no framework dependency; used by both guards and business logic |
+| `@Roles(...)` decorator | `packages/@cos/rbac/src/decorators.ts` | Calls `SetMetadata` only — no request context or JWT dependency |
+| `@RequirePermissions(...)` decorator | `packages/@cos/rbac/src/decorators.ts` | Same as above |
+| `ROLES_KEY`, `PERMISSIONS_KEY` constants | `packages/@cos/rbac/src/decorators.ts` | Metadata keys consumed by concrete guards |
+| `RolesGuard` (`CanActivate`) | `backend/src/shared/guards/roles.guard.ts` | Depends on `JwtPayload` (application-layer type) and `Reflector` (`@nestjs/core`) |
+| `PolicyGuard` (`CanActivate`) | `backend/src/shared/guards/policy.guard.ts` | Depends on `JwtPayload`, `ExecutionContext`, and may query Prisma for ABAC |
+| `JwtAuthGuard` (`CanActivate`) | `backend/src/modules/identity/guards/` | Passport strategy wrapper — identity-module concern |
+
+### Why concrete guards are NOT in `@cos/rbac`
+
+1. **`JwtPayload` is application-specific** — its shape is determined by Keycloak realm
+   configuration and is an identity-module concern, not a shared-library concern.
+   Moving it to `@cos/types` would couple the shared type layer to the authentication
+   implementation choice.
+
+2. **`Reflector` is a framework concern** — injected by `@nestjs/core`; suitable in the
+   application layer, not in a shared package that must remain framework-agnostic where
+   possible.
+
+3. **ABAC (`PolicyGuard`) may require database access** — project membership checks need
+   Prisma queries; shared packages must not import the database layer.
+
+4. **Matches NestJS enterprise conventions** — official NestJS documentation and
+   community patterns (Trilon, Nx monorepo guides) consistently place concrete guards
+   in `src/common/guards/` or `src/shared/guards/` of the application, not in shared
+   libraries. Shared libraries provide the vocabulary (metadata keys, decorators);
+   applications provide the enforcement.
+
+### Rule for future guards
+
+Any new `CanActivate` implementation that:
+
+- reads `JwtPayload` fields, OR
+- queries the database, OR
+- depends on `@nestjs/core` Reflector
+
+**must** be placed in `backend/src/shared/guards/` — never in `@cos/rbac`.
+
+Abstract base guards (no framework/JWT/DB dependency) may be placed in `@cos/rbac` if
+reuse across multiple NestJS applications is required.
 
 ---
 

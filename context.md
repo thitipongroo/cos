@@ -674,6 +674,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Follow the entity-specific conflict resolution strategy from Phase 6 when implementing `ConflictHandler` (QM-9) — never invent a new strategy without an ADR
 - Inject runtime secrets via **AWS Secrets Manager** (cloud/AWS EKS) or **HashiCorp Vault** (on-premise/hybrid) per spec §5.2 and ADR-013; store Kubernetes Secret objects in git only as **SealedSecret** via kubeseal (QM-4)
 - Emit a Kafka event for every workflow state transition — all transitions in RFQ and PO state machines must produce a typed event via `@cos/shared` (master §9; spec §32.6)
+- Concrete guards in `backend/src/shared/guards/` — `@cos/rbac` for decorators/metadata keys only (spec §06 §6.9)
 
 **ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–38):**
 
