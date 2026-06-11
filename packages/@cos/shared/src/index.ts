@@ -71,3 +71,7 @@ export type * from './events/file.document.quarantined.v1';
 export type * from './events/equipment.unit.assigned.v1';
 export type * from './events/equipment.unit.returned.v1';
 export type * from './events/equipment.unit.maintenance_scheduled.v1';
+
+// Phase 22 workforce events (canonical names — spec §Phase 22 Kafka events)
+export type * from './events/workforce.checkout.created.v1';
+export type * from './events/workforce.timesheet.approved.v1';

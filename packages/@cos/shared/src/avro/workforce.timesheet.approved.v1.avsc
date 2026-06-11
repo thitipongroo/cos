@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "WorkforceTimesheetApprovedEvent",
+  "namespace": "com.constructionos.events.workforce",
+  "doc": "workforce.timesheet.approved.v1 — Phase 22 Workforce Service",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "WorkforceTimesheetApprovedPayload",
+      "fields": [
+        { "name": "worker_id",    "type": "string" },
+        { "name": "project_id",   "type": "string" },
+        { "name": "period_date",  "type": "string" },
+        { "name": "total_hours",  "type": "double" }
+      ]
+    }}
+  ]
+}

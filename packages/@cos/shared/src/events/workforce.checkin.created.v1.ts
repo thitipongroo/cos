@@ -1,5 +1,11 @@
-// Event payload stub — full payload spec in context/00_master_construction_os.md §6
-// Implemented in Phase 22 (Workforce Service).
+// workforce.checkin.created.v1 — Phase 22 Workforce Service
+// Emitted when a worker checks in to a project.
 import type { BaseEventEnvelope } from '@cos/types';
-export type WorkforceCheckinCreatedPayload = Record<string, unknown>;
+
+export interface WorkforceCheckinCreatedPayload {
+  worker_id: string;
+  project_id: string;
+  checked_in_at: string; // ISO 8601 timestamp
+}
+
 export type WorkforceCheckinCreatedEvent = BaseEventEnvelope<WorkforceCheckinCreatedPayload>;
