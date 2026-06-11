@@ -3,10 +3,12 @@ info:
   title: Construction OS — Tenant API
   version: '1.0.0'
   description: |
-    Tenant lifecycle management for Construction OS.
+    Tenant lifecycle and user management for Construction OS.
 
-    All endpoints require `SYSTEM_ADMIN` role.
-    Tenant operations are cross-tenant (operate on the `platform` schema).
+    - Tenant lifecycle endpoints (`/admin/tenants/*`) require `SYSTEM_ADMIN` role.
+    - User management endpoints (`/api/v1/users/*`) require `TENANT_ADMIN` role.
+
+    All operations work on the `platform` schema (cross-tenant identity tables).
 
 servers:
   - url: http://localhost:3000/api/v1
@@ -94,6 +96,111 @@ components:
             Format: `postgresql://user:password@host:5432/dbname`
             Must point to a pre-provisioned and migrated PostgreSQL instance.
           example: postgresql://cos_user:secret@rds-acme.ap-southeast-1.rds.amazonaws.com:5432/cos_acme_corp
+
+    CosRole:
+      type: string
+      enum:
+        - SYSTEM_ADMIN
+        - TENANT_ADMIN
+        - EXECUTIVE
+        - PROJECT_MANAGER
+        - PROCUREMENT_OFFICER
+        - FINANCE
+        - SAFETY_OFFICER
+        - SITE_ENGINEER
+        - CRM_SALES_MANAGER
+        - PROC_MANAGER
+        - SITE_WORKER
+        - VIEWER
+      description: COS role assigned to the user within their tenant.
+
+    CreateUserRequest:
+      type: object
+      required: [display_name, role]
+      properties:
+        display_name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: Somchai Jaidee
+        role:
+          $ref: '#/components/schemas/CosRole'
+        phone_number:
+          type: string
+          pattern: '^\+[1-9]\d{7,14}$'
+          description: |
+            Path A (OTP login). Provide phone_number OR email — never both.
+          example: '+66812345678'
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: |
+            Path B (Keycloak OIDC). Provide email OR phone_number — never both.
+          example: somchai@acme-construction.com
+        keycloak_user_id:
+          type: string
+          maxLength: 255
+          description: |
+            Optional. Keycloak UUID if the account was pre-created externally.
+            When omitted, KeycloakAdminService provisions the account automatically.
+
+    UserResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        keycloak_user_id:
+          type: string
+        email:
+          type: string
+          format: email
+          description: PII — redacted in logs; empty string for Path A (phone) users.
+        display_name:
+          type: string
+          description: PII — redacted in logs.
+        role:
+          $ref: '#/components/schemas/CosRole'
+        is_active:
+          type: boolean
+        mfa_enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaginatedUsersResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        pagination:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            page:
+              type: integer
+            total:
+              type: integer
+
+    ChangeRoleRequest:
+      type: object
+      required: [role]
+      properties:
+        role:
+          $ref: '#/components/schemas/CosRole'
 
     Error:
       type: object
@@ -326,3 +433,154 @@ paths:
           description: Unauthenticated
         '403':
           description: Insufficient role — SYSTEM_ADMIN required
+
+  # ── User management (TENANT_ADMIN) ──────────────────────────────────────────
+
+  /users:
+    get:
+      summary: List active users in the tenant (TENANT_ADMIN only)
+      description: |
+        Returns a paginated list of all active users within the caller's tenant.
+        The tenant is resolved from the JWT `tenant_id` claim — no path parameter required.
+      tags: [users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+          description: Maximum records to return (server enforces max 200).
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          description: Number of records to skip (0-based).
+      responses:
+        '200':
+          description: Paginated user list with roles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUsersResponse'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — TENANT_ADMIN required
+
+    post:
+      summary: Create a user within the tenant (TENANT_ADMIN only)
+      description: |
+        Provisions a new user in Keycloak and creates a COS user record.
+
+        Exactly one of `phone_number` (Path A — OTP login) or `email` (Path B — Keycloak OIDC)
+        must be provided. Providing both or neither returns 400.
+
+        Emits Kafka event: `identity.user.created.v1`
+      tags: [users]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation error — phone_number or email required (not both)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: User with this identity (phone or email) already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — TENANT_ADMIN required
+
+  /users/{userId}/role:
+    patch:
+      summary: Change a user's role within the tenant (TENANT_ADMIN only)
+      description: |
+        Updates the user's role in `platform.tenant_memberships`.
+
+        Emits Kafka event: `identity.user.role_changed.v1`
+      tags: [users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRoleRequest'
+      responses:
+        '204':
+          description: Role updated — no content returned
+        '404':
+          description: User not found in tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — TENANT_ADMIN required
+
+  /users/{userId}/deactivate:
+    patch:
+      summary: Deactivate a user — revokes access, preserves data (TENANT_ADMIN only)
+      description: |
+        Sets `is_active = false` on the user record. The user's data is preserved.
+        Keycloak session invalidation is handled asynchronously by the downstream
+        consumer of the JWT expiry (no active session revocation in Phase 2).
+      tags: [users]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deactivated — no content returned
+        '404':
+          description: User not found or already inactive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthenticated
+        '403':
+          description: Insufficient role — TENANT_ADMIN required

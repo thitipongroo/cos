@@ -1323,7 +1323,12 @@ Generate:
 - DTOs with class-validator decorators for all API inputs
 - OpenAPI 3.1 specs — two separate files (QM-2: one file per service):
     docs/api/auth.openapi.yaml   — OTP request/verify, refresh, logout endpoints
-    docs/api/tenant.openapi.yaml — tenant create/deactivate endpoints (SYSTEM_ADMIN only)
+    docs/api/tenant.openapi.yaml — tenant lifecycle endpoints (SYSTEM_ADMIN) AND
+                                   user management endpoints (TENANT_ADMIN):
+                                     GET  /api/v1/users                         — list users (paginated)
+                                     POST /api/v1/users                         — create user (Path A: phone_number; Path B: email)
+                                     PATCH /api/v1/users/{userId}/role          — change role
+                                     PATCH /api/v1/users/{userId}/deactivate    — deactivate user
 - Refresh token rotation flow
 - MFA enrollment and verification endpoints (TOTP) — required for TENANT_ADMIN and FINANCE roles:
     POST /api/v1/auth/mfa/enroll    — initiate TOTP setup (returns QR code URI)
