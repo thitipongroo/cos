@@ -22,6 +22,46 @@ Smartphone-only native application for all roles. Offline-first: all actions que
 - Queue processing: FIFO, exponential backoff, max 3 retries
 - Conflict resolution: entity-specific strategies (Phase 6 spec)
 
+## Public API
+
+This app is a standalone deployable — not a library. The building blocks below are shared across all feature screens.
+
+**Components** (`src/components/`):
+
+| Component | Description |
+| --- | --- |
+| `<OfflineBanner />` | Fixed top banner when offline; shows pending sync count; auto-dismisses on reconnect |
+| `<SyncStatusBar />` | Displays current sync state (syncing / synced / pending / error) |
+| `<ConflictBadge />` | Badge for unresolved sync conflicts; accepts `onPress` handler |
+
+**Hooks** (`src/hooks/`):
+
+| Hook | Returns | Description |
+| --- | --- | --- |
+| `useNetworkStatus()` | `NetworkStatus` | Current network reachability state |
+| `usePendingCount()` | `number` | Count of records pending sync upload |
+| `useSyncStatus()` | `SyncStatus` | Current sync engine state |
+| `useConflicts()` | `Conflict[]` | Unresolved conflict records from WatermelonDB |
+
+**Sync infrastructure** (`src/sync/`):
+
+| Export | Description |
+| --- | --- |
+| `SyncManager` | Orchestrates delta sync, retry, and conflict resolution |
+| `DeltaSyncClient` | HTTP client for `GET /api/v1/sync/delta` |
+| `PhotoUploadQueue` | Queues and uploads offline-captured photos |
+| `ConflictHandler` | Entity-specific conflict strategies (LAST_WRITE_WINS / FIELD_LEVEL_MERGE / SERVER_WINS) |
+| `registerBackgroundSyncTask` / `scheduleBackgroundSync` | Expo background-fetch task registration |
+
+**API client** (`src/api/client.ts`):
+
+| Export | Description |
+| --- | --- |
+| `apiClient` | Axios instance with auth token interceptor and offline queue |
+| `fetchDelta<T>` | Typed delta sync fetch |
+| `get<T>` | Typed GET request |
+| `mutate<T>` | Typed POST/PUT/DELETE with offline queue |
+
 ## Dependencies
 
 - Backend REST API (`/api/v1/*`)
