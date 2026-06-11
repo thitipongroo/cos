@@ -177,6 +177,9 @@ describe('EVENT_AVSC_MAP completeness — regression for Phase 5/6/7 shorthand e
   });
 
   const requiredEventTypes = [
+    // BOQ events (Phase 4) — previously missing, now spec §32.4 entries #19 and #20
+    'construction.boq.created.v1',
+    'construction.boq.updated.v1',
     // Procurement shorthand (Phase 5) — previously missing
     'procurement.po.created.v1',
     'procurement.po.status_changed.v1',

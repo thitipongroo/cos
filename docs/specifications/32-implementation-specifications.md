@@ -436,6 +436,8 @@ compatibility) before first producer deployment.
 | 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                            |
 | 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                          |
 | 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                              |
+| 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                               |
+| 20  | `construction.boq.updated.v1`            | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217)                                   |
 
 ### Schema Registry Rules
 
@@ -470,8 +472,6 @@ Each legacy file below requires a canonical spec entry in §32.4 before migratio
 | `procurement.inventory.low.avsc`       | `procurement.inventory.low_threshold_reached.v1` | Rename for clarity                                                                              |
 | `project.updated.avsc`                 | `construction.project.updated.v1`                | Domain prefix added                                                                             |
 | `project.status_changed.avsc`          | `construction.project.status_changed.v1`         | Domain prefix added                                                                             |
-| `boq.created.avsc`                     | `construction.boq.created.v1`                    | Distinct from boq.version.created                                                               |
-| `boq.updated.avsc`                     | `construction.boq.updated.v1`                    | Domain prefix added                                                                             |
 | `boq.version.approved.avsc`            | `construction.boq.version_approved.v1`           | Domain prefix aligned                                                                           |
 | `site.report.submitted.avsc`           | `site.report.submitted.v1`                       | "submitted" is correct — reports are directly submitted; distinct from `site.report.created.v1` |
 | `site.progress.updated.avsc`           | `site.progress.updated.v1`                       | Version suffix only                                                                             |

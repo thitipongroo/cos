@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "BoqCreatedV1",
+  "namespace": "com.constructionos.boq",
+  "doc": "Emitted once when the first BOQ version (version_number=1) is created for a project. Phase 4. Source: spec §32.4 entry #19.",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    {
+      "name": "payload",
+      "type": {
+        "type": "record",
+        "name": "BoqCreatedPayload",
+        "fields": [
+          { "name": "project_id",     "type": "string" },
+          { "name": "version_id",     "type": "string" },
+          { "name": "version_number", "type": "int"    }
+        ]
+      }
+    }
+  ]
+}

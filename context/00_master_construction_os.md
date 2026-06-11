@@ -616,6 +616,24 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
       model_version:  string
     }
 
+16. boq.created → [construction.boq.created.v1]
+
+    payload: {
+      project_id:     UUID
+      version_id:     UUID
+      version_number: integer
+    }
+
+17. boq.updated → [construction.boq.updated.v1]
+
+    payload: {
+      version_id:                   UUID
+      project_id:                   UUID
+      changed_items_count:           integer
+      new_total_estimated_amount:    string  (decimal — never float)
+      new_total_estimated_currency:  string  (ISO 4217)
+    }
+
 - Use Confluent Schema Registry (open-source, self-hosted)
 - All schemas registered in Avro format
 - Compatibility mode: BACKWARD_TRANSITIVE (new schema must be readable by ALL previous versions, not just the immediately preceding one; source: spec §32.4)

@@ -21,7 +21,8 @@ const EVENT_AVSC_MAP: Record<string, string> = {
   'construction.project.archived.v1': 'construction.project.archived.v1.avsc',
   'construction.boq.version_created.v1': 'construction.boq.version_created.v1.avsc',
   'construction.boq.version_approved.v1': 'construction.boq.version_approved.v1.avsc',
-  'construction.boq.items_updated.v1': 'construction.boq.items_updated.v1.avsc',
+  'construction.boq.created.v1': 'construction.boq.created.v1.avsc',
+  'construction.boq.updated.v1': 'construction.boq.updated.v1.avsc',
   'construction.task.completed.v1': 'construction.task.completed.v1.avsc',
   'construction.delay.detected.v1': 'construction.delay.detected.v1.avsc',
   // Procurement
