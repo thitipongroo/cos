@@ -97,3 +97,109 @@ groups:
           summary: 'AI token usage > 80% of monthly quota (tenant={{ $labels.tenant_id }})'
           description: 'Tenant {{ $labels.tenant_id }} has consumed {{ $value }} tokens (≥80% of monthly quota). Review usage or upgrade plan.'
           runbook: 'https://docs.construction-os.internal/runbooks/ai-token-quota'
+
+      # ── ServiceDown ───────────────────────────────────────────────────────────
+      # Source: spec §Phase 15 + §31.7 — page on-call; severity: critical
+      - alert: ServiceDown
+        expr: |
+          kube_pod_status_ready{condition="true"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: 'Pod not ready: {{ $labels.pod }} ({{ $labels.namespace }})'
+          description: 'Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} has not been ready for > 2 minutes. Check pod logs and events.'
+          runbook: 'https://docs.construction-os.internal/runbooks/service-down'
+
+      # ── DBConnectionExhausted ─────────────────────────────────────────────────
+      # Source: spec §Phase 15 + §31.7 — page on-call; severity: critical
+      - alert: DBConnectionExhausted
+        expr: |
+          pgbouncer_pools_client_active / pgbouncer_databases_pool_size > 0.95
+        for: 0m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: 'PostgreSQL connection pool > 95% ({{ $labels.database }})'
+          description: 'PgBouncer pool for database {{ $labels.database }} is {{ $value | humanizePercentage }} full. Scale connection pool or add replicas immediately.'
+          runbook: 'https://docs.construction-os.internal/runbooks/db-connection-exhausted'
+
+      # ── KafkaConsumerLagCritical ──────────────────────────────────────────────
+      # Source: spec §Phase 15 + §31.7 — page on-call; severity: critical
+      - alert: KafkaConsumerLagCritical
+        expr: |
+          kafka_consumer_lag > 50000
+        for: 0m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: 'Kafka consumer lag critical: {{ $labels.topic }} / {{ $labels.consumer_group }}'
+          description: 'Consumer lag is {{ $value }} messages (threshold: 50,000) for topic={{ $labels.topic }}, group={{ $labels.consumer_group }}. Potential data processing outage.'
+          runbook: 'https://docs.construction-os.internal/runbooks/kafka-partition-rebalance'
+
+      # ── SafetyNotificationFailed ──────────────────────────────────────────────
+      # Source: spec §Phase 15 + §31.7 — page security; severity: critical
+      # Any safety notification stuck in pending must be investigated immediately.
+      - alert: SafetyNotificationFailed
+        expr: |
+          notification_pending_total{notification_type="safety"} > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: 'Safety notification pending delivery ({{ $value }} message(s))'
+          description: 'There are {{ $value }} safety notification(s) pending delivery. Safety data must be authoritative — investigate Notification Service immediately.'
+          runbook: 'https://docs.construction-os.internal/runbooks/safety-notification-failed'
+
+      # ── TenantIsolationBreach ─────────────────────────────────────────────────
+      # Source: spec §Phase 15 + §31.7 + §30.6 — page security lead immediately; severity: critical
+      # Fired by synthetic probe CronJob every 5 min; result 0 = isolation check failed.
+      - alert: TenantIsolationBreach
+        expr: |
+          tenant_isolation_check_result == 0
+        for: 0m
+        labels:
+          severity: critical
+          team: security
+        annotations:
+          summary: 'Tenant isolation check FAILED: {{ $labels.check_name }}'
+          description: 'Synthetic probe {{ $labels.check_name }} returned 0 (FAIL). Possible cross-tenant data access. Escalate to security lead immediately.'
+          runbook: 'https://docs.construction-os.internal/runbooks/tenant-isolation-breach'
+
+      # ── DiskUsageHigh ─────────────────────────────────────────────────────────
+      # Source: spec §Phase 15 + §31.7 — Slack notification; severity: warning
+      - alert: DiskUsageHigh
+        expr: |
+          (
+            kubelet_volume_stats_used_bytes
+            / kubelet_volume_stats_capacity_bytes
+          ) > 0.80
+        for: 0m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: 'PersistentVolume > 80% full: {{ $labels.persistentvolumeclaim }}'
+          description: 'PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} is {{ $value | humanizePercentage }} full. Expand volume or clean up data.'
+          runbook: 'https://docs.construction-os.internal/runbooks/disk-usage-high'
+
+      # ── MemoryPressure ────────────────────────────────────────────────────────
+      # Source: spec §Phase 15 + §31.7 — Slack notification; severity: warning
+      - alert: MemoryPressure
+        expr: |
+          (
+            container_memory_working_set_bytes{container!=""}
+            / on(pod, container, namespace) kube_pod_container_resource_limits{resource="memory"}
+          ) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: 'Pod memory > 85% of limit: {{ $labels.pod }} / {{ $labels.container }}'
+          description: 'Container {{ $labels.container }} in pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of its memory limit for > 10 minutes. Risk of OOMKill.'
+          runbook: 'https://docs.construction-os.internal/runbooks/memory-pressure'

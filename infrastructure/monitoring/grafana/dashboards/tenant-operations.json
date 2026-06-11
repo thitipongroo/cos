@@ -1,0 +1,131 @@
+{
+  "title": "COS — Tenant Operations",
+  "uid": "cos-tenant-operations",
+  "tags": ["cos", "tenant", "operations"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "tenant_id",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(http_requests_total, tenant_id)",
+        "refresh": 2,
+        "multi": false,
+        "includeAll": false,
+        "label": "Tenant"
+      },
+      {
+        "name": "interval",
+        "type": "interval",
+        "options": [{ "value": "1m" }, { "value": "5m" }, { "value": "15m" }, { "value": "1h" }],
+        "current": { "value": "5m" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "API Request Volume (req/s)",
+      "description": "http_requests_total — Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{tenant_id=\"$tenant_id\"}[$interval]))",
+          "legendFormat": "req/s"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "API Latency P50 / P95 / P99",
+      "description": "http_request_duration_seconds — Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{tenant_id=\"$tenant_id\"}[$interval])))",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{tenant_id=\"$tenant_id\"}[$interval])))",
+          "legendFormat": "P95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{tenant_id=\"$tenant_id\"}[$interval])))",
+          "legendFormat": "P99"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Active Users (concurrent sessions)",
+      "description": "active_sessions_total — Identity Service gauge",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "active_sessions_total{tenant_id=\"$tenant_id\"}",
+          "legendFormat": "Active Sessions"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Storage — PostgreSQL",
+      "description": "storage_used_bytes{storage_type=\"postgresql\"} — backend telemetry gauge",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "storage_used_bytes{tenant_id=\"$tenant_id\", storage_type=\"postgresql\"}",
+          "legendFormat": "PostgreSQL"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Storage — S3",
+      "description": "storage_used_bytes{storage_type=\"s3\"} — backend telemetry gauge",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "storage_used_bytes{tenant_id=\"$tenant_id\", storage_type=\"s3\"}",
+          "legendFormat": "S3"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "AI Token Consumption (this month vs quota)",
+      "description": "llm_tokens_consumed_total — Prometheus counter. Quota sourced from cos_tenant_monthly_token_quota.",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "increase(llm_tokens_consumed_total{tenant_id=\"$tenant_id\"}[30d])",
+          "legendFormat": "Tokens Used (30d)"
+        },
+        {
+          "expr": "cos_tenant_monthly_token_quota{tenant_id=\"$tenant_id\"}",
+          "legendFormat": "Monthly Quota"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    }
+  ]
+}

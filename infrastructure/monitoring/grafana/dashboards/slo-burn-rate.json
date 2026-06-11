@@ -1,0 +1,203 @@
+{
+  "title": "COS — SLO Burn Rate",
+  "uid": "cos-slo-burn-rate",
+  "tags": ["cos", "slo", "reliability"],
+  "timezone": "browser",
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "tier",
+        "type": "custom",
+        "options": [
+          { "text": "SMB (99.5%)", "value": "smb" },
+          { "text": "Mid-market (99.9%)", "value": "midmarket" },
+          { "text": "Enterprise (99.95%)", "value": "enterprise" }
+        ],
+        "current": { "text": "SMB (99.5%)", "value": "smb" },
+        "label": "Tenant Tier"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "gauge",
+      "title": "Error Budget Remaining — SMB (99.5% / 3.6 h/month)",
+      "description": "Remaining error budget as % of the 30-day window. Source: spec §31.6",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "1 - (sum(increase(http_requests_total{status=~\"5..\",tenant_tier=\"smb\"}[30d])) / sum(increase(http_requests_total{tenant_tier=\"smb\"}[30d]))) / 0.005",
+          "legendFormat": "SMB Budget Remaining"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "green", "value": 0.5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "gauge",
+      "title": "Error Budget Remaining — Mid-market (99.9% / 43.8 min/month)",
+      "description": "Remaining error budget as % of the 30-day window. Source: spec §31.6",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "1 - (sum(increase(http_requests_total{status=~\"5..\",tenant_tier=\"midmarket\"}[30d])) / sum(increase(http_requests_total{tenant_tier=\"midmarket\"}[30d]))) / 0.001",
+          "legendFormat": "Mid-market Budget Remaining"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "green", "value": 0.5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": "gauge",
+      "title": "Error Budget Remaining — Enterprise (99.95% / 21.9 min/month)",
+      "description": "Remaining error budget as % of the 30-day window. Source: spec §31.6",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "1 - (sum(increase(http_requests_total{status=~\"5..\",tenant_tier=\"enterprise\"}[30d])) / sum(increase(http_requests_total{tenant_tier=\"enterprise\"}[30d]))) / 0.0005",
+          "legendFormat": "Enterprise Budget Remaining"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "green", "value": 0.5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Fast Burn Rate (1-hour window)",
+      "description": "Error rate over 1h vs 30d baseline. Alert threshold: 10× burn rate for 5 min. Source: QM-8.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[1h])) / sum(rate(http_requests_total[1h]))",
+          "legendFormat": "1h Error Rate"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[30d])) / sum(rate(http_requests_total[30d]))",
+          "legendFormat": "30d Baseline Error Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 0.01 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Slow Burn Rate (6-hour window)",
+      "description": "Error rate over 6h vs 30d baseline. Alert threshold: 2× burn rate for 1h. Source: QM-8.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[6h])) / sum(rate(http_requests_total[6h]))",
+          "legendFormat": "6h Error Rate"
+        },
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[30d])) / sum(rate(http_requests_total[30d]))",
+          "legendFormat": "30d Baseline Error Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "red", "value": 0.01 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Historical SLO Compliance (30-day rolling)",
+      "description": "Availability = (total − 5xx errors) / total. Targets: SMB 99.5%, Mid-market 99.9%, Enterprise 99.95%. Source: spec §31.6",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "1 - sum(rate(http_requests_total{status=~\"5..\",tenant_tier=\"smb\"}[30d])) / sum(rate(http_requests_total{tenant_tier=\"smb\"}[30d]))",
+          "legendFormat": "SMB Availability"
+        },
+        {
+          "expr": "1 - sum(rate(http_requests_total{status=~\"5..\",tenant_tier=\"midmarket\"}[30d])) / sum(rate(http_requests_total{tenant_tier=\"midmarket\"}[30d]))",
+          "legendFormat": "Mid-market Availability"
+        },
+        {
+          "expr": "1 - sum(rate(http_requests_total{status=~\"5..\",tenant_tier=\"enterprise\"}[30d])) / sum(rate(http_requests_total{tenant_tier=\"enterprise\"}[30d]))",
+          "legendFormat": "Enterprise Availability"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "min": 0.99,
+          "max": 1,
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 0.995 },
+              { "color": "green", "value": 0.999 }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

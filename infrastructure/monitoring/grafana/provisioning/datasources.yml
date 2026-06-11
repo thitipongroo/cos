@@ -29,3 +29,33 @@ datasources:
     uid: jaeger
     url: http://jaeger-query:16686
     access: proxy
+
+  # Required by Business Metrics dashboard (site_activity_daily aggregation)
+  - name: ClickHouse
+    type: grafana-clickhouse-datasource
+    uid: clickhouse
+    url: http://clickhouse:8123
+    access: proxy
+    jsonData:
+      defaultDatabase: analytics
+      port: 8123
+      server: clickhouse
+      username: cos_readonly
+      tlsSkipVerify: false
+    secureJsonData:
+      password: ${CLICKHOUSE_READONLY_PASSWORD}
+
+  # Required by Business Metrics dashboard (audit_logs, purchase_orders queries)
+  - name: PostgreSQL
+    type: postgres
+    uid: postgresql
+    url: pgbouncer:5432
+    access: proxy
+    database: cos
+    user: cos_grafana_ro
+    jsonData:
+      sslmode: require
+      postgresVersion: 1500
+      timescaledb: false
+    secureJsonData:
+      password: ${POSTGRES_GRAFANA_RO_PASSWORD}

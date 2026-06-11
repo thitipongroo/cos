@@ -1,0 +1,125 @@
+{
+  "title": "COS — Platform Overview",
+  "uid": "cos-platform-overview",
+  "tags": ["cos", "platform", "overview"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "templating": {
+    "list": [
+      {
+        "name": "interval",
+        "type": "interval",
+        "options": [{ "value": "1m" }, { "value": "5m" }, { "value": "15m" }, { "value": "1h" }],
+        "current": { "value": "5m" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Service Health Matrix",
+      "description": "Number of ready pods per service. 0 = service down.",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (pod) (kube_pod_status_ready{condition=\"true\",namespace=\"cos\"})",
+          "legendFormat": "{{pod}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "green", "value": 1 }
+            ]
+          },
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" } } },
+            { "type": "value", "options": { "1": { "text": "UP", "color": "green" } } }
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request Rate per Service (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (service) (rate(http_requests_total[$interval]))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Error Rate per Service (%)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (service) (rate(http_requests_total{status=~\"5..\"}[$interval])) / sum by (service) (rate(http_requests_total[$interval])) * 100",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Active Tenants",
+      "description": "Total tenants with at least one active session right now.",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 14 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "count(active_sessions_total > 0)",
+          "legendFormat": "Active Tenants"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Kafka Consumer Lag Summary (all topics)",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 14 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (topic, consumer_group) (kafka_consumer_lag)",
+          "legendFormat": "{{topic}} / {{consumer_group}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": 0 },
+              { "color": "yellow", "value": 5000 },
+              { "color": "red", "value": 50000 }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

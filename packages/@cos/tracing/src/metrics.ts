@@ -58,6 +58,58 @@ export function createMetrics() {
     fileUploadBytesTotal: meter.createCounter('file_upload_bytes_total', {
       description: 'Total file upload bytes',
     }),
+
+    // Workflows (Temporal) — spec §31.3
+    workflowStartedTotal: meter.createCounter('workflow_started_total', {
+      description: 'Total Temporal workflows started',
+    }),
+    workflowCompletedTotal: meter.createCounter('workflow_completed_total', {
+      description: 'Total Temporal workflows completed',
+    }),
+    approvalPendingDuration: meter.createHistogram('approval_pending_duration_seconds', {
+      description: 'Time a workflow spends waiting for approval',
+      unit: 's',
+    }),
+
+    // LLM / AI service metrics — spec §31.3
+    llmRequestDuration: meter.createHistogram('llm_request_duration_seconds', {
+      description: 'LLM API call latency per provider',
+      unit: 's',
+    }),
+    llmTokensConsumedTotal: meter.createCounter('llm_tokens_consumed_total', {
+      description: 'Input + output tokens per tenant per provider',
+    }),
+    ragRetrievalDuration: meter.createHistogram('rag_retrieval_duration_seconds', {
+      description: 'Vector search query latency',
+      unit: 's',
+    }),
+    ocrPagesProcessedTotal: meter.createCounter('ocr_pages_processed_total', {
+      description: 'OCR pages processed per tenant',
+    }),
+
+    // Notification Service — spec §31.3
+    notificationDeliveryDuration: meter.createHistogram('notification_delivery_duration_seconds', {
+      description: 'Time to deliver a notification per channel and type',
+      unit: 's',
+    }),
+    notificationPendingTotal: meter.createObservableGauge('notification_pending_total', {
+      description: 'Notifications pending delivery per type (polled every 30s)',
+    }),
+
+    // Identity Service — spec §31.3
+    activeSessionsTotal: meter.createObservableGauge('active_sessions_total', {
+      description: 'Active JWT sessions per tenant',
+    }),
+
+    // Storage telemetry — spec §31.3
+    storageUsedBytes: meter.createObservableGauge('storage_used_bytes', {
+      description: 'Storage consumed per tenant per storage type (postgresql|s3)',
+    }),
+
+    // Synthetic tenant isolation probe — spec §31.3 + §30.6
+    tenantIsolationCheckResult: meter.createObservableGauge('tenant_isolation_check_result', {
+      description: 'Tenant isolation probe result: 1=pass, 0=fail',
+    }),
   };
 }
 

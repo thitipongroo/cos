@@ -49,7 +49,7 @@ describe('createMetrics', () => {
     // DB
     expect(m.dbQueryDuration).toBeDefined();
 
-    // AI
+    // AI (backend-side)
     expect(m.aiTokenUsageTotal).toBeDefined();
     expect(m.aiRequestDuration).toBeDefined();
 
@@ -58,6 +58,30 @@ describe('createMetrics', () => {
 
     // File
     expect(m.fileUploadBytesTotal).toBeDefined();
+
+    // Workflows — spec §31.3
+    expect(m.workflowStartedTotal).toBeDefined();
+    expect(m.workflowCompletedTotal).toBeDefined();
+    expect(m.approvalPendingDuration).toBeDefined();
+
+    // LLM / AI service metrics — spec §31.3
+    expect(m.llmRequestDuration).toBeDefined();
+    expect(m.llmTokensConsumedTotal).toBeDefined();
+    expect(m.ragRetrievalDuration).toBeDefined();
+    expect(m.ocrPagesProcessedTotal).toBeDefined();
+
+    // Notification Service — spec §31.3
+    expect(m.notificationDeliveryDuration).toBeDefined();
+    expect(m.notificationPendingTotal).toBeDefined();
+
+    // Identity Service — spec §31.3
+    expect(m.activeSessionsTotal).toBeDefined();
+
+    // Storage telemetry — spec §31.3
+    expect(m.storageUsedBytes).toBeDefined();
+
+    // Synthetic tenant isolation probe — spec §31.3 + §30.6
+    expect(m.tenantIsolationCheckResult).toBeDefined();
   });
 
   it('creates histogram for http_request_duration_seconds with unit s', () => {
@@ -74,5 +98,101 @@ describe('createMetrics', () => {
     const dbCall = histogramCalls.find(([name]) => name === 'db_query_duration_seconds');
     expect(dbCall).toBeDefined();
     expect(dbCall![1]).toMatchObject({ unit: 's' });
+  });
+
+  it('creates histogram for approval_pending_duration_seconds with unit s', () => {
+    createMetrics();
+    const call = mockCreateHistogram.mock.calls.find(
+      ([name]) => name === 'approval_pending_duration_seconds',
+    );
+    expect(call).toBeDefined();
+    expect(call![1]).toMatchObject({ unit: 's' });
+  });
+
+  it('creates histogram for llm_request_duration_seconds with unit s', () => {
+    createMetrics();
+    const call = mockCreateHistogram.mock.calls.find(
+      ([name]) => name === 'llm_request_duration_seconds',
+    );
+    expect(call).toBeDefined();
+    expect(call![1]).toMatchObject({ unit: 's' });
+  });
+
+  it('creates histogram for rag_retrieval_duration_seconds with unit s', () => {
+    createMetrics();
+    const call = mockCreateHistogram.mock.calls.find(
+      ([name]) => name === 'rag_retrieval_duration_seconds',
+    );
+    expect(call).toBeDefined();
+    expect(call![1]).toMatchObject({ unit: 's' });
+  });
+
+  it('creates histogram for notification_delivery_duration_seconds with unit s', () => {
+    createMetrics();
+    const call = mockCreateHistogram.mock.calls.find(
+      ([name]) => name === 'notification_delivery_duration_seconds',
+    );
+    expect(call).toBeDefined();
+    expect(call![1]).toMatchObject({ unit: 's' });
+  });
+
+  it('creates counter for workflow_started_total', () => {
+    createMetrics();
+    const call = mockCreateCounter.mock.calls.find(([name]) => name === 'workflow_started_total');
+    expect(call).toBeDefined();
+  });
+
+  it('creates counter for workflow_completed_total', () => {
+    createMetrics();
+    const call = mockCreateCounter.mock.calls.find(([name]) => name === 'workflow_completed_total');
+    expect(call).toBeDefined();
+  });
+
+  it('creates counter for llm_tokens_consumed_total', () => {
+    createMetrics();
+    const call = mockCreateCounter.mock.calls.find(
+      ([name]) => name === 'llm_tokens_consumed_total',
+    );
+    expect(call).toBeDefined();
+  });
+
+  it('creates counter for ocr_pages_processed_total', () => {
+    createMetrics();
+    const call = mockCreateCounter.mock.calls.find(
+      ([name]) => name === 'ocr_pages_processed_total',
+    );
+    expect(call).toBeDefined();
+  });
+
+  it('creates observable gauge for notification_pending_total', () => {
+    createMetrics();
+    const call = mockCreateObservableGauge.mock.calls.find(
+      ([name]) => name === 'notification_pending_total',
+    );
+    expect(call).toBeDefined();
+  });
+
+  it('creates observable gauge for active_sessions_total', () => {
+    createMetrics();
+    const call = mockCreateObservableGauge.mock.calls.find(
+      ([name]) => name === 'active_sessions_total',
+    );
+    expect(call).toBeDefined();
+  });
+
+  it('creates observable gauge for storage_used_bytes', () => {
+    createMetrics();
+    const call = mockCreateObservableGauge.mock.calls.find(
+      ([name]) => name === 'storage_used_bytes',
+    );
+    expect(call).toBeDefined();
+  });
+
+  it('creates observable gauge for tenant_isolation_check_result', () => {
+    createMetrics();
+    const call = mockCreateObservableGauge.mock.calls.find(
+      ([name]) => name === 'tenant_isolation_check_result',
+    );
+    expect(call).toBeDefined();
   });
 });

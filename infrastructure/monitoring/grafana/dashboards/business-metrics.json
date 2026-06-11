@@ -1,0 +1,100 @@
+{
+  "title": "COS — Business Metrics (Internal)",
+  "uid": "cos-business-metrics",
+  "tags": ["cos", "business", "internal"],
+  "timezone": "browser",
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Daily Active Tenants",
+      "description": "COUNT(DISTINCT tenant_id) FROM audit_logs WHERE created_at >= today() — PostgreSQL",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "rawSql": "SELECT COUNT(DISTINCT tenant_id) AS value FROM audit_logs WHERE created_at >= CURRENT_DATE",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Total Procurement Value Processed (THB)",
+      "description": "SUM(total_amount) FROM purchase_orders WHERE status = 'APPROVED' — PostgreSQL",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": "PostgreSQL",
+      "targets": [
+        {
+          "rawSql": "SELECT SUM(total_amount) AS value FROM purchase_orders WHERE status = 'APPROVED'",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyTHB" } }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Total Site Reports Submitted",
+      "description": "sumMerge(report_count) FROM analytics.site_activity_daily — ClickHouse",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": "ClickHouse",
+      "targets": [
+        {
+          "rawSql": "SELECT sumMerge(report_count) AS value FROM analytics.site_activity_daily",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Approval Workflow Completion Rate (%)",
+      "description": "workflow_completed_total / workflow_started_total — Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(workflow_completed_total{outcome=\"success\"}[1h])) / sum(rate(workflow_started_total[1h])) * 100",
+          "legendFormat": "Completion Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": 0 },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Average Approval Time (seconds)",
+      "description": "approval_pending_duration_seconds P50/P95 — Prometheus",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (workflow_type, le) (rate(approval_pending_duration_seconds_bucket[1h])))",
+          "legendFormat": "{{workflow_type}} P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (workflow_type, le) (rate(approval_pending_duration_seconds_bucket[1h])))",
+          "legendFormat": "{{workflow_type}} P95"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    }
+  ]
+}
