@@ -1,8 +1,8 @@
 ---
 title: 'Notification Architecture'
-version: '1.3.0'
+version: '1.4.0'
 status: Active
-last_updated: '2026-06-06'
+last_updated: '2026-06-12'
 authors:
   - thitipongroo
 related_docs:
@@ -10,6 +10,7 @@ related_docs:
   - 06-rbac-permission-matrix.md
   - 15-event-driven-workflow.md
   - 16-enterprise-event-flow.md
+  - 31-monitoring-observability.md
 ---
 
 # 19. Notification Architecture
@@ -27,6 +28,7 @@ related_docs:
 - [19.6 Notification Preferences](#196-notification-preferences)
 - [19.7 Infrastructure](#197-infrastructure)
 - [19.8 Platform-Level Event Routing (Phase 25)](#198-platform-level-event-routing-phase-25)
+- [19.9 Observability](#199-observability)
 
 ---
 
@@ -188,6 +190,33 @@ represent operational platform state that SYSTEM_ADMIN must act on.
 - Notification records: stored with `tenant_id = NULL` (platform-level, not tenant-scoped)
 - The human gate notification (`AWAITING_APPROVAL`) is sent directly by
   `EnterpriseProvisioningWorkflow` via the Notification Service API — it is NOT a Kafka event
+
+---
+
+## 19.9 Observability
+
+The Notification Service emits two Prometheus metrics (defined in §31.3 of
+[31-monitoring-observability](31-monitoring-observability.md)):
+
+| Metric                                   | Type      | Labels                     | Description                                           |
+| ---------------------------------------- | --------- | -------------------------- | ----------------------------------------------------- |
+| `notification_delivery_duration_seconds` | Histogram | channel, notification_type | Time from notification record created to delivered_at |
+| `notification_pending_total`             | Gauge     | notification_type          | Count of undelivered records older than 5 min         |
+
+### Implementation
+
+- `notification_pending_total` is updated every 30 seconds by querying PostgreSQL:
+  `WHERE delivered_at IS NULL AND created_at < NOW() - INTERVAL '5 minutes'`
+  grouped by `notification_type`.
+- `notification_delivery_duration_seconds` is recorded when `delivered_at` is set on
+  the notification record (post-delivery callback from SSE/push/email handler).
+- Both metrics are emitted via the `@cos/tracing` package (OpenTelemetry SDK).
+
+### Alert
+
+`SafetyNotificationFailed` fires when
+`notification_pending_total{notification_type="safety"} > 0` — see §31.7 for full
+alert definition and escalation policy.
 
 ---
 

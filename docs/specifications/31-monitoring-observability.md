@@ -79,16 +79,30 @@ coupling in application code.
 
 Every NestJS service must expose:
 
-| Metric                              | Type      | Labels                                              |
-| ----------------------------------- | --------- | --------------------------------------------------- |
-| `http_request_duration_seconds`     | Histogram | service, endpoint, method, status_code, tenant_tier |
-| `http_requests_total`               | Counter   | service, endpoint, method, status_code              |
-| `db_query_duration_seconds`         | Histogram | service, query_type                                 |
-| `kafka_messages_produced_total`     | Counter   | service, topic                                      |
-| `kafka_messages_consumed_total`     | Counter   | service, topic, consumer_group                      |
-| `workflow_started_total`            | Counter   | workflow_type                                       |
-| `workflow_completed_total`          | Counter   | workflow_type, outcome (success/failed/timeout)     |
-| `approval_pending_duration_seconds` | Histogram | workflow_type                                       |
+| Metric                                    | Type      | Labels                                              |
+| ----------------------------------------- | --------- | --------------------------------------------------- |
+| `http_request_duration_seconds`           | Histogram | service, endpoint, method, status_code, tenant_tier |
+| `http_requests_total`                     | Counter   | service, endpoint, method, status_code, tenant_tier |
+| `db_query_duration_seconds`               | Histogram | service, query_type                                 |
+| `kafka_messages_produced_total`           | Counter   | service, topic                                      |
+| `kafka_messages_consumed_total`           | Counter   | service, topic, consumer_group                      |
+| `workflow_started_total`                  | Counter   | workflow_type                                       |
+| `workflow_completed_total`                | Counter   | workflow_type, outcome (success/failed/timeout)     |
+| `approval_pending_duration_seconds`       | Histogram | workflow_type                                       |
+| `notification_delivery_duration_seconds`  | Histogram | channel, notification_type                          |
+| `notification_pending_total`              | Gauge     | notification_type                                   |
+| `active_sessions_total`                   | Gauge     | tenant_id                                           |
+| `storage_used_bytes`                      | Gauge     | tenant_id, storage_type (postgresql \| s3)          |
+| `tenant_isolation_check_result`           | Gauge     | check_name                                          |
+
+**Metric emitters:**
+
+- `notification_delivery_duration_seconds`, `notification_pending_total` — Notification Service;
+  queries PostgreSQL (`delivered_at IS NULL AND created_at < NOW()-5m`) every 30 s.
+- `active_sessions_total` — Identity Service; updated on JWT issue/expiry/logout.
+- `storage_used_bytes` — backend telemetry job; `storage_type=postgresql` from
+  pg_relation_size per tenant, `storage_type=s3` from file-service bucket scan.
+- `tenant_isolation_check_result` — synthetic probe CronJob (see §31.7); 1 = pass, 0 = fail.
 
 ### AI Service Metrics
 
@@ -221,13 +235,13 @@ Alerts are routed via **Alertmanager** (bundled with Prometheus) to the on-call 
 
 ### Critical Alerts (Page immediately)
 
-| Alert                               | Condition                                                   | Action                                         |
-| ----------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
-| Service down                        | Pod not ready for > 2 minutes                               | Page on-call; check pod logs                   |
-| DB connection exhausted             | PostgreSQL connection pool > 95%                            | Page on-call; scale connection pool or service |
-| Kafka consumer lag critical         | Lag > 50,000 on any topic                                   | Page on-call; check consumer health            |
-| Safety notification delivery failed | `safety.incident.reported` event not delivered within 5 min | Page on-call; check Notification Service       |
-| Tenant isolation breach (test)      | Any cross-tenant isolation test fails in prod health check  | Page security lead immediately                 |
+| Alert                               | Condition                                                      | Action                                         |
+| ----------------------------------- | -------------------------------------------------------------- | ---------------------------------------------- |
+| Service down                        | Pod not ready for > 2 minutes                                  | Page on-call; check pod logs                   |
+| DB connection exhausted             | PostgreSQL connection pool > 95%                               | Page on-call; scale connection pool or service |
+| Kafka consumer lag critical         | Lag > 50,000 on any topic                                      | Page on-call; check consumer health            |
+| Safety notification delivery failed | `notification_pending_total{notification_type="safety"} > 0`   | Page on-call; check Notification Service       |
+| Tenant isolation breach (test)      | `tenant_isolation_check_result == 0` (synthetic probe — §30.6) | Page security lead immediately                 |
 
 ### Warning Alerts (Slack notification)
 
@@ -261,23 +275,44 @@ All dashboards are version-controlled as Grafana JSON in the GitOps repository.
 
 ### Tenant Operations Dashboard (per tenant)
 
-- API request volume and latency
-- Active users and concurrent sessions
-- Storage usage (PostgreSQL, S3)
-- AI token consumption this month vs. quota
+- API request volume and latency — `http_requests_total`, `http_request_duration_seconds` (Prometheus)
+- Active users and concurrent sessions — `active_sessions_total{tenant_id}` (Identity Service gauge)
+- Storage usage (PostgreSQL, S3) — `storage_used_bytes{tenant_id, storage_type}` (backend telemetry gauge)
+- AI token consumption this month vs. quota — `llm_tokens_consumed_total{tenant_id}` (Prometheus)
 
 ### Business Metrics Dashboard (internal)
 
-- Daily active tenants
-- Total procurement value processed (THB)
-- Total site reports submitted
-- Approval workflow completion rate and average time
+- Daily active tenants — `COUNT(DISTINCT tenant_id) FROM audit_logs WHERE created_at >= today()`
+  (PostgreSQL via Grafana PostgreSQL data source)
+- Total procurement value processed (THB) — `SUM(total_amount) FROM purchase_orders WHERE status = 'APPROVED'`
+  (PostgreSQL via Grafana PostgreSQL data source)
+- Total site reports submitted — `sumMerge(report_count) FROM analytics.site_activity_daily`
+  (ClickHouse via Grafana ClickHouse data source)
+- Approval workflow completion rate and average time — `workflow_completed_total`,
+  `workflow_started_total` (Prometheus)
 
 ### SLO Burn Rate Dashboard
 
 - Error budget remaining per tier (30-day rolling window)
 - Burn rate alerts: fast burn (1-hour window) and slow burn (6-hour window)
 - Historical SLO compliance chart
+
+### Implementation Dashboards (Engineering — Phase 15)
+
+These dashboards are organized by technology component. They complement the four
+audience-based dashboards above and are required deliverables of Phase 15.
+
+| Dashboard | Panels |
+| --------- | ------ |
+| Per-Service Overview | HTTP throughput (req/s), error rate (%), latency P50/P95/P99 |
+| Kafka | Consumer lag per group, DLQ depth, messages produced/consumed (per/s) |
+| Database | DB query duration P50/P95, slow query count (P95 > 1s), PgBouncer pool |
+| AI & LLM | Token usage per tenant/model, AI latency P50/P95, AI error rate |
+| Infrastructure (Kubernetes) | CPU/memory per pod, disk I/O per node, pod restarts (last 1h) |
+
+All dashboards are version-controlled as Grafana JSON under
+`infrastructure/monitoring/grafana/dashboards/` and provisioned automatically via
+`infrastructure/monitoring/grafana/provisioning/dashboards.yml`.
 
 ---
 

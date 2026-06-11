@@ -177,6 +177,24 @@ This is a mandatory test category. Cross-tenant data access is a **Critical Secu
 - Part of the PR gate — PR cannot merge if any isolation test fails
 - Uses two test tenant fixtures: `tenant_fixture_a` and `tenant_fixture_b`
 
+### Production Synthetic Probe
+
+A Kubernetes CronJob runs the same isolation checks against the **live production API**
+every 5 minutes. This provides continuous assurance that RLS/tenant controls are working
+in production, independently of CI/CD. Results are emitted as Prometheus metrics and
+trigger the `TenantIsolationBreach` alert (see §31.7 of
+[31-monitoring-observability](31-monitoring-observability.md)).
+
+| Property       | Value                                                                     |
+| -------------- | ------------------------------------------------------------------------- |
+| Schedule       | `*/5 * * * *` (every 5 minutes)                                           |
+| Test fixtures  | `tenant_fixture_a`, `tenant_fixture_b` (production-only test tenants)     |
+| Scope          | Same 5 checks as PR gate (PostgreSQL, Neo4j, Kafka, S3, API)              |
+| Pass           | `tenant_isolation_check_result{check_name} = 1` (all checks)              |
+| Fail           | `tenant_isolation_check_result{check_name} = 0` → TenantIsolationBreach   |
+| Alert          | §31.7 TenantIsolationBreach - pages security lead immediately              |
+| Location       | `infrastructure/monitoring/isolation-probe/` (CronJob + test script)      |
+
 ---
 
 ## 30.7 Offline Sync Testing

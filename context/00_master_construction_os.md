@@ -3220,9 +3220,9 @@ Tools:
 
 Metrics to instrument (mandatory per service):
   http_request_duration_seconds (histogram, labels: service, method, path, status)
-  http_requests_total (counter)
-  kafka_messages_produced_total (counter, labels: topic)
-  kafka_messages_consumed_total (counter, labels: topic, consumer_group)
+  http_requests_total (counter, labels: service, endpoint, method, status_code, tenant_tier) — spec §31.3
+  kafka_messages_produced_total (counter, labels: service, topic)
+  kafka_messages_consumed_total (counter, labels: service, topic, consumer_group)
   kafka_consumer_lag (gauge)
   kafka_dlq_depth (gauge, alert: > 0)
   db_query_duration_seconds (histogram)
@@ -3230,14 +3230,33 @@ Metrics to instrument (mandatory per service):
   ai_request_duration_seconds (histogram, labels: model)
   sync_queue_depth (gauge — mobile sync queue)
   file_upload_bytes_total (counter)
+  workflow_started_total (counter, labels: workflow_type) — spec §31.3
+  workflow_completed_total (counter, labels: workflow_type, outcome) — spec §31.3
+  approval_pending_duration_seconds (histogram, labels: workflow_type) — spec §31.3
+  llm_request_duration_seconds (histogram, labels: model) — spec §31.3 AI metrics
+  llm_tokens_consumed_total (counter, labels: tenant_id, model) — spec §31.3 AI metrics
+  rag_retrieval_duration_seconds (histogram) — spec §31.3 AI metrics
+  ocr_pages_processed_total (counter, labels: tenant_id) — spec §31.3 AI metrics
+  notification_delivery_duration_seconds (histogram, labels: channel, notification_type) — spec §31.3; Notification Service
+  notification_pending_total (gauge, labels: notification_type) — spec §31.3; Notification Service polls PostgreSQL every 30s
+  active_sessions_total (gauge, labels: tenant_id) — spec §31.3; Identity Service (JWT issue/expiry)
+  storage_used_bytes (gauge, labels: tenant_id, storage_type) — spec §31.3; backend telemetry job (postgresql|s3)
+  tenant_isolation_check_result (gauge, labels: check_name) — spec §31.3; synthetic probe CronJob (spec §30.6)
 
 Alerting rules (mandatory):
-  KafkaDLQNonEmpty:     kafka_dlq_depth > 0 for 5 min
-  APIHighErrorRate:     http_requests_total{status=~"5.."} / total > 1% for 5 min
-  APIHighLatency:       http_request_duration_seconds P99 > 5s for 5 min
-  DBHighQueryTime:      db_query_duration_seconds P95 > 1s for 5 min
-  AnalyticsSLABreach:   http_request_duration_seconds{path="/api/v1/analytics/*"} P95 > 3s
-  AIHighTokenUsage:     ai_token_usage_total > 80% of tenant monthly quota — alert FINANCE and TENANT_ADMIN (see spec §31-monitoring-observability)
+  KafkaDLQNonEmpty:            kafka_dlq_depth > 0 for 5 min
+  APIHighErrorRate:            http_requests_total{status=~"5.."} / total > 1% for 5 min
+  APIHighLatency:              http_request_duration_seconds P99 > 5s for 5 min
+  DBHighQueryTime:             db_query_duration_seconds P95 > 1s for 5 min
+  AnalyticsSLABreach:          http_request_duration_seconds{path="/api/v1/analytics/*"} P95 > 3s
+  AIHighTokenUsage:            ai_token_usage_total > 80% of tenant monthly quota — alert FINANCE and TENANT_ADMIN (see spec §31-monitoring-observability)
+  ServiceDown:                 pod not ready for > 2 min — page on-call; severity: critical (spec §31.7)
+  DBConnectionExhausted:       PostgreSQL connection pool > 95% — page on-call; severity: critical (spec §31.7)
+  KafkaConsumerLagCritical:    consumer lag > 50,000 messages on any topic — page on-call; severity: critical (spec §31.7)
+  SafetyNotificationFailed:    notification_pending_total{notification_type="safety"} > 0 — page security; severity: critical (spec §31.7)
+  TenantIsolationBreach:       tenant_isolation_check_result == 0 (synthetic probe CronJob every 5 min — spec §30.6) — page security lead immediately; severity: critical (spec §31.7)
+  DiskUsageHigh:               any PV > 80% full — Slack notification; severity: warning (spec §31.7)
+  MemoryPressure:              pod memory > 85% of limit for > 10 min — Slack notification; severity: warning (spec §31.7)
 
 Distributed Tracing:
   All NestJS services: trace every HTTP request, Kafka produce/consume, DB query
@@ -3247,11 +3266,17 @@ Distributed Tracing:
   Sampling: 1% of requests in production (100% for errors — tail-based sampling; source: spec §31.5 — production rate corrected from 10% staging rate to 1% production rate)
 
 Grafana Dashboards (required):
+  Implementation dashboards (technology-based — spec §31.8):
   - Per-service: latency P50/P95/P99, error rate, throughput
   - Kafka: consumer lag per group, DLQ depth, throughput
   - Database: connection pool, slow query count, index hit rate
   - AI: token usage per tenant, latency per model, error rate
   - Infrastructure: CPU, memory, disk per pod (Kubernetes metrics)
+  Audience dashboards (purpose-based — spec §31.8):
+  - Platform Overview: service health matrix (all pods), request rate/error rate, active tenants, Kafka lag summary
+  - Tenant Operations (per tenant): API volume/latency (Prometheus), active users (active_sessions_total gauge), storage usage (storage_used_bytes gauge), AI token quota (llm_tokens_consumed_total)
+  - Business Metrics (internal): daily active tenants (PostgreSQL audit_logs), procurement value THB (PostgreSQL purchase_orders), site reports (ClickHouse site_activity_daily), approval completion rate (Prometheus workflow metrics)
+  - SLO Burn Rate: error budget remaining per tier (30-day), fast burn (1h), slow burn (6h), historical SLO compliance
 
 Generate:
 

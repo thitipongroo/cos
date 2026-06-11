@@ -303,7 +303,7 @@ Every new service, module, or background job must include:
 - All HTTP requests must propagate `traceparent` header (W3C Trace Context)
 - All Kafka events must carry `trace_id` and `span_id` in headers
 - All cross-service calls must create child spans
-- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector-config.yaml` (sampling section)
+- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector/otel-collector-config.yml` (sampling section)
 
 **Metrics:**
 
@@ -893,7 +893,7 @@ docs/runbooks/temporal-worker-restart.md         — Temporal.io worker restart 
 cos-audit/                                          — Product owner sign-off audit logs (git-ignored content, directory committed)
 
 # Observability Infrastructure
-infrastructure/monitoring/otel-collector-config.yaml — OTel collector config (includes trace sampling configuration)
+infrastructure/monitoring/otel-collector/otel-collector-config.yml — OTel collector config (includes trace sampling configuration)
 infrastructure/synthetics/                          — Synthetic monitoring probe definitions for Grafana Synthetic Monitoring / OpenTelemetry Collector (Phase 15)
 
 # Stage Marker
