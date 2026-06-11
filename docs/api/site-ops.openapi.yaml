@@ -207,6 +207,74 @@ components:
           type: string
           format: date-time
 
+    MaterialConsumption:
+      type: object
+      properties:
+        consumption_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        report_id:
+          type: string
+          format: uuid
+          nullable: true
+        material_name:
+          type: string
+          maxLength: 255
+        material_id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          nullable: true
+          maxLength: 255
+        quantity:
+          type: string
+          description: DECIMAL(10,4) as string
+          example: '12.5000'
+        unit:
+          type: string
+          maxLength: 50
+        consumed_by:
+          type: string
+          format: uuid
+        consumed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    CreateMaterialConsumptionRequest:
+      type: object
+      required: [material_name, quantity, unit, consumed_at]
+      properties:
+        material_name:
+          type: string
+          maxLength: 255
+          example: Portland Cement 50kg
+        quantity:
+          type: string
+          pattern: '^\d+(\.\d{1,4})?$'
+          example: '12.5000'
+        unit:
+          type: string
+          maxLength: 50
+          example: bag
+        consumed_at:
+          type: string
+          format: date-time
+        task_id:
+          type: string
+          nullable: true
+          maxLength: 255
+          description: Free-text task reference — no FK until Task entity exists
+
     SyncResultItem:
       type: object
       properties:
@@ -590,6 +658,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Inspection'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /site-reports/{reportId}/materials:
+    post:
+      summary: Log material consumption against a site report; emits site.material.consumed.v1
+      operationId: createMaterialConsumption
+      tags: [site-reports]
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMaterialConsumptionRequest'
+      responses:
+        '201':
+          description: Material consumption recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialConsumption'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
 

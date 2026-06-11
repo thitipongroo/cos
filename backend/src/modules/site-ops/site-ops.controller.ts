@@ -30,6 +30,7 @@ import { CreateIssueDto } from './dto/create-issue.dto';
 import { UpdateIssueDto } from './dto/update-issue.dto';
 import { SubmitInspectionDto } from './dto/submit-inspection.dto';
 import { ResolveConflictDto } from './dto/resolve-conflict.dto';
+import { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
 
 @ApiTags('site-ops')
 @ApiBearerAuth()
@@ -182,6 +183,22 @@ export class SiteOpsController {
   @ApiOperation({ summary: 'Submit inspection result against a safety checklist' })
   submitInspection(@Body() dto: SubmitInspectionDto) {
     return this.svc.submitInspection(dto);
+  }
+
+  // ── Material Consumptions ─────────────────────────────────────────────────
+
+  // POST /api/v1/site-reports/:reportId/materials
+  @Post('site-reports/:reportId/materials')
+  @Roles(CosRole.SITE_WORKER, CosRole.SITE_ENGINEER, CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({
+    summary: 'Log material consumption against a site report; emits site.material.consumed.v1',
+  })
+  @ApiParam({ name: 'reportId', type: 'string', format: 'uuid' })
+  createMaterialConsumption(
+    @Param('reportId') reportId: string,
+    @Body() dto: CreateMaterialConsumptionDto,
+  ) {
+    return this.svc.createMaterialConsumption(reportId, dto);
   }
 
   // ── Conflict Records ──────────────────────────────────────────────────────

@@ -25,6 +25,7 @@ import type { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import type { CreateIssueDto } from './dto/create-issue.dto';
 import type { UpdateIssueDto } from './dto/update-issue.dto';
 import type { SubmitInspectionDto } from './dto/submit-inspection.dto';
+import type { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
 
 const logger = createLogger('site-ops-service');
 const OS_REPORTS_INDEX = 'site-reports';
@@ -357,6 +358,47 @@ export class SiteOpsService {
 
   async listConflictRecords() {
     return this.repo.listConflictRecords(true);
+  }
+
+  // ── Material Consumptions ─────────────────────────────────────────────────
+
+  async createMaterialConsumption(reportId: string, dto: CreateMaterialConsumptionDto) {
+    const report = await this.repo.findReportById(reportId);
+    if (!report) {
+      throw new NotFoundException({ code: 'COS-SITE-005', message: 'Site report not found' });
+    }
+    const consumptionId = randomUUID();
+    const materialId = randomUUID();
+    const row = await this.repo.insertMaterialConsumption({
+      consumption_id: consumptionId,
+      project_id: report.project_id,
+      report_id: reportId,
+      material_name: dto.material_name,
+      material_id: materialId,
+      task_id: dto.task_id ?? null,
+      quantity: dto.quantity,
+      unit: dto.unit,
+      consumed_by: this.userId,
+      consumed_at: dto.consumed_at,
+    });
+    await this.emitEvent('site.material.consumed.v1', {
+      consumption_id: row.consumption_id,
+      project_id: row.project_id,
+      task_id: row.task_id ?? '',
+      material_id: row.material_id,
+      quantity: row.quantity,
+      unit: row.unit,
+      consumed_by: row.consumed_by,
+      consumed_at: new Date(row.consumed_at).toISOString(),
+    });
+    logger.info({
+      event: 'material.consumed',
+      consumption_id: consumptionId,
+      project_id: report.project_id,
+      tenant_id: this.tenantId,
+      trace_id: this.correlationId,
+    });
+    return row;
   }
 
   async resolveConflict(conflictId: string) {

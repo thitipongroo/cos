@@ -799,28 +799,18 @@ When a Tenant Admin creates a Path B user:
 
 #### KD-SITE-001: site.material.consumed.v1 Event Emission
 
-**Status:** Deferred — triggering entities not implemented in Phase 6
+**Resolution approach:**
+A `material_consumptions` table is added to the `site_ops` schema in Phase 6. `task_id` is stored
+as a free-text reference (nullable) — no FK to a Task entity — so the event can be emitted with a
+valid payload now. `material_id` is a UUID generated on insert (acts as the record's own identity);
+it will gain a FK to a Material catalogue entity when that entity is built in a future phase.
 
-**What is deferred:**
-Emitting the `site.material.consumed.v1` Kafka event when materials are consumed on a job site.
-The spec §32 defines the event payload as `task_id`, `material_id`, `quantity_consumed`,
-`project_id`, and `site_report_id`.
+**Endpoint:** `POST /api/v1/site-reports/:reportId/materials`
 
-**Why deferred:**
-Phase 6 does not implement the Task or Inventory/Material entities. Neither `task_id` nor
-`material_id` exist in the Phase 6 data model. No API endpoint or service method triggers material
-consumption in Phase 6. Emitting the event without a real triggering entity would produce
-structurally invalid payloads.
+**Emits:** `site.material.consumed.v1` on every successful insert.
 
-**What is needed to implement:**
-
-- Task entity (scoped to a future phase)
-- Inventory / Material catalogue entity
-- A material consumption API endpoint that validates task and material, records the deduction, and
-  emits `site.material.consumed.v1`
-
-**Unblocks when:** Task entity and Inventory/Material entity are implemented in a future phase and
-a consumption API is defined in the spec.
+**Future migration:** when a Material catalogue entity is built, add FK constraint
+`material_consumptions.material_id → materials.material_id` via a non-breaking migration.
 
 ---
 

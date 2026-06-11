@@ -1959,9 +1959,26 @@ APIs (mobile-first, optimized for low bandwidth):
   GET  /api/v1/conflict-records           — list unresolved conflicts (ROLE: SITE_ENGINEER)
   PATCH /api/v1/conflict-records/:id/resolve — manual conflict resolution
 
+  material_consumptions:
+    consumption_id  UUID PK
+    project_id      UUID NOT NULL
+    tenant_id       UUID NOT NULL
+    report_id       UUID FK → site_reports (optional)
+    material_name   VARCHAR(255) NOT NULL
+    material_id     UUID NOT NULL DEFAULT gen_random_uuid()
+                    — own identity now; future FK → materials.material_id when catalogue built
+    task_id         VARCHAR(255)   — nullable free-text; no FK until Task entity exists
+    quantity        DECIMAL(10,4) NOT NULL
+    unit            VARCHAR(50) NOT NULL
+    consumed_by     UUID NOT NULL
+    consumed_at     TIMESTAMPTZ NOT NULL
+
+APIs (addition):
+  POST /api/v1/site-reports/:reportId/materials — log material consumption; emits site.material.consumed.v1
+
 Generate:
 
-- PostgreSQL migration files for all entities
+- PostgreSQL migration files for all entities (including material_consumptions — KD-SITE-001 RESOLVED)
 - NestJS module with offline sync controller
 - Conflict resolution service implementing all three strategies above
 - ConflictRecord persistence and notification
@@ -1972,7 +1989,9 @@ Generate:
 - Integration tests: sync flow including conflict scenarios
 - Kafka event producers:
 
-    site.material.consumed  (see Event Contract spec)
+    site.material.consumed  { consumption_id, project_id, task_id (nullable free-text),
+                              material_id, quantity: DECIMAL(10,4), unit, consumed_by,
+                              consumed_at }  — emitted on POST /api/v1/site-reports/:reportId/materials
     site.report.created   (see Event Contract spec)
     site.report.submitted { report_id, project_id, report_date, submitted_by }
     inspection.passed     { inspection_id, project_id, inspected_by }

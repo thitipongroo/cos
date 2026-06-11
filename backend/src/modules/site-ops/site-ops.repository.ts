@@ -70,6 +70,21 @@ export interface ManpowerLogRow {
   hours_worked: string; // DECIMAL as string
 }
 
+export interface MaterialConsumptionRow {
+  consumption_id: string;
+  project_id: string;
+  tenant_id: string;
+  report_id: string | null;
+  material_name: string;
+  material_id: string;
+  task_id: string | null;
+  quantity: string; // DECIMAL as string
+  unit: string;
+  consumed_by: string;
+  consumed_at: Date;
+  created_at: Date;
+}
+
 export interface ConflictRecordRow {
   conflict_id: string;
   tenant_id: string;
@@ -406,5 +421,39 @@ export class SiteOpsRepository {
       `,
     );
     return rows[0] ?? null;
+  }
+
+  // ── Material Consumptions ──────────────────────────────────────────────
+
+  async insertMaterialConsumption(params: {
+    consumption_id: string;
+    project_id: string;
+    report_id: string;
+    material_name: string;
+    material_id: string;
+    task_id: string | null;
+    quantity: string;
+    unit: string;
+    consumed_by: string;
+    consumed_at: string;
+  }): Promise<MaterialConsumptionRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<MaterialConsumptionRow[]>`
+        INSERT INTO site_ops.material_consumptions
+          (consumption_id, project_id, tenant_id, report_id,
+           material_name, material_id, task_id,
+           quantity, unit, consumed_by, consumed_at)
+        VALUES
+          (${params.consumption_id}::uuid, ${params.project_id}::uuid,
+           ${this.tenantId}::uuid, ${params.report_id}::uuid,
+           ${params.material_name}, ${params.material_id}::uuid,
+           ${params.task_id},
+           ${params.quantity}::decimal, ${params.unit},
+           ${params.consumed_by}::uuid, ${params.consumed_at}::timestamptz)
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
   }
 }

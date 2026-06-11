@@ -721,8 +721,6 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   the spec Generate list is the complete and exhaustive obligation list.
   The product owner approval in step (c) is the human gate that closes the reasoning gap
   that automation cannot close.
-  (prevents silent scope reduction — root cause of Phase 6 gaps: OpenSearch indexing,
-  integration tests, ConflictRecord notification, `site.material.consumed`)
 
 ### Never
 
