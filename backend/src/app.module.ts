@@ -1,7 +1,10 @@
 import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TerminusModule } from '@nestjs/terminus';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import Redis from 'ioredis';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
 import { TenantModule } from './modules/tenant/tenant.module';
@@ -14,6 +17,7 @@ import { PlatformWebhookModule } from './modules/platform-webhook/platform-webho
 import { MasterDataModule } from './modules/master-data/master-data.module';
 import { GraphModule } from './modules/graph/graph.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ComplianceModule } from './modules/compliance/compliance.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
@@ -23,6 +27,13 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => ({
+        throttlers: [{ ttl: 60000, limit: 100 }],
+        storage: new ThrottlerStorageRedisService(new Redis(cfg.getOrThrow<string>('REDIS_URL'))),
+      }),
+    }),
     TerminusModule,
     IdentityModule,
     TenantModule,
@@ -35,6 +46,7 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
     MasterDataModule,
     GraphModule,
     AnalyticsModule,
+    ComplianceModule,
     // Remaining modules added per phase:
     // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)
@@ -44,6 +56,8 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
   ],
   controllers: [HealthController],
   providers: [
+    // Global rate limiting guard — ThrottlerModule handles limits; Redis storage shared across replicas
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     // RequestIdInterceptor must be first — sets request.requestId before AuditInterceptor runs
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
     // HTTP metrics — records http_request_duration_seconds and http_requests_total (Phase 15)

@@ -21,6 +21,7 @@ related_docs:
 - [9.3 Data Storage Architecture](#93-data-storage-architecture)
 - [9.4 Data Flow](#94-data-flow)
 - [9.5 Reporting and Analytics Architecture](#95-reporting-and-analytics-architecture)
+- [9.7 Database Migration Safety Rules](#97-database-migration-safety-rules)
 
 ---
 
@@ -309,6 +310,65 @@ for long-horizon knowledge preservation.
 | Export format         | RDF/Turtle for cross-system interoperability                   |
 
 Construction domain ontology stored in `docs/ontology/` as OWL files.
+
+---
+
+## 9.7 Database Migration Safety Rules
+
+Every PostgreSQL schema migration produced by this platform must satisfy all rules below.
+These rules are the authoritative source of truth for migration practices; QM-9 in `context.md`
+is the agent-optimised summary derived from here.
+
+### 9.7.1 Rollback Script Requirement
+
+Every migration file committed to `backend/prisma/migrations/` **must** have a corresponding
+rollback script committed in the **same PR** at:
+
+```text
+backend/prisma/migrations/rollbacks/<migration-timestamp-and-name>.rollback.sql
+```
+
+Naming convention — mirror the migration directory name exactly:
+
+| Migration file path | Rollback file path |
+| --- | --- |
+| `migrations/20260608000004_phase16_rls_policies/migration.sql` | `migrations/rollbacks/20260608000004_phase16_rls_policies.rollback.sql` |
+
+**Rollback script requirements:**
+
+- Must restore the schema to the state it was in before the migration ran
+- Must be verified (executed against a test database) before the PR merges
+- Must be idempotent — safe to run more than once on the same database state
+- Must not drop data that cannot be recovered (use `ALTER TABLE … SET NULL` or archival before drop)
+
+A PR that adds a migration without a committed rollback script **must not merge** — CI enforces
+this via `scripts/readiness/check-migration-rollbacks.sh`.
+
+### 9.7.2 Backward-Compatible Migration Rules
+
+Migrations must never break the currently-deployed version of the application while running.
+The following table defines allowed and prohibited operations:
+
+| Operation | Rule |
+| --- | --- |
+| Add column | ✅ Allowed — add as `NULL` first; backfill; add `NOT NULL` constraint in a later migration |
+| Rename column | ❌ Prohibited in a single migration — add new + copy data + drop old (3 separate migrations) |
+| Change column type | ❌ Prohibited directly — create new column, migrate data, drop old in 3 separate migrations |
+| Drop column | ❌ Prohibited while any deployed code references the column; requires deprecation period |
+| Add index | ✅ Allowed — use `CREATE INDEX CONCURRENTLY` to avoid table lock |
+| Drop index | ✅ Allowed — use `DROP INDEX CONCURRENTLY` |
+| Add foreign key | ✅ Allowed — add as `NOT VALID` first; validate in a subsequent migration |
+| Truncate table | ❌ Prohibited on any table with live data |
+| Rename table | ❌ Prohibited — requires view + rename + view drop across 3 migrations |
+
+### 9.7.3 RLS Migration Rules
+
+Row-Level Security migrations have additional requirements:
+
+- `ENABLE ROW LEVEL SECURITY` and `FORCE ROW LEVEL SECURITY` must be applied together
+- Every new domain table added after Phase 2 must include RLS enablement in its creation migration
+- The application role (`app_user`) must never be granted `BYPASSRLS`
+- Rollback scripts for RLS migrations must `DISABLE ROW LEVEL SECURITY` and `DROP POLICY` for every policy created
 
 ---
 

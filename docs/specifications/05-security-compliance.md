@@ -329,6 +329,37 @@ Minimum: **Cloudflare Pro** (WAF custom rules + rate limiting). Enterprise recom
 
 > **Note on path convention:** Construction OS backend uses `setGlobalPrefix('api/v1')` — all versioned API routes are at `/api/v1/...`. Health/metrics endpoints are excluded from the global prefix. File upload rate: **20 req/min**.
 
+### Application-layer Rate Limiting (NestJS ThrottlerModule)
+
+Cloudflare WAF enforces rate limits at the edge (see table above). The NestJS backend applies
+a **second, independent rate-limiting layer** using `@nestjs/throttler` to defend against
+requests that reach the application after bypassing or before the WAF is in place (e.g., internal
+cluster traffic, staging environments without Cloudflare).
+
+**Decision:** `ThrottlerModule` is registered globally in `AppModule` with the limits below.
+Per-endpoint overrides are applied via the `@Throttle()` decorator where the global default
+is too permissive.
+
+| Scope | Limit | NestJS mechanism |
+| --- | --- | --- |
+| Default (all endpoints) | 100 req/min per user | `ThrottlerModule` global guard |
+| Auth endpoints (`/api/v*/auth/*`) | 10 req/min per IP | `@Throttle({ default: { limit: 10, ttl: 60000 } })` on `AuthController` |
+| File upload (`/api/v*/files/*`) | 20 req/min per user | `@Throttle({ default: { limit: 20, ttl: 60000 } })` on `FilesController` |
+
+**Implementation requirements:**
+
+- `ThrottlerModule.forRootAsync()` registered in `backend/src/app.module.ts` using Redis as the
+  storage backend (`ThrottlerStorageRedisService`) so limits are shared across all pod replicas
+- `APP_GUARD` provider bound to `ThrottlerGuard` so every route is protected by default
+- `ThrottlerException` maps to HTTP `429` with `Retry-After` header set to seconds until reset
+  (QM-7: "429 responses must include `Retry-After` header")
+- Rate limit response headers on every response: `X-RateLimit-Limit`, `X-RateLimit-Remaining`,
+  `X-RateLimit-Reset` (QM-7)
+- Unit test required: `backend/src/shared/guards/__tests__/throttler.guard.spec.ts`
+  (see `30-testing-strategy` §30.10)
+
+**Package:** `@nestjs/throttler` ^5.x (already in `backend/package.json`)
+
 ### Origin Protection (mandatory)
 
 The AWS ALB security group **must** restrict inbound HTTPS (443) to Cloudflare IP ranges only. This prevents attackers from bypassing the WAF by connecting directly to the origin.

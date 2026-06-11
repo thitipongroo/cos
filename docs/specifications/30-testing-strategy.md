@@ -284,6 +284,29 @@ using **Pact.io** (consumer-driven contract testing).
 - **GitLeaks** — pre-commit hook scanning for hardcoded secrets in all commits
 - Configured in CI pipeline — build fails if secrets detected
 
+### Rate Limiting Guard (Unit Tests)
+
+The NestJS ThrottlerGuard must have a dedicated unit test file at:
+
+```text
+backend/src/shared/guards/__tests__/throttler.guard.spec.ts
+```
+
+Required test cases:
+
+| Test case | Assertion |
+| --- | --- |
+| Request within limit | Returns 200; does not throw |
+| Request exceeding default limit (101st within 60 s) | Throws `ThrottlerException`; response is HTTP 429 |
+| Auth endpoint exceeds limit (11th within 60 s) | Throws `ThrottlerException`; `@Throttle` override applied |
+| File upload endpoint exceeds limit (21st within 60 s) | Throws `ThrottlerException`; `@Throttle` override applied |
+| `Retry-After` header present on 429 | Header value equals seconds until reset window |
+| Counter resets after TTL expires | Next request after TTL returns 200 |
+| Redis storage used (not in-memory) | `ThrottlerStorageRedisService` is injected and called |
+
+Tests must mock `ThrottlerStorageRedisService` — do not connect to a real Redis instance in
+unit tests. Integration tests against a real Redis are covered in the e2e test suite.
+
 ---
 
 ## 30.11 AI Quality Testing

@@ -5,6 +5,7 @@
 
 import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
@@ -13,6 +14,8 @@ import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { JwtPayload } from './jwt.payload';
 
+// Auth endpoints: 10 req/min per IP — brute force protection (spec §5.5, QM-7)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 @ApiTags('auth')
 @Controller('auth')
 export class IdentityController {
