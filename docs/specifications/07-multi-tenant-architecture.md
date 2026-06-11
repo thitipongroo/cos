@@ -335,6 +335,60 @@ SELECT * FROM vendors WHERE tenant_id = $1;
 
 ---
 
+## 7.9 Connection Pool Management
+
+Direct application-to-PostgreSQL connections do not scale in the shared-DB multi-tenant
+model: each pod holds a connection pool, and with many tenants and replicas PostgreSQL
+`max_connections` is exhausted. A connection pooler is mandatory.
+
+### Pooler: PgBouncer
+
+**PgBouncer is the required connection pooler** for all environments (local, staging, production).
+
+| Deployment | Location | Mode |
+| ---------- | -------- | ---- |
+| Local dev | Docker Compose container (`cos-pgbouncer`) | transaction |
+| Kubernetes | `infrastructure/kubernetes/pgbouncer/` — Deployment + Service + ConfigMap + PDB | transaction |
+
+Kubernetes PodDisruptionBudget: `minAvailable: 1`.
+
+### Pool mode: transaction (REQUIRED)
+
+`SET LOCAL app.current_tenant_id` is transaction-scoped and reverts on `COMMIT`/`ROLLBACK`,
+making transaction pooling safe.
+
+- **Session mode — PROHIBITED**: incompatible with horizontal pod autoscaling.
+- **Statement mode — PROHIBITED**: incompatible with multi-statement transactions.
+
+### Connection routing rule
+
+Application `DATABASE_URL` must resolve to PgBouncer, never directly to PostgreSQL port `5432`.
+An integration test must assert the connection string resolves to PgBouncer.
+
+### Baseline configuration
+
+| Parameter | Value | Notes |
+| --------- | ----- | ----- |
+| `default_pool_size` | 25 per database | Tune before Stage 2 based on Grafana observations |
+| `max_client_conn` | 1000 | |
+| `server_idle_timeout` | 600 s | |
+| `pool_mode` | transaction | See above |
+
+### Grafana metrics (required)
+
+`pgbouncer_pools_client_active`, `pgbouncer_pools_server_active`,
+`pgbouncer_pools_client_waiting`, `pgbouncer_databases_pool_size`
+
+Alert: fire P2 incident when `client_waiting > 10` sustained for > 30 seconds.
+
+### Tenant scale limit
+
+Before Stage 2 go-live, load-test the PgBouncer + PostgreSQL stack and record the maximum
+concurrent tenants at acceptable latency in `docs/architecture/tenant-scale-limits.md`.
+This threshold determines when database sharding evaluation must begin.
+
+---
+
 ## References
 
 | ID               | Title                                                              | Source                                                                          |

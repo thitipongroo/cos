@@ -1099,7 +1099,11 @@ Generate:
 - per-service tsconfig.json extending base
 - Docker Compose (local dev: PostgreSQL, TimescaleDB, Redis, Kafka, OpenSearch,
 
-  Neo4j, ClickHouse, MinIO, Confluent Schema Registry, Vault dev mode)
+  Neo4j, ClickHouse, MinIO, Confluent Schema Registry, Vault dev mode, PgBouncer)
+
+  PgBouncer container is REQUIRED in local dev Docker Compose (QM-18; spec §7.9);
+  dev mode Vault and PgBouncer must start together with the application;
+  application must connect to PgBouncer address — never directly to PostgreSQL port 5432
 
 - Istio local dev: skip Istio for Docker Compose (use plain networking locally)
 
@@ -3478,6 +3482,11 @@ Data Scaling Strategy (source §24.2):
 - Dockerfile per service (multi-stage builds, non-root user)
 - Kubernetes HPA (Horizontal Pod Autoscaler) per service
 - Kubernetes PodDisruptionBudget per service (minAvailable: 1)
+- PgBouncer Kubernetes manifests: Deployment (transaction mode) + Service + ConfigMap +
+  PodDisruptionBudget (minAvailable: 1) in infrastructure/kubernetes/pgbouncer/ (QM-18; spec §7.9)
+  Config baseline: default_pool_size=25, max_client_conn=1000, server_idle_timeout=600
+  pool_mode=transaction (REQUIRED; session mode and statement mode are PROHIBITED)
+  Application DATABASE_URL must resolve to PgBouncer service, never to PostgreSQL port 5432
 - sealed-secrets SealedSecret examples for all secret types
 - Cluster Autoscaler manifests
 - Resource quota per namespace
