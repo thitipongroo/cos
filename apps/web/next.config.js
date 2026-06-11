@@ -39,6 +39,8 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Required for Docker multi-stage build (spec §8.9) — produces .next/standalone
+  output: 'standalone',
 };
 
 module.exports = withPWA(nextConfig);

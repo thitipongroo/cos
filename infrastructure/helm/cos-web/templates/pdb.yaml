@@ -1,0 +1,11 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "cos-web.fullname" . }}
+  labels: {{ include "cos-web.labels" . | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{ include "cos-web.selectorLabels" . | nindent 6 }}
+{{- end }}

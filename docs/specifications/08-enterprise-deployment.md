@@ -272,6 +272,96 @@ Cross-region replication: ap-southeast-7 ↔ ap-southeast-1 active-passive failo
 
 ---
 
+## 8.9 Container Build Specification
+
+### Dockerfile standard (Phase 17)
+
+Every deployable service listed in `32-implementation-specifications` §32.2 requires a
+Dockerfile that meets all of the following:
+
+- **Multi-stage build** — dependency installation is separated from the final runtime image
+- **Non-root user** — final stage runs as `cosuser` (UID 1001, GID 1001)
+- **HEALTHCHECK** — every Dockerfile must include a `HEALTHCHECK` instruction
+
+| Service             | Dockerfile path                           | Build pattern                                               |
+| ------------------- | ----------------------------------------- | ----------------------------------------------------------- |
+| Main Application    | `backend/Dockerfile`                      | Node.js: `base → deps → builder → runner`                   |
+| File Service        | `services/file-service/Dockerfile`        | Node.js: `builder → runner`                                 |
+| AI Gateway          | `services/ai-gateway/Dockerfile`          | Python: builder installs venv; runner copies venv only      |
+| AI Embedding Worker | `services/ai-embedding-worker/Dockerfile` | Python: builder installs venv; runner copies venv only      |
+| AI OCR Pipeline     | `services/ai-ocr-pipeline/Dockerfile`     | Python: builder installs venv; runner copies venv only      |
+| Analytics Worker    | `services/analytics-worker/Dockerfile`    | Go: builder compiles binary; alpine runner                  |
+| KG Ingestion Worker | `services/kg-ingestion-worker/Dockerfile` | Go: builder compiles binary; alpine runner                  |
+| Web App             | `apps/web/Dockerfile`                     | Next.js: `deps → builder → runner` (see note below)         |
+
+Mobile (`apps/mobile/`) uses **Expo EAS Build** — no Dockerfile is required or permitted.
+
+**Python multi-stage pattern:**
+
+```dockerfile
+FROM python:3.12-slim AS builder
+RUN python -m venv /venv
+COPY requirements.txt .
+RUN /venv/bin/pip install --no-cache-dir -r requirements.txt
+
+FROM python:3.12-slim AS runner
+RUN useradd --system --uid 1001 cosuser
+COPY --from=builder /venv /venv
+COPY . .
+USER cosuser
+ENV PATH="/venv/bin:$PATH"
+```
+
+**Next.js requirement:** `next.config.js` must set `output: 'standalone'` so Next.js emits a
+self-contained build that can be copied into the runner stage without `node_modules`.
+
+### Helm chart per deployable service (Phase 17)
+
+All services listed in §32.2 except Mobile require a Helm chart at
+`infrastructure/helm/cos-{service}/`. Each chart must include:
+
+`Chart.yaml` · `values.yaml` · `values-dev.yaml` · `values-staging.yaml` · `values-prod.yaml`
+· `templates/_helpers.tpl` · `templates/deployment.yaml` · `templates/hpa.yaml`
+· `templates/pdb.yaml` · `templates/service.yaml` · `templates/serviceaccount.yaml`
+
+| Service             | Helm chart path                                |
+| ------------------- | ---------------------------------------------- |
+| Main Application    | `infrastructure/helm/cos-backend/`             |
+| File Service        | `infrastructure/helm/cos-file-service/`        |
+| AI Gateway          | `infrastructure/helm/cos-ai-gateway/`          |
+| AI Embedding Worker | `infrastructure/helm/cos-ai-embedding-worker/` |
+| AI OCR Pipeline     | `infrastructure/helm/cos-ai-ocr-pipeline/`     |
+| Analytics Worker    | `infrastructure/helm/cos-analytics-worker/`    |
+| KG Ingestion Worker | `infrastructure/helm/cos-kg-ingestion-worker/` |
+| Web App             | `infrastructure/helm/cos-web/`                 |
+
+### CI Docker build matrix (Phase 17)
+
+GitHub Actions step 4 ("build Docker images") must build **all** deployable services in
+parallel using a matrix strategy. The following services must appear in the matrix:
+
+```yaml
+matrix:
+  service:
+    - backend
+    - services/file-service
+    - services/ai-gateway
+    - services/analytics-worker
+    - services/kg-ingestion-worker
+    - services/ai-embedding-worker
+    - services/ai-ocr-pipeline
+    - apps/web
+```
+
+- **Trivy security scan** (step 5) must run against every image built in the matrix — not
+  only the backend image.
+- **ECR push** (step 6) must push all service images — not only the backend image.
+- **GitOps image tag update** (step 7) must commit the new image tag to the Helm
+  `values-prod.yaml` (or equivalent) for each service and push to the GitOps repository
+  to trigger ArgoCD sync; an `echo` statement is not sufficient.
+
+---
+
 ## References
 
 | ID           | Title                                               | Source                                                                                                       |

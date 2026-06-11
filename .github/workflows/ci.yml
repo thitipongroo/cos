@@ -127,9 +127,15 @@ jobs:
           - services/ai-gateway
           - services/analytics-worker
           - services/kg-ingestion-worker
+          - services/ai-embedding-worker
+          - services/ai-ocr-pipeline
+          - apps/web
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      - name: Compute image name
+        id: name
+        run: echo "short=cos-$(basename ${{ matrix.service }})" >> $GITHUB_OUTPUT
       - name: Build image
         uses: docker/build-push-action@v5
         with:
@@ -138,7 +144,7 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: cos/${{ matrix.service }}:${{ github.sha }}
+          tags: ${{ steps.name.outputs.short }}:${{ github.sha }}
 
   # ─── Step 5a: Dependency Audit (OWASP / pnpm audit) ────────────────────────
   # Source: spec §Phase 16 — "OWASP dependency check in CI pipeline"
@@ -185,13 +191,37 @@ jobs:
 
   # ─── Step 5b: Security Scan (Trivy) ─────────────────────────────────────────
   security-scan:
-    name: Security Scan (Trivy)
+    name: Security Scan (Trivy) — ${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: [build-docker]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    strategy:
+      matrix:
+        service:
+          - backend
+          - services/file-service
+          - services/ai-gateway
+          - services/analytics-worker
+          - services/kg-ingestion-worker
+          - services/ai-embedding-worker
+          - services/ai-ocr-pipeline
+          - apps/web
     steps:
       - uses: actions/checkout@v4
-      - name: Run Trivy vulnerability scanner (filesystem)
+      - uses: docker/setup-buildx-action@v3
+      - name: Compute image name
+        id: name
+        run: echo "short=cos-$(basename ${{ matrix.service }})" >> $GITHUB_OUTPUT
+      - name: Rebuild image from GHA cache
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: false
+          cache-from: type=gha
+          tags: ${{ steps.name.outputs.short }}:${{ github.sha }}
+      - name: Run Trivy — filesystem scan (once, backend job only)
+        if: matrix.service == 'backend'
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
@@ -199,24 +229,39 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
-      - name: Run Trivy — container image scan (backend)
+      - name: Run Trivy — container image scan
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'image'
-          image-ref: cos/backend:${{ github.sha }}
+          image-ref: ${{ steps.name.outputs.short }}:${{ github.sha }}
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
 
   # ─── Step 6: Push to ECR (main/staging only) ────────────────────────────────
   push-ecr:
-    name: Push to ECR
+    name: Push to ECR — ${{ matrix.service }}
     runs-on: ubuntu-latest
     needs: [security-scan]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    strategy:
+      matrix:
+        service:
+          - backend
+          - services/file-service
+          - services/ai-gateway
+          - services/analytics-worker
+          - services/kg-ingestion-worker
+          - services/ai-embedding-worker
+          - services/ai-ocr-pipeline
+          - apps/web
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Compute image name
+        id: name
+        run: echo "short=cos-$(basename ${{ matrix.service }})" >> $GITHUB_OUTPUT
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -226,26 +271,49 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - name: Tag and push backend image
+      - name: Rebuild image from GHA cache and push to ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ matrix.service }}/Dockerfile
+          push: true
+          cache-from: type=gha
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ steps.name.outputs.short }}:${{ github.sha }}
+
+  # ─── Step 7: Update GitOps image tags (triggers ArgoCD sync) ────────────────
+  update-gitops:
+    name: Update GitOps image tags
+    runs-on: ubuntu-latest
+    needs: [push-ecr]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.ref_name }}
+      - name: Update image tags in Helm values-prod.yaml
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker tag cos/backend:$IMAGE_TAG $ECR_REGISTRY/cos-backend:$IMAGE_TAG
-          docker push $ECR_REGISTRY/cos-backend:$IMAGE_TAG
-          # Update image tag in GitOps repo to trigger ArgoCD sync
-          echo "$IMAGE_TAG" > .argocd-image-tag
-      - name: Update ArgoCD image tag (GitOps trigger)
+          for SERVICE in backend services/file-service services/ai-gateway services/analytics-worker services/kg-ingestion-worker services/ai-embedding-worker services/ai-ocr-pipeline apps/web; do
+            NAME="cos-$(basename ${SERVICE})"
+            FILE="infrastructure/helm/${NAME}/values-prod.yaml"
+            sed -i "s|  tag: '.*'|  tag: '${IMAGE_TAG}'|" "${FILE}"
+          done
+      - name: Commit and push image tag updates
         run: |
-          echo "Image tag ${{ github.sha }} pushed — ArgoCD will sync automatically on staging"
-          echo "Production requires manual sync gate in ArgoCD UI"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add infrastructure/helm/*/values-prod.yaml
+          git diff --staged --quiet || git commit -m "ci: update image tags to ${{ github.sha }} [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
 
-  # ─── Step 7: E2E Tests (staging only) ───────────────────────────────────────
+  # ─── Step 8: E2E Tests (staging only) ───────────────────────────────────────
   # Source: spec §Phase 18 — "Playwright E2E test for: login, project create, report submit, dashboard view"
   e2e-tests:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
-    needs: [push-ecr]
+    needs: [update-gitops]
     if: github.ref == 'refs/heads/staging'
     steps:
       - uses: actions/checkout@v4
@@ -270,12 +338,12 @@ jobs:
           name: playwright-report
           path: tests/e2e/playwright-report/
 
-  # ─── Step 8: Load Tests (staging only) ───────────────────────────────────────
+  # ─── Step 9: Load Tests (staging only) ───────────────────────────────────────
   # Source: spec §Phase 18 — "load tests on staging deploy"
   load-tests:
     name: Load Tests (k6)
     runs-on: ubuntu-latest
-    needs: [push-ecr]
+    needs: [update-gitops]
     if: github.ref == 'refs/heads/staging'
     steps:
       - uses: actions/checkout@v4

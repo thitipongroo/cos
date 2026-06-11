@@ -1,0 +1,19 @@
+# CLOUD: AWS — PgBouncer Service
+# Services connect to pgbouncer:5432 (this ClusterIP), never to RDS :5432 directly
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgbouncer
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: pgbouncer
+    app.kubernetes.io/component: connection-pooler
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pgbouncer
+  ports:
+    - name: pgbouncer
+      port: 5432
+      targetPort: 5432
+      protocol: TCP

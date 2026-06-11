@@ -1,0 +1,15 @@
+# CLOUD: AWS — PgBouncer PodDisruptionBudget
+# Spec §Phase 17: minAvailable: 1 for all PDB manifests
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pgbouncer
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: pgbouncer
+    app.kubernetes.io/component: connection-pooler
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pgbouncer

@@ -249,3 +249,37 @@ spec:
         duration: 5s
         maxDuration: 3m
         factor: 2
+
+---
+# ─── Web App ──────────────────────────────────────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-web
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-web
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2

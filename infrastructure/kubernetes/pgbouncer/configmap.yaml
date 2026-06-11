@@ -1,0 +1,41 @@
+# CLOUD: AWS — PgBouncer ConfigMap
+# QM-18: pool_mode=transaction (session and statement modes are PROHIBITED)
+# Config baseline: default_pool_size=25, max_client_conn=1000, server_idle_timeout=600
+# All services must connect to PgBouncer :5432, never to PostgreSQL port 5432 directly
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgbouncer-config
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: pgbouncer
+    app.kubernetes.io/component: connection-pooler
+data:
+  pgbouncer.ini: |
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 5432
+    auth_type = scram-sha-256
+    auth_file = /etc/pgbouncer/userlist.txt
+
+    ; QM-18: transaction mode — REQUIRED; session/statement PROHIBITED
+    pool_mode = transaction
+
+    ; Connection pool sizing (spec §Phase 17)
+    default_pool_size = 25
+    max_client_conn = 1000
+    server_idle_timeout = 600
+
+    ; Observability
+    stats_period = 60
+    log_connections = 0
+    log_disconnections = 0
+    log_pooler_errors = 1
+
+    ; Health check
+    server_check_query = SELECT 1
+    server_check_delay = 30
+
+    [databases]
+    ; DATABASE_URL in each service must point here, never to :5432 on the RDS host
+    * = host=$(PGBOUNCER_DB_HOST) port=5432 dbname=$(PGBOUNCER_DB_NAME)

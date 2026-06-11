@@ -1,0 +1,31 @@
+replicaCount: 2
+
+image:
+  repository: '' # ECR_REGISTRY/cos-web — set by CI
+  tag: 'latest'
+
+ingress:
+  enabled: true
+  host: 'staging.construction-os.io'
+
+resources:
+  requests:
+    cpu: '100m'
+    memory: '256Mi'
+  limits:
+    cpu: '500m'
+    memory: '512Mi'
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+env:
+  NODE_ENV: 'production'
+  NEXT_PUBLIC_API_URL: 'https://api.staging.construction-os.io'

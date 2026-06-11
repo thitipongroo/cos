@@ -59,6 +59,27 @@ Principles :
 Note : AWS Secrets Manager is the default for cloud deployments on AWS. HashiCorp Vault is used
 for on-premise and hybrid deployments. See 04-tech-stack section 4.7 for the AWS Services list.
 
+### 5.2.1 Encryption at Rest
+
+All persistent storage must use AES-256 minimum. SSE-KMS with a customer-managed key (CMK)
+is required for all cloud storage resources.
+
+| Storage      | Encryption method   | Key management         | Constraint                                          |
+| ------------ | ------------------- | ---------------------- | --------------------------------------------------- |
+| S3 buckets   | SSE-KMS             | CMK (customer-managed) | All buckets; default encryption enforced at bucket  |
+| RDS / Aurora | Storage encryption  | CMK (customer-managed) | Enabled at instance creation; cannot be added later |
+| ElastiCache  | Encryption-at-rest  | AWS-managed key        | `at_rest_encryption_enabled = true` on all nodes   |
+
+CMK definitions: `infrastructure/terraform/aws/kms.tf`
+
+- One CMK per storage type, per environment (`staging`, `production`)
+- Key alias convention: `cos/{env}/rds`, `cos/{env}/s3`, `cos/{env}/elasticache`
+- Annual automatic key rotation enabled via AWS KMS
+- CMK policy: only the application service role and SYSTEM_ADMIN role may use the key
+
+On-premise equivalent: HashiCorp Vault Transit secrets engine provides envelope encryption;
+CMK lifecycle managed by Vault policy.
+
 ---
 
 ## 5.3 Compliance
@@ -389,6 +410,39 @@ Terraform configuration: `infrastructure/terraform/cloudflare/`
 - `waf.tf` — WAF rulesets (managed + custom + rate limit) + zone security settings
 - `variables.tf` — zone_id, account_id, api_token (sensitive — use Vault/sealed-secrets)
 - `outputs.tf` — ruleset IDs, zone name
+
+---
+
+## 5.6 Data Residency
+
+Data residency rules determine where tenant data is stored and processed to satisfy
+PDPA (Thailand) and GDPR (EU) obligations.
+
+Authoritative file: `docs/compliance/data-residency-policy.md`
+
+### Region assignment
+
+| Tenant origin   | Primary region               | DR region        | Regulation                          |
+| --------------- | ---------------------------- | ---------------- | ----------------------------------- |
+| Thai tenants    | `ap-southeast-7` (Bangkok)   | `ap-southeast-1` | PDPA — data must not leave Thailand |
+| EU tenants      | `eu-west-1` (Ireland)        | —                | GDPR                                |
+| Other / default | `ap-southeast-1` (Singapore) | —                | Platform default                    |
+
+### Rules
+
+- Thai-origin data must not leave `ap-southeast-7` / `ap-southeast-1` without explicit
+  product owner approval and legal review recorded in the audit log.
+- Tenant region assignment is stored in `platform.tenants.data_region` column at provisioning.
+- Kafka topics carrying PII are confined to the tenant's assigned region cluster.
+- ClickHouse analytics data is stored in the tenant's assigned region.
+- Cross-border transfer requires a signed Data Processing Agreement (DPA) on file.
+
+### Enforcement
+
+- Region assignment is immutable after first data write; change requires full data migration
+  with product owner and legal sign-off.
+- `data_region` is included in every Kafka event payload so downstream consumers can
+  enforce residency without a platform lookup.
 
 ---
 

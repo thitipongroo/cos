@@ -1,0 +1,27 @@
+replicaCount: 1
+
+image:
+  repository: '' # ECR_REGISTRY/cos-web — set by CI
+  tag: 'latest'
+
+ingress:
+  enabled: true
+  host: 'dev.construction-os.io'
+
+resources:
+  requests:
+    cpu: '50m'
+    memory: '128Mi'
+  limits:
+    cpu: '250m'
+    memory: '256Mi'
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+env:
+  NODE_ENV: 'development'
+  NEXT_PUBLIC_API_URL: 'https://api.dev.construction-os.io'
