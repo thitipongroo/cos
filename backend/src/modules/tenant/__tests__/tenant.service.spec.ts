@@ -33,7 +33,7 @@ const mockTenant = {
   tenant_id: 'tenant-1',
   tenant_code: 'acme_corp',
   tenant_name: 'ACME Construction',
-  keycloak_realm: 'cos-acme_corp',
+  keycloak_realm: 'construction-os',
   plan_type: 'STARTER',
   is_active: true,
 };
@@ -100,8 +100,8 @@ describe('TenantService', () => {
         'admin-1',
       );
 
-      // The mock returns the tenant row — verify the call happened and result is returned
-      expect(capturedInsertArgs.length).toBeGreaterThan(0);
+      // args[3] is keycloakRealm in the tagged template (after tenantCode and tenantName)
+      expect(capturedInsertArgs[3]).toBe('cos-enterprise_co');
       expect(result).toBeDefined();
     });
 

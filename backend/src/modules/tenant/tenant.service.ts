@@ -41,7 +41,10 @@ export class TenantService {
       throw new BadRequestException('dedicatedDbUrl must start with postgresql:// or postgres://');
     }
 
-    const keycloakRealm = `cos-${dto.tenantCode}`;
+    // SMB/mid-market (STARTER, PROFESSIONAL) → shared realm per spec §5, §7.6 step 3
+    // ENTERPRISE → per-tenant realm; provisioned by Phase 25 EnterpriseProvisioningWorkflow
+    const keycloakRealm =
+      dto.planType === 'ENTERPRISE' ? `cos-${dto.tenantCode}` : 'construction-os';
 
     // Create tenant record (ADR-008: shared DB + tenant_id, no per-tenant schema)
     const tenant = await this.prisma.$transaction(async (tx) => {
@@ -56,12 +59,9 @@ export class TenantService {
       return created!;
     });
 
-    // 3. Provision Keycloak realm (outside DB tx — Keycloak is external)
-    // In production: call Keycloak Admin REST API to create realm
-    // In local dev: realm is pre-imported via docker-compose volume mount
     logger.info(
       { tenantCode: dto.tenantCode, keycloakRealm },
-      'Keycloak realm provisioning deferred to Keycloak Admin API (Phase 2+)',
+      'Keycloak realm assigned to tenant record',
     );
 
     // 4. Emit identity.tenant.created.v1 (non-fatal — outbox pattern handles retries)

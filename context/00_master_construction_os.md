@@ -1316,7 +1316,10 @@ Generate:
     IMPORTANT: realm import template MUST include protocol mappers for tenant_id, user_id, role
     (see spec §05-security-compliance §5.4.2 and §07-multi-tenant-architecture §7.6 step 3)
 - NestJS Identity Service: Keycloak adapter, JWT validation middleware
-- NestJS Tenant Service: tenant CRUD, realm provisioning on tenant create
+- NestJS Tenant Service: tenant CRUD, realm assignment on tenant create
+    Realm model (spec §05 §5, §07 §7.6 step 3):
+      STARTER/PROFESSIONAL → shared realm 'construction-os'
+      ENTERPRISE → dedicated realm 'cos-{tenantCode}' (Phase 25 EnterpriseProvisioningWorkflow)
 - @cos/rbac package: role enum, permission map, NestJS guard decorators and metadata keys
     (@cos/rbac contains: CosRole enum, ROLE_PERMISSIONS map, @Roles/@RequirePermissions decorators,
      ROLES_KEY/PERMISSIONS_KEY metadata constants — NOT concrete CanActivate implementations;

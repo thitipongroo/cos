@@ -188,6 +188,12 @@ Before starting any implementation task:
   - **Path B (email/password — office/management roles):** uses Keycloak OIDC — never implement custom email/password auth; JWT is RS256-signed by Keycloak
   - **Path A (SMS OTP — SITE_WORKER, SITE_ENGINEER):** OTP send/verify uses a **Custom lightweight NestJS module** within the identity module (NOT a Keycloak extension); after OTP verification succeeds, token issuance goes through **Keycloak Direct Grant** (`grant_type=password`, ephemeral credential) → RS256 JWT from Keycloak; SMS gateway: AWS SNS (AWS SNS selected)
   - Keycloak is the single source of truth for identity storage and JWT signing across both paths
+  - **Keycloak Realm Model (spec §5, §7.6):**
+    - SMB/mid-market (STARTER, PROFESSIONAL): shared realm `construction-os`
+    - ENTERPRISE: dedicated realm `cos-{tenantCode}`, provisioned by Phase 25
+      EnterpriseProvisioningWorkflow
+    - `keycloak-jwt.strategy.ts` reads `KEYCLOAK_REALM` env var (`construction-os`
+      for shared-realm tenants)
 - All inputs validated at the API layer — never trust client-supplied data; use **Zod** (TypeScript) or **Pydantic** (Python) for schema validation — never hand-written `if` checks alone
 - SQL queries via Prisma ORM only — never raw string interpolation in SQL
 - File uploads: validate MIME type server-side, scan with ClamAV (Phase 9+)
