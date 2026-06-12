@@ -1,0 +1,11 @@
+# Minimal ServiceAccount for the isolation probe CronJob
+# The probe makes outbound HTTP calls only — no Kubernetes API access needed
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tenant-isolation-probe
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: tenant-isolation-probe
+    app.kubernetes.io/component: security-probe
+automountServiceAccountToken: false

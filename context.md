@@ -217,7 +217,8 @@ Before starting any implementation task:
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
 - **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets: SSE-KMS with customer-managed key (CMK); all RDS/Aurora: storage encryption enabled at creation; all ElastiCache nodes: encryption-at-rest enabled; CMK definitions in `infrastructure/terraform/aws/kms.tf`
 - **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
-- SAST and code quality scan must pass in CI via **SonarQube** before merge — spec §30.10 and §30.12 mandate SonarQube; semgrep removed from CI pipeline once SonarQube is operational; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, 100% line coverage, 100% branch coverage, 0% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
+- SAST and code quality scan must pass in CI via **SonarQube** before merge — spec §30.10 and §30.12 mandate SonarQube; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, 100% line coverage, 100% branch coverage, 0% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
+  **⏸ DEFERRED:** SonarQube CI gate deferred pending EKS server setup. Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim. Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
 - Dependency vulnerability scan in CI (`npm audit --audit-level=high` / `pip-audit`) — no HIGH/CRITICAL unresolved
 - Rate limiting required on all public-facing endpoints (see QM-7)
 - CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/security/cors-policy.md`
@@ -256,9 +257,9 @@ Source: spec §31.6 (targets corrected to match spec SLO definitions)
 | Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                        |
 | Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network             |
 | Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                           |
-| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | CI gate — `scripts/loadtest/api-baseline.js` |
+| k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `scripts/loadtest/api-baseline.js` (staging); Phase 19 one-time gate |
 
-The k6 load test runs as a CI gate on every PR that modifies an API endpoint, database query, or Temporal workflow. A failing load test blocks merge.
+The k6 load test runs on a **weekly schedule against staging** — not per-PR (source: spec §30.9). Results are advisory: alert Engineering Lead if p95 latency increases > 20% vs. previous week. Load tests do not block PR merge. Note: Phase 19 automated check #7 runs a one-time load test gate before production go-live.
 
 ### QM-7 — Rate Limiting
 

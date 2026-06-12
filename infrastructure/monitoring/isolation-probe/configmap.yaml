@@ -1,0 +1,20 @@
+# Mounts isolation-probe.js into the CronJob pod via ConfigMap
+# The CronJob runs: node /scripts/isolation-probe.js
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tenant-isolation-probe-scripts
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: tenant-isolation-probe
+    app.kubernetes.io/component: security-probe
+data:
+  isolation-probe.js: |
+    #!/usr/bin/env node
+    'use strict';
+    // NOTE: Keep in sync with infrastructure/monitoring/isolation-probe/isolation-probe.js
+    // To update: rebuild this ConfigMap from isolation-probe.js via kustomize or helm.
+    // Placeholder — the actual script is loaded from isolation-probe.js at deploy time.
+    // In production, use a ConfigMap generator or Helm .Files.Get to embed the script.
+    console.error('ConfigMap placeholder — regenerate from isolation-probe.js');
+    process.exit(1);

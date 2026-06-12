@@ -113,11 +113,70 @@ jobs:
             packages/@cos/tracing/coverage/
             packages/@cos/config/coverage/
 
+  # ─── Step 4a: Integration Tests ─────────────────────────────────────────────
+  # Source: spec §30.4 — Testcontainers (PostgreSQL, Redis) per test run; blocks PR merge
+  integration-tests:
+    name: Integration Tests (Testcontainers)
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        working-directory: backend
+        run: pnpm exec prisma generate
+      - name: Run integration tests
+        working-directory: backend
+        run: pnpm run test:integration
+
+  # ─── Step 4b: Multi-tenant Isolation Tests ──────────────────────────────────
+  # Source: spec §30.6 — Cross-tenant data access is a Critical Security Defect; blocks PR merge
+  isolation-tests:
+    name: Multi-tenant Isolation Tests
+    runs-on: ubuntu-latest
+    needs: [lint, type-check, unit-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        working-directory: backend
+        run: pnpm exec prisma generate
+      - name: Run tenant isolation tests
+        working-directory: backend
+        run: pnpm exec jest --testPathPattern='tenant-isolation' --runInBand
+
+  # ─── Step 4c: API Contract Tests (Pact) ─────────────────────────────────────
+  # Source: spec §30.8 — consumer-driven contract tests; blocks PR merge
+  contract-tests:
+    name: API Contract Tests (Pact)
+    runs-on: ubuntu-latest
+    needs: [lint, type-check]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run contract tests
+        run: pnpm run test:contract
+
   # ─── Step 4: Build Docker Images ────────────────────────────────────────────
   build-docker:
     name: Build Docker — ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: [lint, type-check, unit-tests]
+    needs: [lint, type-check, unit-tests, integration-tests, isolation-tests, contract-tests]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
       matrix:
@@ -338,27 +397,6 @@ jobs:
           name: playwright-report
           path: tests/e2e/playwright-report/
 
-  # ─── Step 9: Load Tests (staging only) ───────────────────────────────────────
-  # Source: spec §Phase 18 — "load tests on staging deploy"
-  load-tests:
-    name: Load Tests (k6)
-    runs-on: ubuntu-latest
-    needs: [update-gitops]
-    if: github.ref == 'refs/heads/staging'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install k6
-        run: |
-          curl https://github.com/grafana/k6/releases/download/v0.50.0/k6-v0.50.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
-          sudo mv k6 /usr/local/bin/
-      - name: Run API baseline load test
-        env:
-          BASE_URL: ${{ secrets.STAGING_URL }}
-          API_TOKEN: ${{ secrets.STAGING_API_TOKEN }}
-          TENANT_ID: ${{ secrets.STAGING_TENANT_ID }}
-        run: k6 run tests/load/api-baseline.js --out json=k6-results.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: k6-results
-          path: k6-results.json
+  # ─── Step 9: Load Tests — MOVED to .github/workflows/load-tests.yml ─────────
+  # Spec §30.9 + §30.12: load tests run weekly on staging, NOT per-deploy.
+  # See .github/workflows/load-tests.yml (schedule: every Monday 03:00 UTC).

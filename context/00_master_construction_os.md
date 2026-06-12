@@ -3483,8 +3483,9 @@ CI/CD Pipeline (ArgoCD GitOps):
       5. Trivy security scan (per image)
       6. push to ECR (on main/staging/production branch only)
       7. update image tag in GitOps repo (commit new tag → triggers ArgoCD sync)
-      8. integration tests (post-deploy, staging only — wait for ArgoCD sync complete)
-      9. load tests (post-deploy, staging only — k6)
+      8. smoke tests + E2E tests (post-deploy, staging only — ArgoCD PostSync wave 1: smoke
+         health/auth/core-read < 30s; Playwright wave 2: critical user journeys)
+      9. load tests (weekly scheduled, staging only — k6; spec §30.9; NOT per-deploy)
 
   ArgoCD — CD (GitOps, self-healing):
     - Monitors GitOps repo for image tag changes
@@ -3635,7 +3636,7 @@ Generate:
 - k6 load test scripts for all 4 scenarios above
 - Playwright E2E test for: login, project create, report submit, dashboard view
 - Pact consumer test examples for Finance ← Procurement
-- GitHub Actions integration: unit tests on every PR, load tests on staging deploy
+- GitHub Actions integration: unit tests on every PR, load tests weekly scheduled on staging (not per-deploy; spec §30.9)
 - Test data factories (TypeScript class-factory-boy equivalent) per entity
 - Database reset utility for integration tests (truncate + reseed)
 

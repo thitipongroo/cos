@@ -1,0 +1,77 @@
+# ArgoCD PostSync hook — wave 1 smoke test
+# Spec §30.12: smoke tests (ArgoCD PostSync wave 1) → blocks E2E wave 2
+# Runs scripts/smoke-test.sh against staging after every ArgoCD sync
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cos-smoke-test
+  namespace: cos
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: '1'
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cos-smoke-test
+        app.kubernetes.io/component: smoke-test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke-test
+          image: curlimages/curl:8.7.1
+          command: ['/bin/sh', '-c']
+          args:
+            - |
+              set -euo pipefail
+              START=$(date +%s)
+
+              fail() { echo "SMOKE FAIL: $1" >&2; exit 1; }
+
+              echo "→ [1/3] Health check"
+              STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 "${BASE_URL}/health") \
+                || fail "health endpoint unreachable"
+              [ "$STATUS" = "200" ] || fail "health returned HTTP ${STATUS}"
+              echo "  ✓ /health → 200"
+
+              echo "→ [2/3] Auth check"
+              AUTH=$(curl -sf --max-time 10 -X POST "${BASE_URL}/api/v1/auth/login" \
+                -H "Content-Type: application/json" \
+                -d "{\"email\":\"${E2E_EMAIL}\",\"password\":\"${E2E_PASSWORD}\"}") \
+                || fail "auth endpoint unreachable"
+              TOKEN=$(echo "$AUTH" | grep -o '"accessToken":"[^"]*"' | cut -d'"' -f4)
+              [ -n "$TOKEN" ] || fail "auth did not return accessToken"
+              echo "  ✓ /auth/login → accessToken obtained"
+
+              echo "→ [3/3] Core read check"
+              P_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" --max-time 10 \
+                "${BASE_URL}/api/v1/projects" \
+                -H "Authorization: Bearer ${TOKEN}") \
+                || fail "projects endpoint unreachable"
+              [ "$P_STATUS" = "200" ] || fail "projects returned HTTP ${P_STATUS}"
+              echo "  ✓ /api/v1/projects → 200"
+
+              END=$(date +%s)
+              ELAPSED=$((END - START))
+              echo "→ Smoke passed in ${ELAPSED}s"
+              [ $ELAPSED -lt 30 ] || fail "exceeded 30s limit (${ELAPSED}s)"
+          env:
+            - name: BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cos-smoke-test-config
+                  key: BASE_URL
+            - name: E2E_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: cos-smoke-test-config
+                  key: E2E_EMAIL
+            - name: E2E_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cos-smoke-test-config
+                  key: E2E_PASSWORD

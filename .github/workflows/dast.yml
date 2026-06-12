@@ -1,0 +1,32 @@
+name: DAST (Weekly)
+
+# Spec §30.10 + §30.12: OWASP ZAP dynamic scan, weekly on staging
+# Advisory only — results do not block deploys; High-severity findings must be
+# resolved before production release (spec §30.10)
+on:
+  schedule:
+    - cron: '0 4 * * 1' # every Monday 04:00 UTC (1h after load tests)
+  workflow_dispatch:
+
+jobs:
+  dast:
+    name: DAST Scan (OWASP ZAP) — staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run OWASP ZAP full scan
+        uses: zaproxy/action-full-scan@v0.9.0
+        with:
+          target: ${{ secrets.STAGING_URL }}
+          # Advisory only — do not fail the job on findings; Engineering Lead reviews report
+          fail_action: false
+          allow_issue_writing: false
+          cmd_options: '-a'
+      - name: Upload ZAP report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-report-${{ github.run_id }}
+          path: |
+            report_html.html
+            report_json.json

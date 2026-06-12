@@ -1,0 +1,60 @@
+# Tenant Isolation Synthetic Probe — Production CronJob
+# Spec §30.6: runs every 5 minutes against live production API
+# Emits Prometheus metrics → TenantIsolationBreach alert (§31.7)
+# Metrics: tenant_isolation_check_result{check_name} = 1 (pass) | 0 (fail)
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: tenant-isolation-probe
+  namespace: cos
+  labels:
+    app.kubernetes.io/name: tenant-isolation-probe
+    app.kubernetes.io/component: security-probe
+spec:
+  schedule: '*/5 * * * *'
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: tenant-isolation-probe
+        spec:
+          restartPolicy: Never
+          serviceAccountName: tenant-isolation-probe
+          containers:
+            - name: probe
+              image: node:24-alpine
+              command: [node, /scripts/isolation-probe.js]
+              env:
+                - name: API_BASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: cos-isolation-probe-config
+                      key: API_BASE_URL
+                - name: TENANT_A_JWT
+                  valueFrom:
+                    secretKeyRef:
+                      name: cos-isolation-probe-config
+                      key: TENANT_A_JWT
+                - name: TENANT_B_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: cos-isolation-probe-config
+                      key: TENANT_B_ID
+                - name: PUSHGATEWAY_URL
+                  value: http://prometheus-pushgateway.monitoring.svc.cluster.local:9091
+              volumeMounts:
+                - name: scripts
+                  mountPath: /scripts
+                  readOnly: true
+          volumes:
+            - name: scripts
+              configMap:
+                name: tenant-isolation-probe-scripts
+                defaultMode: 0555

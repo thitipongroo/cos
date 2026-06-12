@@ -265,6 +265,9 @@ using **Pact.io** (consumer-driven contract testing).
 ### SAST (Static Analysis)
 
 - **SonarQube** — code quality and security vulnerability scanning on every PR
+  > ⏸ **DEFERRED:** SonarQube CI gate deferred pending EKS server setup.
+  > Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim.
+  > Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
 - **ESLint security plugin** — SQL injection, XSS patterns
 - **npm audit / pip-audit** — dependency vulnerability scanning in CI
 
@@ -361,18 +364,20 @@ unit tests. Integration tests against a real Redis are covered in the e2e test s
 
 CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.9:
 
-| Gate                                     | Trigger          | Blocks                    |
-| ---------------------------------------- | ---------------- | ------------------------- |
-| Lint + type check                        | Every PR         | PR merge                  |
-| Unit tests                               | Every PR         | PR merge                  |
-| Unit coverage 100% lines + 100% branches | Every PR         | PR merge                  |
-| Integration tests                        | Every PR         | PR merge                  |
-| Multi-tenant isolation tests             | Every PR         | PR merge                  |
-| API contract tests (Pact)                | Every PR         | PR merge                  |
-| Security SAST (SonarQube)                | Every PR         | PR merge (High severity)  |
-| E2E tests (Playwright)                   | Merge to `main`  | Staging deploy            |
-| Load tests (k6)                          | Weekly scheduled | Alert only (not blocking) |
-| DAST (OWASP ZAP)                         | Weekly scheduled | Alert only (not blocking) |
+| Gate                                     | Trigger               | Blocks                                      |
+| ---------------------------------------- | --------------------- | ------------------------------------------- |
+| Lint + type check                        | Every PR              | PR merge                                    |
+| Unit tests                               | Every PR              | PR merge                                    |
+| Unit coverage 100% lines + 100% branches | Every PR              | PR merge                                    |
+| Integration tests                        | Every PR              | PR merge                                    |
+| Multi-tenant isolation tests             | Every PR              | PR merge                                    |
+| API contract tests (Pact)                | Every PR              | PR merge                                    |
+| Dependency audit (pnpm/govulncheck/pip)  | Every PR              | PR merge (High/Critical)                    |
+| Security SAST (SonarQube)                | Every PR              | PR merge (High severity) — ⏸ DEFERRED       |
+| Smoke tests (ArgoCD PostSync wave 1)     | Post-deploy (staging) | Blocks E2E wave 2                           |
+| E2E tests (Playwright)                   | Merge to `main`       | Staging deploy                              |
+| Load tests (k6)                          | Weekly scheduled      | Alert only (not blocking)                   |
+| DAST (OWASP ZAP)                         | Weekly scheduled      | Alert only (not blocking)                   |
 
 ---
 

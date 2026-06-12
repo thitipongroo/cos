@@ -1,0 +1,38 @@
+name: Load Tests (Weekly)
+
+# Spec §30.9 + §30.12: load tests run weekly on staging — NOT per-deploy
+# Advisory only: results alert Engineering Lead, do not block any deployment
+on:
+  schedule:
+    - cron: '0 3 * * 1' # every Monday 03:00 UTC
+  workflow_dispatch: # manual trigger for ad-hoc runs
+
+jobs:
+  load-tests:
+    name: Load Tests (k6) — staging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/v0.50.0/k6-v0.50.0-linux-amd64.tar.gz | tar xvz --strip-components 1
+          sudo mv k6 /usr/local/bin/
+      - name: Run API baseline load test
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+          API_TOKEN: ${{ secrets.STAGING_API_TOKEN }}
+          TENANT_ID: ${{ secrets.STAGING_TENANT_ID }}
+        run: k6 run scripts/loadtest/api-baseline.js --out json=k6-results.json
+      - name: Upload k6 results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-results-${{ github.run_id }}
+          path: k6-results.json
+      # Spec §30.9: alert Engineering Lead if p95 latency increases > 20% vs. previous week
+      - name: Check p95 regression (advisory)
+        if: always()
+        run: |
+          P95=$(jq '[.[] | select(.metric=="http_req_duration" and .type=="Point") | .data.value] | sort | .[(length*0.95|floor)]' k6-results.json 2>/dev/null || echo "0")
+          echo "p95 latency: ${P95}ms"
+          echo "p95=${P95}" >> "$GITHUB_STEP_SUMMARY"
