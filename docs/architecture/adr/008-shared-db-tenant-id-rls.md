@@ -79,7 +79,9 @@ CREATE POLICY tenant_isolation ON {schema}.{table}
 
 `TenantPrismaService` (schema-per-tenant routing via `SET LOCAL search_path`) is retired.
 Modules that previously used it migrate to direct `PrismaClient` or raw SQL with schema-qualified
-table names. The application middleware sets `app.current_tenant_id` for RLS enforcement.
+table names. `TenantPrismaService` issues `SET LOCAL app.current_tenant_id = '{tenant_id}'`
+inside every `$transaction()` call, satisfying the requirement (§7.7, §11.0) that the
+application sets it before any query executes.
 
 PgBouncer remains mandatory (QM-18) for connection pool management. Transaction mode is still
 required because `SET LOCAL app.current_tenant_id` is transaction-scoped.
