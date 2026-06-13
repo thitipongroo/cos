@@ -14,8 +14,8 @@ related_docs:
 
 # 0. Executive Overview
 
-> 📝 เอกสารนี้เขียนเป็นภาษาไทยสำหรับผู้บริหาร
-> _This document is intentionally written in Thai for the primary executive audience of the Thai-first platform._
+> 📝 เอกสารนี้สำหรับผู้บริหาร
+> _This document for the primary executive audience of the Thai-first platform._
 
 เป้าหมายของระบบนี้คือสร้าง "Construction Operating System (Construction OS)" สำหรับธุรกิจ :
 
@@ -44,12 +44,16 @@ related_docs:
 
 ## Primary Market
 
-- ตลาดหลัก : ประเทศไทยและภูมิภาค Southeast Asia — first-mover market
+- ตลาดหลัก : ประเทศไทยและภูมิภาค Southeast Asia (SEA) — first-mover market
 - ภาษาไทยเป็น first-class language ในทุก UI, AI outputs และ construction terminology
 - ออกแบบให้สอดคล้องกับ Thailand PDPA และ GDPR ตั้งแต่ Day 1
 - เป้าหมายคือกลุ่ม mid-market contractors ใน SEA ที่ยังใช้ Excel หรือ basic accounting tools (ประมาณ 90–95% ของตลาด)
 
-ดูรายละเอียด AI strategy สำหรับภาษาไทยได้ที่ [22-ai-architecture](22-ai-architecture.md)
-ดู competitive landscape และ market opportunity ได้ที่ [29-final-strategic-positioning](29-final-strategic-positioning.md)
+รายละเอียด AI Strategy : [AI Architecture](22-ai-architecture.md)
+Competitive landscape และ Market opportunity : [Final Strategic Positioning](29-final-strategic-positioning.md)
 
-> 📎 See also: [01-business-architecture](01-business-architecture.md) · [02-system-wide-integration](02-system-wide-integration.md) · [22-ai-architecture](22-ai-architecture.md) · [29-final-strategic-positioning](29-final-strategic-positioning.md)
+> 📎 See also :
+> [Business Architecture](01-business-architecture.md)
+> [System Wide Integration](02-system-wide-integration.md)
+> [AI Architecture](22-ai-architecture.md)
+> [Final Strategic Positioning](29-final-strategic-positioning.md)
