@@ -417,7 +417,8 @@ interface and are the industry standard for this architecture.
 
 One factory function per DTO type. Signature: `build<EntityName>Dto(requiredArgs, overrides?)`.
 
-Rules (from factory_bot canonical source):
+Rules (from factory_bot canonical source) :
+
 - Provide only **required fields** (fields that would fail validation if absent)
 - Fields with server-generated defaults (id, created_at, tenant_id from JWT) are NOT included
 - All factories accept a final `overrides: Partial<T> = {}` argument — spread last
@@ -430,7 +431,7 @@ All factories live in `packages/@cos/test-utils/src/factories.ts` and are export
 
 ### Naming convention
 
-```
+```text
 build<EntityName>Dto   — request payload factories (used in HTTP integration tests)
 build<EntityName>       — seed data factories (used for direct DB seeding)
 ```
@@ -465,11 +466,14 @@ build<EntityName>       — seed data factories (used for direct DB seeding)
 
 ### Adding new factories
 
-When adding a new domain module with integration tests:
+When adding a new domain module with integration tests :
+
 1. Identify all multi-field CREATE payloads in the new integration test
 2. Add one `build<EntityName>Dto` function per entity to `factories.ts`
 3. Use the new factory in the integration test — no inline multi-field objects
 
 ---
 
-> 📎 See also: [03-system-design](03-system-design.md) · [04-tech-stack](04-tech-stack.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [11-database-schema](11-database-schema.md) · [14-api-architecture](14-api-architecture.md) · [17-offline-mobile-sync](17-offline-mobile-sync.md) · [21-mvp-scope](21-mvp-scope.md) · [31-monitoring-observability](31-monitoring-observability.md) · [32-implementation-specifications](32-implementation-specifications.md)
+> 📎 See also : [System Design](03-system-design.md) · [Tech Stack](04-tech-stack.md) · [Mult Tenant Architecture](07-multi-tenant-architecture.md)
+> · [Database Schema](11-database-schema.md) · [API Architecture](14-api-architecture.md) · [OFF-Line Mobile Sync](17-offline-mobile-sync.md)
+> · [MVP Scope](21-mvp-scope.md) · [Monitoring Obserbability](31-monitoring-observability.md) · [Implementation Specifications](32-implementation-specifications.md)
