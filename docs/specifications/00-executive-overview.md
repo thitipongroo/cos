@@ -6,10 +6,10 @@ last_updated: '2026-05-26'
 authors:
   - thitipongroo
 related_docs:
-  - 01-business-architecture.md
-  - 02-system-wide-integration.md
-  - 22-ai-architecture.md
-  - 29-final-strategic-positioning.md
+  - Business Architecture
+  - System Wide Integration
+  - AI Architecture
+  - Final Strategic Positioning
 ---
 
 # 0. Executive Overview
