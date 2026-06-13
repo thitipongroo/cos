@@ -59,6 +59,11 @@ const EVENT_AVSC_MAP: Record<string, string> = {
   'platform.enterprise.db_provisioned.v1': 'platform.enterprise.db_provisioned.v1.avsc',
   // AI
   'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
+  // Digital Twin (Phase 24)
+  'twin.state.updated.v1': 'twin.state.updated.v1.avsc',
+  'twin.divergence.detected.v1': 'twin.divergence.detected.v1.avsc',
+  // Carbon Analytics (Phase 24 / CarbonCalculationEngine EP Phase 6)
+  'carbon.record.created.v1': 'carbon.record.created.v1.avsc',
   // File Service
   'file.document.uploaded.v1': 'file.document.uploaded.v1.avsc',
   'file.document.quarantined.v1': 'file.document.quarantined.v1.avsc',

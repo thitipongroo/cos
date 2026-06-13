@@ -670,7 +670,11 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - All monetary calculations use `decimal.js` (TypeScript) or Python `decimal` module — never `float`
 - All Kafka events must use typed contracts from `@cos/shared`
 - Check `docs/specifications/` (§13.3-13.5, §22.6, §05-security-compliance §5.3.1) before implementing any EP — all EP decisions are documented there;
-  stub implementation behaviour is defined in `32-implementation-specifications` §32.9
+  stub implementation behaviour is defined in `32-implementation-specifications` §32.9:
+  - **Type A** (CRM, BIM, ERP, all stubs not listed as Type B) — log WARN + throw typed exception
+    (fail-fast; source: spec §32.9)
+  - **Type B** (IoT only, explicitly stated in §32.9) — log WARN + return safe defaults
+    (service stays operational in degraded state; source: spec §32.9)
 - Version every HTTP API endpoint from `/api/v1/` on the first commit (QM-2; NestJS global prefix `api/v1` — source: `backend/src/main.ts`)
 - Route all user-facing strings through i18n keys — never hardcode (QM-3)
 - Tag all PII fields with `@pdpa(category: "...")` comment in Prisma schema (QM-5)
@@ -689,6 +693,12 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Inject runtime secrets via **AWS Secrets Manager** (cloud/AWS EKS) or **HashiCorp Vault** (on-premise/hybrid) per spec §5.2 and ADR-013; store Kubernetes Secret objects in git only as **SealedSecret** via kubeseal (QM-4)
 - Emit a Kafka event for every workflow state transition — all transitions in RFQ and PO state machines must produce a typed event via `@cos/shared` (master §9; spec §32.6)
 - Concrete guards in `backend/src/shared/guards/` — `@cos/rbac` for decorators/metadata keys only (spec §06 §6.9)
+- Use **EMQX** self-hosted on EKS as IoT MQTT broker (Phase 21+); pipeline: IoT device → EMQX →
+  Kafka (MSK) → TimescaleDB; RESOLVED (source: spec §13.5, `33-digital-twin-iot`)
+- Use **scikit-learn + XGBoost** for all Phase 23 ML models (DelayForecastModel, SafetyVisionModel,
+  GraphMLModel, RiskClassifier); RESOLVED (source: spec §22-ai-architecture §22.6)
+- Use **W&B Cloud** (`wandb.ai`) for MLOps experiment monitoring (Phase 23+); API key in AWS SM;
+  RESOLVED (source: spec §22-ai-architecture §22.6)
 
 **ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–38):**
 
@@ -745,6 +755,8 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Query another module's database tables directly from application code — cross-module data access must go through the owning module's service layer or via Kafka events (master §4)
 - **Skip RLS on domain tables** — PostgreSQL Row Level Security is MANDATORY on every domain table from MVP (primary isolation mechanism, spec §7.7); `app.current_tenant_id` must be set at request start before any query; application-layer `WHERE tenant_id = $1` is secondary defense-in-depth, not a replacement for RLS
 - Implement BigQuery or Snowflake — analytics uses ClickHouse only
+- Implement LangGraph in Phase 11–12 — Phase 12 uses plain Python sequential pipeline; LangGraph
+  deferred to LAYER-C-001 decision for Layer C autonomous AI (source: spec §22-ai-architecture §22.3)
 - Use IndexedDB in React Native — smartphone uses **WatermelonDB 0.28.x + ExpoSQLiteAdapter** for all main business entities (site_reports, issues, local_photos, etc.); `expo-sqlite` directly is allowed **only** for the `sync_queue` infrastructure table; plain `expo-sqlite` for any other entity is prohibited (Phase 10 authoritative)
 - Skip hallucination guard on AI report endpoints
 - Invent workflow states or transitions beyond those defined in master §WORKFLOW ENGINE SPEC — implement exactly what is specified, nothing more (master §9; spec §32.6)

@@ -50,6 +50,9 @@ export type * from './events/procurement.delivery.received.v1';
 export type * from './events/procurement.rfq.created.v1';
 export type * from './events/procurement.rfq.status_changed.v1';
 export type * from './events/procurement.purchase_order.status_changed.v1';
+export type * from './events/finance.budget.created.v1';
+export type * from './events/finance.payment.processed.v1';
+export type * from './events/finance.variance.alert.v1';
 export type * from './events/finance.budget.exceeded.v1';
 export type * from './events/procurement.vendor_invoice.approved.v1';
 export type * from './events/finance.cashflow_risk.detected.v1';
@@ -75,3 +78,10 @@ export type * from './events/equipment.unit.maintenance_scheduled.v1';
 // Phase 22 workforce events (canonical names — spec §Phase 22 Kafka events)
 export type * from './events/workforce.checkout.created.v1';
 export type * from './events/workforce.timesheet.approved.v1';
+
+// Phase 24 digital twin events (canonical names — spec §Phase 24 Kafka events)
+export type * from './events/twin.state.updated.v1';
+export type * from './events/twin.divergence.detected.v1';
+
+// Phase 24 carbon analytics events (canonical names — spec §33.3 CarbonCalculationEngine EP)
+export type * from './events/carbon.record.created.v1';

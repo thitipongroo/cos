@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "TwinDivergenceDetectedEvent",
+  "namespace": "com.constructionos.events.twin",
+  "doc": "twin.divergence.detected.v1 — Phase 24 Digital Twin",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "TwinDivergenceDetectedPayload",
+      "fields": [
+        { "name": "project_id",        "type": "string" },
+        { "name": "tenant_id",         "type": "string" },
+        { "name": "generated_at",      "type": "string" },
+        { "name": "divergence_count",  "type": "int" },
+        { "name": "max_severity",      "type": { "type": "enum", "name": "SeverityLevel", "symbols": ["LOW", "MEDIUM", "HIGH"] } },
+        { "name": "risk_level",        "type": "string" }
+      ]
+    }}
+  ]
+}
