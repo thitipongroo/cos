@@ -122,14 +122,14 @@ These entities are cached for offline reference but not mutated offline :
 
 ## 17.5 Conflict Resolution Rules per Entity
 
-| Entity                | Strategy                  | Reason                                        |
-| --------------------- | ------------------------- | --------------------------------------------- |
-| Task progress_percent | Last-write-wins           | Simple scalar, bounded 0–100                  |
-| Inspection checklist  | Field-level merge         | Multiple inspectors may fill different fields |
-| Site report           | Last-write-wins per field | One author per daily report                   |
-| Workforce attendance  | Server wins on check_in   | Prevents time manipulation                    |
-| Safety incident       | Human review queue        | Critical record — cannot auto-resolve         |
-| Material consumption  | Append-only               | Each consumption record is a new row          |
+| Entity                | Strategy                  | Reason                                                                                   |
+| --------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+| Task progress_percent | Max-wins                  | Monotonic — progress never regresses; higher value always wins regardless of write order |
+| Inspection checklist  | Field-level merge         | Multiple inspectors may fill different fields                                            |
+| Site report           | Last-write-wins per field | One author per daily report                                                              |
+| Workforce attendance  | Server wins on check_in   | Prevents time manipulation                                                               |
+| Safety incident       | Human review queue        | Critical record — cannot auto-resolve                                                    |
+| Material consumption  | Append-only               | Each consumption record is a new row                                                     |
 
 ---
 

@@ -1902,6 +1902,33 @@ Offline Conflict Resolution Strategy (authoritative):
     Server returns: { resolved_payload, conflict_status, server_version }
     conflict_status: ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED
 
+Task Completion Gates (server-side validation — not enforced offline):
+  A task may only transition to status = COMPLETED when ALL hard-block gates pass.
+  Evaluated at PATCH /api/v1/tasks/:id { status: 'completed' }.
+  On any hard-block failure → return HTTP 422 with error code COS-TASK-001 and the list
+  of blocking gate names.
+
+  Hard blocks — system returns 422 if any gate fails:
+    1. Inspections  — no linked inspection (task_id = task.task_id) with
+                      result = 'FAIL' or status = 'REQUIRES_REINSPECTION'
+    2. Issues       — no linked issue (task_id = task.task_id) with
+                      issue_type IN ('DEFECT','REWORK','PUNCH') and status = 'OPEN'
+    3. Dependencies — all predecessor tasks derived from BOQ parent-child hierarchy
+                      (boq_item_id parent → child = DEPENDS_ON) have status = 'COMPLETED'
+    4. Permit       — no linked permit (linked_task_id = task.task_id) with
+                      status IN ('EXPIRED','REVOKED')
+    5. Safety       — no linked safety incident (task_id = task.task_id) with
+                      status = 'OPEN' and severity IN ('HIGH','CRITICAL')
+    6. Delay        — task.status != 'BLOCKED'
+                      (construction.delay.detected.v1 event auto-sets task.status = BLOCKED)
+    7. Material     — linked BOQ item's purchase order has at least one delivery record
+                      with status != 'PENDING' (partial or complete delivery required)
+
+  Warn only — HTTP 200 returned; response includes warnings[] array:
+    8. Budget 85%–99%  — BOQ item actual_cost >= 85% of budget → warning level: ORANGE
+    9. Budget >= 100%  — BOQ item actual_cost >= 100% of budget → warning level: RED;
+                         requires PM acknowledgement flag in request body: { acknowledge_budget_overrun: true }
+
 Entities (PostgreSQL — schema: site_ops):
   site_reports:
     report_id       UUID PK
@@ -1922,9 +1949,11 @@ Entities (PostgreSQL — schema: site_ops):
     issue_id        UUID PK
     project_id      UUID FK NOT NULL
     tenant_id       UUID NOT NULL
-    report_id       UUID FK (optional)
+    report_id       UUID FK (optional — FK → site_reports)
+    task_id         UUID nullable FK → projects.tasks (completion gate #2; see §11)
     title           VARCHAR(255) NOT NULL
     description     TEXT
+    issue_type      ENUM('DEFECT','REWORK','PUNCH','GENERAL') DEFAULT 'GENERAL'
     severity        ENUM('LOW','MEDIUM','HIGH','CRITICAL')
     status          ENUM('OPEN','IN_PROGRESS','RESOLVED','CLOSED')
     assigned_to     UUID
@@ -1938,6 +1967,7 @@ Entities (PostgreSQL — schema: site_ops):
     project_id      UUID FK NOT NULL
     tenant_id       UUID NOT NULL
     checklist_id    UUID FK NOT NULL
+    task_id         UUID nullable FK → projects.tasks (completion gate #1; see §11)
     status          ENUM('PENDING','PASSED','FAILED','REQUIRES_REINSPECTION')
     inspected_by    UUID NOT NULL
     inspected_at    TIMESTAMPTZ NOT NULL
@@ -3648,7 +3678,7 @@ Generate:
 - Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `main`; source: spec §30.5, §30.7):
     1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
     2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
-    3. Sync conflict resolution — Two users update same task progress_percent while offline → Last-write-wins applied on sync
+    3. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
 - Pact consumer test examples for Finance ← Procurement
 - GitHub Actions integration: unit tests on every PR, load tests weekly scheduled on staging (not per-deploy; spec §30.9)
 - Test data factories (factory_bot pattern — plain TypeScript functions, minimal required fields, spread overrides) per entity — location: packages/@cos/test-utils/src/factories.ts, naming: build<EntityName>Dto for request DTOs; RESOLVED 2026-06-13, see spec §30.13

@@ -220,7 +220,26 @@ Tasks :
 - planned_start
 - planned_end
 - actual_start
-- progress_percent
+- progress_percent (INTEGER 0–100; conflict resolution: Max-wins — see §17.5)
+- qc_status (ENUM: none / qc_hold / qc_passed — default none)
+
+Note on Task Completion Gates : A task may only transition to status = completed when ALL
+of the following gates pass (server-side validation — not enforced offline).
+
+Hard blocks — system rejects completion :
+
+1. Inspections   — no linked inspection with result = fail or status = requires_reinspection
+2. Issues        — no linked issue with issue_type IN (defect, rework, punch) and status = open
+3. Dependencies  — all predecessor tasks (via BOQ hierarchy DEPENDS_ON) have status = completed
+4. Permit        — no linked permit with status IN (expired, revoked)
+5. Safety        — no linked safety incident with status = open and severity IN (high, critical)
+6. Delay         — task.status != blocked (delay event auto-sets status = blocked on detection)
+7. Material      — linked BOQ item's PO has at least one delivery with status != pending
+
+Warn only — UI warning shown; completion still allowed :
+
+1. Budget 85%–99%  — BOQ item actual cost >= 85% of budget → orange warning banner in UI
+2. Budget >= 100%  — BOQ item actual cost >= 100% of budget → red warning banner + PM acknowledgement click required
 
 BOQ :
 
@@ -354,6 +373,29 @@ Site Reports :
 - completed_work
 - blockers
 
+Issues (site_ops schema) :
+
+- issue_id
+- tenant_id
+- project_id
+- report_id (nullable — FK → Site Reports)
+- task_id (nullable — FK → Tasks; links issue to a specific task; completion gate #2)
+- title
+- description
+- issue_type (ENUM: defect / rework / punch / general — default general)
+- severity (low / medium / high / critical)
+- status (open / in_progress / resolved / closed)
+- assigned_to (nullable — FK → Employee.employee_id)
+- resolution_note (nullable)
+- client_submitted_at
+- modified_at
+- created_at
+
+Note : issue_type distinguishes task-blocking issues (defect / rework / punch) from general
+site issues (general). When issue_type IN (defect, rework, punch) and status = open,
+the linked task cannot be marked completed (gate #2). Conflict resolution: FIELD_LEVEL_MERGE
+(description / resolution_note: last-writer-wins; status: server wins; photos: union).
+
 QC Inspection Template :
 
 - qc_template_id
@@ -370,6 +412,7 @@ Inspections :
 - tenant_id
 - project_id
 - qc_template_id (FK → QC Inspection Template)
+- task_id (nullable — FK → Tasks; links inspection to a specific task; see VALIDATED_BY in §10.3)
 - result (pass / fail / conditional)
 - issue_severity (low / medium / high / critical — nullable; populated when result is fail or conditional)
 - photos
@@ -379,6 +422,7 @@ Note : qc_template_id references a QC Inspection Template defined above. issue_s
 records the severity of defects found when result is fail or conditional; it is null when
 result is pass. QC Inspection Templates are separate from Safety — Checklists — the latter
 records completed safety checklist instances, not QC form structure.
+task_id links this inspection to a specific task for the completion gate check (gate #1).
 
 Financials — Cost Transaction :
 
@@ -577,11 +621,15 @@ Safety — Incidents :
 - incident_id
 - tenant_id
 - project_id
+- task_id (nullable — FK → Tasks; links incident to a specific task; see IMPACTS in §10.3)
 - incident_type
-- severity
+- severity (low / medium / high / critical)
 - reported_by
-- status
+- status (open / in_progress / resolved / closed)
 - created_at
+
+Note : task_id links this incident to a specific task for the completion gate check (gate #5).
+When severity IN (high, critical) and status = open, the linked task cannot be marked completed.
 
 Safety — Checklists :
 
