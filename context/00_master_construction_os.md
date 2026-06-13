@@ -3637,7 +3637,7 @@ Generate:
 - Playwright E2E test for: login, project create, report submit, dashboard view
 - Pact consumer test examples for Finance ← Procurement
 - GitHub Actions integration: unit tests on every PR, load tests weekly scheduled on staging (not per-deploy; spec §30.9)
-- Test data factories (TypeScript class-factory-boy equivalent) per entity
+- Test data factories (factory_bot pattern — plain TypeScript functions, minimal required fields, spread overrides) per entity — location: packages/@cos/test-utils/src/factories.ts, naming: build<EntityName>Dto for request DTOs; RESOLVED 2026-06-13, see spec §30.13
 - Database reset utility for integration tests (truncate + reseed)
 
 Async fake timer test pattern (Rule 30 — required for retry helpers, pollers, backoff logic):

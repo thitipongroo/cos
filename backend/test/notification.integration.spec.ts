@@ -8,6 +8,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { AppModule } from '../src/app.module';
+import { buildNotificationPreferenceDto, buildRegisterDeviceDto } from '@cos/test-utils';
 import { NotificationService } from '../src/modules/notification/notification.service';
 import { NotificationRepository } from '../src/modules/notification/notification.repository';
 import type { NotificationRow } from '../src/modules/notification/notification.repository';
@@ -128,11 +129,7 @@ describe('Notification Integration (Phase 20)', () => {
       const res = await request(app.getHttpServer())
         .patch('/api/v1/notifications/preferences')
         .set('Authorization', USER_TOKEN)
-        .send({
-          preferences: [
-            { event_type: 'site.inspection.failed.v1', channel: 'IN_APP', is_enabled: false },
-          ],
-        });
+        .send({ preferences: [buildNotificationPreferenceDto({ is_enabled: false })] });
       expect([200, 500]).toContain(res.status);
     });
 
@@ -164,10 +161,7 @@ describe('Notification Integration (Phase 20)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/notifications/device-token')
         .set('Authorization', USER_TOKEN)
-        .send({
-          push_token: 'ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]',
-          platform: 'IOS',
-        });
+        .send(buildRegisterDeviceDto());
       expect([200, 201, 500]).toContain(res.status);
     });
 

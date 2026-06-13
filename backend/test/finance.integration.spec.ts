@@ -8,6 +8,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { AppModule } from '../src/app.module';
+import { buildSetBudgetDto } from '@cos/test-utils';
 
 const FINANCE_TOKEN = 'Bearer test-finance-token';
 
@@ -56,7 +57,7 @@ describe('Finance Integration (Phase 7)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects/3fa85f64-5717-4562-b3fc-2c963f66afa6/finance/budget')
         .set('Authorization', FINANCE_TOKEN)
-        .send({ total_budget_amount: '1000000.0000', total_budget_currency: 'THB' });
+        .send(buildSetBudgetDto());
       expect([201, 500]).toContain(res.status);
     });
 

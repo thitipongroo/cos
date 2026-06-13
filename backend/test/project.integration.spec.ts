@@ -23,6 +23,7 @@ import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
+import { buildCreateProjectDto } from '@cos/test-utils';
 
 const TENANT_ID = 'cccccccc-1111-4000-8000-000000000001';
 const USER_ID = 'cccccccc-2222-4000-8000-000000000001';
@@ -100,15 +101,12 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
       mockRole = 'PROJECT_MANAGER';
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects')
-        .send({
-          project_code: 'INT-CRUD-001',
-          project_name: 'Integration CRUD Project',
-          project_type: 'COMMERCIAL',
-          budget_amount: '5000000.0000',
-          budget_currency: 'THB',
-          start_date: '2026-01-01',
-          end_date: '2026-12-31',
-        })
+        .send(
+          buildCreateProjectDto({
+            project_code: 'INT-CRUD-001',
+            project_name: 'Integration CRUD Project',
+          }),
+        )
         .expect(201);
 
       expect(res.body.project_code).toBe('INT-CRUD-001');
@@ -203,12 +201,14 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
       // end_date in the past — required by the COMPLETED transition check
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects')
-        .send({
-          project_code: 'INT-TRANS-001',
-          project_name: 'Transition Project',
-          project_type: 'RESIDENTIAL',
-          end_date: '2025-01-01',
-        })
+        .send(
+          buildCreateProjectDto({
+            project_code: 'INT-TRANS-001',
+            project_name: 'Transition Project',
+            project_type: 'RESIDENTIAL',
+            end_date: '2025-01-01',
+          }),
+        )
         .expect(201);
       transProjectId = res.body.project_id;
     });
@@ -270,11 +270,13 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
       mockRole = 'PROJECT_MANAGER';
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects')
-        .send({
-          project_code: 'INT-CANCEL-001',
-          project_name: 'Cancellation Project',
-          project_type: 'INDUSTRIAL',
-        })
+        .send(
+          buildCreateProjectDto({
+            project_code: 'INT-CANCEL-001',
+            project_name: 'Cancellation Project',
+            project_type: 'INDUSTRIAL',
+          }),
+        )
         .expect(201);
       cancelProjectId = res.body.project_id;
     });
@@ -308,11 +310,13 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
       mockRole = 'PROJECT_MANAGER';
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects')
-        .send({
-          project_code: 'INT-MEMBER-001',
-          project_name: 'Member Test Project',
-          project_type: 'INFRASTRUCTURE',
-        })
+        .send(
+          buildCreateProjectDto({
+            project_code: 'INT-MEMBER-001',
+            project_name: 'Member Test Project',
+            project_type: 'INFRASTRUCTURE',
+          }),
+        )
         .expect(201);
       memberProjectId = res.body.project_id;
     });

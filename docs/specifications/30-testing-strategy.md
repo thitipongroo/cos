@@ -396,4 +396,75 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 
 ---
 
+## 30.13 Test Data Factories
+
+**Decision:** plain TypeScript factory functions (factory_bot pattern). **Resolved:** 2026-06-13.
+
+### Rationale
+
+Domain entities in this project are managed as raw SQL tables accessed via Prisma `$queryRaw` /
+`$executeRaw`. Schema-driven generators (prisma-fabbrica, factory-js Prisma plugin) generate
+factories from Prisma schema models only — not applicable here because domain entities are not
+Prisma models. Plain factory functions (the factory_bot canonical pattern) work with any TypeScript
+interface and are the industry standard for this architecture.
+
+### Pattern
+
+One factory function per DTO type. Signature: `build<EntityName>Dto(requiredArgs, overrides?)`.
+
+Rules (from factory_bot canonical source):
+- Provide only **required fields** (fields that would fail validation if absent)
+- Fields with server-generated defaults (id, created_at, tenant_id from JWT) are NOT included
+- All factories accept a final `overrides: Partial<T> = {}` argument — spread last
+- Factory must produce a valid payload that passes API validation with no overrides
+
+### Location
+
+All factories live in `packages/@cos/test-utils/src/factories.ts` and are exported via
+`packages/@cos/test-utils/src/index.ts`.
+
+### Naming convention
+
+```
+build<EntityName>Dto   — request payload factories (used in HTTP integration tests)
+build<EntityName>       — seed data factories (used for direct DB seeding)
+```
+
+### Current factories
+
+| Factory | Type | Fields |
+| --- | --- | --- |
+| `buildTenant` | seed | id, name, slug, tier, active, created_at |
+| `buildUser` | seed | id, tenant_id, email, name, role, created_at |
+| `buildProject` | seed | id, tenant_id, name, status, budget, currency, created_at |
+| `buildDocument` | seed | id, tenant_id, project_id, name, mime_type, size_bytes, storage_key, uploaded_by, created_at |
+| `buildInvoice` | seed | id, tenant_id, project_id, vendor_id, amount, currency, status, due_date, created_at |
+| `buildCreateProjectDto` | DTO | project_code, project_name, project_type, budget_amount, budget_currency, start_date, end_date |
+| `buildCreateVendorDto` | DTO | vendor_code, vendor_name, contact_email |
+| `buildCreatePurchaseRequestDto` | DTO | pr_number, required_date |
+| `buildCreateRfqDto` | DTO | project_id, rfq_number |
+| `buildCreatePurchaseOrderDto` | DTO | vendor_id, project_id, po_number |
+| `buildCreateBoqItemDto` | DTO | category_id, description, unit, quantity |
+| `buildSetBudgetDto` | DTO | total_budget_amount, total_budget_currency |
+| `buildCreateSiteReportDto` | DTO | project_id, report_date |
+| `buildCreateWorkerDto` | DTO | employee_code, full_name, trade_type, employment_type |
+| `buildCreateCheckInDto` | DTO | project_id, check_in_at |
+| `buildNotificationPreferenceDto` | DTO | event_type, channel, is_enabled |
+| `buildRegisterDeviceDto` | DTO | push_token, platform |
+
+### When NOT to use a factory
+
+- Single-field payloads where the specific value is the test (`{ phoneNumber: 'not-a-phone' }`)
+- State transition commands (`{ to: 'ACTIVE' }`)
+- Validation-failure payloads (intentionally malformed data — keep inline to make the intent clear)
+
+### Adding new factories
+
+When adding a new domain module with integration tests:
+1. Identify all multi-field CREATE payloads in the new integration test
+2. Add one `build<EntityName>Dto` function per entity to `factories.ts`
+3. Use the new factory in the integration test — no inline multi-field objects
+
+---
+
 > 📎 See also: [03-system-design](03-system-design.md) · [04-tech-stack](04-tech-stack.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [11-database-schema](11-database-schema.md) · [14-api-architecture](14-api-architecture.md) · [17-offline-mobile-sync](17-offline-mobile-sync.md) · [21-mvp-scope](21-mvp-scope.md) · [31-monitoring-observability](31-monitoring-observability.md) · [32-implementation-specifications](32-implementation-specifications.md)

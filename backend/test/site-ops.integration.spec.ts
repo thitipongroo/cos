@@ -9,6 +9,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { AppModule } from '../src/app.module';
+import { buildCreateSiteReportDto } from '@cos/test-utils';
 import { SiteOpsRepository } from '../src/modules/site-ops/site-ops.repository';
 import type {
   SiteReportRow,
@@ -127,7 +128,7 @@ describe('SiteOps Integration (Phase 6)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/site-reports')
         .set('Authorization', ENGINEER_TOKEN)
-        .send({ project_id: REPORT_ID_A, report_date: '2026-06-04' });
+        .send(buildCreateSiteReportDto(REPORT_ID_A, { report_date: '2026-06-04' }));
       expect([201, 500]).toContain(res.status);
     });
 

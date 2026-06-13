@@ -78,6 +78,7 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@cos/test-utils": "workspace:*",
     "@nestjs/cli": "^10.3.0",
     "@nestjs/platform-express": "^10.4.22",
     "@nestjs/schematics": "^10.1.0",

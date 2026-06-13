@@ -8,6 +8,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { AppModule } from '../src/app.module';
+import { buildCreateWorkerDto, buildCreateCheckInDto } from '@cos/test-utils';
 
 const ENGINEER_TOKEN = 'Bearer test-engineer-token';
 const TENANT_ID = 'tenant-integration-001';
@@ -58,12 +59,14 @@ describe('Workforce Integration (Phase 22)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/workers')
         .set('Authorization', ENGINEER_TOKEN)
-        .send({
-          employee_code: 'EMP-001',
-          full_name: 'Somchai Jaidee',
-          trade_type: 'Carpenter',
-          employment_type: 'PERMANENT',
-        });
+        .send(
+          buildCreateWorkerDto({
+            employee_code: 'EMP-001',
+            full_name: 'Somchai Jaidee',
+            trade_type: 'Carpenter',
+            employment_type: 'PERMANENT',
+          }),
+        );
       expect([201, 500]).toContain(res.status);
     });
 
@@ -122,10 +125,7 @@ describe('Workforce Integration (Phase 22)', () => {
       const res = await request(app.getHttpServer())
         .post(`/api/v1/workers/${WORKER_ID}/attendance`)
         .set('Authorization', ENGINEER_TOKEN)
-        .send({
-          project_id: PROJECT_ID,
-          check_in_at: '2026-06-12T08:00:00Z',
-        });
+        .send(buildCreateCheckInDto(PROJECT_ID, { check_in_at: '2026-06-12T08:00:00Z' }));
       expect([201, 404, 500]).toContain(res.status);
     });
 

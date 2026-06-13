@@ -8,6 +8,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { AppModule } from '../src/app.module';
+import { buildCreateVendorDto, buildCreatePurchaseRequestDto } from '@cos/test-utils';
 
 const PM_TOKEN = 'Bearer test-pm-token';
 const ADMIN_TOKEN = 'Bearer test-admin-token';
@@ -63,11 +64,13 @@ describe('Procurement Integration (Phase 5)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/vendors')
         .set('Authorization', PROC_TOKEN)
-        .send({
-          vendor_code: 'VND-001',
-          vendor_name: 'Test Vendor Co.',
-          contact_email: 'vendor@test.com',
-        });
+        .send(
+          buildCreateVendorDto({
+            vendor_code: 'VND-001',
+            vendor_name: 'Test Vendor Co.',
+            contact_email: 'vendor@test.com',
+          }),
+        );
       expect([201, 409, 500]).toContain(res.status);
     });
 
@@ -85,7 +88,7 @@ describe('Procurement Integration (Phase 5)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects/project-test-001/purchase-requests')
         .set('Authorization', PM_TOKEN)
-        .send({ pr_number: 'PR-001', required_date: '2026-12-31' });
+        .send(buildCreatePurchaseRequestDto({ pr_number: 'PR-001' }));
       expect([201, 409, 500]).toContain(res.status);
     });
 
