@@ -141,6 +141,10 @@ Scenarios for MVP:
 4. **Safety incident** — Safety Officer reports incident → PM receives push notification → incident acknowledged within 30 min SLA
 5. **QC inspection** — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
 6. **Approval escalation** — Approver does not respond in 48 hours → next approver is notified
+7. **Login** — User authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
+8. **Project create** — PM creates a new project; status transitions from DRAFT → ACTIVE
+9. **Report submit** — Site Engineer submits daily site report; Kafka event emitted; notification received by PM
+10. **Dashboard view** — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
 
 ### Mobile E2E (Detox)
 
@@ -376,6 +380,7 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | Security SAST (SonarQube)                | Every PR              | PR merge (High severity) — ⏸ DEFERRED       |
 | Smoke tests (ArgoCD PostSync wave 1)     | Post-deploy (staging) | Blocks E2E wave 2                           |
 | E2E tests (Playwright)                   | Merge to `main`       | Staging deploy                              |
+| E2E tests (Detox — React Native mobile)  | Merge to `main`       | Staging deploy                              |
 | Load tests (k6)                          | Weekly scheduled      | Alert only (not blocking)                   |
 | DAST (OWASP ZAP)                         | Weekly scheduled      | Alert only (not blocking)                   |
 

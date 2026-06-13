@@ -145,7 +145,9 @@ Before starting any implementation task:
 - Unit test coverage **100% lines and 100% branches** for all new modules (source: spec §30.3, §30.12); measured by `jest --coverage` with thresholds `{"global":{"lines":100,"branches":100}}` or `pytest --cov` with `--cov-fail-under=99` for lines (branch coverage enforced in jest config)
 - Integration tests required for every public API endpoint
 - Contract tests required whenever a new inter-service HTTP/gRPC contract is introduced
-- E2E tests required for every critical user workflow (site report, procurement approval, cost tracking)
+- E2E tests required for every critical user workflow (site report, procurement approval, cost tracking):
+  - Web: Playwright 1.x — `tests/e2e/`; 10 scenarios (spec §30.5)
+  - Mobile: Detox (React Native) — `apps/mobile/e2e/`; 3 scenarios (spec §30.5)
 - Test files must be committed in the same PR as the implementation — never as a follow-up
 - For financial calculation logic, procurement approval flows, and permission checks → mutation testing required (`stryker` for TypeScript, `mutmut` for Python); mutation score ≥ 70%
 

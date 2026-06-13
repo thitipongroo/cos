@@ -3634,7 +3634,21 @@ Generate:
 - pytest config for Python services
 - Shared testcontainers setup utility (@cos/test-utils package)
 - k6 load test scripts for all 4 scenarios above
-- Playwright E2E test for: login, project create, report submit, dashboard view
+- Playwright E2E tests (web — location: tests/e2e/; runs on merge to `main`; source: spec §30.5 + Phase 18 Generate):
+    1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
+    2. project create — PM creates project; status transitions DRAFT → ACTIVE
+    3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
+    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
+    5. Procurement flow — Create PR → generate RFQ → receive quotation → approve PO → record delivery → approve vendor invoice
+    6. Daily site report — Site Engineer submits report with manpower count and blockers
+    7. Budget exceeded alert — Cost transaction pushes project over budget → Executive receives push notification
+    8. Safety incident — Safety Officer reports incident → PM receives push notification → acknowledged within 30 min SLA
+    9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
+    10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
+- Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `main`; source: spec §30.5, §30.7):
+    1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
+    2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
+    3. Sync conflict resolution — Two users update same task progress_percent while offline → Last-write-wins applied on sync
 - Pact consumer test examples for Finance ← Procurement
 - GitHub Actions integration: unit tests on every PR, load tests weekly scheduled on staging (not per-deploy; spec §30.9)
 - Test data factories (factory_bot pattern — plain TypeScript functions, minimal required fields, spread overrides) per entity — location: packages/@cos/test-utils/src/factories.ts, naming: build<EntityName>Dto for request DTOs; RESOLVED 2026-06-13, see spec §30.13
