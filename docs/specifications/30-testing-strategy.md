@@ -152,7 +152,7 @@ Scenarios:
 
 1. **Offline check-in** — Worker checks in with no connectivity → record queued → sync on reconnect
 2. **Offline inspection** — Inspector fills checklist offline → photo attached → sync on reconnect
-3. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Last-write-wins applied on sync
+3. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
 
 ### Environment
 
@@ -212,7 +212,7 @@ Tests for the React Native offline sync engine (see `17-offline-mobile-sync`).
 | Device goes offline, user submits task update | Record queued in local FIFO queue                                           |
 | Connectivity restored                         | Queue flushes in priority order (safety → attendance → inspections → tasks) |
 | Sync fails 5 times for safety incident        | Moved to tenant admin review queue; push alert sent to PM                   |
-| Conflict: two users update same task offline  | Last-write-wins applied; lower-timestamp record discarded                   |
+| Conflict: two users update same task offline  | Max-wins applied; higher value wins (progress is monotonic)                 |
 | Conflict: safety incident (human review)      | Both versions preserved; presented to admin for manual resolution           |
 | Device local DB exceeds 500 MB                | LRU eviction triggered; drawing cache cleared first                         |
 

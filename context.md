@@ -146,8 +146,24 @@ Before starting any implementation task:
 - Integration tests required for every public API endpoint
 - Contract tests required whenever a new inter-service HTTP/gRPC contract is introduced
 - E2E tests required for every critical user workflow (site report, procurement approval, cost tracking):
-  - Web: Playwright 1.x — `tests/e2e/`; 10 scenarios (spec §30.5)
-  - Mobile: Detox (React Native) — `apps/mobile/e2e/`; 3 scenarios (spec §30.5)
+  - Web: Playwright 1.x — `tests/e2e/`; 10 scenarios (spec §30.5):
+      1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
+      2. project create — PM creates project; status transitions DRAFT → ACTIVE
+      3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
+      4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
+      5. Procurement flow — Create PR → generate RFQ → receive quotation → approve PO →
+         record delivery → approve vendor invoice
+      6. Daily site report — Site Engineer submits report with manpower count and blockers
+      7. Budget exceeded alert — Cost transaction pushes project over budget → Executive receives push notification
+      8. Safety incident — Safety Officer reports incident → PM receives push notification →
+         acknowledged within 30 min SLA
+      9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
+      10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
+  - Mobile: Detox (React Native) — `apps/mobile/e2e/`; 3 scenarios (spec §30.5):
+      1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
+      2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
+      3. Sync conflict resolution — Two users update same task progress_percent while offline →
+         Max-wins applied on sync (higher value wins; progress is monotonic)
 - Test files must be committed in the same PR as the implementation — never as a follow-up
 - For financial calculation logic, procurement approval flows, and permission checks → mutation testing required (`stryker` for TypeScript, `mutmut` for Python); mutation score ≥ 70%
 

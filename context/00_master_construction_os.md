@@ -1883,6 +1883,12 @@ Offline Conflict Resolution Strategy (authoritative):
     Rationale: safety data must be authoritative — no client override
     On conflict: reject client version, return server version with CONFLICT_REJECTED status
 
+  Entity: tasks (progress_percent field)
+    Strategy: MAX_WINS — higher value wins; progress is monotonic
+    Rationale: progress_percent must never decrease; a worker cannot un-complete work
+    Implementation: compare client progress_percent vs server progress_percent; apply max(client, server)
+    Conflict flag: none — Max-wins resolves silently (no human review required)
+
   Financial entities (BOQ line items, payment approvals, budget entries, invoice records):
     Strategy: NO_AUTO_RESOLUTION — financial data must never be auto-merged or auto-overwritten
     Rationale: financial integrity requires human review of all concurrent-edit conflicts
