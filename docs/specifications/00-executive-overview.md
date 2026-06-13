@@ -4,7 +4,7 @@ version: '1.1.0'
 status: Active
 last_updated: '2026-05-26'
 authors:
-  - thitipongroo
+  - THITIPONG ROONGPRASERT
 related_docs:
   - Business Architecture
   - System Wide Integration
