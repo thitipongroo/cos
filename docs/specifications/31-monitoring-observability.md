@@ -26,6 +26,7 @@ related_docs:
 - [31.7 Alerting Rules](#317-alerting-rules)
 - [31.8 Dashboards](#318-dashboards)
 - [31.9 On-call & Incident Response](#319-on-call--incident-response)
+- [31.10 Synthetic Monitoring](#3110-synthetic-monitoring)
 
 ---
 
@@ -166,6 +167,15 @@ Audit logs (approval decisions, System Admin actions, cross-tenant access) are
 separate from application logs. They are written to an **immutable append-only store**
 per `05-security-compliance` section 5.2. Audit logs are never deleted.
 
+### Log Retention
+
+| Log type         | Hot storage | Cold archive | Compliance archive |
+| ---------------- | ----------- | ------------ | ------------------ |
+| Application logs | 30 days     | 1 year       | —                  |
+| Audit logs       | Indefinite  | —            | 7 years (WORM)     |
+
+Authoritative retention schedule: `docs/compliance/log-retention-policy.md`
+
 ---
 
 ## 31.5 Distributed Tracing
@@ -265,6 +275,7 @@ Alerts are routed via **Alertmanager** (bundled with Prometheus) to the on-call 
 ## 31.8 Dashboards
 
 All dashboards are version-controlled as Grafana JSON in the GitOps repository.
+Dashboard IDs and their corresponding SLO targets are registered in `docs/slo/dashboard-registry.md`.
 
 ### Platform Overview Dashboard
 
@@ -351,6 +362,31 @@ Operational runbooks for on-call response live in `docs/runbooks/`:
 - Post-mortem template: timeline, root cause, impact, remediation, prevention
 - Post-mortems are blameless — focus on system improvement, not individual fault
 - Action items tracked in the engineering backlog with severity label
+
+---
+
+## 31.10 Synthetic Monitoring
+
+Health-check probes run every 60 seconds from ≥ 2 AWS regions against all public
+endpoints, independently of the CI/CD pipeline. This provides continuous assurance
+that the platform is reachable and behaving correctly in production.
+
+| Property       | Value                                                                  |
+| -------------- | ---------------------------------------------------------------------- |
+| Interval       | 60 seconds                                                             |
+| Regions        | ≥ 2 AWS regions (primary + at least one secondary)                     |
+| Implementation | OpenTelemetry Collector + Grafana Synthetic Monitoring                 |
+| Probe location | `infrastructure/synthetics/`                                           |
+| Alerts         | Probe failure fires `ServiceDown` alert (§31.7) after 2 consecutive misses |
+
+Probe definitions (HTTP, DNS, SSL certificate expiry) live in `infrastructure/synthetics/`
+and are version-controlled. A new public endpoint must have a corresponding probe committed
+in the same PR that introduces the endpoint.
+
+> **Relationship to tenant isolation probe:** The synthetic probes in `infrastructure/synthetics/`
+> cover availability and correctness of public endpoints. The tenant isolation CronJob in
+> `infrastructure/monitoring/isolation-probe/` covers security — these are separate concerns
+> and both are required.
 
 ---
 

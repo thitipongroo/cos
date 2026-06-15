@@ -33,6 +33,7 @@ related_docs:
 - [32.6 Workflow State Machines](#326-workflow-state-machines)
 - [32.7 Design Token Specification](#327-design-token-specification)
 - [32.9 Integration Stub Pattern](#329-integration-stub-pattern)
+- [32.10 Feature Flag Lifecycle](#3210-feature-flag-lifecycle)
 
 ---
 
@@ -870,6 +871,31 @@ Currently specified as Type B:
 
 See `13-product-architecture.md` §13.3–13.5 for the list of all integration EPs and their trigger
 conditions.
+
+---
+
+## 32.10 Feature Flag Lifecycle
+
+Feature flags must not accumulate indefinitely. A flag that has reached 100% rollout
+is dead code — it must be removed within 30 days.
+
+### Lifecycle States
+
+| State        | Definition                                          | Required action                                                          |
+| ------------ | --------------------------------------------------- | ------------------------------------------------------------------------ |
+| ACTIVE       | Flag live; rollout < 100%                           | Monitor, iterate                                                         |
+| FULL_ROLLOUT | Flag at 100% rollout for < 30 days                  | Schedule cleanup PR in current sprint                                    |
+| STALE        | Flag at 100% rollout for > 30 days without cleanup  | Add to `docs/feature-flags/cleanup-backlog.md`; escalate in next sprint  |
+| REMOVED      | Flag check deleted from code and registry           | Strike through entry in backlog; must be in same PR as code deletion     |
+
+### Rules
+
+- A flag transitions to STALE automatically 30 days after reaching 100% rollout
+- Stale flags are tracked in `docs/feature-flags/cleanup-backlog.md`
+- Flag cleanup (code deletion + backlog update) must be a single PR — never split
+- Flag cleanup is a hard prerequisite before each Stage gate (Stage 1→2, Stage 2→3)
+- No new flags may be introduced in the same PR that adds a feature if that PR already
+  has an unresolved STALE flag on any code path it touches
 
 ---
 

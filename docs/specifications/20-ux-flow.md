@@ -26,6 +26,7 @@ related_docs:
   - [CRM / Sales Manager](#crm--sales-manager)
 - [20.3 Example Daily Site Workflow](#203-example-daily-site-workflow)
 - [20.4 SYSTEM_ADMIN Panel](#204-system_admin-panel)
+- [20.5 Internationalisation and Localisation](#205-internationalisation-and-localisation)
 
 ---
 
@@ -276,6 +277,39 @@ when workflow reaches the human gate (before data migration step).
 **On confirm:** calls `PATCH /api/v1/admin/tenants/{tenantId}/deactivate`
 
 **Success state:** tenant row status changes to Inactive; row greyed out.
+
+---
+
+## 20.5 Internationalisation and Localisation
+
+### Language Support
+
+| Language | Status        | Scope                                   |
+| -------- | ------------- | --------------------------------------- |
+| Thai     | MVP           | All UI strings, error messages, reports |
+| English  | MVP           | All UI strings, error messages, reports |
+
+All UI strings must be externalised via the i18n library — no hardcoded human-readable
+text in component source. Thai is the primary field language for site workers.
+
+### Thai-specific Rules
+
+- Date format: `DD/MM/YYYY` (Buddhist Era optional, configurable per tenant)
+- Currency: THB as default for Thai tenants; format `฿1,234,567.89`
+- Phone numbers: `+66` prefix; 9-digit local format displayed as `0XX-XXX-XXXX`
+- Number separators: `.` for decimal, `,` for thousands (standard Thai business convention)
+
+### Localisation Gap Tracking
+
+Thai-specific business rules that have no direct international equivalent (e.g., WHT
+calculation logic, BoT regulatory fields, Buddhist Era dates) must be:
+
+1. Tagged in source code with `// i18n: TH-SPECIFIC`
+2. Documented in `docs/i18n/localization-gaps.md` before the feature merges
+
+`docs/i18n/localization-gaps.md` is the authoritative registry of all TH-specific rules.
+It must be reviewed before adding support for any new country (VN, SG, MY, ID) to ensure
+TH-specific logic is not silently applied to non-TH tenants.
 
 ---
 

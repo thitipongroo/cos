@@ -204,6 +204,8 @@ Writes go to DB first (Path 1). Path 2 operates as a separate CDC stream.
 - Data Lake (S3 + Iceberg): cold archive, 10 years
 - Time-series telemetry (TimescaleDB): 90 days hot, then compressed to Iceberg
 
+Authoritative retention schedule per entity type: `docs/compliance/data-retention-policy.md`
+
 ---
 
 ## 9.6 Ecosystem Intelligence Decisions

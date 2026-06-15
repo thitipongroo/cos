@@ -93,6 +93,10 @@ operator fault. Critical safety notification delivery (see 19-notification-archi
 section 19.3) is excluded from planned maintenance windows — safety alerts must remain
 deliverable at all times.
 
+Approved production deployment windows are defined in `docs/runbooks/deployment-windows.md`.
+Production deployments are only executed during these windows. Emergency hotfixes are
+exempt with product owner approval on record (see `docs/runbooks/production-readiness.md`).
+
 ---
 
 ## 8.3 Enterprise Requirements

@@ -20,6 +20,8 @@ related_docs:
 - [5.2 Security Controls](#52-security-controls)
 - [5.3 Compliance](#53-compliance)
 - [5.4 Authentication Flow](#54-authentication-flow)
+- [5.7 Content Security Policy (CSP)](#57-content-security-policy-csp)
+- [5.8 CORS Policy](#58-cors-policy)
 
 ---
 
@@ -112,6 +114,10 @@ Targets (see §5.3.1 for audit workflow spec):
 6. External auditor findings tracked in `docs/security/pentest-findings.md` (SOC 2) or audit tracker
 
 **Controls tracking:** `docs/compliance/soc2-controls.md` (SOC 2) · `docs/compliance/iso27001-controls.md` (ISO 27001) · `docs/compliance/pdpa-controls.md` (PDPA)
+
+**PDPA data governance:** `docs/compliance/data-flow-map.md` (personal data flow map — reviewed before
+each new feature that processes PII; required before Stage 1→2 transition) ·
+`docs/compliance/data-retention-policy.md` (retention period per entity type — reviewed annually)
 
 ### Regional Compliance Scope (COORD-003)
 
@@ -443,6 +449,36 @@ Authoritative file: `docs/compliance/data-residency-policy.md`
   with product owner and legal sign-off.
 - `data_region` is included in every Kafka event payload so downstream consumers can
   enforce residency without a platform lookup.
+
+---
+
+## 5.7 Content Security Policy (CSP)
+
+The platform Content Security Policy is defined in `docs/security/csp-policy.md`.
+The policy must be reviewed and updated whenever a new third-party resource origin is
+added (CDN, font provider, analytics).
+
+Constraints:
+
+- Never use `unsafe-inline` or `unsafe-eval` in production CSP
+- `default-src 'self'` is the baseline; all overrides require justification in the policy file
+- Report-only mode (`Content-Security-Policy-Report-Only`) is enabled in staging when testing
+  new directives before production enforcement
+- CSP headers are set by `backend/src/shared/middleware/secure-headers.middleware.ts`
+
+---
+
+## 5.8 CORS Policy
+
+Allowed origins per environment are defined in `docs/security/cors-policy.md`.
+
+Constraints:
+
+- Never use `Access-Control-Allow-Origin: *` in production
+- The allowed origins list in `docs/security/cors-policy.md` must be updated before
+  onboarding any new web client or partner origin
+- Preflight response cache (`Access-Control-Max-Age`) must not exceed 86400 seconds (24 hours)
+- CORS headers are set by `backend/src/shared/middleware/secure-headers.middleware.ts`
 
 ---
 

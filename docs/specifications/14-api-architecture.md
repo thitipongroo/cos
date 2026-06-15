@@ -415,6 +415,8 @@ Lifecycle :
 - Minimum 12 months deprecation notice before a version is sunset
 - At least 2 major versions supported simultaneously at all times
 - Deprecated version returns Deprecation and Sunset headers in every response
+- Sunset dates and tenant notification log: `docs/api/deprecation-schedule.md`
+- Tenants must be notified ≥ 90 days before sunset via email + in-app banner (Notification Service)
 
 Breaking vs Non-breaking :
 
