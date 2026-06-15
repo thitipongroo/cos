@@ -1,0 +1,369 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — Analytics API
+  version: '1.0.0'
+  description: |
+    Analytics dashboard endpoints for Construction OS (Phase 14).
+
+    All endpoints are backed by ClickHouse + Redis cache layer.
+    Cache key format: `analytics:{tenant_id}:{dashboard_type}:{project_id}:{date_range}`
+
+    Performance SLA (P95 under 100 concurrent loads):
+    - Executive Dashboard: < 3 seconds
+    - PM Dashboard: < 3 seconds
+    - Trend endpoints: < 3 seconds
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ExecutiveDashboardRow:
+      type: object
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        totalCommitted:
+          type: string
+          description: Decimal string — total committed cost in THB
+          example: '5000000.00'
+        totalActual:
+          type: string
+          description: Decimal string — total actual spend in THB
+          example: '4500000.00'
+        totalBudget:
+          type: string
+          description: Decimal string — approved project budget in THB
+          example: '6000000.00'
+        utilizationPct:
+          type: number
+          format: float
+          description: Budget utilization percentage (actual / budget × 100)
+          example: 75.0
+        atRisk:
+          type: boolean
+          description: True when utilization variance exceeds riskThresholdPct
+        overdueInvoiceCount:
+          type: integer
+          description: Number of unpaid invoices past due date
+
+    PmDashboardRow:
+      type: object
+      properties:
+        eventDate:
+          type: string
+          format: date
+          example: '2026-06-01'
+        manpowerTotal:
+          type: integer
+          description: Total workers on site that day
+        issueOpenCount:
+          type: integer
+          description: Open issues at end of day
+        inspectionFailCount:
+          type: integer
+          description: Failed inspections that day
+        reportCount:
+          type: integer
+          description: Daily site reports submitted
+
+    CostTrendRow:
+      type: object
+      properties:
+        eventDate:
+          type: string
+          format: date
+          example: '2026-06-01'
+        committed:
+          type: string
+          description: Decimal string — daily committed amount in THB
+          example: '150000.00'
+        actual:
+          type: string
+          description: Decimal string — daily actual spend in THB
+          example: '140000.00'
+
+    ProcurementTrendRow:
+      type: object
+      properties:
+        eventDate:
+          type: string
+          format: date
+          example: '2026-06-01'
+        poCount:
+          type: integer
+          description: Purchase orders created that day
+        rfqCount:
+          type: integer
+          description: RFQs sent that day
+        invoiceCount:
+          type: integer
+          description: Invoices received that day
+        overdueInvoiceCount:
+          type: integer
+          description: Invoices that became overdue that day
+
+    SiteTrendRow:
+      type: object
+      properties:
+        eventDate:
+          type: string
+          format: date
+          example: '2026-06-01'
+        reportCount:
+          type: integer
+          description: Daily site reports submitted
+        issueOpenCount:
+          type: integer
+          description: Open issues at end of day
+        inspectionFailCount:
+          type: integer
+          description: Failed inspections that day
+        manpowerTotal:
+          type: integer
+          description: Total workers on site that day
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-ANALYTICS-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+security:
+  - bearerAuth: []
+
+paths:
+  /analytics/executive:
+    get:
+      tags: [analytics]
+      summary: Executive dashboard — budget utilization, at-risk projects, overdue invoices
+      operationId: getExecutiveDashboard
+      parameters:
+        - name: projectIds
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+              format: uuid
+          style: form
+          explode: true
+          description: One or more project UUIDs to include
+        - name: dateRange
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 'ISO date range: YYYY-MM-DD,YYYY-MM-DD'
+          example: '2026-01-01,2026-06-30'
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: riskThresholdPct
+          in: query
+          required: false
+          schema:
+            type: number
+            default: 10
+          description: Variance % to flag project as at-risk (default 10)
+      responses:
+        '200':
+          description: Executive dashboard rows — one per project
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExecutiveDashboardRow'
+        '503':
+          description: ClickHouse unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /analytics/pm/{projectId}:
+    get:
+      tags: [analytics]
+      summary: PM dashboard — manpower trend, open issues, inspection pass rate, procurement status
+      operationId: getPmDashboard
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dateRange
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 'ISO date range: YYYY-MM-DD,YYYY-MM-DD'
+          example: '2026-06-01,2026-06-30'
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: PM dashboard rows — one per day in range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PmDashboardRow'
+        '503':
+          description: ClickHouse unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /analytics/projects/{projectId}/cost-trend:
+    get:
+      tags: [analytics]
+      summary: Project cost trend — daily committed vs actual amounts
+      operationId: getCostTrend
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dateRange
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 'ISO date range: YYYY-MM-DD,YYYY-MM-DD'
+          example: '2026-06-01,2026-06-30'
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cost trend rows — one per day in range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CostTrendRow'
+        '503':
+          description: ClickHouse unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /analytics/projects/{projectId}/procurement-trend:
+    get:
+      tags: [analytics]
+      summary: Project procurement trend — daily PO, RFQ, invoice activity
+      operationId: getProcurementTrend
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dateRange
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 'ISO date range: YYYY-MM-DD,YYYY-MM-DD'
+          example: '2026-06-01,2026-06-30'
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Procurement trend rows — one per day in range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProcurementTrendRow'
+        '503':
+          description: ClickHouse unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /analytics/projects/{projectId}/site-trend:
+    get:
+      tags: [analytics]
+      summary: Project site trend — daily manpower, issues, inspections
+      operationId: getSiteTrend
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dateRange
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 'ISO date range: YYYY-MM-DD,YYYY-MM-DD'
+          example: '2026-06-01,2026-06-30'
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Site trend rows — one per day in range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SiteTrendRow'
+        '503':
+          description: ClickHouse unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

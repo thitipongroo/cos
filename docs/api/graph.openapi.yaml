@@ -1,0 +1,274 @@
+openapi: '3.1.0'
+info:
+  title: Construction OS — Graph API
+  version: '1.0.0'
+  description: |
+    Knowledge Graph query endpoints for Construction OS (Phase 13).
+
+    All endpoints read from Neo4j via the Graph Query Service (NestJS).
+    Tenant isolation is enforced at the query level — every Cypher query
+    filters by `tenant_id`.
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    VendorItem:
+      type: object
+      properties:
+        vendorId:
+          type: string
+          format: uuid
+        vendorName:
+          type: string
+
+    SupplyChainItem:
+      type: object
+      properties:
+        materialId:
+          type: string
+          format: uuid
+        description:
+          type: string
+        vendorId:
+          type: string
+          format: uuid
+        vendorName:
+          type: string
+
+    InspectionItem:
+      type: object
+      properties:
+        inspectionId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          example: PASS
+        inspectedAt:
+          type: string
+          example: '2026-06-01T08:00:00Z'
+
+    VendorProjectItem:
+      type: object
+      properties:
+        projectId:
+          type: string
+          format: uuid
+        projectName:
+          type: string
+
+    InvoiceItem:
+      type: object
+      properties:
+        invoiceId:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          description: Decimal string (ClickHouse Decimal64 serialised as string)
+          example: '150000.00'
+        currency:
+          type: string
+          example: THB
+        status:
+          type: string
+          example: APPROVED
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: COS-GRAPH-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
+
+security:
+  - bearerAuth: []
+
+paths:
+  /graph/projects/{projectId}/vendors:
+    get:
+      tags: [graph]
+      summary: All vendors supplying to a project
+      operationId: getVendorsForProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of vendors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VendorItem'
+        '503':
+          description: Neo4j unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /graph/projects/{projectId}/supply-chain:
+    get:
+      tags: [graph]
+      summary: Material supply chain for a project
+      operationId: getSupplyChain
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Supply chain items (material → vendor)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplyChainItem'
+        '503':
+          description: Neo4j unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /graph/projects/{projectId}/inspections:
+    get:
+      tags: [graph]
+      summary: All inspections for a project (pass/fail summary)
+      operationId: getInspectionsForProject
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Inspection list with status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InspectionItem'
+        '503':
+          description: Neo4j unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /graph/vendors/{vendorId}/projects:
+    get:
+      tags: [graph]
+      summary: Vendor relationship map — projects sharing this vendor
+      operationId: getProjectsForVendor
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Projects that share this vendor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VendorProjectItem'
+        '503':
+          description: Neo4j unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /graph/vendors/{vendorId}/invoices:
+    get:
+      tags: [graph]
+      summary: All invoices submitted by a vendor
+      operationId: getInvoicesForVendor
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tenantId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice list for this vendor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceItem'
+        '503':
+          description: Neo4j unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
