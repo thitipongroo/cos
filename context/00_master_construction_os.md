@@ -1556,6 +1556,9 @@ Constraints:
 
 - Before marking Phase 3 complete: read every Generate item above line by line,
   run ls/grep to verify each exists on disk, show output — Rule 36
+- docs/i18n/localization-gaps.md must exist by Phase 3 completion (create stub if not yet
+  populated); tag TH-specific logic in source with // i18n: TH-SPECIFIC and document before
+  each feature merges (source: context.md §Compliance, spec §20.5)
 
 ```
 
@@ -3313,6 +3316,7 @@ Grafana Dashboards (required):
   - Tenant Operations (per tenant): API volume/latency (Prometheus), active users (active_sessions_total gauge), storage usage (storage_used_bytes gauge), AI token quota (llm_tokens_consumed_total)
   - Business Metrics (internal): daily active tenants (PostgreSQL audit_logs), procurement value THB (PostgreSQL purchase_orders), site reports (ClickHouse site_activity_daily), approval completion rate (Prometheus workflow metrics)
   - SLO Burn Rate: error budget remaining per tier (30-day), fast burn (1h), slow burn (6h), historical SLO compliance
+  Dashboard IDs and SLO targets per dashboard: docs/slo/dashboard-registry.md (source: spec §31.8)
 
 Generate:
 
@@ -3326,7 +3330,11 @@ Generate:
 - NestJS interceptor for automatic HTTP metrics
 - Kafka metrics middleware for producer/consumer
 - Unit tests: metric collection, trace propagation
-
+- Log retention schedule: docs/compliance/log-retention-policy.md
+  (application logs 30-day hot / 1-year cold; audit logs indefinite / 7-year WORM — source: spec §31.4)
+- Synthetic health check probe definitions: infrastructure/synthetics/
+  (≥2 AWS regions, 60s interval, OTel Collector + Grafana Synthetic Monitoring;
+  adding a new endpoint requires a probe definition in the same PR — source: spec §31.10)
 
 Constraints:
 
@@ -3353,6 +3361,12 @@ Compliance Targets (source §13.3):
     ComplianceAuditWorkflow (Phase 16)
     Trigger: 6 months before target certification date
     Stub: follow §32.9 Integration Stub Pattern (Type A — fail-fast)
+
+  Compliance documentation (must exist before Phase 16 sign-off):
+    docs/compliance/soc2-controls.md     — SOC 2 Type II control tracking (required before Stage 2→3)
+    docs/compliance/data-flow-map.md     — PDPA/GDPR personal data flow map (reviewed before each
+                                           new feature that processes PII; required before Stage 1→2)
+    docs/compliance/data-retention-policy.md — retention period per entity type (reviewed annually)
 
 Security Requirements:
   Encryption algorithm: AES-256 minimum for all at-rest data encryption — custom field-level
@@ -3414,7 +3428,8 @@ Secure Headers (all HTTP responses):
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self' (adjust per frontend needs)
+  Content-Security-Policy: default-src 'self' (adjust per frontend needs;
+    policy definition: docs/security/csp-policy.md — no unsafe-inline/unsafe-eval; report-only in staging)
   Referrer-Policy: strict-origin-when-cross-origin
 
 Input Security:
@@ -3438,7 +3453,10 @@ Generate:
 - OWASP dependency check in CI pipeline
 - Unit tests: RBAC guards, rate limiting, tenant isolation middleware
 - Integration tests: cross-tenant isolation (must not leak data)
-
+- CORS policy: docs/security/cors-policy.md (allowed origins per environment; no * in production;
+  max-age ≤ 86400s; update policy before adding any new origin — source: spec §5.8)
+- External pentest: docs/security/pentest-findings.md (findings and resolution status;
+  required before Stage 1→2 — source: spec §5.3.1, context.md §Security)
 
 Constraints:
 
@@ -3506,6 +3524,9 @@ Deployment Strategy:
   Max unavailable: 0 pods (zero-downtime rolling)
   Rollback: automatic on health check failure (liveness probe 3 consecutive fails)
   Canary: Argo Rollouts (open-source Kubernetes progressive delivery) — no EP needed; decision made
+  Production deployment window registry: docs/runbooks/deployment-windows.md
+    (production deployments execute only within approved windows;
+    emergency hotfixes exempt with product owner approval on record — source: spec §8.2)
 
 CI/CD Pipeline (ArgoCD GitOps):
 
@@ -3689,6 +3710,8 @@ Generate:
 - GitHub Actions integration: unit tests on every PR, load tests weekly scheduled on staging (not per-deploy; spec §30.9)
 - Test data factories (factory_bot pattern — plain TypeScript functions, minimal required fields, spread overrides) per entity — location: packages/@cos/test-utils/src/factories.ts, naming: build<EntityName>Dto for request DTOs; RESOLVED 2026-06-13, see spec §30.13
 - Database reset utility for integration tests (truncate + reseed)
+- API version sunset dates and tenant notification log: docs/api/deprecation-schedule.md
+  (must exist before any endpoint sunset; minimum 90-day notice — source: spec §14.4, context.md §API)
 
 Async fake timer test pattern (Rule 30 — required for retry helpers, pollers, backoff logic):
   Use jest.runAllTimersAsync() NOT jest.runAllTimers() for async functions that sleep internally.

@@ -182,6 +182,8 @@ Exit criteria (Phase 0 is complete when):
   [ ] CI/CD pipeline is running on every service with no manual deploy paths
   [ ] Feature flag framework is integrated and used for at least 1 live feature
   [ ] Service template is documented and adopted by all engineering teams
+  [ ] docs/feature-flags/cleanup-backlog.md created (registry of stale flags;
+      flags at 100% rollout > 30 days = STALE; cleanup is prerequisite for Stage gates — source: spec §32.10)
 ```
 
 **Effort estimate:** Medium (2–4 weeks, 2–3 engineers)
@@ -531,6 +533,8 @@ Decision rules:
   IF a new integration is requested → evaluate: does it serve 3+ customers?
      If yes → build as standard middleware. If no → defer or build as custom connector.
   IF API deprecation is needed → minimum 90-day notice with migration guide required
+     Sunset dates and tenant notification log: docs/api/deprecation-schedule.md
+     (document before initiating any deprecation — source: spec §14.4)
   IF external API causes platform instability → circuit breaker activates,
      external traffic is shed before internal operations are affected
 
