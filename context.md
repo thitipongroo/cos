@@ -891,7 +891,7 @@ docs/security/pentest-findings.md                   — External pentest finding
 infrastructure/terraform/aws/kms.tf                 — KMS customer-managed key definitions (Phase 17)
 
 # API & Documentation
-docs/api/                                           — OpenAPI 3.1 specs (auto-generated per service: auth.openapi.yaml, boq.openapi.yaml, etc.; QM-2 convention: docs/api/{service}.openapi.yaml)
+docs/api/                                           — OpenAPI 3.1 specs (auto-generated per service: auth.openapi.yaml, boq.openapi.yaml, graph.openapi.yaml, analytics.openapi.yaml, etc.; QM-2 convention: docs/api/{service}.openapi.yaml; full canonical list: spec §14.3)
 docs/api/error-codes.md                             — Error code registry (COS-{DOMAIN}-{NNN}) (Phase 3)
 docs/api/deprecation-schedule.md                    — API version sunset dates and tenant notification log (Phase 18)
 docs/architecture/adr/                              — Architecture Decision Records (see directory for current list)

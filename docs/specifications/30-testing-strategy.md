@@ -196,7 +196,7 @@ trigger the `TenantIsolationBreach` alert (see §31.7 of
 | Scope          | Same 5 checks as PR gate (PostgreSQL, Neo4j, Kafka, S3, API)              |
 | Pass           | `tenant_isolation_check_result{check_name} = 1` (all checks)              |
 | Fail           | `tenant_isolation_check_result{check_name} = 0` → TenantIsolationBreach   |
-| Alert          | §31.7 TenantIsolationBreach - pages security lead immediately              |
+| Alert          | §31.7 TenantIsolationBreach - pages security lead immediately             |
 | Location       | `infrastructure/monitoring/isolation-probe/` (CronJob + test script)      |
 
 ---
@@ -428,6 +428,11 @@ Rules (from factory_bot canonical source) :
 
 All factories live in `packages/@cos/test-utils/src/factories.ts` and are exported via
 `packages/@cos/test-utils/src/index.ts`.
+
+`packages/@cos/test-utils/README.md` is required per QM-11 (purpose, public API,
+dependencies, configuration, usage example). This package was introduced in Phase 18
+and must follow the same README standard as all other `packages/@cos/*` packages
+defined in Phase 1.
 
 ### Naming convention
 

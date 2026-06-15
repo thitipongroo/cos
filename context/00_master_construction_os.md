@@ -3139,6 +3139,7 @@ Generate:
 - Full rebuild admin endpoint
 - Unit tests: Kafka event → Cypher transformation
 - Integration tests: full ingest pipeline with Neo4j test container
+- OpenAPI 3.1 spec: docs/api/graph.openapi.yaml (per spec §14.3 canonical table — Knowledge Graph, MVP Phase 13)
 
 
 Constraints:
@@ -3235,6 +3236,7 @@ Generate:
 - Unit tests: cache logic, aggregation query building
 - Integration tests: Kafka → ClickHouse → API flow
 - Load tests: verify P95 < 3s SLA under 100 concurrent dashboard loads
+- OpenAPI 3.1 spec: docs/api/analytics.openapi.yaml (per spec §14.3 canonical table — Analytics, MVP Phase 14)
 
 
 Constraints:
@@ -3690,6 +3692,7 @@ Generate:
   Note: jest.config.js is a Phase 1 deliverable — Phase 18 adds testcontainers and @cos/test-utils only
 - pytest config for Python services
 - Shared testcontainers setup utility (@cos/test-utils package)
+- packages/@cos/test-utils/README.md (required per QM-11 — purpose, public API, dependencies, configuration, usage example; same README standard as all packages/@cos/* per Rule 31; per spec §30.13)
 - k6 load test scripts for all 4 scenarios above
 - Playwright E2E tests (web — location: tests/e2e/; runs on merge to `main`; source: spec §30.5 + Phase 18 Generate):
     1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
@@ -3886,6 +3889,8 @@ Generate:
 
 - Extension point decisions: documented in docs/specifications/ (§13.3-13.5, §22.6, §05-security-compliance §5.3.1)
 - Adoption gate dashboard: track all 8 SECTION B gates in Grafana
+- cos-audit/ directory committed at repository root (log file contents git-ignored via .gitignore entry: cos-audit/*.log; directory must exist for run-all-checks.sh to write sign-off logs; required as Stage 1→2 transition gate — per spec §32.11)
+- docs/slo/monthly-reviews/ directory committed (monthly SLO review notes written here as YYYY-MM.md; Engineering Lead writes on first business day of each month covering previous month; escalate to product owner if error budget < 20% — per spec §31.6)
 
 
 Constraints:

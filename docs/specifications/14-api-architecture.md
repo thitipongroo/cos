@@ -145,6 +145,8 @@ are maintained in `docs/api/`:
 | AI                 | [ai](../api/ai.openapi.yaml)                     | Planned — MVP                                                                                  |
 | CRM                | [crm](../api/crm.openapi.yaml)                   | Planned — MVP                                                                                  |
 | Vendor             | [vendor](../api/vendor.openapi.yaml)             | Planned — MVP                                                                                  |
+| Knowledge Graph    | [graph](../api/graph.openapi.yaml)               | MVP (Phase 13)                                                                                 |
+| Analytics          | [analytics](../api/analytics.openapi.yaml)       | MVP (Phase 14)                                                                                 |
 | Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml) | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins) |
 
 The endpoint patterns below serve as the canonical reference; OpenAPI files are the

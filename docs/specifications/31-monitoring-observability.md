@@ -237,6 +237,26 @@ Errors: HTTP 5xx responses.
 - Alert threshold: lag > 5,000 messages for > 2 minutes
 - Critical: lag > 50,000 messages (potential data processing outage)
 
+### SLO Monthly Review
+
+A monthly review of SLO compliance is required for all tiers. The review covers:
+
+- API availability vs. target for the month (error budget consumed vs. remaining)
+- Latency SLO compliance per endpoint category
+- Kafka consumer lag incidents and duration
+- Any SLO burn-rate alerts that fired during the month
+
+**Process:**
+
+1. Engineering Lead pulls the SLO Burn Rate Dashboard for the preceding calendar month
+2. Documents compliance status, incidents, and corrective actions
+3. Saves notes to `docs/slo/monthly-reviews/YYYY-MM.md` (one file per month)
+4. Reviews with product owner; escalates if error budget < 20% remaining
+
+**Cadence:** First business day of each month, covering the previous month.
+
+**File location:** `docs/slo/monthly-reviews/YYYY-MM.md`
+
 ---
 
 ## 31.7 Alerting Rules
@@ -371,12 +391,12 @@ Health-check probes run every 60 seconds from ≥ 2 AWS regions against all publ
 endpoints, independently of the CI/CD pipeline. This provides continuous assurance
 that the platform is reachable and behaving correctly in production.
 
-| Property       | Value                                                                  |
-| -------------- | ---------------------------------------------------------------------- |
-| Interval       | 60 seconds                                                             |
-| Regions        | ≥ 2 AWS regions (primary + at least one secondary)                     |
-| Implementation | OpenTelemetry Collector + Grafana Synthetic Monitoring                 |
-| Probe location | `infrastructure/synthetics/`                                           |
+| Property       | Value                                                                      |
+| -------------- | -------------------------------------------------------------------------- |
+| Interval       | 60 seconds                                                                 |
+| Regions        | ≥ 2 AWS regions (primary + at least one secondary)                         |
+| Implementation | OpenTelemetry Collector + Grafana Synthetic Monitoring                     |
+| Probe location | `infrastructure/synthetics/`                                               |
 | Alerts         | Probe failure fires `ServiceDown` alert (§31.7) after 2 consecutive misses |
 
 Probe definitions (HTTP, DNS, SSL certificate expiry) live in `infrastructure/synthetics/`

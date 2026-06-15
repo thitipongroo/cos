@@ -899,6 +899,42 @@ is dead code — it must be removed within 30 days.
 
 ---
 
+## 32.11 Production Verification Artifacts
+
+### cos-audit/ Directory
+
+**Purpose:** Stores product owner sign-off audit logs from production readiness
+verification runs. Every execution of `scripts/readiness/run-all-checks.sh` that
+results in a product owner approval must be recorded here.
+
+**Location:** `cos-audit/` at repository root.
+
+**File format:** `cos-audit/audit-<timestamp>.log`
+
+- `<timestamp>` — ISO 8601 UTC format: `YYYYMMDDTHHMMSSZ`
+  (e.g. `cos-audit/audit-20260616T143000Z.log`)
+- Content: output of `run-all-checks.sh` + product owner sign-off statement
+- One file per verification run
+
+**Git configuration:**
+
+- Directory `cos-audit/` is committed to the repository (so the directory exists)
+- Log file contents are git-ignored (`.gitignore` entry: `cos-audit/*.log`)
+- Rationale: directory must exist for scripts to write to it; logs contain
+  potentially sensitive operational state and are not version-controlled
+
+**When to write:** Product owner must sign off in `cos-audit/audit-<timestamp>.log`
+at two mandatory gates:
+
+| Gate | Trigger |
+| ---- | ------- |
+| Phase completion sign-off | After product owner approves a Phase via Rule 38 |
+| Production readiness gate | After `run-all-checks.sh` passes and PO confirms |
+
+**Authority:** `context.md` §Production Readiness Procedure.
+
+---
+
 ## References
 
 | ID                 | Title                                                              | Source                                                                                                                      |
