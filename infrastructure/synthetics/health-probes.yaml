@@ -1,0 +1,162 @@
+# Construction OS — Synthetic Monitoring Probe Definitions
+# Source: spec §31.10 + master Phase 15 + QM-8
+# Implementation: OpenTelemetry Collector + Grafana Synthetic Monitoring
+# Interval: 60 seconds from ≥ 2 AWS regions (ap-southeast-1 primary + ap-east-1 secondary)
+# Alert: probe failure → Alertmanager → P1 incident (QM-17)
+#
+# Adding a new public endpoint: add a probe entry here in the same PR as the endpoint code.
+
+apiVersion: synthetic-monitoring/v1
+kind: ProbeGroup
+metadata:
+  name: cos-health-probes
+  namespace: monitoring
+spec:
+  regions:
+    - id: ap-southeast-1
+      name: 'Asia Pacific (Singapore) — primary'
+    - id: ap-east-1
+      name: 'Asia Pacific (Hong Kong) — secondary DR region'
+
+  defaults:
+    interval: 60 # seconds — QM-8 requirement
+    timeout: 10 # seconds — fail if no response within 10s
+    retry_count: 2 # retry twice before marking probe failed
+
+  probes:
+    # ── Core API health ──────────────────────────────────────────────
+
+    - name: backend-live
+      type: http
+      target: '${PROBE_BASE_URL}/health/live'
+      method: GET
+      interval: 60
+      expected_status: 200
+      labels:
+        service: backend
+        severity: critical
+      alert:
+        threshold: 1
+        for: '2m'
+        annotations:
+          runbook: 'https://docs.construction-os.internal/runbooks/incident-response'
+          summary: 'Backend liveness probe failing from {{ $labels.region }}'
+
+    - name: backend-ready
+      type: http
+      target: '${PROBE_BASE_URL}/health/ready'
+      method: GET
+      interval: 60
+      expected_status: 200
+      labels:
+        service: backend
+        severity: high
+      alert:
+        threshold: 2
+        for: '3m'
+
+    # ── File service ─────────────────────────────────────────────────
+
+    - name: file-service-live
+      type: http
+      target: '${FILE_SERVICE_URL}/health/live'
+      method: GET
+      interval: 60
+      expected_status: 200
+      labels:
+        service: file-service
+        severity: high
+
+    # ── AI gateway ───────────────────────────────────────────────────
+
+    - name: ai-gateway-live
+      type: http
+      target: '${AI_GATEWAY_URL}/health/live'
+      method: GET
+      interval: 60
+      expected_status: 200
+      labels:
+        service: ai-gateway
+        severity: high
+
+    # ── API smoke — authentication endpoint ──────────────────────────
+
+    - name: api-auth-otp-endpoint
+      type: http
+      target: '${PROBE_BASE_URL}/api/v1/identity/otp/request'
+      method: POST
+      interval: 60
+      headers:
+        Content-Type: 'application/json'
+        X-Tenant-ID: '${PROBE_TENANT_ID}'
+      body: '{"phone":"+66000000000"}'
+      # 422 expected (invalid phone in probe tenant) — proves endpoint is reachable
+      expected_status_range: [200, 422]
+      labels:
+        service: backend
+        domain: identity
+        severity: critical
+
+    # ── API smoke — projects list ─────────────────────────────────────
+
+    - name: api-projects-list
+      type: http
+      target: '${PROBE_BASE_URL}/api/v1/projects'
+      method: GET
+      interval: 60
+      headers:
+        Authorization: 'Bearer ${PROBE_SERVICE_TOKEN}'
+        X-Tenant-ID: '${PROBE_TENANT_ID}'
+      expected_status: 200
+      latency_p95_ms: 300
+      labels:
+        service: backend
+        domain: project
+        severity: high
+      alert:
+        latency_threshold_ms: 1000
+        for: '5m'
+
+    # ── Analytics endpoint ─────────────────────────────────────────
+
+    - name: api-analytics-executive
+      type: http
+      target: '${PROBE_BASE_URL}/api/v1/analytics/executive/summary'
+      method: GET
+      interval: 60
+      headers:
+        Authorization: 'Bearer ${PROBE_EXEC_TOKEN}'
+        X-Tenant-ID: '${PROBE_TENANT_ID}'
+      expected_status_range: [200, 200]
+      latency_p95_ms: 3000
+      labels:
+        service: backend
+        domain: analytics
+        severity: high
+      alert:
+        latency_threshold_ms: 3000
+        for: '5m'
+        annotations:
+          summary: 'ClickHouse analytics SLO breach (P95 > 3s) from {{ $labels.region }}'
+
+    # ── Kong Gateway ───────────────────────────────────────────────
+
+    - name: kong-gateway-live
+      type: http
+      target: '${KONG_URL}/status'
+      method: GET
+      interval: 60
+      expected_status: 200
+      labels:
+        service: kong
+        severity: critical
+
+---
+# Environment variable references (resolved by Kubernetes ExternalSecret or Vault Agent)
+# PROBE_BASE_URL         — https://api.construction-os.app (production)
+# FILE_SERVICE_URL       — https://files.construction-os.app
+# AI_GATEWAY_URL         — internal cluster URL (ai-gateway service)
+# KONG_URL               — internal cluster URL (kong-admin service)
+# PROBE_TENANT_ID        — UUID of dedicated synthetic monitoring tenant
+# PROBE_SERVICE_TOKEN    — Keycloak service account JWT (SITE_WORKER role minimum)
+# PROBE_EXEC_TOKEN       — Keycloak service account JWT (EXEC role)

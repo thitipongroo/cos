@@ -49,6 +49,8 @@ allowBuilds:
   '@prisma/engines': true
   '@swc/core': true
   cpu-features: true
+  detox: true
+  dtrace-provider: true
   prisma: true
   protobufjs: true
   ssh2: true
