@@ -116,75 +116,75 @@ Dependency Order (must complete before dependent can start):
         │
         ▼
 [Phase 2: Auth + Tenant] ──────────────────────────────────────────────┐
-        │                                                               │
-        ▼                                                               │
+        │                                                              │
+        ▼                                                              │
 [Phase 8: Event Infrastructure] ◄── MUST complete before Ph3–7         │
-        │                                                               │
-        ├──► [Phase 3: Project Service]                                 │
-        │           │                                                   │
-        ├──► [Phase 4: BOQ Service] ◄─── depends on Ph3               │
-        │           │                                                   │
-        ├──► [Phase 5: Procurement] ◄─── depends on Ph3, Ph4          │
-        │           │                                                   │
-        ├──► [Phase 6: Site Operations] ◄─── depends on Ph3           │
-        │           │                                                   │
-        ├──► [Phase 7: Finance] ◄─── depends on Ph4, Ph5             │
-        │           │                                                   │
-        ├──► [Phase 20: Notification Service] ◄─── depends on Ph2, Ph3│
-        │           │                                                   │
-        ├──► [Phase 21: Equipment Service] ◄─── depends on Ph2, Ph3  │
-        │           │                                                   │
-        ├──► [Phase 22: Workforce Service] ◄─── depends on Ph2, Ph3  │
-        │           │                                                   │
-        └──► [Phase 25: Enterprise Provisioning] ◄─── Ph2, Ph3, Ph20 │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 9: File Service] ◄─── depends on Ph2 (tenant)        │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 10: Mobile Offline] ◄─── depends on Ph3–7, Ph20–22  │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 11: AI Foundation] ◄─── depends on Ph8, Ph9          │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 12: AI Report Assistant] ◄─── depends on Ph11        │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 13: Knowledge Graph] ◄─── depends on Ph3–7, Ph11    │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 14: Analytics] ◄─── depends on Ph3–7, Ph8, Ph13     │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 23: MLOps Pipeline] ◄─── depends on Ph11, Ph14       │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 15: Observability] ◄─── depends on Ph1–14, Ph20–25  │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 16: Security] ◄─── depends on Ph2, Ph15             │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 17: DevOps] ◄─── depends on Ph1, Ph15, Ph16         │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 18: Testing] ◄─── depends on Ph1–17, Ph20–25        │
-                    │                                                   │
-                    ▼                                                   │
-         [Phase 19: Production Readiness] ◄─── depends on Ph1–18    │
-                                                                        │
+        │                                                              │
+        ├──► [Phase 3: Project Service]                                │
+        │           │                                                  │
+        ├──► [Phase 4: BOQ Service] ◄─── depends on Ph3                │
+        │           │                                                  │
+        ├──► [Phase 5: Procurement] ◄─── depends on Ph3, Ph4           │
+        │           │                                                  │
+        ├──► [Phase 6: Site Operations] ◄─── depends on Ph3            │
+        │           │                                                  │
+        ├──► [Phase 7: Finance] ◄─── depends on Ph4, Ph5               │
+        │           │                                                  │
+        ├──► [Phase 20: Notification Service] ◄─── depends on Ph2, Ph3 │
+        │           │                                                  │
+        ├──► [Phase 21: Equipment Service] ◄─── depends on Ph2, Ph3    │
+        │           │                                                  │
+        ├──► [Phase 22: Workforce Service] ◄─── depends on Ph2, Ph3    │
+        │           │                                                  │
+        └──► [Phase 25: Enterprise Provisioning] ◄─── Ph2, Ph3, Ph20   │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 9: File Service] ◄─── depends on Ph2 (tenant)          │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 10: Mobile Offline] ◄─── depends on Ph3–7, Ph20–22     │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 11: AI Foundation] ◄─── depends on Ph8, Ph9            │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 12: AI Report Assistant] ◄─── depends on Ph11          │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 13: Knowledge Graph] ◄─── depends on Ph3–7, Ph11       │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 14: Analytics] ◄─── depends on Ph3–7, Ph8, Ph13        │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 23: MLOps Pipeline] ◄─── depends on Ph11, Ph14         │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 15: Observability] ◄─── depends on Ph1–14, Ph20–25     │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 16: Security] ◄─── depends on Ph2, Ph15                │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 17: DevOps] ◄─── depends on Ph1, Ph15, Ph16            │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 18: Testing] ◄─── depends on Ph1–17, Ph20–25           │
+                    │                                                  │
+                    ▼                                                  │
+         [Phase 19: Production Readiness] ◄─── depends on Ph1–18       │
+                                                                       │
 BLOCKING RULE: Phase 8 must be completed before Ph3–7 begin,           │
-because all services depend on the shared event SDK from Ph8.          ◄┘
+because all services depend on the shared event SDK from Ph8.         ◄┘
 
 SAAS MATURITY MODEL — Phase to Stage mapping (source §32.1):
   Prevents agents from implementing features before their correct maturity stage.
 
-  Stage 1 — Multi-tenant MVP          → Phase 1–2   (Foundation + Auth)
-  Stage 2 — Multi-project SaaS       → Phase 3–7   (Core Domains)
-  Stage 3 — Multi-company Enterprise → Phase 8–14, 25  (Events + AI + Analytics + Enterprise Provisioning)
-  Stage 4 — Cross-region Deployment  → Phase 17 (DevOps + Multi-region)
-  Stage 5 — AI-native Ecosystem      → Phase 23–24 (MLOps + Digital Twin)
+  Stage 1 — Multi-tenant MVP          → Phase 1–2       (Foundation + Auth)
+  Stage 2 — Multi-project SaaS        → Phase 3–7       (Core Domains)
+  Stage 3 — Multi-company Enterprise  → Phase 8–14, 25  (Events + AI + Analytics + Enterprise Provisioning)
+  Stage 4 — Cross-region Deployment   → Phase 17        (DevOps + Multi-region)
+  Stage 5 — AI-native Ecosystem       → Phase 23–24     (MLOps + Digital Twin)
 
   Note: Stage command files 06–11 (ECOSYSTEM DOMINANCE through BACKGROUND CIVILIZATION) are beyond the spec Phase 25 scope. They operate under the AWAITING_DECISION protocol defined in each stage file.
 
@@ -3586,6 +3586,8 @@ Data Scaling Strategy (source §24.2):
 - Helm charts for all services (values-dev, values-staging, values-prod)
 - GitHub Actions workflow files (all steps above)
 - Dockerfile per service (multi-stage builds, non-root user)
+  Exception: apps/mobile/ — uses Expo EAS Build; no Dockerfile required or permitted
+  (source: docs/specifications/08-enterprise-deployment.md — Dockerfile table line "Mobile")
 - Kubernetes HPA (Horizontal Pod Autoscaler) per service
 - Kubernetes PodDisruptionBudget per service (minAvailable: 1)
 - PgBouncer Kubernetes manifests: Deployment (transaction mode) + Service + ConfigMap +
@@ -3617,6 +3619,7 @@ Constraints:
 
 - Before marking Phase 17 complete: read every Generate item above line by line,
   run ls/grep to verify each exists on disk, show output — Rule 36
+  Cross-reference: docs/specifications/08-enterprise-deployment.md (Dockerfile table + mobile Expo EAS note)
 
 ```
 
