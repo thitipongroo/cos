@@ -1,8 +1,8 @@
 ---
 title: 'AI Architecture'
-version: '1.6.0'
+version: '1.7.0'
 status: Active
-last_updated: '2026-05-28'
+last_updated: '2026-06-17'
 authors:
   - thitipongroo
 related_docs:
@@ -67,15 +67,15 @@ Layer C — Autonomous AI :
 
 ## 22.3 AI System Components
 
-| Component          | Responsibility                                                                                                                                                                                           |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| LLM Gateway        | Multi-model routing — implemented via LangChain latest; provider interface abstracted via `LLMProvider`; primary: OpenAI GPT-4o / gpt-4o-mini (cost fallback); no direct SDK coupling in domain services |
-| RAG Engine         | Context retrieval                                                                                                                                                                                        |
-| Vector DB          | Embeddings                                                                                                                                                                                               |
-| Knowledge Graph    | Construction relationships                                                                                                                                                                               |
-| Feature Store      | ML features                                                                                                                                                                                              |
-| Training Pipeline  | Continuous learning                                                                                                                                                                                      |
-| Agent Orchestrator | Multi-step AI workflows — see note below                                                                                                                                                                 |
+| Component          | Responsibility                                                                                                                                                                        |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| LLM Gateway        | Single entrypoint for all LLM calls — multi-model routing via `LLMProvider` (no direct SDK coupling); token tracking, Redis cache, Jinja2 prompts; resilience/budget per §22.7 GW-001 |
+| RAG Engine         | Context retrieval                                                                                                                                                                     |
+| Vector DB          | Embeddings                                                                                                                                                                            |
+| Knowledge Graph    | Construction relationships                                                                                                                                                            |
+| Feature Store      | ML features                                                                                                                                                                           |
+| Training Pipeline  | Continuous learning                                                                                                                                                                   |
+| Agent Orchestrator | Multi-step AI workflows — see note below                                                                                                                                              |
 
 Note on Agent Orchestrator :
 
@@ -151,7 +151,8 @@ CREATE INDEX ON document_embeddings (tenant_id, source_type, created_at DESC);
 
 #### Enforcement Rules
 
-1. **JWT-bound tenant_id:** Every RAG query binds `tenant_id` from the decoded JWT claim — never from a user-supplied body or query parameter (see `05-security-compliance` §5.4.1).
+1. **JWT-bound tenant_id:** Every RAG query binds `tenant_id` from the decoded JWT claim — never from a
+   user-supplied body or query parameter (see `05-security-compliance` §5.4.1).
 2. **No cross-tenant results:** Vector similarity search must never return rows from a different
    `tenant_id` than the requesting user's. A single mis-scoped query is a security incident.
 3. **SMB shared HNSW index trade-off:** The shared HNSW index covers all tenants for write
@@ -215,8 +216,10 @@ Provider Hierarchy :
 
 Routing :
 
-- LLM Gateway selects model based on `model_hint` passed by caller — two-tier configurable routing table (stored in env/YAML, never hardcoded)
-- All providers accessed via unified `LLMProvider` interface (LangChain abstraction) — no direct SDK coupling in domain services
+- LLM Gateway selects model based on `model_hint` passed by caller — two-tier configurable routing table
+  (stored in env/YAML, never hardcoded)
+- All providers accessed via unified `LLMProvider` interface (LangChain abstraction) — no direct SDK
+  coupling in domain services
 - Provider switching does not require application code changes
 
 | model_hint            | Model       | Rationale                      |
@@ -234,7 +237,8 @@ RAG Architecture :
 - Text chunked (512–1024 tokens with overlap)
 - Embedded via **text-embedding-3-small** (OpenAI, 1536 dimensions) via `EmbeddingProvider` interface
 - Stored in pgvector (MVP) → Weaviate (at scale)
-- Query-time: hybrid search — semantic similarity + keyword BM25
+- Query-time: hybrid search — keyword BM25 (OpenSearch) + semantic vector (pgvector), fused via Reciprocal
+  Rank Fusion (RRF), then cross-encoder reranking (see §22.7 RAG-001)
 - Retrieved chunks injected into LLM prompt as context
 
 Thai Language :
@@ -276,11 +280,13 @@ Thai Language :
 Execute these 5 scenarios in Thai against each candidate. Score pass/fail per scenario.
 Minimum pass rate for consideration: **4/5**.
 
-1. `"สร้าง RFQ สำหรับวัสดุ rebar 50 ตัน โครงการ proj_001 ภายใน 3 วัน"` — agent must call procurement tool, not just answer text
+1. `"สร้าง RFQ สำหรับวัสดุ rebar 50 ตัน โครงการ proj_001 ภายใน 3 วัน"`
+   — agent must call procurement tool, not just answer text
 2. `"ตรวจสอบ PO ที่รออนุมัติเกิน 48 ชั่วโมง และส่ง notification ให้ Finance"` — multi-step with notification tool
 3. `"พยากรณ์ความล่าช้าของโครงการ proj_002 จากข้อมูล 30 วันล่าสุด"` — must retrieve data, not hallucinate
 4. `"หยุดรอการอนุมัติจาก PM ก่อนดำเนินการต่อ"` — human-in-the-loop pause + resume
-5. `"ถ้า cost variance > 15% ให้แจ้ง Executive และสร้าง risk report อัตโนมัติ"` — conditional branching with multiple tool calls
+5. `"ถ้า cost variance > 15% ให้แจ้ง Executive และสร้าง risk report อัตโนมัติ"`
+   — conditional branching with multiple tool calls
 
 ### Decision Output Required
 
@@ -305,7 +311,8 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 
 ### LLM Provider
 
-**Decision:** OpenAI GPT-4o as primary LLM. Integration via `LLMProvider` interface in AI Gateway (FastAPI). All LLM calls routed through the interface — never called directly.
+**Decision:** OpenAI GPT-4o as primary LLM. Integration via `LLMProvider` interface in AI Gateway (FastAPI).
+All LLM calls routed through the interface — never called directly.
 
 | Attribute        | Value                                                           |
 | ---------------- | --------------------------------------------------------------- |
@@ -327,16 +334,61 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 
 ---
 
+### LLM Gateway Resilience (GW-001)
+
+**Decision:** The LLM Gateway centralizes resilience and cost controls so they never leak into domain services.
+**Resolved:** 2026-06-17
+
+- **Provider fallback / failover:** on primary (OpenAI) error or cost-threshold breach, the gateway routes
+  to the configured alternative provider (Claude — see Alternative LLM Provider) via the same `LLMProvider`
+  interface. Failover policy lives in routing YAML, never hardcoded.
+- **Budget enforcement:** per-tenant monthly token budget enforced at the gateway; on breach, alert
+  FINANCE + TENANT_ADMIN per 31-monitoring-observability §31.3 (`AIHighTokenUsage`). Enforcement action
+  (block vs. throttle) configurable per tenant tier.
+- **Virtual keys:** domain services authenticate to the gateway with internal virtual keys; provider API
+  keys live only in the gateway secret store (AWS Secrets Manager / Vault).
+
+**Industry precedent (2026):** centralized AI/LLM gateways (LiteLLM, Portkey, Kong AI Gateway, MLflow AI
+Gateway) consolidate fallback, budget enforcement, virtual keys, and observability at the gateway layer.
+
+---
+
 ### OCR Provider
 
-**Decision:** AWS Textract for invoice photo OCR.
+**Decision:** Two-tier OCR — open-source self-hosted for basic text extraction, AWS Textract for
+structured invoice/form extraction.
+**Aligned with:** `context/00_master_construction_os.md` §Phase 11 (lines 2762, 2805, 2841)
 
-| Attribute | Value                                                                       |
-| --------- | --------------------------------------------------------------------------- |
-| Service   | AWS Textract (`AnalyzeDocument` API — FORMS feature)                        |
-| Use case  | Extract vendor name, invoice number, amount, line items from invoice photos |
-| Auth      | IAM role (EKS IRSA) — no separate credentials                               |
-| Interface | `CloudOCRProvider.extract(imageUrl, documentType): Promise<OCRResult>`      |
+| Tier                | Engine                                                 | Use case                                                                           | Auth / Deployment                                                                               | Interface                                                              |
+| ------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Tier 1 — Basic      | `pytesseract` + `pdf2image` (open-source, self-hosted) | Scanned PDFs and image files (JPEG/PNG) → plain text for embedding / RAG ingestion | Runs in `ai-ocr-pipeline` container; requires system packages `tesseract-ocr` + `poppler-utils` | `process_file(file_id, bytes, mime_type): OCROutput`                   |
+| Tier 2 — Structured | AWS Textract (`AnalyzeDocument` — FORMS feature)       | Extract vendor name, invoice number, amount, line items from invoice photos        | IAM role (EKS IRSA) — no separate credentials                                                   | `CloudOCRProvider.extract(imageUrl, documentType): Promise<OCRResult>` |
+
+**Pipeline (Tier 1):** `pdf2image → pytesseract → extracted text → embedding worker` (00_master §Phase 11,
+line 2805). Output: `{ file_id, extracted_text, confidence_score }`. Triggered by Kafka consumer on
+`file.uploaded` (mime = PDF or image).
+
+> **Implementation note (gap found 2026-06-16):** `services/ai-ocr-pipeline/ocr_pipeline.py` imports
+> `pytesseract`, `pdf2image`, `PIL` but `requirements.txt` does not list them, and the Dockerfile does not
+> install system `tesseract-ocr` / `poppler-utils`. These must be added for Tier 1 to run.
+
+---
+
+### OCR High-Accuracy Extraction Tier (OCR-001)
+
+**Decision:** For high-value or layout-variable documents, route OCR text through the LLM Gateway
+`document-extraction` model_hint (gpt-4o) for structured field extraction.
+**Resolved:** 2026-06-17
+
+- **Pipeline:** Tier-1 / Tier-2 OCR (raw text or blocks) → LLM Gateway `document-extraction` (gpt-4o, §22.5)
+  → validated structured fields.
+- **When to use:** invoices / drawings with high layout variance, handwriting, or non-standard formats
+  where Textract FORMS confidence is low.
+- **Guardrail:** extracted financial fields stay advisory — never auto-post; human review per Autonomous
+  Workflow Executor (§22.7) and COORD-001 thresholds.
+
+**Industry precedent (2026):** combining external OCR with an LLM extraction step (e.g. GPT-4o) yields the
+highest field-level accuracy on complex / variable documents in invoice-extraction benchmarks.
 
 ---
 
@@ -356,12 +408,12 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 
 **Decision:** LangChain Python SDK (`langchain` + `langchain-openai`) configured with the LLMProvider wrapper.
 
-| Attribute  | Value                                                            |
-| ---------- | ---------------------------------------------------------------- |
-| Library    | `langchain>=0.3`, `langchain-openai>=0.2`                        |
-| Chain type | RAG chain: retriever (pgvector/OpenSearch) → reranker → LLM      |
-| Config     | Chain config stored in `ai/chains/` as YAML per chain type       |
-| Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain` |
+| Attribute  | Value                                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------------------------------- |
+| Library    | `langchain>=0.3`, `langchain-openai>=0.2`                                                                     |
+| Chain type | RAG chain: retrievers (pgvector + OpenSearch) → RRF fusion → cross-encoder reranker → LLM (see §22.7 RAG-001) |
+| Config     | Chain config stored in `ai/chains/` as YAML per chain type                                                    |
+| Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain`                                              |
 
 ---
 
@@ -375,6 +427,49 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 | Model     | `cross-encoder/ms-marco-MiniLM-L-6-v2` (fast, construction-domain suitable) |
 | Trigger   | Activate when RAG retrieval p95 relevance score < 0.7 over 7-day window     |
 | Interface | `CrossEncoderReranking.rerank(query, passages): Promise<RankedPassage[]>`   |
+
+---
+
+### RAG Retrieval Fusion (RAG-001)
+
+**Decision:** Fuse keyword (BM25) and vector results with Reciprocal Rank Fusion (RRF) before reranking.
+**Resolved:** 2026-06-17
+
+- **Why RRF:** BM25 scores and cosine similarities are on different scales; RRF combines them by rank
+  position alone (no score normalization) and rewards documents both retrievers agree on.
+- **Pipeline:** BM25 (OpenSearch) + vector (pgvector) → RRF merge → cross-encoder reranker (§22.7
+  Cross-Encoder Reranking) → top-k = 5 context assembly.
+- **Tuning:** RRF rank constant is tunable in chain config (`ai/chains/`) — use the retriever library's
+  documented default unless benchmark dictates otherwise.
+
+**Industry precedent (2026):** most production hybrid-RAG systems fuse BM25 + vector with RRF, optionally
+followed by cross-encoder reranking on the candidate set.
+
+---
+
+### Model Routing Evolution (RT-001)
+
+**Decision:** MVP uses static task-type tiering (§22.5); evolve to cascade, then predictive routing.
+Adoption is **eval-driven, not budget-percentage-driven** — adopt early once a representative eval set
+exists, and **learn thresholds from data** rather than hardcoding magic numbers.
+**Resolved:** 2026-06-17
+
+- **MVP (current):** static two-tier routing by `model_hint` → POWERFUL (`gpt-4o`) / FAST (`gpt-4o-mini`);
+  table in §22.5, config in routing YAML.
+- **Stage 2 — cascade routing:** start at FAST tier; escalate to POWERFUL only when the cheap-model
+  confidence score falls below threshold τ. **Adopt when:** (a) a representative labeled eval set exists
+  (use the Thai construction benchmark, §22.6) AND (b) a quality/cost signal fires (`AIHighTokenUsage`,
+  31-monitoring-observability §31.3). **τ is LEARNED on the eval set (FrugalGPT), never hardcoded.**
+- **Stage 3 — predictive routing:** a lightweight classifier predicts the cheapest model that satisfies
+  each request. **Adopt when:** an in-domain preference-data router (trained on cascade escalations +
+  logged human overrides; bootstrap from public data per RouteLLM) beats static routing on a holdout set.
+- **Guardrail:** never change routing without per-task cost/quality attribution
+  (31-monitoring-observability §31.3); run the eval on real prompts before committing a savings figure
+  to FINANCE.
+
+**Industry precedent (2026):** leaders adopt routing early and choose eval-driven triggers, not magic
+numbers — cascade thresholds are learned on a validation set (FrugalGPT, arXiv:2305.05176) and predictive
+routers are trained on preference data (RouteLLM, arXiv:2406.18665).
 
 ---
 
@@ -419,7 +514,8 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 
 ### Autonomous Workflow Executor
 
-**Decision:** AI may act autonomously ONLY for notifications and report generation. All financial actions and approvals require human approval.
+**Decision:** AI may act autonomously ONLY for notifications and report generation. All financial actions
+and approvals require human approval.
 
 | Action type           | Autonomous?        | Requires human?               |
 | --------------------- | ------------------ | ----------------------------- |
@@ -430,7 +526,8 @@ File the ADR as `docs/architecture/adr-layer-c-agent-framework.md` and update
 | Adjust budget         | ❌ No              | Always FINANCE + EXECUTIVE    |
 | Modify workflow state | ❌ No              | Always role-appropriate human |
 
-**Implementation:** `AutonomousWorkflowExecutor.execute(action)` — checks action type against whitelist before executing; throws `GovernanceViolationError` for disallowed actions.
+**Implementation:** `AutonomousWorkflowExecutor.execute(action)` — checks action type against whitelist
+before executing; throws `GovernanceViolationError` for disallowed actions.
 
 > ⚠️ **NOT implemented in Phase 11–12.** Interface is specified here as a decision record only.
 > Implementation deferred to Phase 13+ when Layer B (Analytical AI) is deployed and stable.
@@ -630,4 +727,7 @@ Base SaaS subscription revenue is not shared. Revenue distributed quarterly via 
 | [Temporal]  | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                                             |
 | [IFC4]      | Industry Foundation Classes IFC4                                   | buildingSMART International                                                               |
 
-> 📎 See also: [09-data-architecture](09-data-architecture.md) · [12-construction-knowledge-graph](12-construction-knowledge-graph.md) · [21-mvp-scope](21-mvp-scope.md) · [23-ai-native-operating-model](23-ai-native-operating-model.md) · [24-ai-training-pipeline](24-ai-training-pipeline.md)
+> 📎 See also: [09-data-architecture](09-data-architecture.md) ·
+> [12-construction-knowledge-graph](12-construction-knowledge-graph.md) ·
+> [21-mvp-scope](21-mvp-scope.md) · [23-ai-native-operating-model](23-ai-native-operating-model.md) ·
+> [24-ai-training-pipeline](24-ai-training-pipeline.md)

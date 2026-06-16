@@ -2761,6 +2761,7 @@ AI Provider Decision:
 
   OCR Engine: pytesseract + pdf2image (open-source, self-hosted) for basic PDF extraction
     Cloud OCR: AWS Textract AnalyzeDocument API (FORMS feature) for invoice photo extraction; IAM IRSA auth (see spec §22.6)
+    High-accuracy extraction: OCR text → LLM Gateway document-extraction (gpt-4o) for layout-variable/handwritten docs (RESOLVED — see spec §22.7 OCR-001)
 
 AI Services (FastAPI — all in ai/ directory):
 
@@ -2773,12 +2774,14 @@ AI Services (FastAPI — all in ai/ directory):
        configurable routing table; store in env/YAML, never hardcode model names)
        Tier POWERFUL (gpt-4o):   report-generation, risk-analysis, document-extraction
        Tier FAST (gpt-4o-mini):  summarization, classification, autocomplete
+       Routing evolution: static tiering (now) → cascade → predictive (RESOLVED — see spec §22.7 RT-001)
      - Token usage tracking (persisted to PostgreSQL for billing/monitoring)
      - Prompt template rendering (Jinja2 templates from ai/prompts/)
      - Response caching (Redis, TTL configurable per template)
+     - Gateway resilience: provider fallback/failover, per-tenant token budget enforcement, virtual keys (RESOLVED — see spec §22.7 GW-001)
      - RAG Pipeline (LangChain chain — implemented inside ai-gateway, not a separate service;
        see spec §22-ai-architecture §22.7 LangChain Configuration):
-         Retrieval: hybrid search (keyword via OpenSearch + vector via pgvector)
+         Retrieval: hybrid search (keyword via OpenSearch + vector via pgvector), fused via Reciprocal Rank Fusion (RRF) (RESOLVED — see spec §22.7 RAG-001)
          Reranking: sentence-transformers cross-encoder/ms-marco-MiniLM-L-6-v2; activate when RAG p95 relevance < 0.7
          Context assembly: top-k=5 chunks, max context 4000 tokens
          Chunking strategy:
