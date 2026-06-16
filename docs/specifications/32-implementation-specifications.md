@@ -186,7 +186,7 @@ If either condition is absent → keep as a module inside the monolith.
 | Main App ↔ File Service                 | REST API (HTTP)                               |
 | Main App ↔ AI Services                  | REST API (HTTP)                               |
 | Main App → Go Workers (write/ingestion) | Kafka events                                  |
-| Main App ← Go Workers (read/query)      | gRPC (proto-contracts)                        |
+| Main App ← Go Workers (read/query)      | N/A — NestJS queries each database directly   |
 
 ---
 

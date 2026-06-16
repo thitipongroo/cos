@@ -44,9 +44,7 @@
       "@cos/validation": ["./packages/@cos/validation/src/index.ts"],
       "@cos/validation/*": ["./packages/@cos/validation/src/*"],
       "@cos/database": ["./packages/@cos/database/src/index.ts"],
-      "@cos/database/*": ["./packages/@cos/database/src/*"],
-      "@cos/proto-contracts": ["./packages/@cos/proto-contracts/src/index.ts"],
-      "@cos/proto-contracts/*": ["./packages/@cos/proto-contracts/src/*"]
+      "@cos/database/*": ["./packages/@cos/database/src/*"]
     }
   }
 }

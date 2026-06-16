@@ -272,8 +272,8 @@ Cross-deployable communication:
   Main App ↔ File Service:    REST API (HTTP)
   Main App ↔ AI Services:     REST API (HTTP)
   Main App ↔ Go Workers:      Kafka events for WRITE/ingestion path (no direct HTTP).
-                              gRPC (proto-contracts) allowed for READ/query path only
-                              (e.g. KnowledgeGraphService querying Neo4j via Go worker gRPC API)
+                              READ/query path: NestJS services query each database directly
+                              via native driver (e.g. Neo4j driver in graph.service.ts).
 
 RULES:
 
@@ -1046,7 +1046,6 @@ services/                 — Separately deployed services (non-monolith)
 
 packages/                 — Shared packages (ONLY code used by 2+ apps/services)
   @cos/shared             — Typed Kafka event interfaces (Phase 1); Avro schemas added in Phase 8 alongside KafkaProducer/Consumer/OutboxPublisher
-  @cos/proto-contracts/   — gRPC proto files + generated stubs (future use)
   @cos/database/          — Prisma pagination utilities, ID generation, retry helpers
   @cos/rbac/              — RBAC + ABAC role definitions, guard decorators and metadata keys (NOT concrete CanActivate guards — those live in backend/src/shared/guards/; see spec §06 §6.9)
   @cos/validation/        — Shared DTO validators (class-validator decorators)
@@ -1109,7 +1108,7 @@ Generate:
     backend/src/modules/: identity, tenant, project, boq, procurement, site-ops,
                           finance, notification, equipment, workforce
     packages/@cos/: shared, database, rbac, validation, logger, tracing, financial,
-                    types, config, proto-contracts
+                    types, config
     Each README must contain: purpose, public API, dependencies, configuration, usage example (QM-11)
 - root pnpm-workspace.yaml with all packages listed
 - turbo.json with build, test, lint, dev pipelines
@@ -1128,10 +1127,9 @@ Generate:
   Istio enabled from dev Kubernetes environment onwards
 
 - HashiCorp Vault: dev mode container for local secret injection
-- @cos/proto-contracts: base proto setup with buf.gen.yaml for TypeScript + Python generation
 - .env.example with all required variables documented
 - GitHub Actions: CI pipeline (lint → build → test → docker build)
-- Makefile with: setup, dev, test, build, migrate, seed, proto-gen targets
+- Makefile with: setup, dev, test, build, migrate, seed targets
 - root README with architecture overview and getting started
 - Git hooks: initialize Husky (husky init); create .husky/pre-commit running lint-staged;
   lint-staged config: eslint --fix + prettier --write on staged .ts/.tsx/.js/.jsx files;
@@ -1139,8 +1137,8 @@ Generate:
 - Mobile tsconfig exception: apps/mobile extends expo/tsconfig.base (NOT root tsconfig.base.json —
   root base uses "module": "CommonJS" which is incompatible with React Native Metro bundler);
   add only mobile-compatible @cos/* paths: types, types/*, financial, financial/*, validation,
-  validation/*, rbac, rbac/*, shared, shared/* — do NOT add logger, tracing, config, database,
-  proto-contracts (Node.js-only packages)
+  validation/*, rbac, rbac/*, shared, shared/* — do NOT add logger, tracing, config, database
+  (Node.js-only packages)
 - jest.config.js per TypeScript package/service with coverage thresholds:
     coverage thresholds: { lines: 100, branches: 100 } per QM-1 (spec §30.3)
     collectCoverageFrom: exclude *.module.ts, *.dto.ts, *.payload.ts, index.ts, main.ts,
@@ -1157,7 +1155,7 @@ Generate:
       packages/@cos/tracing/         — initTracing, shutdownTracing, getTraceId
       packages/@cos/config/          — loadConfig, getConfig
     packages EXEMPT (no executable logic — types/interfaces only):
-      packages/@cos/types/, packages/@cos/proto-contracts/
+      packages/@cos/types/
     Note: Phase 18 adds testcontainers setup and @cos/test-utils — jest.config is a Phase 1 deliverable
 - pnpm lock file: run `pnpm install` after initial setup and commit pnpm-lock.yaml (Rule 28);
     pnpm-lock.yaml must be committed before CI `--frozen-lockfile` can pass;
@@ -4603,7 +4601,7 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     @cos/rbac (ROLE_PERMISSIONS, decorators), @cos/validation (IsCurrencyCode, IsDecimalString),
     @cos/logger (createLogger), @cos/tracing (initTracing, shutdownTracing, getTraceId),
     @cos/config (loadConfig, getConfig).
-    Packages exempt (no executable logic — only types/interfaces): @cos/types, @cos/proto-contracts.
+    Packages exempt (no executable logic — only types/interfaces): @cos/types.
 
   Rule 36 — Exhaustive verification before claiming completion (prevents overstating completion confidence):
     Before reporting any Phase, task, or bug-fix set as "complete" or "all done":

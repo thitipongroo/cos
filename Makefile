@@ -1,7 +1,7 @@
 # Construction OS — Makefile
 # Usage: make <target>
 
-.PHONY: help setup dev test build migrate seed proto-gen clean lint type-check docker-up docker-down
+.PHONY: help setup dev test build migrate seed clean lint type-check docker-up docker-down
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 BOLD  := $(shell tput bold 2>/dev/null || echo "")
@@ -69,10 +69,6 @@ seed: ## Seed the database with initial data
 
 studio: ## Open Prisma Studio
 	@pnpm --filter @cos/backend run studio
-
-# ─── Code Generation ──────────────────────────────────────────────────────────
-proto-gen: ## Generate gRPC stubs from proto files (requires buf CLI)
-	@pnpm run proto-gen
 
 # ─── Cleanup ──────────────────────────────────────────────────────────────────
 clean: ## Remove all build artifacts and node_modules
