@@ -64,6 +64,17 @@ Principles :
 Note : AWS Secrets Manager is the default for cloud deployments on AWS. HashiCorp Vault is used
 for on-premise and hybrid deployments. See 04-tech-stack section 4.7 for the AWS Services list.
 
+Secret delivery into the cluster (the mechanism that injects stored secrets into pods) is part
+of the decision, not just the secret store:
+
+- **Cloud (AWS EKS):** the **External Secrets Operator** syncs AWS Secrets Manager secrets into
+  native Kubernetes Secret objects, which are then mounted as pod environment variables.
+- **On-premise / hybrid:** the **Vault Agent sidecar injector** delivers HashiCorp Vault secrets
+  into pods.
+- **Git-committed secrets** (any Kubernetes Secret that must live in the GitOps repository) are
+  committed only as a `SealedSecret` via **sealed-secrets** (`kubeseal`) — never as a plaintext
+  Secret. See §8.6 for the operator-level deployment view.
+
 ### 5.2.1 Encryption at Rest
 
 All persistent storage must use AES-256 minimum. SSE-KMS with a customer-managed key (CMK)

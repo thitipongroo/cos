@@ -331,9 +331,6 @@ application, and covered by tests:
 - **Tests** — unit tests covering the workflow approve + abort paths and the webhook HMAC
   verification cases.
 
-> Build-completion verification (file-by-file `ls`/`grep` evidence per Rule 36) is an execution
-> activity carried out against the implementation — not part of this architecture spec.
-
 ---
 
 ## References
@@ -346,4 +343,5 @@ application, and covered by tests:
 | [Avro]      | Apache Avro Specification                                 | [avro.apache.org](https://avro.apache.org/docs/current/spec.html)                                                  |
 | [HMAC]      | RFC 2104 — HMAC: Keyed-Hashing for Message Authentication | IETF                                                                                                               |
 
-> See also: [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [19-notification-architecture](19-notification-architecture.md) · [32-implementation-specifications](32-implementation-specifications.md)
+> See also: [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [15-event-driven-workflow](15-event-driven-workflow.md)
+> · [19-notification-architecture](19-notification-architecture.md) · [32-implementation-specifications](32-implementation-specifications.md)

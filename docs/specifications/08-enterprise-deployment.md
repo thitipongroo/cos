@@ -204,6 +204,10 @@ Upgrade procedure :
 - **TLS certificate automation:** TLS 1.3 on all ingress; certificates are automated via
   **cert-manager** (Kubernetes ingress) and **AWS ACM** (cloud), including automatic rotation
   (see `05-security-compliance` §5.2 for the TLS policy).
+- **Secret delivery into the cluster:** the **External Secrets Operator** (cloud/AWS EKS) syncs
+  AWS Secrets Manager secrets into native Kubernetes Secret objects; the **Vault Agent sidecar
+  injector** (on-premise/hybrid) delivers HashiCorp Vault secrets; Git-committed secrets use
+  **sealed-secrets** (`kubeseal`). (see `05-security-compliance` §5.2 for the secret-store policy.)
 
 ---
 
