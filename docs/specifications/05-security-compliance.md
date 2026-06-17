@@ -75,7 +75,7 @@ is required for all cloud storage resources.
 | RDS / Aurora | Storage encryption  | CMK (customer-managed) | Enabled at instance creation; cannot be added later |
 | ElastiCache  | Encryption-at-rest  | AWS-managed key        | `at_rest_encryption_enabled = true` on all nodes   |
 
-CMK definitions: `infrastructure/terraform/aws/kms.tf`
+CMK definitions: managed as Terraform IaC (AWS KMS)
 
 - One CMK per storage type, per environment (`staging`, `production`)
 - Key alias convention: `cos/{env}/rds`, `cos/{env}/s3`, `cos/{env}/elasticache`
@@ -384,17 +384,16 @@ is too permissive.
 
 **Implementation requirements:**
 
-- `ThrottlerModule.forRootAsync()` registered in `backend/src/app.module.ts` using Redis as the
-  storage backend (`ThrottlerStorageRedisService`) so limits are shared across all pod replicas
+- `ThrottlerModule` registered globally in the application root module, using Redis as the
+  shared storage backend so limits are consistent across all pod replicas
 - `APP_GUARD` provider bound to `ThrottlerGuard` so every route is protected by default
 - `ThrottlerException` maps to HTTP `429` with `Retry-After` header set to seconds until reset
   (QM-7: "429 responses must include `Retry-After` header")
 - Rate limit response headers on every response: `X-RateLimit-Limit`, `X-RateLimit-Remaining`,
   `X-RateLimit-Reset` (QM-7)
-- Unit test required: `backend/src/shared/guards/__tests__/throttler.guard.spec.ts`
-  (see `30-testing-strategy` §30.10)
+- Unit test required for the throttler guard (see `30-testing-strategy` §30.10)
 
-**Package:** `@nestjs/throttler` ^5.x (already in `backend/package.json`)
+**Library:** `@nestjs/throttler` (NestJS rate-limiting module)
 
 ### Origin Protection (mandatory)
 
@@ -402,7 +401,7 @@ The AWS ALB security group **must** restrict inbound HTTPS (443) to Cloudflare I
 
 Cloudflare publishes current IP ranges at: `https://api.cloudflare.com/client/v4/ips`
 
-See: `infrastructure/terraform/cloudflare/` and `infrastructure/kubernetes/security/cloudflare-origin-protection.yaml`
+Configured via Cloudflare Terraform IaC and a Kubernetes origin-protection manifest.
 
 ### Application-level Integration
 
@@ -415,7 +414,7 @@ See: `infrastructure/terraform/cloudflare/` and `infrastructure/kubernetes/secur
 | Tracing         | Log `CF-Ray` + `CF-Connecting-IP` in all request logs for end-to-end tracing (QM-8)    |
 | Dev bypass      | `NODE_ENV !== production` — CF-Ray validation skipped (no Cloudflare edge locally)     |
 
-Implementation: `backend/src/shared/middleware/cloudflare-waf.middleware.ts`
+Implementation: a NestJS WAF middleware in the application layer.
 
 ### Infrastructure as Code
 
@@ -479,7 +478,7 @@ Constraints:
 - `default-src 'self'` is the baseline; all overrides require justification in the policy file
 - Report-only mode (`Content-Security-Policy-Report-Only`) is enabled in staging when testing
   new directives before production enforcement
-- CSP headers are set by `backend/src/shared/middleware/secure-headers.middleware.ts`
+- CSP headers are set by the application's secure-headers middleware
 
 ---
 
@@ -493,7 +492,7 @@ Constraints:
 - The allowed origins list in `docs/security/cors-policy.md` must be updated before
   onboarding any new web client or partner origin
 - Preflight response cache (`Access-Control-Max-Age`) must not exceed 86400 seconds (24 hours)
-- CORS headers are set by `backend/src/shared/middleware/secure-headers.middleware.ts`
+- CORS headers are set by the application's secure-headers middleware
 
 ---
 

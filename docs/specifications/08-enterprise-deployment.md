@@ -195,6 +195,16 @@ Upgrade procedure :
 5. Rollback: `helm rollback <release> <revision>` or ArgoCD GitOps revert to previous image tag
 6. Post-upgrade smoke tests run automatically as Kubernetes Jobs; alert on failure
 
+### Deployment strategy and TLS automation (technology choices)
+
+- **Deployment strategy:** rolling update by default (zero-downtime); **Argo Rollouts** (open-source
+  Kubernetes progressive-delivery controller) provides canary rollouts; blue-green is used for
+  high-risk changes (major version releases, authentication changes, non-backward-compatible
+  migrations). Automated rollback on health-gate failure.
+- **TLS certificate automation:** TLS 1.3 on all ingress; certificates are automated via
+  **cert-manager** (Kubernetes ingress) and **AWS ACM** (cloud), including automatic rotation
+  (see `05-security-compliance` §5.2 for the TLS policy).
+
 ---
 
 ## 8.7 WAF Requirements by Deployment Type

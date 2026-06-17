@@ -301,15 +301,10 @@ text in component source. Thai is the primary field language for site workers.
 - **Locale negotiation:** honour the `Accept-Language` HTTP header for API responses; a user's
   stored profile locale overrides the header when present.
 - **Translation file location:** `apps/{web,mobile}/src/i18n/{locale}.json` — one file per locale
-  per app (e.g. `apps/web/src/i18n/th.json`, `apps/web/src/i18n/en.json`,
-  `apps/mobile/src/i18n/th.json`, `apps/mobile/src/i18n/en.json`). Applies to **both** the web app
-  and the React Native mobile app.
+  per app, applying to **both** the web app and the React Native mobile app.
 - **i18n key format:** `{domain}.{screen}.{element}` (e.g. `procurement.list.emptyState`).
 - **Plural forms:** use ICU MessageFormat syntax for any count-dependent string — never assume
   English plural rules apply to other locales.
-
-> These codes and conventions are the authoritative source; `context.md` QM-3 is the
-> agent-optimised summary derived from here.
 
 ### Thai-specific Rules
 

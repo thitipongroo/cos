@@ -319,8 +319,7 @@ Construction domain ontology stored in `docs/ontology/` as OWL files.
 ## 9.7 Database Migration Safety Rules
 
 Every PostgreSQL schema migration produced by this platform must satisfy all rules below.
-These rules are the authoritative source of truth for migration practices; QM-9 in `context.md`
-is the agent-optimised summary derived from here.
+These rules are the authoritative source of truth for migration practices.
 
 ### 9.7.1 Rollback Script Requirement
 
@@ -335,7 +334,7 @@ Naming convention — mirror the migration directory name exactly:
 
 | Migration file path | Rollback file path |
 | --- | --- |
-| `migrations/20260608000004_phase16_rls_policies/migration.sql` | `migrations/rollbacks/20260608000004_phase16_rls_policies.rollback.sql` |
+| `migrations/<timestamp>_<name>/migration.sql` | `migrations/rollbacks/<timestamp>_<name>.rollback.sql` |
 
 **Rollback script requirements:**
 
@@ -344,8 +343,8 @@ Naming convention — mirror the migration directory name exactly:
 - Must be idempotent — safe to run more than once on the same database state
 - Must not drop data that cannot be recovered (use `ALTER TABLE … SET NULL` or archival before drop)
 
-A PR that adds a migration without a committed rollback script **must not merge** — CI enforces
-this via `scripts/readiness/check-migration-rollbacks.sh`.
+A PR that adds a migration without a committed rollback script **must not merge** — enforced by a
+CI gate.
 
 ### 9.7.2 Backward-Compatible Migration Rules
 

@@ -212,7 +212,7 @@ Before starting any implementation task:
       EnterpriseProvisioningWorkflow
     - `keycloak-jwt.strategy.ts` reads `KEYCLOAK_REALM` env var (`construction-os`
       for shared-realm tenants)
-- All inputs validated at the API layer — never trust client-supplied data; use **Zod** (TypeScript) or **Pydantic** (Python) for schema validation — never hand-written `if` checks alone
+- All inputs validated at the API layer — never trust client-supplied data; use **class-validator** (TypeScript/NestJS DTOs) or **Pydantic** (Python/FastAPI) for schema validation — never hand-written `if` checks alone (source: master API gateway + spec §30.3; `@cos/validation` uses class-validator)
 - SQL queries via Prisma ORM only — never raw string interpolation in SQL
 - File uploads: validate MIME type server-side, scan with ClamAV (Phase 9+)
 - OWASP Top 10 — every endpoint must be hardened against: injection, broken auth, IDOR, SSRF, XSS, security misconfiguration
@@ -703,7 +703,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Register every new Kafka schema in the Schema Registry before the first producer deployment (QM-9)
 - Gate every user-facing feature and high-risk change behind a feature flag before production (QM-15)
 - Include all required security headers in every HTTP response (QM-4)
-- Use Zod (TypeScript) or Pydantic (Python) for all API input validation — never hand-written `if` checks alone (QM-4)
+- Use class-validator (TypeScript/NestJS) or Pydantic (Python) for all API input validation — never hand-written `if` checks alone (QM-4)
 - Connect application to **PgBouncer** (transaction mode), never directly to PostgreSQL port 5432 (QM-18)
 - Follow the entity-specific conflict resolution strategy from Phase 6 when implementing `ConflictHandler` (QM-9) — never invent a new strategy without an ADR
 - Inject runtime secrets via **AWS Secrets Manager** (cloud/AWS EKS) or **HashiCorp Vault** (on-premise/hybrid) per spec §5.2 and ADR-013; store Kubernetes Secret objects in git only as **SealedSecret** via kubeseal (QM-4)

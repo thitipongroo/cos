@@ -62,12 +62,10 @@ Stack :
 
 - Kafka
 - Event sourcing for critical workflows
-- Outbox pattern — `OutboxPoller` background process polls `outbox_events` every **500 ms** and
-  publishes unpublished rows to Kafka, marking `published=true` after a successful produce
-- Retry queues — failed message processing retried **3 attempts with exponential backoff (1s, 5s, 30s)**
-- Dead-letter queues — after max retries, the message is published to `{original-topic}.dlq` and an
-  observability alert fires (DLQ depth > 0)
-- Consumer idempotency — consumers check `event_id` in Redis (TTL 24h) before processing
+- Outbox pattern — guarantees event delivery atomically with the DB write
+- Retry queues — failed processing retried with exponential backoff before dead-lettering
+- Dead-letter queues — exhausted messages routed to a DLQ topic with an observability alert
+- Consumer idempotency — consumers de-duplicate by `event_id`
 
 ---
 
@@ -179,8 +177,8 @@ Envelope Standard :
 
 - **Base Event Envelope** (authoritative — defined in `32-implementation-specifications` §32.4):
   custom fields `event_id`, `event_type`, `event_version`, `tenant_id`, `actor_id`, `occurred_at`,
-  `correlation_id`, `trace_id`, `span_id`, `payload`. Implemented as
-  `packages/@cos/shared/src/avro/base-event-envelope.avsc`.
+  `correlation_id`, `trace_id`, `span_id`, `payload`. Implemented as an Avro schema in the shared
+  events package (`@cos/shared`).
 - The envelope is **CloudEvents v1.0-inspired** (id/type/time/source concepts) but uses the COS
   field names above — it is NOT a strict CloudEvents-compliant envelope. Where other specs say
   "CloudEvents envelope" they refer to this Base Event Envelope.

@@ -229,7 +229,7 @@ Namespace: `com.constructionos.events.platform`
 
 Emitted when a contract is marked signed (either trigger path).
 
-Avro schema: `packages/@cos/shared/src/avro/platform.enterprise.contract_signed.v1.avsc`
+Avro schema: registered as `platform.enterprise.contract_signed.v1` in the shared events package
 
 | Field                        | Type              | Required | Description                                          |
 | ---------------------------- | ----------------- | -------- | ---------------------------------------------------- |
@@ -248,7 +248,7 @@ Avro schema: `packages/@cos/shared/src/avro/platform.enterprise.contract_signed.
 
 Emitted when `verifyRoutingActivity` passes (workflow COMPLETED).
 
-Avro schema: `packages/@cos/shared/src/avro/platform.enterprise.db_provisioned.v1.avsc`
+Avro schema: registered as `platform.enterprise.db_provisioned.v1` in the shared events package
 
 | Field                  | Type              | Required | Description                                                      |
 | ---------------------- | ----------------- | -------- | ---------------------------------------------------------------- |
@@ -314,36 +314,25 @@ Only tenant-owned domain data (in the tenant's own schema) is eligible for migra
 
 ## 34.13 Exit Criteria
 
-All of the following must be true before Phase 25 is considered complete:
+Phase 25 is complete when all of the following deliverables are implemented, wired into the
+application, and covered by tests:
 
-| #   | Criterion                                                                           | Evidence                 |
-| --- | ----------------------------------------------------------------------------------- | ------------------------ |
-| 1   | This spec file exists at `docs/specifications/34-enterprise-tenant-provisioning.md` | `ls`                     |
-| 2   | `§19.8` added to `19-notification-architecture.md`                                  | `grep "19.8"`            |
-| 3   | `mark-contracted` endpoint in `docs/api/tenant.openapi.yaml`                        | `grep "mark-contracted"` |
-| 4   | `docs/api/platform-webhooks.openapi.yaml` exists                                    | `ls`                     |
-| 5   | `infrastructure/terraform/modules/rds-tenant/README.md` exists                      | `ls`                     |
-| 6   | `platform.enterprise.contract_signed.v1.avsc` exists                                | `ls`                     |
-| 7   | `platform.enterprise.db_provisioned.v1.avsc` exists                                 | `ls`                     |
-| 8   | `mark-contracted.dto.ts` exists                                                     | `ls`                     |
-| 9   | `PATCH :tenantId/mark-contracted` in `tenant.controller.ts`                         | `grep`                   |
-| 10  | `markAsEnterpriseContracted` in `tenant.service.ts`                                 | `grep`                   |
-| 11  | `platform-webhook.controller.ts` exists with `@HttpCode(202)`                       | `grep`                   |
-| 12  | `platform-webhook.service.ts` with `timingSafeEqual`                                | `grep`                   |
-| 13  | `platform-webhook.module.ts` exists                                                 | `ls`                     |
-| 14  | `PlatformWebhookModule` imported in `app.module.ts`                                 | `grep`                   |
-| 15  | Fastify `addContentTypeParser` in `main.ts`                                         | `grep`                   |
-| 16  | `enterprise-provisioning.workflow.ts` with `approveSignal`, `abortSignal`           | `grep`                   |
-| 17  | `enterprise-provisioning.activities.ts` with all 8 activity functions               | `grep`                   |
-| 18  | `enterprise-provisioning.worker.ts` with task queue `enterprise-provisioning`       | `grep`                   |
-| 19  | `notification.service.ts` maps `platform.enterprise.*` → `SYSTEM_ADMIN`             | `grep`                   |
-| 20  | `main.tf` exists with `aws_db_instance` resource                                    | `ls` + `grep`            |
-| 21  | `variables.tf` exists with 11 variables                                             | `ls` + `grep`            |
-| 22  | `outputs.tf` exists with 4 outputs                                                  | `ls` + `grep`            |
-| 23  | `@aws-sdk/client-rds` in `backend/package.json`                                     | `grep`                   |
-| 24  | `pnpm-lock.yaml` updated (client-rds present)                                       | `grep`                   |
-| 25  | `enterprise-provisioning.workflow.spec.ts` covers approve + abort paths             | `ls`                     |
-| 26  | `platform-webhook.service.spec.ts` covers 6 HMAC test cases                         | `ls`                     |
+- **Trigger paths** — both the Admin endpoint (`PATCH /admin/tenants/{tenantId}/mark-contracted`)
+  and the CRM webhook (`POST /platform/webhooks/enterprise-contract-signed`) are implemented, with
+  HMAC-SHA256 signature verification on the webhook (§34.6).
+- **Workflow** — `EnterpriseProvisioningWorkflow` with its 5 activities, compensation logic, the
+  `AWAITING_APPROVAL` human gate (`approve`/`abort` signals), and a worker on the
+  `enterprise-provisioning` task queue.
+- **Events** — both platform events (`platform.enterprise.contract_signed.v1`,
+  `platform.enterprise.db_provisioned.v1`) defined as TypeScript interface + Avro schema, and routed
+  to SYSTEM_ADMIN via the Notification Service.
+- **Infrastructure** — the `rds-tenant` Terraform module (RDS instance + variables + outputs).
+- **Contracts** — OpenAPI specs for both endpoints.
+- **Tests** — unit tests covering the workflow approve + abort paths and the webhook HMAC
+  verification cases.
+
+> Build-completion verification (file-by-file `ls`/`grep` evidence per Rule 36) is an execution
+> activity carried out against the implementation — not part of this architecture spec.
 
 ---
 

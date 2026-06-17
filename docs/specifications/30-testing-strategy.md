@@ -293,11 +293,7 @@ using **Pact.io** (consumer-driven contract testing).
 
 ### Rate Limiting Guard (Unit Tests)
 
-The NestJS ThrottlerGuard must have a dedicated unit test file at:
-
-```text
-backend/src/shared/guards/__tests__/throttler.guard.spec.ts
-```
+The NestJS ThrottlerGuard must have a dedicated unit test.
 
 Required test cases:
 
@@ -426,8 +422,7 @@ Rules (from factory_bot canonical source) :
 
 ### Location
 
-All factories live in `packages/@cos/test-utils/src/factories.ts` and are exported via
-`packages/@cos/test-utils/src/index.ts`.
+All factories live in the `@cos/test-utils` package (exported from its index).
 
 `packages/@cos/test-utils/README.md` is required per QM-11 (purpose, public API,
 dependencies, configuration, usage example). This package was introduced in Phase 18

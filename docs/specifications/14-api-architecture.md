@@ -158,8 +158,7 @@ machine-readable contracts derived from these patterns.
 
 #### Authentication APIs
 
-Two authentication paths (source: `context/00_master_construction_os.md` §Phase 2;
-`05-security-compliance` §5.3):
+Two authentication paths (authoritative spec: `05-security-compliance` §5.4):
 
 - **Path A** — SMS OTP for field workers (`SITE_WORKER`, `SITE_ENGINEER`): phone + 6-digit OTP.
   The COS identity service performs OTP send/verify only; after verification it obtains the JWT

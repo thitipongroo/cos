@@ -360,7 +360,6 @@ Gateway) consolidate fallback, budget enforcement, virtual keys, and observabili
 
 **Decision:** Two-tier OCR — open-source self-hosted for basic text extraction, AWS Textract for
 structured invoice/form extraction.
-**Aligned with:** `context/00_master_construction_os.md` §Phase 11 (lines 2762, 2805, 2841)
 
 | Tier                | Engine                                                 | Use case                                                                           | Auth / Deployment                                                                               | Interface                                                              |
 | ------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -530,7 +529,6 @@ before executing; throws `GovernanceViolationError` for disallowed actions.
 
 > ⚠️ **NOT implemented in Phase 11–12.** Interface is specified here as a decision record only.
 > Implementation deferred to Phase 13+ when Layer B (Analytical AI) is deployed and stable.
-> Source: `context/00_master_construction_os.md §Phase 11 AI Operating Modes`.
 
 ---
 

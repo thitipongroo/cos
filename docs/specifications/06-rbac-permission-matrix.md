@@ -293,16 +293,16 @@ based on the dependency analysis below.
 
 ### Package boundary
 
-| Artifact | Location | Reason |
-| --- | --- | --- |
-| `CosRole` enum | `packages/@cos/rbac/src/` (re-exported from `@cos/types`) | Used by every platform (mobile, web, Node.js) — belongs in shared layer |
-| `ROLE_PERMISSIONS` map | `packages/@cos/rbac/src/permissions.ts` | Pure data; no framework dependency; used by both guards and business logic |
-| `@Roles(...)` decorator | `packages/@cos/rbac/src/decorators.ts` | Calls `SetMetadata` only — no request context or JWT dependency |
-| `@RequirePermissions(...)` decorator | `packages/@cos/rbac/src/decorators.ts` | Same as above |
-| `ROLES_KEY`, `PERMISSIONS_KEY` constants | `packages/@cos/rbac/src/decorators.ts` | Metadata keys consumed by concrete guards |
-| `RolesGuard` (`CanActivate`) | `backend/src/shared/guards/roles.guard.ts` | Depends on `JwtPayload` (application-layer type) and `Reflector` (`@nestjs/core`) |
-| `PolicyGuard` (`CanActivate`) | `backend/src/shared/guards/policy.guard.ts` | Depends on `JwtPayload`, `ExecutionContext`, and may query Prisma for ABAC |
-| `JwtAuthGuard` (`CanActivate`) | `backend/src/modules/identity/guards/` | Passport strategy wrapper — identity-module concern |
+| Artifact                                 | Location                                                  | Reason                                                                            |
+| ---------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `CosRole` enum                           | `packages/@cos/rbac/src/` (re-exported from `@cos/types`) | Used by every platform (mobile, web, Node.js) — belongs in shared layer           |
+| `ROLE_PERMISSIONS` map                   | `packages/@cos/rbac/` (shared package)                   | Pure data; no framework dependency; used by both guards and business logic        |
+| `@Roles(...)` decorator                  | `packages/@cos/rbac/` (shared package)                    | Calls `SetMetadata` only — no request context or JWT dependency                   |
+| `@RequirePermissions(...)` decorator     | `packages/@cos/rbac/` (shared package)                    | Same as above                                                                     |
+| `ROLES_KEY`, `PERMISSIONS_KEY` constants | `packages/@cos/rbac/` (shared package)                    | Metadata keys consumed by concrete guards                                         |
+| `RolesGuard` (`CanActivate`)             | `backend/src/shared/guards/` (application layer)                | Depends on `JwtPayload` (application-layer type) and `Reflector` (`@nestjs/core`) |
+| `PolicyGuard` (`CanActivate`)            | `backend/src/shared/guards/` (application layer)               | Depends on `JwtPayload`, `ExecutionContext`, and may query Prisma for ABAC        |
+| `JwtAuthGuard` (`CanActivate`)           | `backend/src/modules/identity/guards/`                    | Passport strategy wrapper — identity-module concern                               |
 
 ### Why concrete guards are NOT in `@cos/rbac`
 
@@ -351,4 +351,5 @@ reuse across multiple NestJS applications is required.
 | [Keycloak]  | Keycloak Server Documentation                                      | [keycloak.org/documentation](https://www.keycloak.org/documentation)                                   |
 | [JWT-RFC]   | JSON Web Token (JWT)                                               | RFC 7519                                                                                               |
 
-> 📎 See also: [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [13-product-architecture](13-product-architecture.md) · [20-ux-flow](20-ux-flow.md)
+> 📎 See also: [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md)
+> · [13-product-architecture](13-product-architecture.md) · [20-ux-flow](20-ux-flow.md)

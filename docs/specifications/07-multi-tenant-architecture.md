@@ -89,8 +89,7 @@ never moves to a dedicated DB.
 #### Routing mechanism — non-HTTP paths (Temporal activities, Kafka consumers)
 
 Temporal activities and Kafka consumers have no HTTP request context. They resolve the DB URL
-by calling `getDbUrlForTenant(tenantId: string): Promise<string>` (utility in
-`backend/src/modules/tenant/utils/get-db-url.ts`):
+by calling a tenant DB-URL resolution utility (`getDbUrlForTenant(tenantId)` in the tenant module):
 
 1. Queries `platform.tenants.dedicated_db_url` using `DATABASE_URL` (platform DB — always shared)
 2. Returns `dedicated_db_url` if non-NULL, else `DATABASE_URL`

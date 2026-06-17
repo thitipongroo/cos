@@ -341,9 +341,8 @@ audience-based dashboards above and are required deliverables of Phase 15.
 | AI & LLM | Token usage per tenant/model, AI latency P50/P95, AI error rate |
 | Infrastructure (Kubernetes) | CPU/memory per pod, disk I/O per node, pod restarts (last 1h) |
 
-All dashboards are version-controlled as Grafana JSON under
-`infrastructure/monitoring/grafana/dashboards/` and provisioned automatically via
-`infrastructure/monitoring/grafana/provisioning/dashboards.yml`.
+All dashboards are version-controlled as Grafana JSON and provisioned automatically via the
+Grafana provisioning config (GitOps).
 
 ---
 
@@ -351,7 +350,7 @@ All dashboards are version-controlled as Grafana JSON under
 
 ### Incident Severity Classification
 
-> **Severity scheme:** P0–P3, consistent with `context.md` QM-17. (P0 is the most severe.)
+> **Severity scheme:** P0–P3 (P0 is the most severe).
 
 | Severity      | Definition                                | Response Time     | Example                                                            |
 | ------------- | ----------------------------------------- | ----------------- | ------------------------------------------------------------------ |

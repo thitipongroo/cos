@@ -59,14 +59,14 @@ Languages :
 
 ## 4.3 Databases
 
-Storage (versions are the pinned minimum baseline — authoritative here; `context/00_master_construction_os.md` mirrors these):
+Storage:
 
-- PostgreSQL 16
-- TimescaleDB 2.x (time-series telemetry, PostgreSQL extension)
-- Redis 7
-- ClickHouse 24.x
-- Neo4j 5.x
-- OpenSearch 2.x
+- PostgreSQL
+- TimescaleDB (time-series telemetry, PostgreSQL extension)
+- Redis
+- ClickHouse
+- Neo4j
+- OpenSearch
 - S3-compatible storage
 - Apache Iceberg (data lake format on S3)
 - pgvector (vector embeddings — MVP)
@@ -76,19 +76,19 @@ Storage (versions are the pinned minimum baseline — authoritative here; `conte
 
 ## 4.4 Infrastructure
 
-Tools (versions are the pinned minimum baseline — authoritative here):
+Tools:
 
-- Kubernetes 1.29+
+- Kubernetes
 - Docker
-- Terraform 1.7+
-- Apache Kafka 3.x
-- Confluent Schema Registry 7.x (Kafka schema management — see 15-event-driven-workflow §15.6)
+- Terraform
+- Apache Kafka
+- Confluent Schema Registry (Kafka schema management — see 15-event-driven-workflow §15.6)
 - NGINX
-- Istio 1.21+ (service mesh — mTLS, traffic management)
+- Istio (service mesh — mTLS, traffic management)
 - Temporal.io (workflow orchestration)
 - Debezium (CDC — change data capture)
 - Keycloak (identity provider — OAuth2/OIDC/SAML)
-- HashiCorp Vault 1.16+ (secrets management — on-premise and hybrid deployments only; AWS Secrets Manager is used for AWS cloud deployments — see 05-security-compliance section 5.2)
+- HashiCorp Vault (secrets management — on-premise and hybrid deployments only; AWS Secrets Manager is used for AWS cloud deployments — see 05-security-compliance section 5.2)
 
 ---
 

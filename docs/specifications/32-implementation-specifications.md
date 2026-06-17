@@ -20,7 +20,6 @@ related_docs:
 # 32. Implementation Specifications
 
 > **Authority note:** This document is part of `docs/specifications/` — the source of truth
-> for all platform decisions. `context/00_master_construction_os.md` derives its implementation
 > sections from this document. On any conflict, this document wins.
 
 ## Table of Contents
@@ -787,8 +786,8 @@ When a Tenant Admin creates a Path B user:
 
 **Implementation:**
 
-- `@keycloak/keycloak-admin-client` added to `backend/package.json`
-- `KeycloakAdminService` at `backend/src/modules/identity/keycloak-admin.service.ts`:
+- `@keycloak/keycloak-admin-client` added as a backend dependency
+- `KeycloakAdminService` (identity module) exposes:
   - `provisionPhoneUser(phone, displayName, realm): Promise<{ keycloakUserId: string }>` — Path A
   - `createEmailUser(email, displayName, realm): Promise<{ keycloakUserId: string }>` — Path B
   - `getDirectGrantToken(phone, ephemeralCredential, realm): Promise<KeycloakTokenResponse>` — Path A token exchange
@@ -904,8 +903,8 @@ is dead code — it must be removed within 30 days.
 ### cos-audit/ Directory
 
 **Purpose:** Stores product owner sign-off audit logs from production readiness
-verification runs. Every execution of `scripts/readiness/run-all-checks.sh` that
-results in a product owner approval must be recorded here.
+verification runs. Every production-readiness verification run that results in a
+product owner approval must be recorded here.
 
 **Location:** `cos-audit/` at repository root.
 
@@ -913,7 +912,7 @@ results in a product owner approval must be recorded here.
 
 - `<timestamp>` — ISO 8601 UTC format: `YYYYMMDDTHHMMSSZ`
   (e.g. `cos-audit/audit-20260616T143000Z.log`)
-- Content: output of `run-all-checks.sh` + product owner sign-off statement
+- Content: production-readiness verification output + product owner sign-off statement
 - One file per verification run
 
 **Git configuration:**
@@ -929,9 +928,7 @@ at two mandatory gates:
 | Gate | Trigger |
 | ---- | ------- |
 | Phase completion sign-off | After product owner approves a Phase via Rule 38 |
-| Production readiness gate | After `run-all-checks.sh` passes and PO confirms |
-
-**Authority:** `context.md` §Production Readiness Procedure.
+| Production readiness gate | After production-readiness verification passes and PO confirms |
 
 ---
 

@@ -41,7 +41,7 @@ Offline capability is mandatory.
 
 Mobile Local DB :
 
-- WatermelonDB 0.28.x with a custom **ExpoSQLiteAdapter** (`expo-sqlite` ~15.x underneath, WAL mode enabled).
+- WatermelonDB with a custom **ExpoSQLiteAdapter** (`expo-sqlite` WAL mode enabled).
   WatermelonDB is used for all main business entities (site_reports, issues, local_photos, etc.).
 - `sync_queue` infrastructure table uses `expo-sqlite` directly (the only entity exempt from WatermelonDB).
 - Local event queue
@@ -125,14 +125,14 @@ These entities are cached for offline reference but not mutated offline :
 
 ## 17.5 Conflict Resolution Rules per Entity
 
-| Entity                | Strategy                  | Reason                                                                                   |
-| --------------------- | ------------------------- | ---------------------------------------------------------------------------------------- |
-| Task progress_percent | Max-wins                  | Monotonic — progress never regresses; higher value always wins regardless of write order |
-| Inspection checklist  | Field-level merge         | Multiple inspectors may fill different fields                                            |
-| Site report           | Last-write-wins on `client_submitted_at` (whole record) | One report per day per submitter; flag CONFLICT for SITE_ENGINEER review if server `modified_at` ≠ client's `last_known_modified_at` (master Phase 6; QM-9) |
-| Workforce attendance  | Server wins on check_in   | Prevents time manipulation                                                               |
-| Safety incident       | Human review queue        | Critical record — cannot auto-resolve                                                    |
-| Material consumption  | Append-only               | Each consumption record is a new row                                                     |
+| Entity                | Strategy                                                | Reason                                                                                                                                    |
+| --------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Task progress_percent | Max-wins                                                | Monotonic — progress never regresses; higher value always wins regardless of write order                                                  |
+| Inspection checklist  | Field-level merge                                       | Multiple inspectors may fill different fields                                                                                             |
+| Site report           | Last-write-wins on `client_submitted_at` (whole record) | One report per day per submitter; SITE_ENGINEER review if server `modified_at` ≠ client's `last_known_modified_at` (master Phase 6; QM-9) |
+| Workforce attendance  | Server wins on check_in                                 | Prevents time manipulation                                                                                                                |
+| Safety incident       | Human review queue                                      | Critical record — cannot auto-resolve                                                                                                     |
+| Material consumption  | Append-only                                             | Each consumption record is a new row                                                                                                      |
 
 ---
 
