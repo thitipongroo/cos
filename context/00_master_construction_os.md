@@ -1076,7 +1076,7 @@ backend/prisma/           — Database schema and migrations
 ai/
   prompts/                — Prompt templates (versioned)
   chains/                 — LangChain chain definitions
-  evaluations/            — AI output evaluation scripts
+  (AI output evaluation — it is operationalized via MLflow / W&B / Evidently AI on a monthly cadence; see docs/specifications/30-testing-strategy.md §30.11)
 
 docs/
   architecture/           — Architecture decision records (ADRs)
