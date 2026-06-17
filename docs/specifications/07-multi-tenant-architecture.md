@@ -26,6 +26,7 @@ related_docs:
 - [7.6 Tenant Provisioning Workflow](#76-tenant-provisioning-workflow)
 - [7.7 PostgreSQL Schema Convention](#77-postgresql-schema-convention)
 - [7.8 Enterprise Provisioning Workflow (Phase 25)](#78-enterprise-provisioning-workflow-phase-25)
+- [7.9 Connection Pool Management](#79-connection-pool-management)
 
 ---
 
@@ -304,6 +305,12 @@ One named PostgreSQL schema per domain module. All schemas are global (shared ac
 | `ai`                  | AI Token Tracking                    | Yes                                                                 |                                                |
 | `equipment_telemetry` | IoT Telemetry (TimescaleDB)          | Yes                                                                 | Hypertable — partitioned by `recorded_at`      |
 | `workforce_telemetry` | Attendance / Biometric (TimescaleDB) | Yes                                                                 | Hypertable — partitioned by `recorded_at`      |
+| `digital_twin`        | Digital Twin / IoT (TimescaleDB, Phase 24) | Yes                                                           | TwinState hypertable — partitioned by `recorded_at`; see `33-digital-twin-iot` §33.4 |
+
+> **Future schemas (not yet provisioned):** CRM entities (Lead, Opportunity, Contact, Customer) and
+> additional master-data entities (Material, etc.) in `11-database-schema` §11.2 receive their owning
+> schema when implemented post-MVP (CRM UI is excluded from MVP per §21.6). Vendor master data lives in
+> the `procurement` schema. Until then, those entities are spec-defined but not yet physical tables.
 
 ### RLS policy standard
 

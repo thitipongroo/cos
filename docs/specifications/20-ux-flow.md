@@ -27,6 +27,8 @@ related_docs:
 - [20.3 Example Daily Site Workflow](#203-example-daily-site-workflow)
 - [20.4 SYSTEM_ADMIN Panel](#204-system_admin-panel)
 - [20.5 Internationalisation and Localisation](#205-internationalisation-and-localisation)
+- [20.6 Web Application — Authentication and Session](#206-web-application--authentication-and-session)
+- [20.7 Web Application — Page Inventory per Role](#207-web-application--page-inventory-per-role)
 
 ---
 
@@ -292,6 +294,23 @@ when workflow reaches the human gate (before data migration step).
 All UI strings must be externalised via the i18n library — no hardcoded human-readable
 text in component source. Thai is the primary field language for site workers.
 
+### Locale Codes and File Convention
+
+- **Default locale:** `th-TH` (Buddhist Era display configurable per tenant — see Thai-specific
+  Rules below). **Fallback locale:** `en-US`.
+- **Locale negotiation:** honour the `Accept-Language` HTTP header for API responses; a user's
+  stored profile locale overrides the header when present.
+- **Translation file location:** `apps/{web,mobile}/src/i18n/{locale}.json` — one file per locale
+  per app (e.g. `apps/web/src/i18n/th.json`, `apps/web/src/i18n/en.json`,
+  `apps/mobile/src/i18n/th.json`, `apps/mobile/src/i18n/en.json`). Applies to **both** the web app
+  and the React Native mobile app.
+- **i18n key format:** `{domain}.{screen}.{element}` (e.g. `procurement.list.emptyState`).
+- **Plural forms:** use ICU MessageFormat syntax for any count-dependent string — never assume
+  English plural rules apply to other locales.
+
+> These codes and conventions are the authoritative source; `context.md` QM-3 is the
+> agent-optimised summary derived from here.
+
 ### Thai-specific Rules
 
 - Date format: `DD/MM/YYYY` (Buddhist Era optional, configurable per tenant)
@@ -310,6 +329,174 @@ calculation logic, BoT regulatory fields, Buddhist Era dates) must be:
 `docs/i18n/localization-gaps.md` is the authoritative registry of all TH-specific rules.
 It must be reviewed before adding support for any new country (VN, SG, MY, ID) to ensure
 TH-specific logic is not silently applied to non-TH tenants.
+
+---
+
+## 20.6 Web Application — Authentication and Session
+
+> **Platform:** `apps/web/` (Next.js + next-pwa) — tablet/laptop browser, online + offline
+> (deployable: `32-implementation-specifications` §32.2; ADR-016).
+> **Scope:** the web app is a **full operational client** for all roles — not a dashboard-only
+> surface. It renders the same authentication paths and RBAC model defined for the platform;
+> it introduces **no new auth mechanism**. Authoritative auth spec: §5.4 and master Phase 2.
+
+### 20.6.1 Login
+
+The web login renders **both** authentication paths already defined in §5.4 (master Phase 2):
+
+| Path | Users | Mechanism | Route |
+| ---- | ----- | --------- | ----- |
+| Path B — email + password | Office / management (PM, Finance, Executive, Tenant Admin, Procurement, Safety) | Keycloak OIDC (OAuth2), RS256 JWT | `/login` |
+| Path A — phone + SMS OTP | Field roles on tablet (Site Engineer, Site Worker) | Custom OTP module → Keycloak Direct Grant | `/login/otp` |
+
+- **MFA (TOTP):** required for `TENANT_ADMIN` and `FINANCE` (§5.4; master Phase 2) — MFA challenge
+  page shown after primary factor succeeds.
+- **Session:** Keycloak-issued JWT — access token 15 min, refresh token 7 days, with native
+  Keycloak refresh-token rotation (`refreshTokenMaxReuse: 0`) per §5.4 (step 6). The web client
+  consumes this same session model; no web-specific token lifetime is introduced.
+- **Post-login routing:** redirect to the role's landing page (first row of that role's table in
+  §20.7), resolved from the JWT `role` claim.
+- **Logout:** `/logout` clears the local session and performs Keycloak RP-initiated logout.
+
+### 20.6.2 Web Application Shell (all authenticated pages)
+
+- **Role-filtered navigation:** left sidebar + top bar; visible items are filtered by the JWT
+  `role` claim (RBAC) — a role never sees navigation for pages it cannot access.
+- **In-app notifications:** notification bell fed by SSE (`19-notification-architecture` §19.2,
+  §19 "active in web UI") — never WebSocket.
+- **Offline indicator + sync status:** PWA offline support via next-pwa + IndexedDB
+  (Phase 10 Target B). Offline-capable pages mirror the mobile sync entities (site reports,
+  issues, inspections, deliveries); read views are served from cache when offline.
+- **Language switcher:** `th` / `en` per §20.5.
+- **Layout convention:** list views use **data tables** (web/desktop design tokens —
+  `32-implementation-specifications` §32.7 "table content"); the mobile no-tables rule does
+  **not** apply to web.
+- **Authorization:** every page enforces RBAC (role claim) + ABAC (`project_membership`,
+  `tenant_match`, `resource_ownership`) per master Phase 2 / §6.
+
+---
+
+## 20.7 Web Application — Page Inventory per Role
+
+> **Derivation:** each page below maps to (a) the role's documented needs in §20.2, (b) the
+> per-role mobile navigation in master Phase 10 (where enumerated), and (c) the module APIs in
+> §14 / master Phases 3–7, 14, 20–22. Routes follow API resource names. No page introduces a
+> capability not already specified for that role.
+> **Tenant-scoping:** all routes are within the authenticated tenant; SYSTEM_ADMIN cross-tenant
+> pages are the separate `/admin` panel in §20.4.
+
+### 20.7.1 Executive (`EXECUTIVE`)
+
+Source: §20.2 Executive; master Phase 10 EXEC nav; Analytics (Phase 14) + AI reports (Phase 12).
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/` | Portfolio home | KPI summary: active projects, total budget vs actual, open critical issues | `GET /api/v1/analytics/executive` |
+| `/portfolio` | Portfolio | Project list with status chips + budget-variance badge; drill to project health | Analytics + Project APIs |
+| `/alerts` | Risk alerts | Delay risk, budget overrun, critical issues sorted by severity | `finance.variance.alert`, `construction.delay.detected`, issues |
+| `/reports` | Executive reports | AI executive summaries per project | `POST /api/v1/ai/reports/executive-summary` |
+
+### 20.7.2 Project Manager (`PROJECT_MANAGER`)
+
+Source: §20.2 PM; master Phase 10 PM nav; Phases 3, 5, 6, 14.
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/projects` | Projects | List/create projects; filter by status/type | Phase 3 Project APIs |
+| `/projects/{id}` | Project detail | Status transitions, members, documents, BOQ summary | Phase 3 + Phase 4 |
+| `/projects/{id}/procurement` | Procurement status | RFQ/PO status (read), delivery tracking | Phase 5 (read) |
+| `/projects/{id}/finance` | Budget variance | Budget vs actual vs committed (read) | Phase 7 (read) |
+| `/projects/{id}/site` | Site summary | Site report summary, issue triage | Phase 6 |
+| `/analytics/pm/{projectId}` | PM dashboard | Manpower trend, issues by severity, inspection rate, procurement KPIs | `GET /api/v1/analytics/pm/{projectId}` (Phase 14 — implemented) |
+
+### 20.7.3 Procurement Officer / Procurement Manager (`PROCUREMENT_OFFICER`, `PROC_MANAGER`)
+
+Source: §20.2 Procurement Officer; master Phase 10 Procurement nav; Phase 5.
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/procurement/requests` | Purchase requests | PR list/create | Phase 5 |
+| `/procurement/rfqs` | RFQs | RFQ list/detail; `PROC_MANAGER` approve/cancel (EVALUATED→AWARDED/CANCELLED) | Phase 5 RFQ workflow |
+| `/procurement/quotations` | Quotation comparison | Compare quotations, mark selected | Phase 5 |
+| `/procurement/orders` | Purchase orders | PO list + approval chain + delivery timeline | Phase 5 PO workflow |
+| `/procurement/deliveries` | Deliveries | Record/receive deliveries | Phase 5 |
+| `/procurement/vendors` | Vendors | Vendor master, vendor scoring | Phase 5 |
+
+### 20.7.4 Finance (`FINANCE`)
+
+Source: §20.2 Finance; master Phase 10 FINANCE nav; Phase 7.
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/finance/payments` | Payments | Pending payment approvals; approve/record payment | Phase 7 |
+| `/finance/budget/{projectId}` | Budget | Budget vs actual vs committed; budget lines | Phase 7 |
+| `/finance/invoices` | Invoices | Invoice list/detail; verify/approve/dispute | Phase 5/7 invoice flow |
+| `/finance/reports/variance` | Variance report | Budget variance across projects | `GET /api/v1/finance/reports/variance` |
+
+### 20.7.5 Site Engineer (`SITE_ENGINEER`)
+
+Source: §20.2 Site Engineer; master Phase 10 SITE_ENGINEER nav; Phase 6.
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/site/reports` | Site reports | Review/submit daily site reports; manpower overview | Phase 6 |
+| `/site/issues` | Issues | Issue list, triage, escalation | Phase 6 |
+| `/site/inspections` | Inspections | Inspection results, approval/re-inspection | Phase 6 |
+| `/site/conflicts` | Conflict resolution | Resolve `ConflictRecord` (offline sync conflicts) | Phase 6 `/conflict-records` |
+
+### 20.7.6 Site Worker (`SITE_WORKER`)
+
+Source: §20.2 Site Engineer needs; master Phase 10 SITE_WORKER nav; Phases 6, 22.
+Mobile-primary role; web pages provide the same functions for tablet use.
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/tasks` | Tasks | Assigned task list; progress update | Phase 6 task gates |
+| `/site/reports/new` | Daily report | Submit daily site report (manpower, blockers) | Phase 6 |
+| `/site/issues/new` | Quick issue | Report an issue with photo | Phase 6 |
+| `/site/checklists` | Safety checklist | Complete assigned safety checklist | Phase 6 safety |
+
+### 20.7.7 Safety Officer (`SAFETY_OFFICER`)
+
+Source: §20.2 Safety Officer + §21.2 MVP Safety scope (incident reports, checklists, work permits,
+permit approval). **Derived from role needs** — master Phase 10 does not enumerate a Safety Officer
+mobile nav; the functions are specified in §20.2 + §21.2 + master §9 (safety permit approval chain).
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/safety/incidents` | Incidents | Report/track safety incidents | §21.2 Safety; Phase 6 |
+| `/safety/checklists` | Safety checklists | Manage/review safety checklists | §21.2 Safety; Phase 6 |
+| `/safety/permits` | Work permits | Permit approval (Safety Officer approves; PM final) | master §9 approval chain |
+| `/safety/compliance` | Compliance | Compliance status + violation alerts | §20.2 Safety Officer |
+
+### 20.7.8 Tenant Admin (`TENANT_ADMIN`)
+
+Source: master Phase 2 User Management API (§14.3) + tenant settings. Full access to all
+tenant pages above, plus tenant administration. (Distinct from the SYSTEM_ADMIN `/admin` panel in §20.4.)
+
+| Route | Page | Purpose | Source |
+| ----- | ---- | ------- | ------ |
+| `/settings/users` | User management | List/create users (Path A phone / Path B email), change role, deactivate | master Phase 2 User Management API |
+| `/settings/tenant` | Tenant settings | Variance thresholds, retention %, LINE channel token, notification prefs | Phases 7, 20 tenant-configurable settings |
+
+### 20.7.9 Viewer (`VIEWER`)
+
+Source: RBAC role definition (master Phase 2 — read-only across modules, per project assignment).
+
+- Read-only access to the pages of whichever modules the viewer is assigned to (per
+  `project_membership`). No create/edit/approve actions are rendered.
+
+### 20.7.10 CRM / Sales Manager (`CRM_SALES_MANAGER`)
+
+- **No web operational pages in MVP.** CRM module UI (pipeline views, dashboards, proposal
+  workflows) is **excluded from MVP** per §21.6; the CRM schema and APIs exist from Day 1 but the
+  UI ships post-MVP. The role authenticates and is provisioned, but no CRM web pages are rendered
+  until the CRM UI is in scope.
+
+### 20.7.11 System Admin (`SYSTEM_ADMIN`)
+
+- Cross-tenant platform administration is the separate **`/admin` panel** specified in §20.4 —
+  not part of the tenant-scoped page set above.
 
 ---
 

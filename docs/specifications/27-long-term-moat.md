@@ -179,4 +179,6 @@ stronger lock-in → enables ecosystem expansion.
 | Regulatory change (data residency / AI regulation) | Low        | High      | Thailand data sovereignty: deploy on Thai-region cloud from day one; monitor PDPA AI amendments (see 05-security-compliance)     |
 | Key-person dependency (AI Lead)                    | Medium     | Medium    | Document all model training decisions; MLOps pipeline owned by team not individuals (see 24-ai-training-pipeline)                |
 
-> 📎 See also: [28-ecosystem-expansion](28-ecosystem-expansion.md) · [29-final-strategic-positioning](29-final-strategic-positioning.md) · [25-go-to-market](25-go-to-market.md)
+> 📎 See also: [28-ecosystem-expansion](28-ecosystem-expansion.md)
+> · [29-final-strategic-positioning](29-final-strategic-positioning.md)
+> · [25-go-to-market](25-go-to-market.md)

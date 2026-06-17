@@ -463,7 +463,7 @@ PATCH  /api/v1/lrs/networks/{id}/events/{eid}
 | `crew_id`        | UUID          | FK workforce                                                  |
 | `scheduled_date` | DATE          |                                                               |
 | `completed_date` | DATE          |                                                               |
-| `cost_estimate`  | DECIMAL(15,2) |                                                               |
+| `cost_estimate`  | DECIMAL(19,4) | Monetary — DECIMAL(19,4) per Financial Precision Spec (§32.5) |
 | `currency`       | CHAR(3)       | ISO 4217                                                      |
 
 **Pagination and filtering:** OData-style `$filter`, `$select`, `$top`, `$skip`, `$orderby` on all list endpoints — consistent with V1.
@@ -624,7 +624,7 @@ GET    /api/v1/analytics/occupancy        $filter=property_id
 | `status`              | ENUM          | DRAFT / ACTIVE / RENEWAL / AMENDMENT / TERMINATED  |
 | `start_date`          | DATE          |                                                    |
 | `end_date`            | DATE          |                                                    |
-| `rent_amount`         | DECIMAL(15,2) |                                                    |
+| `rent_amount`         | DECIMAL(19,4) | Monetary — DECIMAL(19,4) per Financial Precision Spec (§32.5) |
 | `currency`            | CHAR(3)       | ISO 4217                                           |
 | `rent_escalation_pct` | DECIMAL(5,2)  | annual escalation %                                |
 | `lease_type`          | ENUM          | RESIDENTIAL / COMMERCIAL / INDUSTRIAL              |

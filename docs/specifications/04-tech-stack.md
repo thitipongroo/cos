@@ -59,14 +59,14 @@ Languages :
 
 ## 4.3 Databases
 
-Storage :
+Storage (versions are the pinned minimum baseline — authoritative here; `context/00_master_construction_os.md` mirrors these):
 
-- PostgreSQL
-- TimescaleDB (time-series telemetry, PostgreSQL extension)
-- Redis
-- ClickHouse
-- Neo4j
-- OpenSearch
+- PostgreSQL 16
+- TimescaleDB 2.x (time-series telemetry, PostgreSQL extension)
+- Redis 7
+- ClickHouse 24.x
+- Neo4j 5.x
+- OpenSearch 2.x
 - S3-compatible storage
 - Apache Iceberg (data lake format on S3)
 - pgvector (vector embeddings — MVP)
@@ -76,18 +76,19 @@ Storage :
 
 ## 4.4 Infrastructure
 
-Tools :
+Tools (versions are the pinned minimum baseline — authoritative here):
 
-- Kubernetes
+- Kubernetes 1.29+
 - Docker
-- Terraform
-- Kafka
+- Terraform 1.7+
+- Apache Kafka 3.x
+- Confluent Schema Registry 7.x (Kafka schema management — see 15-event-driven-workflow §15.6)
 - NGINX
-- Istio
+- Istio 1.21+ (service mesh — mTLS, traffic management)
 - Temporal.io (workflow orchestration)
 - Debezium (CDC — change data capture)
 - Keycloak (identity provider — OAuth2/OIDC/SAML)
-- HashiCorp Vault (secrets management — on-premise and hybrid deployments only; AWS Secrets Manager is used for AWS cloud deployments — see 05-security-compliance section 5.2)
+- HashiCorp Vault 1.16+ (secrets management — on-premise and hybrid deployments only; AWS Secrets Manager is used for AWS cloud deployments — see 05-security-compliance section 5.2)
 
 ---
 
@@ -123,8 +124,8 @@ tool is used in the training pipeline.
 Provider :
 
 - AWS (primary cloud)
-- Primary region: ap-southeast-1 (Singapore)
-- Secondary region: ap-southeast-7 (Thailand — when available) or ap-east-1 (Hong Kong) for data residency
+- Primary region: **ap-southeast-7 (Bangkok, Thailand)** — GLOB-001 (resolved 2026-06-10; PDPA data residency; see `08-enterprise-deployment` §8.8)
+- DR / secondary region: ap-southeast-1 (Singapore); EU tenants: eu-west-1 (Ireland) — see `05-security-compliance` §5.6
 
 AWS Services :
 

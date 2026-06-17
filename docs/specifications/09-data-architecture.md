@@ -21,6 +21,7 @@ related_docs:
 - [9.3 Data Storage Architecture](#93-data-storage-architecture)
 - [9.4 Data Flow](#94-data-flow)
 - [9.5 Reporting and Analytics Architecture](#95-reporting-and-analytics-architecture)
+- [9.6 Ecosystem Intelligence Decisions](#96-ecosystem-intelligence-decisions)
 - [9.7 Database Migration Safety Rules](#97-database-migration-safety-rules)
 
 ---

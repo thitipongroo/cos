@@ -62,7 +62,7 @@ Target coverage by layer:
 
 | Layer       | Target                                   | Tooling                                |
 | ----------- | ---------------------------------------- | -------------------------------------- |
-| Unit        | ≥ 80% line coverage per service          | Jest (Node.js/NestJS), pytest (Python) |
+| Unit        | 100% lines + 100% branches per service (see §30.3, §30.12; QM-1) | Jest (Node.js/NestJS), pytest (Python) |
 | Integration | Key service boundaries and DB queries    | Jest + Testcontainers                  |
 | E2E         | Critical user journeys (10–20 scenarios) | Playwright (web), Detox (mobile)       |
 | Contract    | All public API endpoints                 | Pact.io (consumer-driven contracts)    |

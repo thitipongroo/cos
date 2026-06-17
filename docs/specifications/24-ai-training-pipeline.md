@@ -118,7 +118,7 @@ RAG Pipeline :
 ```text
 Document ingested
 → OCR / text extraction
-→ chunked (512–1024 tokens, 20% overlap)
+→ chunked (documents: chunk_size=500, chunk_overlap=100 — master Phase 11; site reports = 1 chunk)
 → embedded via text-embedding-3-small (OpenAI, 1536 dimensions)
 → stored in pgvector (MVP) / Weaviate (at scale)
 → query-time: hybrid search (semantic similarity + keyword BM25)

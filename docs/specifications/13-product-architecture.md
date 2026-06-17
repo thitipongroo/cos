@@ -25,6 +25,9 @@ related_docs:
   - [SMB Package](#smb-package)
   - [Mid-market Package](#mid-market-package)
   - [Enterprise Package](#enterprise-package)
+- [13.3 Financial Compliance Integrations](#133-financial-compliance-integrations)
+- [13.4 Domain Integrations](#134-domain-integrations)
+- [13.5 Additional Integration Decisions](#135-additional-integration-decisions)
 
 ---
 
@@ -40,7 +43,7 @@ Foundation :
 - Audit logs
 - Notifications
 - Workflow engine
-- Document engine (OCR, version management, format conversion, drawing viewer — implemented by Document Service in 03-system-design section 3.2; sits above the File Service storage layer)
+- Document engine (implemented by Document Service in 03-system-design section 3.2; sits above the File Service storage layer). **MVP scope:** OCR only (Phase 11 AI OCR Pipeline) + file storage (Phase 9 File Service). **Post-MVP:** version management, format conversion, and drawing viewer are not in the MVP phase plan (absent from §21.2) — implement when scheduled post-MVP.
 - API gateway
 - Event bus
 
@@ -350,7 +353,7 @@ Vendor SDK is injected via DI at deployment time. No vendor is selected at the p
 | Protocol        | MQTT 5.0 (OASIS Standard 2019)                               |
 | QoS             | QoS 1 minimum for telemetry; QoS 2 for critical state events |
 | Topic structure | `cos/v1/devices/{device_id}/telemetry`                       |
-| Broker          | AWS IoT Core (cloud) / EMQX (on-premise)                     |
+| Broker          | **EMQX self-hosted on EKS** (RESOLVED — master Phase 21 + `33-digital-twin-iot` §33.8; EMQX→Kafka MSK connector built-in; AWS IoT Core deferred, Azure IoT Hub excluded) |
 | Interface       | `IoTIntegration.publishTelemetry(deviceId, payload): void`   |
 | Trigger         | Implement when first tenant deploys GPS-tracked equipment    |
 

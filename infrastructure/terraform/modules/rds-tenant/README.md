@@ -81,7 +81,7 @@ Examples:
 
 | Parameter           | Value                                                     |
 | ------------------- | --------------------------------------------------------- |
-| Engine              | PostgreSQL 15                                             |
+| Engine              | PostgreSQL 16 (matches shared RDS major version)         |
 | Instance class      | `db.t3.medium` (default — override per contract)          |
 | Storage type        | GP3                                                       |
 | Allocated storage   | 100 GB (initial); auto-scales to 1 TB                     |

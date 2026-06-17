@@ -256,7 +256,7 @@ Before starting any implementation task:
 - **CCPA (California, USA)** — applies when California residents are served:
   - "Do not sell my personal information" opt-out must be implementable
 - **SOC 2 Type II** — platform must be SOC 2 Type II ready by Stage 3; controls tracked in `docs/compliance/soc2-controls.md`; every new feature reviewed against SOC 2 trust criteria (Security, Availability, Confidentiality) before merge
-- **Cross-border data transfer**: Thai-origin data must not leave the `ap-southeast-1` region without explicit product owner approval and legal review; data residency rules per region defined in `docs/compliance/data-residency-policy.md`
+- **Cross-border data transfer**: Thai-origin data must not leave the `ap-southeast-7` (Bangkok) region — `ap-southeast-1` (Singapore) is the DR/fallback — without explicit product owner approval and legal review; data residency rules per region defined in `docs/compliance/data-residency-policy.md` (region decision: GLOB-001, spec §8.8 + §5.6)
 - PII must never appear in logs, traces, or error messages — use `[REDACTED]` or masked values
 
 ### QM-6 — Performance Budgets
@@ -432,9 +432,9 @@ DR drills must be executed before every Stage transition; drill results recorded
 
 **Stage 4+ (required implementation — multi-region Terraform module):**
 
-- Active-passive multi-region: primary `ap-southeast-1` (Thailand); DR region defined via multi-region Terraform module before Stage 4 begins
+- Active-passive multi-region: primary `ap-southeast-7` (Bangkok, Thailand); DR region `ap-southeast-1` (Singapore) defined via multi-region Terraform module before Stage 4 begins (GLOB-001, spec §8.8)
 - Global traffic routing via Route 53 latency-based routing or CloudFront
-- Data residency enforced per QM-5: Thai-origin data remains in `ap-southeast-1` unless product owner approves otherwise with legal sign-off
+- Data residency enforced per QM-5: Thai-origin data remains in `ap-southeast-7` (Bangkok) unless product owner approves otherwise with legal sign-off
 - Cross-region replication strategy (read replicas vs. active-active) decided in an ADR before implementation begins
 - Each region must independently pass Phase 19 automated checks before receiving production traffic
 

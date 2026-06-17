@@ -351,12 +351,14 @@ All dashboards are version-controlled as Grafana JSON under
 
 ### Incident Severity Classification
 
+> **Severity scheme:** P0–P3, consistent with `context.md` QM-17. (P0 is the most severe.)
+
 | Severity      | Definition                                | Response Time     | Example                                                            |
 | ------------- | ----------------------------------------- | ----------------- | ------------------------------------------------------------------ |
-| P1 — Critical | Complete service outage or data loss risk | 15 minutes        | All API endpoints returning 5xx; DB unresponsive                   |
-| P2 — High     | Partial outage affecting a key user flow  | 30 minutes        | Procurement approval workflow failing; notifications not delivered |
-| P3 — Medium   | Degraded performance, workaround exists   | 2 hours           | Dashboard slow (> 5 s p95); AI generation timing out               |
-| P4 — Low      | Minor issue, no user impact               | Next business day | Monitoring alert misconfigured; log noise                          |
+| P0 — Critical | Complete service outage or data loss risk | 15 minutes        | All API endpoints returning 5xx; DB unresponsive                   |
+| P1 — High     | Partial outage affecting a key user flow  | 30 minutes        | Procurement approval workflow failing; notifications not delivered |
+| P2 — Medium   | Degraded performance, workaround exists   | 2 hours           | Dashboard slow (> 5 s p95); AI generation timing out               |
+| P3 — Low      | Minor issue, no user impact               | Next business day | Monitoring alert misconfigured; log noise                          |
 
 ### Incident Runbooks
 

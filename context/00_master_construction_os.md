@@ -324,7 +324,7 @@ Core architectural principles:
 Technology assignments follow the SERVICE → RUNTIME MAPPING table above.
 Do NOT reassign runtimes. Do NOT combine runtimes within a service.
 
-Infrastructure stack (all required — synced from source §3.3, §8.3, §8.4):
+Infrastructure stack (all required — versions authoritative in spec §4.3 Databases + §4.4 Infrastructure; mirrored here):
 
 - PostgreSQL 16          — primary relational store
 - TimescaleDB 2.x        — time-series telemetry (equipment, IoT, workforce)
@@ -1255,12 +1255,20 @@ Tenant Isolation Model (FINAL — spec §7, §7.7, §21-mvp-scope):
     - One PostgreSQL database (shared across all tenants)
     - One named PostgreSQL schema per domain module (global, not per-tenant):
         platform, projects, boq, procurement, site_ops, finance, files,
-        notifications, equipment, workforce, ai, equipment_telemetry, workforce_telemetry
+        notifications, equipment, workforce, ai, equipment_telemetry, workforce_telemetry,
+        digital_twin (TimescaleDB, Phase 24 — see spec §7.7, §11.0, §33.4)
     - tenant_id UUID NOT NULL on every domain table (platform tables exempt)
     - All SQL must use schema-qualified names: procurement.vendors, finance.project_budgets
-    - PostgreSQL RLS enabled on every domain table (MANDATORY, spec §7.7):
+    - PostgreSQL RLS enabled on every domain table (MANDATORY, spec §7.7 + §9.7.3):
         SET LOCAL app.current_tenant_id = '{tenant_id}' at request start
-        POLICY: USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
+        ENABLE and FORCE must be applied TOGETHER (FORCE = table owner cannot bypass RLS):
+          ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
+          CREATE POLICY tenant_isolation ON {schema}.{table}
+            AS RESTRICTIVE
+            USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+        The application role (app_user) must NEVER be granted BYPASSRLS (spec §9.7.3).
+        RLS migration rollback must DISABLE ROW LEVEL SECURITY and DROP POLICY for every policy created.
     - Application layer also filters WHERE tenant_id = $1 as secondary defense-in-depth
     - Migrations run once (not per-tenant) — CREATE SCHEMA IF NOT EXISTS {schema}
     - identity module tables live in schema "platform" (cross-tenant, no RLS needed)
@@ -1289,6 +1297,7 @@ Entities (PostgreSQL — all in schema: identity):
     plan_type        ENUM('STARTER','PROFESSIONAL','ENTERPRISE') NOT NULL
     is_active        BOOLEAN DEFAULT true
     dedicated_db_url VARCHAR(500) NULL  -- NULL = shared DB; non-NULL = enterprise dedicated DB URL
+    data_region      VARCHAR(20) NOT NULL DEFAULT 'ap-southeast-1'  -- data-residency region; Thai→ap-southeast-7, EU→eu-west-1, default→ap-southeast-1 (spec §5.6); immutable after first write
     created_at       TIMESTAMPTZ DEFAULT now()
     updated_at       TIMESTAMPTZ DEFAULT now()
 
@@ -2634,6 +2643,14 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - Service worker registration in Next.js _app.tsx
     - Offline fallback pages
     - Install prompt component (beforeinstallprompt handler)
+    - Web authentication: login (Path A SMS OTP + Path B email/password), MFA challenge,
+      session/refresh, role-based post-login routing — per spec §20.6 (no new auth mechanism)
+    - Web operational pages for ALL roles (full operational client, not dashboard-only) —
+      build the per-role page inventory in spec §20.7 (Executive, PM, Procurement, Finance,
+      Site Engineer, Site Worker, Safety Officer, Tenant Admin, Viewer; CRM web UI excluded
+      per §21.6; SYSTEM_ADMIN uses the separate /admin panel §20.4)
+    - Web app shell: role-filtered navigation, SSE notification bell, offline/sync indicator,
+      th/en language switcher, data-table list views (spec §20.6.2)
 
 Local SQLite Schema (mirrors server entities for offline use):
   sync_queue:
@@ -3576,9 +3593,9 @@ Data Scaling Strategy (source §24.2):
     TimescaleDB: hypertable chunk interval = 1 day (equipment), 1 week (workforce)
 
   Multi-region replication:
-    DECIDED: active-passive; primary ap-southeast-1 (Thailand); DR region via Terraform multi-region module; Route 53 latency routing; trigger: first tenant with data residency requirement
-    Active-passive: primary in ap-southeast-1, standby in ap-east-1
-    Data residency: EU tenants → eu-west-1, Thai PDPA → ap-southeast-1
+    DECIDED: active-passive; primary ap-southeast-7 (Bangkok, Thailand) — GLOB-001 spec §8.8; DR ap-southeast-1 (Singapore); DR region via Terraform multi-region module; Route 53 latency routing; trigger: first tenant with data residency requirement
+    Active-passive: primary ap-southeast-7 (Bangkok), DR ap-southeast-1 (Singapore)
+    Data residency: EU tenants → eu-west-1, Thai PDPA → ap-southeast-7 (Bangkok)
 
 - Terraform modules (AWS EKS, RDS, ElastiCache, MSK, S3 — default to AWS)
 
@@ -3610,9 +3627,9 @@ Decisions in Phase 17 (documented in spec):
     PostgreSQL: max_ttl 24h; JWT signing keys: rotation via JWKS endpoint (zero-downtime)
 
   MultiRegionDeploy:
-    DECIDED: active-passive; primary ap-southeast-1 (Thailand); Terraform multi-region module;
+    DECIDED: active-passive; primary ap-southeast-7 (Bangkok, Thailand) — GLOB-001 spec §8.8; DR ap-southeast-1 (Singapore); Terraform multi-region module;
     Route 53 latency routing; trigger: first tenant with data residency requirement
-    Active-passive: primary ap-southeast-1, DR region via Terraform module
+    Active-passive: primary ap-southeast-7 (Bangkok), DR ap-southeast-1 (Singapore) via Terraform module
     Active-active: NOT planned (requires CockroachDB or Aurora Global)
     Data residency routing: tenant metadata → region assignment → connection routing
 
@@ -3941,7 +3958,7 @@ Entities (PostgreSQL — schema: notifications):
     template_id     UUID PK
     tenant_id       UUID  (nullable — null = system template)
     event_type      VARCHAR(255) NOT NULL  — maps to Kafka event_type
-    channel         ENUM('IN_APP','EMAIL','LINE','SMS')
+    channel         ENUM('IN_APP','EMAIL','LINE','PUSH','SMS')  -- PUSH = Expo push (mobile); SMS enum value has no MVP adapter (spec §19.2)
     subject_template TEXT    — Jinja2 template
     body_template   TEXT NOT NULL  — Jinja2 template
     is_active       BOOLEAN DEFAULT true
@@ -3950,7 +3967,7 @@ Entities (PostgreSQL — schema: notifications):
     notification_id UUID PK
     tenant_id       UUID NOT NULL
     recipient_id    UUID NOT NULL   — user_id
-    channel         ENUM('IN_APP','EMAIL','LINE','SMS')
+    channel         ENUM('IN_APP','EMAIL','LINE','PUSH','SMS')  -- PUSH = Expo push (mobile); SMS enum value has no MVP adapter (spec §19.2)
     event_type      VARCHAR(255) NOT NULL
     subject         TEXT
     body            TEXT NOT NULL
@@ -3965,7 +3982,7 @@ Entities (PostgreSQL — schema: notifications):
     tenant_id       UUID NOT NULL
     user_id         UUID NOT NULL
     event_type      VARCHAR(255) NOT NULL
-    channel         ENUM('IN_APP','EMAIL','LINE','SMS')
+    channel         ENUM('IN_APP','EMAIL','LINE','PUSH','SMS')  -- PUSH = Expo push (mobile); SMS enum value has no MVP adapter (spec §19.2)
     is_enabled      BOOLEAN DEFAULT true
     UNIQUE: (user_id, event_type, channel)
 
@@ -4059,7 +4076,7 @@ TimescaleDB Tables (schema: equipment_telemetry):
     operator_id     UUID
     INDEX: (equipment_id, recorded_at DESC)
 
-  IoT telemetry: MQTT 5.0; AWS IoT Core (cloud) / EMQX (on-premise); topic: cos/v1/devices/{device_id}/telemetry (see spec §13.5)
+  IoT telemetry: MQTT 5.0; broker = EMQX self-hosted on EKS (RESOLVED — AWS IoT Core deferred, Azure IoT Hub excluded; see Phase 21 stub note below + spec §13.5, §33.8); topic: cos/v1/devices/{device_id}/telemetry
     Trigger: equipment has IoT sensor attached
     Interface: { streamTelemetry(equipmentId: string): AsyncIterable<TelemetryEvent> }
 
@@ -4466,6 +4483,12 @@ Generate:
 
 - PATCH /api/v1/admin/tenants/:tenantId/mark-contracted (NestJS controller + service + DTO)
 - POST /api/v1/platform/webhooks/enterprise-contract-signed (new module: platform-webhook)
+    SECURITY (MANDATORY — spec §34.6): verify HMAC-SHA256 signature on every webhook request.
+      env: PLATFORM_WEBHOOK_SECRET
+      1. Capture raw request body as Buffer via Fastify addContentTypeParser
+      2. expectedSig = "sha256=" + HMAC-SHA256(secret, rawBody).hexDigest()
+      3. Compare X-Webhook-Signature header vs expectedSig using timingSafeEqual (constant-time)
+      4. Missing secret or missing rawBody → 500; missing or invalid signature → 401
 - EnterpriseProvisioningWorkflow + 5 activities + compensation + worker (enterprise-provisioning)
 - TypeScript interfaces: platform.enterprise.contract_signed.v1.ts + platform.enterprise.db_provisioned.v1.ts
 - Avro schemas: platform.enterprise.contract_signed.v1.avsc + platform.enterprise.db_provisioned.v1.avsc

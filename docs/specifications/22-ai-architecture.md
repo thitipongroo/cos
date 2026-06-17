@@ -22,6 +22,8 @@ related_docs:
 - [22.3 AI System Components](#223-ai-system-components)
 - [22.4 AI Use Cases](#224-ai-use-cases)
 - [22.5 LLM Provider Strategy](#225-llm-provider-strategy)
+- [22.6 LAYER-C-001 Evaluation Rubric](#226-layer-c-001-evaluation-rubric)
+- [22.7 AI Integration Decisions](#227-ai-integration-decisions)
 
 ---
 
@@ -234,7 +236,8 @@ Routing :
 RAG Architecture :
 
 - Documents ingested → text extracted (OCR for PDFs, photos)
-- Text chunked (512–1024 tokens with overlap)
+- Text chunked: documents via recursive character splitter `chunk_size=500`, `chunk_overlap=100`
+  (master Phase 11; site reports treated as a single chunk)
 - Embedded via **text-embedding-3-small** (OpenAI, 1536 dimensions) via `EmbeddingProvider` interface
 - Stored in pgvector (MVP) → Weaviate (at scale)
 - Query-time: hybrid search — keyword BM25 (OpenSearch) + semantic vector (pgvector), fused via Reciprocal
@@ -367,10 +370,6 @@ structured invoice/form extraction.
 **Pipeline (Tier 1):** `pdf2image → pytesseract → extracted text → embedding worker` (00_master §Phase 11,
 line 2805). Output: `{ file_id, extracted_text, confidence_score }`. Triggered by Kafka consumer on
 `file.uploaded` (mime = PDF or image).
-
-> **Implementation note (gap found 2026-06-16):** `services/ai-ocr-pipeline/ocr_pipeline.py` imports
-> `pytesseract`, `pdf2image`, `PIL` but `requirements.txt` does not list them, and the Dockerfile does not
-> install system `tesseract-ocr` / `poppler-utils`. These must be added for Tier 1 to run.
 
 ---
 

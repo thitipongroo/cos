@@ -29,6 +29,7 @@ related_docs:
 - [33.8 Infrastructure](#338-infrastructure)
 - [33.9 Revenue Model](#339-revenue-model)
 - [33.10 Success Metrics](#3310-success-metrics)
+- [33.11 Ecosystem Architecture Decisions](#3311-ecosystem-architecture-decisions)
 
 ---
 
@@ -40,7 +41,7 @@ related_docs:
 | BIM data exchange       | Industry Foundation Classes (IFC) — ISO 16739-1 | IFC4 (ISO 16739-1:2018)  | Normative — BIM element identifier format and file exchange for BIM Integration                |
 | Embodied carbon factors | EN 15804:2012+A2:2019 / ISO 21930:2017          | Current                  | Normative — EPD life cycle module A1–A3 as the basis for material carbon emission factors      |
 | GHG accounting          | ISO 14064-1:2018                                | 2018                     | Informative — organizational GHG inventory framework for tenant carbon reporting               |
-| Event envelope          | CloudEvents                                     | v1.0                     | Normative — event envelope format (see 15-event-driven-workflow §15.6)                         |
+| Event envelope          | Base Event Envelope (CloudEvents-inspired)      | §32.4                    | Normative — COS Base Event Envelope (see 15-event-driven-workflow §15.6 + 32-implementation-specifications §32.4) |
 | Event schema            | Apache Avro / Confluent Schema Registry         | —                        | Normative — event schema format and compatibility (see 32-implementation-specifications §32.4) |
 
 **Normative** = implementation must comply with the standard.

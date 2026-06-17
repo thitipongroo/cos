@@ -20,6 +20,8 @@ related_docs:
 - [5.2 Security Controls](#52-security-controls)
 - [5.3 Compliance](#53-compliance)
 - [5.4 Authentication Flow](#54-authentication-flow)
+- [5.5 Cloudflare WAF](#55-cloudflare-waf)
+- [5.6 Data Residency](#56-data-residency)
 - [5.7 Content Security Policy (CSP)](#57-content-security-policy-csp)
 - [5.8 CORS Policy](#58-cors-policy)
 
@@ -52,9 +54,10 @@ Principles :
 
 > **ClamAV quarantine procedure (Phase 9+):** Infected files are moved to a dedicated
 > `cos-quarantine/{tenant_id}/` MinIO bucket (separate from `cos-files`); quarantine bucket
-> retention: 30 days; event emitted on detection: `file.scan.quarantined.v1`
-> (payload: `{ file_id, tenant_id, threat_name, quarantined_at }`);
-> SYSTEM_ADMIN notified via `file.scan.quarantined.v1` event; recovery from quarantine is
+> retention: 30 days; event emitted on detection: `file.document.quarantined.v1`
+> (payload: `{ file_id, tenant_id, threat_type }` — canonical event per
+> `32-implementation-specifications` §32.4 #18 and master Phase 9);
+> SYSTEM_ADMIN notified via `file.document.quarantined.v1` event; recovery from quarantine is
 > SYSTEM_ADMIN-only action via platform admin API; files automatically deleted after
 > 30-day retention period.
 
@@ -277,6 +280,12 @@ Keycloak Admin REST API during user provisioning) and mapped to the JWT access t
 
 **Path A (phone/OTP via Keycloak Direct Grant):**
 
+SMS gateway (authoritative): **AWS SNS** (region `ap-southeast-1` SMS-capable endpoint), via AWS SDK v3
+`@aws-sdk/client-sns` (`SNSClient.publish()`). OTP delivery is the only step that uses SNS; token
+issuance is Keycloak (below). OTP parameters: 6-digit numeric, TTL 5 min, max 3 attempts per session,
+rate-limited 10 OTP requests per phone per day (see §14.3). A Thai SMS fallback applies if +66 delivery
+rate < 95%.
+
 1. OTP verification succeeds in COS identity service.
 2. `KeycloakAdminService.provisionPhoneUser(phone, displayName, realm)` creates a Keycloak user and sets an ephemeral one-time credential.
 3. COS calls `POST /realms/{realm}/protocol/openid-connect/token` with `grant_type=password`, username=phone, password=ephemeralCredential (`directAccessGrantsEnabled: true` required on `cos-backend` client).
@@ -428,11 +437,16 @@ Authoritative file: `docs/compliance/data-residency-policy.md`
 
 ### Region assignment
 
-| Tenant origin   | Primary region               | DR region        | Regulation                          |
-| --------------- | ---------------------------- | ---------------- | ----------------------------------- |
-| Thai tenants    | `ap-southeast-7` (Bangkok)   | `ap-southeast-1` | PDPA — data must not leave Thailand |
-| EU tenants      | `eu-west-1` (Ireland)        | —                | GDPR                                |
-| Other / default | `ap-southeast-1` (Singapore) | —                | Platform default                    |
+The "Primary region" column below is the per-tenant **data-residency** region (the tenant's home
+region per the GLOB-003 data-sovereignty principle, §5.3). It is **distinct from** the platform's
+primary **compute/control-plane** region (`ap-southeast-7` Bangkok — GLOB-001, §8.8): a tenant's
+data is stored in its own home region regardless of where the platform control plane runs.
+
+| Tenant origin                | Data-residency region        | DR region        | Regulation / rationale                                            |
+| ---------------------------- | ---------------------------- | ---------------- | ----------------------------------------------------------------- |
+| Thai tenants                 | `ap-southeast-7` (Bangkok)   | `ap-southeast-1` | PDPA — data must not leave Thailand                               |
+| EU tenants                   | `eu-west-1` (Ireland)        | —                | GDPR                                                              |
+| Other / default (SG/VN/MY/ID & international) | `ap-southeast-1` (Singapore) | —    | Default for non-Thai/non-EU tenants — Singapore is the established, neutral SEA data hub (no AWS region in VN/MY/ID); per GLOB-003 home-region principle. **Not** the platform-primary compute region. |
 
 ### Rules
 
@@ -447,8 +461,9 @@ Authoritative file: `docs/compliance/data-residency-policy.md`
 
 - Region assignment is immutable after first data write; change requires full data migration
   with product owner and legal sign-off.
-- `data_region` is included in every Kafka event payload so downstream consumers can
-  enforce residency without a platform lookup.
+- `data_region` is a column on `platform.tenants` (see `11-database-schema` §11.1). Because the
+  Base Event Envelope (§32.4) already carries `tenant_id`, downstream consumers resolve a tenant's
+  `data_region` from `platform.tenants` — it is NOT a separate field on the event envelope.
 
 ---
 

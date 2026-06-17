@@ -49,8 +49,11 @@ and 16-enterprise-event-flow) and routed to recipients based on their role and p
 | In-app (web)  | SSE (Server-Sent Events)                     | Real-time alerts while user is active in web UI  |
 | Push (mobile) | Expo Push Notifications (APNs / FCM)         | Alerts to field users on React Native app        |
 | Email         | SendGrid (MVP) / AWS SES (production target) | Non-urgent summaries, daily digests, escalations |
+| LINE          | LINE Messaging API (push message)            | Parallel channel; tenant configures LINE Channel Access Token in tenant settings |
 
-SMS is not included in MVP. It is evaluated post-MVP based on field user adoption data.
+Implemented channel adapters (backend `notification/adapters/`): Expo Push, SendGrid (email), LINE Messaging.
+SMS is present in the channel enum but has no MVP adapter — it is not included in MVP and is evaluated
+post-MVP based on field user adoption data.
 
 Note on In-app Channel :
 
@@ -127,7 +130,7 @@ Stored in PostgreSQL for audit and in-app inbox :
 - recipient_user_id
 - event_type
 - event_source_id (FK to the triggering entity)
-- channel (in_app / push / email)
+- channel (in_app / push / email / line / sms) — sms enum value has no MVP adapter (see §19.2)
 - title
 - body
 - read_at (null = unread)

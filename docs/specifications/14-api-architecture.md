@@ -161,8 +161,11 @@ machine-readable contracts derived from these patterns.
 Two authentication paths (source: `context/00_master_construction_os.md` §Phase 2;
 `05-security-compliance` §5.3):
 
-- **Path A** — SMS OTP for field workers (`SITE_WORKER`, `SITE_ENGINEER`): phone + 6-digit OTP →
-  JWT issued by COS identity service (RS256).
+- **Path A** — SMS OTP for field workers (`SITE_WORKER`, `SITE_ENGINEER`): phone + 6-digit OTP.
+  The COS identity service performs OTP send/verify only; after verification it obtains the JWT
+  from **Keycloak via Direct Grant** (`grant_type=password`, ephemeral credential) — the token is
+  **Keycloak-signed (RS256)**. Keycloak is the single source of truth for JWT signing on both paths
+  (master Phase 2; `05-security-compliance` §5.4).
 - **Path B** — Email + password for office roles via Keycloak OIDC: JWT issued by Keycloak
   (RS256). MFA (TOTP) required for `TENANT_ADMIN` and `FINANCE`.
 
@@ -428,16 +431,16 @@ Breaking vs Non-breaking :
 
 ### Authentication Plugin
 
-Kong Gateway uses the `jwt` plugin on all `/api/v1/*` routes. The plugin validates JWT
-signatures against two JWKS endpoints:
+Kong Gateway uses the `jwt` plugin on all `/api/v1/*` routes. **Keycloak signs all user JWTs**
+(both Path A via Direct Grant and Path B via OIDC — master Phase 2; §5.4), so the plugin validates
+signatures against a single JWKS endpoint:
 
-| Issuer               | JWKS Endpoint                                                  | Token Type                     |
-| -------------------- | -------------------------------------------------------------- | ------------------------------ |
-| COS identity service | `https://api.cos.io/.well-known/jwks.json`                     | Path A user JWT (phone/OTP)    |
-| Keycloak realm       | `{keycloak_base}/realms/{realm}/protocol/openid-connect/certs` | Path B JWT; client credentials |
+| Issuer         | JWKS Endpoint                                                  | Token Type                                       |
+| -------------- | -------------------------------------------------------------- | ------------------------------------------------ |
+| Keycloak realm | `{keycloak_base}/realms/{realm}/protocol/openid-connect/certs` | Path A + Path B user JWT; OAuth2 client credentials |
 
-Both endpoints are configured in the same `jwt` plugin instance. Token `iss` claim is
-validated against the JWKS endpoint that issued the signing key.
+The COS identity service performs OTP send/verify only — it does **not** sign JWTs. Token `iss`
+claim is validated against the Keycloak JWKS endpoint.
 
 ### Traffic Type Distinction
 
@@ -446,7 +449,7 @@ Kong identifies external OAuth2 client credential traffic by Consumer lookup on 
 
 | Traffic Type                     | `iss`                | `azp`                     | `session_state` | Kong Consumer           |
 | -------------------------------- | -------------------- | ------------------------- | --------------- | ----------------------- |
-| Internal — Path A (field worker) | COS identity service | absent                    | absent          | No — anonymous consumer |
+| Internal — Path A (field worker) | Keycloak realm       | absent                    | Present         | No — anonymous consumer |
 | Internal — Path B (office user)  | Keycloak realm       | `cos-web` or `cos-mobile` | Present         | No — anonymous consumer |
 | External — marketplace / ERP     | Keycloak realm       | registered `client_id`    | Absent          | Yes — matched consumer  |
 
@@ -510,7 +513,6 @@ A request is rejected (HTTP 429) if **any** of the three limits is exceeded.
 | [OAuth2]   | The OAuth 2.0 Authorization Framework                              | RFC 6749                                                             |
 | [OpenAPI]  | OpenAPI Specification v3.1.0                                       | [spec.openapis.org/oas/v3.1.0](https://spec.openapis.org/oas/v3.1.0) |
 | [Kong]     | Kong Gateway Documentation                                         | [docs.konghq.com](https://docs.konghq.com/)                          |
-| [gRPC]     | gRPC Protocol Documentation                                        | [grpc.io/docs](https://grpc.io/docs/)                                |
 | [GraphQL]  | GraphQL Specification                                              | [spec.graphql.org](https://spec.graphql.org/)                        |
 
 > 📎 See also: [03-system-design](03-system-design.md) · [13-product-architecture](13-product-architecture.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [26-pricing-model](26-pricing-model.md)

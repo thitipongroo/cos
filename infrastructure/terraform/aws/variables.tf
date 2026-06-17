@@ -1,8 +1,11 @@
 # CLOUD: AWS — replace with GCP/on-prem equivalent
 variable "aws_region" {
-  description = "AWS region"
+  # Primary deployment region: ap-southeast-7 (Bangkok) per GLOB-001 (spec §8.8); DR = ap-southeast-1.
+  # NOTE: terraform S3 backend state bucket stays in ap-southeast-1 (main.tf) — that is the state
+  # store location, independent of the deployment region.
+  description = "AWS deployment region (primary)"
   type        = string
-  default     = "ap-southeast-1"
+  default     = "ap-southeast-7"
 }
 
 variable "environment" {
@@ -45,9 +48,13 @@ variable "public_subnet_cidrs" {
 }
 
 variable "availability_zones" {
-  description = "Availability zones"
+  # AZs for the primary region (ap-southeast-7, Bangkok). Naming follows the AWS {region}{a,b,c}
+  # convention. VERIFY actual AZ availability for ap-southeast-7 before apply (newer region — AZ
+  # count/IDs must be confirmed via `aws ec2 describe-availability-zones --region ap-southeast-7`);
+  # adjust this list + the subnet CIDR lists if the region exposes fewer/more than 3 AZs.
+  description = "Availability zones (primary region)"
   type        = list(string)
-  default     = ["ap-southeast-1a", "ap-southeast-1b", "ap-southeast-1c"]
+  default     = ["ap-southeast-7a", "ap-southeast-7b", "ap-southeast-7c"]
 }
 
 variable "node_instance_types" {

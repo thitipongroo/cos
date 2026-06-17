@@ -89,4 +89,7 @@ Platformize :
 - Financing
 - Insurance
 
-> 📎 See also: [01-business-architecture](01-business-architecture.md) · [21-mvp-scope](21-mvp-scope.md) · [26-pricing-model](26-pricing-model.md) · [29-final-strategic-positioning](29-final-strategic-positioning.md)
+> 📎 See also: [01-business-architecture](01-business-architecture.md)
+> · [21-mvp-scope](21-mvp-scope.md)
+> · [26-pricing-model](26-pricing-model.md)
+> · [29-final-strategic-positioning](29-final-strategic-positioning.md)

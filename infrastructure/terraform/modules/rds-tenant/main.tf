@@ -59,7 +59,7 @@ resource "aws_db_instance" "tenant" {
   identifier = local.name_prefix
 
   engine         = "postgres"
-  engine_version = "15"
+  engine_version = "16.2" # match shared RDS major version (aws/modules/rds engine_version 16.2); spec §34
   instance_class = var.instance_class
 
   allocated_storage     = var.allocated_storage

@@ -1,7 +1,7 @@
 # Construction OS — Synthetic Monitoring Probe Definitions
 # Source: spec §31.10 + master Phase 15 + QM-8
 # Implementation: OpenTelemetry Collector + Grafana Synthetic Monitoring
-# Interval: 60 seconds from ≥ 2 AWS regions (ap-southeast-1 primary + ap-east-1 secondary)
+# Interval: 60 seconds from ≥ 2 AWS regions (ap-southeast-7 Bangkok primary + ap-southeast-1 Singapore DR — GLOB-001 spec §8.8)
 # Alert: probe failure → Alertmanager → P1 incident (QM-17)
 #
 # Adding a new public endpoint: add a probe entry here in the same PR as the endpoint code.
@@ -13,10 +13,10 @@ metadata:
   namespace: monitoring
 spec:
   regions:
+    - id: ap-southeast-7
+      name: 'Asia Pacific (Bangkok) — primary'
     - id: ap-southeast-1
-      name: 'Asia Pacific (Singapore) — primary'
-    - id: ap-east-1
-      name: 'Asia Pacific (Hong Kong) — secondary DR region'
+      name: 'Asia Pacific (Singapore) — secondary / DR region'
 
   defaults:
     interval: 60 # seconds — QM-8 requirement

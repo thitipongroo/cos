@@ -65,6 +65,11 @@ CREATE POLICY tenant_isolation ON {schema}.{table}
 | `ai`                  | AI Services               | NOT NULL  | Migration tool: Prisma (`backend/prisma/migrations/`)                    |
 | `equipment_telemetry` | IoT Telemetry (Timescale) | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
 | `workforce_telemetry` | Attendance (Timescale)    | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
+| `digital_twin`        | Digital Twin / IoT (Timescale, Phase 24) | NOT NULL | TwinState hypertable; see `33-digital-twin-iot` §33.4                 |
+
+> **Future schemas:** CRM (Lead/Opportunity/Contact/Customer) and additional master-data entities in
+> §11.2 get their owning schema when implemented post-MVP (CRM UI excluded from MVP per §21.6).
+> Vendor master data lives in `procurement`. See `07-multi-tenant-architecture` §7.7.
 
 ---
 
@@ -89,6 +94,7 @@ Core :
 | `plan_type`        | ENUM('STARTER','PROFESSIONAL','ENTERPRISE') | NOT NULL                     |                                                          |
 | `is_active`        | BOOLEAN                                     | NOT NULL DEFAULT true        |                                                          |
 | `dedicated_db_url` | VARCHAR(500)                                | NULL                         | NULL = shared DB; non-NULL = enterprise dedicated DB URL |
+| `data_region`      | VARCHAR(20)                                 | NOT NULL DEFAULT 'ap-southeast-1' | AWS region for data residency; assigned at provisioning per `05-security-compliance` §5.6 (Thai → `ap-southeast-7`, EU → `eu-west-1`, default → `ap-southeast-1`); immutable after first data write |
 | `created_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()       |                                                          |
 | `updated_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()       |                                                          |
 

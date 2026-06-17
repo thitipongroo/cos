@@ -22,6 +22,9 @@ related_docs:
 - [8.4 Backup and Disaster Recovery](#84-backup-and-disaster-recovery)
 - [8.5 On-premise Minimum Hardware Requirements](#85-on-premise-minimum-hardware-requirements)
 - [8.6 Deployment Packaging](#86-deployment-packaging)
+- [8.7 WAF Requirements by Deployment Type](#87-waf-requirements-by-deployment-type)
+- [8.8 Cloud Deployment and Resilience Decisions](#88-cloud-deployment-and-resilience-decisions)
+- [8.9 Container Build Specification](#89-container-build-specification)
 
 ---
 
@@ -32,7 +35,7 @@ related_docs:
 Multi-tenant cloud, shared database.
 
 - Isolation: Shared DB + tenant_id (see 07-multi-tenant-architecture section 7.1)
-- Infrastructure: AWS EKS (ap-southeast-1) managed by the platform operator
+- Infrastructure: AWS EKS (ap-southeast-7 primary, ap-southeast-1 DR — GLOB-001 §8.8) managed by the platform operator
 - Keycloak: shared realm, per-tenant isolation by tenant_id claim in JWT
 - Suitable for: contractors with 1–5 concurrent projects, up to 50 users
 
@@ -41,7 +44,7 @@ Multi-tenant cloud, shared database.
 Multi-tenant cloud, shared database.
 
 - Isolation: Shared DB + tenant_id (see 07-multi-tenant-architecture section 7.1)
-- Infrastructure: AWS EKS (ap-southeast-1) managed by the platform operator
+- Infrastructure: AWS EKS (ap-southeast-7 primary, ap-southeast-1 DR — GLOB-001 §8.8) managed by the platform operator
 - Keycloak: shared realm, per-tenant isolation by tenant_id claim in JWT
 - Suitable for: contractors with 5–20 concurrent projects, 50–500 users
 
@@ -129,8 +132,8 @@ exempt with product owner approval on record (see `docs/runbooks/production-read
 
 Multi-region disaster recovery :
 
-- Primary region: ap-southeast-1 (Singapore)
-- Failover region: ap-southeast-7 (Thailand) or ap-east-1 (Hong Kong) — see 04-tech-stack section 4.7
+- Primary region: ap-southeast-7 (Bangkok, Thailand) — GLOB-001 (§8.8)
+- Failover / DR region: ap-southeast-1 (Singapore); EU tenants: eu-west-1 — see 04-tech-stack section 4.7 and §8.8
 - RDS Multi-AZ is enabled for all production PostgreSQL instances
 - S3 cross-region replication is enabled for Enterprise and Dedicated Tenant tiers
 - Failover is triggered manually by the platform operator after declaring an incident

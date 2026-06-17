@@ -55,7 +55,7 @@ datasources:
     user: cos_grafana_ro
     jsonData:
       sslmode: require
-      postgresVersion: 1500
+      postgresVersion: 1600
       timescaledb: false
     secureJsonData:
       password: ${POSTGRES_GRAFANA_RO_PASSWORD}

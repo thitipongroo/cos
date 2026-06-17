@@ -116,7 +116,7 @@ All domain services depend on the shared event SDK output from Phase 8.
 | Stage 1 | Multi-tenant MVP         | Phase 1–2 (Foundation + Auth)                                                                               |
 | Stage 2 | Multi-project SaaS       | Phase 3–7 (Core Domains)                                                                                    |
 | Stage 3 | Multi-company Enterprise | Phase 8–14, 25 (Events + AI + Analytics + Enterprise Provisioning)                                          |
-| Stage 4 | Cross-region Deployment  | Phase 17 + multi-region Terraform module (active-passive, primary ap-southeast-1, Route 53 latency routing) |
+| Stage 4 | Cross-region Deployment  | Phase 17 + multi-region Terraform module (active-passive, primary ap-southeast-7 Bangkok, DR ap-southeast-1 — GLOB-001 §8.8; Route 53 latency routing) |
 | Stage 5 | AI-native Ecosystem      | Phase 23–24 (MLOps + Digital Twin)                                                                          |
 
 > **Phase 24 — Digital Twin:** Phase 24 corresponds to the Digital Twin / IoT capability in
