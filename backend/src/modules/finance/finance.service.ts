@@ -3,7 +3,14 @@
 // Consumes procurement Kafka events; no direct DB access to procurement schema.
 // All monetary calculations via decimal.js (ROUND_HALF_UP).
 
-import { Injectable, Scope, Inject, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Scope,
+  Inject,
+  NotFoundException,
+  UnprocessableEntityException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
@@ -16,13 +23,44 @@ import type {
   BudgetLineRow,
   CostTransactionRow,
   PaymentRow,
+  CustomerRow,
+  ContractRow,
+  BillingRow,
+  ArReceiptRow,
+  CashflowDueRow,
 } from './finance.repository';
 import type { CreateBudgetDto } from './dto/create-budget.dto';
 import type { AddBudgetLineDto } from './dto/add-budget-line.dto';
 import type { RecordPaymentDto } from './dto/record-payment.dto';
+import type {
+  CreateCustomerDto,
+  CreateContractDto,
+  CreateBillingDto,
+  RecordArReceiptDto,
+} from './dto/ar-billing.dto';
 
 const logger = createLogger('finance-service');
 const DEFAULT_VARIANCE_THRESHOLD = new Decimal('10');
+
+// §15: PM approves Client Billing (AR) up to a configured limit; above requires Executive.
+// Default in THB, tenant-configurable in Phase 14 admin UI (mirrors procurement thresholds).
+const DEFAULT_BILLING_PM_APPROVAL_MAX = new Decimal(
+  process.env['BILLING_PM_APPROVAL_MAX'] ?? '500000',
+);
+
+// Direct-method cash flow forecast: weekly buckets (industry-standard 13-week rolling horizon).
+const FORECAST_WEEKS = 13;
+const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+/** One period bucket in a direct-method cash flow forecast. */
+export interface CashflowPeriod {
+  period_start: string;
+  period_end: string;
+  inflow: string;
+  outflow: string;
+  net_flow: string;
+  cumulative_net: string;
+}
 
 @Injectable({ scope: Scope.REQUEST })
 export class FinanceService {
@@ -315,6 +353,196 @@ export class FinanceService {
         );
       }
     }
+  }
+
+  // ── Customers (§11) ─────────────────────────────────────────────────────────
+
+  async createCustomer(dto: CreateCustomerDto): Promise<CustomerRow> {
+    return this.repo.createCustomer({
+      company_name: dto.company_name,
+      customer_type: dto.customer_type ?? null,
+      opportunity_id: dto.opportunity_id ?? null,
+    });
+  }
+
+  async listCustomers(): Promise<CustomerRow[]> {
+    return this.repo.listCustomers();
+  }
+
+  // ── Contracts (§11) ─────────────────────────────────────────────────────────
+
+  async createContract(dto: CreateContractDto): Promise<ContractRow> {
+    return this.repo.createContract({
+      project_id: dto.project_id,
+      contract_type: dto.contract_type,
+      contract_value: dto.contract_value ? new Decimal(dto.contract_value).toFixed(4) : null,
+      customer_id: dto.customer_id ?? null,
+      vendor_id: dto.vendor_id ?? null,
+    });
+  }
+
+  async listContracts(project_id?: string): Promise<ContractRow[]> {
+    return this.repo.listContracts(project_id);
+  }
+
+  // ── Client Billing (AR — §11, §15) ──────────────────────────────────────────
+
+  async createBilling(dto: CreateBillingDto): Promise<BillingRow> {
+    const contract = await this.repo.findContractById(dto.contract_id);
+    if (!contract) {
+      throw new NotFoundException(`Contract ${dto.contract_id} not found`);
+    }
+    return this.repo.createBilling({
+      project_id: dto.project_id,
+      contract_id: dto.contract_id,
+      billing_number: dto.billing_number,
+      amount: new Decimal(dto.amount).toFixed(4),
+      due_date: dto.due_date,
+    });
+  }
+
+  async getBilling(billing_id: string): Promise<BillingRow> {
+    const billing = await this.repo.findBillingById(billing_id);
+    if (!billing) {
+      throw new NotFoundException(`Billing ${billing_id} not found`);
+    }
+    return billing;
+  }
+
+  async listBillings(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ items: BillingRow[]; total: number; page: number; limit: number }> {
+    const { rows, total } = await this.repo.listBillings(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
+  }
+
+  /** Approve a DRAFT billing → ISSUED (§15: PM up to limit, Executive above). */
+  async approveBilling(
+    billing_id: string,
+    tier: 'PM' | 'EXECUTIVE' | 'TENANT_ADMIN',
+  ): Promise<BillingRow> {
+    const billing = await this.getBilling(billing_id);
+    if (billing.status !== 'DRAFT') {
+      throw new UnprocessableEntityException(
+        `Billing ${billing_id} is ${billing.status}; only DRAFT can be approved`,
+      );
+    }
+    if (tier === 'PM' && new Decimal(billing.amount).greaterThan(DEFAULT_BILLING_PM_APPROVAL_MAX)) {
+      throw new ForbiddenException(
+        'Billing amount exceeds PM approval limit; Executive approval required',
+      );
+    }
+    const updated = await this.repo.updateBillingStatus({
+      billing_id,
+      status: 'ISSUED',
+      approved_by: this.userId,
+    });
+    await this.emitEvent('finance.billing.approved.v1', {
+      billing_id,
+      project_id: updated.project_id,
+      contract_id: updated.contract_id,
+      amount: updated.amount,
+      approved_by: this.userId,
+      tier,
+    });
+    logger.info({ billing_id, tier, tenant_id: this.tenantId }, 'billing.approved');
+    return updated;
+  }
+
+  // ── AR Receipts (§11) ───────────────────────────────────────────────────────
+
+  /** Record a client payment; settles the parent billing (ISSUED → PAID). */
+  async recordArReceipt(dto: RecordArReceiptDto): Promise<ArReceiptRow> {
+    const billing = await this.getBilling(dto.billing_id);
+    if (billing.status !== 'ISSUED') {
+      throw new UnprocessableEntityException(
+        `Billing ${dto.billing_id} is ${billing.status}; a receipt can only settle an ISSUED billing`,
+      );
+    }
+    const receipt = await this.repo.createArReceipt({
+      project_id: dto.project_id,
+      billing_id: dto.billing_id,
+      customer_id: dto.customer_id,
+      amount_received: new Decimal(dto.amount_received).toFixed(4),
+      received_date: dto.received_date,
+      payment_method: dto.payment_method ?? null,
+      payment_reference: dto.payment_reference ?? null,
+      received_by: this.userId,
+    });
+    await this.repo.updateBillingStatus({ billing_id: dto.billing_id, status: 'PAID' });
+    await this.emitEvent('finance.ar_receipt.recorded.v1', {
+      ar_receipt_id: receipt.ar_receipt_id,
+      billing_id: dto.billing_id,
+      project_id: dto.project_id,
+      amount_received: receipt.amount_received,
+    });
+    logger.info(
+      {
+        ar_receipt_id: receipt.ar_receipt_id,
+        billing_id: dto.billing_id,
+        tenant_id: this.tenantId,
+      },
+      'ar_receipt.recorded',
+    );
+    return receipt;
+  }
+
+  // ── Cash flow forecast (direct method, §09) ─────────────────────────────────
+
+  /** 13-week rolling direct-method forecast: AR inflow (ISSUED billings) − AP outflow
+   *  (PENDING payments), bucketed weekly by due date. Cumulative net is relative to 0
+   *  (no opening cash-account balance is modeled — not in §11). */
+  async getCashflowForecast(project_id: string): Promise<CashflowPeriod[]> {
+    const [inflows, outflows] = await Promise.all([
+      this.repo.findUnpaidBillingsDue(project_id),
+      this.repo.findPendingPaymentsDue(project_id),
+    ]);
+    return this.buildForecast(inflows, outflows);
+  }
+
+  private buildForecast(inflows: CashflowDueRow[], outflows: CashflowDueRow[]): CashflowPeriod[] {
+    const start = new Date();
+    start.setUTCHours(0, 0, 0, 0);
+    const startMs = start.getTime();
+
+    const inflowByBucket = Array.from({ length: FORECAST_WEEKS }, () => new Decimal(0));
+    const outflowByBucket = Array.from({ length: FORECAST_WEEKS }, () => new Decimal(0));
+
+    const bucketIndex = (due: Date): number => {
+      const dueMs = due.getTime();
+      if (dueMs < startMs) return 0; // overdue collapses into the first bucket
+      return Math.floor((dueMs - startMs) / MS_PER_WEEK);
+    };
+
+    for (const row of inflows) {
+      const idx = bucketIndex(row.due_date);
+      if (idx < FORECAST_WEEKS) inflowByBucket[idx] = inflowByBucket[idx]!.plus(row.amount);
+    }
+    for (const row of outflows) {
+      const idx = bucketIndex(row.due_date);
+      if (idx < FORECAST_WEEKS) outflowByBucket[idx] = outflowByBucket[idx]!.plus(row.amount);
+    }
+
+    let cumulative = new Decimal(0);
+    const periods: CashflowPeriod[] = [];
+    for (let i = 0; i < FORECAST_WEEKS; i++) {
+      const inflow = inflowByBucket[i]!;
+      const outflow = outflowByBucket[i]!;
+      const net = inflow.minus(outflow);
+      cumulative = cumulative.plus(net);
+      periods.push({
+        period_start: new Date(startMs + i * MS_PER_WEEK).toISOString().slice(0, 10),
+        period_end: new Date(startMs + (i + 1) * MS_PER_WEEK).toISOString().slice(0, 10),
+        inflow: inflow.toFixed(4),
+        outflow: outflow.toFixed(4),
+        net_flow: net.toFixed(4),
+        cumulative_net: cumulative.toFixed(4),
+      });
+    }
+    return periods;
   }
 
   private async emitEvent<T>(eventType: string, payload: T): Promise<void> {

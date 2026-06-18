@@ -13,7 +13,11 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-import { NotFoundException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { REQUEST } from '@nestjs/core';
 import { FinanceService } from '../finance.service';
@@ -40,6 +44,18 @@ const mockRepo = {
   createPayment: jest.fn(),
   findPayments: jest.fn(),
   findAllBudgets: jest.fn(),
+  createCustomer: jest.fn(),
+  listCustomers: jest.fn(),
+  createContract: jest.fn(),
+  findContractById: jest.fn(),
+  listContracts: jest.fn(),
+  createBilling: jest.fn(),
+  findBillingById: jest.fn(),
+  listBillings: jest.fn(),
+  updateBillingStatus: jest.fn(),
+  createArReceipt: jest.fn(),
+  findUnpaidBillingsDue: jest.fn(),
+  findPendingPaymentsDue: jest.fn(),
 };
 
 const mockRequest = { tenantId: 'tenant-uuid-001', user: { user_id: 'user-uuid-001' } };
@@ -547,5 +563,209 @@ describe('emitEvent error handling', () => {
         total_budget_currency: 'THB',
       }),
     ).resolves.toBeDefined();
+  });
+
+  // ── AR Billing increment ────────────────────────────────────────────────────
+
+  describe('Customers & Contracts', () => {
+    it('createCustomer passes through optional fields', async () => {
+      mockRepo.createCustomer.mockResolvedValue({ customer_id: 'cust-1' });
+      await service.createCustomer({
+        company_name: 'ACME',
+        customer_type: 'developer',
+        opportunity_id: 'opp-1',
+      });
+      expect(mockRepo.createCustomer).toHaveBeenCalledWith(
+        expect.objectContaining({ customer_type: 'developer', opportunity_id: 'opp-1' }),
+      );
+    });
+
+    it('createCustomer defaults optionals to null', async () => {
+      mockRepo.createCustomer.mockResolvedValue({ customer_id: 'cust-1' });
+      await service.createCustomer({ company_name: 'ACME' });
+      expect(mockRepo.createCustomer).toHaveBeenCalledWith(
+        expect.objectContaining({ customer_type: null, opportunity_id: null }),
+      );
+    });
+
+    it('listCustomers delegates to repo', async () => {
+      mockRepo.listCustomers.mockResolvedValue([{ customer_id: 'cust-1' }]);
+      expect(await service.listCustomers()).toHaveLength(1);
+    });
+
+    it('createContract formats contract_value to 4dp', async () => {
+      mockRepo.createContract.mockResolvedValue({ contract_id: 'con-1' });
+      await service.createContract({
+        project_id: 'proj-uuid-001',
+        contract_type: 'MAIN_CONTRACT',
+        contract_value: '1000000',
+        customer_id: 'cust-1',
+      });
+      expect(mockRepo.createContract).toHaveBeenCalledWith(
+        expect.objectContaining({ contract_value: '1000000.0000' }),
+      );
+    });
+
+    it('createContract leaves contract_value null when omitted', async () => {
+      mockRepo.createContract.mockResolvedValue({ contract_id: 'con-1' });
+      await service.createContract({ project_id: 'proj-uuid-001', contract_type: 'SUBCONTRACT' });
+      expect(mockRepo.createContract).toHaveBeenCalledWith(
+        expect.objectContaining({ contract_value: null }),
+      );
+    });
+
+    it('listContracts delegates to repo', async () => {
+      mockRepo.listContracts.mockResolvedValue([{ contract_id: 'con-1' }]);
+      expect(await service.listContracts('proj-uuid-001')).toHaveLength(1);
+    });
+  });
+
+  describe('Client Billing (AR)', () => {
+    const draftBilling = {
+      billing_id: 'bill-1',
+      project_id: 'proj-uuid-001',
+      contract_id: 'con-1',
+      amount: '100000.0000',
+      status: 'DRAFT' as const,
+    };
+
+    it('createBilling succeeds when contract exists', async () => {
+      mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1' });
+      mockRepo.createBilling.mockResolvedValue(draftBilling);
+      const r = await service.createBilling({
+        project_id: 'proj-uuid-001',
+        contract_id: 'con-1',
+        billing_number: 'AR-001',
+        amount: '100000',
+        due_date: '2026-07-15',
+      });
+      expect(r.billing_id).toBe('bill-1');
+      expect(mockRepo.createBilling).toHaveBeenCalledWith(
+        expect.objectContaining({ amount: '100000.0000' }),
+      );
+    });
+
+    it('createBilling throws NotFound when contract missing', async () => {
+      mockRepo.findContractById.mockResolvedValue(null);
+      await expect(
+        service.createBilling({
+          project_id: 'proj-uuid-001',
+          contract_id: 'missing',
+          billing_number: 'AR-001',
+          amount: '100000',
+          due_date: '2026-07-15',
+        }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('getBilling returns billing / throws NotFound', async () => {
+      mockRepo.findBillingById.mockResolvedValueOnce(draftBilling);
+      expect((await service.getBilling('bill-1')).billing_id).toBe('bill-1');
+      mockRepo.findBillingById.mockResolvedValueOnce(null);
+      await expect(service.getBilling('missing')).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('listBillings returns paginated envelope', async () => {
+      mockRepo.listBillings.mockResolvedValue({ rows: [draftBilling], total: 1 });
+      const r = await service.listBillings({ page: 1, limit: 20 });
+      expect(r).toEqual({ items: [draftBilling], total: 1, page: 1, limit: 20 });
+    });
+
+    it('approveBilling DRAFT → ISSUED (Executive tier)', async () => {
+      mockRepo.findBillingById.mockResolvedValue(draftBilling);
+      mockRepo.updateBillingStatus.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
+      const r = await service.approveBilling('bill-1', 'EXECUTIVE');
+      expect(r.status).toBe('ISSUED');
+      expect(mockRepo.updateBillingStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'ISSUED', approved_by: 'user-uuid-001' }),
+      );
+    });
+
+    it('approveBilling PM under limit succeeds', async () => {
+      mockRepo.findBillingById.mockResolvedValue(draftBilling);
+      mockRepo.updateBillingStatus.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
+      await expect(service.approveBilling('bill-1', 'PM')).resolves.toBeDefined();
+    });
+
+    it('approveBilling PM over limit throws Forbidden', async () => {
+      mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, amount: '600000.0000' });
+      await expect(service.approveBilling('bill-1', 'PM')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+    });
+
+    it('approveBilling throws when not DRAFT', async () => {
+      mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
+      await expect(service.approveBilling('bill-1', 'EXECUTIVE')).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+    });
+
+    it('recordArReceipt settles an ISSUED billing → PAID', async () => {
+      mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
+      mockRepo.createArReceipt.mockResolvedValue({
+        ar_receipt_id: 'rcpt-1',
+        amount_received: '100000.0000',
+      });
+      mockRepo.updateBillingStatus.mockResolvedValue({ ...draftBilling, status: 'PAID' });
+      const r = await service.recordArReceipt({
+        project_id: 'proj-uuid-001',
+        billing_id: 'bill-1',
+        customer_id: 'cust-1',
+        amount_received: '100000',
+        received_date: '2026-07-14',
+      });
+      expect(r.ar_receipt_id).toBe('rcpt-1');
+      expect(mockRepo.updateBillingStatus).toHaveBeenCalledWith({
+        billing_id: 'bill-1',
+        status: 'PAID',
+      });
+    });
+
+    it('recordArReceipt throws when billing not ISSUED', async () => {
+      mockRepo.findBillingById.mockResolvedValue(draftBilling); // DRAFT
+      await expect(
+        service.recordArReceipt({
+          project_id: 'proj-uuid-001',
+          billing_id: 'bill-1',
+          customer_id: 'cust-1',
+          amount_received: '100000',
+          received_date: '2026-07-14',
+        }),
+      ).rejects.toBeInstanceOf(UnprocessableEntityException);
+    });
+  });
+
+  describe('Cash flow forecast (direct method)', () => {
+    const day = 86_400_000;
+    const at = (offsetDays: number) => new Date(Date.now() + offsetDays * day);
+
+    it('buckets AR inflow / AP outflow weekly, drops items beyond the 13-week horizon', async () => {
+      mockRepo.findUnpaidBillingsDue.mockResolvedValue([
+        { due_date: at(-10), amount: '10000.0000' }, // overdue → bucket 0
+        { due_date: at(10), amount: '20000.0000' }, // bucket 1
+        { due_date: at(200), amount: '99999.0000' }, // beyond horizon → dropped
+      ]);
+      mockRepo.findPendingPaymentsDue.mockResolvedValue([
+        { due_date: at(3), amount: '5000.0000' }, // bucket 0
+      ]);
+
+      const periods = await service.getCashflowForecast('proj-uuid-001');
+
+      expect(periods).toHaveLength(13);
+      expect(periods[0]).toEqual(
+        expect.objectContaining({
+          inflow: '10000.0000',
+          outflow: '5000.0000',
+          net_flow: '5000.0000',
+          cumulative_net: '5000.0000',
+        }),
+      );
+      expect(periods[1]).toEqual(
+        expect.objectContaining({ inflow: '20000.0000', cumulative_net: '25000.0000' }),
+      );
+      // Beyond-horizon item excluded → final cumulative stays 25000.
+      expect(periods[12]?.cumulative_net).toBe('25000.0000');
+    });
   });
 });

@@ -287,4 +287,163 @@ describe('FinanceRepository', () => {
     const result = await repo.findWhtRule('TH', 'unknown-type');
     expect(result).toBeNull();
   });
+
+  // ── AR Billing increment ────────────────────────────────────────────────────
+
+  const customerRow = { customer_id: 'cust-1', tenant_id: 'tenant-uuid-001' };
+  const contractRow = { contract_id: 'con-1', tenant_id: 'tenant-uuid-001' };
+  const billingRow = { billing_id: 'bill-1', tenant_id: 'tenant-uuid-001', status: 'DRAFT' };
+  const arReceiptRow = { ar_receipt_id: 'rcpt-1', tenant_id: 'tenant-uuid-001' };
+
+  it('createCustomer with optional fields provided', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([customerRow]);
+    const r = await repo.createCustomer({
+      company_name: 'ACME',
+      customer_type: 'developer',
+      opportunity_id: 'opp-1',
+    });
+    expect(r.customer_id).toBe('cust-1');
+  });
+
+  it('createCustomer with optionals omitted (null branch)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([customerRow]);
+    const r = await repo.createCustomer({ company_name: 'ACME' });
+    expect(r.customer_id).toBe('cust-1');
+  });
+
+  it('findCustomerById returns row then null', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([customerRow]);
+    expect((await repo.findCustomerById('cust-1'))?.customer_id).toBe('cust-1');
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.findCustomerById('missing')).toBeNull();
+  });
+
+  it('listCustomers returns rows', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([customerRow]);
+    expect(await repo.listCustomers()).toHaveLength(1);
+  });
+
+  it('createContract with optional fields provided', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([contractRow]);
+    const r = await repo.createContract({
+      project_id: 'proj-uuid-001',
+      contract_type: 'MAIN_CONTRACT',
+      contract_value: '1000000.0000',
+      customer_id: 'cust-1',
+      vendor_id: null,
+    });
+    expect(r.contract_id).toBe('con-1');
+  });
+
+  it('createContract with optionals omitted (null branch)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([contractRow]);
+    const r = await repo.createContract({
+      project_id: 'proj-uuid-001',
+      contract_type: 'SUBCONTRACT',
+    });
+    expect(r.contract_id).toBe('con-1');
+  });
+
+  it('findContractById returns row then null', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([contractRow]);
+    expect((await repo.findContractById('con-1'))?.contract_id).toBe('con-1');
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.findContractById('missing')).toBeNull();
+  });
+
+  it('listContracts with and without project filter', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([contractRow]);
+    expect(await repo.listContracts('proj-uuid-001')).toHaveLength(1);
+    expect(await repo.listContracts()).toHaveLength(1);
+  });
+
+  it('createBilling returns billing row', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([billingRow]);
+    const r = await repo.createBilling({
+      project_id: 'proj-uuid-001',
+      contract_id: 'con-1',
+      billing_number: 'AR-001',
+      amount: '50000.0000',
+      due_date: '2026-07-15',
+    });
+    expect(r.billing_id).toBe('bill-1');
+  });
+
+  it('findBillingById returns row then null', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([billingRow]);
+    expect((await repo.findBillingById('bill-1'))?.billing_id).toBe('bill-1');
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.findBillingById('missing')).toBeNull();
+  });
+
+  it('listBillings returns rows and total (filters applied)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([billingRow]).mockResolvedValueOnce([{ count: 1n }]);
+    const r = await repo.listBillings({
+      project_id: 'proj-uuid-001',
+      status: 'DRAFT',
+      page: 1,
+      limit: 20,
+    });
+    expect(r.total).toBe(1);
+  });
+
+  it('listBillings returns total=0 when count empty (no filters)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    const r = await repo.listBillings({ page: 1, limit: 20 });
+    expect(r.total).toBe(0);
+  });
+
+  it('updateBillingStatus to ISSUED with approver', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...billingRow, status: 'ISSUED' }]);
+    const r = await repo.updateBillingStatus({
+      billing_id: 'bill-1',
+      status: 'ISSUED',
+      approved_by: 'user-1',
+    });
+    expect(r.status).toBe('ISSUED');
+  });
+
+  it('updateBillingStatus to PAID without approver (null branch)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...billingRow, status: 'PAID' }]);
+    const r = await repo.updateBillingStatus({ billing_id: 'bill-1', status: 'PAID' });
+    expect(r.status).toBe('PAID');
+  });
+
+  it('createArReceipt with optional fields provided', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([arReceiptRow]);
+    const r = await repo.createArReceipt({
+      project_id: 'proj-uuid-001',
+      billing_id: 'bill-1',
+      customer_id: 'cust-1',
+      amount_received: '50000.0000',
+      received_date: '2026-07-14',
+      payment_method: 'transfer',
+      payment_reference: 'TXN-1',
+      received_by: 'user-1',
+    });
+    expect(r.ar_receipt_id).toBe('rcpt-1');
+  });
+
+  it('createArReceipt with optionals omitted (null branch)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([arReceiptRow]);
+    const r = await repo.createArReceipt({
+      project_id: 'proj-uuid-001',
+      billing_id: 'bill-1',
+      customer_id: 'cust-1',
+      amount_received: '50000.0000',
+      received_date: '2026-07-14',
+      received_by: 'user-1',
+    });
+    expect(r.ar_receipt_id).toBe('rcpt-1');
+  });
+
+  it('findUnpaidBillingsDue returns dated amounts', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ due_date: new Date(), amount: '50000.0000' }]);
+    expect(await repo.findUnpaidBillingsDue('proj-uuid-001')).toHaveLength(1);
+  });
+
+  it('findPendingPaymentsDue returns dated amounts', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ due_date: new Date(), amount: '20000.0000' }]);
+    expect(await repo.findPendingPaymentsDue('proj-uuid-001')).toHaveLength(1);
+  });
 });

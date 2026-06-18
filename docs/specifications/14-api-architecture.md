@@ -40,11 +40,11 @@ All internal services communicate via :
 **Decision:** Layered hybrid — REST + AsyncAPI 3.1. GraphQL excluded.
 **Resolved:** 2026-06-10
 
-| Protocol           | Scope                                               | Rationale                                                                    |
-| ------------------ | --------------------------------------------------- | ---------------------------------------------------------------------------- |
-| REST (OpenAPI 3.1) | Synchronous external APIs — supplier, RFQ, document | Universal for ERP/procurement portals; OpenAPI 3.1 mandated platform-wide    |
-| AsyncAPI 3.1       | Event-based ecosystem — notifications, order status | Pairs with Confluent Schema Registry + Avro; v3.1 stable as of 31 Jan 2026   |
-| GraphQL            | Excluded                                            | Schema versioning complexity; unpredictable query cost; REST is sufficient   |
+| Protocol           | Scope                                               | Rationale                                                                  |
+| ------------------ | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| REST (OpenAPI 3.1) | Synchronous external APIs — supplier, RFQ, document | Universal for ERP/procurement portals; OpenAPI 3.1 mandated platform-wide  |
+| AsyncAPI 3.1       | Event-based ecosystem — notifications, order status | Pairs with Confluent Schema Registry + Avro; v3.1 stable as of 31 Jan 2026 |
+| GraphQL            | Excluded                                            | Schema versioning complexity; unpredictable query cost; REST is sufficient |
 
 **Industry precedent (2026):** Autodesk Construction Cloud, Procore API, SAP Business Network.
 
@@ -234,18 +234,30 @@ POST /api/v1/projects
 > Canonical prefix `/api/v1/finance/*` (ADR-023). Budget is project-scoped; cost-transactions
 > and payments are tenant-wide AIP-132 lists filterable by `?project_id=`. Vendor invoices (AP)
 > live in the procurement module (`/api/v1/procurement/vendor-invoices`) per the procure-to-pay
-> 3-way-match boundary; Finance approves/pays them. AR `billing` and `cashflow-forecast` are
-> **deferred (post-MVP)** — not in the Phase 7 implementation.
+> 3-way-match boundary; Finance approves/pays them. AR Client Billing, AR Receipts, Contracts,
+> Customers, and the direct-method Cash Flow Forecast are MVP (§28 "AR/Billing module live").
+> Billing approval is Finance → PM (≤ configured limit) → Executive (§15). Customers and
+> contracts live in the `finance` schema; the forecast is deterministic (ADR-024).
 
-| Method | Path                                        | Description                            | Auth                     |
-| ------ | ------------------------------------------- | -------------------------------------- | ------------------------ |
-| `GET`  | `/api/v1/finance/budget/{project_id}`       | Budget summary with lines              | FINANCE, PM, EXEC, ADMIN |
-| `POST` | `/api/v1/finance/budget/{project_id}`       | Create or update project budget        | FINANCE, ADMIN           |
-| `POST` | `/api/v1/finance/budget/{project_id}/lines` | Add a budget line                      | FINANCE, ADMIN           |
-| `GET`  | `/api/v1/finance/cost-transactions`         | List cost transactions (tenant-wide)   | FINANCE, PM, EXEC, ADMIN |
-| `POST` | `/api/v1/finance/payments`                  | Record payment vs a vendor invoice     | FINANCE, ADMIN           |
-| `GET`  | `/api/v1/finance/payments`                  | List payments / AP queue (tenant-wide) | FINANCE, PM, EXEC, ADMIN |
-| `GET`  | `/api/v1/finance/reports/variance`          | Budget variance across projects        | FINANCE, EXEC, ADMIN     |
+| Method  | Path                                             | Description                            | Auth                           |
+| ------- | ------------------------------------------------ | -------------------------------------- | ------------------------------ |
+| `GET`   | `/api/v1/finance/budget/{project_id}`            | Budget summary with lines              | FINANCE, PM, EXEC, ADMIN       |
+| `POST`  | `/api/v1/finance/budget/{project_id}`            | Create or update project budget        | FINANCE, ADMIN                 |
+| `POST`  | `/api/v1/finance/budget/{project_id}/lines`      | Add a budget line                      | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/cost-transactions`              | List cost transactions (tenant-wide)   | FINANCE, PM, EXEC, ADMIN       |
+| `POST`  | `/api/v1/finance/payments`                       | Record payment vs a vendor invoice     | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/payments`                       | List payments / AP queue (tenant-wide) | FINANCE, PM, EXEC, ADMIN       |
+| `GET`   | `/api/v1/finance/reports/variance`               | Budget variance across projects        | FINANCE, EXEC, ADMIN           |
+| `POST`  | `/api/v1/finance/customers`                      | Register a client/customer             | FINANCE, PM, CRM, ADMIN        |
+| `GET`   | `/api/v1/finance/customers`                      | List customers                         | FINANCE, PM, EXEC, PROC, ADMIN |
+| `POST`  | `/api/v1/finance/contracts`                      | Create a contract                      | PM, ADMIN                      |
+| `GET`   | `/api/v1/finance/contracts`                      | List contracts (filterable by project) | FINANCE, PM, EXEC, PROC, ADMIN |
+| `POST`  | `/api/v1/finance/billing`                        | Create client billing (AR) — DRAFT     | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/billing`                        | List client billings (tenant-wide)     | FINANCE, PM, EXEC, PROC, ADMIN |
+| `GET`   | `/api/v1/finance/billing/{billing_id}`           | Get a client billing                   | FINANCE, PM, EXEC, PROC, ADMIN |
+| `PATCH` | `/api/v1/finance/billing/{billing_id}/approve`   | Approve billing (DRAFT → ISSUED, §15)  | PM, EXEC, ADMIN                |
+| `POST`  | `/api/v1/finance/ar-receipts`                    | Record client payment (billing → PAID) | FINANCE, ADMIN                 |
+| `GET`   | `/api/v1/finance/cashflow-forecast/{project_id}` | 13-week direct-method cash forecast    | FINANCE, PM, EXEC, ADMIN       |
 
 ---
 
@@ -444,8 +456,8 @@ Kong Gateway uses the `jwt` plugin on all `/api/v1/*` routes. **Keycloak signs a
 (both Path A via Direct Grant and Path B via OIDC — master Phase 2; §5.4), so the plugin validates
 signatures against a single JWKS endpoint:
 
-| Issuer         | JWKS Endpoint                                                  | Token Type                                       |
-| -------------- | -------------------------------------------------------------- | ------------------------------------------------ |
+| Issuer         | JWKS Endpoint                                                  | Token Type                                          |
+| -------------- | -------------------------------------------------------------- | --------------------------------------------------- |
 | Keycloak realm | `{keycloak_base}/realms/{realm}/protocol/openid-connect/certs` | Path A + Path B user JWT; OAuth2 client credentials |
 
 The COS identity service performs OTP send/verify only — it does **not** sign JWTs. Token `iss`
@@ -456,11 +468,11 @@ claim is validated against the Keycloak JWKS endpoint.
 Kong identifies external OAuth2 client credential traffic by Consumer lookup on the `azp`
 (Authorized Party) claim:
 
-| Traffic Type                     | `iss`                | `azp`                     | `session_state` | Kong Consumer           |
-| -------------------------------- | -------------------- | ------------------------- | --------------- | ----------------------- |
-| Internal — Path A (field worker) | Keycloak realm       | absent                    | Present         | No — anonymous consumer |
-| Internal — Path B (office user)  | Keycloak realm       | `cos-web` or `cos-mobile` | Present         | No — anonymous consumer |
-| External — marketplace / ERP     | Keycloak realm       | registered `client_id`    | Absent          | Yes — matched consumer  |
+| Traffic Type                     | `iss`          | `azp`                     | `session_state` | Kong Consumer           |
+| -------------------------------- | -------------- | ------------------------- | --------------- | ----------------------- |
+| Internal — Path A (field worker) | Keycloak realm | absent                    | Present         | No — anonymous consumer |
+| Internal — Path B (office user)  | Keycloak realm | `cos-web` or `cos-mobile` | Present         | No — anonymous consumer |
+| External — marketplace / ERP     | Keycloak realm | registered `client_id`    | Absent          | Yes — matched consumer  |
 
 `jwt` plugin is configured with:
 

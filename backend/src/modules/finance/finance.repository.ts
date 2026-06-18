@@ -74,6 +74,64 @@ export interface WhtRuleRow {
   is_active: boolean;
 }
 
+// AR Billing increment (§11) ─────────────────────────────────────────────────
+
+export interface CustomerRow {
+  customer_id: string;
+  tenant_id: string;
+  opportunity_id: string | null;
+  company_name: string;
+  customer_type: string | null;
+  status: string;
+  created_at: Date;
+}
+
+export interface ContractRow {
+  contract_id: string;
+  tenant_id: string;
+  project_id: string;
+  contract_type: 'MAIN_CONTRACT' | 'SUBCONTRACT' | 'SUPPLY_AGREEMENT';
+  contract_value: string | null;
+  customer_id: string | null;
+  vendor_id: string | null;
+  status: string;
+  created_at: Date;
+}
+
+export interface BillingRow {
+  billing_id: string;
+  tenant_id: string;
+  project_id: string;
+  contract_id: string;
+  billing_number: string;
+  amount: string;
+  due_date: Date;
+  status: 'DRAFT' | 'ISSUED' | 'PAID';
+  issued_at: Date | null;
+  approved_by: string | null;
+  created_at: Date;
+}
+
+export interface ArReceiptRow {
+  ar_receipt_id: string;
+  tenant_id: string;
+  project_id: string;
+  billing_id: string;
+  customer_id: string;
+  amount_received: string;
+  received_date: Date;
+  payment_method: string | null;
+  payment_reference: string | null;
+  received_by: string;
+  created_at: Date;
+}
+
+/** A dated amount feeding the direct-method cash flow forecast. */
+export interface CashflowDueRow {
+  due_date: Date;
+  amount: string;
+}
+
 // ── Repository ─────────────────────────────────────────────────────────────
 
 @Injectable({ scope: Scope.REQUEST })
@@ -358,6 +416,238 @@ export class FinanceRepository {
         SELECT * FROM finance.project_budgets
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC
+      `,
+    );
+  }
+
+  // ── customers (§11) ─────────────────────────────────────────────────────────
+
+  async createCustomer(params: {
+    company_name: string;
+    customer_type?: string | null;
+    opportunity_id?: string | null;
+  }): Promise<CustomerRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<CustomerRow[]>`
+        INSERT INTO finance.customers (tenant_id, opportunity_id, company_name, customer_type)
+        VALUES (${this.tenantId}::uuid, ${params.opportunity_id ?? null}::uuid,
+                ${params.company_name}, ${params.customer_type ?? null})
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  async findCustomerById(customer_id: string): Promise<CustomerRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<CustomerRow[]>`
+        SELECT * FROM finance.customers
+        WHERE customer_id = ${customer_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  async listCustomers(): Promise<CustomerRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<CustomerRow[]>`
+        SELECT * FROM finance.customers
+        WHERE tenant_id = ${this.tenantId}::uuid
+        ORDER BY created_at DESC
+      `,
+    );
+  }
+
+  // ── contracts (§11) ─────────────────────────────────────────────────────────
+
+  async createContract(params: {
+    project_id: string;
+    contract_type: string;
+    contract_value?: string | null;
+    customer_id?: string | null;
+    vendor_id?: string | null;
+  }): Promise<ContractRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractRow[]>`
+        INSERT INTO finance.contracts
+          (tenant_id, project_id, contract_type, contract_value, customer_id, vendor_id)
+        VALUES
+          (${this.tenantId}::uuid, ${params.project_id}::uuid,
+           ${params.contract_type}::finance."ContractType",
+           ${params.contract_value ?? null}::decimal,
+           ${params.customer_id ?? null}::uuid, ${params.vendor_id ?? null}::uuid)
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  async findContractById(contract_id: string): Promise<ContractRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractRow[]>`
+        SELECT * FROM finance.contracts
+        WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  async listContracts(project_id?: string): Promise<ContractRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractRow[]>`
+        SELECT * FROM finance.contracts
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${project_id ?? null}::uuid IS NULL OR project_id = ${project_id ?? null}::uuid)
+        ORDER BY created_at DESC
+      `,
+    );
+  }
+
+  // ── billings (AR — §11) ───────────────────────────────────────────────────
+
+  async createBilling(params: {
+    project_id: string;
+    contract_id: string;
+    billing_number: string;
+    amount: string;
+    due_date: string;
+  }): Promise<BillingRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<BillingRow[]>`
+        INSERT INTO finance.billings
+          (tenant_id, project_id, contract_id, billing_number, amount, due_date)
+        VALUES
+          (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.contract_id}::uuid,
+           ${params.billing_number}, ${params.amount}::decimal, ${params.due_date}::date)
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  async findBillingById(billing_id: string): Promise<BillingRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<BillingRow[]>`
+        SELECT * FROM finance.billings
+        WHERE billing_id = ${billing_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  async listBillings(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: BillingRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<BillingRow[]>`
+        SELECT * FROM finance.billings
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = (${params.status ?? null})::finance."BillingStatus")
+        ORDER BY due_date ASC
+        LIMIT ${params.limit} OFFSET ${offset}
+      `,
+    );
+    const countRows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM finance.billings
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = (${params.status ?? null})::finance."BillingStatus")
+      `,
+    );
+    return { rows, total: Number(countRows[0]?.count ?? 0) };
+  }
+
+  /** DRAFT → ISSUED (approval, §15) or ISSUED → PAID (AR receipt recorded). */
+  async updateBillingStatus(params: {
+    billing_id: string;
+    status: 'ISSUED' | 'PAID';
+    approved_by?: string | null;
+  }): Promise<BillingRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<BillingRow[]>`
+        UPDATE finance.billings SET
+          status = ${params.status}::finance."BillingStatus",
+          approved_by = COALESCE(${params.approved_by ?? null}::uuid, approved_by),
+          issued_at = CASE WHEN ${params.status} = 'ISSUED' THEN now() ELSE issued_at END
+        WHERE billing_id = ${params.billing_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  // ── ar_receipts (§11) ───────────────────────────────────────────────────────
+
+  async createArReceipt(params: {
+    project_id: string;
+    billing_id: string;
+    customer_id: string;
+    amount_received: string;
+    received_date: string;
+    payment_method?: string | null;
+    payment_reference?: string | null;
+    received_by: string;
+  }): Promise<ArReceiptRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ArReceiptRow[]>`
+        INSERT INTO finance.ar_receipts
+          (tenant_id, project_id, billing_id, customer_id, amount_received,
+           received_date, payment_method, payment_reference, received_by)
+        VALUES
+          (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.billing_id}::uuid,
+           ${params.customer_id}::uuid, ${params.amount_received}::decimal,
+           ${params.received_date}::date, ${params.payment_method ?? null},
+           ${params.payment_reference ?? null}, ${params.received_by}::uuid)
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  // ── cash flow forecast sources (direct method) ──────────────────────────────
+
+  /** Unpaid AR inflow: ISSUED billings by due_date (project-scoped). */
+  async findUnpaidBillingsDue(project_id: string): Promise<CashflowDueRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<CashflowDueRow[]>`
+        SELECT due_date, amount FROM finance.billings
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND project_id = ${project_id}::uuid
+          AND status = 'ISSUED'
+        ORDER BY due_date ASC
+      `,
+    );
+  }
+
+  /** Pending AP outflow: PENDING payments by payment_date (project-scoped). */
+  async findPendingPaymentsDue(project_id: string): Promise<CashflowDueRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<CashflowDueRow[]>`
+        SELECT payment_date AS due_date, amount FROM finance.payments
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND project_id = ${project_id}::uuid
+          AND status = 'PENDING'
+        ORDER BY payment_date ASC
       `,
     );
   }

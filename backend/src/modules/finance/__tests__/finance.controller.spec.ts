@@ -13,6 +13,16 @@ const mockSvc = {
   recordPayment: jest.fn(),
   listPayments: jest.fn(),
   getVarianceReport: jest.fn(),
+  createCustomer: jest.fn(),
+  listCustomers: jest.fn(),
+  createContract: jest.fn(),
+  listContracts: jest.fn(),
+  createBilling: jest.fn(),
+  listBillings: jest.fn(),
+  getBilling: jest.fn(),
+  approveBilling: jest.fn(),
+  recordArReceipt: jest.fn(),
+  getCashflowForecast: jest.fn(),
 };
 
 describe('FinanceController', () => {
@@ -96,5 +106,98 @@ describe('FinanceController', () => {
   it('getVarianceReport delegates to svc.getVarianceReport', () => {
     ctrl.getVarianceReport();
     expect(mockSvc.getVarianceReport).toHaveBeenCalled();
+  });
+
+  // ── AR Billing increment ────────────────────────────────────────────────────
+
+  it('createCustomer delegates to svc.createCustomer', () => {
+    const dto = { company_name: 'ACME' };
+    ctrl.createCustomer(dto as never);
+    expect(mockSvc.createCustomer).toHaveBeenCalledWith(dto);
+  });
+
+  it('listCustomers delegates to svc.listCustomers', () => {
+    ctrl.listCustomers();
+    expect(mockSvc.listCustomers).toHaveBeenCalled();
+  });
+
+  it('createContract delegates to svc.createContract', () => {
+    const dto = { project_id: 'p-001', contract_type: 'MAIN_CONTRACT' };
+    ctrl.createContract(dto as never);
+    expect(mockSvc.createContract).toHaveBeenCalledWith(dto);
+  });
+
+  it('listContracts delegates to svc.listContracts', () => {
+    ctrl.listContracts('p-001');
+    expect(mockSvc.listContracts).toHaveBeenCalledWith('p-001');
+  });
+
+  it('createBilling delegates to svc.createBilling', () => {
+    const dto = {
+      project_id: 'p-001',
+      contract_id: 'c-1',
+      billing_number: 'AR-1',
+      amount: '1',
+      due_date: '2026-07-15',
+    };
+    ctrl.createBilling(dto as never);
+    expect(mockSvc.createBilling).toHaveBeenCalledWith(dto);
+  });
+
+  it('listBillings parses params and delegates', () => {
+    ctrl.listBillings('p-001', 'DRAFT', '2', '50');
+    expect(mockSvc.listBillings).toHaveBeenCalledWith({
+      project_id: 'p-001',
+      status: 'DRAFT',
+      page: 2,
+      limit: 50,
+    });
+  });
+
+  it('listBillings applies defaults on invalid page/limit', () => {
+    ctrl.listBillings(undefined, undefined, 'x', 'y');
+    expect(mockSvc.listBillings).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listBillings uses default page/limit when omitted', () => {
+    ctrl.listBillings('p-001', 'DRAFT');
+    expect(mockSvc.listBillings).toHaveBeenCalledWith({
+      project_id: 'p-001',
+      status: 'DRAFT',
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('getBilling delegates to svc.getBilling', () => {
+    ctrl.getBilling('bill-1');
+    expect(mockSvc.getBilling).toHaveBeenCalledWith('bill-1');
+  });
+
+  it('approveBilling delegates tier to svc.approveBilling', () => {
+    ctrl.approveBilling('bill-1', { tier: 'EXECUTIVE' } as never);
+    expect(mockSvc.approveBilling).toHaveBeenCalledWith('bill-1', 'EXECUTIVE');
+  });
+
+  it('recordArReceipt delegates to svc.recordArReceipt', () => {
+    const dto = {
+      project_id: 'p-001',
+      billing_id: 'b-1',
+      customer_id: 'c-1',
+      amount_received: '1',
+      received_date: '2026-07-14',
+    };
+    ctrl.recordArReceipt(dto as never);
+    expect(mockSvc.recordArReceipt).toHaveBeenCalledWith(dto);
+  });
+
+  it('getCashflowForecast delegates to svc.getCashflowForecast', () => {
+    ctrl.getCashflowForecast('p-001');
+    expect(mockSvc.getCashflowForecast).toHaveBeenCalledWith('p-001');
   });
 });

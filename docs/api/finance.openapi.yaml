@@ -210,3 +210,254 @@ paths:
       responses:
         '200':
           description: Variance report
+  /finance/customers:
+    post:
+      tags:
+        - finance
+      summary: Register a client/customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - company_name
+              properties:
+                company_name:
+                  type: string
+                customer_type:
+                  type: string
+                opportunity_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Customer created
+    get:
+      tags:
+        - finance
+      summary: List customers
+      responses:
+        '200':
+          description: Customer list
+  /finance/contracts:
+    post:
+      tags:
+        - finance
+      summary: Create a contract (client-side or vendor-side)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - project_id
+                - contract_type
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                contract_type:
+                  type: string
+                  enum:
+                    - MAIN_CONTRACT
+                    - SUBCONTRACT
+                    - SUPPLY_AGREEMENT
+                contract_value:
+                  type: string
+                  description: DECIMAL string
+                customer_id:
+                  type: string
+                  format: uuid
+                vendor_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Contract created
+    get:
+      tags:
+        - finance
+      summary: List contracts (filterable by project)
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contract list
+  /finance/billing:
+    post:
+      tags:
+        - finance
+      summary: Create a client billing (AR) invoice in DRAFT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - project_id
+                - contract_id
+                - billing_number
+                - amount
+                - due_date
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                contract_id:
+                  type: string
+                  format: uuid
+                billing_number:
+                  type: string
+                amount:
+                  type: string
+                  description: DECIMAL string
+                due_date:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Billing created (DRAFT)
+    get:
+      tags:
+        - finance
+      summary: List client billings (filterable by project and status)
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - DRAFT
+              - ISSUED
+              - PAID
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Billing list
+  /finance/billing/{billingId}:
+    get:
+      tags:
+        - finance
+      summary: Get a single client billing
+      parameters:
+        - name: billingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Billing
+  /finance/billing/{billingId}/approve:
+    patch:
+      tags:
+        - finance
+      summary: Approve a client billing (PM up to limit; Executive above)
+      parameters:
+        - name: billingId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tier
+              properties:
+                tier:
+                  type: string
+                  enum:
+                    - PM
+                    - EXECUTIVE
+                    - TENANT_ADMIN
+      responses:
+        '200':
+          description: Billing approved (DRAFT → ISSUED)
+  /finance/ar-receipts:
+    post:
+      tags:
+        - finance
+      summary: Record a client payment (AR receipt) against an ISSUED billing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - project_id
+                - billing_id
+                - customer_id
+                - amount_received
+                - received_date
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                billing_id:
+                  type: string
+                  format: uuid
+                customer_id:
+                  type: string
+                  format: uuid
+                amount_received:
+                  type: string
+                  description: DECIMAL string
+                received_date:
+                  type: string
+                  format: date
+                payment_method:
+                  type: string
+                payment_reference:
+                  type: string
+      responses:
+        '201':
+          description: AR receipt recorded (billing → PAID)
+  /finance/cashflow-forecast/{projectId}:
+    get:
+      tags:
+        - finance
+      summary: 13-week direct-method cash flow forecast for a project
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Weekly forecast periods (inflow, outflow, net, cumulative)

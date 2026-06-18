@@ -2157,6 +2157,9 @@ IMPORTANT SCOPE CLARIFICATION:
   - Payment status tracking
   - Budget variance reporting
   - Project-level financial summary views
+  - AR Client Billing (§11/§15): create → approve (Finance → PM ≤ limit → Executive) → paid
+  - AR Receipts (client payments; settle billing to PAID) + Contracts + Customers (§11)
+  - Cash Flow Forecast — deterministic 13-week direct method (ADR-024; §09 AI forecast deferred)
 
 Financial Precision: follow FINANCIAL PRECISION SPEC section above.
 
@@ -2239,7 +2242,16 @@ APIs (canonical prefix /api/v1/finance/*; spec §14 Financial APIs; AIP-132; see
   POST /api/v1/finance/payments                       — record payment vs vendor invoice (project_id in body)
   GET  /api/v1/finance/payments                       — list payments / AP queue (tenant-wide; ?project_id=)
   GET  /api/v1/finance/reports/variance               — budget variance across projects
-  Deferred (post-MVP, not implemented): /api/v1/finance/billing (AR), /api/v1/finance/cashflow-forecast
+  POST /api/v1/finance/customers                       — register a client/customer (§11)
+  GET  /api/v1/finance/customers                       — list customers
+  POST /api/v1/finance/contracts                       — create a contract (client-/vendor-side, §11)
+  GET  /api/v1/finance/contracts                       — list contracts (tenant-wide; ?project_id=)
+  POST /api/v1/finance/billing                         — create AR client billing (DRAFT)
+  GET  /api/v1/finance/billing                         — list AR billings (tenant-wide; ?project_id=&status=)
+  GET  /api/v1/finance/billing/:billingId              — get a single AR billing
+  PATCH /api/v1/finance/billing/:billingId/approve     — approve billing DRAFT→ISSUED (§15: PM≤limit, Exec above)
+  POST /api/v1/finance/ar-receipts                     — record client payment; settles billing → PAID (§11)
+  GET  /api/v1/finance/cashflow-forecast/:projectId    — 13-week direct-method cash flow forecast (ADR-024)
 
 Generate:
 
