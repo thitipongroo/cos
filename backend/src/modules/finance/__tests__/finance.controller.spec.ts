@@ -23,11 +23,6 @@ describe('FinanceController', () => {
     ctrl = new FinanceController(mockSvc as never);
   });
 
-  it('getSummary delegates to svc.getBudgetSummary', () => {
-    ctrl.getSummary('p-001');
-    expect(mockSvc.getBudgetSummary).toHaveBeenCalledWith('p-001');
-  });
-
   it('getBudget delegates to svc.getBudgetSummary', () => {
     ctrl.getBudget('p-001');
     expect(mockSvc.getBudgetSummary).toHaveBeenCalledWith('p-001');
@@ -45,35 +40,57 @@ describe('FinanceController', () => {
     expect(mockSvc.addBudgetLine).toHaveBeenCalledWith('p-001', dto);
   });
 
-  it('listTransactions delegates with parsed page/limit', () => {
-    ctrl.listTransactions('p-001', 1, 20);
-    expect(mockSvc.listCostTransactions).toHaveBeenCalledWith('p-001', 1, 20);
+  it('listTransactions parses params and delegates (tenant-wide, ?project_id=)', () => {
+    ctrl.listTransactions('p-001', '2', '50');
+    expect(mockSvc.listCostTransactions).toHaveBeenCalledWith({
+      project_id: 'p-001',
+      page: 2,
+      limit: 50,
+    });
   });
 
-  it('listTransactions clamps limit to 100 max', () => {
-    ctrl.listTransactions('p-001', 1, 999);
-    expect(mockSvc.listCostTransactions).toHaveBeenCalledWith('p-001', 1, 100);
+  it('listTransactions applies defaults on invalid page/limit', () => {
+    ctrl.listTransactions(undefined, 'x', 'y');
+    expect(mockSvc.listCostTransactions).toHaveBeenCalledWith({
+      project_id: undefined,
+      page: 1,
+      limit: 20,
+    });
   });
 
-  it('listTransactions enforces page >= 1', () => {
-    ctrl.listTransactions('p-001', 0, 20);
-    expect(mockSvc.listCostTransactions).toHaveBeenCalledWith('p-001', 1, 20);
+  it('listTransactions uses query defaults when page/limit omitted', () => {
+    ctrl.listTransactions('p-001');
+    expect(mockSvc.listCostTransactions).toHaveBeenCalledWith({
+      project_id: 'p-001',
+      page: 1,
+      limit: 20,
+    });
   });
 
-  it('recordPayment delegates to svc.recordPayment', () => {
+  it('recordPayment delegates to svc.recordPayment (project_id in body)', () => {
     const dto = {
+      project_id: 'p-001',
       invoice_id: 'inv-001',
       amount: '60000.0000',
       currency_code: 'THB',
       payment_date: '2026-06-05',
     };
-    ctrl.recordPayment('p-001', dto as never);
-    expect(mockSvc.recordPayment).toHaveBeenCalledWith('p-001', dto);
+    ctrl.recordPayment(dto as never);
+    expect(mockSvc.recordPayment).toHaveBeenCalledWith(dto);
   });
 
-  it('listPayments delegates to svc.listPayments', () => {
-    ctrl.listPayments('p-001');
-    expect(mockSvc.listPayments).toHaveBeenCalledWith('p-001');
+  it('listPayments parses params and delegates (tenant-wide AP queue)', () => {
+    ctrl.listPayments('p-001', '2', '50');
+    expect(mockSvc.listPayments).toHaveBeenCalledWith({ project_id: 'p-001', page: 2, limit: 50 });
+  });
+
+  it('listPayments uses query defaults when page/limit omitted', () => {
+    ctrl.listPayments();
+    expect(mockSvc.listPayments).toHaveBeenCalledWith({
+      project_id: undefined,
+      page: 1,
+      limit: 20,
+    });
   });
 
   it('getVarianceReport delegates to svc.getVarianceReport', () => {

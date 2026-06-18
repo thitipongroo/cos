@@ -194,16 +194,20 @@ describe('FinanceRepository', () => {
     expect(result.transaction_id).toBe('tx-uuid-001');
   });
 
-  it('findTransactionsByProject returns rows and total', async () => {
+  it('findCostTransactions returns rows and total (with project filter)', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([txRow]).mockResolvedValueOnce([{ count: 1n }]);
-    const result = await repo.findTransactionsByProject('proj-uuid-001', 1, 20);
+    const result = await repo.findCostTransactions({
+      project_id: 'proj-uuid-001',
+      page: 1,
+      limit: 20,
+    });
     expect(result.rows).toHaveLength(1);
     expect(result.total).toBe(1);
   });
 
-  it('findTransactionsByProject returns total=0 when count empty', async () => {
+  it('findCostTransactions returns total=0 when count empty (no project filter)', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
-    const result = await repo.findTransactionsByProject('proj-uuid-001', 1, 20);
+    const result = await repo.findCostTransactions({ page: 1, limit: 20 });
     expect(result.total).toBe(0);
   });
 
@@ -252,10 +256,17 @@ describe('FinanceRepository', () => {
     expect(result.payment_id).toBe('pay-uuid-001');
   });
 
-  it('findPaymentsByProject returns rows', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([paymentRow]);
-    const result = await repo.findPaymentsByProject('proj-uuid-001');
-    expect(result).toHaveLength(1);
+  it('findPayments returns rows and total (with project filter)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([paymentRow]).mockResolvedValueOnce([{ count: 1n }]);
+    const result = await repo.findPayments({ project_id: 'proj-uuid-001', page: 1, limit: 20 });
+    expect(result.rows).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it('findPayments returns total=0 when count empty (no project filter)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    const result = await repo.findPayments({ page: 1, limit: 20 });
+    expect(result.total).toBe(0);
   });
 
   it('findAllBudgets returns all tenant budgets', async () => {

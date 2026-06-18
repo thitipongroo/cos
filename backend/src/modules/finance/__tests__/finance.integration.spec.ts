@@ -29,11 +29,11 @@ const mockRepo = {
   addBudgetLine: jest.fn(),
   findLinesByBudget: jest.fn(),
   createTransaction: jest.fn(),
-  findTransactionsByProject: jest.fn(),
+  findCostTransactions: jest.fn(),
   sumTransactionsByProject: jest.fn(),
   deleteTransactionBySource: jest.fn().mockResolvedValue(undefined),
   createPayment: jest.fn(),
-  findPaymentsByProject: jest.fn(),
+  findPayments: jest.fn(),
   findAllBudgets: jest.fn(),
 };
 
@@ -266,7 +266,8 @@ describe('recordPayment', () => {
     };
     mockRepo.createPayment.mockResolvedValue(payRow);
 
-    const result = await svc.recordPayment('proj-int-001', {
+    const result = await svc.recordPayment({
+      project_id: 'proj-int-001',
       invoice_id: 'inv-int-001',
       amount: '50000.0000',
       currency_code: 'THB',

@@ -2,117 +2,211 @@ openapi: 3.1.0
 info:
   title: Finance Service API
   version: 1.0.0
-  description: |
-    Phase 7 — Project cost tracking service.
+  description: 'Phase 7 — Project cost tracking service.
+
     Tracks budget vs actual vs committed. Does NOT implement accounting or ERP posting.
+
+    '
 servers:
   - url: /api/v1
 tags:
   - name: finance
     description: Budget, cost tracking, payments, variance reporting
-
 paths:
-  /projects/{projectId}/finance/summary:
+  /finance/budget/{projectId}:
     get:
-      tags: [finance]
-      summary: Budget vs actual vs committed summary
-      parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200': { description: Budget summary }
-        '404': { description: Budget not found }
-
-  /projects/{projectId}/finance/budget:
-    get:
-      tags: [finance]
+      tags:
+        - finance
       summary: Budget detail with lines
       parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200': { description: Budget detail }
+        '200':
+          description: Budget detail
     post:
-      tags: [finance]
+      tags:
+        - finance
       summary: Create or update project budget
       parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [total_budget_amount, total_budget_currency]
+              required:
+                - total_budget_amount
+                - total_budget_currency
               properties:
-                total_budget_amount: { type: string, description: DECIMAL string }
-                total_budget_currency: { type: string, example: THB }
-                variance_alert_threshold: { type: number, minimum: 1, maximum: 100 }
+                total_budget_amount:
+                  type: string
+                  description: DECIMAL string
+                total_budget_currency:
+                  type: string
+                  example: THB
+                variance_alert_threshold:
+                  type: number
+                  minimum: 1
+                  maximum: 100
       responses:
-        '201': { description: Budget created or updated }
-
-  /projects/{projectId}/budget-lines:
+        '201':
+          description: Budget created or updated
+  /finance/budget/{projectId}/lines:
     post:
-      tags: [finance]
+      tags:
+        - finance
       summary: Add a budget line
       parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [line_name, allocated_amount, currency_code]
+              required:
+                - line_name
+                - allocated_amount
+                - currency_code
               properties:
-                line_name: { type: string }
-                allocated_amount: { type: string, description: DECIMAL string }
-                currency_code: { type: string, example: THB }
-                boq_category_id: { type: string, format: uuid }
+                line_name:
+                  type: string
+                allocated_amount:
+                  type: string
+                  description: DECIMAL string
+                currency_code:
+                  type: string
+                  example: THB
+                boq_category_id:
+                  type: string
+                  format: uuid
       responses:
-        '201': { description: Budget line added }
-
-  /projects/{projectId}/cost-transactions:
+        '201':
+          description: Budget line added
+  /finance/cost-transactions:
     get:
-      tags: [finance]
+      tags:
+        - finance
       summary: List cost transactions (paginated)
       parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
-        - { name: page, in: query, schema: { type: integer, default: 1 } }
-        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
       responses:
-        '200': { description: Paginated cost transactions }
-
-  /projects/{projectId}/payments:
-    post:
-      tags: [finance]
-      summary: Record a payment against an invoice
+        '200':
+          description: Paginated cost transactions
+  /finance/payments:
+    get:
+      tags:
+        - finance
+      summary: List payments for a project
       parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Payments list
+    post:
+      tags:
+        - finance
+      summary: Record a payment against an invoice
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [invoice_id, amount, currency_code, payment_date]
+              required:
+                - project_id
+                - invoice_id
+                - amount
+                - currency_code
+                - payment_date
               properties:
-                invoice_id: { type: string, format: uuid }
-                amount: { type: string, description: DECIMAL string }
-                currency_code: { type: string, example: THB }
-                payment_date: { type: string, format: date }
-                payment_reference: { type: string }
+                project_id:
+                  type: string
+                  format: uuid
+                  description: Project this payment belongs to
+                invoice_id:
+                  type: string
+                  format: uuid
+                amount:
+                  type: string
+                  description: DECIMAL string
+                currency_code:
+                  type: string
+                  example: THB
+                payment_date:
+                  type: string
+                  format: date
+                payment_reference:
+                  type: string
       responses:
-        '201': { description: Payment recorded }
-    get:
-      tags: [finance]
-      summary: List payments for a project
-      parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200': { description: Payments list }
-
+        '201':
+          description: Payment recorded
   /finance/reports/variance:
     get:
-      tags: [finance]
+      tags:
+        - finance
       summary: Budget variance report across all projects
       responses:
-        '200': { description: Variance report }
+        '200':
+          description: Variance report

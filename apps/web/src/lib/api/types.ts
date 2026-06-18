@@ -188,3 +188,46 @@ export interface ProcurementListFilter {
   project_id?: string;
   status?: string;
 }
+
+// ── Finance (§20.7.4) ─────────────────────────────────────────────────────────
+
+export interface PaymentRow {
+  payment_id: string;
+  invoice_id: string;
+  project_id: string;
+  amount: string;
+  currency_code: string;
+  payment_date: string;
+  status: 'PENDING' | 'PROCESSED' | 'FAILED';
+  payment_reference: string | null;
+}
+
+export interface VarianceRow {
+  project_id: string;
+  allocated: string;
+  committed: string;
+  actual: string;
+  variance_percentage: string;
+  over_budget: boolean;
+}
+
+/** Vendor invoice (AP) — owned by procurement, viewed/approved by Finance. */
+export interface FinanceInvoiceRow {
+  invoice_id: string;
+  po_id: string;
+  vendor_id: string;
+  invoice_number: string;
+  amount: string;
+  currency_code: string;
+  status: 'RECEIVED' | 'VERIFIED' | 'APPROVED' | 'PAID' | 'DISPUTED';
+  due_date: string;
+}
+
+export interface RecordPaymentInput {
+  project_id: string;
+  invoice_id: string;
+  amount: string;
+  currency_code: string;
+  payment_date: string;
+  payment_reference?: string;
+}

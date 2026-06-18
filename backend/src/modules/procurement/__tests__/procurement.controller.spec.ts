@@ -28,7 +28,7 @@ const mockSvc = {
   acknowledgePo: jest.fn(),
   recordDelivery: jest.fn(),
   receiveInvoice: jest.fn(),
-  listInvoicesByPo: jest.fn(),
+  listInvoices: jest.fn(),
   approveInvoice: jest.fn(),
   markInvoicePaid: jest.fn(),
   disputeInvoice: jest.fn(),
@@ -185,9 +185,24 @@ describe('ProcurementController', () => {
     expect(mockSvc.receiveInvoice).toHaveBeenCalledWith(dto);
   });
 
-  it('listInvoices delegates to svc.listInvoicesByPo (po_id from query)', () => {
-    ctrl.listInvoices('po-001');
-    expect(mockSvc.listInvoicesByPo).toHaveBeenCalledWith('po-001');
+  it('listInvoices parses params and delegates (tenant-wide AP queue)', () => {
+    ctrl.listInvoices('po-001', 'RECEIVED', '2', '50');
+    expect(mockSvc.listInvoices).toHaveBeenCalledWith({
+      po_id: 'po-001',
+      status: 'RECEIVED',
+      page: 2,
+      limit: 50,
+    });
+  });
+
+  it('listInvoices uses query defaults when params omitted', () => {
+    ctrl.listInvoices();
+    expect(mockSvc.listInvoices).toHaveBeenCalledWith({
+      po_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
   });
 
   it('approveInvoice delegates to svc.approveInvoice (flat /vendor-invoices/:id/approve)', () => {

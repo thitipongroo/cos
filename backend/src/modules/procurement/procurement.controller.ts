@@ -368,13 +368,26 @@ export class ProcurementController {
     return this.svc.receiveInvoice(dto);
   }
 
-  // GET /api/v1/procurement/vendor-invoices?po_id=...
+  // GET /api/v1/procurement/vendor-invoices  (tenant-wide AP queue, AIP-132; ?po_id= ?status=)
   @Get('procurement/vendor-invoices')
   @Roles(...READ_ROLES)
-  @ApiOperation({ summary: 'List vendor invoices for a purchase order' })
-  @ApiQuery({ name: 'po_id', required: true, type: String })
-  listInvoices(@Query('po_id') poId: string) {
-    return this.svc.listInvoicesByPo(poId);
+  @ApiOperation({ summary: 'List vendor invoices across the tenant (filterable by PO/status)' })
+  @ApiQuery({ name: 'po_id', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  listInvoices(
+    @Query('po_id') po_id?: string,
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.svc.listInvoices({
+      po_id,
+      status,
+      page: parsePage(page),
+      limit: parseLimit(limit),
+    });
   }
 
   // POST /api/v1/procurement/vendor-invoices/:invoiceId/approve

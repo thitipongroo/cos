@@ -2,7 +2,7 @@
 
 ## Runtime Topology
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          CLIENT LAYER                                       │
 │   React Native (iOS/Android)    Web App (Next.js PWA)    Admin Web          │
@@ -87,7 +87,7 @@
 
 ## Authentication Flow
 
-```
+```text
 Field worker (SITE_WORKER / SITE_ENGINEER):
   Mobile app → POST /auth/otp/request → NestJS identity module (custom OTP)
              → SMS via AWS SNS → device

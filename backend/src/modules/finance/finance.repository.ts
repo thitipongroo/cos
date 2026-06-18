@@ -218,28 +218,29 @@ export class FinanceRepository {
     return rows[0]!;
   }
 
-  async findTransactionsByProject(
-    project_id: string,
-    page: number,
-    limit: number,
-  ): Promise<{ rows: CostTransactionRow[]; total: number }> {
-    const offset = (page - 1) * limit;
+  // Tenant-wide cost transactions (AIP-132); optional project_id filter (spec §14).
+  async findCostTransactions(params: {
+    project_id?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: CostTransactionRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<CostTransactionRow[]>`
         SELECT * FROM finance.cost_transactions
-        WHERE project_id = ${project_id}::uuid
-          AND tenant_id  = ${this.tenantId}::uuid
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
         ORDER BY transaction_date DESC, recorded_at DESC
-        LIMIT ${limit} OFFSET ${offset}
+        LIMIT ${params.limit} OFFSET ${offset}
       `,
     );
     const countRows = await this.db.run(
       (tx) =>
         tx.$queryRaw<[{ count: bigint }]>`
         SELECT COUNT(*)::bigint AS count FROM finance.cost_transactions
-        WHERE project_id = ${project_id}::uuid
-          AND tenant_id  = ${this.tenantId}::uuid
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };
@@ -303,16 +304,32 @@ export class FinanceRepository {
     return rows[0]!;
   }
 
-  async findPaymentsByProject(project_id: string): Promise<PaymentRow[]> {
-    return this.db.run(
+  // Tenant-wide payments (AIP-132 AP queue); optional project_id filter (spec §14).
+  async findPayments(params: {
+    project_id?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: PaymentRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<PaymentRow[]>`
         SELECT * FROM finance.payments
-        WHERE project_id = ${project_id}::uuid
-          AND tenant_id  = ${this.tenantId}::uuid
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
         ORDER BY payment_date DESC
+        LIMIT ${params.limit} OFFSET ${offset}
       `,
     );
+    const countRows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM finance.payments
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+      `,
+    );
+    return { rows, total: Number(countRows[0]?.count ?? 0) };
   }
 
   // ── wht_rules ─────────────────────────────────────────────────────────────

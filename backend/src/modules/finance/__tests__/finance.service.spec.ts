@@ -34,11 +34,11 @@ const mockRepo = {
   addBudgetLine: jest.fn(),
   findLinesByBudget: jest.fn(),
   createTransaction: jest.fn(),
-  findTransactionsByProject: jest.fn(),
+  findCostTransactions: jest.fn(),
   sumTransactionsByProject: jest.fn(),
   deleteTransactionBySource: jest.fn(),
   createPayment: jest.fn(),
-  findPaymentsByProject: jest.fn(),
+  findPayments: jest.fn(),
   findAllBudgets: jest.fn(),
 };
 
@@ -262,8 +262,12 @@ it('recalculateAllocated skips update when budget disappears between calls (cove
 
 describe('listCostTransactions', () => {
   it('returns paginated transactions', async () => {
-    mockRepo.findTransactionsByProject.mockResolvedValue({ rows: [txRow], total: 1 });
-    const result = await service.listCostTransactions('proj-uuid-001', 1, 20);
+    mockRepo.findCostTransactions.mockResolvedValue({ rows: [txRow], total: 1 });
+    const result = await service.listCostTransactions({
+      project_id: 'proj-uuid-001',
+      page: 1,
+      limit: 20,
+    });
     expect(result.items).toHaveLength(1);
     expect(result.total).toBe(1);
   });
@@ -451,7 +455,8 @@ describe('variance alert', () => {
 describe('recordPayment', () => {
   it('records payment and emits finance.payment.processed.v1', async () => {
     mockRepo.createPayment.mockResolvedValue(paymentRow);
-    const result = await service.recordPayment('proj-uuid-001', {
+    const result = await service.recordPayment({
+      project_id: 'proj-uuid-001',
       invoice_id: 'inv-uuid-001',
       amount: '60000.0000',
       currency_code: 'THB',
@@ -471,9 +476,9 @@ describe('recordPayment', () => {
 
 describe('listPayments', () => {
   it('returns payments', async () => {
-    mockRepo.findPaymentsByProject.mockResolvedValue([paymentRow]);
-    const result = await service.listPayments('proj-uuid-001');
-    expect(result).toHaveLength(1);
+    mockRepo.findPayments.mockResolvedValue({ rows: [paymentRow], total: 1 });
+    const result = await service.listPayments({ project_id: 'proj-uuid-001', page: 1, limit: 20 });
+    expect(result.items).toHaveLength(1);
   });
 });
 

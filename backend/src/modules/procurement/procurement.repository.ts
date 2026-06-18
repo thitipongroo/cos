@@ -616,14 +616,33 @@ export class ProcurementRepository {
     return rows[0] ?? null;
   }
 
-  async findInvoicesByPo(po_id: string): Promise<InvoiceRow[]> {
-    return this.db.run(
+  // Tenant-wide vendor-invoice list (AIP-132 AP queue); optional po_id / status filters.
+  async findInvoices(params: {
+    po_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: InvoiceRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
       (prisma) =>
         prisma.$queryRaw<InvoiceRow[]>`
         SELECT * FROM procurement.invoices
-        WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ORDER BY invoice_date DESC`,
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+        ORDER BY invoice_date DESC
+        LIMIT ${params.limit} OFFSET ${offset}`,
     );
+    const countRows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM procurement.invoices
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+    );
+    return { rows, total: Number(countRows[0]?.count ?? 0) };
   }
 
   async updateInvoiceStatus(invoice_id: string, status: InvoiceRow['status']): Promise<void> {

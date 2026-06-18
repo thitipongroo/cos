@@ -231,14 +231,21 @@ POST /api/v1/projects
 
 #### Financial APIs
 
-| Method  | Path                                             | Description                                                          | Auth                   |
-| ------- | ------------------------------------------------ | -------------------------------------------------------------------- | ---------------------- |
-| `GET`   | `/api/v1/finance/budget/{project_id}`            | Get budget summary with spent vs. allocated                          | Any role               |
-| `GET`   | `/api/v1/finance/cost-transactions`              | List cost transactions (filterable by project, category, date range) | Any role               |
-| `POST`  | `/api/v1/finance/billing`                        | Create client billing invoice (AR)                                   | Finance                |
-| `PATCH` | `/api/v1/finance/billing/{billing_id}/approve`   | Approve billing (triggers approval workflow)                         | PM, Executive          |
-| `POST`  | `/api/v1/finance/payments`                       | Record payment against vendor invoice                                | Finance                |
-| `GET`   | `/api/v1/finance/cashflow-forecast/{project_id}` | Get cash flow forecast                                               | Executive, PM, Finance |
+> Canonical prefix `/api/v1/finance/*` (ADR-023). Budget is project-scoped; cost-transactions
+> and payments are tenant-wide AIP-132 lists filterable by `?project_id=`. Vendor invoices (AP)
+> live in the procurement module (`/api/v1/procurement/vendor-invoices`) per the procure-to-pay
+> 3-way-match boundary; Finance approves/pays them. AR `billing` and `cashflow-forecast` are
+> **deferred (post-MVP)** — not in the Phase 7 implementation.
+
+| Method | Path                                        | Description                            | Auth                     |
+| ------ | ------------------------------------------- | -------------------------------------- | ------------------------ |
+| `GET`  | `/api/v1/finance/budget/{project_id}`       | Budget summary with lines              | FINANCE, PM, EXEC, ADMIN |
+| `POST` | `/api/v1/finance/budget/{project_id}`       | Create or update project budget        | FINANCE, ADMIN           |
+| `POST` | `/api/v1/finance/budget/{project_id}/lines` | Add a budget line                      | FINANCE, ADMIN           |
+| `GET`  | `/api/v1/finance/cost-transactions`         | List cost transactions (tenant-wide)   | FINANCE, PM, EXEC, ADMIN |
+| `POST` | `/api/v1/finance/payments`                  | Record payment vs a vendor invoice     | FINANCE, ADMIN           |
+| `GET`  | `/api/v1/finance/payments`                  | List payments / AP queue (tenant-wide) | FINANCE, PM, EXEC, ADMIN |
+| `GET`  | `/api/v1/finance/reports/variance`          | Budget variance across projects        | FINANCE, EXEC, ADMIN     |
 
 ---
 

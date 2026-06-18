@@ -3,6 +3,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDecimalString } from '@cos/validation';
 
 export class RecordPaymentDto {
+  @ApiProperty({ description: 'Project this payment belongs to', format: 'uuid' })
+  @IsUUID()
+  project_id!: string;
+
   @ApiProperty({ description: 'Procurement invoice UUID', format: 'uuid' })
   @IsUUID()
   invoice_id!: string;

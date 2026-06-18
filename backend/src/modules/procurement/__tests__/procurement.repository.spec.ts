@@ -385,9 +385,22 @@ describe('ProcurementRepository', () => {
     expect((await repo.findInvoiceById('inv-uuid-001'))?.invoice_id).toBe('inv-uuid-001');
   });
 
-  it('findInvoicesByPo returns rows', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([invoiceRow]);
-    expect(await repo.findInvoicesByPo('po-uuid-001')).toHaveLength(1);
+  it('findInvoices returns rows + total (with po_id and status filters)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([invoiceRow]).mockResolvedValueOnce([{ count: 1n }]);
+    const result = await repo.findInvoices({
+      po_id: 'po-uuid-001',
+      status: 'RECEIVED',
+      page: 1,
+      limit: 20,
+    });
+    expect(result.rows).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it('findInvoices handles undefined filters + empty count (?? null and ?? 0 branches)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    const result = await repo.findInvoices({ page: 1, limit: 20 });
+    expect(result.total).toBe(0);
   });
 
   it('updateInvoiceStatus calls $executeRaw', async () => {

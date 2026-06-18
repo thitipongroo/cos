@@ -68,7 +68,7 @@ const mockRepo = {
   sumDeliveredQuantity: jest.fn(),
   createInvoice: jest.fn(),
   findInvoiceById: jest.fn(),
-  findInvoicesByPo: jest.fn(),
+  findInvoices: jest.fn(),
   updateInvoiceStatus: jest.fn(),
   listPurchaseRequestsTenant: jest.fn(),
   listRfqsTenant: jest.fn(),
@@ -790,11 +790,16 @@ describe('approveInvoice', () => {
   });
 });
 
-describe('listInvoicesByPo / markInvoicePaid / disputeInvoice', () => {
-  it('listInvoicesByPo returns list', async () => {
-    mockRepo.findInvoicesByPo.mockResolvedValue([]);
-    const result = await service.listInvoicesByPo('po-uuid-001');
-    expect(result).toEqual([]);
+describe('listInvoices / markInvoicePaid / disputeInvoice', () => {
+  it('listInvoices wraps repo result with pagination meta', async () => {
+    mockRepo.findInvoices.mockResolvedValue({ rows: ['INV'], total: 1 });
+    const result = await service.listInvoices({ po_id: 'po-uuid-001', page: 1, limit: 20 });
+    expect(mockRepo.findInvoices).toHaveBeenCalledWith({
+      po_id: 'po-uuid-001',
+      page: 1,
+      limit: 20,
+    });
+    expect(result).toEqual({ items: ['INV'], total: 1, page: 1, limit: 20 });
   });
 
   it('markInvoicePaid — signals workflow when INVOICED', async () => {

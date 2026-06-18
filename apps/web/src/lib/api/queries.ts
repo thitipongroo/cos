@@ -8,10 +8,14 @@ import type {
   CreateProjectInput,
   DeliveryRow,
   ExecutiveDashboardRow,
+  FinanceInvoiceRow,
   FinanceSummary,
   IssueListResponse,
   PaginatedResponse,
+  PaymentRow,
   ProcurementListFilter,
+  RecordPaymentInput,
+  VarianceRow,
   ProjectDocumentRow,
   ProjectListResponse,
   ProjectMemberRow,
@@ -113,7 +117,7 @@ export function useFinanceSummary(id: string) {
   return useQuery({
     queryKey: ['project', id, 'finance'],
     enabled: id !== '',
-    queryFn: () => api<FinanceSummary>(`/projects/${id}/finance/summary`),
+    queryFn: () => api<FinanceSummary>(`/finance/budget/${id}`),
   });
 }
 
@@ -253,5 +257,61 @@ export function useAwardRfq(rfqId: string) {
         body: JSON.stringify({ quotation_id }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['quotations', rfqId] }),
+  });
+}
+
+// ── Finance (§20.7.4) ─────────────────────────────────────────────────────────
+
+export function usePayments(projectId: string) {
+  const api = useApi();
+  const qs = new URLSearchParams({ limit: '100' });
+  if (projectId) {
+    qs.set('project_id', projectId);
+  }
+  return useQuery({
+    queryKey: ['payments', projectId],
+    queryFn: () => api<PaginatedResponse<PaymentRow>>(`/finance/payments?${qs.toString()}`),
+  });
+}
+
+export function useVarianceReport() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['finance', 'variance'],
+    queryFn: () => api<VarianceRow[]>('/finance/reports/variance'),
+  });
+}
+
+/** Finance AP invoice queue — vendor invoices owned by procurement (ADR-023). */
+export function useFinanceInvoices(status: string) {
+  const api = useApi();
+  const qs = new URLSearchParams({ limit: '100' });
+  if (status) {
+    qs.set('status', status);
+  }
+  return useQuery({
+    queryKey: ['finance', 'invoices', status],
+    queryFn: () =>
+      api<PaginatedResponse<FinanceInvoiceRow>>(`/procurement/vendor-invoices?${qs.toString()}`),
+  });
+}
+
+export function useRecordPayment() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RecordPaymentInput) =>
+      api<PaymentRow>('/finance/payments', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['payments'] }),
+  });
+}
+
+export function useApproveInvoice() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (invoiceId: string) =>
+      api<void>(`/procurement/vendor-invoices/${invoiceId}/approve`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'invoices'] }),
   });
 }

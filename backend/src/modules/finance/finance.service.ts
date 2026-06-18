@@ -115,13 +115,13 @@ export class FinanceService {
 
   // ── Cost Transactions ─────────────────────────────────────────────────────
 
-  async listCostTransactions(
-    project_id: string,
-    page: number,
-    limit: number,
-  ): Promise<{ items: CostTransactionRow[]; total: number }> {
-    const { rows, total } = await this.repo.findTransactionsByProject(project_id, page, limit);
-    return { items: rows, total };
+  async listCostTransactions(params: {
+    project_id?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ items: CostTransactionRow[]; total: number; page: number; limit: number }> {
+    const { rows, total } = await this.repo.findCostTransactions(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
   }
 
   // ── Kafka Consumer Handlers ────────────────────────────────────────────────
@@ -193,7 +193,8 @@ export class FinanceService {
 
   // ── Payments ──────────────────────────────────────────────────────────────
 
-  async recordPayment(project_id: string, dto: RecordPaymentDto): Promise<PaymentRow> {
+  async recordPayment(dto: RecordPaymentDto): Promise<PaymentRow> {
+    const project_id = dto.project_id;
     const payment = await this.repo.createPayment({
       invoice_id: dto.invoice_id,
       project_id,
@@ -220,8 +221,13 @@ export class FinanceService {
     return payment;
   }
 
-  async listPayments(project_id: string): Promise<PaymentRow[]> {
-    return this.repo.findPaymentsByProject(project_id);
+  async listPayments(params: {
+    project_id?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ items: PaymentRow[]; total: number; page: number; limit: number }> {
+    const { rows, total } = await this.repo.findPayments(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
   }
 
   // ── Variance Report ───────────────────────────────────────────────────────

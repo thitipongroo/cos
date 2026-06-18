@@ -2228,15 +2228,18 @@ Kafka Consumers (Finance subscribes to these events):
   procurement.invoice.received   → create cost_transaction (ACTUAL, source: INVOICE)
   procurement.po.status_changed  → update committed_amount if PO CANCELLED
 
-APIs:
-  GET  /api/v1/projects/:projectId/finance/summary    — budget vs actual vs committed
-  GET  /api/v1/projects/:projectId/finance/budget     — budget detail with lines
-  POST /api/v1/projects/:projectId/finance/budget     — create/update budget
-  POST /api/v1/projects/:projectId/budget-lines       — add budget line
-  GET  /api/v1/projects/:projectId/cost-transactions  — list transactions (paginated)
-  POST /api/v1/projects/:projectId/payments           — record payment
-  GET  /api/v1/projects/:projectId/payments           — list payments
+APIs (canonical prefix /api/v1/finance/*; spec §14 Financial APIs; AIP-132; see ADR-023.
+  Budget is project-scoped; cost-transactions and payments are tenant-wide lists filterable
+  by ?project_id=. Vendor invoices (AP) live in procurement /api/v1/procurement/vendor-invoices
+  — Finance views/approves/pays them; no duplicate finance invoice store):
+  GET  /api/v1/finance/budget/:projectId              — budget summary with lines (vs actual/committed)
+  POST /api/v1/finance/budget/:projectId              — create/update budget
+  POST /api/v1/finance/budget/:projectId/lines        — add budget line
+  GET  /api/v1/finance/cost-transactions              — list cost transactions (tenant-wide; ?project_id=)
+  POST /api/v1/finance/payments                       — record payment vs vendor invoice (project_id in body)
+  GET  /api/v1/finance/payments                       — list payments / AP queue (tenant-wide; ?project_id=)
   GET  /api/v1/finance/reports/variance               — budget variance across projects
+  Deferred (post-MVP, not implemented): /api/v1/finance/billing (AR), /api/v1/finance/cashflow-forecast
 
 Generate:
 

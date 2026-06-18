@@ -1206,23 +1206,49 @@ paths:
     get:
       tags:
         - Invoices
-      summary: List invoices for a PO
+      summary: List vendor invoices across the tenant (AP queue; filterable by PO/status)
       operationId: listInvoices
       parameters:
         - name: po_id
           in: query
-          required: true
+          required: false
           schema:
             type: string
             format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InvoiceRow'
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InvoiceRow'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
   /procurement/vendor-invoices/{invoiceId}/approve:
     post:
       tags:

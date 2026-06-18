@@ -1,6 +1,8 @@
 // Finance Controller — Phase 7
-// All endpoints require RBAC: FINANCE, PROJECT_MANAGER, EXECUTIVE, TENANT_ADMIN (read);
-// FINANCE, TENANT_ADMIN (write).
+// Canonical path convention (spec §14 Financial APIs + ADR-023): finance resources are
+// served under /api/v1/finance/*. Budget is project-scoped (/finance/budget/:projectId);
+// cost-transactions and payments are tenant-wide AIP-132 lists filterable by ?project_id=.
+// RBAC: read = FINANCE, PROJECT_MANAGER, EXECUTIVE, TENANT_ADMIN; write = FINANCE, TENANT_ADMIN.
 
 import {
   Controller,
@@ -12,8 +14,6 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  ParseIntPipe,
-  DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
@@ -25,6 +25,20 @@ import { CreateBudgetDto } from './dto/create-budget.dto';
 import { AddBudgetLineDto } from './dto/add-budget-line.dto';
 import { RecordPaymentDto } from './dto/record-payment.dto';
 
+const READ_ROLES = [
+  CosRole.FINANCE,
+  CosRole.PROJECT_MANAGER,
+  CosRole.EXECUTIVE,
+  CosRole.TENANT_ADMIN,
+] as const;
+
+function parsePage(page: string): number {
+  return Math.max(1, parseInt(page, 10) || 1);
+}
+function parseLimit(limit: string): number {
+  return Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+}
+
 @ApiTags('finance')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,26 +46,17 @@ import { RecordPaymentDto } from './dto/record-payment.dto';
 export class FinanceController {
   constructor(private readonly svc: FinanceService) {}
 
-  // GET /api/v1/projects/:projectId/finance/summary
-  @Get('projects/:projectId/finance/summary')
-  @Roles(CosRole.FINANCE, CosRole.PROJECT_MANAGER, CosRole.EXECUTIVE, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Budget vs actual vs committed summary' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  getSummary(@Param('projectId') projectId: string) {
-    return this.svc.getBudgetSummary(projectId);
-  }
-
-  // GET /api/v1/projects/:projectId/finance/budget
-  @Get('projects/:projectId/finance/budget')
-  @Roles(CosRole.FINANCE, CosRole.PROJECT_MANAGER, CosRole.EXECUTIVE, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Budget detail with lines' })
+  // GET /api/v1/finance/budget/:projectId  (budget vs actual vs committed + lines)
+  @Get('finance/budget/:projectId')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'Budget summary with lines (budget vs actual vs committed)' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
   getBudget(@Param('projectId') projectId: string) {
     return this.svc.getBudgetSummary(projectId);
   }
 
-  // POST /api/v1/projects/:projectId/finance/budget
-  @Post('projects/:projectId/finance/budget')
+  // POST /api/v1/finance/budget/:projectId
+  @Post('finance/budget/:projectId')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Create or update project budget' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
@@ -59,8 +64,8 @@ export class FinanceController {
     return this.svc.createOrUpdateBudget(projectId, dto);
   }
 
-  // POST /api/v1/projects/:projectId/budget-lines
-  @Post('projects/:projectId/budget-lines')
+  // POST /api/v1/finance/budget/:projectId/lines
+  @Post('finance/budget/:projectId/lines')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Add a budget line to project budget' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
@@ -68,41 +73,50 @@ export class FinanceController {
     return this.svc.addBudgetLine(projectId, dto);
   }
 
-  // GET /api/v1/projects/:projectId/cost-transactions
-  @Get('projects/:projectId/cost-transactions')
-  @Roles(CosRole.FINANCE, CosRole.PROJECT_MANAGER, CosRole.EXECUTIVE, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'List cost transactions for a project (paginated)' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
+  // GET /api/v1/finance/cost-transactions  (tenant-wide, AIP-132; ?project_id= to scope)
+  @Get('finance/cost-transactions')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'List cost transactions across the tenant (filterable by project)' })
+  @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   listTransactions(
-    @Param('projectId') projectId: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('project_id') project_id?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
   ) {
-    return this.svc.listCostTransactions(
-      projectId,
-      Math.max(1, page),
-      Math.min(100, Math.max(1, limit)),
-    );
+    return this.svc.listCostTransactions({
+      project_id,
+      page: parsePage(page),
+      limit: parseLimit(limit),
+    });
   }
 
-  // POST /api/v1/projects/:projectId/payments
-  @Post('projects/:projectId/payments')
+  // POST /api/v1/finance/payments  (record payment against a vendor invoice; project_id in body)
+  @Post('finance/payments')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Record a payment against an invoice' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  recordPayment(@Param('projectId') projectId: string, @Body() dto: RecordPaymentDto) {
-    return this.svc.recordPayment(projectId, dto);
+  @ApiOperation({ summary: 'Record a payment against a vendor invoice' })
+  recordPayment(@Body() dto: RecordPaymentDto) {
+    return this.svc.recordPayment(dto);
   }
 
-  // GET /api/v1/projects/:projectId/payments
-  @Get('projects/:projectId/payments')
-  @Roles(CosRole.FINANCE, CosRole.PROJECT_MANAGER, CosRole.EXECUTIVE, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'List payments for a project' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  listPayments(@Param('projectId') projectId: string) {
-    return this.svc.listPayments(projectId);
+  // GET /api/v1/finance/payments  (tenant-wide AP payment queue, AIP-132; ?project_id= to scope)
+  @Get('finance/payments')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'List payments across the tenant (filterable by project)' })
+  @ApiQuery({ name: 'project_id', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  listPayments(
+    @Query('project_id') project_id?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.svc.listPayments({
+      project_id,
+      page: parsePage(page),
+      limit: parseLimit(limit),
+    });
   }
 
   // GET /api/v1/finance/reports/variance

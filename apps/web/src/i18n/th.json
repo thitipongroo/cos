@@ -123,6 +123,23 @@
     "colPo": "PO",
     "quotationsHint": "ดูได้เฉพาะ RFQ ที่สถานะ CLOSED; เลือกผู้ชนะได้เมื่อสถานะ EVALUATED"
   },
+  "finance": {
+    "paymentsTitle": "การชำระเงิน (AP)",
+    "budgetTitle": "งบประมาณ",
+    "invoicesTitle": "ใบแจ้งหนี้ผู้ขาย",
+    "varianceTitle": "รายงานส่วนต่างงบ",
+    "allStatuses": "ทุกสถานะ",
+    "approve": "อนุมัติ",
+    "overBudget": "เกินงบ",
+    "onBudget": "ในงบ",
+    "selectProject": "เลือกโครงการ",
+    "invoicesHint": "ใบแจ้งหนี้เป็นของโมดูลจัดซื้อ (AP) — Finance ดู/อนุมัติ/จ่าย",
+    "colNumber": "เลขที่",
+    "colVendor": "ผู้ขาย",
+    "colPo": "PO",
+    "colDueDate": "ครบกำหนด",
+    "colReference": "อ้างอิง"
+  },
   "nav": {
     "exec": {
       "home": "ภาพรวมพอร์ต",

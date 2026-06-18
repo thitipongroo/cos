@@ -123,6 +123,23 @@
     "colPo": "PO",
     "quotationsHint": "Viewable only for CLOSED RFQs; award is available when status is EVALUATED"
   },
+  "finance": {
+    "paymentsTitle": "Payments (AP)",
+    "budgetTitle": "Budget",
+    "invoicesTitle": "Vendor invoices",
+    "varianceTitle": "Variance report",
+    "allStatuses": "All statuses",
+    "approve": "Approve",
+    "overBudget": "Over budget",
+    "onBudget": "On budget",
+    "selectProject": "Select project",
+    "invoicesHint": "Invoices are owned by procurement (AP) — Finance views/approves/pays",
+    "colNumber": "Number",
+    "colVendor": "Vendor",
+    "colPo": "PO",
+    "colDueDate": "Due date",
+    "colReference": "Reference"
+  },
   "nav": {
     "exec": {
       "home": "Portfolio home",
