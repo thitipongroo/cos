@@ -1,25 +1,30 @@
-openapi: '3.1.0'
+openapi: 3.1.0
 info:
   title: Construction OS — Procurement Service API
-  version: '1.0.0'
-  description: |
-    Phase 5 Procurement Service. Covers vendor management, purchase requests,
+  version: 1.0.0
+  description: 'Phase 5 Procurement Service. Covers vendor management, purchase requests,
+
     RFQ lifecycle, quotation comparison, PO approval chain (Temporal-backed),
+
     delivery recording, and invoice receipt.
 
+
     Approval thresholds (spec §15.5):
+
     - ≤ 50,000 THB: PROJECT_MANAGER alone
+
     - 50,001–500,000 THB: PROJECT_MANAGER + FINANCE
+
     - > 500,000 THB: PROJECT_MANAGER + FINANCE + EXECUTIVE
+
     - 48h timeout per approver → escalates to TENANT_ADMIN
 
+    '
 servers:
   - url: /api/v1
     description: Current API version
-
 security:
   - bearerAuth: []
-
 tags:
   - name: Vendors
     description: Vendor master data management
@@ -35,270 +40,529 @@ tags:
     description: Delivery recording against POs
   - name: Invoices
     description: Vendor invoice receipt and approval
-
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-
   schemas:
     VendorRow:
       type: object
       properties:
-        vendor_id: { type: string, format: uuid }
-        tenant_id: { type: string, format: uuid }
-        vendor_code: { type: string, maxLength: 50 }
-        vendor_name: { type: string, maxLength: 255 }
-        tax_id: { type: string, nullable: true }
-        contact_email: { type: string, format: email, nullable: true }
-        contact_phone: { type: string, nullable: true }
-        address: { type: string, nullable: true }
-        is_active: { type: boolean }
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
-
+        vendor_id:
+          type: string
+          format: uuid
+        tenant_id:
+          type: string
+          format: uuid
+        vendor_code:
+          type: string
+          maxLength: 50
+        vendor_name:
+          type: string
+          maxLength: 255
+        tax_id:
+          type: string
+          nullable: true
+        contact_email:
+          type: string
+          format: email
+          nullable: true
+        contact_phone:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     CreateVendorDto:
       type: object
-      required: [vendor_code, vendor_name]
+      required:
+        - vendor_code
+        - vendor_name
       properties:
-        vendor_code: { type: string, maxLength: 50 }
-        vendor_name: { type: string, maxLength: 255 }
-        tax_id: { type: string, maxLength: 100, nullable: true }
-        contact_email: { type: string, format: email }
-        contact_phone: { type: string, maxLength: 50 }
-        address: { type: string }
-
+        vendor_code:
+          type: string
+          maxLength: 50
+        vendor_name:
+          type: string
+          maxLength: 255
+        tax_id:
+          type: string
+          maxLength: 100
+          nullable: true
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+          maxLength: 50
+        address:
+          type: string
     PurchaseRequestRow:
       type: object
       properties:
-        pr_id: { type: string, format: uuid }
-        project_id: { type: string, format: uuid }
-        pr_number: { type: string }
-        status: { type: string, enum: [DRAFT, SUBMITTED, APPROVED, REJECTED, PO_CREATED] }
-        requested_by: { type: string, format: uuid }
-        required_date: { type: string, format: date, nullable: true }
-        created_at: { type: string, format: date-time }
-
-    CreatePurchaseRequestDto:
-      type: object
-      required: [project_id, pr_number]
-      properties:
-        project_id: { type: string, format: uuid }
-        pr_number: { type: string, maxLength: 50 }
-        required_date: { type: string, format: date }
-
-    RfqRow:
-      type: object
-      properties:
-        rfq_id: { type: string, format: uuid }
-        pr_id: { type: string, format: uuid, nullable: true }
-        project_id: { type: string, format: uuid }
-        rfq_number: { type: string }
-        status: { type: string, enum: [DRAFT, PUBLISHED, CLOSED, EVALUATED, AWARDED, CANCELLED] }
-        deadline: { type: string, format: date-time }
-        temporal_workflow_id: { type: string, nullable: true }
-        created_by: { type: string, format: uuid }
-        created_at: { type: string, format: date-time }
-
-    CreateRfqDto:
-      type: object
-      required: [project_id, rfq_number, deadline]
-      properties:
-        project_id: { type: string, format: uuid }
-        pr_id: { type: string, format: uuid }
-        rfq_number: { type: string, maxLength: 50 }
-        deadline: { type: string, format: date-time }
-
-    QuotationRow:
-      type: object
-      properties:
-        quotation_id: { type: string, format: uuid }
-        rfq_id: { type: string, format: uuid }
-        vendor_id: { type: string, format: uuid }
-        total_amount: { type: string, description: 'DECIMAL(19,4) as string' }
-        currency_code: { type: string, maxLength: 3 }
-        validity_days: { type: integer }
-        submitted_at: { type: string, format: date-time }
-        is_selected: { type: boolean }
-
-    SubmitQuotationDto:
-      type: object
-      required: [vendor_id, total_amount, currency_code, validity_days, submitted_at]
-      properties:
-        vendor_id: { type: string, format: uuid }
-        total_amount: { type: string, description: 'DECIMAL(19,4) as string — never float' }
-        currency_code: { type: string, maxLength: 3 }
-        validity_days: { type: integer, minimum: 1 }
-        submitted_at: { type: string, format: date-time }
-
-    PoLineItemDto:
-      type: object
-      required: [description, quantity, unit, unit_price]
-      properties:
-        boq_item_id: { type: string, format: uuid }
-        description: { type: string }
-        quantity: { type: string, description: 'DECIMAL(10,4) as string' }
-        unit: { type: string, maxLength: 50 }
-        unit_price: { type: string, description: 'DECIMAL(19,4) as string' }
-
-    PoLineItemRow:
-      type: object
-      properties:
-        line_id: { type: string, format: uuid }
-        po_id: { type: string, format: uuid }
-        boq_item_id: { type: string, format: uuid, nullable: true }
-        description: { type: string }
-        quantity: { type: string }
-        unit: { type: string }
-        unit_price: { type: string }
-        line_total: { type: string }
-
-    CreatePurchaseOrderDto:
-      type: object
-      required:
-        [vendor_id, project_id, po_number, total_amount, currency_code, delivery_date, line_items]
-      properties:
-        rfq_id: { type: string, format: uuid }
-        vendor_id: { type: string, format: uuid }
-        project_id: { type: string, format: uuid }
-        po_number: { type: string, maxLength: 50 }
-        total_amount:
-          { type: string, description: 'DECIMAL(19,4) as string — must equal sum of line_items' }
-        currency_code: { type: string, maxLength: 3 }
-        delivery_date: { type: string, format: date }
-        line_items:
-          type: array
-          minItems: 1
-          items: { $ref: '#/components/schemas/PoLineItemDto' }
-
-    PurchaseOrderRow:
-      type: object
-      properties:
-        po_id: { type: string, format: uuid }
-        rfq_id: { type: string, format: uuid, nullable: true }
-        vendor_id: { type: string, format: uuid }
-        project_id: { type: string, format: uuid }
-        po_number: { type: string }
+        pr_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        pr_number:
+          type: string
         status:
           type: string
           enum:
-            [
-              DRAFT,
-              PENDING_APPROVAL,
-              APPROVED,
-              SENT,
-              ACKNOWLEDGED,
-              PARTIALLY_DELIVERED,
-              FULLY_DELIVERED,
-              INVOICED,
-              PAID,
-              DISPUTED,
-            ]
-        total_amount: { type: string }
-        currency_code: { type: string }
-        delivery_date: { type: string, format: date }
-        temporal_workflow_id: { type: string, nullable: true }
-        created_by: { type: string, format: uuid }
-        created_at: { type: string, format: date-time }
-
+            - DRAFT
+            - SUBMITTED
+            - APPROVED
+            - REJECTED
+            - PO_CREATED
+        requested_by:
+          type: string
+          format: uuid
+        required_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    CreatePurchaseRequestDto:
+      type: object
+      required:
+        - project_id
+        - pr_number
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        pr_number:
+          type: string
+          maxLength: 50
+        required_date:
+          type: string
+          format: date
+    RfqRow:
+      type: object
+      properties:
+        rfq_id:
+          type: string
+          format: uuid
+        pr_id:
+          type: string
+          format: uuid
+          nullable: true
+        project_id:
+          type: string
+          format: uuid
+        rfq_number:
+          type: string
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - PUBLISHED
+            - CLOSED
+            - EVALUATED
+            - AWARDED
+            - CANCELLED
+        deadline:
+          type: string
+          format: date-time
+        temporal_workflow_id:
+          type: string
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+    CreateRfqDto:
+      type: object
+      required:
+        - project_id
+        - rfq_number
+        - deadline
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        pr_id:
+          type: string
+          format: uuid
+        rfq_number:
+          type: string
+          maxLength: 50
+        deadline:
+          type: string
+          format: date-time
+    QuotationRow:
+      type: object
+      properties:
+        quotation_id:
+          type: string
+          format: uuid
+        rfq_id:
+          type: string
+          format: uuid
+        vendor_id:
+          type: string
+          format: uuid
+        total_amount:
+          type: string
+          description: DECIMAL(19,4) as string
+        currency_code:
+          type: string
+          maxLength: 3
+        validity_days:
+          type: integer
+        submitted_at:
+          type: string
+          format: date-time
+        is_selected:
+          type: boolean
+    SubmitQuotationDto:
+      type: object
+      required:
+        - vendor_id
+        - total_amount
+        - currency_code
+        - validity_days
+        - submitted_at
+      properties:
+        vendor_id:
+          type: string
+          format: uuid
+        total_amount:
+          type: string
+          description: DECIMAL(19,4) as string — never float
+        currency_code:
+          type: string
+          maxLength: 3
+        validity_days:
+          type: integer
+          minimum: 1
+        submitted_at:
+          type: string
+          format: date-time
+    PoLineItemDto:
+      type: object
+      required:
+        - description
+        - quantity
+        - unit
+        - unit_price
+      properties:
+        boq_item_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        quantity:
+          type: string
+          description: DECIMAL(10,4) as string
+        unit:
+          type: string
+          maxLength: 50
+        unit_price:
+          type: string
+          description: DECIMAL(19,4) as string
+    PoLineItemRow:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        po_id:
+          type: string
+          format: uuid
+        boq_item_id:
+          type: string
+          format: uuid
+          nullable: true
+        description:
+          type: string
+        quantity:
+          type: string
+        unit:
+          type: string
+        unit_price:
+          type: string
+        line_total:
+          type: string
+    CreatePurchaseOrderDto:
+      type: object
+      required:
+        - vendor_id
+        - project_id
+        - po_number
+        - total_amount
+        - currency_code
+        - delivery_date
+        - line_items
+      properties:
+        rfq_id:
+          type: string
+          format: uuid
+        vendor_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        po_number:
+          type: string
+          maxLength: 50
+        total_amount:
+          type: string
+          description: DECIMAL(19,4) as string — must equal sum of line_items
+        currency_code:
+          type: string
+          maxLength: 3
+        delivery_date:
+          type: string
+          format: date
+        line_items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PoLineItemDto'
+    PurchaseOrderRow:
+      type: object
+      properties:
+        po_id:
+          type: string
+          format: uuid
+        rfq_id:
+          type: string
+          format: uuid
+          nullable: true
+        vendor_id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        po_number:
+          type: string
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - PENDING_APPROVAL
+            - APPROVED
+            - SENT
+            - ACKNOWLEDGED
+            - PARTIALLY_DELIVERED
+            - FULLY_DELIVERED
+            - INVOICED
+            - PAID
+            - DISPUTED
+        total_amount:
+          type: string
+        currency_code:
+          type: string
+        delivery_date:
+          type: string
+          format: date
+        temporal_workflow_id:
+          type: string
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
     DeliveryItemDto:
       type: object
-      required: [line_id, quantity_received]
+      required:
+        - line_id
+        - quantity_received
       properties:
-        line_id: { type: string, format: uuid }
-        quantity_received: { type: string, description: 'DECIMAL(10,4) as string' }
-
+        line_id:
+          type: string
+          format: uuid
+        quantity_received:
+          type: string
+          description: DECIMAL(10,4) as string
     RecordDeliveryDto:
       type: object
-      required: [delivered_at, items]
+      required:
+        - po_id
+        - delivered_at
+        - items
       properties:
-        delivery_note: { type: string, maxLength: 100 }
-        delivered_at: { type: string, format: date-time }
-        notes: { type: string }
+        po_id:
+          type: string
+          format: uuid
+          description: Purchase order this is recorded against
+        delivery_note:
+          type: string
+          maxLength: 100
+        delivered_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
         items:
           type: array
           minItems: 1
-          items: { $ref: '#/components/schemas/DeliveryItemDto' }
-
+          items:
+            $ref: '#/components/schemas/DeliveryItemDto'
     DeliveryRow:
       type: object
       properties:
-        delivery_id: { type: string, format: uuid }
-        po_id: { type: string, format: uuid }
-        delivery_note: { type: string, nullable: true }
-        delivered_at: { type: string, format: date-time }
-        received_by: { type: string, format: uuid }
-        notes: { type: string, nullable: true }
-
+        delivery_id:
+          type: string
+          format: uuid
+        po_id:
+          type: string
+          format: uuid
+        delivery_note:
+          type: string
+          nullable: true
+        delivered_at:
+          type: string
+          format: date-time
+        received_by:
+          type: string
+          format: uuid
+        notes:
+          type: string
+          nullable: true
     ReceiveInvoiceDto:
       type: object
-      required: [invoice_number, amount, currency_code, invoice_date, due_date]
+      required:
+        - po_id
+        - invoice_number
+        - amount
+        - currency_code
+        - invoice_date
+        - due_date
       properties:
-        invoice_number: { type: string, maxLength: 100 }
-        amount: { type: string, description: 'DECIMAL(19,4) as string' }
-        currency_code: { type: string, maxLength: 3 }
-        invoice_date: { type: string, format: date }
-        due_date: { type: string, format: date }
-        file_id: { type: string, format: uuid }
-
+        po_id:
+          type: string
+          format: uuid
+          description: Purchase order this is recorded against
+        invoice_number:
+          type: string
+          maxLength: 100
+        amount:
+          type: string
+          description: DECIMAL(19,4) as string
+        currency_code:
+          type: string
+          maxLength: 3
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        file_id:
+          type: string
+          format: uuid
     InvoiceRow:
       type: object
       properties:
-        invoice_id: { type: string, format: uuid }
-        po_id: { type: string, format: uuid }
-        vendor_id: { type: string, format: uuid }
-        invoice_number: { type: string }
-        amount: { type: string }
-        currency_code: { type: string }
-        invoice_date: { type: string, format: date }
-        due_date: { type: string, format: date }
-        status: { type: string, enum: [RECEIVED, VERIFIED, APPROVED, PAID, DISPUTED] }
-        file_id: { type: string, format: uuid, nullable: true }
-
+        invoice_id:
+          type: string
+          format: uuid
+        po_id:
+          type: string
+          format: uuid
+        vendor_id:
+          type: string
+          format: uuid
+        invoice_number:
+          type: string
+        amount:
+          type: string
+        currency_code:
+          type: string
+        invoice_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - RECEIVED
+            - VERIFIED
+            - APPROVED
+            - PAID
+            - DISPUTED
+        file_id:
+          type: string
+          format: uuid
+          nullable: true
     ErrorResponse:
       type: object
       properties:
         error:
           type: object
           properties:
-            code: { type: string, example: 'COS-PROC-001' }
-            message: { type: string }
-            messageKey: { type: string }
-            details: { type: object }
-            traceId: { type: string }
-            timestamp: { type: string, format: date-time }
-
+            code:
+              type: string
+              example: COS-PROC-001
+            message:
+              type: string
+            messageKey:
+              type: string
+            details:
+              type: object
+            traceId:
+              type: string
+            timestamp:
+              type: string
+              format: date-time
 paths:
-  # ── Vendors ────────────────────────────────────────────────────────────────
-
-  /vendors:
+  /procurement/vendors:
     post:
-      tags: [Vendors]
+      tags:
+        - Vendors
       summary: Create a new vendor
       operationId: createVendor
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/CreateVendorDto' }
+            schema:
+              $ref: '#/components/schemas/CreateVendorDto'
       responses:
         '201':
           description: Vendor created
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/VendorRow' }
-        '422': { description: Business rule violation }
+              schema:
+                $ref: '#/components/schemas/VendorRow'
+        '422':
+          description: Business rule violation
     get:
-      tags: [Vendors]
+      tags:
+        - Vendors
       summary: List vendors
       operationId: listVendors
       parameters:
         - name: active_only
           in: query
           required: false
-          schema: { type: boolean, default: true }
+          schema:
+            type: boolean
+            default: true
       responses:
         '200':
           description: Vendor list
@@ -306,92 +570,269 @@ paths:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/VendorRow' }
-
-  /vendors/{vendorId}:
+                items:
+                  $ref: '#/components/schemas/VendorRow'
+  /procurement/vendors/{vendorId}:
     get:
-      tags: [Vendors]
+      tags:
+        - Vendors
       summary: Get vendor by ID
       operationId: getVendor
       parameters:
-        - { name: vendorId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200':
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/VendorRow' }
-        '404': { description: Not found }
-    delete:
-      tags: [Vendors]
-      summary: Deactivate vendor (soft delete)
-      operationId: deactivateVendor
-      parameters:
-        - { name: vendorId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '204': { description: Deactivated }
-        '404': { description: Not found }
-
-  # ── Purchase Requests ──────────────────────────────────────────────────────
-
-  /projects/{projectId}/purchase-requests:
-    post:
-      tags: [Purchase Requests]
-      summary: Create a purchase request
-      operationId: createPurchaseRequest
-      parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/CreatePurchaseRequestDto' }
-      responses:
-        '201':
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/PurchaseRequestRow' }
-    get:
-      tags: [Purchase Requests]
-      summary: List purchase requests for a project
-      operationId: listPurchaseRequests
-      parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: '#/components/schemas/PurchaseRequestRow' }
-
-  # ── RFQs ───────────────────────────────────────────────────────────────────
-
-  /rfqs:
+                $ref: '#/components/schemas/VendorRow'
+        '404':
+          description: Not found
+    delete:
+      tags:
+        - Vendors
+      summary: Deactivate vendor (soft delete)
+      operationId: deactivateVendor
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deactivated
+        '404':
+          description: Not found
+  /procurement/rfqs:
+    get:
+      tags:
+        - RFQs
+      summary: List RFQs across the tenant (filterable) — AIP-132
+      operationId: listAllRfqs
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RfqRow'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
     post:
-      tags: [RFQs]
+      tags:
+        - RFQs
       summary: Create RFQ and start Temporal workflow
       operationId: createRfq
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/CreateRfqDto' }
+            schema:
+              $ref: '#/components/schemas/CreateRfqDto'
       responses:
         '201':
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/RfqRow' }
-
-  /procurement/rfqs:
-    get:
-      tags: [RFQs]
-      summary: List RFQs across the tenant (filterable) — AIP-132
-      operationId: listAllRfqs
+              schema:
+                $ref: '#/components/schemas/RfqRow'
+  /procurement/rfqs/{rfqId}/publish:
+    post:
+      tags:
+        - RFQs
+      summary: Publish RFQ (DRAFT → PUBLISHED)
+      operationId: publishRfq
       parameters:
-        - { name: project_id, in: query, required: false, schema: { type: string, format: uuid } }
-        - { name: status, in: query, required: false, schema: { type: string } }
-        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
-        - { name: limit, in: query, required: false, schema: { type: integer, default: 20 } }
+        - name: rfqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signal sent
+        '422':
+          description: Not in DRAFT state
+  /procurement/rfqs/{rfqId}/close:
+    post:
+      tags:
+        - RFQs
+      summary: Manually close RFQ before deadline (PUBLISHED → CLOSED)
+      operationId: closeRfq
+      parameters:
+        - name: rfqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signal sent
+  /procurement/rfqs/{rfqId}/cancel:
+    post:
+      tags:
+        - RFQs
+      summary: Cancel RFQ
+      operationId: cancelRfq
+      parameters:
+        - name: rfqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Signal sent
+  /procurement/rfqs/{rfqId}/award:
+    post:
+      tags:
+        - RFQs
+      summary: Award RFQ to selected quotation (EVALUATED → AWARDED)
+      operationId: awardRfq
+      parameters:
+        - name: rfqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quotation_id
+              properties:
+                quotation_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: RFQ awarded
+        '404':
+          description: Quotation not found in RFQ
+  /procurement/rfqs/{rfqId}/quotations:
+    post:
+      tags:
+        - Quotations
+      summary: Submit a vendor quotation for an RFQ
+      operationId: submitQuotation
+      parameters:
+        - name: rfqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmitQuotationDto'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotationRow'
+        '422':
+          description: RFQ not PUBLISHED
+    get:
+      tags:
+        - Quotations
+      summary: Compare quotations (sorted by price ASC, lowest auto-selected)
+      operationId: compareQuotations
+      parameters:
+        - name: rfqId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuotationRow'
+        '422':
+          description: RFQ not CLOSED or no quotations
+  /procurement/purchase-orders:
+    get:
+      tags:
+        - Purchase Orders
+      summary: List purchase orders across the tenant (filterable) — AIP-132
+      operationId: listAllPurchaseOrders
+      parameters:
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
       responses:
         '200':
           content:
@@ -399,124 +840,27 @@ paths:
               schema:
                 type: object
                 properties:
-                  items: { type: array, items: { $ref: '#/components/schemas/RfqRow' } }
-                  total: { type: integer }
-                  page: { type: integer }
-                  limit: { type: integer }
-
-  /projects/{projectId}/rfqs:
-    get:
-      tags: [RFQs]
-      summary: List RFQs for a project
-      operationId: listRfqs
-      parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/RfqRow' }
-
-  /rfqs/{rfqId}/publish:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseOrderRow'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
     post:
-      tags: [RFQs]
-      summary: Publish RFQ (DRAFT → PUBLISHED)
-      operationId: publishRfq
-      parameters:
-        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200': { description: Signal sent }
-        '422': { description: Not in DRAFT state }
-
-  /rfqs/{rfqId}/close:
-    post:
-      tags: [RFQs]
-      summary: Manually close RFQ before deadline (PUBLISHED → CLOSED)
-      operationId: closeRfq
-      parameters:
-        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200': { description: Signal sent }
-
-  /rfqs/{rfqId}/cancel:
-    post:
-      tags: [RFQs]
-      summary: Cancel RFQ
-      operationId: cancelRfq
-      parameters:
-        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200': { description: Signal sent }
-
-  /rfqs/{rfqId}/award:
-    post:
-      tags: [RFQs]
-      summary: Award RFQ to selected quotation (EVALUATED → AWARDED)
-      operationId: awardRfq
-      parameters:
-        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [quotation_id]
-              properties:
-                quotation_id: { type: string, format: uuid }
-      responses:
-        '200': { description: RFQ awarded }
-        '404': { description: Quotation not found in RFQ }
-
-  # ── Quotations ─────────────────────────────────────────────────────────────
-
-  /rfqs/{rfqId}/quotations:
-    post:
-      tags: [Quotations]
-      summary: Submit a vendor quotation for an RFQ
-      operationId: submitQuotation
-      parameters:
-        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/SubmitQuotationDto' }
-      responses:
-        '201':
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/QuotationRow' }
-        '422': { description: RFQ not PUBLISHED }
-    get:
-      tags: [Quotations]
-      summary: Compare quotations (sorted by price ASC, lowest auto-selected)
-      operationId: compareQuotations
-      parameters:
-        - { name: rfqId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/QuotationRow' }
-        '422': { description: RFQ not CLOSED or no quotations }
-
-  # ── Purchase Orders ────────────────────────────────────────────────────────
-
-  /purchase-orders:
-    post:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Create PO and start Temporal workflow
       operationId: createPurchaseOrder
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/CreatePurchaseOrderDto' }
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseOrderDto'
       responses:
         '201':
           content:
@@ -524,56 +868,27 @@ paths:
               schema:
                 type: object
                 properties:
-                  po: { $ref: '#/components/schemas/PurchaseOrderRow' }
+                  po:
+                    $ref: '#/components/schemas/PurchaseOrderRow'
                   line_items:
                     type: array
-                    items: { $ref: '#/components/schemas/PoLineItemRow' }
-        '422': { description: Total mismatch or validation error }
-
-  /procurement/purchase-orders:
+                    items:
+                      $ref: '#/components/schemas/PoLineItemRow'
+        '422':
+          description: Total mismatch or validation error
+  /procurement/purchase-orders/{poId}:
     get:
-      tags: [Purchase Orders]
-      summary: List purchase orders across the tenant (filterable) — AIP-132
-      operationId: listAllPurchaseOrders
-      parameters:
-        - { name: project_id, in: query, required: false, schema: { type: string, format: uuid } }
-        - { name: status, in: query, required: false, schema: { type: string } }
-        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
-        - { name: limit, in: query, required: false, schema: { type: integer, default: 20 } }
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items: { type: array, items: { $ref: '#/components/schemas/PurchaseOrderRow' } }
-                  total: { type: integer }
-                  page: { type: integer }
-                  limit: { type: integer }
-
-  /projects/{projectId}/purchase-orders:
-    get:
-      tags: [Purchase Orders]
-      summary: List purchase orders for a project
-      operationId: listPurchaseOrders
-      parameters:
-        - { name: projectId, in: path, required: true, schema: { type: string, format: uuid } }
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/PurchaseOrderRow' }
-
-  /purchase-orders/{poId}:
-    get:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Get PO detail with line items
       operationId: getPurchaseOrder
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           content:
@@ -581,145 +896,176 @@ paths:
               schema:
                 type: object
                 properties:
-                  po: { $ref: '#/components/schemas/PurchaseOrderRow' }
+                  po:
+                    $ref: '#/components/schemas/PurchaseOrderRow'
                   line_items:
                     type: array
-                    items: { $ref: '#/components/schemas/PoLineItemRow' }
-
-  /purchase-orders/{poId}/submit:
+                    items:
+                      $ref: '#/components/schemas/PoLineItemRow'
+  /procurement/purchase-orders/{poId}/submit:
     post:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Submit PO for approval (DRAFT → PENDING_APPROVAL)
       operationId: submitPoForApproval
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200': { description: Signal sent }
-
-  /purchase-orders/{poId}/approve:
+        '200':
+          description: Signal sent
+  /procurement/purchase-orders/{poId}/approve:
     post:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Approve PO for a tier (PM / FINANCE / EXECUTIVE / TENANT_ADMIN)
       operationId: approvePo
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [tier]
+              required:
+                - tier
               properties:
-                tier: { type: string, enum: [PM, FINANCE, EXECUTIVE, TENANT_ADMIN] }
+                tier:
+                  type: string
+                  enum:
+                    - PM
+                    - FINANCE
+                    - EXECUTIVE
+                    - TENANT_ADMIN
       responses:
-        '200': { description: Approval signal sent }
-
-  /purchase-orders/{poId}/reject:
+        '200':
+          description: Approval signal sent
+  /procurement/purchase-orders/{poId}/reject:
     post:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Reject PO — returns to DRAFT
       operationId: rejectPo
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [reason]
+              required:
+                - reason
               properties:
-                reason: { type: string }
+                reason:
+                  type: string
       responses:
-        '200': { description: Rejection signal sent }
-
-  /purchase-orders/{poId}/acknowledge:
+        '200':
+          description: Rejection signal sent
+  /procurement/purchase-orders/{poId}/acknowledge:
     post:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Record vendor acknowledgement (SENT → ACKNOWLEDGED)
       operationId: acknowledgePo
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200': { description: Signal sent }
-
-  /purchase-orders/{poId}/mark-paid:
+        '200':
+          description: Signal sent
+  /procurement/purchase-orders/{poId}/mark-paid:
     post:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Mark PO invoice as paid (INVOICED → PAID)
       operationId: markInvoicePaid
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
-        '200': { description: Signal sent }
-
-  /purchase-orders/{poId}/dispute:
+        '200':
+          description: Signal sent
+  /procurement/purchase-orders/{poId}/dispute:
     post:
-      tags: [Purchase Orders]
+      tags:
+        - Purchase Orders
       summary: Dispute invoice (INVOICED → DISPUTED)
       operationId: disputeInvoice
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [reason]
+              required:
+                - reason
               properties:
-                reason: { type: string }
-      responses:
-        '200': { description: Signal sent }
-
-  # ── Deliveries ─────────────────────────────────────────────────────────────
-
-  /purchase-orders/{poId}/deliveries:
-    post:
-      tags: [Deliveries]
-      summary: Record a delivery against a PO
-      operationId: recordDelivery
-      parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/RecordDeliveryDto' }
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  delivery: { $ref: '#/components/schemas/DeliveryRow' }
-                  is_partial: { type: boolean }
-    get:
-      tags: [Deliveries]
-      summary: List deliveries recorded against a purchase order
-      operationId: listDeliveriesByPo
-      parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+                reason:
+                  type: string
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items: { $ref: '#/components/schemas/DeliveryRow' }
-
+          description: Signal sent
   /procurement/purchase-requests:
     get:
-      tags: [Purchase Requests]
+      tags:
+        - Purchase Requests
       summary: List purchase requests across the tenant (filterable) — AIP-132
       operationId: listAllPurchaseRequests
       parameters:
-        - { name: project_id, in: query, required: false, schema: { type: string, format: uuid } }
-        - { name: status, in: query, required: false, schema: { type: string } }
-        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
-        - { name: limit, in: query, required: false, schema: { type: integer, default: 20 } }
+        - name: project_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
       responses:
         '200':
           content:
@@ -727,75 +1073,172 @@ paths:
               schema:
                 type: object
                 properties:
-                  items: { type: array, items: { $ref: '#/components/schemas/PurchaseRequestRow' } }
-                  total: { type: integer }
-                  page: { type: integer }
-                  limit: { type: integer }
-
-  /procurement/deliveries:
-    get:
-      tags: [Deliveries]
-      summary: List deliveries across the tenant (filterable by PO) — AIP-132
-      operationId: listAllDeliveries
-      parameters:
-        - { name: po_id, in: query, required: false, schema: { type: string, format: uuid } }
-        - { name: page, in: query, required: false, schema: { type: integer, default: 1 } }
-        - { name: limit, in: query, required: false, schema: { type: integer, default: 20 } }
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  items: { type: array, items: { $ref: '#/components/schemas/DeliveryRow' } }
-                  total: { type: integer }
-                  page: { type: integer }
-                  limit: { type: integer }
-
-  # ── Invoices ───────────────────────────────────────────────────────────────
-
-  /purchase-orders/{poId}/invoices:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseRequestRow'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
     post:
-      tags: [Invoices]
-      summary: Receive a vendor invoice (PO must be FULLY_DELIVERED)
-      operationId: receiveInvoice
-      parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+      tags:
+        - Purchase Requests
+      summary: Create a purchase request
+      operationId: createPurchaseRequest
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/ReceiveInvoiceDto' }
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseRequestDto'
       responses:
         '201':
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/InvoiceRow' }
+              schema:
+                $ref: '#/components/schemas/PurchaseRequestRow'
+  /procurement/deliveries:
     get:
-      tags: [Invoices]
-      summary: List invoices for a PO
-      operationId: listInvoices
+      tags:
+        - Deliveries
+      summary: List deliveries across the tenant (filterable by PO) — AIP-132
+      operationId: listAllDeliveries
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: po_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeliveryRow'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+    post:
+      tags:
+        - Deliveries
+      summary: Record a delivery against a PO
+      operationId: recordDelivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordDeliveryDto'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  delivery:
+                    $ref: '#/components/schemas/DeliveryRow'
+                  is_partial:
+                    type: boolean
+  /procurement/purchase-orders/{poId}/deliveries:
+    get:
+      tags:
+        - Deliveries
+      summary: List deliveries recorded against a purchase order
+      operationId: listDeliveriesByPo
+      parameters:
+        - name: poId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           content:
             application/json:
               schema:
                 type: array
-                items: { $ref: '#/components/schemas/InvoiceRow' }
-
-  /purchase-orders/{poId}/invoices/{invoiceId}/approve:
+                items:
+                  $ref: '#/components/schemas/DeliveryRow'
+  /procurement/vendor-invoices:
     post:
-      tags: [Invoices]
-      summary: Approve vendor invoice (RECEIVED/VERIFIED → APPROVED)
-      operationId: approveInvoice
+      tags:
+        - Invoices
+      summary: Receive a vendor invoice (PO must be FULLY_DELIVERED)
+      operationId: receiveInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveInvoiceDto'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceRow'
+    get:
+      tags:
+        - Invoices
+      summary: List invoices for a PO
+      operationId: listInvoices
       parameters:
-        - { name: poId, in: path, required: true, schema: { type: string, format: uuid } }
-        - { name: invoiceId, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: po_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
       responses:
         '200':
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/InvoiceRow' }
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceRow'
+  /procurement/vendor-invoices/{invoiceId}/approve:
+    post:
+      tags:
+        - Invoices
+      summary: Approve vendor invoice (RECEIVED/VERIFIED → APPROVED)
+      operationId: approveInvoice
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceRow'

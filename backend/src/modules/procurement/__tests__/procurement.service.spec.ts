@@ -48,12 +48,10 @@ const mockRepo = {
   listVendors: jest.fn(),
   deactivateVendor: jest.fn(),
   createPurchaseRequest: jest.fn(),
-  listPurchaseRequests: jest.fn(),
   findPrById: jest.fn(),
   updatePrStatus: jest.fn(),
   createRfq: jest.fn(),
   findRfqById: jest.fn(),
-  listRfqs: jest.fn(),
   updateRfqStatus: jest.fn(),
   setRfqWorkflowId: jest.fn(),
   createQuotation: jest.fn(),
@@ -61,7 +59,6 @@ const mockRepo = {
   markQuotationSelected: jest.fn(),
   createPurchaseOrder: jest.fn(),
   findPoById: jest.fn(),
-  listPurchaseOrders: jest.fn(),
   updatePoStatus: jest.fn(),
   setPoWorkflowId: jest.fn(),
   createLineItems: jest.fn(),
@@ -405,7 +402,8 @@ describe('PO state machine', () => {
   it('receiveInvoice — throws if PO not FULLY_DELIVERED', async () => {
     mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'INVOICED' });
     await expect(
-      service.receiveInvoice('po-uuid-001', {
+      service.receiveInvoice({
+        po_id: 'po-uuid-001',
         invoice_number: 'INV-001',
         amount: '60000.0000',
         currency_code: 'THB',
@@ -436,7 +434,8 @@ describe('Delivery recording', () => {
   it('recordDelivery — throws if PO not ACKNOWLEDGED or PARTIALLY_DELIVERED', async () => {
     mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'DRAFT' });
     await expect(
-      service.recordDelivery('po-uuid-001', {
+      service.recordDelivery({
+        po_id: 'po-uuid-001',
         delivered_at: new Date().toISOString(),
         items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
       }),
@@ -469,7 +468,8 @@ describe('Delivery recording', () => {
     mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
     mockRepo.sumDeliveredQuantity.mockResolvedValue('5.0000'); // 5 out of 10 = partial
 
-    const result = await service.recordDelivery('po-uuid-001', {
+    const result = await service.recordDelivery({
+      po_id: 'po-uuid-001',
       delivered_at: new Date().toISOString(),
       items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
     });
@@ -480,7 +480,8 @@ describe('Delivery recording', () => {
   it('recordDelivery — throws NotFoundException when PO not found', async () => {
     mockRepo.findPoById.mockResolvedValue(null);
     await expect(
-      service.recordDelivery('missing-po', {
+      service.recordDelivery({
+        po_id: 'missing-po',
         delivered_at: new Date().toISOString(),
         items: [{ line_id: 'l-001', quantity_received: '5.0000' }],
       }),
@@ -513,7 +514,8 @@ describe('Delivery recording', () => {
     mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
     mockRepo.sumDeliveredQuantity.mockResolvedValue('10.0000'); // 10 of 10 = complete
 
-    const result = await service.recordDelivery('po-uuid-001', {
+    const result = await service.recordDelivery({
+      po_id: 'po-uuid-001',
       delivered_at: new Date().toISOString(),
       items: [{ line_id: 'line-uuid-001', quantity_received: '10.0000' }],
     });
@@ -568,12 +570,6 @@ describe('Purchase Requests', () => {
     });
     expect(result.pr_id).toBe('pr-001');
   });
-
-  it('listPurchaseRequests returns list', async () => {
-    mockRepo.listPurchaseRequests.mockResolvedValue([]);
-    const result = await service.listPurchaseRequests('p-001');
-    expect(result).toEqual([]);
-  });
 });
 
 describe('createRfq', () => {
@@ -625,12 +621,6 @@ describe('RFQ — additional happy paths', () => {
     mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
     mockRepo.markQuotationSelected.mockResolvedValue(undefined);
     await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-001')).resolves.toBeUndefined();
-  });
-
-  it('listRfqs returns list', async () => {
-    mockRepo.listRfqs.mockResolvedValue([rfqDraftFixture]);
-    const result = await service.listRfqs('project-uuid-001');
-    expect(result).toHaveLength(1);
   });
 });
 
@@ -698,12 +688,6 @@ describe('PO — additional happy paths', () => {
     await expect(service.acknowledgePo('po-uuid-001')).resolves.toBeUndefined();
   });
 
-  it('listPurchaseOrders returns list', async () => {
-    mockRepo.listPurchaseOrders.mockResolvedValue([poFixture]);
-    const result = await service.listPurchaseOrders('project-uuid-001');
-    expect(result).toHaveLength(1);
-  });
-
   it('getPurchaseOrder returns PO with line items', async () => {
     mockRepo.findPoById.mockResolvedValue(poFixture);
     mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
@@ -720,6 +704,7 @@ describe('PO — additional happy paths', () => {
 
 describe('receiveInvoice', () => {
   const invoiceDto = {
+    po_id: 'po-uuid-001',
     invoice_number: 'INV-001',
     amount: '60000.0000',
     currency_code: 'THB',
@@ -745,7 +730,7 @@ describe('receiveInvoice', () => {
   it('receives invoice for FULLY_DELIVERED PO', async () => {
     mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'FULLY_DELIVERED' });
     mockRepo.createInvoice.mockResolvedValue(invoiceRow);
-    const result = await service.receiveInvoice('po-uuid-001', invoiceDto);
+    const result = await service.receiveInvoice(invoiceDto);
     expect(result.invoice_id).toBe('inv-uuid-001');
   });
 });
@@ -771,27 +756,18 @@ describe('approveInvoice', () => {
     mockRepo.findInvoiceById.mockResolvedValue(invoiceRow);
     mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
     mockRepo.findPoById.mockResolvedValue(poFixture);
-    const result = await service.approveInvoice('po-uuid-001', 'inv-uuid-001');
+    const result = await service.approveInvoice('inv-uuid-001');
     expect(result.status).toBe('APPROVED');
   });
 
   it('throws NotFoundException when invoice not found', async () => {
     mockRepo.findInvoiceById.mockResolvedValue(null);
-    await expect(service.approveInvoice('po-uuid-001', 'missing')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
-  });
-
-  it('throws NotFoundException when invoice belongs to different PO', async () => {
-    mockRepo.findInvoiceById.mockResolvedValue({ ...invoiceRow, po_id: 'other-po' });
-    await expect(service.approveInvoice('po-uuid-001', 'inv-uuid-001')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(service.approveInvoice('missing')).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('throws UnprocessableEntityException when status is not RECEIVED or VERIFIED', async () => {
     mockRepo.findInvoiceById.mockResolvedValue({ ...invoiceRow, status: 'APPROVED' });
-    await expect(service.approveInvoice('po-uuid-001', 'inv-uuid-001')).rejects.toBeInstanceOf(
+    await expect(service.approveInvoice('inv-uuid-001')).rejects.toBeInstanceOf(
       UnprocessableEntityException,
     );
   });
@@ -800,7 +776,7 @@ describe('approveInvoice', () => {
     mockRepo.findInvoiceById.mockResolvedValue(invoiceRow);
     mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
     mockRepo.findPoById.mockResolvedValue(null); // po is null → project_id = ''
-    const result = await service.approveInvoice('po-uuid-001', 'inv-uuid-001');
+    const result = await service.approveInvoice('inv-uuid-001');
     expect(result.status).toBe('APPROVED');
   });
 
@@ -809,7 +785,7 @@ describe('approveInvoice', () => {
     mockRepo.findInvoiceById.mockResolvedValue(invoiceWithStringDate);
     mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
     mockRepo.findPoById.mockResolvedValue(poFixture);
-    const result = await service.approveInvoice('po-uuid-001', 'inv-uuid-001');
+    const result = await service.approveInvoice('inv-uuid-001');
     expect(result.status).toBe('APPROVED');
   });
 });

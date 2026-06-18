@@ -119,20 +119,24 @@ export function useFinanceSummary(id: string) {
 
 export function useProjectProcurement(id: string) {
   const api = useApi();
+  // Per ADR-022 / §14 there are no project-scoped procurement lists; the PM
+  // per-project view uses the tenant-wide endpoints filtered by project_id.
   const prs = useQuery({
     queryKey: ['project', id, 'prs'],
     enabled: id !== '',
-    queryFn: () => api<PurchaseRequestRow[]>(`/projects/${id}/purchase-requests`),
+    queryFn: () =>
+      api<PaginatedResponse<PurchaseRequestRow>>(`/procurement/purchase-requests?project_id=${id}`),
   });
   const rfqs = useQuery({
     queryKey: ['project', id, 'rfqs'],
     enabled: id !== '',
-    queryFn: () => api<RfqRow[]>(`/projects/${id}/rfqs`),
+    queryFn: () => api<PaginatedResponse<RfqRow>>(`/procurement/rfqs?project_id=${id}`),
   });
   const pos = useQuery({
     queryKey: ['project', id, 'pos'],
     enabled: id !== '',
-    queryFn: () => api<PurchaseOrderRow[]>(`/projects/${id}/purchase-orders`),
+    queryFn: () =>
+      api<PaginatedResponse<PurchaseOrderRow>>(`/procurement/purchase-orders?project_id=${id}`),
   });
   return { prs, rfqs, pos };
 }
@@ -184,7 +188,7 @@ export function useVendors() {
   const api = useApi();
   return useQuery({
     queryKey: ['vendors'],
-    queryFn: () => api<VendorRow[]>('/vendors'),
+    queryFn: () => api<VendorRow[]>('/procurement/vendors'),
   });
 }
 
@@ -235,7 +239,7 @@ export function useQuotations(rfqId: string) {
   return useQuery({
     queryKey: ['quotations', rfqId],
     enabled: rfqId !== '',
-    queryFn: () => api<QuotationRow[]>(`/rfqs/${rfqId}/quotations`),
+    queryFn: () => api<QuotationRow[]>(`/procurement/rfqs/${rfqId}/quotations`),
   });
 }
 
@@ -244,7 +248,7 @@ export function useAwardRfq(rfqId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (quotation_id: string) =>
-      api<void>(`/rfqs/${rfqId}/award`, {
+      api<void>(`/procurement/rfqs/${rfqId}/award`, {
         method: 'POST',
         body: JSON.stringify({ quotation_id }),
       }),

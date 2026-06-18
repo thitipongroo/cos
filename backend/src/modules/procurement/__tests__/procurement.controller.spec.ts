@@ -13,9 +13,7 @@ const mockSvc = {
   getVendor: jest.fn(),
   deactivateVendor: jest.fn(),
   createPurchaseRequest: jest.fn(),
-  listPurchaseRequests: jest.fn(),
   createRfq: jest.fn(),
-  listRfqs: jest.fn(),
   publishRfq: jest.fn(),
   closeRfq: jest.fn(),
   cancelRfq: jest.fn(),
@@ -23,7 +21,6 @@ const mockSvc = {
   submitQuotation: jest.fn(),
   awardRfq: jest.fn(),
   createPurchaseOrder: jest.fn(),
-  listPurchaseOrders: jest.fn(),
   getPurchaseOrder: jest.fn(),
   submitPoForApproval: jest.fn(),
   approvePo: jest.fn(),
@@ -83,24 +80,14 @@ describe('ProcurementController', () => {
 
   it('createPurchaseRequest delegates to svc.createPurchaseRequest', () => {
     const dto = { project_id: 'p-001', pr_number: 'PR-001' };
-    ctrl.createPurchaseRequest('p-001', dto as never);
+    ctrl.createPurchaseRequest(dto as never);
     expect(mockSvc.createPurchaseRequest).toHaveBeenCalledWith(dto);
-  });
-
-  it('listPurchaseRequests delegates to svc.listPurchaseRequests', () => {
-    ctrl.listPurchaseRequests('p-001');
-    expect(mockSvc.listPurchaseRequests).toHaveBeenCalledWith('p-001');
   });
 
   it('createRfq delegates to svc.createRfq', () => {
     const dto = { project_id: 'p-001', rfq_number: 'R-001', deadline: '2026-12-31T00:00:00Z' };
     ctrl.createRfq(dto as never);
     expect(mockSvc.createRfq).toHaveBeenCalledWith(dto);
-  });
-
-  it('listRfqs delegates to svc.listRfqs', () => {
-    ctrl.listRfqs('p-001');
-    expect(mockSvc.listRfqs).toHaveBeenCalledWith('p-001');
   });
 
   it('publishRfq delegates to svc.publishRfq', () => {
@@ -154,11 +141,6 @@ describe('ProcurementController', () => {
     expect(mockSvc.createPurchaseOrder).toHaveBeenCalledWith(dto);
   });
 
-  it('listPurchaseOrders delegates to svc.listPurchaseOrders', () => {
-    ctrl.listPurchaseOrders('p-001');
-    expect(mockSvc.listPurchaseOrders).toHaveBeenCalledWith('p-001');
-  });
-
   it('getPurchaseOrder delegates to svc.getPurchaseOrder', () => {
     ctrl.getPurchaseOrder('po-001');
     expect(mockSvc.getPurchaseOrder).toHaveBeenCalledWith('po-001');
@@ -184,32 +166,33 @@ describe('ProcurementController', () => {
     expect(mockSvc.acknowledgePo).toHaveBeenCalledWith('po-001');
   });
 
-  it('recordDelivery delegates to svc.recordDelivery', () => {
-    const dto = { delivered_at: '2026-09-01T00:00:00Z', items: [] };
-    ctrl.recordDelivery('po-001', dto as never);
-    expect(mockSvc.recordDelivery).toHaveBeenCalledWith('po-001', dto);
+  it('recordDelivery delegates to svc.recordDelivery (po_id in body)', () => {
+    const dto = { po_id: 'po-001', delivered_at: '2026-09-01T00:00:00Z', items: [] };
+    ctrl.recordDelivery(dto as never);
+    expect(mockSvc.recordDelivery).toHaveBeenCalledWith(dto);
   });
 
-  it('receiveInvoice delegates to svc.receiveInvoice', () => {
+  it('receiveInvoice delegates to svc.receiveInvoice (po_id in body)', () => {
     const dto = {
+      po_id: 'po-001',
       invoice_number: 'INV-001',
       amount: '1000.0000',
       currency_code: 'THB',
       invoice_date: '2026-09-05',
       due_date: '2026-09-20',
     };
-    ctrl.receiveInvoice('po-001', dto as never);
-    expect(mockSvc.receiveInvoice).toHaveBeenCalledWith('po-001', dto);
+    ctrl.receiveInvoice(dto as never);
+    expect(mockSvc.receiveInvoice).toHaveBeenCalledWith(dto);
   });
 
-  it('listInvoices delegates to svc.listInvoicesByPo', () => {
+  it('listInvoices delegates to svc.listInvoicesByPo (po_id from query)', () => {
     ctrl.listInvoices('po-001');
     expect(mockSvc.listInvoicesByPo).toHaveBeenCalledWith('po-001');
   });
 
-  it('approveInvoice delegates to svc.approveInvoice', () => {
-    ctrl.approveInvoice('po-001', 'inv-001');
-    expect(mockSvc.approveInvoice).toHaveBeenCalledWith('po-001', 'inv-001');
+  it('approveInvoice delegates to svc.approveInvoice (flat /vendor-invoices/:id/approve)', () => {
+    ctrl.approveInvoice('inv-001');
+    expect(mockSvc.approveInvoice).toHaveBeenCalledWith('inv-001');
   });
 
   it('markInvoicePaid delegates to svc.markInvoicePaid', () => {

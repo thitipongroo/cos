@@ -209,12 +209,6 @@ describe('ProcurementRepository', () => {
     expect(await repo.findPrById('missing')).toBeNull();
   });
 
-  it('listPurchaseRequests returns rows', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([prRow]);
-    const result = await repo.listPurchaseRequests('proj-uuid-001');
-    expect(result).toHaveLength(1);
-  });
-
   it('updatePrStatus calls $executeRaw', async () => {
     mockPrisma.$executeRaw.mockResolvedValue(1);
     await repo.updatePrStatus('pr-uuid-001', 'SUBMITTED');
@@ -242,11 +236,6 @@ describe('ProcurementRepository', () => {
   it('findRfqById returns row when found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([rfqRow]);
     expect((await repo.findRfqById('rfq-uuid-001'))?.rfq_id).toBe('rfq-uuid-001');
-  });
-
-  it('listRfqs returns rows', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([rfqRow]);
-    expect(await repo.listRfqs('proj-uuid-001')).toHaveLength(1);
   });
 
   it('updateRfqStatus calls $executeRaw', async () => {
@@ -311,11 +300,6 @@ describe('ProcurementRepository', () => {
   it('findPoById returns row when found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([poRow]);
     expect((await repo.findPoById('po-uuid-001'))?.po_id).toBe('po-uuid-001');
-  });
-
-  it('listPurchaseOrders returns rows', async () => {
-    mockPrisma.$queryRaw.mockResolvedValue([poRow]);
-    expect(await repo.listPurchaseOrders('proj-uuid-001')).toHaveLength(1);
   });
 
   it('updatePoStatus calls $executeRaw', async () => {

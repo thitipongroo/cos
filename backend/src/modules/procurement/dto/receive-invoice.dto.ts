@@ -9,6 +9,10 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ReceiveInvoiceDto {
+  @ApiProperty({ format: 'uuid', description: 'Purchase order this invoice is against' })
+  @IsUUID()
+  po_id!: string;
+
   @ApiProperty({ maxLength: 100 })
   @IsString()
   @MaxLength(100)

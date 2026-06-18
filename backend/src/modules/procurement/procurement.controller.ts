@@ -1,10 +1,8 @@
 // Procurement Controller — Phase 5
-// RBAC per spec §06-rbac-permission-matrix.md:
-//   Read access:  EXECUTIVE, PROJECT_MANAGER, FINANCE, PROCUREMENT_OFFICER, PROC_MANAGER, TENANT_ADMIN
-//   Vendor CRUD:  PROCUREMENT_OFFICER, PROC_MANAGER, TENANT_ADMIN
-//   RFQ publish:  PROCUREMENT_OFFICER, PROC_MANAGER
-//   PO approval:  PROJECT_MANAGER (PM tier), FINANCE (FINANCE tier), EXECUTIVE, TENANT_ADMIN
-//   Invoice pay:  FINANCE, TENANT_ADMIN
+// Canonical path convention (spec §14 + ADR-022): the entire procurement module —
+// vendors included — is served under /api/v1/procurement/* (ADR-022 override of §14's
+// former separate /api/v1/vendors namespace). Tenant scoping is enforced server-side
+// via RLS + JWT. RBAC per spec §06-rbac-permission-matrix.md.
 
 import {
   Controller,
@@ -32,6 +30,23 @@ import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { RecordDeliveryDto } from './dto/record-delivery.dto';
 import { ReceiveInvoiceDto } from './dto/receive-invoice.dto';
 
+// Read access across procurement (spec §06): all office/management + procurement roles.
+const READ_ROLES = [
+  CosRole.EXECUTIVE,
+  CosRole.PROJECT_MANAGER,
+  CosRole.FINANCE,
+  CosRole.PROCUREMENT_OFFICER,
+  CosRole.PROC_MANAGER,
+  CosRole.TENANT_ADMIN,
+] as const;
+
+function parsePage(page: string): number {
+  return Math.max(1, parseInt(page, 10) || 1);
+}
+function parseLimit(limit: string): number {
+  return Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+}
+
 @ApiTags('procurement')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,50 +54,36 @@ import { ReceiveInvoiceDto } from './dto/receive-invoice.dto';
 export class ProcurementController {
   constructor(private readonly svc: ProcurementService) {}
 
-  // ── Vendors ─────────────────────────────────────────────────────────────────
+  // ── Vendors (unified under /procurement/* — overrides §14 separate Vendor APIs; ADR-022) ───
 
-  // POST /api/v1/vendors
-  @Post('vendors')
+  // POST /api/v1/procurement/vendors
+  @Post('procurement/vendors')
   @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Create a new vendor' })
   createVendor(@Body() dto: CreateVendorDto) {
     return this.svc.createVendor(dto);
   }
 
-  // GET /api/v1/vendors
-  @Get('vendors')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
+  // GET /api/v1/procurement/vendors
+  @Get('procurement/vendors')
+  @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'List vendors' })
   @ApiQuery({ name: 'active_only', required: false, type: Boolean, description: 'Default: true' })
   listVendors(@Query('active_only') active_only?: string) {
     return this.svc.listVendors(active_only !== 'false');
   }
 
-  // GET /api/v1/vendors/:vendorId
-  @Get('vendors/:vendorId')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
+  // GET /api/v1/procurement/vendors/:vendorId
+  @Get('procurement/vendors/:vendorId')
+  @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'Get vendor by ID' })
   @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
   getVendor(@Param('vendorId') vendorId: string) {
     return this.svc.getVendor(vendorId);
   }
 
-  // DELETE /api/v1/vendors/:vendorId
-  @Delete('vendors/:vendorId')
+  // DELETE /api/v1/procurement/vendors/:vendorId
+  @Delete('procurement/vendors/:vendorId')
   @Roles(CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Deactivate vendor (soft delete)' })
   @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
@@ -91,142 +92,19 @@ export class ProcurementController {
     return this.svc.deactivateVendor(vendorId);
   }
 
-  // ── Purchase Requests ────────────────────────────────────────────────────────
+  // ── Purchase Requests ─────────────────────────────────────────────────────────
 
-  // POST /api/v1/projects/:projectId/purchase-requests
-  @Post('projects/:projectId/purchase-requests')
+  // POST /api/v1/procurement/purchase-requests  (project_id in body)
+  @Post('procurement/purchase-requests')
   @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Create a purchase request' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  createPurchaseRequest(
-    @Param('projectId') _projectId: string,
-    @Body() dto: CreatePurchaseRequestDto,
-  ) {
+  createPurchaseRequest(@Body() dto: CreatePurchaseRequestDto) {
     return this.svc.createPurchaseRequest(dto);
   }
 
-  // GET /api/v1/projects/:projectId/purchase-requests
-  @Get('projects/:projectId/purchase-requests')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'List purchase requests for a project' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  listPurchaseRequests(@Param('projectId') projectId: string) {
-    return this.svc.listPurchaseRequests(projectId);
-  }
-
-  // ── RFQs ─────────────────────────────────────────────────────────────────────
-
-  // POST /api/v1/rfqs
-  @Post('rfqs')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Create an RFQ and start Temporal workflow' })
-  createRfq(@Body() dto: CreateRfqDto) {
-    return this.svc.createRfq(dto);
-  }
-
-  // GET /api/v1/projects/:projectId/rfqs
-  @Get('projects/:projectId/rfqs')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'List RFQs for a project' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  listRfqs(@Param('projectId') projectId: string) {
-    return this.svc.listRfqs(projectId);
-  }
-
-  // POST /api/v1/rfqs/:rfqId/publish
-  @Post('rfqs/:rfqId/publish')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Publish RFQ (DRAFT → PUBLISHED)' })
-  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  @HttpCode(HttpStatus.OK)
-  publishRfq(@Param('rfqId') rfqId: string) {
-    return this.svc.publishRfq(rfqId);
-  }
-
-  // POST /api/v1/rfqs/:rfqId/close
-  @Post('rfqs/:rfqId/close')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Manually close RFQ (PUBLISHED → CLOSED)' })
-  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  @HttpCode(HttpStatus.OK)
-  closeRfq(@Param('rfqId') rfqId: string) {
-    return this.svc.closeRfq(rfqId);
-  }
-
-  // POST /api/v1/rfqs/:rfqId/cancel
-  @Post('rfqs/:rfqId/cancel')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Cancel RFQ' })
-  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  @HttpCode(HttpStatus.OK)
-  cancelRfq(@Param('rfqId') rfqId: string) {
-    return this.svc.cancelRfq(rfqId);
-  }
-
-  // GET /api/v1/rfqs/:rfqId/quotations
-  @Get('rfqs/:rfqId/quotations')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'Compare quotations for an RFQ (sorted by price ASC)' })
-  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  compareQuotations(@Param('rfqId') rfqId: string) {
-    return this.svc.compareQuotations(rfqId);
-  }
-
-  // POST /api/v1/rfqs/:rfqId/quotations
-  @Post('rfqs/:rfqId/quotations')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Submit a vendor quotation for an RFQ' })
-  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  submitQuotation(@Param('rfqId') rfqId: string, @Body() dto: SubmitQuotationDto) {
-    return this.svc.submitQuotation(rfqId, dto);
-  }
-
-  // POST /api/v1/rfqs/:rfqId/award
-  @Post('rfqs/:rfqId/award')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Award RFQ to selected quotation (EVALUATED → AWARDED)' })
-  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  @HttpCode(HttpStatus.OK)
-  awardRfq(@Param('rfqId') rfqId: string, @Body() body: { quotation_id: string }) {
-    return this.svc.awardRfq(rfqId, body.quotation_id);
-  }
-
-  // ── Purchase Orders ───────────────────────────────────────────────────────────
-
-  // ── Tenant-wide list endpoints (AIP-132 List / AIP-159) ─────────────────────
-  // Global procurement inboxes for §20.7.3; tenant-scoped via RLS + JWT.
-
-  // GET /api/v1/procurement/purchase-requests
+  // GET /api/v1/procurement/purchase-requests  (tenant-wide, AIP-132; ?project_id= to scope)
   @Get('procurement/purchase-requests')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
+  @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'List purchase requests across the tenant (filterable)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
@@ -241,21 +119,24 @@ export class ProcurementController {
     return this.svc.listAllPurchaseRequests({
       project_id,
       status,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+      page: parsePage(page),
+      limit: parseLimit(limit),
     });
   }
 
-  // GET /api/v1/procurement/rfqs
+  // ── RFQs ──────────────────────────────────────────────────────────────────────
+
+  // POST /api/v1/procurement/rfqs
+  @Post('procurement/rfqs')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Create an RFQ and start Temporal workflow' })
+  createRfq(@Body() dto: CreateRfqDto) {
+    return this.svc.createRfq(dto);
+  }
+
+  // GET /api/v1/procurement/rfqs  (tenant-wide, AIP-132; ?project_id= to scope)
   @Get('procurement/rfqs')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
+  @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'List RFQs across the tenant (filterable)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
@@ -270,21 +151,82 @@ export class ProcurementController {
     return this.svc.listAllRfqs({
       project_id,
       status,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+      page: parsePage(page),
+      limit: parseLimit(limit),
     });
   }
 
-  // GET /api/v1/procurement/purchase-orders
+  // POST /api/v1/procurement/rfqs/:rfqId/publish
+  @Post('procurement/rfqs/:rfqId/publish')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Publish RFQ (DRAFT → PUBLISHED)' })
+  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  publishRfq(@Param('rfqId') rfqId: string) {
+    return this.svc.publishRfq(rfqId);
+  }
+
+  // POST /api/v1/procurement/rfqs/:rfqId/close
+  @Post('procurement/rfqs/:rfqId/close')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Manually close RFQ (PUBLISHED → CLOSED)' })
+  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  closeRfq(@Param('rfqId') rfqId: string) {
+    return this.svc.closeRfq(rfqId);
+  }
+
+  // POST /api/v1/procurement/rfqs/:rfqId/cancel
+  @Post('procurement/rfqs/:rfqId/cancel')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Cancel RFQ' })
+  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  cancelRfq(@Param('rfqId') rfqId: string) {
+    return this.svc.cancelRfq(rfqId);
+  }
+
+  // GET /api/v1/procurement/rfqs/:rfqId/quotations
+  @Get('procurement/rfqs/:rfqId/quotations')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'Compare quotations for an RFQ (sorted by price ASC)' })
+  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
+  compareQuotations(@Param('rfqId') rfqId: string) {
+    return this.svc.compareQuotations(rfqId);
+  }
+
+  // POST /api/v1/procurement/rfqs/:rfqId/quotations
+  @Post('procurement/rfqs/:rfqId/quotations')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Submit a vendor quotation for an RFQ' })
+  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
+  submitQuotation(@Param('rfqId') rfqId: string, @Body() dto: SubmitQuotationDto) {
+    return this.svc.submitQuotation(rfqId, dto);
+  }
+
+  // POST /api/v1/procurement/rfqs/:rfqId/award
+  @Post('procurement/rfqs/:rfqId/award')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Award RFQ to selected quotation (EVALUATED → AWARDED)' })
+  @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  awardRfq(@Param('rfqId') rfqId: string, @Body() body: { quotation_id: string }) {
+    return this.svc.awardRfq(rfqId, body.quotation_id);
+  }
+
+  // ── Purchase Orders ───────────────────────────────────────────────────────────
+
+  // POST /api/v1/procurement/purchase-orders
+  @Post('procurement/purchase-orders')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Create a purchase order and start Temporal workflow' })
+  createPurchaseOrder(@Body() dto: CreatePurchaseOrderDto) {
+    return this.svc.createPurchaseOrder(dto);
+  }
+
+  // GET /api/v1/procurement/purchase-orders  (tenant-wide, AIP-132; ?project_id= to scope)
   @Get('procurement/purchase-orders')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
+  @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'List purchase orders across the tenant (filterable)' })
   @ApiQuery({ name: 'project_id', required: false, type: String })
   @ApiQuery({ name: 'status', required: false, type: String })
@@ -299,95 +241,31 @@ export class ProcurementController {
     return this.svc.listAllPurchaseOrders({
       project_id,
       status,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+      page: parsePage(page),
+      limit: parseLimit(limit),
     });
   }
 
-  // GET /api/v1/procurement/deliveries
-  @Get('procurement/deliveries')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'List deliveries across the tenant (filterable by PO)' })
-  @ApiQuery({ name: 'po_id', required: false, type: String })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  listAllDeliveries(
-    @Query('po_id') po_id?: string,
-    @Query('page') page = '1',
-    @Query('limit') limit = '20',
-  ) {
-    return this.svc.listAllDeliveries({
-      po_id,
-      page: Math.max(1, parseInt(page, 10) || 1),
-      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
-    });
-  }
-
-  // GET /api/v1/purchase-orders/:poId/deliveries
-  @Get('purchase-orders/:poId/deliveries')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'List deliveries recorded against a purchase order' })
-  @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
-  listDeliveriesByPo(@Param('poId') poId: string) {
-    return this.svc.listDeliveriesByPo(poId);
-  }
-
-  // POST /api/v1/purchase-orders
-  @Post('purchase-orders')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Create a purchase order and start Temporal workflow' })
-  createPurchaseOrder(@Body() dto: CreatePurchaseOrderDto) {
-    return this.svc.createPurchaseOrder(dto);
-  }
-
-  // GET /api/v1/projects/:projectId/purchase-orders
-  @Get('projects/:projectId/purchase-orders')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'List purchase orders for a project' })
-  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  listPurchaseOrders(@Param('projectId') projectId: string) {
-    return this.svc.listPurchaseOrders(projectId);
-  }
-
-  // GET /api/v1/purchase-orders/:poId
-  @Get('purchase-orders/:poId')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
+  // GET /api/v1/procurement/purchase-orders/:poId
+  @Get('procurement/purchase-orders/:poId')
+  @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'Get purchase order detail with line items' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   getPurchaseOrder(@Param('poId') poId: string) {
     return this.svc.getPurchaseOrder(poId);
   }
 
-  // POST /api/v1/purchase-orders/:poId/submit
-  @Post('purchase-orders/:poId/submit')
+  // GET /api/v1/procurement/purchase-orders/:poId/deliveries
+  @Get('procurement/purchase-orders/:poId/deliveries')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'List deliveries recorded against a purchase order' })
+  @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
+  listDeliveriesByPo(@Param('poId') poId: string) {
+    return this.svc.listDeliveriesByPo(poId);
+  }
+
+  // POST /api/v1/procurement/purchase-orders/:poId/submit
+  @Post('procurement/purchase-orders/:poId/submit')
   @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Submit PO for approval (DRAFT → PENDING_APPROVAL)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
@@ -396,8 +274,8 @@ export class ProcurementController {
     return this.svc.submitPoForApproval(poId);
   }
 
-  // POST /api/v1/purchase-orders/:poId/approve
-  @Post('purchase-orders/:poId/approve')
+  // POST /api/v1/procurement/purchase-orders/:poId/approve
+  @Post('procurement/purchase-orders/:poId/approve')
   @Roles(CosRole.PROJECT_MANAGER, CosRole.FINANCE, CosRole.EXECUTIVE, CosRole.TENANT_ADMIN)
   @ApiOperation({
     summary: 'Approve PO for a specific tier (PM / FINANCE / EXECUTIVE / TENANT_ADMIN)',
@@ -411,8 +289,8 @@ export class ProcurementController {
     return this.svc.approvePo(poId, body.tier);
   }
 
-  // POST /api/v1/purchase-orders/:poId/reject
-  @Post('purchase-orders/:poId/reject')
+  // POST /api/v1/procurement/purchase-orders/:poId/reject
+  @Post('procurement/purchase-orders/:poId/reject')
   @Roles(CosRole.PROJECT_MANAGER, CosRole.FINANCE, CosRole.EXECUTIVE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Reject PO — returns to DRAFT for revision' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
@@ -421,8 +299,8 @@ export class ProcurementController {
     return this.svc.rejectPo(poId, body.reason);
   }
 
-  // POST /api/v1/purchase-orders/:poId/acknowledge
-  @Post('purchase-orders/:poId/acknowledge')
+  // POST /api/v1/procurement/purchase-orders/:poId/acknowledge
+  @Post('procurement/purchase-orders/:poId/acknowledge')
   @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Record vendor acknowledgement (SENT → ACKNOWLEDGED)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
@@ -431,57 +309,8 @@ export class ProcurementController {
     return this.svc.acknowledgePo(poId);
   }
 
-  // ── Deliveries ────────────────────────────────────────────────────────────────
-
-  // POST /api/v1/purchase-orders/:poId/deliveries
-  @Post('purchase-orders/:poId/deliveries')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Record a delivery against a purchase order' })
-  @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
-  recordDelivery(@Param('poId') poId: string, @Body() dto: RecordDeliveryDto) {
-    return this.svc.recordDelivery(poId, dto);
-  }
-
-  // ── Invoices ──────────────────────────────────────────────────────────────────
-
-  // POST /api/v1/purchase-orders/:poId/invoices
-  @Post('purchase-orders/:poId/invoices')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.FINANCE, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Receive a vendor invoice against a fully-delivered PO' })
-  @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
-  receiveInvoice(@Param('poId') poId: string, @Body() dto: ReceiveInvoiceDto) {
-    return this.svc.receiveInvoice(poId, dto);
-  }
-
-  // GET /api/v1/purchase-orders/:poId/invoices
-  @Get('purchase-orders/:poId/invoices')
-  @Roles(
-    CosRole.EXECUTIVE,
-    CosRole.PROJECT_MANAGER,
-    CosRole.FINANCE,
-    CosRole.PROCUREMENT_OFFICER,
-    CosRole.PROC_MANAGER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'List invoices for a purchase order' })
-  @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
-  listInvoices(@Param('poId') poId: string) {
-    return this.svc.listInvoicesByPo(poId);
-  }
-
-  // POST /api/v1/purchase-orders/:poId/invoices/:invoiceId/approve
-  @Post('purchase-orders/:poId/invoices/:invoiceId/approve')
-  @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
-  @ApiOperation({ summary: 'Approve vendor invoice (RECEIVED/VERIFIED → APPROVED)' })
-  @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
-  @ApiParam({ name: 'invoiceId', type: 'string', format: 'uuid' })
-  @HttpCode(HttpStatus.OK)
-  approveInvoice(@Param('poId') poId: string, @Param('invoiceId') invoiceId: string) {
-    return this.svc.approveInvoice(poId, invoiceId);
-  }
-
-  // POST /api/v1/purchase-orders/:poId/mark-paid
-  @Post('purchase-orders/:poId/mark-paid')
+  // POST /api/v1/procurement/purchase-orders/:poId/mark-paid
+  @Post('procurement/purchase-orders/:poId/mark-paid')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Mark PO invoice as paid (INVOICED → PAID)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
@@ -490,13 +319,71 @@ export class ProcurementController {
     return this.svc.markInvoicePaid(poId);
   }
 
-  // POST /api/v1/purchase-orders/:poId/dispute
-  @Post('purchase-orders/:poId/dispute')
+  // POST /api/v1/procurement/purchase-orders/:poId/dispute
+  @Post('procurement/purchase-orders/:poId/dispute')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Dispute invoice (INVOICED → DISPUTED)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
   disputeInvoice(@Param('poId') poId: string, @Body() body: { reason: string }) {
     return this.svc.disputeInvoice(poId, body.reason);
+  }
+
+  // ── Deliveries (spec §14: flat /api/v1/procurement/deliveries) ────────────────
+
+  // POST /api/v1/procurement/deliveries  (po_id in body)
+  @Post('procurement/deliveries')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Record a delivery against a purchase order' })
+  recordDelivery(@Body() dto: RecordDeliveryDto) {
+    return this.svc.recordDelivery(dto);
+  }
+
+  // GET /api/v1/procurement/deliveries  (tenant-wide, AIP-132; ?po_id= to scope)
+  @Get('procurement/deliveries')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'List deliveries across the tenant (filterable by PO)' })
+  @ApiQuery({ name: 'po_id', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  listAllDeliveries(
+    @Query('po_id') po_id?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.svc.listAllDeliveries({
+      po_id,
+      page: parsePage(page),
+      limit: parseLimit(limit),
+    });
+  }
+
+  // ── Vendor invoices (spec §14: flat /api/v1/procurement/vendor-invoices) ──────
+
+  // POST /api/v1/procurement/vendor-invoices  (po_id in body)
+  @Post('procurement/vendor-invoices')
+  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.FINANCE, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Receive a vendor invoice against a fully-delivered PO' })
+  receiveInvoice(@Body() dto: ReceiveInvoiceDto) {
+    return this.svc.receiveInvoice(dto);
+  }
+
+  // GET /api/v1/procurement/vendor-invoices?po_id=...
+  @Get('procurement/vendor-invoices')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'List vendor invoices for a purchase order' })
+  @ApiQuery({ name: 'po_id', required: true, type: String })
+  listInvoices(@Query('po_id') poId: string) {
+    return this.svc.listInvoicesByPo(poId);
+  }
+
+  // POST /api/v1/procurement/vendor-invoices/:invoiceId/approve
+  @Post('procurement/vendor-invoices/:invoiceId/approve')
+  @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Approve vendor invoice (RECEIVED/VERIFIED → APPROVED)' })
+  @ApiParam({ name: 'invoiceId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  approveInvoice(@Param('invoiceId') invoiceId: string) {
+    return this.svc.approveInvoice(invoiceId);
   }
 }

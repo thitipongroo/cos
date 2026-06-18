@@ -341,12 +341,12 @@ POST /api/v1/ai/report/generate
 
 #### Vendor APIs
 
-| Method | Path                                     | Description                       | Auth                |
-| ------ | ---------------------------------------- | --------------------------------- | ------------------- |
-| `GET`  | `/api/v1/vendors`                        | List vendors                      | Any role            |
-| `POST` | `/api/v1/vendors`                        | Register vendor                   | Procurement Officer |
-| `GET`  | `/api/v1/vendors/{vendor_id}`            | Get vendor detail with rating     | Any role            |
-| `GET`  | `/api/v1/vendors/{vendor_id}/quotations` | List quotation history for vendor | Any role            |
+| Method | Path                                                 | Description                       | Auth                |
+| ------ | ---------------------------------------------------- | --------------------------------- | ------------------- |
+| `GET`  | `/api/v1/procurement/vendors`                        | List vendors                      | Any role            |
+| `POST` | `/api/v1/procurement/vendors`                        | Register vendor                   | Procurement Officer |
+| `GET`  | `/api/v1/procurement/vendors/{vendor_id}`            | Get vendor detail with rating     | Any role            |
+| `GET`  | `/api/v1/procurement/vendors/{vendor_id}/quotations` | List quotation history for vendor | Any role            |
 
 ---
 

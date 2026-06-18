@@ -1815,17 +1815,39 @@ Generate:
 - Quotation comparison service (sort by total_amount, mark is_selected)
 - DTOs with validation for all APIs
 - OpenAPI 3.1 spec
-- Tenant-wide list endpoints (canonical path prefix `/api/v1/procurement/...`; spec §14
-  Procurement APIs; AIP-132 List / AIP-159 cross-collection; see ADR-022):
-    GET /api/v1/procurement/purchase-requests   — list PRs (filterable: status, project_id)
-    GET /api/v1/procurement/rfqs                 — list RFQs (filterable: status, project_id)
-    GET /api/v1/procurement/purchase-orders      — list POs (filterable: status, project_id)
-    GET /api/v1/procurement/deliveries           — list deliveries (filterable: po_id)
-    GET /api/v1/procurement/rfqs/:rfqId/quotations — compare quotations (RFQ CLOSED)
-  Tenant scoping is enforced server-side via RLS + JWT; no project_id is required.
-  Note: legacy project-scoped routes (/api/v1/projects/:projectId/purchase-requests|rfqs|
-  purchase-orders) remain for the PM per-project views; the `/procurement/*` prefix is the
-  canonical convention going forward (other existing flat routes still pending alignment — see ADR-022).
+- APIs (authoritative: spec §14 Procurement APIs + Vendor APIs; AIP-132 List /
+  AIP-159 cross-collection; tenant-scoped server-side via RLS + JWT; see ADR-022).
+  Canonical prefix `/api/v1/procurement/*` for the ENTIRE module — vendors included
+  (ADR-022 override: §14's separate `/api/v1/vendors` namespace was unified under
+  `/api/v1/procurement/vendors`; §14 updated to match). There are NO project-scoped
+  procurement list routes — per-project views use the tenant-wide lists with `?project_id=`:
+    Vendors:
+      POST   /api/v1/procurement/vendors
+      GET    /api/v1/procurement/vendors
+      GET    /api/v1/procurement/vendors/:vendorId
+      DELETE /api/v1/procurement/vendors/:vendorId
+    Purchase requests:
+      POST   /api/v1/procurement/purchase-requests          (project_id in body)
+      GET    /api/v1/procurement/purchase-requests           (filterable: status, project_id)
+    RFQs:
+      POST   /api/v1/procurement/rfqs
+      GET    /api/v1/procurement/rfqs                         (filterable: status, project_id)
+      POST   /api/v1/procurement/rfqs/:rfqId/publish|close|cancel|award
+      GET    /api/v1/procurement/rfqs/:rfqId/quotations       (compare; RFQ CLOSED)
+      POST   /api/v1/procurement/rfqs/:rfqId/quotations       (submit quotation)
+    Purchase orders:
+      POST   /api/v1/procurement/purchase-orders
+      GET    /api/v1/procurement/purchase-orders              (filterable: status, project_id)
+      GET    /api/v1/procurement/purchase-orders/:poId
+      GET    /api/v1/procurement/purchase-orders/:poId/deliveries
+      POST   /api/v1/procurement/purchase-orders/:poId/submit|approve|reject|acknowledge|mark-paid|dispute
+    Deliveries:
+      POST   /api/v1/procurement/deliveries                  (po_id in body)
+      GET    /api/v1/procurement/deliveries                  (filterable: po_id)
+    Vendor invoices:
+      POST   /api/v1/procurement/vendor-invoices             (po_id in body)
+      GET    /api/v1/procurement/vendor-invoices?po_id=
+      POST   /api/v1/procurement/vendor-invoices/:invoiceId/approve
 - Decimal.js used for all financial calculations
 - Unit tests: workflow state transitions, financial calculations
 - Integration tests: full procurement lifecycle with Temporal test server
@@ -2040,6 +2062,19 @@ APIs (mobile-first, optimized for low bandwidth):
   POST /api/v1/inspections                — submit inspection result
   GET  /api/v1/conflict-records           — list unresolved conflicts (ROLE: SITE_ENGINEER)
   PATCH /api/v1/conflict-records/:id/resolve — manual conflict resolution
+
+Safety APIs (authoritative: spec §14 Safety APIs; MVP scope: spec §21.2 = incident reports,
+  safety checklists, work permits, safety permit-approval workflow). Enumerated here so the
+  execution view matches §14 and the Procurement/Phase-5-style context-derivation drift is not
+  repeated. Backend NOT yet implemented — tracked as the deferred safety workstream (DECISION-2;
+  ADR-022 follow-up):
+  POST  /api/v1/safety/incidents                         — report safety incident (Site Engineer, Safety Officer)
+  PATCH /api/v1/safety/incidents/:incidentId/acknowledge — acknowledge incident (Safety Officer)
+  GET   /api/v1/safety/checklists                        — list safety checklists (any role)
+  POST  /api/v1/safety/checklists                        — submit completed safety checklist (Site Engineer, Safety Officer)
+  Note: §21.2 also mandates WORK PERMITS + a safety permit-approval workflow, but §14's Safety
+  table does NOT yet enumerate their API paths — flagged as a spec-level gap (§14 incomplete vs
+  §21.2). Do not invent permit endpoint paths until §14 is updated.
 
   material_consumptions:
     consumption_id  UUID PK

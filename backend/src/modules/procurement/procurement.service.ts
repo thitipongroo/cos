@@ -132,10 +132,6 @@ export class ProcurementService {
     return pr;
   }
 
-  async listPurchaseRequests(project_id: string): Promise<PurchaseRequestRow[]> {
-    return this.repo.listPurchaseRequests(project_id);
-  }
-
   // ── RFQ Lifecycle ──────────────────────────────────────────────────────────
 
   async createRfq(dto: CreateRfqDto): Promise<RfqRow> {
@@ -222,10 +218,6 @@ export class ProcurementService {
     const handle = await this.getRfqWorkflowHandle(rfq);
     await handle.signal(awardRfqSignal, { actor_id: this.userId, quotation_id });
     logger.info({ rfq_id, quotation_id, actor_id: this.userId }, 'rfq.awarded');
-  }
-
-  async listRfqs(project_id: string): Promise<RfqRow[]> {
-    return this.repo.listRfqs(project_id);
   }
 
   // ── Quotation Comparison ──────────────────────────────────────────────────
@@ -425,10 +417,6 @@ export class ProcurementService {
     logger.info({ po_id, actor_id: this.userId }, 'po.acknowledged');
   }
 
-  async listPurchaseOrders(project_id: string): Promise<PurchaseOrderRow[]> {
-    return this.repo.listPurchaseOrders(project_id);
-  }
-
   // ── Tenant-wide list methods (AIP-132 List) ─────────────────────────────────
 
   async listAllPurchaseRequests(params: {
@@ -478,9 +466,9 @@ export class ProcurementService {
   // ── Delivery Recording ────────────────────────────────────────────────────
 
   async recordDelivery(
-    po_id: string,
     dto: RecordDeliveryDto,
   ): Promise<{ delivery: DeliveryRow; is_partial: boolean }> {
+    const po_id = dto.po_id;
     const po = await this.repo.findPoById(po_id);
     if (!po) throw new NotFoundException(`Purchase order ${po_id} not found`);
 
@@ -544,7 +532,8 @@ export class ProcurementService {
 
   // ── Invoice Receipt ────────────────────────────────────────────────────────
 
-  async receiveInvoice(po_id: string, dto: ReceiveInvoiceDto): Promise<InvoiceRow> {
+  async receiveInvoice(dto: ReceiveInvoiceDto): Promise<InvoiceRow> {
+    const po_id = dto.po_id;
     const po = await this.assertPoStatus(po_id, 'FULLY_DELIVERED');
 
     const invoice = await this.repo.createInvoice({
@@ -578,11 +567,12 @@ export class ProcurementService {
     return invoice;
   }
 
-  async approveInvoice(po_id: string, invoice_id: string): Promise<InvoiceRow> {
+  async approveInvoice(invoice_id: string): Promise<InvoiceRow> {
     const invoice = await this.repo.findInvoiceById(invoice_id);
-    if (!invoice || invoice.po_id !== po_id) {
-      throw new NotFoundException(`Invoice ${invoice_id} not found for PO ${po_id}`);
+    if (!invoice) {
+      throw new NotFoundException(`Invoice ${invoice_id} not found`);
     }
+    const po_id = invoice.po_id;
     if (invoice.status !== 'RECEIVED' && invoice.status !== 'VERIFIED') {
       throw new UnprocessableEntityException(
         `Invoice ${invoice_id} must be RECEIVED or VERIFIED to approve (current: ${invoice.status})`,

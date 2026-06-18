@@ -22,6 +22,10 @@ export class DeliveryItemDto {
 }
 
 export class RecordDeliveryDto {
+  @ApiProperty({ format: 'uuid', description: 'Purchase order this delivery is recorded against' })
+  @IsUUID()
+  po_id!: string;
+
   @ApiPropertyOptional({ maxLength: 100, description: 'Delivery note / document reference' })
   @IsOptional()
   @IsString()

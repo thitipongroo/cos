@@ -69,12 +69,25 @@ to it removes a spec/implementation discrepancy rather than inventing a new one.
   server endpoints; the web client needs no aggregation hacks.
 - Implementation matches spec §14 for these endpoints.
 
-### Negative / Follow-up
+### Module-wide reconciliation (completed)
 
-- **Module-wide prefix debt:** other existing procurement routes (`/api/v1/vendors`,
-  `POST /api/v1/rfqs`, `POST /api/v1/purchase-orders`, `/api/v1/purchase-orders/:poId`,
-  `/api/v1/rfqs/:rfqId/quotations`, and the project-scoped `/api/v1/projects/:projectId/...`
-  routes) still do **not** use the `/procurement/` prefix that §14 specifies. This
-  record aligns only the newly added list endpoints. Full module-wide alignment
-  (re-prefixing the existing routes and reconciling the project-scoped resource
-  hierarchy with §14) is a separate, larger change tracked as follow-up debt.
+The whole procurement module was subsequently aligned to the `/api/v1/procurement/*`
+convention and §14's resource hierarchy:
+
+- All RFQ / PO / quotation / lifecycle routes re-prefixed to `/api/v1/procurement/*`.
+- Create + delivery + invoice flattened to tenant-level per §14 (`POST /procurement/
+  purchase-requests|rfqs|purchase-orders`, `POST /procurement/deliveries`,
+  `POST /procurement/vendor-invoices`), with `po_id`/`project_id` carried in the body.
+- Project-scoped list routes (`/api/v1/projects/:projectId/...`) were **removed**;
+  per-project views use the tenant-wide lists with `?project_id=`.
+
+### Vendors override
+
+§14 originally placed vendors in a separate `/api/v1/vendors` "Vendor APIs" namespace.
+By product-owner decision, vendors were **unified under `/api/v1/procurement/vendors`**
+so the entire module shares one prefix. **§14 was updated** to match (no spec/impl drift).
+
+### Negative
+
+- Larger surface change (controller, DTOs, OpenAPI, web client, integration tests);
+  mitigated by 100% unit-test coverage on the procurement controller/service/repository.

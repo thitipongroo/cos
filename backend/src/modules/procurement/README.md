@@ -11,34 +11,24 @@ Uses Temporal for long-running RFQ and PO workflows with threshold-based approva
 
 ## Public API
 
-Vendors:
+All routes are under `/api/v1/procurement/*` (canonical convention — spec §14 + ADR-022;
+vendors included). Tenant-scoped server-side via RLS + JWT. There are no project-scoped
+list routes — per-project views use the tenant-wide lists with `?project_id=`.
 
 ```text
-POST/GET /api/v1/vendors
-```
-
-Purchase Requests:
-
-```text
-POST/GET /api/v1/purchase-requests
-POST     /api/v1/purchase-requests/:id/submit
-POST     /api/v1/purchase-requests/:id/approve
-```
-
-RFQ:
-
-```text
-POST/GET /api/v1/rfqs
-POST     /api/v1/rfqs/:id/publish
-POST     /api/v1/rfqs/:id/quotations
-POST     /api/v1/rfqs/:id/award
-```
-
-Purchase Orders:
-
-```text
-POST/GET /api/v1/purchase-orders
-POST     /api/v1/purchase-orders/:id/record-delivery
+Vendors:         POST/GET  /api/v1/procurement/vendors
+                 GET/DELETE /api/v1/procurement/vendors/:vendorId
+Purchase reqs:   POST/GET  /api/v1/procurement/purchase-requests      (filter: status, project_id)
+RFQs:            POST/GET  /api/v1/procurement/rfqs                   (filter: status, project_id)
+                 POST      /api/v1/procurement/rfqs/:rfqId/publish|close|cancel|award
+                 GET/POST  /api/v1/procurement/rfqs/:rfqId/quotations
+Purchase orders: POST/GET  /api/v1/procurement/purchase-orders        (filter: status, project_id)
+                 GET       /api/v1/procurement/purchase-orders/:poId
+                 GET       /api/v1/procurement/purchase-orders/:poId/deliveries
+                 POST      /api/v1/procurement/purchase-orders/:poId/submit|approve|reject|acknowledge|mark-paid|dispute
+Deliveries:      POST/GET  /api/v1/procurement/deliveries             (po_id in body / filter)
+Vendor invoices: POST/GET  /api/v1/procurement/vendor-invoices        (po_id in body / query)
+                 POST      /api/v1/procurement/vendor-invoices/:invoiceId/approve
 ```
 
 ## Approval Thresholds (PO)
@@ -71,7 +61,7 @@ POST     /api/v1/purchase-orders/:id/record-delivery
 
 ```typescript
 // Create a PO and start Temporal workflow
-POST /api/v1/purchase-orders
+POST /api/v1/procurement/purchase-orders
 { "rfq_id": "uuid", "vendor_id": "uuid", "delivery_date": "2026-07-01", ... }
 ```
 

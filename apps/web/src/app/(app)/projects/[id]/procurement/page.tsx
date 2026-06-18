@@ -37,7 +37,7 @@ export default function ProjectProcurementPage({ params }: { params: { id: strin
         <h2 className="mb-2 text-sm font-semibold uppercase text-gray-500">{t('pm.prs')}</h2>
         <DataTable
           columns={prCols}
-          rows={prs.data ?? []}
+          rows={prs.data?.items ?? []}
           rowKey={(r) => r.pr_id}
           isLoading={prs.isLoading}
         />
@@ -46,7 +46,7 @@ export default function ProjectProcurementPage({ params }: { params: { id: strin
         <h2 className="mb-2 text-sm font-semibold uppercase text-gray-500">{t('pm.rfqs')}</h2>
         <DataTable
           columns={rfqCols}
-          rows={rfqs.data ?? []}
+          rows={rfqs.data?.items ?? []}
           rowKey={(r) => r.rfq_id}
           isLoading={rfqs.isLoading}
         />
@@ -55,7 +55,7 @@ export default function ProjectProcurementPage({ params }: { params: { id: strin
         <h2 className="mb-2 text-sm font-semibold uppercase text-gray-500">{t('pm.pos')}</h2>
         <DataTable
           columns={poCols}
-          rows={pos.data ?? []}
+          rows={pos.data?.items ?? []}
           rowKey={(r) => r.po_id}
           isLoading={pos.isLoading}
         />

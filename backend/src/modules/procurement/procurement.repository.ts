@@ -230,16 +230,6 @@ export class ProcurementRepository {
     return rows[0] ?? null;
   }
 
-  async listPurchaseRequests(project_id: string): Promise<PurchaseRequestRow[]> {
-    return this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<PurchaseRequestRow[]>`
-        SELECT * FROM procurement.purchase_requests
-        WHERE project_id = ${project_id}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ORDER BY created_at DESC`,
-    );
-  }
-
   async updatePrStatus(pr_id: string, status: PurchaseRequestRow['status']): Promise<void> {
     await this.db.run(
       (prisma) =>
@@ -278,16 +268,6 @@ export class ProcurementRepository {
         WHERE rfq_id = ${rfq_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
-  }
-
-  async listRfqs(project_id: string): Promise<RfqRow[]> {
-    return this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<RfqRow[]>`
-        SELECT * FROM procurement.rfqs
-        WHERE project_id = ${project_id}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ORDER BY created_at DESC`,
-    );
   }
 
   async updateRfqStatus(rfq_id: string, status: RfqRow['status']): Promise<void> {
@@ -386,16 +366,6 @@ export class ProcurementRepository {
         WHERE po_id = ${po_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
     return rows[0] ?? null;
-  }
-
-  async listPurchaseOrders(project_id: string): Promise<PurchaseOrderRow[]> {
-    return this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<PurchaseOrderRow[]>`
-        SELECT * FROM procurement.purchase_orders
-        WHERE project_id = ${project_id}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ORDER BY created_at DESC`,
-    );
   }
 
   // ── Tenant-wide list methods (AIP-132 List / AIP-159 cross-collection) ───────

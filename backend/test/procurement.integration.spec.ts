@@ -59,10 +59,10 @@ describe('Procurement Integration (Phase 5)', () => {
     await app.close();
   });
 
-  describe('POST /api/v1/vendors', () => {
+  describe('POST /api/v1/procurement/vendors', () => {
     it('returns 201 with valid vendor payload', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/vendors')
+        .post('/api/v1/procurement/vendors')
         .set('Authorization', PROC_TOKEN)
         .send(
           buildCreateVendorDto({
@@ -76,17 +76,17 @@ describe('Procurement Integration (Phase 5)', () => {
 
     it('returns 400 when vendor_code is missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/vendors')
+        .post('/api/v1/procurement/vendors')
         .set('Authorization', PROC_TOKEN)
         .send({ vendor_name: 'No Code Vendor' });
       expect(res.status).toBe(400);
     });
   });
 
-  describe('POST /api/v1/projects/:projectId/purchase-requests', () => {
+  describe('POST /api/v1/procurement/purchase-requests', () => {
     it('returns 201 with valid PR payload', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/projects/project-test-001/purchase-requests')
+        .post('/api/v1/procurement/purchase-requests')
         .set('Authorization', PM_TOKEN)
         .send(buildCreatePurchaseRequestDto({ pr_number: 'PR-001' }));
       expect([201, 409, 500]).toContain(res.status);
@@ -94,17 +94,17 @@ describe('Procurement Integration (Phase 5)', () => {
 
     it('returns 400 when pr_number is missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/projects/project-test-001/purchase-requests')
+        .post('/api/v1/procurement/purchase-requests')
         .set('Authorization', PM_TOKEN)
         .send({});
       expect(res.status).toBe(400);
     });
   });
 
-  describe('POST /api/v1/rfqs', () => {
+  describe('POST /api/v1/procurement/rfqs', () => {
     it('returns 400 when deadline is missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/rfqs')
+        .post('/api/v1/procurement/rfqs')
         .set('Authorization', PROC_TOKEN)
         .send({
           project_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
@@ -114,10 +114,10 @@ describe('Procurement Integration (Phase 5)', () => {
     });
   });
 
-  describe('POST /api/v1/purchase-orders', () => {
+  describe('POST /api/v1/procurement/purchase-orders', () => {
     it('returns 400 when total_amount is not a valid decimal string', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/purchase-orders')
+        .post('/api/v1/procurement/purchase-orders')
         .set('Authorization', PROC_TOKEN)
         .send({
           vendor_id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
@@ -131,19 +131,19 @@ describe('Procurement Integration (Phase 5)', () => {
     });
   });
 
-  describe('POST /api/v1/purchase-orders/:poId/approve', () => {
+  describe('POST /api/v1/procurement/purchase-orders/:poId/approve', () => {
     it('requires authentication', async () => {
       const res = await request(app.getHttpServer()).post(
-        '/api/v1/purchase-orders/00000000-0000-0000-0000-000000000000/approve',
+        '/api/v1/procurement/purchase-orders/00000000-0000-0000-0000-000000000000/approve',
       );
       expect([401, 403, 500]).toContain(res.status);
     });
   });
 
-  describe('GET /api/v1/vendors', () => {
+  describe('GET /api/v1/procurement/vendors', () => {
     it('returns 200 with list', async () => {
       const res = await request(app.getHttpServer())
-        .get('/api/v1/vendors')
+        .get('/api/v1/procurement/vendors')
         .set('Authorization', PROC_TOKEN);
       expect([200, 500]).toContain(res.status);
     });
