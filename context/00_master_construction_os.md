@@ -1815,6 +1815,17 @@ Generate:
 - Quotation comparison service (sort by total_amount, mark is_selected)
 - DTOs with validation for all APIs
 - OpenAPI 3.1 spec
+- Tenant-wide list endpoints (canonical path prefix `/api/v1/procurement/...`; spec §14
+  Procurement APIs; AIP-132 List / AIP-159 cross-collection; see ADR-022):
+    GET /api/v1/procurement/purchase-requests   — list PRs (filterable: status, project_id)
+    GET /api/v1/procurement/rfqs                 — list RFQs (filterable: status, project_id)
+    GET /api/v1/procurement/purchase-orders      — list POs (filterable: status, project_id)
+    GET /api/v1/procurement/deliveries           — list deliveries (filterable: po_id)
+    GET /api/v1/procurement/rfqs/:rfqId/quotations — compare quotations (RFQ CLOSED)
+  Tenant scoping is enforced server-side via RLS + JWT; no project_id is required.
+  Note: legacy project-scoped routes (/api/v1/projects/:projectId/purchase-requests|rfqs|
+  purchase-orders) remain for the PM per-project views; the `/procurement/*` prefix is the
+  canonical convention going forward (other existing flat routes still pending alignment — see ADR-022).
 - Decimal.js used for all financial calculations
 - Unit tests: workflow state transitions, financial calculations
 - Integration tests: full procurement lifecycle with Temporal test server

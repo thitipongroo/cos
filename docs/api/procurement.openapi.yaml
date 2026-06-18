@@ -381,6 +381,8 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/RfqRow' }
+
+  /procurement/rfqs:
     get:
       tags: [RFQs]
       summary: List RFQs across the tenant (filterable) — AIP-132
@@ -527,6 +529,8 @@ paths:
                     type: array
                     items: { $ref: '#/components/schemas/PoLineItemRow' }
         '422': { description: Total mismatch or validation error }
+
+  /procurement/purchase-orders:
     get:
       tags: [Purchase Orders]
       summary: List purchase orders across the tenant (filterable) — AIP-132
@@ -706,7 +710,7 @@ paths:
                 type: array
                 items: { $ref: '#/components/schemas/DeliveryRow' }
 
-  /purchase-requests:
+  /procurement/purchase-requests:
     get:
       tags: [Purchase Requests]
       summary: List purchase requests across the tenant (filterable) — AIP-132
@@ -728,7 +732,7 @@ paths:
                   page: { type: integer }
                   limit: { type: integer }
 
-  /deliveries:
+  /procurement/deliveries:
     get:
       tags: [Deliveries]
       summary: List deliveries across the tenant (filterable by PO) — AIP-132

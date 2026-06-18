@@ -217,8 +217,8 @@ export class ProcurementController {
   // ── Tenant-wide list endpoints (AIP-132 List / AIP-159) ─────────────────────
   // Global procurement inboxes for §20.7.3; tenant-scoped via RLS + JWT.
 
-  // GET /api/v1/purchase-requests
-  @Get('purchase-requests')
+  // GET /api/v1/procurement/purchase-requests
+  @Get('procurement/purchase-requests')
   @Roles(
     CosRole.EXECUTIVE,
     CosRole.PROJECT_MANAGER,
@@ -246,8 +246,8 @@ export class ProcurementController {
     });
   }
 
-  // GET /api/v1/rfqs
-  @Get('rfqs')
+  // GET /api/v1/procurement/rfqs
+  @Get('procurement/rfqs')
   @Roles(
     CosRole.EXECUTIVE,
     CosRole.PROJECT_MANAGER,
@@ -275,8 +275,8 @@ export class ProcurementController {
     });
   }
 
-  // GET /api/v1/purchase-orders
-  @Get('purchase-orders')
+  // GET /api/v1/procurement/purchase-orders
+  @Get('procurement/purchase-orders')
   @Roles(
     CosRole.EXECUTIVE,
     CosRole.PROJECT_MANAGER,
@@ -304,8 +304,8 @@ export class ProcurementController {
     });
   }
 
-  // GET /api/v1/deliveries
-  @Get('deliveries')
+  // GET /api/v1/procurement/deliveries
+  @Get('procurement/deliveries')
   @Roles(
     CosRole.EXECUTIVE,
     CosRole.PROJECT_MANAGER,

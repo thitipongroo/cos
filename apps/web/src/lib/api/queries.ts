@@ -193,7 +193,9 @@ export function useAllPurchaseRequests(filter: ProcurementListFilter) {
   return useQuery({
     queryKey: ['purchase-requests', filter],
     queryFn: () =>
-      api<PaginatedResponse<PurchaseRequestRow>>(`/purchase-requests?${filterQuery(filter)}`),
+      api<PaginatedResponse<PurchaseRequestRow>>(
+        `/procurement/purchase-requests?${filterQuery(filter)}`,
+      ),
   });
 }
 
@@ -201,7 +203,7 @@ export function useAllRfqs(filter: ProcurementListFilter) {
   const api = useApi();
   return useQuery({
     queryKey: ['rfqs', filter],
-    queryFn: () => api<PaginatedResponse<RfqRow>>(`/rfqs?${filterQuery(filter)}`),
+    queryFn: () => api<PaginatedResponse<RfqRow>>(`/procurement/rfqs?${filterQuery(filter)}`),
   });
 }
 
@@ -210,7 +212,9 @@ export function useAllPurchaseOrders(filter: ProcurementListFilter) {
   return useQuery({
     queryKey: ['purchase-orders', filter],
     queryFn: () =>
-      api<PaginatedResponse<PurchaseOrderRow>>(`/purchase-orders?${filterQuery(filter)}`),
+      api<PaginatedResponse<PurchaseOrderRow>>(
+        `/procurement/purchase-orders?${filterQuery(filter)}`,
+      ),
   });
 }
 
@@ -222,7 +226,7 @@ export function useAllDeliveries(poId: string) {
   }
   return useQuery({
     queryKey: ['deliveries', poId],
-    queryFn: () => api<PaginatedResponse<DeliveryRow>>(`/deliveries?${qs.toString()}`),
+    queryFn: () => api<PaginatedResponse<DeliveryRow>>(`/procurement/deliveries?${qs.toString()}`),
   });
 }
 

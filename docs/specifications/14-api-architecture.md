@@ -218,10 +218,13 @@ POST /api/v1/projects
 | `GET`   | `/api/v1/procurement/purchase-requests`               | List PRs (filterable by status, project) | Any role                               |
 | `POST`  | `/api/v1/procurement/purchase-requests`               | Create PR                                | PM, Site Engineer, Procurement Officer |
 | `POST`  | `/api/v1/procurement/rfqs`                            | Create RFQ from PR                       | Procurement Officer                    |
+| `GET`   | `/api/v1/procurement/rfqs`                            | List RFQs (filterable: status, project)  | Any role                               |
 | `GET`   | `/api/v1/procurement/rfqs/{rfq_id}/quotations`        | List vendor quotations for RFQ           | Any role                               |
 | `POST`  | `/api/v1/procurement/purchase-orders`                 | Create PO from selected quotation        | Procurement Officer                    |
+| `GET`   | `/api/v1/procurement/purchase-orders`                 | List POs (filterable: status, project)   | Any role                               |
 | `PATCH` | `/api/v1/procurement/purchase-orders/{po_id}/approve` | Approve PO (triggers approval workflow)  | PM, Finance, Executive                 |
 | `POST`  | `/api/v1/procurement/deliveries`                      | Record delivery against PO               | Procurement Officer, Site Engineer     |
+| `GET`   | `/api/v1/procurement/deliveries`                      | List deliveries (filterable: PO)         | Any role                               |
 | `POST`  | `/api/v1/procurement/vendor-invoices`                 | Create vendor invoice against PO         | Procurement Officer, Finance           |
 
 ---
