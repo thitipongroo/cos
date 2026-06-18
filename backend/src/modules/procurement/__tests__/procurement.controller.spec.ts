@@ -35,6 +35,11 @@ const mockSvc = {
   approveInvoice: jest.fn(),
   markInvoicePaid: jest.fn(),
   disputeInvoice: jest.fn(),
+  listAllPurchaseRequests: jest.fn(),
+  listAllRfqs: jest.fn(),
+  listAllPurchaseOrders: jest.fn(),
+  listAllDeliveries: jest.fn(),
+  listDeliveriesByPo: jest.fn(),
 };
 
 describe('ProcurementController', () => {
@@ -215,5 +220,137 @@ describe('ProcurementController', () => {
   it('disputeInvoice delegates to svc.disputeInvoice', () => {
     ctrl.disputeInvoice('po-001', { reason: 'Incorrect amount' });
     expect(mockSvc.disputeInvoice).toHaveBeenCalledWith('po-001', 'Incorrect amount');
+  });
+
+  // ── Tenant-wide list endpoints (AIP-132) ───────────────────────────────────
+
+  it('listAllPurchaseRequests parses params and delegates', () => {
+    ctrl.listAllPurchaseRequests('proj-1', 'DRAFT', '2', '50');
+    expect(mockSvc.listAllPurchaseRequests).toHaveBeenCalledWith({
+      project_id: 'proj-1',
+      status: 'DRAFT',
+      page: 2,
+      limit: 50,
+    });
+  });
+
+  it('listAllPurchaseRequests applies defaults on invalid page/limit', () => {
+    ctrl.listAllPurchaseRequests(undefined, undefined, 'x', 'y');
+    expect(mockSvc.listAllPurchaseRequests).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listAllPurchaseRequests caps limit at 100 and floors page at 1', () => {
+    ctrl.listAllPurchaseRequests(undefined, undefined, '-5', '500');
+    expect(mockSvc.listAllPurchaseRequests).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 100,
+    });
+  });
+
+  it('listAllRfqs parses params and delegates', () => {
+    ctrl.listAllRfqs('proj-1', 'PUBLISHED', '3', '10');
+    expect(mockSvc.listAllRfqs).toHaveBeenCalledWith({
+      project_id: 'proj-1',
+      status: 'PUBLISHED',
+      page: 3,
+      limit: 10,
+    });
+  });
+
+  it('listAllRfqs applies defaults', () => {
+    ctrl.listAllRfqs(undefined, undefined, 'x', 'y');
+    expect(mockSvc.listAllRfqs).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listAllPurchaseOrders parses params and delegates', () => {
+    ctrl.listAllPurchaseOrders('proj-1', 'APPROVED', '4', '25');
+    expect(mockSvc.listAllPurchaseOrders).toHaveBeenCalledWith({
+      project_id: 'proj-1',
+      status: 'APPROVED',
+      page: 4,
+      limit: 25,
+    });
+  });
+
+  it('listAllPurchaseOrders applies defaults', () => {
+    ctrl.listAllPurchaseOrders(undefined, undefined, 'x', 'y');
+    expect(mockSvc.listAllPurchaseOrders).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listAllDeliveries parses params and delegates', () => {
+    ctrl.listAllDeliveries('po-1', '2', '30');
+    expect(mockSvc.listAllDeliveries).toHaveBeenCalledWith({ po_id: 'po-1', page: 2, limit: 30 });
+  });
+
+  it('listAllDeliveries applies defaults', () => {
+    ctrl.listAllDeliveries(undefined, 'x', 'y');
+    expect(mockSvc.listAllDeliveries).toHaveBeenCalledWith({
+      po_id: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listDeliveriesByPo delegates to svc.listDeliveriesByPo', () => {
+    ctrl.listDeliveriesByPo('po-1');
+    expect(mockSvc.listDeliveriesByPo).toHaveBeenCalledWith('po-1');
+  });
+
+  // Calls omitting page/limit cover the default-parameter branch (page='1', limit='20').
+
+  it('listAllPurchaseRequests uses query defaults when page/limit omitted', () => {
+    ctrl.listAllPurchaseRequests('proj-1', 'DRAFT');
+    expect(mockSvc.listAllPurchaseRequests).toHaveBeenCalledWith({
+      project_id: 'proj-1',
+      status: 'DRAFT',
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listAllRfqs uses query defaults when page/limit omitted', () => {
+    ctrl.listAllRfqs();
+    expect(mockSvc.listAllRfqs).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listAllPurchaseOrders uses query defaults when page/limit omitted', () => {
+    ctrl.listAllPurchaseOrders();
+    expect(mockSvc.listAllPurchaseOrders).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listAllDeliveries uses query defaults when page/limit omitted', () => {
+    ctrl.listAllDeliveries();
+    expect(mockSvc.listAllDeliveries).toHaveBeenCalledWith({
+      po_id: undefined,
+      page: 1,
+      limit: 20,
+    });
   });
 });

@@ -398,6 +398,119 @@ export class ProcurementRepository {
     );
   }
 
+  // ── Tenant-wide list methods (AIP-132 List / AIP-159 cross-collection) ───────
+  // Tenant scoping is enforced by RLS + the tenant_id predicate; project_id and
+  // status are optional filters. Mirrors the optional-filter idiom in site-ops.
+
+  async listPurchaseRequestsTenant(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: PurchaseRequestRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<PurchaseRequestRow[]>`
+        SELECT * FROM procurement.purchase_requests
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+        ORDER BY created_at DESC
+        LIMIT ${params.limit} OFFSET ${offset}`,
+    );
+    const countRows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM procurement.purchase_requests
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+    );
+    return { rows, total: Number(countRows[0].count) };
+  }
+
+  async listRfqsTenant(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: RfqRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<RfqRow[]>`
+        SELECT * FROM procurement.rfqs
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+        ORDER BY created_at DESC
+        LIMIT ${params.limit} OFFSET ${offset}`,
+    );
+    const countRows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM procurement.rfqs
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+    );
+    return { rows, total: Number(countRows[0].count) };
+  }
+
+  async listPurchaseOrdersTenant(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: PurchaseOrderRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<PurchaseOrderRow[]>`
+        SELECT * FROM procurement.purchase_orders
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+        ORDER BY created_at DESC
+        LIMIT ${params.limit} OFFSET ${offset}`,
+    );
+    const countRows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM procurement.purchase_orders
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+    );
+    return { rows, total: Number(countRows[0].count) };
+  }
+
+  async listDeliveriesTenant(params: {
+    po_id?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: DeliveryRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<DeliveryRow[]>`
+        SELECT * FROM procurement.deliveries
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)
+        ORDER BY delivered_at DESC
+        LIMIT ${params.limit} OFFSET ${offset}`,
+    );
+    const countRows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM procurement.deliveries
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)`,
+    );
+    return { rows, total: Number(countRows[0].count) };
+  }
+
   async updatePoStatus(po_id: string, status: PurchaseOrderRow['status']): Promise<void> {
     await this.db.run(
       (prisma) =>

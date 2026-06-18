@@ -214,6 +214,138 @@ export class ProcurementController {
 
   // ── Purchase Orders ───────────────────────────────────────────────────────────
 
+  // ── Tenant-wide list endpoints (AIP-132 List / AIP-159) ─────────────────────
+  // Global procurement inboxes for §20.7.3; tenant-scoped via RLS + JWT.
+
+  // GET /api/v1/purchase-requests
+  @Get('purchase-requests')
+  @Roles(
+    CosRole.EXECUTIVE,
+    CosRole.PROJECT_MANAGER,
+    CosRole.FINANCE,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.PROC_MANAGER,
+    CosRole.TENANT_ADMIN,
+  )
+  @ApiOperation({ summary: 'List purchase requests across the tenant (filterable)' })
+  @ApiQuery({ name: 'project_id', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  listAllPurchaseRequests(
+    @Query('project_id') project_id?: string,
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.svc.listAllPurchaseRequests({
+      project_id,
+      status,
+      page: Math.max(1, parseInt(page, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+    });
+  }
+
+  // GET /api/v1/rfqs
+  @Get('rfqs')
+  @Roles(
+    CosRole.EXECUTIVE,
+    CosRole.PROJECT_MANAGER,
+    CosRole.FINANCE,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.PROC_MANAGER,
+    CosRole.TENANT_ADMIN,
+  )
+  @ApiOperation({ summary: 'List RFQs across the tenant (filterable)' })
+  @ApiQuery({ name: 'project_id', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  listAllRfqs(
+    @Query('project_id') project_id?: string,
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.svc.listAllRfqs({
+      project_id,
+      status,
+      page: Math.max(1, parseInt(page, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+    });
+  }
+
+  // GET /api/v1/purchase-orders
+  @Get('purchase-orders')
+  @Roles(
+    CosRole.EXECUTIVE,
+    CosRole.PROJECT_MANAGER,
+    CosRole.FINANCE,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.PROC_MANAGER,
+    CosRole.TENANT_ADMIN,
+  )
+  @ApiOperation({ summary: 'List purchase orders across the tenant (filterable)' })
+  @ApiQuery({ name: 'project_id', required: false, type: String })
+  @ApiQuery({ name: 'status', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  listAllPurchaseOrders(
+    @Query('project_id') project_id?: string,
+    @Query('status') status?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.svc.listAllPurchaseOrders({
+      project_id,
+      status,
+      page: Math.max(1, parseInt(page, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+    });
+  }
+
+  // GET /api/v1/deliveries
+  @Get('deliveries')
+  @Roles(
+    CosRole.EXECUTIVE,
+    CosRole.PROJECT_MANAGER,
+    CosRole.FINANCE,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.PROC_MANAGER,
+    CosRole.TENANT_ADMIN,
+  )
+  @ApiOperation({ summary: 'List deliveries across the tenant (filterable by PO)' })
+  @ApiQuery({ name: 'po_id', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  listAllDeliveries(
+    @Query('po_id') po_id?: string,
+    @Query('page') page = '1',
+    @Query('limit') limit = '20',
+  ) {
+    return this.svc.listAllDeliveries({
+      po_id,
+      page: Math.max(1, parseInt(page, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+    });
+  }
+
+  // GET /api/v1/purchase-orders/:poId/deliveries
+  @Get('purchase-orders/:poId/deliveries')
+  @Roles(
+    CosRole.EXECUTIVE,
+    CosRole.PROJECT_MANAGER,
+    CosRole.FINANCE,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.PROC_MANAGER,
+    CosRole.TENANT_ADMIN,
+  )
+  @ApiOperation({ summary: 'List deliveries recorded against a purchase order' })
+  @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
+  listDeliveriesByPo(@Param('poId') poId: string) {
+    return this.svc.listDeliveriesByPo(poId);
+  }
+
   // POST /api/v1/purchase-orders
   @Post('purchase-orders')
   @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)

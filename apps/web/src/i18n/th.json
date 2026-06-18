@@ -100,6 +100,29 @@
     "INFRASTRUCTURE": "โครงสร้างพื้นฐาน",
     "INDUSTRIAL": "อุตสาหกรรม"
   },
+  "proc": {
+    "requestsTitle": "ใบขอซื้อ",
+    "rfqsTitle": "ใบขอราคา (RFQ)",
+    "ordersTitle": "ใบสั่งซื้อ (PO)",
+    "deliveriesTitle": "การส่งมอบ",
+    "vendorsTitle": "ผู้ขาย",
+    "quotationsTitle": "เปรียบเทียบใบเสนอราคา",
+    "allStatuses": "ทุกสถานะ",
+    "selectRfq": "เลือก RFQ (สถานะ CLOSED)",
+    "award": "เลือกผู้ชนะ",
+    "awarded": "เลือกแล้ว",
+    "selected": "ถูกเลือก",
+    "active": "ใช้งาน",
+    "inactive": "ปิดใช้งาน",
+    "colVendor": "ผู้ขาย",
+    "colCode": "รหัส",
+    "colName": "ชื่อ",
+    "colContact": "ติดต่อ",
+    "colValidity": "ยืนราคา (วัน)",
+    "colDeliveryNote": "ใบส่งของ",
+    "colPo": "PO",
+    "quotationsHint": "ดูได้เฉพาะ RFQ ที่สถานะ CLOSED; เลือกผู้ชนะได้เมื่อสถานะ EVALUATED"
+  },
   "nav": {
     "exec": {
       "home": "ภาพรวมพอร์ต",

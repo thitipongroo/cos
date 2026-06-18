@@ -429,6 +429,42 @@ export class ProcurementService {
     return this.repo.listPurchaseOrders(project_id);
   }
 
+  // ── Tenant-wide list methods (AIP-132 List) ─────────────────────────────────
+
+  async listAllPurchaseRequests(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }) {
+    const { rows, total } = await this.repo.listPurchaseRequestsTenant(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
+  }
+
+  async listAllRfqs(params: { project_id?: string; status?: string; page: number; limit: number }) {
+    const { rows, total } = await this.repo.listRfqsTenant(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
+  }
+
+  async listAllPurchaseOrders(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }) {
+    const { rows, total } = await this.repo.listPurchaseOrdersTenant(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
+  }
+
+  async listAllDeliveries(params: { po_id?: string; page: number; limit: number }) {
+    const { rows, total } = await this.repo.listDeliveriesTenant(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
+  }
+
+  async listDeliveriesByPo(po_id: string): Promise<DeliveryRow[]> {
+    return this.repo.findDeliveriesByPo(po_id);
+  }
+
   async getPurchaseOrder(po_id: string): Promise<{
     po: PurchaseOrderRow;
     line_items: PoLineItemRow[];

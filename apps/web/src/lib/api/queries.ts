@@ -6,9 +6,12 @@ import { useApi } from './client';
 import type {
   BoqVersionRow,
   CreateProjectInput,
+  DeliveryRow,
   ExecutiveDashboardRow,
   FinanceSummary,
   IssueListResponse,
+  PaginatedResponse,
+  ProcurementListFilter,
   ProjectDocumentRow,
   ProjectListResponse,
   ProjectMemberRow,
@@ -16,9 +19,22 @@ import type {
   ProjectTransitionTarget,
   PurchaseOrderRow,
   PurchaseRequestRow,
+  QuotationRow,
   RfqRow,
   SiteReportListResponse,
+  VendorRow,
 } from './types';
+
+function filterQuery(filter: ProcurementListFilter): string {
+  const params = new URLSearchParams({ limit: '100' });
+  if (filter.project_id) {
+    params.set('project_id', filter.project_id);
+  }
+  if (filter.status) {
+    params.set('status', filter.status);
+  }
+  return params.toString();
+}
 
 /** Project list (tenant-scoped server-side via JWT/RLS). */
 export function useProjects() {
@@ -159,5 +175,75 @@ export function useTransitionProject(id: string) {
         body: JSON.stringify(input),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id] }),
+  });
+}
+
+// ── Procurement (§20.7.3) — tenant-wide AIP-132 lists ─────────────────────────
+
+export function useVendors() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['vendors'],
+    queryFn: () => api<VendorRow[]>('/vendors'),
+  });
+}
+
+export function useAllPurchaseRequests(filter: ProcurementListFilter) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['purchase-requests', filter],
+    queryFn: () =>
+      api<PaginatedResponse<PurchaseRequestRow>>(`/purchase-requests?${filterQuery(filter)}`),
+  });
+}
+
+export function useAllRfqs(filter: ProcurementListFilter) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['rfqs', filter],
+    queryFn: () => api<PaginatedResponse<RfqRow>>(`/rfqs?${filterQuery(filter)}`),
+  });
+}
+
+export function useAllPurchaseOrders(filter: ProcurementListFilter) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['purchase-orders', filter],
+    queryFn: () =>
+      api<PaginatedResponse<PurchaseOrderRow>>(`/purchase-orders?${filterQuery(filter)}`),
+  });
+}
+
+export function useAllDeliveries(poId: string) {
+  const api = useApi();
+  const qs = new URLSearchParams({ limit: '100' });
+  if (poId) {
+    qs.set('po_id', poId);
+  }
+  return useQuery({
+    queryKey: ['deliveries', poId],
+    queryFn: () => api<PaginatedResponse<DeliveryRow>>(`/deliveries?${qs.toString()}`),
+  });
+}
+
+export function useQuotations(rfqId: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['quotations', rfqId],
+    enabled: rfqId !== '',
+    queryFn: () => api<QuotationRow[]>(`/rfqs/${rfqId}/quotations`),
+  });
+}
+
+export function useAwardRfq(rfqId: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (quotation_id: string) =>
+      api<void>(`/rfqs/${rfqId}/award`, {
+        method: 'POST',
+        body: JSON.stringify({ quotation_id }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['quotations', rfqId] }),
   });
 }

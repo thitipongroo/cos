@@ -423,4 +423,78 @@ describe('ProcurementRepository', () => {
     const result = await repo.sumDeliveredQuantity('line-uuid-001');
     expect(result).toBe('0');
   });
+
+  // ── Tenant-wide list methods (AIP-132) ──────────────────────────────────────
+
+  it('listPurchaseRequestsTenant returns rows + total (with filters)', async () => {
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([prRow])
+      .mockResolvedValueOnce([{ count: BigInt(1) }]);
+    const result = await repo.listPurchaseRequestsTenant({
+      project_id: 'proj-uuid-001',
+      status: 'DRAFT',
+      page: 1,
+      limit: 20,
+    });
+    expect(result.rows).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it('listPurchaseRequestsTenant handles undefined filters (?? null branch)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: BigInt(0) }]);
+    const result = await repo.listPurchaseRequestsTenant({ page: 2, limit: 10 });
+    expect(result.total).toBe(0);
+  });
+
+  it('listRfqsTenant returns rows + total (with filters)', async () => {
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([rfqRow])
+      .mockResolvedValueOnce([{ count: BigInt(1) }]);
+    const result = await repo.listRfqsTenant({
+      project_id: 'proj-uuid-001',
+      status: 'PUBLISHED',
+      page: 1,
+      limit: 20,
+    });
+    expect(result.rows).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it('listRfqsTenant handles undefined filters', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: BigInt(0) }]);
+    expect((await repo.listRfqsTenant({ page: 1, limit: 20 })).total).toBe(0);
+  });
+
+  it('listPurchaseOrdersTenant returns rows + total (with filters)', async () => {
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([poRow])
+      .mockResolvedValueOnce([{ count: BigInt(1) }]);
+    const result = await repo.listPurchaseOrdersTenant({
+      project_id: 'proj-uuid-001',
+      status: 'APPROVED',
+      page: 1,
+      limit: 20,
+    });
+    expect(result.rows).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it('listPurchaseOrdersTenant handles undefined filters', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: BigInt(0) }]);
+    expect((await repo.listPurchaseOrdersTenant({ page: 1, limit: 20 })).total).toBe(0);
+  });
+
+  it('listDeliveriesTenant returns rows + total (with po filter)', async () => {
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([deliveryRow])
+      .mockResolvedValueOnce([{ count: BigInt(1) }]);
+    const result = await repo.listDeliveriesTenant({ po_id: 'po-uuid-001', page: 1, limit: 20 });
+    expect(result.rows).toHaveLength(1);
+    expect(result.total).toBe(1);
+  });
+
+  it('listDeliveriesTenant handles undefined po filter', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: BigInt(0) }]);
+    expect((await repo.listDeliveriesTenant({ page: 1, limit: 20 })).total).toBe(0);
+  });
 });

@@ -73,6 +73,10 @@ const mockRepo = {
   findInvoiceById: jest.fn(),
   findInvoicesByPo: jest.fn(),
   updateInvoiceStatus: jest.fn(),
+  listPurchaseRequestsTenant: jest.fn(),
+  listRfqsTenant: jest.fn(),
+  listPurchaseOrdersTenant: jest.fn(),
+  listDeliveriesTenant: jest.fn(),
 };
 
 const mockRequest = {
@@ -886,5 +890,53 @@ describe('private helper branches', () => {
         deadline: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
       }),
     ).resolves.toBeDefined();
+  });
+});
+
+describe('Tenant-wide list methods', () => {
+  it('listAllPurchaseRequests wraps repo result with pagination meta', async () => {
+    mockRepo.listPurchaseRequestsTenant.mockResolvedValue({ rows: ['PR'], total: 5 });
+    const result = await service.listAllPurchaseRequests({
+      project_id: 'p-1',
+      status: 'DRAFT',
+      page: 2,
+      limit: 10,
+    });
+    expect(mockRepo.listPurchaseRequestsTenant).toHaveBeenCalledWith({
+      project_id: 'p-1',
+      status: 'DRAFT',
+      page: 2,
+      limit: 10,
+    });
+    expect(result).toEqual({ items: ['PR'], total: 5, page: 2, limit: 10 });
+  });
+
+  it('listAllRfqs wraps repo result', async () => {
+    mockRepo.listRfqsTenant.mockResolvedValue({ rows: ['RFQ'], total: 1 });
+    const result = await service.listAllRfqs({ page: 1, limit: 20 });
+    expect(result).toEqual({ items: ['RFQ'], total: 1, page: 1, limit: 20 });
+  });
+
+  it('listAllPurchaseOrders wraps repo result', async () => {
+    mockRepo.listPurchaseOrdersTenant.mockResolvedValue({ rows: ['PO'], total: 3 });
+    const result = await service.listAllPurchaseOrders({ page: 1, limit: 20 });
+    expect(result).toEqual({ items: ['PO'], total: 3, page: 1, limit: 20 });
+  });
+
+  it('listAllDeliveries wraps repo result', async () => {
+    mockRepo.listDeliveriesTenant.mockResolvedValue({ rows: ['DEL'], total: 2 });
+    const result = await service.listAllDeliveries({ po_id: 'po-1', page: 1, limit: 20 });
+    expect(mockRepo.listDeliveriesTenant).toHaveBeenCalledWith({
+      po_id: 'po-1',
+      page: 1,
+      limit: 20,
+    });
+    expect(result).toEqual({ items: ['DEL'], total: 2, page: 1, limit: 20 });
+  });
+
+  it('listDeliveriesByPo delegates to repo.findDeliveriesByPo', async () => {
+    mockRepo.findDeliveriesByPo.mockResolvedValue(['DEL']);
+    expect(await service.listDeliveriesByPo('po-1')).toEqual(['DEL']);
+    expect(mockRepo.findDeliveriesByPo).toHaveBeenCalledWith('po-1');
   });
 });

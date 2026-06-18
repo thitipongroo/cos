@@ -147,3 +147,44 @@ export interface SiteReportListResponse {
   page: number;
   limit: number;
 }
+
+// ── Procurement (§20.7.3) ─────────────────────────────────────────────────────
+
+export interface VendorRow {
+  vendor_id: string;
+  vendor_code: string;
+  vendor_name: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  is_active: boolean;
+}
+
+export interface DeliveryRow {
+  delivery_id: string;
+  po_id: string;
+  delivery_note: string | null;
+  delivered_at: string;
+  received_by: string;
+}
+
+export interface QuotationRow {
+  quotation_id: string;
+  rfq_id: string;
+  vendor_id: string;
+  total_amount: string;
+  currency_code: string;
+  validity_days: number;
+  is_selected: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface ProcurementListFilter {
+  project_id?: string;
+  status?: string;
+}

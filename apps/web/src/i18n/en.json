@@ -100,6 +100,29 @@
     "INFRASTRUCTURE": "Infrastructure",
     "INDUSTRIAL": "Industrial"
   },
+  "proc": {
+    "requestsTitle": "Purchase requests",
+    "rfqsTitle": "RFQs",
+    "ordersTitle": "Purchase orders",
+    "deliveriesTitle": "Deliveries",
+    "vendorsTitle": "Vendors",
+    "quotationsTitle": "Quotation comparison",
+    "allStatuses": "All statuses",
+    "selectRfq": "Select RFQ (CLOSED status)",
+    "award": "Award",
+    "awarded": "Awarded",
+    "selected": "Selected",
+    "active": "Active",
+    "inactive": "Inactive",
+    "colVendor": "Vendor",
+    "colCode": "Code",
+    "colName": "Name",
+    "colContact": "Contact",
+    "colValidity": "Validity (days)",
+    "colDeliveryNote": "Delivery note",
+    "colPo": "PO",
+    "quotationsHint": "Viewable only for CLOSED RFQs; award is available when status is EVALUATED"
+  },
   "nav": {
     "exec": {
       "home": "Portfolio home",
