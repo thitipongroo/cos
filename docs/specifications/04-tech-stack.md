@@ -82,13 +82,15 @@ Tools:
 - Docker
 - Terraform
 - Apache Kafka
-- Confluent Schema Registry (Kafka schema management — see 15-event-driven-workflow §15.6)
+- Confluent Schema Registry (Kafka schema management — see `15-event-driven-workflow.md` §15.6)
 - NGINX
 - Istio (service mesh — mTLS, traffic management)
 - Temporal.io (workflow orchestration)
 - Debezium (CDC — change data capture)
 - Keycloak (identity provider — OAuth2/OIDC/SAML)
-- HashiCorp Vault (secrets management — on-premise and hybrid deployments only; AWS Secrets Manager is used for AWS cloud deployments — see 05-security-compliance section 5.2)
+- HashiCorp Vault (secrets management — on-premise and hybrid deployments only)
+
+> AWS Secrets Manager is used for AWS cloud deployments — see `05-security-compliance.md` section 5.2
 
 ---
 
@@ -124,7 +126,7 @@ tool is used in the training pipeline.
 Provider :
 
 - AWS (primary cloud)
-- Primary region: **ap-southeast-7 (Bangkok, Thailand)** — GLOB-001 (resolved 2026-06-10; PDPA data residency; see `08-enterprise-deployment` §8.8)
+- Primary region: **ap-southeast-7 (Bangkok, Thailand)** — GLOB-001 (PDPA data; see `08-enterprise-deployment` §8.8)
 - DR / secondary region: ap-southeast-1 (Singapore); EU tenants: eu-west-1 (Ireland) — see `05-security-compliance` §5.6
 
 AWS Services :
@@ -195,4 +197,6 @@ Pipeline :
 | [Prometheus]    | Prometheus Monitoring Documentation                                | [prometheus.io/docs](https://prometheus.io/docs/introduction/overview/)       |
 | [Grafana]       | Grafana Observability Platform Documentation                       | [grafana.com/docs/grafana/latest](https://grafana.com/docs/grafana/latest/)   |
 
-> 📎 See also: [03-system-design](03-system-design.md) · [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [09-data-architecture](09-data-architecture.md)
+> 📎 See also: [03-system-design](03-system-design.md) · [05-security-compliance](05-security-compliance.md)
+> · [07-multi-tenant-architecture](07-multi-tenant-architecture.md)
+> · [08-enterprise-deployment](08-enterprise-deployment.md) · [09-data-architecture](09-data-architecture.md)

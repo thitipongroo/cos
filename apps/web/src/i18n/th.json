@@ -1,1 +1,168 @@
-{}
+{
+  "common": {
+    "appName": "Construction OS",
+    "loading": "กำลังโหลด...",
+    "signOut": "ออกจากระบบ",
+    "retry": "ลองใหม่",
+    "offline": "ออฟไลน์",
+    "synced": "ซิงค์แล้ว",
+    "syncing": "กำลังซิงค์..."
+  },
+  "shell": {
+    "notifications": "การแจ้งเตือน",
+    "noNotifications": "ไม่มีการแจ้งเตือน",
+    "markAllRead": "ทำเครื่องหมายว่าอ่านแล้วทั้งหมด",
+    "language": "ภาษา"
+  },
+  "table": {
+    "project": "โครงการ",
+    "code": "รหัส",
+    "status": "สถานะ",
+    "type": "ประเภท",
+    "budget": "งบประมาณ",
+    "actual": "ใช้จริง",
+    "utilization": "% การใช้งบ",
+    "severity": "ความรุนแรง",
+    "title": "หัวข้อ",
+    "createdAt": "สร้างเมื่อ"
+  },
+  "projectStatus": {
+    "DRAFT": "ร่าง",
+    "ACTIVE": "ดำเนินการ",
+    "ON_HOLD": "พักไว้",
+    "COMPLETED": "เสร็จสิ้น",
+    "CANCELLED": "ยกเลิก"
+  },
+  "exec": {
+    "homeTitle": "ภาพรวมพอร์ตโครงการ",
+    "kpiActiveProjects": "โครงการที่ดำเนินการ",
+    "kpiBudget": "งบประมาณรวม",
+    "kpiActual": "ใช้จริงรวม",
+    "kpiOpenCritical": "ปัญหาวิกฤตที่เปิดอยู่",
+    "portfolioTitle": "พอร์ตโครงการ",
+    "alertsTitle": "การแจ้งเตือนความเสี่ยง",
+    "alertsBudget": "งบประมาณเกินเกณฑ์",
+    "alertsCritical": "ปัญหาวิกฤต",
+    "noAlerts": "ไม่มีการแจ้งเตือนความเสี่ยง",
+    "reportsTitle": "รายงานผู้บริหาร (AI)",
+    "selectProject": "เลือกโครงการ",
+    "generate": "สร้างรายงาน",
+    "generating": "กำลังสร้างรายงาน...",
+    "reportUnavailable": "ยังสร้างรายงาน AI ไม่ได้ (ยังไม่ได้ตั้งค่า LLM provider)",
+    "lowConfidence": "ความเชื่อมั่นต่ำ — ข้อมูลไม่เพียงพอ",
+    "atRisk": "เสี่ยง",
+    "onTrack": "ปกติ"
+  },
+  "pm": {
+    "projectsTitle": "โครงการ",
+    "newProject": "สร้างโครงการ",
+    "create": "สร้าง",
+    "cancel": "ยกเลิก",
+    "filterAll": "ทั้งหมด",
+    "fieldCode": "รหัสโครงการ",
+    "fieldName": "ชื่อโครงการ",
+    "fieldType": "ประเภท",
+    "fieldBudget": "งบประมาณ",
+    "fieldCurrency": "สกุลเงิน",
+    "members": "สมาชิก",
+    "documents": "เอกสาร",
+    "boqSummary": "สรุป BOQ",
+    "detailOverview": "ภาพรวม",
+    "transition": "เปลี่ยนสถานะ",
+    "reason": "เหตุผล",
+    "apply": "ยืนยัน",
+    "tabProcurement": "จัดซื้อ",
+    "tabFinance": "การเงิน",
+    "tabSite": "หน้างาน",
+    "procurementTitle": "สถานะจัดซื้อ",
+    "financeTitle": "งบประมาณ vs ใช้จริง",
+    "siteTitle": "สรุปหน้างาน",
+    "prs": "ใบขอซื้อ",
+    "rfqs": "ใบขอราคา",
+    "pos": "ใบสั่งซื้อ",
+    "allocated": "จัดสรร",
+    "committed": "ผูกพัน",
+    "actual": "ใช้จริง",
+    "variance": "ส่วนต่าง (%)",
+    "noBudget": "ยังไม่มีงบประมาณ",
+    "openIssues": "ปัญหาที่เปิดอยู่",
+    "colNumber": "เลขที่",
+    "colAmount": "จำนวนเงิน",
+    "colDate": "วันที่",
+    "colRole": "บทบาท",
+    "colDeadline": "กำหนด",
+    "colManpower": "แรงงาน",
+    "colVersion": "เวอร์ชัน"
+  },
+  "projectType": {
+    "RESIDENTIAL": "ที่อยู่อาศัย",
+    "COMMERCIAL": "พาณิชย์",
+    "INFRASTRUCTURE": "โครงสร้างพื้นฐาน",
+    "INDUSTRIAL": "อุตสาหกรรม"
+  },
+  "nav": {
+    "exec": {
+      "home": "ภาพรวมพอร์ต",
+      "portfolio": "พอร์ตโครงการ",
+      "alerts": "การแจ้งเตือนความเสี่ยง",
+      "reports": "รายงานผู้บริหาร"
+    },
+    "pm": { "projects": "โครงการ" },
+    "procurement": {
+      "requests": "ใบขอซื้อ",
+      "rfqs": "ใบขอราคา (RFQ)",
+      "quotations": "เปรียบเทียบใบเสนอราคา",
+      "orders": "ใบสั่งซื้อ (PO)",
+      "deliveries": "การส่งมอบ",
+      "vendors": "ผู้ขาย"
+    },
+    "finance": {
+      "payments": "การชำระเงิน",
+      "budget": "งบประมาณ",
+      "invoices": "ใบแจ้งหนี้",
+      "variance": "รายงานส่วนต่างงบ"
+    },
+    "site": {
+      "reports": "รายงานหน้างาน",
+      "issues": "ปัญหา",
+      "inspections": "การตรวจสอบ",
+      "conflicts": "แก้ไขข้อขัดแย้ง"
+    },
+    "siteWorker": {
+      "newReport": "รายงานประจำวัน",
+      "newIssue": "แจ้งปัญหา"
+    },
+    "admin": {
+      "users": "จัดการผู้ใช้",
+      "tenant": "ตั้งค่าองค์กร"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "เข้าสู่ระบบ",
+      "office": "สำหรับสำนักงาน / ผู้บริหาร",
+      "officeButton": "เข้าสู่ระบบด้วย Keycloak",
+      "fieldLink": "เข้าสู่ระบบสำหรับหน้างาน (SMS OTP)",
+      "error": "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่"
+    },
+    "otp": {
+      "title": "เข้าสู่ระบบด้วย SMS OTP",
+      "phoneLabel": "เบอร์โทรศัพท์",
+      "phonePlaceholder": "เช่น 0812345678",
+      "requestButton": "ขอรหัส OTP",
+      "otpLabel": "รหัส OTP (6 หลัก)",
+      "verifyButton": "ยืนยันและเข้าสู่ระบบ",
+      "backToOffice": "กลับไปเข้าสู่ระบบสำนักงาน",
+      "sent": "ส่งรหัส OTP ไปยังเบอร์ของคุณแล้ว",
+      "requestError": "ขอรหัส OTP ไม่สำเร็จ",
+      "verifyError": "รหัส OTP ไม่ถูกต้องหรือหมดอายุ"
+    },
+    "logout": {
+      "title": "กำลังออกจากระบบ..."
+    },
+    "pending": {
+      "title": "โมดูลยังไม่พร้อมใช้งาน",
+      "body": "หน้าใช้งานสำหรับบทบาทของคุณกำลังอยู่ระหว่างพัฒนา (รอ backend)"
+    }
+  }
+}

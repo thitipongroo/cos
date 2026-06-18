@@ -1,1 +1,168 @@
-{}
+{
+  "common": {
+    "appName": "Construction OS",
+    "loading": "Loading...",
+    "signOut": "Sign out",
+    "retry": "Retry",
+    "offline": "Offline",
+    "synced": "Synced",
+    "syncing": "Syncing..."
+  },
+  "shell": {
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "markAllRead": "Mark all as read",
+    "language": "Language"
+  },
+  "table": {
+    "project": "Project",
+    "code": "Code",
+    "status": "Status",
+    "type": "Type",
+    "budget": "Budget",
+    "actual": "Actual",
+    "utilization": "Utilization %",
+    "severity": "Severity",
+    "title": "Title",
+    "createdAt": "Created"
+  },
+  "projectStatus": {
+    "DRAFT": "Draft",
+    "ACTIVE": "Active",
+    "ON_HOLD": "On hold",
+    "COMPLETED": "Completed",
+    "CANCELLED": "Cancelled"
+  },
+  "exec": {
+    "homeTitle": "Portfolio overview",
+    "kpiActiveProjects": "Active projects",
+    "kpiBudget": "Total budget",
+    "kpiActual": "Total actual",
+    "kpiOpenCritical": "Open critical issues",
+    "portfolioTitle": "Portfolio",
+    "alertsTitle": "Risk alerts",
+    "alertsBudget": "Budget overrun",
+    "alertsCritical": "Critical issues",
+    "noAlerts": "No risk alerts",
+    "reportsTitle": "Executive reports (AI)",
+    "selectProject": "Select project",
+    "generate": "Generate report",
+    "generating": "Generating report...",
+    "reportUnavailable": "AI report unavailable (LLM provider not configured)",
+    "lowConfidence": "Low confidence — insufficient data",
+    "atRisk": "At risk",
+    "onTrack": "On track"
+  },
+  "pm": {
+    "projectsTitle": "Projects",
+    "newProject": "New project",
+    "create": "Create",
+    "cancel": "Cancel",
+    "filterAll": "All",
+    "fieldCode": "Project code",
+    "fieldName": "Project name",
+    "fieldType": "Type",
+    "fieldBudget": "Budget",
+    "fieldCurrency": "Currency",
+    "members": "Members",
+    "documents": "Documents",
+    "boqSummary": "BOQ summary",
+    "detailOverview": "Overview",
+    "transition": "Change status",
+    "reason": "Reason",
+    "apply": "Apply",
+    "tabProcurement": "Procurement",
+    "tabFinance": "Finance",
+    "tabSite": "Site",
+    "procurementTitle": "Procurement status",
+    "financeTitle": "Budget vs actual",
+    "siteTitle": "Site summary",
+    "prs": "Purchase requests",
+    "rfqs": "RFQs",
+    "pos": "Purchase orders",
+    "allocated": "Allocated",
+    "committed": "Committed",
+    "actual": "Actual",
+    "variance": "Variance (%)",
+    "noBudget": "No budget yet",
+    "openIssues": "Open issues",
+    "colNumber": "Number",
+    "colAmount": "Amount",
+    "colDate": "Date",
+    "colRole": "Role",
+    "colDeadline": "Deadline",
+    "colManpower": "Manpower",
+    "colVersion": "Version"
+  },
+  "projectType": {
+    "RESIDENTIAL": "Residential",
+    "COMMERCIAL": "Commercial",
+    "INFRASTRUCTURE": "Infrastructure",
+    "INDUSTRIAL": "Industrial"
+  },
+  "nav": {
+    "exec": {
+      "home": "Portfolio home",
+      "portfolio": "Portfolio",
+      "alerts": "Risk alerts",
+      "reports": "Executive reports"
+    },
+    "pm": { "projects": "Projects" },
+    "procurement": {
+      "requests": "Purchase requests",
+      "rfqs": "RFQs",
+      "quotations": "Quotations",
+      "orders": "Purchase orders",
+      "deliveries": "Deliveries",
+      "vendors": "Vendors"
+    },
+    "finance": {
+      "payments": "Payments",
+      "budget": "Budget",
+      "invoices": "Invoices",
+      "variance": "Variance report"
+    },
+    "site": {
+      "reports": "Site reports",
+      "issues": "Issues",
+      "inspections": "Inspections",
+      "conflicts": "Conflict resolution"
+    },
+    "siteWorker": {
+      "newReport": "Daily report",
+      "newIssue": "Report issue"
+    },
+    "admin": {
+      "users": "User management",
+      "tenant": "Tenant settings"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "office": "Office / management",
+      "officeButton": "Sign in with Keycloak",
+      "fieldLink": "Field login (SMS OTP)",
+      "error": "Sign-in failed. Please try again."
+    },
+    "otp": {
+      "title": "Sign in with SMS OTP",
+      "phoneLabel": "Phone number",
+      "phonePlaceholder": "e.g. 0812345678",
+      "requestButton": "Request OTP",
+      "otpLabel": "OTP code (6 digits)",
+      "verifyButton": "Verify and sign in",
+      "backToOffice": "Back to office sign-in",
+      "sent": "An OTP code has been sent to your phone.",
+      "requestError": "Failed to request OTP.",
+      "verifyError": "Invalid or expired OTP."
+    },
+    "logout": {
+      "title": "Signing out..."
+    },
+    "pending": {
+      "title": "Module not yet available",
+      "body": "The pages for your role are still under development (pending backend)."
+    }
+  }
+}

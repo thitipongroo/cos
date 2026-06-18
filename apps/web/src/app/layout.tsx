@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ServiceWorkerRegistration } from '../components/pwa/ServiceWorkerRegistration';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: 'Construction OS',
@@ -18,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="th">
       <body>
         <ServiceWorkerRegistration />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

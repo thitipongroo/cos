@@ -158,7 +158,8 @@ What is included in MVP (schema-only) :
 
 ### CRM API Availability During MVP
 
-The CRM REST API endpoints (`docs/api/crm.openapi.yaml`) are **available via API from Day 1** — they are not blocked at the Kong Gateway.
+The CRM REST API endpoints (`docs/api/crm.openapi.yaml`) are **available via API from Day 1** — they are not blocked at
+the Kong Gateway.
 
 | Layer                                                                                     | MVP Status                                                    |
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
@@ -189,4 +190,5 @@ CRM endpoints regardless of whether the UI exists.
 | [React Native] | React Native / Expo Documentation                                  | [docs.expo.dev](https://docs.expo.dev/)                                   |
 | [NestJS]       | NestJS — A progressive Node.js framework                           | [docs.nestjs.com](https://docs.nestjs.com/)                               |
 
-> 📎 See also: [03-system-design](03-system-design.md) · [13-product-architecture](13-product-architecture.md) · [20-ux-flow](20-ux-flow.md) · [22-ai-architecture](22-ai-architecture.md) · [11-database-schema](11-database-schema.md)
+> 📎 See also: [03-system-design](03-system-design.md) · [13-product-architecture](13-product-architecture.md)
+> · [20-ux-flow](20-ux-flow.md) · [22-ai-architecture](22-ai-architecture.md) · [11-database-schema](11-database-schema.md)
