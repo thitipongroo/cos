@@ -351,3 +351,40 @@ export interface ComplianceSummary {
   expired_permits: number;
   revoked_permits: number;
 }
+
+// ── Tenant Admin (§20.7.8) ───────────────────────────────────────────────────
+
+export interface UserRow {
+  user_id: string;
+  email: string;
+  display_name: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface UserListResponse {
+  data: UserRow[];
+  pagination: { limit: number; offset: number; page: number; total: number };
+}
+
+export interface CreateUserInput {
+  display_name: string;
+  role: string;
+  email?: string;
+  phone_number?: string;
+}
+
+export interface TenantSettings {
+  variance_alert_threshold: string;
+  retention_percentage: string;
+  line_channel_token: string | null;
+  notifications_enabled: boolean;
+}
+
+export interface UpdateTenantSettingsInput {
+  variance_alert_threshold?: number;
+  retention_percentage?: number;
+  line_channel_token?: string;
+  notifications_enabled?: boolean;
+}

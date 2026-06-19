@@ -58,14 +58,12 @@ Modules :
 
 Note on Workforce Management in MVP :
 
-Workforce management (check-in/check-out, site attendance, daily timesheet) is included in
-MVP because :
+Workforce management (check-in/check-out, site attendance, daily timesheet) is included in MVP because :
 
-- Worker attendance is required to generate accurate daily site reports (see 11-database-schema
-  Workforce entity)
+- Worker attendance is required to generate accurate daily site reports (see 11-database-schema Workforce entity)
 - Manpower count is a mandatory field in Site Reports and is used in cost-per-day calculations
-- Offline check-in is a field operation critical path requirement (see 17-offline-mobile-sync
-  section 17.4 — Workforce attendance is a high-priority sync entity)
+- Offline check-in is a field operation critical path requirement (see 17-offline-mobile-sync section 17.4 — Workforce
+  attendance is a high-priority sync entity)
 
 MVP Workforce scope : daily check-in/check-out, timesheet by project, manpower count for
 site reports. Advanced features (shift optimization, productivity analytics) are post-MVP.

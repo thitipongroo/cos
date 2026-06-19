@@ -382,6 +382,8 @@ corresponding Keycloak account in the tenant's realm.
 | `POST`  | `/api/v1/users`                      | Create a user within the tenant; emits `identity.user.created.v1`             | Tenant Admin |
 | `PATCH` | `/api/v1/users/{user_id}/role`       | Change a user's role within the tenant; emits `identity.user.role_changed.v1` | Tenant Admin |
 | `PATCH` | `/api/v1/users/{user_id}/deactivate` | Deactivate a user (revokes access, preserves data)                            | Tenant Admin |
+| `GET`   | `/api/v1/tenant/settings`            | Get tenant settings (variance/retention defaults, LINE token, notif)          | Tenant Admin |
+| `PATCH` | `/api/v1/tenant/settings`            | Update tenant settings (partial; §20.7.8, ADR-028)                            | Tenant Admin |
 
 Request body — create user (Path A, phone OTP):
 

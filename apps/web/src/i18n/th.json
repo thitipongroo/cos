@@ -275,5 +275,22 @@
     "highCritical": "รุนแรง/วิกฤต (เปิด)",
     "expiredPermits": "ใบอนุญาตหมดอายุ",
     "revokedPermits": "ใบอนุญาตถูกเพิกถอน"
+  },
+  "settings": {
+    "usersTitle": "จัดการผู้ใช้",
+    "tenantTitle": "ตั้งค่าองค์กร",
+    "colName": "ชื่อ",
+    "colEmail": "อีเมล",
+    "colRole": "บทบาท",
+    "active": "ใช้งาน",
+    "inactive": "ปิดใช้งาน",
+    "deactivate": "ปิดใช้งาน",
+    "createUser": "เพิ่มผู้ใช้",
+    "variance": "เกณฑ์แจ้งเตือนงบเกิน (%)",
+    "retention": "เปอร์เซ็นต์เงินประกันผลงาน (%)",
+    "lineToken": "LINE Channel Access Token",
+    "notifications": "เปิดการแจ้งเตือน",
+    "save": "บันทึก",
+    "saved": "บันทึกแล้ว"
   }
 }

@@ -5,12 +5,21 @@ import { TenantMiddleware } from './tenant.middleware';
 import { TenantPrismaService } from './prisma/tenant-prisma.service';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
+import { TenantSettingsService } from './settings.service';
+import { TenantSettingsRepository } from './settings.repository';
+import { TenantSettingsController } from './settings.controller';
 import { IdentityModule } from '../identity/identity.module';
 
 @Module({
   imports: [IdentityModule],
-  providers: [TenantService, TenantPrismaService, UserService],
-  controllers: [TenantController, UserController],
+  providers: [
+    TenantService,
+    TenantPrismaService,
+    UserService,
+    TenantSettingsService,
+    TenantSettingsRepository,
+  ],
+  controllers: [TenantController, UserController, TenantSettingsController],
   exports: [TenantService, TenantPrismaService, UserService],
 })
 export class TenantModule implements NestModule {

@@ -50,22 +50,22 @@ CREATE POLICY tenant_isolation ON {schema}.{table}
 
 ### Schema registry — full list
 
-| Schema                | Owner module              | tenant_id | Notes                                                                    |
-| --------------------- | ------------------------- | --------- | ------------------------------------------------------------------------ |
-| `platform`            | Identity / Tenant         | exempt    | Cross-tenant system tables — no RLS needed                               |
-| `projects`            | Project Management        | NOT NULL  |                                                                          |
-| `boq`                 | Bill of Quantities        | NOT NULL  |                                                                          |
-| `procurement`         | Procurement               | NOT NULL  |                                                                          |
-| `site_ops`            | Site Operations           | NOT NULL  |                                                                          |
-| `finance`             | Finance                   | NOT NULL  |                                                                          |
-| `files`               | File Service              | NOT NULL  |                                                                          |
-| `notifications`       | Notification Service      | NOT NULL  | `notification_templates` has nullable tenant_id (null = system template) |
-| `equipment`           | Equipment Service         | NOT NULL  |                                                                          |
-| `workforce`           | Workforce Service         | NOT NULL  |                                                                          |
-| `ai`                  | AI Services               | NOT NULL  | Migration tool: Prisma (`backend/prisma/migrations/`)                    |
-| `equipment_telemetry` | IoT Telemetry (Timescale) | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
-| `workforce_telemetry` | Attendance (Timescale)    | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
-| `digital_twin`        | Digital Twin / IoT (Timescale, Phase 24) | NOT NULL | TwinState hypertable; see `33-digital-twin-iot` §33.4                 |
+| Schema                | Owner module                             | tenant_id | Notes                                                                    |
+| --------------------- | ---------------------------------------- | --------- | ------------------------------------------------------------------------ |
+| `platform`            | Identity / Tenant                        | exempt    | Cross-tenant system tables — no RLS needed                               |
+| `projects`            | Project Management                       | NOT NULL  |                                                                          |
+| `boq`                 | Bill of Quantities                       | NOT NULL  |                                                                          |
+| `procurement`         | Procurement                              | NOT NULL  |                                                                          |
+| `site_ops`            | Site Operations                          | NOT NULL  |                                                                          |
+| `finance`             | Finance                                  | NOT NULL  |                                                                          |
+| `files`               | File Service                             | NOT NULL  |                                                                          |
+| `notifications`       | Notification Service                     | NOT NULL  | `notification_templates` has nullable tenant_id (null = system template) |
+| `equipment`           | Equipment Service                        | NOT NULL  |                                                                          |
+| `workforce`           | Workforce Service                        | NOT NULL  |                                                                          |
+| `ai`                  | AI Services                              | NOT NULL  | Migration tool: Prisma (`backend/prisma/migrations/`)                    |
+| `equipment_telemetry` | IoT Telemetry (Timescale)                | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
+| `workforce_telemetry` | Attendance (Timescale)                   | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
+| `digital_twin`        | Digital Twin / IoT (Timescale, Phase 24) | NOT NULL  | TwinState hypertable; see `33-digital-twin-iot` §33.4                    |
 
 > **Future schemas:** CRM (Lead/Opportunity/Contact/Customer) and additional master-data entities in
 > §11.2 get their owning schema when implemented post-MVP (CRM UI excluded from MVP per §21.6).
@@ -85,18 +85,18 @@ Core :
 
 ### platform.tenants
 
-| Column             | Type                                        | Constraints                  | Notes                                                    |
-| ------------------ | ------------------------------------------- | ---------------------------- | -------------------------------------------------------- |
-| `tenant_id`        | UUID                                        | PK DEFAULT gen_random_uuid() |                                                          |
-| `tenant_code`      | VARCHAR(50)                                 | UNIQUE NOT NULL              |                                                          |
-| `tenant_name`      | VARCHAR(255)                                | NOT NULL                     |                                                          |
-| `keycloak_realm`   | VARCHAR(100)                                | UNIQUE NOT NULL              |                                                          |
-| `plan_type`        | ENUM('STARTER','PROFESSIONAL','ENTERPRISE') | NOT NULL                     |                                                          |
-| `is_active`        | BOOLEAN                                     | NOT NULL DEFAULT true        |                                                          |
-| `dedicated_db_url` | VARCHAR(500)                                | NULL                         | NULL = shared DB; non-NULL = enterprise dedicated DB URL |
+| Column             | Type                                        | Constraints                       | Notes                                                                                                                                                                                               |
+| ------------------ | ------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tenant_id`        | UUID                                        | PK DEFAULT gen_random_uuid()      |                                                                                                                                                                                                     |
+| `tenant_code`      | VARCHAR(50)                                 | UNIQUE NOT NULL                   |                                                                                                                                                                                                     |
+| `tenant_name`      | VARCHAR(255)                                | NOT NULL                          |                                                                                                                                                                                                     |
+| `keycloak_realm`   | VARCHAR(100)                                | UNIQUE NOT NULL                   |                                                                                                                                                                                                     |
+| `plan_type`        | ENUM('STARTER','PROFESSIONAL','ENTERPRISE') | NOT NULL                          |                                                                                                                                                                                                     |
+| `is_active`        | BOOLEAN                                     | NOT NULL DEFAULT true             |                                                                                                                                                                                                     |
+| `dedicated_db_url` | VARCHAR(500)                                | NULL                              | NULL = shared DB; non-NULL = enterprise dedicated DB URL                                                                                                                                            |
 | `data_region`      | VARCHAR(20)                                 | NOT NULL DEFAULT 'ap-southeast-1' | AWS region for data residency; assigned at provisioning per `05-security-compliance` §5.6 (Thai → `ap-southeast-7`, EU → `eu-west-1`, default → `ap-southeast-1`); immutable after first data write |
-| `created_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()       |                                                          |
-| `updated_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()       |                                                          |
+| `created_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()            |                                                                                                                                                                                                     |
+| `updated_at`       | TIMESTAMPTZ                                 | NOT NULL DEFAULT now()            |                                                                                                                                                                                                     |
 
 `dedicated_db_url` is set by SYSTEM_ADMIN at one of two points:
 
@@ -111,18 +111,18 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 
 ### platform.users
 
-| Column              | Type         | Constraints                  | Notes                                            |
-| ------------------- | ------------ | ---------------------------- | ------------------------------------------------ |
-| `user_id`           | UUID         | PK DEFAULT gen_random_uuid() |                                                  |
-| `tenant_id`         | UUID         | FK → tenants NOT NULL        |                                                  |
-| `keycloak_user_id`  | VARCHAR(255) | UNIQUE NOT NULL              | Path A: phone_number; Path B: Keycloak UUID      |
-| `email`             | VARCHAR(255) | NOT NULL                     | Path A: empty string; Path B: actual email       |
-| `display_name`      | VARCHAR(255) | NOT NULL                     |                                                  |
-| `is_active`         | BOOLEAN      | NOT NULL DEFAULT true        |                                                  |
-| `mfa_enabled`       | BOOLEAN      | NOT NULL DEFAULT false       |                                                  |
-| `mfa_totp_secret`   | VARCHAR(255) | NULL                         | TOTP secret; NULL until MFA enrollment completes |
-| `created_at`        | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
-| `updated_at`        | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
+| Column             | Type         | Constraints                  | Notes                                            |
+| ------------------ | ------------ | ---------------------------- | ------------------------------------------------ |
+| `user_id`          | UUID         | PK DEFAULT gen_random_uuid() |                                                  |
+| `tenant_id`        | UUID         | FK → tenants NOT NULL        |                                                  |
+| `keycloak_user_id` | VARCHAR(255) | UNIQUE NOT NULL              | Path A: phone_number; Path B: Keycloak UUID      |
+| `email`            | VARCHAR(255) | NOT NULL                     | Path A: empty string; Path B: actual email       |
+| `display_name`     | VARCHAR(255) | NOT NULL                     |                                                  |
+| `is_active`        | BOOLEAN      | NOT NULL DEFAULT true        |                                                  |
+| `mfa_enabled`      | BOOLEAN      | NOT NULL DEFAULT false       |                                                  |
+| `mfa_totp_secret`  | VARCHAR(255) | NULL                         | TOTP secret; NULL until MFA enrollment completes |
+| `created_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
+| `updated_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
 
 INDEX: `(tenant_id, email)`
 
@@ -139,6 +139,21 @@ INDEX: `(tenant_id, email)`
 | `assigned_at`   | TIMESTAMPTZ | NOT NULL DEFAULT now()       |       |
 
 UNIQUE: `(tenant_id, user_id)`
+
+---
+
+### platform.tenant_settings
+
+Per-tenant configurable settings managed by `TENANT_ADMIN` (§20.7.8, ADR-028). One row per tenant.
+
+| Column                     | Type         | Constraints            | Notes                             |
+| -------------------------- | ------------ | ---------------------- | --------------------------------- |
+| `tenant_id`                | UUID         | PK                     | One settings row per tenant       |
+| `variance_alert_threshold` | DECIMAL(5,2) | NOT NULL DEFAULT 10.00 | Tenant default budget-variance %  |
+| `retention_percentage`     | DECIMAL(5,2) | NOT NULL DEFAULT 5.00  | Tenant default retention %        |
+| `line_channel_token`       | VARCHAR(512) | NULL                   | LINE Channel Access Token (§19.4) |
+| `notifications_enabled`    | BOOLEAN      | NOT NULL DEFAULT TRUE  | Tenant-level notifications toggle |
+| `updated_at`               | TIMESTAMPTZ  | NOT NULL DEFAULT now() |                                   |
 
 ---
 
@@ -234,18 +249,18 @@ of the following gates pass (server-side validation — not enforced offline).
 
 Hard blocks — system rejects completion :
 
-1. Inspections   — no linked inspection with result = fail or status = requires_reinspection
-2. Issues        — no linked issue with issue_type IN (defect, rework, punch) and status = open
-3. Dependencies  — all predecessor tasks (via BOQ hierarchy DEPENDS_ON) have status = completed
-4. Permit        — no linked permit with status IN (expired, revoked)
-5. Safety        — no linked safety incident with status = open and severity IN (high, critical)
-6. Delay         — task.status != blocked (delay event auto-sets status = blocked on detection)
-7. Material      — linked BOQ item's PO has at least one delivery with status != pending
+1. Inspections — no linked inspection with result = fail or status = requires_reinspection
+2. Issues — no linked issue with issue_type IN (defect, rework, punch) and status = open
+3. Dependencies — all predecessor tasks (via BOQ hierarchy DEPENDS_ON) have status = completed
+4. Permit — no linked permit with status IN (expired, revoked)
+5. Safety — no linked safety incident with status = open and severity IN (high, critical)
+6. Delay — task.status != blocked (delay event auto-sets status = blocked on detection)
+7. Material — linked BOQ item's PO has at least one delivery with status != pending
 
 Warn only — UI warning shown; completion still allowed :
 
-1. Budget 85%–99%  — BOQ item actual cost >= 85% of budget → orange warning banner in UI
-2. Budget >= 100%  — BOQ item actual cost >= 100% of budget → red warning banner + PM acknowledgement click required
+1. Budget 85%–99% — BOQ item actual cost >= 85% of budget → orange warning banner in UI
+2. Budget >= 100% — BOQ item actual cost >= 100% of budget → red warning banner + PM acknowledgement click required
 
 BOQ :
 

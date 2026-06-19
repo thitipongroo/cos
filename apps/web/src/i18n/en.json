@@ -275,5 +275,22 @@
     "highCritical": "High/Critical (open)",
     "expiredPermits": "Expired permits",
     "revokedPermits": "Revoked permits"
+  },
+  "settings": {
+    "usersTitle": "User management",
+    "tenantTitle": "Tenant settings",
+    "colName": "Name",
+    "colEmail": "Email",
+    "colRole": "Role",
+    "active": "Active",
+    "inactive": "Inactive",
+    "deactivate": "Deactivate",
+    "createUser": "Add user",
+    "variance": "Budget variance alert (%)",
+    "retention": "Retention percentage (%)",
+    "lineToken": "LINE Channel Access Token",
+    "notifications": "Enable notifications",
+    "save": "Save",
+    "saved": "Saved"
   }
 }

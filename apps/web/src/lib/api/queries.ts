@@ -25,6 +25,11 @@ import type {
   CreateIncidentInput,
   PermitRow,
   ComplianceSummary,
+  UserListResponse,
+  UserRow,
+  CreateUserInput,
+  TenantSettings,
+  UpdateTenantSettingsInput,
   PaginatedResponse,
   PaymentRow,
   ProcurementListFilter,
@@ -510,5 +515,62 @@ export function useCompliance() {
   return useQuery({
     queryKey: ['safety', 'compliance'],
     queryFn: () => api<ComplianceSummary>('/safety/compliance'),
+  });
+}
+
+// ── Tenant Admin (§20.7.8) ───────────────────────────────────────────────────
+
+export function useUsers() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['users'],
+    queryFn: () => api<UserListResponse>('/users?limit=100'),
+  });
+}
+
+export function useCreateUser() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateUserInput) =>
+      api<UserRow>('/users', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+  });
+}
+
+export function useChangeUserRole() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
+      api<void>(`/users/${id}/role`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+  });
+}
+
+export function useDeactivateUser() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/users/${id}/deactivate`, { method: 'PATCH' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+  });
+}
+
+export function useTenantSettings() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['tenant', 'settings'],
+    queryFn: () => api<TenantSettings>('/tenant/settings'),
+  });
+}
+
+export function useUpdateTenantSettings() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: UpdateTenantSettingsInput) =>
+      api<TenantSettings>('/tenant/settings', { method: 'PATCH', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tenant', 'settings'] }),
   });
 }
