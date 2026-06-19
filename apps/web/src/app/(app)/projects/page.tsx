@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { DataTable, type Column } from '../../../components/ui/DataTable';
 import { StatusChip } from '../../../components/ui/StatusChip';
+import { ReadOnlyBanner } from '../../../components/ui/ReadOnlyBanner';
 import { useI18n } from '../../../i18n';
+import { useReadOnly } from '../../../lib/auth/useReadOnly';
 import { useCreateProject, useProjects } from '../../../lib/api/queries';
 import type { ProjectRow, ProjectStatus, ProjectType } from '../../../lib/api/types';
 import { formatMoney } from '../../../lib/format';
@@ -15,6 +17,7 @@ const STATUSES: ProjectStatus[] = ['DRAFT', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'C
 /** PM projects list + create (§20.7.2). Create yields a DRAFT project (Phase 3). */
 export default function ProjectsPage() {
   const { t, locale } = useI18n();
+  const readOnly = useReadOnly();
   const projectsQuery = useProjects();
   const create = useCreateProject();
 
@@ -74,14 +77,17 @@ export default function ProjectsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-800">{t('pm.projectsTitle')}</h1>
-        <button
-          type="button"
-          onClick={() => setShowForm((v) => !v)}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          {t('pm.newProject')}
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={() => setShowForm((v) => !v)}
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            {t('pm.newProject')}
+          </button>
+        )}
       </div>
+      <ReadOnlyBanner />
 
       <div className="mb-4 flex gap-3">
         <select
@@ -110,7 +116,7 @@ export default function ProjectsPage() {
         </select>
       </div>
 
-      {showForm && (
+      {showForm && !readOnly && (
         <form
           onSubmit={submit}
           className="mb-6 grid grid-cols-1 gap-3 rounded-lg border border-gray-200 bg-white p-4 sm:grid-cols-2"

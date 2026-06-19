@@ -6,7 +6,8 @@
     "retry": "Retry",
     "offline": "Offline",
     "synced": "Synced",
-    "syncing": "Syncing..."
+    "syncing": "Syncing...",
+    "readOnly": "Read-only mode — this account can view but not modify"
   },
   "shell": {
     "notifications": "Notifications",

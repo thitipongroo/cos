@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { StatusChip } from '../../../../components/ui/StatusChip';
 import { ProjectTabs } from '../../../../components/project/ProjectTabs';
+import { ReadOnlyBanner } from '../../../../components/ui/ReadOnlyBanner';
 import { useI18n } from '../../../../i18n';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 import {
   useBoqVersions,
   useProject,
@@ -26,6 +28,7 @@ const TRANSITIONS: ProjectTransitionTarget[] = ['ACTIVE', 'ON_HOLD', 'COMPLETED'
 export default function ProjectDetailPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const { t, locale } = useI18n();
+  const readOnly = useReadOnly();
   const projectQuery = useProject(id);
   const membersQuery = useProjectMembers(id);
   const documentsQuery = useProjectDocuments(id);
@@ -66,36 +69,42 @@ export default function ProjectDetailPage({ params }: { params: { id: string } }
         </div>
       )}
 
-      <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-semibold uppercase text-gray-500">{t('pm.transition')}</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={target}
-            onChange={(e) => setTarget(e.target.value as ProjectTransitionTarget)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          >
-            {TRANSITIONS.map((tr) => (
-              <option key={tr} value={tr}>
-                {t(`projectStatus.${tr}`)}
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder={t('pm.reason')}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
-          />
-          <button
-            type="button"
-            disabled={transition.isPending}
-            onClick={() => transition.mutate({ to: target, reason: reason || undefined })}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {t('pm.apply')}
-          </button>
-        </div>
-      </section>
+      <ReadOnlyBanner />
+
+      {!readOnly && (
+        <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4">
+          <h2 className="mb-3 text-sm font-semibold uppercase text-gray-500">
+            {t('pm.transition')}
+          </h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={target}
+              onChange={(e) => setTarget(e.target.value as ProjectTransitionTarget)}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            >
+              {TRANSITIONS.map((tr) => (
+                <option key={tr} value={tr}>
+                  {t(`projectStatus.${tr}`)}
+                </option>
+              ))}
+            </select>
+            <input
+              placeholder={t('pm.reason')}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <button
+              type="button"
+              disabled={transition.isPending}
+              onClick={() => transition.mutate({ to: target, reason: reason || undefined })}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {t('pm.apply')}
+            </button>
+          </div>
+        </section>
+      )}
 
       <section className="mb-8">
         <h2 className="mb-2 text-sm font-semibold uppercase text-gray-500">{t('pm.boqSummary')}</h2>

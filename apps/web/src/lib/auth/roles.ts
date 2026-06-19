@@ -2,12 +2,8 @@
  * Post-login landing routes per role — the first-row page of each role's
  * inventory in spec §20.7. Used by the post-login redirect and the `/` router.
  *
- * DECISION-2 note: SITE_WORKER's spec landing (`/tasks`) and SAFETY_OFFICER's
- * spec landing (`/safety/incidents`) depend on backend (Task entity / safety
- * incidents) that does not exist yet and is tracked as a separate workstream.
- * Until that backend lands, SITE_WORKER routes to its first READY page
- * (`/site/reports/new`) and SAFETY_OFFICER routes to the honest `/pending`
- * notice. These two entries change to their §20.7 values once the backend ships.
+ * SITE_WORKER (`/tasks`, Increment 9) and SAFETY_OFFICER (`/safety/incidents`,
+ * Increment 10) now route to their §20.7 landings — their backends have shipped.
  */
 import { CosRole } from '@cos/types';
 
@@ -18,11 +14,10 @@ export const ROLE_LANDING: Record<string, string> = {
   [CosRole.PROC_MANAGER]: '/procurement/requests',
   [CosRole.FINANCE]: '/finance/payments',
   [CosRole.SITE_ENGINEER]: '/site/reports',
+  [CosRole.SITE_WORKER]: '/tasks',
+  [CosRole.SAFETY_OFFICER]: '/safety/incidents',
   [CosRole.TENANT_ADMIN]: '/settings/users',
   [CosRole.VIEWER]: '/',
-  // Deferred landings (DECISION-2) — see file header.
-  [CosRole.SITE_WORKER]: '/site/reports/new',
-  [CosRole.SAFETY_OFFICER]: '/pending',
 };
 
 /** Resolve the landing route for a role claim; unknown/missing → `/pending`. */
