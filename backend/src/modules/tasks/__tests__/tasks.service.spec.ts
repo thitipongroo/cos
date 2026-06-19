@@ -18,6 +18,9 @@ const mockRepo = {
   countBlockingIssues: jest.fn(),
   countIncompletePredecessors: jest.fn(),
   countBlockingPermits: jest.fn(),
+  countBlockingIncidents: jest.fn(),
+  countUndeliveredMaterials: jest.fn(),
+  getTaskBudgetRatio: jest.fn(),
 };
 
 const taskRow = { task_id: 'task-1', project_id: 'proj-1', status: 'IN_PROGRESS' };
@@ -27,6 +30,9 @@ function clearGates() {
   mockRepo.countBlockingIssues.mockResolvedValue(0);
   mockRepo.countIncompletePredecessors.mockResolvedValue(0);
   mockRepo.countBlockingPermits.mockResolvedValue(0);
+  mockRepo.countBlockingIncidents.mockResolvedValue(0);
+  mockRepo.countUndeliveredMaterials.mockResolvedValue(0);
+  mockRepo.getTaskBudgetRatio.mockResolvedValue(null);
 }
 
 let service: TasksService;
@@ -92,18 +98,30 @@ it('updateTask → COMPLETED succeeds when all gates clear', async () => {
   expect(r.status).toBe('COMPLETED');
 });
 
-it('updateTask → COMPLETED blocked lists every failing gate (COS-TASK-001)', async () => {
-  mockRepo.findTaskById.mockResolvedValue(taskRow);
+it('updateTask → COMPLETED blocked lists all 7 gates + budget overrun (COS-TASK-001)', async () => {
+  mockRepo.findTaskById.mockResolvedValue({ ...taskRow, status: 'BLOCKED' }); // gate 6 (delay)
   mockRepo.countBlockingInspections.mockResolvedValue(1);
   mockRepo.countBlockingIssues.mockResolvedValue(2);
   mockRepo.countIncompletePredecessors.mockResolvedValue(1);
   mockRepo.countBlockingPermits.mockResolvedValue(3);
+  mockRepo.countBlockingIncidents.mockResolvedValue(1);
+  mockRepo.countUndeliveredMaterials.mockResolvedValue(1);
+  mockRepo.getTaskBudgetRatio.mockResolvedValue({ allocated: '100', actual: '150' });
   await expect(
     service.updateTask('task-1', { status: 'COMPLETED' } as never),
   ).rejects.toMatchObject({
     response: {
       code: 'COS-TASK-001',
-      blocking_gates: ['inspections', 'issues', 'dependencies', 'permits'],
+      blocking_gates: [
+        'inspections',
+        'issues',
+        'dependencies',
+        'permits',
+        'incidents',
+        'material',
+        'delay',
+        'budget_overrun',
+      ],
     },
   });
   expect(mockRepo.updateTask).not.toHaveBeenCalled();
@@ -116,4 +134,34 @@ it('updateTask → COMPLETED blocked by a single gate', async () => {
   await expect(
     service.updateTask('task-1', { status: 'COMPLETED' } as never),
   ).rejects.toBeInstanceOf(UnprocessableEntityException);
+});
+
+it('budget 85–99% → ORANGE warning, completes (gate 8)', async () => {
+  mockRepo.findTaskById.mockResolvedValue(taskRow);
+  clearGates();
+  mockRepo.getTaskBudgetRatio.mockResolvedValue({ allocated: '100', actual: '90' });
+  mockRepo.updateTask.mockResolvedValue({ ...taskRow, status: 'COMPLETED' });
+  const r = await service.updateTask('task-1', { status: 'COMPLETED' } as never);
+  expect(r.warnings).toEqual(['budget_warning']);
+});
+
+it('budget ≥100% with acknowledge_budget_overrun → completes with warning (gate 9)', async () => {
+  mockRepo.findTaskById.mockResolvedValue(taskRow);
+  clearGates();
+  mockRepo.getTaskBudgetRatio.mockResolvedValue({ allocated: '100', actual: '120' });
+  mockRepo.updateTask.mockResolvedValue({ ...taskRow, status: 'COMPLETED' });
+  const r = await service.updateTask('task-1', {
+    status: 'COMPLETED',
+    acknowledge_budget_overrun: true,
+  } as never);
+  expect(r.warnings).toEqual(['budget_overrun']);
+});
+
+it('budget with zero allocated → no warning (allocated>0 false branch)', async () => {
+  mockRepo.findTaskById.mockResolvedValue(taskRow);
+  clearGates();
+  mockRepo.getTaskBudgetRatio.mockResolvedValue({ allocated: '0', actual: '50' });
+  mockRepo.updateTask.mockResolvedValue({ ...taskRow, status: 'COMPLETED' });
+  const r = await service.updateTask('task-1', { status: 'COMPLETED' } as never);
+  expect(r.warnings).toEqual([]);
 });

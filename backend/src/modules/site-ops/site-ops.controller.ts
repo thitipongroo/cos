@@ -247,22 +247,7 @@ export class SiteOpsController {
     return this.svc.updateInspectionStatus(inspectionId, dto);
   }
 
-  // ── Safety Checklists ─────────────────────────────────────────────────────
-
-  // GET /api/v1/site/checklists  (assigned safety checklists; complete via POST /site/inspections)
-  @Get('site/checklists')
-  @Roles(
-    CosRole.SITE_WORKER,
-    CosRole.SITE_ENGINEER,
-    CosRole.PROJECT_MANAGER,
-    CosRole.SAFETY_OFFICER,
-    CosRole.TENANT_ADMIN,
-  )
-  @ApiOperation({ summary: 'List safety checklists (filterable by project)' })
-  @ApiQuery({ name: 'project_id', required: false, type: String })
-  listChecklists(@Query('project_id') project_id?: string) {
-    return this.svc.listChecklists(project_id);
-  }
+  // Safety checklists list/submit moved to /api/v1/safety/checklists (§14, ADR-027).
 
   // ── Material Consumptions ─────────────────────────────────────────────────
 

@@ -1,12 +1,11 @@
 openapi: 3.1.0
 info:
   title: Construction OS — Safety API
-  version: v1
+  version: 1.0.0
   description: |
-    Safety Service — MVP scope.
-    Manages safety checklists, incidents, near-miss reports, and compliance records.
+    Safety Officer operations (§20.7.7): incidents, work-permit approval (§15.5), safety
+    checklists, and a deterministic compliance view (ADR-027). Canonical prefix /api/v1/safety/*.
     All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
-    **STUB** — endpoints to be defined when Safety module development begins.
 servers:
   - url: /api/v1
     description: Current version
@@ -21,4 +20,190 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
-paths: {}
+paths:
+  /safety/incidents:
+    post:
+      tags: [safety]
+      summary: Report a safety incident
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, incident_type, severity]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                incident_type:
+                  type: string
+                severity:
+                  type: string
+                  enum: [LOW, MEDIUM, HIGH, CRITICAL]
+                task_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Incident reported
+    get:
+      tags: [safety]
+      summary: List incidents (filter by project, status, severity)
+      parameters:
+        - { name: project_id, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: severity, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200':
+          description: Paginated incidents
+  /safety/incidents/{incidentId}/acknowledge:
+    patch:
+      tags: [safety]
+      summary: Acknowledge an incident (OPEN → IN_PROGRESS)
+      parameters:
+        - { name: incidentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Incident acknowledged
+        '404':
+          description: Incident not found
+  /safety/permits:
+    post:
+      tags: [safety]
+      summary: Create a permit request (PENDING)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, permit_type, permit_number]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                permit_type:
+                  type: string
+                  enum: [WORK_PERMIT, SAFETY_PERMIT, DRAWING_APPROVAL, ENTRY_PERMIT]
+                permit_number:
+                  type: string
+                linked_task_id:
+                  type: string
+                  format: uuid
+                valid_from:
+                  type: string
+                  format: date
+                valid_until:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Permit created (PENDING)
+    get:
+      tags: [safety]
+      summary: List permits (filter by project, status)
+      parameters:
+        - { name: project_id, in: query, schema: { type: string, format: uuid } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
+      responses:
+        '200':
+          description: Paginated permits
+  /safety/permits/{permitId}/approve:
+    patch:
+      tags: [safety]
+      summary: Approve a permit (§15.5; PENDING → ACTIVE; SAFETY_PERMIT needs PM final)
+      parameters:
+        - { name: permitId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tier]
+              properties:
+                tier:
+                  type: string
+                  enum: [SAFETY_OFFICER, PROJECT_MANAGER, TENANT_ADMIN]
+      responses:
+        '200':
+          description: Permit approved (ACTIVE)
+        '403':
+          description: Safety permit requires PM final approval
+        '422':
+          description: Permit is not PENDING
+  /safety/permits/{permitId}/reject:
+    patch:
+      tags: [safety]
+      summary: Reject a permit (PENDING → REVOKED)
+      parameters:
+        - { name: permitId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Permit rejected (REVOKED)
+        '422':
+          description: Permit is not PENDING
+  /safety/checklists:
+    get:
+      tags: [safety]
+      summary: List safety checklists (delegated to site-ops)
+      parameters:
+        - { name: project_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Checklist list
+    post:
+      tags: [safety]
+      summary: Submit a completed safety checklist (recorded as an inspection)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [project_id, checklist_id, status, inspected_at]
+              properties:
+                project_id:
+                  type: string
+                  format: uuid
+                checklist_id:
+                  type: string
+                  format: uuid
+                status:
+                  type: string
+                  enum: [PENDING, PASSED, FAILED, REQUIRES_REINSPECTION]
+                inspected_at:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Checklist submitted
+  /safety/compliance:
+    get:
+      tags: [safety]
+      summary: Compliance summary — open incidents and bad permits
+      parameters:
+        - { name: project_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Compliance summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  open_incidents:
+                    type: integer
+                  high_critical_incidents:
+                    type: integer
+                  expired_permits:
+                    type: integer
+                  revoked_permits:
+                    type: integer

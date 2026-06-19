@@ -2,9 +2,9 @@
  * Role-filtered navigation (spec §20.6.2 / §20.7). Each role sees only the
  * navigation for pages it can access; items map to the §20.7 page inventory.
  *
- * DECISION-2: SITE_WORKER `/tasks` + `/site/checklists` shipped in Increment 9
- * (tasks backend + completion gates; checklists GET). SAFETY_OFFICER `/safety/*`
- * remains deferred until the safety workstream lands.
+ * DECISION-2: SITE_WORKER `/tasks` + `/site/checklists` shipped in Increment 9.
+ * SAFETY_OFFICER `/safety/*` shipped in Increment 10 (incidents, permits, checklists,
+ * compliance).
  */
 import { CosRole } from '@cos/types';
 
@@ -71,7 +71,12 @@ export const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { href: '/site/issues/new', labelKey: 'nav.siteWorker.newIssue' },
     { href: '/site/checklists', labelKey: 'nav.siteWorker.checklists' },
   ],
-  [CosRole.SAFETY_OFFICER]: [],
+  [CosRole.SAFETY_OFFICER]: [
+    { href: '/safety/incidents', labelKey: 'nav.safety.incidents' },
+    { href: '/safety/permits', labelKey: 'nav.safety.permits' },
+    { href: '/safety/checklists', labelKey: 'nav.safety.checklists' },
+    { href: '/safety/compliance', labelKey: 'nav.safety.compliance' },
+  ],
 };
 
 export function navForRole(role: string | undefined | null): NavItem[] {

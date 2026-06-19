@@ -330,10 +330,10 @@ TH-specific logic is not silently applied to non-TH tenants.
 ## 20.6 Web Application — Authentication and Session
 
 > **Platform:** `apps/web/` (Next.js + next-pwa) — tablet/laptop browser, online + offline
-> (deployable: `32-implementation-specifications` §32.2; ADR-016).
+> (deployable: `32-implementation-specifications` §32.2).
 > **Scope:** the web app is a **full operational client** for all roles — not a dashboard-only
 > surface. It renders the same authentication paths and RBAC model defined for the platform;
-> it introduces **no new auth mechanism**. Authoritative auth spec: §5.4 and master Phase 2.
+> it introduces **no new auth mechanism**. Authoritative auth spec: §5.4
 
 ### 20.6.1 Login
 

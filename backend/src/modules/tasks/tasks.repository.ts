@@ -202,4 +202,64 @@ export class TasksRepository {
     );
     return Number(rows[0]?.count ?? 0);
   }
+
+  /** Gate 5: open HIGH/CRITICAL safety incidents linked to the task. */
+  async countBlockingIncidents(taskId: string): Promise<number> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM site_ops.incidents
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND task_id = ${taskId}::uuid
+          AND status = 'OPEN'
+          AND severity IN ('HIGH', 'CRITICAL')
+      `,
+    );
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  /** Gate 7: the task's BOQ item was ordered (a PO line item exists) but the PO has no delivery
+   *  record yet. `deliveries` has no status column, so an existing delivery row = partial/complete
+   *  delivery (ADR-027). A task with no BOQ item / no PO line is not material-gated. */
+  async countUndeliveredMaterials(taskId: string): Promise<number> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM procurement.po_line_items li
+        WHERE li.tenant_id = ${this.tenantId}::uuid
+          AND li.boq_item_id = (
+            SELECT boq_item_id FROM projects.tasks
+            WHERE task_id = ${taskId}::uuid AND tenant_id = ${this.tenantId}::uuid
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM procurement.deliveries d
+            WHERE d.po_id = li.po_id AND d.tenant_id = ${this.tenantId}::uuid
+          )
+      `,
+    );
+    return Number(rows[0]?.count ?? 0);
+  }
+
+  /** Warnings 8–9: budget vs actual for the task's BOQ category (budget is tracked at
+   *  budget-line / category level — ADR-027). Returns null when no budget line is linked. */
+  async getTaskBudgetRatio(taskId: string): Promise<{ allocated: string; actual: string } | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<{ allocated: string; actual: string }[]>`
+        SELECT
+          bl.allocated_amount::text AS allocated,
+          COALESCE((
+            SELECT SUM(ct.amount) FROM finance.cost_transactions ct
+            WHERE ct.tenant_id = ${this.tenantId}::uuid AND ct.budget_line_id = bl.line_id
+          ), 0)::text AS actual
+        FROM projects.tasks t
+        JOIN boq.boq_items bi ON bi.item_id = t.boq_item_id
+        JOIN finance.budget_lines bl
+          ON bl.boq_category_id = bi.category_id AND bl.tenant_id = ${this.tenantId}::uuid
+        WHERE t.task_id = ${taskId}::uuid AND t.tenant_id = ${this.tenantId}::uuid
+        LIMIT 1
+      `,
+    );
+    return rows[0] ?? null;
+  }
 }

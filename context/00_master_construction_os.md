@@ -2051,17 +2051,28 @@ Entities (PostgreSQL — schema: site_ops):
     reviewed_at     TIMESTAMPTZ
     created_at      TIMESTAMPTZ DEFAULT now()
 
-APIs (mobile-first, optimized for low bandwidth):
-  POST /api/v1/site-reports               — create or sync offline report
-  GET  /api/v1/site-reports               — list (paginated, date range filter)
-  GET  /api/v1/site-reports/:id           — get by ID
-  POST /api/v1/site-reports/sync          — bulk sync endpoint (accepts array of offline changes)
-  POST /api/v1/issues                     — create or sync offline issue
-  PATCH /api/v1/issues/:id                — update issue
-  GET  /api/v1/issues                     — list issues (filterable by severity, status)
-  POST /api/v1/inspections                — submit inspection result
-  GET  /api/v1/conflict-records           — list unresolved conflicts (ROLE: SITE_ENGINEER)
-  PATCH /api/v1/conflict-records/:id/resolve — manual conflict resolution
+APIs (mobile-first; canonical /api/v1/site/* and /api/v1/safety/* — ADR-025/027):
+  POST  /api/v1/site/reports                    — create or sync offline report
+  GET   /api/v1/site/reports                    — list (paginated, date range filter)
+  GET   /api/v1/site/reports/:id                — get by ID
+  POST  /api/v1/site/reports/sync               — bulk offline sync (array of changes)
+  POST  /api/v1/site/reports/:reportId/materials — log material consumption
+  POST  /api/v1/site/issues                     — create or sync offline issue
+  PATCH /api/v1/site/issues/:id                 — update issue (field-level merge)
+  GET   /api/v1/site/issues                     — list issues (severity/status/project)
+  POST  /api/v1/site/inspections                — submit inspection result
+  GET   /api/v1/site/inspections                — list inspection results
+  GET   /api/v1/site/inspections/:id            — get inspection
+  PATCH /api/v1/site/inspections/:id            — approve / request re-inspection (ADR-025)
+  GET   /api/v1/site/conflict-records           — list unresolved conflicts (ROLE: SITE_ENGINEER)
+  PATCH /api/v1/site/conflict-records/:id/resolve — manual conflict resolution
+  # Tasks + completion gate (1–7 hard blocks + budget warnings 8–9; see Task Completion Gates):
+  GET   /api/v1/projects/:projectId/tasks       — list tasks; POST creates; PATCH /api/v1/tasks/:id updates
+  # Safety (incidents, permits §15.5, checklists, compliance — ADR-027):
+  POST  /api/v1/safety/incidents                — report incident; GET lists; PATCH :id/acknowledge
+  POST  /api/v1/safety/permits                  — create; GET lists; PATCH :id/approve|:id/reject (§15.5)
+  GET   /api/v1/safety/checklists               — list; POST submit completed checklist (= inspection)
+  GET   /api/v1/safety/compliance               — deterministic compliance view (open incidents + bad permits)
 
 Safety APIs (authoritative: spec §14 Safety APIs; MVP scope: spec §21.2 = incident reports,
   safety checklists, work permits, safety permit-approval workflow). Enumerated here so the

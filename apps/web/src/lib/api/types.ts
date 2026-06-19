@@ -309,3 +309,45 @@ export interface UploadedFileResult {
   mime_type: string;
   file_size_bytes: string;
 }
+
+// ── Safety Officer (§20.7.7) ─────────────────────────────────────────────────
+
+export type IncidentSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+export interface IncidentRow {
+  incident_id: string;
+  project_id: string;
+  task_id: string | null;
+  incident_type: string;
+  severity: IncidentSeverity;
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  reported_by: string;
+  created_at: string;
+}
+
+export interface CreateIncidentInput {
+  project_id: string;
+  incident_type: string;
+  severity: IncidentSeverity;
+  task_id?: string;
+}
+
+export type PermitType = 'WORK_PERMIT' | 'SAFETY_PERMIT' | 'DRAWING_APPROVAL' | 'ENTRY_PERMIT';
+
+export interface PermitRow {
+  permit_id: string;
+  project_id: string;
+  permit_type: PermitType;
+  permit_number: string;
+  status: 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'REVOKED';
+  valid_until: string | null;
+  linked_task_id: string | null;
+  created_at: string;
+}
+
+export interface ComplianceSummary {
+  open_incidents: number;
+  high_critical_incidents: number;
+  expired_permits: number;
+  revoked_permits: number;
+}

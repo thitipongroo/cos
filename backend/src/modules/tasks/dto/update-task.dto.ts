@@ -1,4 +1,4 @@
-import { IsOptional, IsUUID, IsEnum, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsUUID, IsEnum, IsInt, Min, Max, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum TaskStatusInput {
@@ -26,4 +26,11 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsUUID()
   assigned_to?: string;
+
+  @ApiPropertyOptional({
+    description: 'Acknowledge a ≥100% budget overrun (gate 9, master Phase 6)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  acknowledge_budget_overrun?: boolean;
 }

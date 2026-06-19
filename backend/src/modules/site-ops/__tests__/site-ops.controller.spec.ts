@@ -197,9 +197,4 @@ describe('SiteOpsController', () => {
     ctrl.updateInspection('insp-1', dto as never);
     expect(mockSvc.updateInspectionStatus).toHaveBeenCalledWith('insp-1', dto);
   });
-
-  it('listChecklists delegates to svc.listChecklists', () => {
-    ctrl.listChecklists('proj-1');
-    expect(mockSvc.listChecklists).toHaveBeenCalledWith('proj-1');
-  });
 });

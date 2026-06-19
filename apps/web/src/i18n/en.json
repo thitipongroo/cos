@@ -180,6 +180,12 @@
     "admin": {
       "users": "User management",
       "tenant": "Tenant settings"
+    },
+    "safety": {
+      "incidents": "Incidents",
+      "permits": "Permits",
+      "checklists": "Checklists",
+      "compliance": "Compliance"
     }
   },
   "auth": {
@@ -249,5 +255,25 @@
     "fieldPhoto": "Photo",
     "submit": "Submit",
     "submitted": "Submitted"
+  },
+  "safety": {
+    "incidentsTitle": "Safety incidents",
+    "permitsTitle": "Work permits",
+    "checklistsTitle": "Safety checklists",
+    "complianceTitle": "Compliance status",
+    "colType": "Incident type",
+    "colPermitNo": "Permit no.",
+    "colPermitType": "Permit type",
+    "colValidUntil": "Valid until",
+    "acknowledge": "Acknowledge",
+    "report": "Report",
+    "approve": "Approve",
+    "reject": "Reject",
+    "permitsHint": "§15.5: Site Engineer → Safety Officer → PM (safety permit)",
+    "permitPmRequired": "Safety permits require PM final approval",
+    "openIncidents": "Open incidents",
+    "highCritical": "High/Critical (open)",
+    "expiredPermits": "Expired permits",
+    "revokedPermits": "Revoked permits"
   }
 }

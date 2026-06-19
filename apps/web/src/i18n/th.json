@@ -180,6 +180,12 @@
     "admin": {
       "users": "จัดการผู้ใช้",
       "tenant": "ตั้งค่าองค์กร"
+    },
+    "safety": {
+      "incidents": "เหตุการณ์",
+      "permits": "ใบอนุญาต",
+      "checklists": "เช็คลิสต์",
+      "compliance": "การปฏิบัติตาม"
     }
   },
   "auth": {
@@ -249,5 +255,25 @@
     "fieldPhoto": "รูปภาพ",
     "submit": "ส่ง",
     "submitted": "ส่งเรียบร้อย"
+  },
+  "safety": {
+    "incidentsTitle": "อุบัติเหตุ/เหตุการณ์ความปลอดภัย",
+    "permitsTitle": "ใบอนุญาตทำงาน",
+    "checklistsTitle": "เช็คลิสต์ความปลอดภัย",
+    "complianceTitle": "สถานะการปฏิบัติตามข้อกำหนด",
+    "colType": "ประเภทเหตุการณ์",
+    "colPermitNo": "เลขที่ใบอนุญาต",
+    "colPermitType": "ประเภทใบอนุญาต",
+    "colValidUntil": "มีผลถึง",
+    "acknowledge": "รับทราบ",
+    "report": "แจ้งเหตุ",
+    "approve": "อนุมัติ",
+    "reject": "ปฏิเสธ",
+    "permitsHint": "§15.5: Site Engineer → Safety Officer → PM (safety permit)",
+    "permitPmRequired": "ใบอนุญาตความปลอดภัยต้องให้ PM อนุมัติขั้นสุดท้าย",
+    "openIncidents": "เหตุการณ์ที่เปิดอยู่",
+    "highCritical": "รุนแรง/วิกฤต (เปิด)",
+    "expiredPermits": "ใบอนุญาตหมดอายุ",
+    "revokedPermits": "ใบอนุญาตถูกเพิกถอน"
   }
 }

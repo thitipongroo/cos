@@ -824,21 +824,6 @@ paths:
         '422':
           $ref: '#/components/responses/UnprocessableEntity'
 
-  /site/checklists:
-    get:
-      summary: List safety checklists (completed via inspection submission)
-      operationId: listChecklists
-      tags: [inspections]
-      parameters:
-        - name: project_id
-          in: query
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Checklist list
-
   responses:
     Unauthorized:
       description: Authentication required

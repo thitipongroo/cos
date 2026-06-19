@@ -13,6 +13,7 @@ import { BoqModule } from './modules/boq/boq.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { TasksModule } from './modules/tasks/tasks.module';
+import { SafetyModule } from './modules/safety/safety.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { PlatformWebhookModule } from './modules/platform-webhook/platform-webhook.module';
 import { MasterDataModule } from './modules/master-data/master-data.module';
@@ -43,6 +44,7 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
     ProcurementModule,
     SiteOpsModule,
     TasksModule,
+    SafetyModule,
     NotificationModule,
     PlatformWebhookModule,
     MasterDataModule,

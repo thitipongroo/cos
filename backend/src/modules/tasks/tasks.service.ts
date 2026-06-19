@@ -67,12 +67,27 @@ export class TasksService {
     return task;
   }
 
-  /** Update task; enforces the completion gate when transitioning to COMPLETED. */
-  async updateTask(taskId: string, dto: UpdateTaskDto): Promise<TaskRow> {
-    await this.getTask(taskId); // 404 if missing
+  /** Update task; enforces the 7 hard-block gates + budget warnings on COMPLETED (master Phase 6). */
+  async updateTask(taskId: string, dto: UpdateTaskDto): Promise<TaskRow & { warnings: string[] }> {
+    const task = await this.getTask(taskId); // 404 if missing
+    const warnings: string[] = [];
 
     if (dto.status === 'COMPLETED') {
-      const blocking = await this.evaluateCompletionGates(taskId);
+      const blocking = await this.evaluateCompletionGates(taskId, task);
+
+      // Warnings 8–9: budget vs actual. ≥100% is a hard block unless acknowledged.
+      const budget = await this.repo.getTaskBudgetRatio(taskId);
+      if (budget) {
+        const allocated = Number(budget.allocated);
+        const ratio = allocated > 0 ? Number(budget.actual) / allocated : 0;
+        if (ratio >= 1) {
+          warnings.push('budget_overrun');
+          if (!dto.acknowledge_budget_overrun) blocking.push('budget_overrun');
+        } else if (ratio >= 0.85) {
+          warnings.push('budget_warning');
+        }
+      }
+
       if (blocking.length > 0) {
         throw new UnprocessableEntityException({
           code: 'COS-TASK-001',
@@ -92,22 +107,28 @@ export class TasksService {
       { task_id: taskId, status: updated.status, tenant_id: this.tenantId },
       'task.updated',
     );
-    return updated;
+    return { ...updated, warnings };
   }
 
-  /** Returns the names of the hard-block gates that currently fail (empty = clear to complete). */
-  private async evaluateCompletionGates(taskId: string): Promise<string[]> {
-    const [inspections, issues, dependencies, permits] = await Promise.all([
+  /** Names of the hard-block gates that currently fail (empty = clear to complete). master Phase 6
+   *  gates 1–7: inspections, issues, dependencies, permits, incidents, material, delay. */
+  private async evaluateCompletionGates(taskId: string, task: TaskRow): Promise<string[]> {
+    const [inspections, issues, dependencies, permits, incidents, undelivered] = await Promise.all([
       this.repo.countBlockingInspections(taskId),
       this.repo.countBlockingIssues(taskId),
       this.repo.countIncompletePredecessors(taskId),
       this.repo.countBlockingPermits(taskId),
+      this.repo.countBlockingIncidents(taskId),
+      this.repo.countUndeliveredMaterials(taskId),
     ]);
     const blocking: string[] = [];
     if (inspections > 0) blocking.push('inspections');
     if (issues > 0) blocking.push('issues');
     if (dependencies > 0) blocking.push('dependencies');
     if (permits > 0) blocking.push('permits');
+    if (incidents > 0) blocking.push('incidents');
+    if (undelivered > 0) blocking.push('material');
+    if (task.status === 'BLOCKED') blocking.push('delay');
     return blocking;
   }
 }

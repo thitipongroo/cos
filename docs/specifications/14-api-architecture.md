@@ -261,9 +261,6 @@ POST /api/v1/projects
 | `PATCH` | `/api/v1/site/inspections/{inspection_id}`   | Approve / request re-inspection (status transition)   | PM, Site Engineer, Safety, Admin |
 | `GET`   | `/api/v1/site/conflict-records`              | List unresolved conflict records                      | Site Engineer, PM, Admin         |
 | `PATCH` | `/api/v1/site/conflict-records/{id}/resolve` | Mark conflict record resolved                         | Site Engineer, PM, Admin         |
-| `GET`   | `/api/v1/site/checklists`                    | List safety checklists (complete via inspections)     | SW, SE, PM, Safety, Admin        |
-| `GET`   | `/api/v1/site/permits`                       | List permits (filterable by project, type, status)    | Any role                         |
-| `POST`  | `/api/v1/site/permits`                       | Create permit request                                 | PM, Safety Officer               |
 
 ---
 
@@ -303,12 +300,18 @@ POST /api/v1/projects
 
 #### Safety APIs
 
-| Method  | Path                                                 | Description                       | Auth                          |
-| ------- | ---------------------------------------------------- | --------------------------------- | ----------------------------- |
-| `POST`  | `/api/v1/safety/incidents`                           | Report safety incident            | Site Engineer, Safety Officer |
-| `PATCH` | `/api/v1/safety/incidents/{incident_id}/acknowledge` | Acknowledge incident              | Safety Officer                |
-| `GET`   | `/api/v1/safety/checklists`                          | List safety checklists            | Any role                      |
-| `POST`  | `/api/v1/safety/checklists`                          | Submit completed safety checklist | Site Engineer, Safety Officer |
+| Method  | Path                                                 | Description                            | Auth                         |
+| ------- | ---------------------------------------------------- | -------------------------------------- | ---------------------------- |
+| `POST`  | `/api/v1/safety/incidents`                           | Report safety incident                 | Site Engineer, Safety, Admin |
+| `GET`   | `/api/v1/safety/incidents`                           | List incidents (project/status/sev)    | Exec, PM, SE, Safety, Admin  |
+| `PATCH` | `/api/v1/safety/incidents/{incident_id}/acknowledge` | Acknowledge incident (OPEN→IN_PROG)    | Safety Officer, Admin        |
+| `POST`  | `/api/v1/safety/permits`                             | Create a permit request (PENDING)      | Site Engineer, Safety, Admin |
+| `GET`   | `/api/v1/safety/permits`                             | List permits (project/status)          | Exec, PM, SE, Safety, Admin  |
+| `PATCH` | `/api/v1/safety/permits/{permit_id}/approve`         | Approve permit (§15.5; →ACTIVE)        | Safety, PM, Admin            |
+| `PATCH` | `/api/v1/safety/permits/{permit_id}/reject`          | Reject permit (→REVOKED)               | Safety, PM, Admin            |
+| `GET`   | `/api/v1/safety/checklists`                          | List safety checklists                 | Any role                     |
+| `POST`  | `/api/v1/safety/checklists`                          | Submit completed safety checklist      | Site Engineer, Safety, Admin |
+| `GET`   | `/api/v1/safety/compliance`                          | Compliance summary (incidents/permits) | Exec, PM, SE, Safety, Admin  |
 
 ---
 
@@ -368,7 +371,8 @@ Managed by **Tenant Admin** (FULL permission — see `06-rbac-permission-matrix`
 All endpoints are tenant-scoped via JWT `tenant_id` claim; a Tenant Admin can only
 manage users within their own tenant.
 
-Path A users (SITE_ENGINEER — the authoritative field-worker role per `06-rbac-permission-matrix` §6.2) are identified by phone number.
+Path A users (SITE_ENGINEER — the authoritative field-worker role per `06-rbac-permission-matrix` §6.2) are identified by
+phone number.
 Path B users (all other roles) are identified by email address and require a
 corresponding Keycloak account in the tenant's realm.
 

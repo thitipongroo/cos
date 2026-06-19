@@ -108,11 +108,20 @@ describe('TasksRepository', () => {
     ['countBlockingIssues'],
     ['countIncompletePredecessors'],
     ['countBlockingPermits'],
+    ['countBlockingIncidents'],
+    ['countUndeliveredMaterials'],
   ])('%s returns the count, and 0 when no rows', async (method) => {
     const fn = (repo as unknown as Record<string, (id: string) => Promise<number>>)[method]!;
     mockPrisma.$queryRaw.mockResolvedValueOnce([{ count: 2n }]);
     expect(await fn.call(repo, 'task-1')).toBe(2);
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
     expect(await fn.call(repo, 'task-1')).toBe(0);
+  });
+
+  it('getTaskBudgetRatio returns row then null', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ allocated: '100.0000', actual: '50.0000' }]);
+    expect((await repo.getTaskBudgetRatio('task-1'))?.allocated).toBe('100.0000');
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.getTaskBudgetRatio('task-1')).toBeNull();
   });
 });

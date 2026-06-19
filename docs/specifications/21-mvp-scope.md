@@ -79,11 +79,12 @@ Safety and QC are included in MVP because daily field operations depend on them 
 - Safety permit approval is part of the core approval chain (see 15-event-driven-workflow section 15.5)
 - QC inspection forms are required for construction milestone gate validation
 
-MVP Safety scope : incident reports, safety checklists, work permits, safety permit approval workflow.
-MVP QC scope : inspection forms with pass/fail/conditional results and photo upload.
+MVP Safety scope : incident reports, safety checklists, work permits, safety permit approval workflow, and
+a deterministic compliance view. MVP QC scope : inspection forms with pass/fail/conditional results and photo upload.
 
-Advanced safety features (AI-based compliance detection from video/photo) are post-MVP
-Layer B/C capabilities — see 22-ai-architecture section 22.2.
+Advanced safety features (**AI-based** compliance detection from video/photo) are post-MVP
+Layer B/C capabilities — see 22-ai-architecture section 22.2. The deterministic compliance view
+(`GET /api/v1/safety/compliance`) is MVP; only the AI detection enhancement is deferred.
 
 ### Excluded Initially
 

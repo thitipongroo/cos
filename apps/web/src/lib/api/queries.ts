@@ -21,6 +21,10 @@ import type {
   CreateSiteReportInput,
   CreateIssueInput,
   SiteReportRow,
+  IncidentRow,
+  CreateIncidentInput,
+  PermitRow,
+  ComplianceSummary,
   PaginatedResponse,
   PaymentRow,
   ProcurementListFilter,
@@ -434,7 +438,77 @@ export function useChecklists(projectId?: string) {
   const api = useApi();
   const qs = projectId ? `?project_id=${projectId}` : '';
   return useQuery({
-    queryKey: ['site', 'checklists', projectId ?? 'all'],
-    queryFn: () => api<SafetyChecklistRow[]>(`/site/checklists${qs}`),
+    queryKey: ['safety', 'checklists', projectId ?? 'all'],
+    queryFn: () => api<SafetyChecklistRow[]>(`/safety/checklists${qs}`),
+  });
+}
+
+// ── Safety Officer (§20.7.7) ─────────────────────────────────────────────────
+
+export function useIncidents(status?: string) {
+  const api = useApi();
+  const qs = status ? `&status=${status}` : '';
+  return useQuery({
+    queryKey: ['safety', 'incidents', status ?? 'all'],
+    queryFn: () => api<PaginatedResponse<IncidentRow>>(`/safety/incidents?limit=100${qs}`),
+  });
+}
+
+export function useReportIncident() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateIncidentInput) =>
+      api<IncidentRow>('/safety/incidents', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['safety', 'incidents'] }),
+  });
+}
+
+export function useAcknowledgeIncident() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (incidentId: string) =>
+      api<IncidentRow>(`/safety/incidents/${incidentId}/acknowledge`, { method: 'PATCH' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['safety', 'incidents'] }),
+  });
+}
+
+export function usePermits(status?: string) {
+  const api = useApi();
+  const qs = status ? `&status=${status}` : '';
+  return useQuery({
+    queryKey: ['safety', 'permits', status ?? 'all'],
+    queryFn: () => api<PaginatedResponse<PermitRow>>(`/safety/permits?limit=100${qs}`),
+  });
+}
+
+export function useApprovePermit() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, tier }: { id: string; tier: string }) =>
+      api<PermitRow>(`/safety/permits/${id}/approve`, {
+        method: 'PATCH',
+        body: JSON.stringify({ tier }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['safety', 'permits'] }),
+  });
+}
+
+export function useRejectPermit() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<PermitRow>(`/safety/permits/${id}/reject`, { method: 'PATCH' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['safety', 'permits'] }),
+  });
+}
+
+export function useCompliance() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['safety', 'compliance'],
+    queryFn: () => api<ComplianceSummary>('/safety/compliance'),
   });
 }
