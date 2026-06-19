@@ -423,6 +423,19 @@ Kafka events emitted:
 | `identity.user.created.v1`      | `POST /api/v1/users` succeeds                 |
 | `identity.user.role_changed.v1` | `PATCH /api/v1/users/{user_id}/role` succeeds |
 
+#### Platform Admin APIs (SYSTEM_ADMIN)
+
+Cross-tenant platform administration — the `/admin` panel (§20.4). `SYSTEM_ADMIN` only; not
+tenant-scoped (excluded from the tenant middleware). Contract: `tenant.openapi.yaml`.
+
+| Method  | Path                                                | Description                                 | Auth         |
+| ------- | --------------------------------------------------- | ------------------------------------------- | ------------ |
+| `GET`   | `/api/v1/admin/tenants`                             | List all tenants on the platform (§20.4.1)  | System Admin |
+| `POST`  | `/api/v1/admin/tenants`                             | Provision a new tenant (§20.4.2)            | System Admin |
+| `PATCH` | `/api/v1/admin/tenants/{tenant_id}/dedicated-db`    | Assign a dedicated DB URL (§20.4.3)         | System Admin |
+| `PATCH` | `/api/v1/admin/tenants/{tenant_id}/mark-contracted` | Mark Enterprise tenant contracted (§20.4.4) | System Admin |
+| `PATCH` | `/api/v1/admin/tenants/{tenant_id}/deactivate`      | Deactivate a tenant (§20.4.5)               | System Admin |
+
 ---
 
 ## 14.4 API Versioning
