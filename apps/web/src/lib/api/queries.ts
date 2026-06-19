@@ -32,6 +32,11 @@ import type {
   UpdateTenantSettingsInput,
   TenantRow,
   CreateTenantInput,
+  LeadRow,
+  CreateLeadInput,
+  OpportunityRow,
+  CreateOpportunityInput,
+  CrmCustomerRow,
   PaginatedResponse,
   PaymentRow,
   ProcurementListFilter,
@@ -616,5 +621,67 @@ export function useAssignDedicatedDb() {
         body: JSON.stringify({ dedicatedDbUrl }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// ── CRM / Sales Manager (§20.7.10) ───────────────────────────────────────────
+
+export function useCrmLeads() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['crm', 'leads'],
+    queryFn: () => api<LeadRow[]>('/crm/leads'),
+  });
+}
+
+export function useCreateLead() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateLeadInput) =>
+      api<LeadRow>('/crm/leads', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['crm', 'leads'] }),
+  });
+}
+
+export function useCrmOpportunities() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['crm', 'opportunities'],
+    queryFn: () => api<OpportunityRow[]>('/crm/opportunities'),
+  });
+}
+
+export function useCreateOpportunity() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateOpportunityInput) =>
+      api<OpportunityRow>('/crm/opportunities', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['crm', 'opportunities'] });
+      qc.invalidateQueries({ queryKey: ['crm', 'leads'] });
+    },
+  });
+}
+
+export function useConvertOpportunity() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api<CrmCustomerRow>(`/crm/opportunities/${id}/convert`, { method: 'PATCH' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['crm', 'opportunities'] });
+      qc.invalidateQueries({ queryKey: ['crm', 'customers'] });
+    },
+  });
+}
+
+export function useCrmCustomers() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['crm', 'customers'],
+    queryFn: () => api<CrmCustomerRow[]>('/crm/customers'),
   });
 }

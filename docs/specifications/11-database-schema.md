@@ -62,14 +62,11 @@ CREATE POLICY tenant_isolation ON {schema}.{table}
 | `notifications`       | Notification Service                     | NOT NULL  | `notification_templates` has nullable tenant_id (null = system template) |
 | `equipment`           | Equipment Service                        | NOT NULL  |                                                                          |
 | `workforce`           | Workforce Service                        | NOT NULL  |                                                                          |
+| `crm`                 | CRM (Lead / Opportunity / Contact)       | NOT NULL  | Customer = `finance.customers` (ADR-024/029); MVP per §21.6 update       |
 | `ai`                  | AI Services                              | NOT NULL  | Migration tool: Prisma (`backend/prisma/migrations/`)                    |
 | `equipment_telemetry` | IoT Telemetry (Timescale)                | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
 | `workforce_telemetry` | Attendance (Timescale)                   | NOT NULL  | Hypertable; partitioned by `recorded_at`                                 |
 | `digital_twin`        | Digital Twin / IoT (Timescale, Phase 24) | NOT NULL  | TwinState hypertable; see `33-digital-twin-iot` §33.4                    |
-
-> **Future schemas:** CRM (Lead/Opportunity/Contact/Customer) and additional master-data entities in
-> §11.2 get their owning schema when implemented post-MVP (CRM UI excluded from MVP per §21.6).
-> Vendor master data lives in `procurement`. See `07-multi-tenant-architecture` §7.7.
 
 ---
 

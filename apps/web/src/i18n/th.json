@@ -187,6 +187,11 @@
       "permits": "ใบอนุญาต",
       "checklists": "เช็คลิสต์",
       "compliance": "การปฏิบัติตาม"
+    },
+    "crm": {
+      "leads": "Leads",
+      "opportunities": "โอกาสการขาย",
+      "customers": "ลูกค้า"
     }
   },
   "auth": {
@@ -305,5 +310,20 @@
     "assignDb": "กำหนด DB",
     "dbUrlOptional": "Dedicated DB URL (ไม่บังคับ)",
     "createTenant": "สร้างองค์กร"
+  },
+  "crm": {
+    "leadsTitle": "ลูกค้าเป้าหมาย (Leads)",
+    "opportunitiesTitle": "โอกาสการขาย",
+    "customersTitle": "ลูกค้า",
+    "colContact": "ผู้ติดต่อ",
+    "colCompany": "บริษัท",
+    "colSource": "แหล่งที่มา",
+    "colTitle": "หัวข้อ",
+    "colValue": "มูลค่า",
+    "colCloseDate": "คาดว่าจะปิด",
+    "createLead": "เพิ่ม Lead",
+    "createOpportunity": "สร้างโอกาส",
+    "convert": "แปลงเป็นลูกค้า",
+    "selectLead": "เลือก Lead"
   }
 }

@@ -1,12 +1,12 @@
 openapi: 3.1.0
 info:
   title: Construction OS — CRM API
-  version: v1
+  version: 1.0.0
   description: |
-    CRM Service — MVP scope.
-    Manages leads, contacts, opportunities, and CRM webhook integrations.
-    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
-    **STUB** — endpoints to be defined when CRM module development begins.
+    CRM Service — Lead → Opportunity → Customer (§11.3, §20.7.10, ADR-029).
+    `convert` wins an opportunity and creates a finance.customers row (the canonical Customer
+    store, ADR-024). All endpoints require Bearer JWT (Keycloak RS256).
+    RBAC: read = EXECUTIVE + CRM_SALES_MANAGER; write = CRM_SALES_MANAGER.
 servers:
   - url: /api/v1
     description: Current version
@@ -21,4 +21,110 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
-paths: {}
+paths:
+  /crm/leads:
+    get:
+      tags: [crm]
+      summary: List leads (filterable by status)
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Lead list
+    post:
+      tags: [crm]
+      summary: Create a lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contact_name: { type: string }
+                company: { type: string }
+                source: { type: string }
+                assigned_to: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Lead created
+  /crm/opportunities:
+    get:
+      tags: [crm]
+      summary: List opportunities (filterable by status)
+      parameters:
+        - { name: status, in: query, schema: { type: string } }
+      responses:
+        '200':
+          description: Opportunity list
+    post:
+      tags: [crm]
+      summary: Create an opportunity from a lead (qualifies the lead)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lead_id, title]
+              properties:
+                lead_id: { type: string, format: uuid }
+                title: { type: string }
+                value: { type: string, description: DECIMAL string }
+                expected_close_date: { type: string, format: date }
+                assigned_to: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Opportunity created
+        '404':
+          description: Lead not found
+  /crm/opportunities/{opportunityId}/convert:
+    patch:
+      tags: [crm]
+      summary: Convert a won opportunity to a Customer (finance.customers)
+      parameters:
+        - { name: opportunityId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Customer created from the won opportunity
+        '404':
+          description: Opportunity not found
+        '422':
+          description: Opportunity already converted
+  /crm/contacts:
+    get:
+      tags: [crm]
+      summary: List contacts (filterable by lead)
+      parameters:
+        - { name: lead_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Contact list
+    post:
+      tags: [crm]
+      summary: Create a contact under a lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lead_id, name]
+              properties:
+                lead_id: { type: string, format: uuid }
+                name: { type: string }
+                email: { type: string }
+                phone: { type: string }
+                role: { type: string }
+      responses:
+        '201':
+          description: Contact created
+        '404':
+          description: Lead not found
+  /crm/customers:
+    get:
+      tags: [crm]
+      summary: List customers (finance.customers)
+      responses:
+        '200':
+          description: Customer list

@@ -88,7 +88,8 @@ Layer B/C capabilities — see 22-ai-architecture section 22.2. The deterministi
 
 Modules :
 
-- CRM (UI module excluded — schema is built from Day 1, see section 21.6)
+- CRM advanced UI (pipeline kanban, dashboards, proposal generation) — the basic
+  leads / opportunities / customers UI + backend are MVP (see section 21.6)
 - Full BIM
 - IoT
 - Advanced digital twin
@@ -134,26 +135,30 @@ MVP is built multi-tenant from Day 1 :
 
 ## 21.6 CRM Schema Status
 
-CRM module UI is excluded from MVP but the CRM database schema is built from Day 1.
+> The basic CRM UI + backend are now MVP. The schema and the four §14 endpoints did not actually exist before;
+> they were built together with the `/crm/leads · /crm/opportunities · /crm/customers` pages. Only **advanced** CRM UI
+> (pipeline kanban, analytics dashboards, proposal generation) remains post-MVP.
+
+The basic CRM UI is in MVP; the CRM database schema (`crm` schema) ships with it.
 
 Rationale :
 
 - CRM tables (Lead, Opportunity, Contact, Customer) are referenced by Project and Finance flows
-- Building the schema now avoids a breaking migration when the CRM UI ships post-MVP
+- Customer is the existing `finance.customers` store (ADR-024); CRM `convert` populates it
 - The CRM data model is defined in 11-database-schema section 11.3
 
 What is excluded from MVP :
 
-- CRM UI pages and navigation
-- Lead pipeline views
-- Opportunity tracking dashboards
+- CRM advanced views: lead pipeline (kanban) views
+- Opportunity tracking dashboards (analytics)
 - Proposal generation workflows
+- CRM mobile screens
 
-What is included in MVP (schema-only) :
+What is included in MVP :
 
-- All CRM tables with tenant_id from Day 1
-- CRM entity lifecycle: Lead → Opportunity → Customer
-- FK relationships from Customer to Project
+- All CRM tables (`crm.leads`, `crm.opportunities`, `crm.contacts`) with tenant_id + RLS
+- CRM entity lifecycle: Lead → Opportunity → Customer (`finance.customers`)
+- Basic web UI: leads / opportunities (+ convert) / customers (§20.7.10)
 
 ### CRM API Availability During MVP
 
@@ -164,7 +169,8 @@ the Kong Gateway.
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | CRM database schema                                                                       | ✅ Built Day 1                                                |
 | CRM API endpoints (`/crm/leads`, `/crm/opportunities`, `/crm/opportunities/{id}/convert`) | ✅ Available — role-gated (EXECUTIVE, CRM_SALES_MANAGER only) |
-| CRM web UI (pipeline views, dashboards, proposal workflows)                               | ❌ Excluded from MVP                                          |
+| CRM web UI — basic (leads, opportunities + convert, customers)                            | ✅ MVP (§20.7.10)                                             |
+| CRM web UI — advanced (pipeline kanban, dashboards, proposal workflows)                   | ❌ Excluded from MVP                                          |
 | CRM mobile screens                                                                        | ❌ Excluded from MVP                                          |
 
 **Rationale for API-open, UI-excluded approach:**

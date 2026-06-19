@@ -187,6 +187,11 @@
       "permits": "Permits",
       "checklists": "Checklists",
       "compliance": "Compliance"
+    },
+    "crm": {
+      "leads": "Leads",
+      "opportunities": "Opportunities",
+      "customers": "Customers"
     }
   },
   "auth": {
@@ -305,5 +310,20 @@
     "assignDb": "Assign DB",
     "dbUrlOptional": "Dedicated DB URL (optional)",
     "createTenant": "Create tenant"
+  },
+  "crm": {
+    "leadsTitle": "Leads",
+    "opportunitiesTitle": "Opportunities",
+    "customersTitle": "Customers",
+    "colContact": "Contact",
+    "colCompany": "Company",
+    "colSource": "Source",
+    "colTitle": "Title",
+    "colValue": "Value",
+    "colCloseDate": "Expected close",
+    "createLead": "Add lead",
+    "createOpportunity": "Create opportunity",
+    "convert": "Convert to customer",
+    "selectLead": "Select a lead"
   }
 }

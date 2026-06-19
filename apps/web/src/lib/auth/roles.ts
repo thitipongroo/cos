@@ -15,6 +15,7 @@ export const ROLE_LANDING: Record<string, string> = {
   [CosRole.PROC_MANAGER]: '/procurement/requests',
   [CosRole.FINANCE]: '/finance/payments',
   [CosRole.SITE_ENGINEER]: '/site/reports',
+  [CosRole.CRM_SALES_MANAGER]: '/crm/leads',
   [CosRole.SITE_WORKER]: '/tasks',
   [CosRole.SAFETY_OFFICER]: '/safety/incidents',
   [CosRole.TENANT_ADMIN]: '/settings/users',

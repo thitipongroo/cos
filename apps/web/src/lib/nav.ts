@@ -37,6 +37,12 @@ const SITE_ENGINEER_NAV: NavItem[] = [
   { href: '/site/conflicts', labelKey: 'nav.site.conflicts' },
 ];
 
+const CRM_NAV: NavItem[] = [
+  { href: '/crm/leads', labelKey: 'nav.crm.leads' },
+  { href: '/crm/opportunities', labelKey: 'nav.crm.opportunities' },
+  { href: '/crm/customers', labelKey: 'nav.crm.customers' },
+];
+
 const EXECUTIVE_NAV: NavItem[] = [
   { href: '/', labelKey: 'nav.exec.home' },
   { href: '/portfolio', labelKey: 'nav.exec.portfolio' },
@@ -62,6 +68,7 @@ export const NAV_BY_ROLE: Record<string, NavItem[]> = {
   [CosRole.PROC_MANAGER]: PROCUREMENT_NAV,
   [CosRole.FINANCE]: FINANCE_NAV,
   [CosRole.SITE_ENGINEER]: SITE_ENGINEER_NAV,
+  [CosRole.CRM_SALES_MANAGER]: CRM_NAV,
   [CosRole.TENANT_ADMIN]: TENANT_ADMIN_NAV,
   // Read-only across assigned modules; per-project ABAC enforced at page level.
   [CosRole.VIEWER]: [...PM_NAV, ...SITE_ENGINEER_NAV],

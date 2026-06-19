@@ -286,10 +286,10 @@ when workflow reaches the human gate (before data migration step).
 
 ### Language Support
 
-| Language | Status        | Scope                                   |
-| -------- | ------------- | --------------------------------------- |
-| Thai     | MVP           | All UI strings, error messages, reports |
-| English  | MVP           | All UI strings, error messages, reports |
+| Language | Status | Scope                                   |
+| -------- | ------ | --------------------------------------- |
+| Thai     | MVP    | All UI strings, error messages, reports |
+| English  | MVP    | All UI strings, error messages, reports |
 
 All UI strings must be externalised via the i18n library — no hardcoded human-readable
 text in component source. Thai is the primary field language for site workers.
@@ -339,10 +339,10 @@ TH-specific logic is not silently applied to non-TH tenants.
 
 The web login renders **both** authentication paths already defined in §5.4 (master Phase 2):
 
-| Path | Users | Mechanism | Route |
-| ---- | ----- | --------- | ----- |
-| Path B — email + password | Office / management (PM, Finance, Executive, Tenant Admin, Procurement, Safety) | Keycloak OIDC (OAuth2), RS256 JWT | `/login` |
-| Path A — phone + SMS OTP | Field roles on tablet (Site Engineer, Site Worker) | Custom OTP module → Keycloak Direct Grant | `/login/otp` |
+| Path                      | Users                                                                           | Mechanism                                 | Route        |
+| ------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------- | ------------ |
+| Path B — email + password | Office / management (PM, Finance, Executive, Tenant Admin, Procurement, Safety) | Keycloak OIDC (OAuth2), RS256 JWT         | `/login`     |
+| Path A — phone + SMS OTP  | Field roles on tablet (Site Engineer, Site Worker)                              | Custom OTP module → Keycloak Direct Grant | `/login/otp` |
 
 - **MFA (TOTP):** required for `TENANT_ADMIN` and `FINANCE` (§5.4; master Phase 2) — MFA challenge
   page shown after primary factor succeeds.
@@ -384,72 +384,72 @@ The web login renders **both** authentication paths already defined in §5.4 (ma
 
 Source: §20.2 Executive; master Phase 10 EXEC nav; Analytics (Phase 14) + AI reports (Phase 12).
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/` | Portfolio home | KPI summary: active projects, total budget vs actual, open critical issues | `GET /api/v1/analytics/executive` |
-| `/portfolio` | Portfolio | Project list with status chips + budget-variance badge; drill to project health | Analytics + Project APIs |
-| `/alerts` | Risk alerts | Delay risk, budget overrun, critical issues sorted by severity | `finance.variance.alert`, `construction.delay.detected`, issues |
-| `/reports` | Executive reports | AI executive summaries per project | `POST /api/v1/ai/reports/executive-summary` |
+| Route        | Page              | Purpose                                                                         | Source                                                          |
+| ------------ | ----------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `/`          | Portfolio home    | KPI summary: active projects, total budget vs actual, open critical issues      | `GET /api/v1/analytics/executive`                               |
+| `/portfolio` | Portfolio         | Project list with status chips + budget-variance badge; drill to project health | Analytics + Project APIs                                        |
+| `/alerts`    | Risk alerts       | Delay risk, budget overrun, critical issues sorted by severity                  | `finance.variance.alert`, `construction.delay.detected`, issues |
+| `/reports`   | Executive reports | AI executive summaries per project                                              | `POST /api/v1/ai/reports/executive-summary`                     |
 
 ### 20.7.2 Project Manager (`PROJECT_MANAGER`)
 
 Source: §20.2 PM; master Phase 10 PM nav; Phases 3, 5, 6, 14.
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/projects` | Projects | List/create projects; filter by status/type | Phase 3 Project APIs |
-| `/projects/{id}` | Project detail | Status transitions, members, documents, BOQ summary | Phase 3 + Phase 4 |
-| `/projects/{id}/procurement` | Procurement status | RFQ/PO status (read), delivery tracking | Phase 5 (read) |
-| `/projects/{id}/finance` | Budget variance | Budget vs actual vs committed (read) | Phase 7 (read) |
-| `/projects/{id}/site` | Site summary | Site report summary, issue triage | Phase 6 |
-| `/analytics/pm/{projectId}` | PM dashboard | Manpower trend, issues by severity, inspection rate, procurement KPIs | `GET /api/v1/analytics/pm/{projectId}` (Phase 14 — implemented) |
+| Route                        | Page               | Purpose                                                               | Source                                                          |
+| ---------------------------- | ------------------ | --------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `/projects`                  | Projects           | List/create projects; filter by status/type                           | Phase 3 Project APIs                                            |
+| `/projects/{id}`             | Project detail     | Status transitions, members, documents, BOQ summary                   | Phase 3 + Phase 4                                               |
+| `/projects/{id}/procurement` | Procurement status | RFQ/PO status (read), delivery tracking                               | Phase 5 (read)                                                  |
+| `/projects/{id}/finance`     | Budget variance    | Budget vs actual vs committed (read)                                  | Phase 7 (read)                                                  |
+| `/projects/{id}/site`        | Site summary       | Site report summary, issue triage                                     | Phase 6                                                         |
+| `/analytics/pm/{projectId}`  | PM dashboard       | Manpower trend, issues by severity, inspection rate, procurement KPIs | `GET /api/v1/analytics/pm/{projectId}` (Phase 14 — implemented) |
 
 ### 20.7.3 Procurement Officer / Procurement Manager (`PROCUREMENT_OFFICER`, `PROC_MANAGER`)
 
 Source: §20.2 Procurement Officer; master Phase 10 Procurement nav; Phase 5.
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/procurement/requests` | Purchase requests | PR list/create | Phase 5 |
-| `/procurement/rfqs` | RFQs | RFQ list/detail; `PROC_MANAGER` approve/cancel (EVALUATED→AWARDED/CANCELLED) | Phase 5 RFQ workflow |
-| `/procurement/quotations` | Quotation comparison | Compare quotations, mark selected | Phase 5 |
-| `/procurement/orders` | Purchase orders | PO list + approval chain + delivery timeline | Phase 5 PO workflow |
-| `/procurement/deliveries` | Deliveries | Record/receive deliveries | Phase 5 |
-| `/procurement/vendors` | Vendors | Vendor master, vendor scoring | Phase 5 |
+| Route                     | Page                 | Purpose                                                                      | Source               |
+| ------------------------- | -------------------- | ---------------------------------------------------------------------------- | -------------------- |
+| `/procurement/requests`   | Purchase requests    | PR list/create                                                               | Phase 5              |
+| `/procurement/rfqs`       | RFQs                 | RFQ list/detail; `PROC_MANAGER` approve/cancel (EVALUATED→AWARDED/CANCELLED) | Phase 5 RFQ workflow |
+| `/procurement/quotations` | Quotation comparison | Compare quotations, mark selected                                            | Phase 5              |
+| `/procurement/orders`     | Purchase orders      | PO list + approval chain + delivery timeline                                 | Phase 5 PO workflow  |
+| `/procurement/deliveries` | Deliveries           | Record/receive deliveries                                                    | Phase 5              |
+| `/procurement/vendors`    | Vendors              | Vendor master, vendor scoring                                                | Phase 5              |
 
 ### 20.7.4 Finance (`FINANCE`)
 
 Source: §20.2 Finance; master Phase 10 FINANCE nav; Phase 7.
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/finance/payments` | Payments | Pending payment approvals; approve/record payment | Phase 7 |
-| `/finance/budget/{projectId}` | Budget | Budget vs actual vs committed; budget lines | Phase 7 |
-| `/finance/invoices` | Invoices | Invoice list/detail; verify/approve/dispute | Phase 5/7 invoice flow |
-| `/finance/reports/variance` | Variance report | Budget variance across projects | `GET /api/v1/finance/reports/variance` |
+| Route                         | Page            | Purpose                                           | Source                                 |
+| ----------------------------- | --------------- | ------------------------------------------------- | -------------------------------------- |
+| `/finance/payments`           | Payments        | Pending payment approvals; approve/record payment | Phase 7                                |
+| `/finance/budget/{projectId}` | Budget          | Budget vs actual vs committed; budget lines       | Phase 7                                |
+| `/finance/invoices`           | Invoices        | Invoice list/detail; verify/approve/dispute       | Phase 5/7 invoice flow                 |
+| `/finance/reports/variance`   | Variance report | Budget variance across projects                   | `GET /api/v1/finance/reports/variance` |
 
 ### 20.7.5 Site Engineer (`SITE_ENGINEER`)
 
 Source: §20.2 Site Engineer; master Phase 10 SITE_ENGINEER nav; Phase 6.
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/site/reports` | Site reports | Review/submit daily site reports; manpower overview | Phase 6 |
-| `/site/issues` | Issues | Issue list, triage, escalation | Phase 6 |
-| `/site/inspections` | Inspections | Inspection results, approval/re-inspection | Phase 6 |
-| `/site/conflicts` | Conflict resolution | Resolve `ConflictRecord` (offline sync conflicts) | Phase 6 `/conflict-records` |
+| Route               | Page                | Purpose                                             | Source                      |
+| ------------------- | ------------------- | --------------------------------------------------- | --------------------------- |
+| `/site/reports`     | Site reports        | Review/submit daily site reports; manpower overview | Phase 6                     |
+| `/site/issues`      | Issues              | Issue list, triage, escalation                      | Phase 6                     |
+| `/site/inspections` | Inspections         | Inspection results, approval/re-inspection          | Phase 6                     |
+| `/site/conflicts`   | Conflict resolution | Resolve `ConflictRecord` (offline sync conflicts)   | Phase 6 `/conflict-records` |
 
 ### 20.7.6 Site Worker (`SITE_WORKER`)
 
 Source: §20.2 Site Engineer needs; master Phase 10 SITE_WORKER nav; Phases 6, 22.
 Mobile-primary role; web pages provide the same functions for tablet use.
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/tasks` | Tasks | Assigned task list; progress update | Phase 6 task gates |
-| `/site/reports/new` | Daily report | Submit daily site report (manpower, blockers) | Phase 6 |
-| `/site/issues/new` | Quick issue | Report an issue with photo | Phase 6 |
-| `/site/checklists` | Safety checklist | Complete assigned safety checklist | Phase 6 safety |
+| Route               | Page             | Purpose                                       | Source             |
+| ------------------- | ---------------- | --------------------------------------------- | ------------------ |
+| `/tasks`            | Tasks            | Assigned task list; progress update           | Phase 6 task gates |
+| `/site/reports/new` | Daily report     | Submit daily site report (manpower, blockers) | Phase 6            |
+| `/site/issues/new`  | Quick issue      | Report an issue with photo                    | Phase 6            |
+| `/site/checklists`  | Safety checklist | Complete assigned safety checklist            | Phase 6 safety     |
 
 ### 20.7.7 Safety Officer (`SAFETY_OFFICER`)
 
@@ -457,21 +457,21 @@ Source: §20.2 Safety Officer + §21.2 MVP Safety scope (incident reports, check
 permit approval). **Derived from role needs** — master Phase 10 does not enumerate a Safety Officer
 mobile nav; the functions are specified in §20.2 + §21.2 + master §9 (safety permit approval chain).
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/safety/incidents` | Incidents | Report/track safety incidents | §21.2 Safety; Phase 6 |
-| `/safety/checklists` | Safety checklists | Manage/review safety checklists | §21.2 Safety; Phase 6 |
-| `/safety/permits` | Work permits | Permit approval (Safety Officer approves; PM final) | master §9 approval chain |
-| `/safety/compliance` | Compliance | Compliance status + violation alerts | §20.2 Safety Officer |
+| Route                | Page              | Purpose                                             | Source                   |
+| -------------------- | ----------------- | --------------------------------------------------- | ------------------------ |
+| `/safety/incidents`  | Incidents         | Report/track safety incidents                       | §21.2 Safety; Phase 6    |
+| `/safety/checklists` | Safety checklists | Manage/review safety checklists                     | §21.2 Safety; Phase 6    |
+| `/safety/permits`    | Work permits      | Permit approval (Safety Officer approves; PM final) | master §9 approval chain |
+| `/safety/compliance` | Compliance        | Compliance status + violation alerts                | §20.2 Safety Officer     |
 
 ### 20.7.8 Tenant Admin (`TENANT_ADMIN`)
 
 Source: master Phase 2 User Management API (§14.3) + tenant settings. Full access to all
 tenant pages above, plus tenant administration. (Distinct from the SYSTEM_ADMIN `/admin` panel in §20.4.)
 
-| Route | Page | Purpose | Source |
-| ----- | ---- | ------- | ------ |
-| `/settings/users` | User management | List/create users (Path A phone / Path B email), change role, deactivate | master Phase 2 User Management API |
+| Route              | Page            | Purpose                                                                  | Source                                    |
+| ------------------ | --------------- | ------------------------------------------------------------------------ | ----------------------------------------- |
+| `/settings/users`  | User management | List/create users (Path A phone / Path B email), change role, deactivate | master Phase 2 User Management API        |
 | `/settings/tenant` | Tenant settings | Variance thresholds, retention %, LINE channel token, notification prefs | Phases 7, 20 tenant-configurable settings |
 
 ### 20.7.9 Viewer (`VIEWER`)
@@ -483,10 +483,14 @@ Source: RBAC role definition (master Phase 2 — read-only across modules, per p
 
 ### 20.7.10 CRM / Sales Manager (`CRM_SALES_MANAGER`)
 
-- **No web operational pages in MVP.** CRM module UI (pipeline views, dashboards, proposal
-  workflows) is **excluded from MVP** per §21.6; the CRM schema and APIs exist from Day 1 but the
-  UI ships post-MVP. The role authenticates and is provisioned, but no CRM web pages are rendered
-  until the CRM UI is in scope.
+Source: §11.3 CRM lifecycle + §14 CRM APIs. Basic CRM UI is MVP (ADR-029; §21.6 updated). Advanced
+CRM UI (pipeline kanban, dashboards, proposal generation) remains post-MVP.
+
+| Route                | Page          | Purpose                                                | Source     |
+| -------------------- | ------------- | ------------------------------------------------------ | ---------- |
+| `/crm/leads`         | Leads         | List / create leads                                    | §11.3, §14 |
+| `/crm/opportunities` | Opportunities | Create opportunity from a lead; convert won → Customer | §11.3, §14 |
+| `/crm/customers`     | Customers     | Read-only customer list (`finance.customers`)          | §11.3, §14 |
 
 ### 20.7.11 System Admin (`SYSTEM_ADMIN`)
 
@@ -495,4 +499,5 @@ Source: RBAC role definition (master Phase 2 — read-only across modules, per p
 
 ---
 
-> 📎 See also: [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [13-product-architecture](13-product-architecture.md) · [21-mvp-scope](21-mvp-scope.md)
+> 📎 See also: [06-rbac-permission-matrix](06-rbac-permission-matrix.md)
+> · [13-product-architecture](13-product-architecture.md) · [21-mvp-scope](21-mvp-scope.md)

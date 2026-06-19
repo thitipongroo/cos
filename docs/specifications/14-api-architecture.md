@@ -343,14 +343,23 @@ POST /api/v1/ai/report/generate
 
 ---
 
-#### CRM APIs (Schema-built; UI post-MVP)
+#### CRM APIs (MVP — UI + backend, ADR-029)
 
-| Method  | Path                                     | Description                     | Auth                           |
-| ------- | ---------------------------------------- | ------------------------------- | ------------------------------ |
-| `GET`   | `/api/v1/crm/leads`                      | List leads                      | Executive, CRM / Sales Manager |
-| `POST`  | `/api/v1/crm/leads`                      | Create lead                     | CRM / Sales Manager            |
-| `POST`  | `/api/v1/crm/opportunities`              | Create opportunity from lead    | CRM / Sales Manager            |
-| `PATCH` | `/api/v1/crm/opportunities/{id}/convert` | Convert opportunity to Customer | CRM / Sales Manager            |
+> CRM is MVP : `Lead → Opportunity → Customer`. `convert` wins the
+> opportunity and creates a `finance.customers` row (the canonical Customer store). The
+> `GET /crm/opportunities`, `GET /crm/contacts`, and `GET /crm/customers` read endpoints extend the
+> original four to support the UI. Read = Executive + CRM/Sales Manager; write = CRM/Sales Manager.
+
+| Method  | Path                                     | Description                                 | Auth                           |
+| ------- | ---------------------------------------- | ------------------------------------------- | ------------------------------ |
+| `GET`   | `/api/v1/crm/leads`                      | List leads (filterable by status)           | Executive, CRM / Sales Manager |
+| `POST`  | `/api/v1/crm/leads`                      | Create lead                                 | CRM / Sales Manager            |
+| `POST`  | `/api/v1/crm/opportunities`              | Create opportunity from lead (qualifies it) | CRM / Sales Manager            |
+| `GET`   | `/api/v1/crm/opportunities`              | List opportunities (filterable by status)   | Executive, CRM / Sales Manager |
+| `PATCH` | `/api/v1/crm/opportunities/{id}/convert` | Convert won opportunity to a Customer       | CRM / Sales Manager            |
+| `POST`  | `/api/v1/crm/contacts`                   | Create a contact under a lead               | CRM / Sales Manager            |
+| `GET`   | `/api/v1/crm/contacts`                   | List contacts (filterable by lead)          | Executive, CRM / Sales Manager |
+| `GET`   | `/api/v1/crm/customers`                  | List customers (finance.customers)          | Executive, CRM / Sales Manager |
 
 ---
 

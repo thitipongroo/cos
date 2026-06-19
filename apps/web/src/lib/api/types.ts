@@ -411,3 +411,46 @@ export interface CreateTenantInput {
   planType: PlanType;
   dedicatedDbUrl?: string;
 }
+
+// ── CRM / Sales Manager (§20.7.10) ───────────────────────────────────────────
+
+export interface LeadRow {
+  lead_id: string;
+  contact_name: string | null;
+  company: string | null;
+  status: 'NEW' | 'QUALIFIED' | 'DISQUALIFIED';
+  source: string | null;
+  created_at: string;
+}
+
+export interface CreateLeadInput {
+  contact_name?: string;
+  company?: string;
+  source?: string;
+}
+
+export interface OpportunityRow {
+  opportunity_id: string;
+  lead_id: string;
+  title: string;
+  value: string | null;
+  status: 'OPEN' | 'WON' | 'LOST';
+  expected_close_date: string | null;
+  created_at: string;
+}
+
+export interface CreateOpportunityInput {
+  lead_id: string;
+  title: string;
+  value?: string;
+  expected_close_date?: string;
+}
+
+export interface CrmCustomerRow {
+  customer_id: string;
+  opportunity_id: string | null;
+  company_name: string;
+  customer_type: string | null;
+  status: string;
+  created_at: string;
+}
