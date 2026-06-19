@@ -231,3 +231,32 @@ export interface RecordPaymentInput {
   payment_date: string;
   payment_reference?: string;
 }
+
+// ── Site Engineer (§20.7.5) ──────────────────────────────────────────────────
+
+export type InspectionStatus = 'PENDING' | 'PASSED' | 'FAILED' | 'REQUIRES_REINSPECTION';
+
+export interface InspectionRow {
+  inspection_id: string;
+  project_id: string;
+  checklist_id: string;
+  status: InspectionStatus;
+  inspected_by: string;
+  inspected_at: string;
+  notes: string | null;
+}
+
+export interface UpdateInspectionInput {
+  status: 'PASSED' | 'FAILED' | 'REQUIRES_REINSPECTION';
+  notes?: string;
+}
+
+export interface ConflictRecordRow {
+  conflict_id: string;
+  entity_type: string;
+  entity_id: string;
+  conflict_type: 'FIELD_CONFLICT' | 'STATUS_CONFLICT' | 'REJECTED';
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}

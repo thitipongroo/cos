@@ -17,7 +17,7 @@ import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { SiteOpsRepository } from './site-ops.repository';
-import type { IssueRow, SiteReportRow } from './site-ops.repository';
+import type { IssueRow, SiteReportRow, InspectionRow } from './site-ops.repository';
 import { resolveReportConflict, resolveIssueConflict } from './conflict-handler';
 import type { ConflictStatus } from './conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
@@ -25,6 +25,7 @@ import type { SyncSiteReportsDto } from './dto/sync-site-reports.dto';
 import type { CreateIssueDto } from './dto/create-issue.dto';
 import type { UpdateIssueDto } from './dto/update-issue.dto';
 import type { SubmitInspectionDto } from './dto/submit-inspection.dto';
+import type { UpdateInspectionDto } from './dto/update-inspection.dto';
 import type { CreateMaterialConsumptionDto } from './dto/create-material-consumption.dto';
 
 const logger = createLogger('site-ops-service');
@@ -352,6 +353,68 @@ export class SiteOpsService {
     });
 
     return inspection;
+  }
+
+  async listInspections(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }) {
+    const { rows, total } = await this.repo.findInspections(params);
+    return { items: rows, total, page: params.page, limit: params.limit };
+  }
+
+  async getInspection(inspectionId: string): Promise<InspectionRow> {
+    const inspection = await this.repo.findInspectionById(inspectionId);
+    if (!inspection) {
+      throw new NotFoundException({ code: 'COS-SITE-006', message: 'Inspection not found' });
+    }
+    return inspection;
+  }
+
+  /** Approve (→PASSED) or request re-inspection (→REQUIRES_REINSPECTION); PASSED is terminal (ADR-025). */
+  async updateInspectionStatus(
+    inspectionId: string,
+    dto: UpdateInspectionDto,
+  ): Promise<InspectionRow> {
+    const inspection = await this.getInspection(inspectionId);
+    if (inspection.status === 'PASSED') {
+      throw new UnprocessableEntityException({
+        code: 'COS-SITE-007',
+        message: 'Inspection already PASSED (terminal); create a new inspection for re-inspection',
+      });
+    }
+
+    const updated = await this.repo.updateInspectionStatus({
+      inspection_id: inspectionId,
+      status: dto.status,
+      notes: dto.notes ?? null,
+    });
+
+    if (dto.status === 'PASSED') {
+      await this.emitEvent('site.inspection.passed.v1', {
+        inspection_id: inspectionId,
+        project_id: updated.project_id,
+        inspected_by: this.userId,
+      });
+    } else if (dto.status === 'FAILED') {
+      await this.emitEvent('site.inspection.failed.v1', {
+        inspection_id: inspectionId,
+        project_id: updated.project_id,
+        checklist_id: updated.checklist_id,
+        inspected_by: this.userId,
+      });
+    }
+
+    logger.info({
+      event: 'inspection.updated',
+      inspection_id: inspectionId,
+      status: dto.status,
+      tenant_id: this.tenantId,
+      trace_id: this.correlationId,
+    });
+    return updated;
   }
 
   // ── Conflict Records ──────────────────────────────────────────────────────

@@ -123,10 +123,10 @@ describe('SiteOps Integration (Phase 6)', () => {
 
   // ── HTTP contract + validation ─────────────────────────────────────────────
 
-  describe('POST /api/v1/site-reports', () => {
+  describe('POST /api/v1/site/reports', () => {
     it('returns 201 with valid payload', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/site-reports')
+        .post('/api/v1/site/reports')
         .set('Authorization', ENGINEER_TOKEN)
         .send(buildCreateSiteReportDto(REPORT_ID_A, { report_date: '2026-06-04' }));
       expect([201, 500]).toContain(res.status);
@@ -134,37 +134,37 @@ describe('SiteOps Integration (Phase 6)', () => {
 
     it('returns 400 when report_date is missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/site-reports')
+        .post('/api/v1/site/reports')
         .set('Authorization', ENGINEER_TOKEN)
         .send({ project_id: REPORT_ID_A });
       expect(res.status).toBe(400);
     });
   });
 
-  describe('POST /api/v1/site-reports/sync — validation', () => {
+  describe('POST /api/v1/site/reports/sync — validation', () => {
     it('returns 400 when items array is missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/site-reports/sync')
+        .post('/api/v1/site/reports/sync')
         .set('Authorization', ENGINEER_TOKEN)
         .send({});
       expect(res.status).toBe(400);
     });
   });
 
-  describe('POST /api/v1/issues — validation', () => {
+  describe('POST /api/v1/site/issues — validation', () => {
     it('returns 400 when title is missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/issues')
+        .post('/api/v1/site/issues')
         .set('Authorization', ENGINEER_TOKEN)
         .send({ project_id: REPORT_ID_A });
       expect(res.status).toBe(400);
     });
   });
 
-  describe('POST /api/v1/inspections — validation', () => {
+  describe('POST /api/v1/site/inspections — validation', () => {
     it('returns 400 when checklist_id is missing', async () => {
       const res = await request(app.getHttpServer())
-        .post('/api/v1/inspections')
+        .post('/api/v1/site/inspections')
         .set('Authorization', ENGINEER_TOKEN)
         .send({
           project_id: REPORT_ID_A,
@@ -175,10 +175,10 @@ describe('SiteOps Integration (Phase 6)', () => {
     });
   });
 
-  describe('GET /api/v1/conflict-records', () => {
+  describe('GET /api/v1/site/conflict-records', () => {
     it('returns 200 list', async () => {
       const res = await request(app.getHttpServer())
-        .get('/api/v1/conflict-records')
+        .get('/api/v1/site/conflict-records')
         .set('Authorization', ENGINEER_TOKEN);
       expect([200, 500]).toContain(res.status);
     });
@@ -186,7 +186,7 @@ describe('SiteOps Integration (Phase 6)', () => {
 
   // ── Conflict scenarios — LAST_WRITE_WINS (site_reports) ───────────────────
 
-  describe('POST /api/v1/site-reports/sync — LAST_WRITE_WINS conflict scenarios', () => {
+  describe('POST /api/v1/site/reports/sync — LAST_WRITE_WINS conflict scenarios', () => {
     afterEach(() => jest.restoreAllMocks());
 
     it('returns conflict_status CONFLICT_FLAGGED when server was modified after client last synced', async () => {
@@ -199,7 +199,7 @@ describe('SiteOps Integration (Phase 6)', () => {
         .mockResolvedValue(makeConflictRecord());
 
       const res = await request(app.getHttpServer())
-        .post('/api/v1/site-reports/sync')
+        .post('/api/v1/site/reports/sync')
         .set('Authorization', ENGINEER_TOKEN)
         .send({
           items: [
@@ -227,7 +227,7 @@ describe('SiteOps Integration (Phase 6)', () => {
         .mockResolvedValue(makeServerReport({ report_id: REPORT_ID_B, modified_at: sharedTs }));
 
       const res = await request(app.getHttpServer())
-        .post('/api/v1/site-reports/sync')
+        .post('/api/v1/site/reports/sync')
         .set('Authorization', ENGINEER_TOKEN)
         .send({
           items: [
@@ -251,7 +251,7 @@ describe('SiteOps Integration (Phase 6)', () => {
 
   // ── Conflict scenarios — FIELD_LEVEL_MERGE (issues) ───────────────────────
 
-  describe('PATCH /api/v1/issues/:issueId — FIELD_LEVEL_MERGE conflict scenario', () => {
+  describe('PATCH /api/v1/site/issues/:issueId — FIELD_LEVEL_MERGE conflict scenario', () => {
     afterEach(() => jest.restoreAllMocks());
 
     it('creates ConflictRecord when server changed status while client was offline', async () => {
@@ -270,7 +270,7 @@ describe('SiteOps Integration (Phase 6)', () => {
       jest.spyOn(SiteOpsRepository.prototype, 'updateIssue').mockResolvedValue(makeServerIssue());
 
       const res = await request(app.getHttpServer())
-        .patch(`/api/v1/issues/${ISSUE_ID_A}`)
+        .patch(`/api/v1/site/issues/${ISSUE_ID_A}`)
         .set('Authorization', ENGINEER_TOKEN)
         .send({
           status: 'OPEN', // client wants OPEN
@@ -296,7 +296,7 @@ describe('SiteOps Integration (Phase 6)', () => {
         .mockResolvedValue(makeServerIssue({ status: 'OPEN' }));
 
       const res = await request(app.getHttpServer())
-        .patch(`/api/v1/issues/${ISSUE_ID_A}`)
+        .patch(`/api/v1/site/issues/${ISSUE_ID_A}`)
         .set('Authorization', ENGINEER_TOKEN)
         .send({
           status: 'OPEN', // same as server status — no conflict

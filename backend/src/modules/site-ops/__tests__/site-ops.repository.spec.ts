@@ -346,4 +346,48 @@ describe('SiteOpsRepository', () => {
     });
     expect(result.consumption_id).toBe('cons-uuid-001');
   });
+
+  // ── Inspections list/detail/update (ADR-025) ────────────────────────────────
+
+  it('findInspections returns rows and total (filters applied)', async () => {
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([inspectionRow])
+      .mockResolvedValueOnce([{ count: 1n }]);
+    const result = await repo.findInspections({
+      project_id: 'proj-uuid-001',
+      status: 'PENDING',
+      page: 1,
+      limit: 20,
+    });
+    expect(result.total).toBe(1);
+    expect(result.rows).toHaveLength(1);
+  });
+
+  it('findInspections returns total=0 when count empty (no filters)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    const result = await repo.findInspections({ page: 1, limit: 20 });
+    expect(result.total).toBe(0);
+  });
+
+  it('findInspectionById returns row then null', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([inspectionRow]);
+    expect((await repo.findInspectionById('insp-uuid-001'))?.inspection_id).toBeDefined();
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.findInspectionById('missing')).toBeNull();
+  });
+
+  it('updateInspectionStatus returns updated row (with and without notes)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...inspectionRow, status: 'PASSED' }]);
+    const r1 = await repo.updateInspectionStatus({
+      inspection_id: 'insp-uuid-001',
+      status: 'PASSED',
+      notes: 'approved',
+    });
+    expect(r1.status).toBe('PASSED');
+    const r2 = await repo.updateInspectionStatus({
+      inspection_id: 'insp-uuid-001',
+      status: 'PASSED',
+    });
+    expect(r2.status).toBe('PASSED');
+  });
 });

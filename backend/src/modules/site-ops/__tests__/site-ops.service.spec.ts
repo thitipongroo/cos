@@ -56,6 +56,9 @@ const mockRepo = {
   updateIssue: jest.fn(),
   createInspection: jest.fn(),
   findChecklistById: jest.fn(),
+  findInspections: jest.fn(),
+  findInspectionById: jest.fn(),
+  updateInspectionStatus: jest.fn(),
   createConflictRecord: jest.fn(),
   listConflictRecords: jest.fn(),
   resolveConflictRecord: jest.fn(),
@@ -743,5 +746,65 @@ describe('createMaterialConsumption', () => {
     await expect(
       service.createMaterialConsumption('missing-report', dto as never),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+// ── Inspections list/detail/approval (ADR-025) ──────────────────────────────
+
+describe('inspection results & approval', () => {
+  const pending = {
+    inspection_id: 'insp-1',
+    project_id: 'proj-uuid-1',
+    checklist_id: 'chk-1',
+    status: 'PENDING',
+  };
+
+  it('listInspections returns paginated envelope', async () => {
+    mockRepo.findInspections.mockResolvedValue({ rows: [pending], total: 1 });
+    const r = await service.listInspections({ page: 1, limit: 20 });
+    expect(r).toEqual({ items: [pending], total: 1, page: 1, limit: 20 });
+  });
+
+  it('getInspection returns row / throws NotFound', async () => {
+    mockRepo.findInspectionById.mockResolvedValueOnce(pending);
+    expect((await service.getInspection('insp-1')).inspection_id).toBe('insp-1');
+    mockRepo.findInspectionById.mockResolvedValueOnce(null);
+    await expect(service.getInspection('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('updateInspectionStatus → PASSED (approve) emits and returns', async () => {
+    mockRepo.findInspectionById.mockResolvedValue(pending);
+    mockRepo.updateInspectionStatus.mockResolvedValue({ ...pending, status: 'PASSED' });
+    const r = await service.updateInspectionStatus('insp-1', { status: 'PASSED' } as never);
+    expect(r.status).toBe('PASSED');
+  });
+
+  it('updateInspectionStatus → FAILED emits failed event', async () => {
+    mockRepo.findInspectionById.mockResolvedValue(pending);
+    mockRepo.updateInspectionStatus.mockResolvedValue({ ...pending, status: 'FAILED' });
+    await expect(
+      service.updateInspectionStatus('insp-1', { status: 'FAILED' } as never),
+    ).resolves.toBeDefined();
+  });
+
+  it('updateInspectionStatus → REQUIRES_REINSPECTION (no event branch)', async () => {
+    mockRepo.findInspectionById.mockResolvedValue({ ...pending, status: 'FAILED' });
+    mockRepo.updateInspectionStatus.mockResolvedValue({
+      ...pending,
+      status: 'REQUIRES_REINSPECTION',
+    });
+    await expect(
+      service.updateInspectionStatus('insp-1', {
+        status: 'REQUIRES_REINSPECTION',
+        notes: 'redo',
+      } as never),
+    ).resolves.toBeDefined();
+  });
+
+  it('updateInspectionStatus throws when already PASSED (terminal)', async () => {
+    mockRepo.findInspectionById.mockResolvedValue({ ...pending, status: 'PASSED' });
+    await expect(
+      service.updateInspectionStatus('insp-1', { status: 'PASSED' } as never),
+    ).rejects.toBeInstanceOf(UnprocessableEntityException);
   });
 });

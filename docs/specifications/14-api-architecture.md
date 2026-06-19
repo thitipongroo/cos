@@ -263,14 +263,29 @@ POST /api/v1/projects
 
 #### Site APIs
 
-| Method | Path                               | Description                                           | Auth                              |
-| ------ | ---------------------------------- | ----------------------------------------------------- | --------------------------------- |
-| `GET`  | `/api/v1/site/reports`             | List daily site reports (filterable by project, date) | Any role                          |
-| `POST` | `/api/v1/site/reports`             | Submit daily site report                              | PM, Site Engineer                 |
-| `GET`  | `/api/v1/site/reports/{report_id}` | Get site report detail                                | Any role                          |
-| `POST` | `/api/v1/site/inspections`         | Submit QC inspection result                           | PM, Site Engineer, Safety Officer |
-| `GET`  | `/api/v1/site/permits`             | List permits (filterable by project, type, status)    | Any role                          |
-| `POST` | `/api/v1/site/permits`             | Create permit request                                 | PM, Safety Officer                |
+> Canonical prefix `/api/v1/site/*` (ADR-025). Inspections / QC support a results list and an
+> approval / re-inspection transition (`PATCH`, §06 RW; PASSED is terminal). Reports support
+> offline bulk sync and per-report material consumption. Issues and conflict-records are part of
+> the offline-sync site module. Permits are owned by the Safety module (§20.7.7).
+
+| Method  | Path                                         | Description                                           | Auth                             |
+| ------- | -------------------------------------------- | ----------------------------------------------------- | -------------------------------- |
+| `GET`   | `/api/v1/site/reports`                       | List daily site reports (filterable by project, date) | Any role                         |
+| `POST`  | `/api/v1/site/reports`                       | Submit daily site report                              | SW, Site Engineer, PM, Admin     |
+| `GET`   | `/api/v1/site/reports/{report_id}`           | Get site report detail                                | Any role                         |
+| `POST`  | `/api/v1/site/reports/sync`                  | Bulk offline sync (per-item conflict status)          | SW, Site Engineer, PM, Admin     |
+| `POST`  | `/api/v1/site/reports/{report_id}/materials` | Log material consumption                              | SW, Site Engineer, PM, Admin     |
+| `GET`   | `/api/v1/site/issues`                        | List issues (filterable by severity, status, project) | Read roles + Safety              |
+| `POST`  | `/api/v1/site/issues`                        | Create a site issue                                   | SW, Site Engineer, PM, Admin     |
+| `PATCH` | `/api/v1/site/issues/{issue_id}`             | Update issue (field-level merge)                      | SW, SE, PM, Safety, Admin        |
+| `POST`  | `/api/v1/site/inspections`                   | Submit QC inspection result                           | Site Engineer, Safety, Admin     |
+| `GET`   | `/api/v1/site/inspections`                   | List inspection results (filter project, status)      | Exec, PM, SE, Safety, Admin      |
+| `GET`   | `/api/v1/site/inspections/{inspection_id}`   | Get inspection result                                 | Exec, PM, SE, Safety, Admin      |
+| `PATCH` | `/api/v1/site/inspections/{inspection_id}`   | Approve / request re-inspection (status transition)   | PM, Site Engineer, Safety, Admin |
+| `GET`   | `/api/v1/site/conflict-records`              | List unresolved conflict records                      | Site Engineer, PM, Admin         |
+| `PATCH` | `/api/v1/site/conflict-records/{id}/resolve` | Mark conflict record resolved                         | Site Engineer, PM, Admin         |
+| `GET`   | `/api/v1/site/permits`                       | List permits (filterable by project, type, status)    | Any role                         |
+| `POST`  | `/api/v1/site/permits`                       | Create permit request                                 | PM, Safety Officer               |
 
 ---
 

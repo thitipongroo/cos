@@ -11,6 +11,9 @@ import type {
   FinanceInvoiceRow,
   FinanceSummary,
   IssueListResponse,
+  InspectionRow,
+  ConflictRecordRow,
+  UpdateInspectionInput,
   PaginatedResponse,
   PaymentRow,
   ProcurementListFilter,
@@ -70,7 +73,7 @@ export function useCriticalIssues() {
   const api = useApi();
   return useQuery({
     queryKey: ['issues', 'critical'],
-    queryFn: () => api<IssueListResponse>('/issues?severity=CRITICAL&status=OPEN&limit=100'),
+    queryFn: () => api<IssueListResponse>('/site/issues?severity=CRITICAL&status=OPEN&limit=100'),
   });
 }
 
@@ -150,7 +153,7 @@ export function useProjectSiteReports(id: string) {
   return useQuery({
     queryKey: ['project', id, 'site-reports'],
     enabled: id !== '',
-    queryFn: () => api<SiteReportListResponse>(`/site-reports?project_id=${id}&limit=50`),
+    queryFn: () => api<SiteReportListResponse>(`/site/reports?project_id=${id}&limit=50`),
   });
 }
 
@@ -159,7 +162,7 @@ export function useProjectIssues(id: string) {
   return useQuery({
     queryKey: ['project', id, 'issues'],
     enabled: id !== '',
-    queryFn: () => api<IssueListResponse>(`/issues?project_id=${id}&status=OPEN&limit=50`),
+    queryFn: () => api<IssueListResponse>(`/site/issues?project_id=${id}&status=OPEN&limit=50`),
   });
 }
 
@@ -313,5 +316,67 @@ export function useApproveInvoice() {
     mutationFn: (invoiceId: string) =>
       api<void>(`/procurement/vendor-invoices/${invoiceId}/approve`, { method: 'POST' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'invoices'] }),
+  });
+}
+
+// ── Site Engineer (§20.7.5) ──────────────────────────────────────────────────
+
+export function useSiteReports() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['site', 'reports'],
+    queryFn: () => api<SiteReportListResponse>('/site/reports?limit=50'),
+  });
+}
+
+export function useIssues(status?: string) {
+  const api = useApi();
+  const qs = status ? `&status=${status}` : '';
+  return useQuery({
+    queryKey: ['site', 'issues', status ?? 'all'],
+    queryFn: () => api<IssueListResponse>(`/site/issues?limit=100${qs}`),
+  });
+}
+
+export function useInspections(status?: string) {
+  const api = useApi();
+  const qs = status ? `&status=${status}` : '';
+  return useQuery({
+    queryKey: ['site', 'inspections', status ?? 'all'],
+    queryFn: () => api<PaginatedResponse<InspectionRow>>(`/site/inspections?limit=100${qs}`),
+  });
+}
+
+export function useUpdateInspection() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateInspectionInput }) =>
+      api<InspectionRow>(`/site/inspections/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'inspections'] }),
+  });
+}
+
+export function useConflictRecords() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['site', 'conflicts'],
+    queryFn: () => api<ConflictRecordRow[]>('/site/conflict-records'),
+  });
+}
+
+export function useResolveConflict() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conflictId: string) =>
+      api<void>(`/site/conflict-records/${conflictId}/resolve`, {
+        method: 'PATCH',
+        body: JSON.stringify({ resolution: 'MANUAL' }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'conflicts'] }),
   });
 }

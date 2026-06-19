@@ -337,7 +337,7 @@ components:
               format: date-time
 
 paths:
-  /site-reports:
+  /site/reports:
     post:
       summary: Create or upsert a site report (offline-sync compatible)
       operationId: createSiteReport
@@ -427,7 +427,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /site-reports/{reportId}:
+  /site/reports/{reportId}:
     get:
       summary: Get site report by ID
       operationId: getSiteReport
@@ -449,7 +449,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /site-reports/sync:
+  /site/reports/sync:
     post:
       summary: Bulk offline sync — accepts array of reports; returns per-item conflict_status
       operationId: syncSiteReports
@@ -502,7 +502,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/SyncResultItem'
 
-  /issues:
+  /site/issues:
     post:
       summary: Create a site issue (offline-sync compatible)
       operationId: createIssue
@@ -579,7 +579,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIssues'
 
-  /issues/{issueId}:
+  /site/issues/{issueId}:
     patch:
       summary: Update issue — applies FIELD_LEVEL_MERGE conflict strategy
       operationId: updateIssue
@@ -625,7 +625,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /inspections:
+  /site/inspections:
     post:
       summary: Submit inspection result against a safety checklist
       operationId: submitInspection
@@ -661,7 +661,93 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /site-reports/{reportId}/materials:
+    get:
+      summary: List inspection results (filterable by project and status)
+      operationId: listInspections
+      tags: [inspections]
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InspectionStatus'
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated inspection results
+
+  /site/inspections/{inspectionId}:
+    get:
+      summary: Get a single inspection result
+      operationId: getInspection
+      tags: [inspections]
+      parameters:
+        - name: inspectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Inspection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      summary: Approve or request re-inspection (status transition; PASSED is terminal)
+      operationId: updateInspection
+      tags: [inspections]
+      parameters:
+        - name: inspectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [PASSED, FAILED, REQUIRES_REINSPECTION]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Inspection updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inspection'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          description: Invalid transition (e.g. already PASSED)
+
+  /site/reports/{reportId}/materials:
     post:
       summary: Log material consumption against a site report; emits site.material.consumed.v1
       operationId: createMaterialConsumption
@@ -693,7 +779,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /conflict-records:
+  /site/conflict-records:
     get:
       summary: List unresolved conflict records for manual review
       operationId: listConflictRecords
@@ -708,7 +794,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/ConflictRecord'
 
-  /conflict-records/{conflictId}/resolve:
+  /site/conflict-records/{conflictId}/resolve:
     patch:
       summary: Mark conflict record as manually resolved
       operationId: resolveConflict

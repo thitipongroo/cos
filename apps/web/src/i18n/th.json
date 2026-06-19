@@ -24,7 +24,8 @@
     "utilization": "% การใช้งบ",
     "severity": "ความรุนแรง",
     "title": "หัวข้อ",
-    "createdAt": "สร้างเมื่อ"
+    "createdAt": "สร้างเมื่อ",
+    "actions": "การดำเนินการ"
   },
   "projectStatus": {
     "DRAFT": "ร่าง",
@@ -147,7 +148,9 @@
       "alerts": "การแจ้งเตือนความเสี่ยง",
       "reports": "รายงานผู้บริหาร"
     },
-    "pm": { "projects": "โครงการ" },
+    "pm": {
+      "projects": "โครงการ"
+    },
     "procurement": {
       "requests": "ใบขอซื้อ",
       "rfqs": "ใบขอราคา (RFQ)",
@@ -204,5 +207,26 @@
       "title": "โมดูลยังไม่พร้อมใช้งาน",
       "body": "หน้าใช้งานสำหรับบทบาทของคุณกำลังอยู่ระหว่างพัฒนา (รอ backend)"
     }
+  },
+  "site": {
+    "reportsTitle": "รายงานหน้างาน",
+    "issuesTitle": "ปัญหาหน้างาน",
+    "inspectionsTitle": "ผลการตรวจสอบ",
+    "conflictsTitle": "การแก้ไขข้อขัดแย้ง",
+    "colDate": "วันที่",
+    "colSummary": "สรุป",
+    "colManpower": "จำนวนแรงงาน",
+    "colTitle": "หัวข้อ",
+    "colSeverity": "ความรุนแรง",
+    "colChecklist": "เช็คลิสต์",
+    "colInspectedAt": "ตรวจเมื่อ",
+    "colNotes": "หมายเหตุ",
+    "colEntity": "ประเภทข้อมูล",
+    "colEntityId": "รหัสข้อมูล",
+    "colConflictType": "ประเภทข้อขัดแย้ง",
+    "approve": "อนุมัติ",
+    "requestReinspection": "ขอตรวจซ้ำ",
+    "resolve": "แก้ไข",
+    "allStatuses": "ทุกสถานะ"
   }
 }

@@ -16,6 +16,9 @@ const mockSvc = {
   updateIssue: jest.fn(),
   listIssues: jest.fn(),
   submitInspection: jest.fn(),
+  listInspections: jest.fn(),
+  getInspection: jest.fn(),
+  updateInspectionStatus: jest.fn(),
   listConflictRecords: jest.fn(),
   resolveConflict: jest.fn(),
   createMaterialConsumption: jest.fn(),
@@ -149,5 +152,48 @@ describe('SiteOpsController', () => {
     const dto = { material_name: 'Steel', quantity: '5', unit: 'pcs', consumed_at: '2026-06-11' };
     ctrl.createMaterialConsumption('report-001', dto as never);
     expect(mockSvc.createMaterialConsumption).toHaveBeenCalledWith('report-001', dto);
+  });
+
+  // ── Inspections (ADR-025) ───────────────────────────────────────────────────
+
+  it('listInspections parses params and delegates', () => {
+    ctrl.listInspections('proj-1', 'PENDING', '2', '50');
+    expect(mockSvc.listInspections).toHaveBeenCalledWith({
+      project_id: 'proj-1',
+      status: 'PENDING',
+      page: 2,
+      limit: 50,
+    });
+  });
+
+  it('listInspections applies defaults on omitted params', () => {
+    ctrl.listInspections();
+    expect(mockSvc.listInspections).toHaveBeenCalledWith({
+      project_id: undefined,
+      status: undefined,
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('listInspections falls back to defaults on non-numeric page/limit', () => {
+    ctrl.listInspections('proj-1', 'PENDING', 'x', 'y');
+    expect(mockSvc.listInspections).toHaveBeenCalledWith({
+      project_id: 'proj-1',
+      status: 'PENDING',
+      page: 1,
+      limit: 20,
+    });
+  });
+
+  it('getInspection delegates to svc.getInspection', () => {
+    ctrl.getInspection('insp-1');
+    expect(mockSvc.getInspection).toHaveBeenCalledWith('insp-1');
+  });
+
+  it('updateInspection delegates to svc.updateInspectionStatus', () => {
+    const dto = { status: 'PASSED' };
+    ctrl.updateInspection('insp-1', dto as never);
+    expect(mockSvc.updateInspectionStatus).toHaveBeenCalledWith('insp-1', dto);
   });
 });

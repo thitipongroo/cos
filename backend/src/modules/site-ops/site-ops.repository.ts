@@ -351,6 +351,69 @@ export class SiteOpsRepository {
     return rows[0]!;
   }
 
+  async findInspections(params: {
+    project_id?: string;
+    status?: string;
+    page: number;
+    limit: number;
+  }): Promise<{ rows: InspectionRow[]; total: number }> {
+    const offset = (params.page - 1) * params.limit;
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<InspectionRow[]>`
+        SELECT * FROM site_ops.inspections
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL
+               OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL
+               OR status = ${params.status ?? null})
+        ORDER BY inspected_at DESC
+        LIMIT ${params.limit} OFFSET ${offset}
+      `,
+    );
+    const countRows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<[{ count: bigint }]>`
+        SELECT COUNT(*)::bigint AS count FROM site_ops.inspections
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${params.project_id ?? null}::uuid IS NULL
+               OR project_id = ${params.project_id ?? null}::uuid)
+          AND (${params.status ?? null} IS NULL
+               OR status = ${params.status ?? null})
+      `,
+    );
+    return { rows, total: Number(countRows[0]?.count ?? 0) };
+  }
+
+  async findInspectionById(inspectionId: string): Promise<InspectionRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<InspectionRow[]>`
+        SELECT * FROM site_ops.inspections
+        WHERE inspection_id = ${inspectionId}::uuid AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  async updateInspectionStatus(params: {
+    inspection_id: string;
+    status: string;
+    notes?: string | null;
+  }): Promise<InspectionRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<InspectionRow[]>`
+        UPDATE site_ops.inspections SET
+          status = ${params.status},
+          notes = COALESCE(${params.notes ?? null}, notes)
+        WHERE inspection_id = ${params.inspection_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
   async findChecklistById(checklistId: string): Promise<SafetyChecklistRow | null> {
     const rows = await this.db.run(
       (tx) =>

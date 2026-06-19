@@ -24,7 +24,8 @@
     "utilization": "Utilization %",
     "severity": "Severity",
     "title": "Title",
-    "createdAt": "Created"
+    "createdAt": "Created",
+    "actions": "Actions"
   },
   "projectStatus": {
     "DRAFT": "Draft",
@@ -147,7 +148,9 @@
       "alerts": "Risk alerts",
       "reports": "Executive reports"
     },
-    "pm": { "projects": "Projects" },
+    "pm": {
+      "projects": "Projects"
+    },
     "procurement": {
       "requests": "Purchase requests",
       "rfqs": "RFQs",
@@ -204,5 +207,26 @@
       "title": "Module not yet available",
       "body": "The pages for your role are still under development (pending backend)."
     }
+  },
+  "site": {
+    "reportsTitle": "Site reports",
+    "issuesTitle": "Site issues",
+    "inspectionsTitle": "Inspection results",
+    "conflictsTitle": "Conflict resolution",
+    "colDate": "Date",
+    "colSummary": "Summary",
+    "colManpower": "Manpower",
+    "colTitle": "Title",
+    "colSeverity": "Severity",
+    "colChecklist": "Checklist",
+    "colInspectedAt": "Inspected at",
+    "colNotes": "Notes",
+    "colEntity": "Entity",
+    "colEntityId": "Entity ID",
+    "colConflictType": "Conflict type",
+    "approve": "Approve",
+    "requestReinspection": "Request re-inspection",
+    "resolve": "Resolve",
+    "allStatuses": "All statuses"
   }
 }
