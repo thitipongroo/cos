@@ -173,7 +173,9 @@
     },
     "siteWorker": {
       "newReport": "รายงานประจำวัน",
-      "newIssue": "แจ้งปัญหา"
+      "newIssue": "แจ้งปัญหา",
+      "tasks": "งาน",
+      "checklists": "เช็คลิสต์"
     },
     "admin": {
       "users": "จัดการผู้ใช้",
@@ -227,6 +229,25 @@
     "approve": "อนุมัติ",
     "requestReinspection": "ขอตรวจซ้ำ",
     "resolve": "แก้ไข",
-    "allStatuses": "ทุกสถานะ"
+    "allStatuses": "ทุกสถานะ",
+    "tasksTitle": "งานที่ได้รับมอบหมาย",
+    "selectProject": "เลือกโครงการ",
+    "colTaskName": "ชื่องาน",
+    "colProgress": "ความคืบหน้า",
+    "complete": "เสร็จสิ้น",
+    "completeBlocked": "ปิดงานไม่ได้ — ติดเงื่อนไข (ตรวจสอบ/ปัญหา/งานก่อนหน้า/ใบอนุญาต)",
+    "reportsNewTitle": "ส่งรายงานประจำวัน",
+    "issuesNewTitle": "แจ้งปัญหา",
+    "checklistsTitle": "เช็คลิสต์ความปลอดภัย",
+    "colChecklistName": "ชื่อเช็คลิสต์",
+    "colVersion": "เวอร์ชัน",
+    "fieldDate": "วันที่",
+    "fieldManpower": "จำนวนแรงงาน",
+    "fieldSummary": "สรุป/อุปสรรค",
+    "fieldTitle": "หัวข้อ",
+    "fieldDescription": "รายละเอียด",
+    "fieldPhoto": "รูปภาพ",
+    "submit": "ส่ง",
+    "submitted": "ส่งเรียบร้อย"
   }
 }

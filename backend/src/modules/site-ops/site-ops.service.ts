@@ -423,6 +423,10 @@ export class SiteOpsService {
     return this.repo.listConflictRecords(true);
   }
 
+  async listChecklists(project_id?: string) {
+    return this.repo.listChecklists(project_id);
+  }
+
   // ── Material Consumptions ─────────────────────────────────────────────────
 
   async createMaterialConsumption(reportId: string, dto: CreateMaterialConsumptionDto) {

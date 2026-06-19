@@ -19,6 +19,7 @@ const mockSvc = {
   listInspections: jest.fn(),
   getInspection: jest.fn(),
   updateInspectionStatus: jest.fn(),
+  listChecklists: jest.fn(),
   listConflictRecords: jest.fn(),
   resolveConflict: jest.fn(),
   createMaterialConsumption: jest.fn(),
@@ -195,5 +196,10 @@ describe('SiteOpsController', () => {
     const dto = { status: 'PASSED' };
     ctrl.updateInspection('insp-1', dto as never);
     expect(mockSvc.updateInspectionStatus).toHaveBeenCalledWith('insp-1', dto);
+  });
+
+  it('listChecklists delegates to svc.listChecklists', () => {
+    ctrl.listChecklists('proj-1');
+    expect(mockSvc.listChecklists).toHaveBeenCalledWith('proj-1');
   });
 });

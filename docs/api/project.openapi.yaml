@@ -580,3 +580,118 @@ paths:
                   $ref: '#/components/schemas/ProjectDocument'
         '404':
           description: Project not found
+  /projects/{projectId}/tasks:
+    get:
+      summary: List tasks for a project (filter by assignee, status)
+      operationId: listTasks
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: assigned_to
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED]
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated tasks
+    post:
+      summary: Create a task
+      operationId: createTask
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task_name]
+              properties:
+                task_name:
+                  type: string
+                work_type:
+                  type: string
+                boq_item_id:
+                  type: string
+                  format: uuid
+                floor_id:
+                  type: string
+                  format: uuid
+                room_id:
+                  type: string
+                  format: uuid
+                assigned_to:
+                  type: string
+                  format: uuid
+                planned_start:
+                  type: string
+                  format: date
+                planned_end:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Task created
+  /tasks/{taskId}:
+    patch:
+      summary: Update task progress / status (completion gate on COMPLETED)
+      description: |
+        Transitioning status to COMPLETED is rejected with 422 (code COS-TASK-001) and the list
+        of blocking gate names unless all hard-block gates pass (inspections, issues,
+        dependencies, permits). See ADR-026.
+      operationId: updateTask
+      parameters:
+        - in: path
+          name: taskId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [NOT_STARTED, IN_PROGRESS, COMPLETED, BLOCKED, CANCELLED]
+                progress_percent:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                assigned_to:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Task updated
+        '422':
+          description: Completion blocked by hard-block gates (COS-TASK-001)

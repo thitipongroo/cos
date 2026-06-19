@@ -260,3 +260,52 @@ export interface ConflictRecordRow {
   reviewed_at: string | null;
   created_at: string;
 }
+
+// ── Site Worker (§20.7.6) ────────────────────────────────────────────────────
+
+export type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'BLOCKED' | 'CANCELLED';
+
+export interface TaskRow {
+  task_id: string;
+  project_id: string;
+  task_name: string;
+  work_type: string;
+  status: TaskStatus;
+  progress_percent: number;
+  assigned_to: string | null;
+  planned_end: string | null;
+}
+
+export interface UpdateTaskInput {
+  status?: TaskStatus;
+  progress_percent?: number;
+}
+
+export interface SafetyChecklistRow {
+  checklist_id: string;
+  project_id: string;
+  checklist_name: string;
+  version: number;
+}
+
+export interface CreateSiteReportInput {
+  project_id: string;
+  report_date: string;
+  summary?: string;
+  manpower_count?: number;
+  weather?: string;
+}
+
+export interface CreateIssueInput {
+  project_id: string;
+  title: string;
+  description?: string;
+  severity: IssueSeverity;
+}
+
+export interface UploadedFileResult {
+  file_id: string;
+  original_filename: string;
+  mime_type: string;
+  file_size_bytes: string;
+}

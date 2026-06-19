@@ -426,6 +426,18 @@ export class SiteOpsRepository {
     return rows[0] ?? null;
   }
 
+  async listChecklists(project_id?: string): Promise<SafetyChecklistRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<SafetyChecklistRow[]>`
+        SELECT * FROM site_ops.safety_checklists
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND (${project_id ?? null}::uuid IS NULL OR project_id = ${project_id ?? null}::uuid)
+        ORDER BY created_at DESC
+      `,
+    );
+  }
+
   // ── Conflict Records ───────────────────────────────────────────────────
 
   async createConflictRecord(params: {

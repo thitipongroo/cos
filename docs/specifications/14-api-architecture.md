@@ -78,8 +78,6 @@ Rate Limiting Defaults (Kong Gateway, configurable per tenant tier) :
   defined in the AI usage quota (see 26-pricing-model section 26.1)
 - Limits are tunable per tenant by the Tenant Admin via platform admin API
 
-> **Relationship to monthly quota:** These per-minute rate limits apply to **all API traffic** (internal web/mobile app + external integrations) as a burst/anti-abuse control. The monthly cumulative quota defined in `13-product-architecture` §13.5 applies to **external API traffic only** (OAuth2 client credentials). The two controls operate on different traffic scopes and are enforced independently by Kong: user JWT requests are subject to per-minute limits only; OAuth2 client credential requests are subject to both per-minute limits and the monthly quota.
-
 ---
 
 ## 14.3 Public APIs
@@ -123,8 +121,7 @@ Error response:
 
 ### Canonical Endpoint Patterns by Category
 
-The patterns below define the shape for each API category. OpenAPI 3.x specs
-are maintained in `docs/api/`:
+The patterns below define the shape for each API category. OpenAPI specs are maintained in `docs/api/`:
 
 | Domain             | OpenAPI File                                     | Scope                                                                                          |
 | ------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
@@ -150,10 +147,6 @@ are maintained in `docs/api/`:
 The endpoint patterns below serve as the canonical reference; OpenAPI files are the
 machine-readable contracts derived from these patterns.
 
-> **Auth column convention:** Values use display names from `06-rbac-permission-matrix` §6.2
-> (e.g., "CRM / Sales Manager", "Site Engineer"). These map to JWT enum constants in code
-> (e.g., `CRM_SALES_MANAGER`, `SITE_ENGINEER`) per `05-security-compliance` §5.4.1.
-
 ---
 
 #### Authentication APIs
@@ -178,10 +171,6 @@ Two authentication paths (authoritative spec: `05-security-compliance` §5.4):
 | `POST` | `/api/v1/auth/mfa/verify`       | Confirm TOTP code to complete enrollment; sets `mfa_enabled = true` | Bearer token |
 | `POST` | `/api/v1/auth/mfa/authenticate` | Verify TOTP during login — Path B only (`TENANT_ADMIN`, `FINANCE`)  | Bearer token |
 
-> OTP constraints: 6-digit numeric, TTL 5 minutes, max 3 attempts per session,
-> rate-limited to 10 requests per phone per day (Kong Gateway — `05-security-compliance` §5.5).
-> Full request/response schemas: [`docs/api/auth.openapi.yaml`](../api/auth.openapi.yaml).
-
 ---
 
 #### Project APIs
@@ -194,6 +183,7 @@ Two authentication paths (authoritative spec: `05-security-compliance` §5.4):
 | `PATCH` | `/api/v1/projects/{project_id}`       | Update project (status, budget, dates) | PM, Executive               |
 | `GET`   | `/api/v1/projects/{project_id}/tasks` | List tasks for project                 | Any role                    |
 | `POST`  | `/api/v1/projects/{project_id}/tasks` | Create task                            | PM, Site Engineer           |
+| `PATCH` | `/api/v1/tasks/{task_id}`             | Update task progress / status          | SW, SE, PM, Admin           |
 
 Example request — create project:
 
@@ -231,14 +221,6 @@ POST /api/v1/projects
 
 #### Financial APIs
 
-> Canonical prefix `/api/v1/finance/*` (ADR-023). Budget is project-scoped; cost-transactions
-> and payments are tenant-wide AIP-132 lists filterable by `?project_id=`. Vendor invoices (AP)
-> live in the procurement module (`/api/v1/procurement/vendor-invoices`) per the procure-to-pay
-> 3-way-match boundary; Finance approves/pays them. AR Client Billing, AR Receipts, Contracts,
-> Customers, and the direct-method Cash Flow Forecast are MVP (§28 "AR/Billing module live").
-> Billing approval is Finance → PM (≤ configured limit) → Executive (§15). Customers and
-> contracts live in the `finance` schema; the forecast is deterministic (ADR-024).
-
 | Method  | Path                                             | Description                            | Auth                           |
 | ------- | ------------------------------------------------ | -------------------------------------- | ------------------------------ |
 | `GET`   | `/api/v1/finance/budget/{project_id}`            | Budget summary with lines              | FINANCE, PM, EXEC, ADMIN       |
@@ -263,11 +245,6 @@ POST /api/v1/projects
 
 #### Site APIs
 
-> Canonical prefix `/api/v1/site/*` (ADR-025). Inspections / QC support a results list and an
-> approval / re-inspection transition (`PATCH`, §06 RW; PASSED is terminal). Reports support
-> offline bulk sync and per-report material consumption. Issues and conflict-records are part of
-> the offline-sync site module. Permits are owned by the Safety module (§20.7.7).
-
 | Method  | Path                                         | Description                                           | Auth                             |
 | ------- | -------------------------------------------- | ----------------------------------------------------- | -------------------------------- |
 | `GET`   | `/api/v1/site/reports`                       | List daily site reports (filterable by project, date) | Any role                         |
@@ -284,6 +261,7 @@ POST /api/v1/projects
 | `PATCH` | `/api/v1/site/inspections/{inspection_id}`   | Approve / request re-inspection (status transition)   | PM, Site Engineer, Safety, Admin |
 | `GET`   | `/api/v1/site/conflict-records`              | List unresolved conflict records                      | Site Engineer, PM, Admin         |
 | `PATCH` | `/api/v1/site/conflict-records/{id}/resolve` | Mark conflict record resolved                         | Site Engineer, PM, Admin         |
+| `GET`   | `/api/v1/site/checklists`                    | List safety checklists (complete via inspections)     | SW, SE, PM, Safety, Admin        |
 | `GET`   | `/api/v1/site/permits`                       | List permits (filterable by project, type, status)    | Any role                         |
 | `POST`  | `/api/v1/site/permits`                       | Create permit request                                 | PM, Safety Officer               |
 
@@ -500,10 +478,6 @@ When `azp` is absent or does not match a registered Kong Consumer, Kong assigns 
 to the anonymous consumer. The anonymous consumer has per-minute rate limiting only —
 monthly quota plugin does not fire.
 
-> **Provisioning requirement:** The Kong Consumer for a given `client_id` MUST be registered
-> before the API key is distributed. An external client whose `client_id` is not yet
-> registered as a Kong Consumer will fall to the anonymous consumer (no monthly quota enforced).
-
 ### Kong Consumer and Consumer Group Model
 
 External API clients (marketplace integrations, ERP adapters) are provisioned as Kong
@@ -551,4 +525,5 @@ A request is rejected (HTTP 429) if **any** of the three limits is exceeded.
 | [Kong]     | Kong Gateway Documentation                                         | [docs.konghq.com](https://docs.konghq.com/)                          |
 | [GraphQL]  | GraphQL Specification                                              | [spec.graphql.org](https://spec.graphql.org/)                        |
 
-> 📎 See also: [03-system-design](03-system-design.md) · [13-product-architecture](13-product-architecture.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [26-pricing-model](26-pricing-model.md)
+> 📎 See also: [03-system-design](03-system-design.md) · [13-product-architecture](13-product-architecture.md)
+> · [15-event-driven-workflow](15-event-driven-workflow.md) · [26-pricing-model](26-pricing-model.md)

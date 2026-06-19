@@ -173,7 +173,9 @@
     },
     "siteWorker": {
       "newReport": "Daily report",
-      "newIssue": "Report issue"
+      "newIssue": "Report issue",
+      "tasks": "Tasks",
+      "checklists": "Checklists"
     },
     "admin": {
       "users": "User management",
@@ -227,6 +229,25 @@
     "approve": "Approve",
     "requestReinspection": "Request re-inspection",
     "resolve": "Resolve",
-    "allStatuses": "All statuses"
+    "allStatuses": "All statuses",
+    "tasksTitle": "Assigned tasks",
+    "selectProject": "Select a project",
+    "colTaskName": "Task",
+    "colProgress": "Progress",
+    "complete": "Complete",
+    "completeBlocked": "Cannot complete — blocked (inspections / issues / dependencies / permits)",
+    "reportsNewTitle": "Submit daily report",
+    "issuesNewTitle": "Report an issue",
+    "checklistsTitle": "Safety checklists",
+    "colChecklistName": "Checklist",
+    "colVersion": "Version",
+    "fieldDate": "Date",
+    "fieldManpower": "Manpower",
+    "fieldSummary": "Summary / blockers",
+    "fieldTitle": "Title",
+    "fieldDescription": "Description",
+    "fieldPhoto": "Photo",
+    "submit": "Submit",
+    "submitted": "Submitted"
   }
 }

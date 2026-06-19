@@ -2,9 +2,9 @@
  * Role-filtered navigation (spec §20.6.2 / §20.7). Each role sees only the
  * navigation for pages it can access; items map to the §20.7 page inventory.
  *
- * DECISION-2: deferred routes (SITE_WORKER `/tasks`, `/site/checklists`;
- * SAFETY_OFFICER `/safety/*`) are omitted until their backend ships. They are
- * added back here when the safety/tasks workstream lands.
+ * DECISION-2: SITE_WORKER `/tasks` + `/site/checklists` shipped in Increment 9
+ * (tasks backend + completion gates; checklists GET). SAFETY_OFFICER `/safety/*`
+ * remains deferred until the safety workstream lands.
  */
 import { CosRole } from '@cos/types';
 
@@ -65,10 +65,11 @@ export const NAV_BY_ROLE: Record<string, NavItem[]> = {
   [CosRole.TENANT_ADMIN]: TENANT_ADMIN_NAV,
   // Read-only across assigned modules; per-project ABAC enforced at page level.
   [CosRole.VIEWER]: [...PM_NAV, ...SITE_ENGINEER_NAV],
-  // DECISION-2 — only READY pages until backend lands.
   [CosRole.SITE_WORKER]: [
+    { href: '/tasks', labelKey: 'nav.siteWorker.tasks' },
     { href: '/site/reports/new', labelKey: 'nav.siteWorker.newReport' },
     { href: '/site/issues/new', labelKey: 'nav.siteWorker.newIssue' },
+    { href: '/site/checklists', labelKey: 'nav.siteWorker.checklists' },
   ],
   [CosRole.SAFETY_OFFICER]: [],
 };

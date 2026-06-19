@@ -59,6 +59,7 @@ const mockRepo = {
   findInspections: jest.fn(),
   findInspectionById: jest.fn(),
   updateInspectionStatus: jest.fn(),
+  listChecklists: jest.fn(),
   createConflictRecord: jest.fn(),
   listConflictRecords: jest.fn(),
   resolveConflictRecord: jest.fn(),
@@ -806,5 +807,10 @@ describe('inspection results & approval', () => {
     await expect(
       service.updateInspectionStatus('insp-1', { status: 'PASSED' } as never),
     ).rejects.toBeInstanceOf(UnprocessableEntityException);
+  });
+
+  it('listChecklists delegates to repo', async () => {
+    mockRepo.listChecklists.mockResolvedValue([{ checklist_id: 'chk-1' }]);
+    expect(await service.listChecklists('proj-1')).toHaveLength(1);
   });
 });

@@ -11,9 +11,16 @@ import type {
   FinanceInvoiceRow,
   FinanceSummary,
   IssueListResponse,
+  IssueRow,
   InspectionRow,
   ConflictRecordRow,
   UpdateInspectionInput,
+  TaskRow,
+  UpdateTaskInput,
+  SafetyChecklistRow,
+  CreateSiteReportInput,
+  CreateIssueInput,
+  SiteReportRow,
   PaginatedResponse,
   PaymentRow,
   ProcurementListFilter,
@@ -378,5 +385,56 @@ export function useResolveConflict() {
         body: JSON.stringify({ resolution: 'MANUAL' }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'conflicts'] }),
+  });
+}
+
+// ── Site Worker (§20.7.6) ────────────────────────────────────────────────────
+
+export function useTasks(projectId: string, assignedTo?: string) {
+  const api = useApi();
+  const qs = assignedTo ? `&assigned_to=${assignedTo}` : '';
+  return useQuery({
+    queryKey: ['tasks', projectId, assignedTo ?? 'all'],
+    queryFn: () => api<PaginatedResponse<TaskRow>>(`/projects/${projectId}/tasks?limit=100${qs}`),
+    enabled: !!projectId,
+  });
+}
+
+export function useUpdateTask() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateTaskInput }) =>
+      api<TaskRow>(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+}
+
+export function useCreateSiteReport() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateSiteReportInput) =>
+      api<SiteReportRow>('/site/reports', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'reports'] }),
+  });
+}
+
+export function useCreateIssue() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateIssueInput) =>
+      api<IssueRow>('/site/issues', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'issues'] }),
+  });
+}
+
+export function useChecklists(projectId?: string) {
+  const api = useApi();
+  const qs = projectId ? `?project_id=${projectId}` : '';
+  return useQuery({
+    queryKey: ['site', 'checklists', projectId ?? 'all'],
+    queryFn: () => api<SafetyChecklistRow[]>(`/site/checklists${qs}`),
   });
 }

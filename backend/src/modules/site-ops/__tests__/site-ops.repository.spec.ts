@@ -390,4 +390,12 @@ describe('SiteOpsRepository', () => {
     });
     expect(r2.status).toBe('PASSED');
   });
+
+  it('listChecklists returns rows (with and without project filter)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { checklist_id: 'chk-1', tenant_id: 'tenant-uuid-001' },
+    ]);
+    expect(await repo.listChecklists('proj-uuid-001')).toHaveLength(1);
+    expect(await repo.listChecklists()).toHaveLength(1);
+  });
 });

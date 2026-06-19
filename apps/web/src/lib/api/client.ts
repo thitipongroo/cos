@@ -53,3 +53,20 @@ export function useApi(): <T>(path: string, init?: RequestInit) => Promise<T> {
     [token],
   );
 }
+
+/** Hook for multipart uploads (e.g. photos via the File Service). Does NOT set a JSON
+ *  content-type so the browser can add the multipart boundary. */
+export function useUpload(): <T>(path: string, form: FormData) => Promise<T> {
+  const { data } = useSession();
+  const token = data?.accessToken;
+  return useCallback(
+    async <T>(path: string, form: FormData): Promise<T> => {
+      const headers = new Headers();
+      if (token) headers.set('authorization', `Bearer ${token}`);
+      const res = await fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form });
+      if (!res.ok) throw new ApiError(res.status, `Upload failed: ${res.status}`);
+      return (await res.json()) as T;
+    },
+    [token],
+  );
+}
