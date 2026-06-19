@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Patch, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, UseGuards, Req } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TenantService } from './tenant.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -15,6 +15,14 @@ import { TenantRequest } from './tenant.middleware';
 @Controller('admin/tenants')
 export class TenantController {
   constructor(private readonly tenantService: TenantService) {}
+
+  @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(CosRole.SYSTEM_ADMIN)
+  @ApiOperation({ summary: 'List all tenants on the platform (SYSTEM_ADMIN only)' })
+  async list() {
+    return this.tenantService.listTenants();
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)

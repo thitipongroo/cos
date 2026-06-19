@@ -306,4 +306,14 @@ describe('TenantService', () => {
       expect(result).toEqual({ workflowId: WORKFLOW_ID });
     });
   });
+
+  describe('listTenants', () => {
+    it('returns all platform tenants', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([
+        { tenant_id: 't1' },
+        { tenant_id: 't2' },
+      ]);
+      expect(await service.listTenants()).toHaveLength(2);
+    });
+  });
 });

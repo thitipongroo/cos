@@ -239,6 +239,22 @@ components:
 
 paths:
   /admin/tenants:
+    get:
+      summary: List all tenants on the platform (SYSTEM_ADMIN only — §20.4.1)
+      tags: [tenants]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Tenant list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TenantResponse'
+        '403':
+          description: Insufficient role — SYSTEM_ADMIN required
     post:
       summary: Provision a new tenant (SYSTEM_ADMIN only)
       description: |

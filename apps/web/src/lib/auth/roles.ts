@@ -8,6 +8,7 @@
 import { CosRole } from '@cos/types';
 
 export const ROLE_LANDING: Record<string, string> = {
+  [CosRole.SYSTEM_ADMIN]: '/admin',
   [CosRole.EXECUTIVE]: '/',
   [CosRole.PROJECT_MANAGER]: '/projects',
   [CosRole.PROCUREMENT_OFFICER]: '/procurement/requests',

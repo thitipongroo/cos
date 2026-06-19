@@ -388,3 +388,26 @@ export interface UpdateTenantSettingsInput {
   line_channel_token?: string;
   notifications_enabled?: boolean;
 }
+
+// ── System Admin (§20.4 / §20.7.11) ──────────────────────────────────────────
+
+export type PlanType = 'STARTER' | 'PROFESSIONAL' | 'ENTERPRISE';
+
+/** Raw platform.tenants row (snake_case — returned by $queryRaw). */
+export interface TenantRow {
+  tenant_id: string;
+  tenant_code: string;
+  tenant_name: string;
+  plan_type: PlanType;
+  is_active: boolean;
+  dedicated_db_url: string | null;
+  created_at: string;
+}
+
+/** Create-tenant body (camelCase — matches CreateTenantDto). */
+export interface CreateTenantInput {
+  tenantCode: string;
+  tenantName: string;
+  planType: PlanType;
+  dedicatedDbUrl?: string;
+}

@@ -30,6 +30,8 @@ import type {
   CreateUserInput,
   TenantSettings,
   UpdateTenantSettingsInput,
+  TenantRow,
+  CreateTenantInput,
   PaginatedResponse,
   PaymentRow,
   ProcurementListFilter,
@@ -572,5 +574,47 @@ export function useUpdateTenantSettings() {
     mutationFn: (input: UpdateTenantSettingsInput) =>
       api<TenantSettings>('/tenant/settings', { method: 'PATCH', body: JSON.stringify(input) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tenant', 'settings'] }),
+  });
+}
+
+// ── System Admin (§20.4 / §20.7.11) ──────────────────────────────────────────
+
+export function useTenants() {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['admin', 'tenants'],
+    queryFn: () => api<TenantRow[]>('/admin/tenants'),
+  });
+}
+
+export function useCreateTenant() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateTenantInput) =>
+      api<TenantRow>('/admin/tenants', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+export function useDeactivateTenant() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/admin/tenants/${id}/deactivate`, { method: 'PATCH' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+export function useAssignDedicatedDb() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, dedicatedDbUrl }: { id: string; dedicatedDbUrl: string }) =>
+      api<void>(`/admin/tenants/${id}/dedicated-db`, {
+        method: 'PATCH',
+        body: JSON.stringify({ dedicatedDbUrl }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });
 }

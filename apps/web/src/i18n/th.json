@@ -293,5 +293,17 @@
     "notifications": "เปิดการแจ้งเตือน",
     "save": "บันทึก",
     "saved": "บันทึกแล้ว"
+  },
+  "admin": {
+    "title": "แผงผู้ดูแลระบบ (System Admin)",
+    "unauthorized": "ต้องมีสิทธิ์ SYSTEM_ADMIN เท่านั้น",
+    "colCode": "รหัสองค์กร",
+    "colName": "ชื่อองค์กร",
+    "colPlan": "แพ็กเกจ",
+    "colDb": "Dedicated DB",
+    "shared": "แชร์",
+    "assignDb": "กำหนด DB",
+    "dbUrlOptional": "Dedicated DB URL (ไม่บังคับ)",
+    "createTenant": "สร้างองค์กร"
   }
 }

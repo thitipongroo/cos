@@ -293,5 +293,17 @@
     "notifications": "Enable notifications",
     "save": "Save",
     "saved": "Saved"
+  },
+  "admin": {
+    "title": "System Admin panel",
+    "unauthorized": "SYSTEM_ADMIN role required",
+    "colCode": "Tenant code",
+    "colName": "Tenant name",
+    "colPlan": "Plan",
+    "colDb": "Dedicated DB",
+    "shared": "Shared",
+    "assignDb": "Assign DB",
+    "dbUrlOptional": "Dedicated DB URL (optional)",
+    "createTenant": "Create tenant"
   }
 }

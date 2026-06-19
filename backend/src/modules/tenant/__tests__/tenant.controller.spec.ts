@@ -5,6 +5,7 @@ const mockTenantService = {
   deactivateTenant: jest.fn(),
   assignDedicatedDb: jest.fn(),
   markAsEnterpriseContracted: jest.fn(),
+  listTenants: jest.fn(),
 };
 
 import { TenantController } from '../tenant.controller';
@@ -17,6 +18,13 @@ describe('TenantController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     controller = new TenantController(mockTenantService as never);
+  });
+
+  describe('list', () => {
+    it('delegates to tenantService.listTenants', async () => {
+      mockTenantService.listTenants.mockResolvedValue([{ tenant_id: 't1' }]);
+      expect(await controller.list()).toHaveLength(1);
+    });
   });
 
   describe('create', () => {

@@ -186,6 +186,13 @@ export class TenantService {
     return new Client({ connection });
   }
 
+  /** List all tenants for the SYSTEM_ADMIN panel (§20.4.1). */
+  async listTenants(): Promise<Tenant[]> {
+    return this.prisma.$queryRaw<Tenant[]>`
+      SELECT * FROM platform.tenants ORDER BY created_at DESC
+    `;
+  }
+
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
     try {
       await this.kafka.connect();
