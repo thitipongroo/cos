@@ -167,8 +167,10 @@ row-level and context-level rules on top of RBAC :
 
 - Project scope: a PM can only read/write entities within projects they are assigned to
 - Tenant scope: all queries are filtered by tenant_id — cross-tenant access is blocked at service layer
-- Approval authority: Finance can approve Vendor Invoices (AP) only up to their configured approval limit; above the limit requires Executive approval
-- Approval authority: PM can approve Client Billing (AR) only up to their configured approval limit; above the limit requires Executive approval
+- Approval authority: Finance can approve Vendor Invoices (AP) only up to their configured approval limit;
+  above the limit requires Executive approval
+- Approval authority: PM can approve Client Billing (AR) only up to their configured approval limit;
+  above the limit requires Executive approval
 - Self-service: a Site Engineer can update only their own attendance record, not other workers'
 
 ---

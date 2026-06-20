@@ -1361,6 +1361,9 @@ Generate:
                                      POST /api/v1/users                         — create user (Path A: phone_number; Path B: email)
                                      PATCH /api/v1/users/{userId}/role          — change role
                                      PATCH /api/v1/users/{userId}/deactivate    — deactivate user
+                                     GET  /api/v1/admin/tenants                 — list all tenants (SYSTEM_ADMIN, §20.4.1)
+                                     GET  /api/v1/tenant/settings               — get tenant settings (TENANT_ADMIN, ADR-028)
+                                     PATCH /api/v1/tenant/settings              — update tenant settings (variance/retention/LINE/notif)
 - Refresh token rotation flow
 - MFA enrollment and verification endpoints (TOTP) — required for TENANT_ADMIN and FINANCE roles:
     POST /api/v1/auth/mfa/enroll    — initiate TOTP setup (returns QR code URI)
@@ -2719,8 +2722,9 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       session/refresh, role-based post-login routing — per spec §20.6 (no new auth mechanism)
     - Web operational pages for ALL roles (full operational client, not dashboard-only) —
       build the per-role page inventory in spec §20.7 (Executive, PM, Procurement, Finance,
-      Site Engineer, Site Worker, Safety Officer, Tenant Admin, Viewer; CRM web UI excluded
-      per §21.6; SYSTEM_ADMIN uses the separate /admin panel §20.4)
+      Site Engineer, Site Worker, Safety Officer, Tenant Admin, Viewer, CRM/Sales Manager
+      (basic CRM UI — MVP per ADR-029; the §21.6 UI-excluded note was overridden); SYSTEM_ADMIN
+      uses the separate /admin panel §20.4)
     - Web app shell: role-filtered navigation, SSE notification bell, offline/sync indicator,
       th/en language switcher, data-table list views (spec §20.6.2)
 
