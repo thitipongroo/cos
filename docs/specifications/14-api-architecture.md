@@ -1,8 +1,8 @@
 ---
 title: 'API Architecture'
-version: '1.3.0'
+version: '1.4.0'
 status: Active
-last_updated: '2026-06-10'
+last_updated: '2026-06-20'
 authors:
   - thitipongroo
 related_docs:
@@ -135,17 +135,17 @@ The patterns below define the shape for each API category. OpenAPI specs are mai
 | Equipment          | [equipment](../api/equipment.openapi.yaml)       | MVP                                                                                            |
 | Files              | [file](../api/file.openapi.yaml)                 | MVP                                                                                            |
 | Notifications      | [notification](../api/notification.openapi.yaml) | MVP                                                                                            |
-| Site               | [site-ops](../api/site-ops.openapi.yaml)         | Planned — MVP                                                                                  |
-| Safety             | [safety](../api/safety.openapi.yaml)             | Planned — MVP                                                                                  |
-| AI                 | [ai](../api/ai.openapi.yaml)                     | Planned — MVP                                                                                  |
-| CRM                | [crm](../api/crm.openapi.yaml)                   | Planned — MVP                                                                                  |
-| Vendor             | [vendor](../api/vendor.openapi.yaml)             | Planned — MVP                                                                                  |
+| Site               | [site-ops](../api/site-ops.openapi.yaml)         | MVP                                                                                            |
+| Safety             | [safety](../api/safety.openapi.yaml)             | MVP                                                                                            |
+| AI                 | [ai](../api/ai.openapi.yaml)                     | MVP                                                                                            |
+| CRM                | [crm](../api/crm.openapi.yaml)                   | MVP                                                                                            |
+| Vendor Portal      | [vendor](../api/vendor.openapi.yaml)             | Planned — Phase 2 self-service portal (stub; internal vendor mgmt is under Procurement)        |
 | Knowledge Graph    | [graph](../api/graph.openapi.yaml)               | MVP (Phase 13)                                                                                 |
 | Analytics          | [analytics](../api/analytics.openapi.yaml)       | MVP (Phase 14)                                                                                 |
 | Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml) | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins) |
 
-The endpoint patterns below serve as the canonical reference; OpenAPI files are the
-machine-readable contracts derived from these patterns.
+The endpoint patterns below serve as the canonical reference;
+OpenAPI files are the machine-readable contracts derived from these patterns.
 
 ---
 
@@ -266,24 +266,34 @@ POST /api/v1/projects
 
 #### Workforce APIs
 
-| Method  | Path                                                   | Description                                           | Auth              |
-| ------- | ------------------------------------------------------ | ----------------------------------------------------- | ----------------- |
-| `POST`  | `/api/v1/workforce/check-in`                           | Record worker check-in                                | PM, Site Engineer |
-| `PATCH` | `/api/v1/workforce/check-in/{attendance_id}/check-out` | Record worker check-out                               | PM, Site Engineer |
-| `GET`   | `/api/v1/workforce/attendance`                         | List attendance records (filterable by project, date) | Any role          |
+| Method  | Path                                              | Description                     | Auth              |
+| ------- | ------------------------------------------------- | ------------------------------- | ----------------- |
+| `POST`  | `/api/v1/workers`                                 | Register a worker               | PM, Site Engineer |
+| `GET`   | `/api/v1/workers`                                 | List workers (tenant-scoped)    | Any role          |
+| `GET`   | `/api/v1/workers/{worker_id}`                     | Get worker detail               | Any role          |
+| `POST`  | `/api/v1/workers/{worker_id}/attendance`          | Record check-in / check-out     | PM, Site Engineer |
+| `GET`   | `/api/v1/workers/{worker_id}/attendance`          | Attendance history (date range) | Any role          |
+| `POST`  | `/api/v1/projects/{project_id}/workforce`         | Allocate a worker to a project  | PM, Site Engineer |
+| `GET`   | `/api/v1/projects/{project_id}/workforce`         | List project workforce          | Any role          |
+| `GET`   | `/api/v1/projects/{project_id}/workforce/summary` | Manpower summary (analytics)    | Any role          |
+| `POST`  | `/api/v1/timesheets`                              | Submit a timesheet              | PM, Site Engineer |
+| `PATCH` | `/api/v1/timesheets/{timesheet_id}/approve`       | Approve a timesheet             | Site Engineer     |
 
 ---
 
 #### Equipment APIs
 
-| Method  | Path                               | Description                                                        | Auth                    |
-| ------- | ---------------------------------- | ------------------------------------------------------------------ | ----------------------- |
-| `GET`   | `/api/v1/equipment`                | List equipment (filterable by project, type, status)               | Any role                |
-| `POST`  | `/api/v1/equipment`                | Register equipment                                                 | PM, Procurement Officer |
-| `GET`   | `/api/v1/equipment/{equipment_id}` | Get equipment detail                                               | Any role                |
-| `PATCH` | `/api/v1/equipment/{equipment_id}` | Update equipment status or assignment                              | PM, Site Engineer       |
-| `POST`  | `/api/v1/equipment/usage-logs`     | Record equipment usage against a project                           | PM, Site Engineer       |
-| `GET`   | `/api/v1/equipment/usage-logs`     | List equipment usage logs (filterable by equipment, project, date) | Any role                |
+| Method  | Path                                                                  | Description                                          | Auth                    |
+| ------- | --------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------- |
+| `POST`  | `/api/v1/equipment`                                                   | Register equipment                                   | PM, Procurement Officer |
+| `GET`   | `/api/v1/equipment`                                                   | List equipment (filterable by project, type, status) | Any role                |
+| `GET`   | `/api/v1/equipment/{equipment_id}`                                    | Get equipment detail                                 | Any role                |
+| `PATCH` | `/api/v1/equipment/{equipment_id}/status`                             | Update equipment status                              | PM, Site Engineer       |
+| `POST`  | `/api/v1/equipment/{equipment_id}/assignments`                        | Assign equipment to a project                        | PM, Site Engineer       |
+| `PATCH` | `/api/v1/equipment/{equipment_id}/assignments/{assignment_id}/return` | Return an equipment assignment                       | PM, Site Engineer       |
+| `POST`  | `/api/v1/equipment/{equipment_id}/maintenance`                        | Log an equipment maintenance record                  | PM, Site Engineer       |
+| `POST`  | `/api/v1/equipment/{equipment_id}/utilization`                        | Record equipment utilization                         | PM, Site Engineer       |
+| `GET`   | `/api/v1/projects/{project_id}/equipment`                             | List equipment assigned to a project                 | Any role                |
 
 ---
 
@@ -317,21 +327,31 @@ POST /api/v1/projects
 
 #### AI APIs
 
-All AI endpoints are under `/api/v1/ai/` with separate token-rate limiting
+AI / ML capabilities are served by three Python services — the AI Gateway
+(`/api/v1/ai/*`, `/api/v1/rag/*`), the OCR pipeline (`/api/v1/ocr/*`), and the
+embedding worker (`/api/v1/embeddings/*`) — each with separate token-rate limiting
 (see section 14.2 and `26-pricing-model` section 26.1).
 
-| Method | Path                             | Description                                      | Auth              |
-| ------ | -------------------------------- | ------------------------------------------------ | ----------------- |
-| `POST` | `/api/v1/ai/report/generate`     | Generate daily site report draft from raw inputs | PM, Site Engineer |
-| `POST` | `/api/v1/ai/documents/summarize` | Summarize uploaded document                      | Any role          |
-| `POST` | `/api/v1/ai/documents/ocr`       | Extract text from image or PDF                   | Any role          |
-| `POST` | `/api/v1/ai/voice/transcribe`    | Transcribe voice note to text                    | Any role          |
-| `POST` | `/api/v1/ai/copilot/query`       | Query the AI Copilot with context (RAG-backed)   | Any role          |
+| Method | Path                                     | Description                                      | Auth                |
+| ------ | ---------------------------------------- | ------------------------------------------------ | ------------------- |
+| `POST` | `/api/v1/ai/completions`                 | LLM chat completion (prompt → text)              | Any role            |
+| `POST` | `/api/v1/ai/reports/site-summary`        | Generate a daily site-summary report draft       | PM, Site Engineer   |
+| `POST` | `/api/v1/ai/reports/procurement-summary` | Generate a procurement-summary report draft      | Procurement Officer |
+| `POST` | `/api/v1/ai/reports/executive-summary`   | Generate an executive-summary report draft       | Executive           |
+| `POST` | `/api/v1/ai/reports/delay-risk`          | Generate a delay-risk analysis report            | Executive, PM       |
+| `GET`  | `/api/v1/ai/reports/history`             | List previously generated AI reports             | Any role            |
+| `POST` | `/api/v1/rag/query`                      | RAG-backed contextual query (AI Copilot)         | Any role            |
+| `POST` | `/api/v1/ocr/process`                    | Extract text from an image or PDF (OCR pipeline) | Any role            |
+| `POST` | `/api/v1/embeddings/generate`            | Generate vector embeddings (internal/RAG)        | Any role            |
 
-Example — generate report:
+> Voice transcription (`21-mvp-scope` section 21.4) is a planned MVP AI feature; it is
+> not yet exposed as a REST endpoint and will be added when the transcription provider
+> is integrated.
+
+Example — generate a site-summary report:
 
 ```json
-POST /api/v1/ai/report/generate
+POST /api/v1/ai/reports/site-summary
 {
   "project_id": "proj_001",
   "report_date": "2026-05-24",

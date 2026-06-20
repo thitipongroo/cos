@@ -3,16 +3,287 @@ info:
   title: Construction OS — AI API
   version: v1
   description: |
-    AI Gateway Service — Phase 11 (Foundation) and Phase 12 (Report Assistant).
-    Exposes AI Copilot, report generation, risk scoring, and LLM proxy endpoints.
-    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
-    **STUB** — endpoints to be defined when Phase 11 development begins.
+    AI / ML API surface — Phase 11 (AI Foundation), Phase 12 (Report Assistant), Phase 13 (RAG/embeddings).
+    Backed by three FastAPI services:
+      - AI Gateway       — `/ai/completions`, `/ai/reports/*`, `/rag/query`
+      - OCR Pipeline     — `/ocr/process`
+      - Embedding Worker — `/embeddings/generate`
+    All endpoints require Bearer JWT (Keycloak RS256), enforced at the Kong Gateway.
+    `tenant_id` is passed explicitly in the request body for these internal AI services.
+    Errors follow the FastAPI shape `{ "detail": ... }`.
 servers:
   - url: /api/v1
     description: Current version
 
 security:
   - bearerAuth: []
+
+tags:
+  - name: Completions
+    description: LLM chat completion proxy
+  - name: Reports
+    description: AI-generated report drafts (site, procurement, executive, delay-risk) and history
+  - name: RAG
+    description: Retrieval-augmented contextual query (AI Copilot)
+  - name: OCR
+    description: Optical character recognition pipeline
+  - name: Embeddings
+    description: Vector embedding generation
+
+paths:
+  # ─── Completions (AI Gateway) ────────────────────────────────────────────────
+
+  /ai/completions:
+    post:
+      tags: [Completions]
+      operationId: createCompletion
+      summary: LLM chat completion from a named template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompletionsRequest'
+      responses:
+        '200':
+          description: Completion generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompletionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  # ─── Reports (AI Gateway) ────────────────────────────────────────────────────
+
+  /ai/reports/site-summary:
+    post:
+      tags: [Reports]
+      operationId: generateSiteSummary
+      summary: Generate a daily site-summary report draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteSummaryRequest'
+      responses:
+        '200':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /ai/reports/procurement-summary:
+    post:
+      tags: [Reports]
+      operationId: generateProcurementSummary
+      summary: Generate a procurement-summary report draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectReportRequest'
+      responses:
+        '200':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /ai/reports/executive-summary:
+    post:
+      tags: [Reports]
+      operationId: generateExecutiveSummary
+      summary: Generate an executive-summary report draft
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectReportRequest'
+      responses:
+        '200':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /ai/reports/delay-risk:
+    post:
+      tags: [Reports]
+      operationId: generateDelayRisk
+      summary: Generate a delay-risk analysis report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectReportRequest'
+      responses:
+        '200':
+          description: Report generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  /ai/reports/history:
+    get:
+      tags: [Reports]
+      operationId: listReportHistory
+      summary: List previously generated AI reports for a project
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: tenant_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Report history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportHistoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  # ─── RAG (AI Gateway) ────────────────────────────────────────────────────────
+
+  /rag/query:
+    post:
+      tags: [RAG]
+      operationId: ragQuery
+      summary: RAG-backed contextual query (AI Copilot)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RAGQueryRequest'
+      responses:
+        '200':
+          description: Answer with sources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RAGQueryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+  # ─── OCR (OCR Pipeline) ──────────────────────────────────────────────────────
+
+  /ocr/process:
+    post:
+      tags: [OCR]
+      operationId: processOcr
+      summary: Extract text from an image or PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OCRRequest'
+      responses:
+        '200':
+          description: Extracted text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OCRResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  # ─── Embeddings (Embedding Worker) ───────────────────────────────────────────
+
+  /embeddings/generate:
+    post:
+      tags: [Embeddings]
+      operationId: generateEmbedding
+      summary: Generate and store a vector embedding for an entity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmbeddingRequest'
+      responses:
+        '200':
+          description: Embedding generated and stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbeddingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
 
 components:
   securitySchemes:
@@ -21,4 +292,215 @@ components:
       scheme: bearer
       bearerFormat: JWT
 
-paths: {}
+  responses:
+    Unauthorized:
+      description: Missing or invalid Bearer token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Template or resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Request validation error (FastAPI)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HTTPValidationError'
+    ServiceUnavailable:
+      description: LLM provider, vector store, or database not yet configured
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    CompletionsRequest:
+      type: object
+      required: [template_name, variables]
+      properties:
+        template_name:
+          type: string
+          example: site_summary
+        variables:
+          type: object
+          additionalProperties: true
+          description: Template variables (free-form key/value)
+        model_hint:
+          type: string
+          default: summarization
+
+    CompletionsResponse:
+      type: object
+      required: [content, model_used, total_tokens]
+      properties:
+        content:
+          type: string
+        model_used:
+          type: string
+        total_tokens:
+          type: integer
+
+    SiteSummaryRequest:
+      type: object
+      required: [project_id, tenant_id]
+      properties:
+        project_id:
+          type: string
+        tenant_id:
+          type: string
+        date_range:
+          type: string
+          default: last 7 days
+        generated_by:
+          type: string
+          default: system
+
+    ProjectReportRequest:
+      type: object
+      description: Request body for procurement-summary, executive-summary, and delay-risk reports
+      required: [project_id, tenant_id]
+      properties:
+        project_id:
+          type: string
+        tenant_id:
+          type: string
+        generated_by:
+          type: string
+          default: system
+
+    ReportResponse:
+      type: object
+      required: [report_type, content, low_confidence]
+      properties:
+        report_id:
+          type: [string, 'null']
+        report_type:
+          type: string
+          example: SITE_SUMMARY
+        content:
+          type: object
+          additionalProperties: true
+          description: Structured report body (free-form)
+        confidence:
+          type: [number, 'null']
+        low_confidence:
+          type: boolean
+
+    ReportHistoryResponse:
+      type: object
+      required: [project_id, reports]
+      properties:
+        project_id:
+          type: string
+        reports:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    RAGQueryRequest:
+      type: object
+      required: [query, tenant_id]
+      properties:
+        query:
+          type: string
+        tenant_id:
+          type: string
+        entity_types:
+          type: [array, 'null']
+          items:
+            type: string
+        top_k:
+          type: integer
+          default: 5
+
+    RAGQueryResponse:
+      type: object
+      required: [answer, sources]
+      properties:
+        answer:
+          type: string
+        sources:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    OCRRequest:
+      type: object
+      required: [file_id, tenant_id]
+      properties:
+        file_id:
+          type: string
+        tenant_id:
+          type: string
+
+    OCRResponse:
+      type: object
+      required: [file_id, extracted_text, confidence_score]
+      properties:
+        file_id:
+          type: string
+        extracted_text:
+          type: string
+        confidence_score:
+          type: number
+
+    EmbeddingRequest:
+      type: object
+      required: [text, entity_type, entity_id, tenant_id]
+      properties:
+        text:
+          type: string
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+        tenant_id:
+          type: string
+
+    EmbeddingResponse:
+      type: object
+      required: [entity_id, dimensions, status]
+      properties:
+        entity_id:
+          type: string
+        dimensions:
+          type: integer
+        status:
+          type: string
+          example: stored
+
+    ErrorResponse:
+      type: object
+      required: [detail]
+      properties:
+        detail:
+          type: string
+          example: Template site_summary not found
+
+    ValidationError:
+      type: object
+      required: [loc, msg, type]
+      properties:
+        loc:
+          type: array
+          items:
+            type: [string, integer]
+        msg:
+          type: string
+        type:
+          type: string
+
+    HTTPValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'

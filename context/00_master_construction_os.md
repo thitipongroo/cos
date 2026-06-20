@@ -2105,7 +2105,7 @@ Safety APIs (authoritative: spec §14 Safety APIs; MVP scope: spec §21.2 = inci
     consumed_at     TIMESTAMPTZ NOT NULL
 
 APIs (addition):
-  POST /api/v1/site-reports/:reportId/materials — log material consumption; emits site.material.consumed.v1
+  POST /api/v1/site/reports/:reportId/materials — log material consumption; emits site.material.consumed.v1
 
 Generate:
 
@@ -2122,7 +2122,7 @@ Generate:
 
     site.material.consumed  { consumption_id, project_id, task_id (nullable free-text),
                               material_id, quantity: DECIMAL(10,4), unit, consumed_by,
-                              consumed_at }  — emitted on POST /api/v1/site-reports/:reportId/materials
+                              consumed_at }  — emitted on POST /api/v1/site/reports/:reportId/materials
     site.report.created   (see Event Contract spec)
     site.report.submitted { report_id, project_id, report_date, submitted_by }
     inspection.passed     { inspection_id, project_id, inspected_by }
