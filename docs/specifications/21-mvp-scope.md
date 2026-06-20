@@ -1,8 +1,8 @@
 ---
 title: 'MVP Scope'
-version: '1.4.0'
+version: '1.5.0'
 status: Active
-last_updated: '2026-05-26'
+last_updated: '2026-06-20'
 authors:
   - thitipongroo
 related_docs:
@@ -55,6 +55,7 @@ Modules :
 - Mobile field app
 - Dashboard
 - AI report assistant
+- Vendor Portal (external self-service: RFQ, quotation, PO status, invoice) — MVP
 
 Note on Workforce Management in MVP :
 

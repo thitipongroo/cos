@@ -123,26 +123,26 @@ Error response:
 
 The patterns below define the shape for each API category. OpenAPI specs are maintained in `docs/api/`:
 
-| Domain             | OpenAPI File                                     | Scope                                                                                                                |
-| ------------------ | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
-| Authentication     | [auth](../api/auth.openapi.yaml)                 | MVP                                                                                                                  |
-| Tenant Management  | [tenant](../api/tenant.openapi.yaml)             | MVP                                                                                                                  |
-| Projects           | [project](../api/project.openapi.yaml)           | MVP                                                                                                                  |
-| Procurement        | [procurement](../api/procurement.openapi.yaml)   | MVP                                                                                                                  |
-| Financial          | [finance](../api/finance.openapi.yaml)           | MVP                                                                                                                  |
-| Bill of Quantities | [BOQ](../api/boq.openapi.yaml)                   | MVP                                                                                                                  |
-| Workforce          | [workforce](../api/workforce.openapi.yaml)       | MVP                                                                                                                  |
-| Equipment          | [equipment](../api/equipment.openapi.yaml)       | MVP                                                                                                                  |
-| Files              | [file](../api/file.openapi.yaml)                 | MVP                                                                                                                  |
-| Notifications      | [notification](../api/notification.openapi.yaml) | MVP                                                                                                                  |
-| Site               | [site-ops](../api/site-ops.openapi.yaml)         | MVP                                                                                                                  |
-| Safety             | [safety](../api/safety.openapi.yaml)             | MVP                                                                                                                  |
-| AI                 | [ai](../api/ai.openapi.yaml)                     | MVP                                                                                                                  |
-| CRM                | [crm](../api/crm.openapi.yaml)                   | MVP                                                                                                                  |
-| Vendor Portal      | [vendor](../api/vendor.openapi.yaml)             | Post-MVP — Ecosystem channel (§13.1 Layer 4); not in §21 MVP scope; stub. Internal vendor mgmt is under Procurement. |
-| Knowledge Graph    | [graph](../api/graph.openapi.yaml)               | MVP (Phase 13)                                                                                                       |
-| Analytics          | [analytics](../api/analytics.openapi.yaml)       | MVP (Phase 14)                                                                                                       |
-| Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml) | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins)                       |
+| Domain             | OpenAPI File                                     | Scope                                                                                                                  |
+| ------------------ | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Authentication     | [auth](../api/auth.openapi.yaml)                 | MVP                                                                                                                    |
+| Tenant Management  | [tenant](../api/tenant.openapi.yaml)             | MVP                                                                                                                    |
+| Projects           | [project](../api/project.openapi.yaml)           | MVP                                                                                                                    |
+| Procurement        | [procurement](../api/procurement.openapi.yaml)   | MVP                                                                                                                    |
+| Financial          | [finance](../api/finance.openapi.yaml)           | MVP                                                                                                                    |
+| Bill of Quantities | [BOQ](../api/boq.openapi.yaml)                   | MVP                                                                                                                    |
+| Workforce          | [workforce](../api/workforce.openapi.yaml)       | MVP                                                                                                                    |
+| Equipment          | [equipment](../api/equipment.openapi.yaml)       | MVP                                                                                                                    |
+| Files              | [file](../api/file.openapi.yaml)                 | MVP                                                                                                                    |
+| Notifications      | [notification](../api/notification.openapi.yaml) | MVP                                                                                                                    |
+| Site               | [site-ops](../api/site-ops.openapi.yaml)         | MVP                                                                                                                    |
+| Safety             | [safety](../api/safety.openapi.yaml)             | MVP                                                                                                                    |
+| AI                 | [ai](../api/ai.openapi.yaml)                     | MVP                                                                                                                    |
+| CRM                | [crm](../api/crm.openapi.yaml)                   | MVP                                                                                                                    |
+| Vendor Portal      | [vendor](../api/vendor.openapi.yaml)             | MVP - external vendor self-service (RFQ / quotation / PO status / invoice). Internal vendor mgmt is under Procurement. |
+| Knowledge Graph    | [graph](../api/graph.openapi.yaml)               | MVP (Phase 13)                                                                                                         |
+| Analytics          | [analytics](../api/analytics.openapi.yaml)       | MVP (Phase 14)                                                                                                         |
+| Digital Twin       | [digital-twin](../api/digital-twin.openapi.yaml) | **Post-MVP — Phase 24 (SaaS maturity Stage 5 / Year 5+)** (not created before Phase 24 begins)                         |
 
 The endpoint patterns below serve as the canonical reference;
 OpenAPI files are the machine-readable contracts derived from these patterns.

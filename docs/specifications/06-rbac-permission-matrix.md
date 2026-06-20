@@ -1,8 +1,8 @@
 ---
 title: 'RBAC Permission Matrix'
-version: '1.1.0'
+version: '1.2.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-06-20'
 authors:
   - thitipongroo
 related_docs:
@@ -24,6 +24,7 @@ related_docs:
 - [6.6 Default Role Seeding at Tenant Provisioning](#66-default-role-seeding-at-tenant-provisioning)
 - [6.7 System Admin — Platform-level Permissions](#67-system-admin--platform-level-permissions)
 - [6.8 Implementation Sub-roles](#68-implementation-sub-roles)
+- [6.8b External Principals — Vendor Portal](#68b-external-principals--vendor-portal)
 - [6.9 NestJS Guard Implementation](#69-nestjs-guard-implementation)
 
 ---
@@ -285,6 +286,27 @@ Read-only across all modules assigned to the viewer's project scope.
 | Finance (all)     | R          |
 
 Viewer does not have write, delete, or approve access on any module.
+
+---
+
+## 6.8b External Principals — Vendor Portal
+
+`VENDOR_PORTAL` is **not** a `CosRole` and is never provisioned to a tenant. It is a distinct
+external authorization context for vendor-network users (ADR-030). An external vendor must never
+receive an internal role; the two principal types are kept separate.
+
+Authentication is two-tier (§05): Tier-1 magic-link (no account) for RFQ response, Tier-2
+lightweight account for PO-status tracking and invoice submission. Authorization is **not** tenant
+RLS — access is scoped by `vendor_identity_id` and the `platform.vendor_trading_relationships` link:
+
+| Capability       | Scope                                                                      |
+| ---------------- | -------------------------------------------------------------------------- |
+| RFQ response     | Only RFQs the vendor was invited to (`procurement.rfq_invitations` token)  |
+| Submit quotation | Only against an RFQ the vendor was invited to                              |
+| Track PO status  | Only POs on a tenant where the vendor has an `ACTIVE` trading relationship |
+| Submit invoice   | Only the vendor's own invoices on a linked PO                              |
+
+The data read remains tenant-scoped; the vendor's view is filtered to their relationship/ownership.
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: 'UX Flow'
-version: '1.3.0'
+version: '1.4.0'
 status: Active
-last_updated: '2026-06-06'
+last_updated: '2026-06-20'
 authors:
   - thitipongroo
 related_docs:
@@ -496,6 +496,21 @@ CRM UI (pipeline kanban, dashboards, proposal generation) remains post-MVP.
 
 - Cross-tenant platform administration is the separate **`/admin` panel** specified in §20.4 —
   not part of the tenant-scoped page set above.
+
+### 20.7.12 Vendor Portal (`VENDOR_PORTAL`)
+
+Source: §28 Vendor portal capabilities. External vendor-network users — **not** a
+tenant-scoped role. Served by a **separate `(vendor)` route group** with its own minimal external
+shell (no internal AppShell / nav / role switcher), matching SAP Ariba Network / Coupa Supplier
+Portal / Procore (external portal is a separate surface).
+
+| Route                     | Page         | Purpose                                                 | Auth tier        |
+| ------------------------- | ------------ | ------------------------------------------------------- | ---------------- |
+| `/vendor/rfq/[token]`     | RFQ response | Open an invited RFQ and submit a quotation (magic-link) | Tier 1 (no acct) |
+| `/vendor`                 | Dashboard    | Invited RFQs + linked POs overview                      | Tier 2 (account) |
+| `/vendor/quotations`      | Quotations   | Submitted-quotation history                             | Tier 2           |
+| `/vendor/purchase-orders` | PO status    | Track status of POs on linked trading relationships     | Tier 2           |
+| `/vendor/invoices`        | Invoices     | Submit and track the vendor's own invoices              | Tier 2           |
 
 ---
 

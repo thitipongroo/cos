@@ -1,8 +1,8 @@
 ---
 title: 'Security & Compliance'
-version: '1.7.0'
+version: '1.8.0'
 status: Active
-last_updated: '2026-06-10'
+last_updated: '2026-06-20'
 authors:
   - thitipongroo
 related_docs:
@@ -80,11 +80,11 @@ of the decision, not just the secret store:
 All persistent storage must use AES-256 minimum. SSE-KMS with a customer-managed key (CMK)
 is required for all cloud storage resources.
 
-| Storage      | Encryption method   | Key management         | Constraint                                          |
-| ------------ | ------------------- | ---------------------- | --------------------------------------------------- |
-| S3 buckets   | SSE-KMS             | CMK (customer-managed) | All buckets; default encryption enforced at bucket  |
-| RDS / Aurora | Storage encryption  | CMK (customer-managed) | Enabled at instance creation; cannot be added later |
-| ElastiCache  | Encryption-at-rest  | AWS-managed key        | `at_rest_encryption_enabled = true` on all nodes   |
+| Storage      | Encryption method  | Key management         | Constraint                                          |
+| ------------ | ------------------ | ---------------------- | --------------------------------------------------- |
+| S3 buckets   | SSE-KMS            | CMK (customer-managed) | All buckets; default encryption enforced at bucket  |
+| RDS / Aurora | Storage encryption | CMK (customer-managed) | Enabled at instance creation; cannot be added later |
+| ElastiCache  | Encryption-at-rest | AWS-managed key        | `at_rest_encryption_enabled = true` on all nodes    |
 
 CMK definitions: managed as Terraform IaC (AWS KMS)
 
@@ -318,6 +318,28 @@ API Auth :
 - Service-to-service — mTLS + JWT (issued by Keycloak)
 - External API clients — OAuth2 client credentials flow
 
+### 5.4.3 Vendor Portal External Authentication (magic-link)
+
+External vendor-network users authenticate **outside** the tenant Keycloak realms. Vendors are not
+`platform.users` and never receive a `CosRole`; the principal is `VENDOR_PORTAL` (§06 §6.8b).
+
+**Tier 1 — frictionless RFQ response (no account, §28):**
+
+- An RFQ invitation issues a **single-use, HMAC-signed token** stored only as `token_hash` in
+  `procurement.rfq_invitations` (never the raw token).
+- The token is embedded in an HTTPS-only magic-link, **expires in 5–15 minutes**, and is
+  invalidated immediately after one successful use (replay-protected).
+- A valid token grants a short-lived, narrowly-scoped session limited to the invited RFQ.
+
+**Tier 2 — lightweight vendor account (PO-status tracking + invoice submission):**
+
+- The vendor claims an account linked to their `platform.vendor_identities` row
+  (`keycloak_user_id` populated). Onboarding is invitation-driven.
+- JWTs for `VENDOR_PORTAL` carry `vendor_identity_id` (not `tenant_id`/`role`); authorization is by
+  `platform.vendor_trading_relationships`, not tenant RLS.
+
+All vendor-portal traffic is rate-limited at Kong independently of tenant API quotas.
+
 ---
 
 ## References
@@ -387,11 +409,11 @@ cluster traffic, staging environments without Cloudflare).
 Per-endpoint overrides are applied via the `@Throttle()` decorator where the global default
 is too permissive.
 
-| Scope | Limit | NestJS mechanism |
-| --- | --- | --- |
-| Default (all endpoints) | 100 req/min per user | `ThrottlerModule` global guard |
-| Auth endpoints (`/api/v*/auth/*`) | 10 req/min per IP | `@Throttle({ default: { limit: 10, ttl: 60000 } })` on `AuthController` |
-| File upload (`/api/v*/files/*`) | 20 req/min per user | `@Throttle({ default: { limit: 20, ttl: 60000 } })` on `FilesController` |
+| Scope                             | Limit                | NestJS mechanism                                                         |
+| --------------------------------- | -------------------- | ------------------------------------------------------------------------ |
+| Default (all endpoints)           | 100 req/min per user | `ThrottlerModule` global guard                                           |
+| Auth endpoints (`/api/v*/auth/*`) | 10 req/min per IP    | `@Throttle({ default: { limit: 10, ttl: 60000 } })` on `AuthController`  |
+| File upload (`/api/v*/files/*`)   | 20 req/min per user  | `@Throttle({ default: { limit: 20, ttl: 60000 } })` on `FilesController` |
 
 **Implementation requirements:**
 
@@ -452,11 +474,11 @@ region per the GLOB-003 data-sovereignty principle, §5.3). It is **distinct fro
 primary **compute/control-plane** region (`ap-southeast-7` Bangkok — GLOB-001, §8.8): a tenant's
 data is stored in its own home region regardless of where the platform control plane runs.
 
-| Tenant origin                | Data-residency region        | DR region        | Regulation / rationale                                            |
-| ---------------------------- | ---------------------------- | ---------------- | ----------------------------------------------------------------- |
-| Thai tenants                 | `ap-southeast-7` (Bangkok)   | `ap-southeast-1` | PDPA — data must not leave Thailand                               |
-| EU tenants                   | `eu-west-1` (Ireland)        | —                | GDPR                                                              |
-| Other / default (SG/VN/MY/ID & international) | `ap-southeast-1` (Singapore) | —    | Default for non-Thai/non-EU tenants — Singapore is the established, neutral SEA data hub (no AWS region in VN/MY/ID); per GLOB-003 home-region principle. **Not** the platform-primary compute region. |
+| Tenant origin                                 | Data-residency region        | DR region        | Regulation / rationale                                                                                                                                                                                 |
+| --------------------------------------------- | ---------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Thai tenants                                  | `ap-southeast-7` (Bangkok)   | `ap-southeast-1` | PDPA — data must not leave Thailand                                                                                                                                                                    |
+| EU tenants                                    | `eu-west-1` (Ireland)        | —                | GDPR                                                                                                                                                                                                   |
+| Other / default (SG/VN/MY/ID & international) | `ap-southeast-1` (Singapore) | —                | Default for non-Thai/non-EU tenants — Singapore is the established, neutral SEA data hub (no AWS region in VN/MY/ID); per GLOB-003 home-region principle. **Not** the platform-primary compute region. |
 
 ### Rules
 

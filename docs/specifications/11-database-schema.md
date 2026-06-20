@@ -1,8 +1,8 @@
 ---
 title: 'Database Schema'
-version: '1.4.0'
+version: '1.5.0'
 status: Active
-last_updated: '2026-06-05'
+last_updated: '2026-06-20'
 authors:
   - thitipongroo
 related_docs:
@@ -173,6 +173,42 @@ INDEX: `(tenant_id, occurred_at DESC)`
 
 ---
 
+### platform.vendor_identities
+
+Cross-tenant vendor network identity (ADR-030). **No `tenant_id`** — a vendor is a network
+participant, not a tenant member. No RLS (platform schema is exempt). Tier-1 (magic-link) needs no
+account; `keycloak_user_id` is populated only when a Tier-2 account is claimed.
+
+| Column               | Type         | Constraints                  | Notes                                  |
+| -------------------- | ------------ | ---------------------------- | -------------------------------------- |
+| `vendor_identity_id` | UUID         | PK DEFAULT gen_random_uuid() |                                        |
+| `email`              | VARCHAR(255) | UNIQUE NOT NULL              | Network-unique vendor contact email    |
+| `display_name`       | VARCHAR(255) | NOT NULL                     |                                        |
+| `keycloak_user_id`   | VARCHAR(255) | UNIQUE NULL                  | NULL until a Tier-2 account is claimed |
+| `is_active`          | BOOLEAN      | NOT NULL DEFAULT true        |                                        |
+| `created_at`         | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                        |
+| `updated_at`         | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                        |
+
+---
+
+### platform.vendor_trading_relationships
+
+Binds a network vendor identity to a tenant's internal vendor record (ADR-030; analogous to
+`platform.tenant_memberships`). One vendor identity → many relationships → many tenants.
+
+| Column               | Type        | Constraints                     | Notes                                    |
+| -------------------- | ----------- | ------------------------------- | ---------------------------------------- |
+| `relationship_id`    | UUID        | PK DEFAULT gen_random_uuid()    |                                          |
+| `vendor_identity_id` | UUID        | FK → vendor_identities NOT NULL |                                          |
+| `tenant_id`          | UUID        | FK → tenants NOT NULL           |                                          |
+| `vendor_id`          | UUID        | NOT NULL                        | FK → tenant-scoped `procurement.vendors` |
+| `status`             | VARCHAR(20) | NOT NULL DEFAULT 'ACTIVE'       | CHECK ∈ (ACTIVE, REVOKED)                |
+| `created_at`         | TIMESTAMPTZ | NOT NULL DEFAULT now()          |                                          |
+
+UNIQUE: `(tenant_id, vendor_identity_id)`
+
+---
+
 ## 11.2 Core Entities
 
 Projects :
@@ -293,6 +329,18 @@ Procurement — RFQ :
 - deadline_date
 - status (open / closed / cancelled)
 - created_by
+- created_at
+
+Procurement — RFQ Invitation (Vendor Portal Tier-1 magic-link) :
+
+- invitation_id
+- tenant_id
+- rfq_id (FK → Procurement — RFQ)
+- vendor_identity_id (FK → `platform.vendor_identities`; NULL if invited by raw email only)
+- invited_email
+- token_hash (single-use; never store the raw token)
+- expires_at (5–15 min window)
+- status (pending / responded / expired)
 - created_at
 
 Procurement — Quotation :
