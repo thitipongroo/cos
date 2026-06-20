@@ -54,6 +54,8 @@ export type * from './events/finance.budget.created.v1';
 export type * from './events/finance.payment.processed.v1';
 export type * from './events/finance.variance.alert.v1';
 export type * from './events/finance.budget.exceeded.v1';
+export type * from './events/finance.billing.approved.v1';
+export type * from './events/finance.ar_receipt.recorded.v1';
 export type * from './events/procurement.vendor_invoice.approved.v1';
 export type * from './events/finance.cashflow_risk.detected.v1';
 export type * from './events/ai.risk_prediction.generated.v1';

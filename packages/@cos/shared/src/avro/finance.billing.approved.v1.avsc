@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "BillingApprovedEvent",
+  "namespace": "com.constructionos.events.finance",
+  "doc": "finance.billing.approved.v1 — Phase 7 Finance Service (AR Client Billing approval, §15)",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "BillingApprovedPayload",
+      "fields": [
+        { "name": "billing_id",  "type": "string" },
+        { "name": "project_id",  "type": "string" },
+        { "name": "contract_id", "type": "string" },
+        { "name": "amount",      "type": "string" },
+        { "name": "approved_by", "type": "string" },
+        { "name": "tier",        "type": "string" }
+      ]
+    }}
+  ]
+}

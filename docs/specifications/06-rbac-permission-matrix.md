@@ -82,6 +82,7 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 | ------------------------ | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
 | User management          | R         | —   | —             | —           | —       | —      | —         | FULL         |
 | Role assignment          | —         | —   | —             | —           | —       | —      | —         | FULL         |
+| Tenant settings          | —         | —   | —             | —           | —       | —      | —         | FULL         |
 | Workflow configuration   | R         | R   | —             | —           | —       | —      | —         | FULL         |
 | Audit logs               | R         | R   | —             | —           | R       | —      | —         | FULL         |
 | Notification preferences | R         | RW  | RW            | RW          | RW      | RW     | RW        | FULL         |
@@ -296,12 +297,12 @@ based on the dependency analysis below.
 | Artifact                                 | Location                                                  | Reason                                                                            |
 | ---------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | `CosRole` enum                           | `packages/@cos/rbac/src/` (re-exported from `@cos/types`) | Used by every platform (mobile, web, Node.js) — belongs in shared layer           |
-| `ROLE_PERMISSIONS` map                   | `packages/@cos/rbac/` (shared package)                   | Pure data; no framework dependency; used by both guards and business logic        |
+| `ROLE_PERMISSIONS` map                   | `packages/@cos/rbac/` (shared package)                    | Pure data; no framework dependency; used by both guards and business logic        |
 | `@Roles(...)` decorator                  | `packages/@cos/rbac/` (shared package)                    | Calls `SetMetadata` only — no request context or JWT dependency                   |
 | `@RequirePermissions(...)` decorator     | `packages/@cos/rbac/` (shared package)                    | Same as above                                                                     |
 | `ROLES_KEY`, `PERMISSIONS_KEY` constants | `packages/@cos/rbac/` (shared package)                    | Metadata keys consumed by concrete guards                                         |
-| `RolesGuard` (`CanActivate`)             | `backend/src/shared/guards/` (application layer)                | Depends on `JwtPayload` (application-layer type) and `Reflector` (`@nestjs/core`) |
-| `PolicyGuard` (`CanActivate`)            | `backend/src/shared/guards/` (application layer)               | Depends on `JwtPayload`, `ExecutionContext`, and may query Prisma for ABAC        |
+| `RolesGuard` (`CanActivate`)             | `backend/src/shared/guards/` (application layer)          | Depends on `JwtPayload` (application-layer type) and `Reflector` (`@nestjs/core`) |
+| `PolicyGuard` (`CanActivate`)            | `backend/src/shared/guards/` (application layer)          | Depends on `JwtPayload`, `ExecutionContext`, and may query Prisma for ABAC        |
 | `JwtAuthGuard` (`CanActivate`)           | `backend/src/modules/identity/guards/`                    | Passport strategy wrapper — identity-module concern                               |
 
 ### Why concrete guards are NOT in `@cos/rbac`

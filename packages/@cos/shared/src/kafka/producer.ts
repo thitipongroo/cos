@@ -47,6 +47,8 @@ const EVENT_AVSC_MAP: Record<string, string> = {
   'finance.payment.processed.v1': 'finance.payment.processed.v1.avsc',
   'finance.variance.alert.v1': 'finance.variance.alert.v1.avsc',
   'finance.cashflow_risk.detected.v1': 'finance.cashflow_risk.detected.v1.avsc',
+  'finance.billing.approved.v1': 'finance.billing.approved.v1.avsc',
+  'finance.ar_receipt.recorded.v1': 'finance.ar_receipt.recorded.v1.avsc',
   // Workforce
   'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
   // Identity
