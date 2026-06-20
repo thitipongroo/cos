@@ -3,17 +3,163 @@ info:
   title: Construction OS — Vendor Portal API
   version: v1
   description: |
-    Vendor Portal Service — Phase 2 (Vendor Portal Expansion).
-    Exposes vendor self-service endpoints: RFQ responses, quotation submission,
-    PO acknowledgement, and delivery confirmation.
-    All endpoints require Bearer JWT (Keycloak RS256). RBAC enforced per role.
-    **STUB** — endpoints to be defined when Phase 2 Vendor Portal development begins.
+    Vendor Portal — external vendor self-service (ADR-030; brought into MVP). Two tiers (§05 §5.4.3):
+      - Tier 1 (no account): respond to an invited RFQ via a single-use magic-link token (in the URL
+        path). The buyer issues the invitation from the procurement side.
+      - Tier 2 (lightweight account): a vendor session token (Bearer) plus an `x-vendor-tenant-id`
+        header selects the buyer relationship; used to track PO status and submit invoices.
+    Vendors are network identities (platform.vendor_identities), not tenant Keycloak users; the
+    principal is VENDOR_PORTAL (§06 §6.8b), scoped by the trading relationship — not tenant RLS.
 servers:
   - url: /api/v1
     description: Current version
 
-security:
-  - bearerAuth: []
+tags:
+  - name: Invitations
+    description: Buyer side — issue an RFQ invitation to a vendor (internal Keycloak JWT + RBAC)
+  - name: RFQ (vendor)
+    description: Tier-1 magic-link — open an invited RFQ and submit a quotation
+  - name: PO & Invoices (vendor)
+    description: Tier-2 vendor session — track PO status and submit invoices
+
+paths:
+  /procurement/rfqs/{rfqId}/invitations:
+    post:
+      tags: [Invitations]
+      operationId: issueRfqInvitation
+      summary: Issue an RFQ invitation to a vendor (returns the magic-link token)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rfqId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IssueInvitationRequest' }
+      responses:
+        '201':
+          description: Invitation issued
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IssuedInvitation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /vendor/rfq/{token}:
+    get:
+      tags: [RFQ (vendor)]
+      operationId: openInvitedRfq
+      summary: Open an invited RFQ (Tier-1 magic-link)
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Invitation magic-link token
+          schema: { type: string }
+      responses:
+        '200':
+          description: RFQ detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Rfq' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /vendor/rfq/{token}/quotation:
+    post:
+      tags: [RFQ (vendor)]
+      operationId: submitQuotation
+      summary: Submit a quotation for an invited RFQ (Tier-1 magic-link)
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubmitQuotationRequest' }
+      responses:
+        '201':
+          description: Quotation submitted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Quotation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /vendor/purchase-orders:
+    get:
+      tags: [PO & Invoices (vendor)]
+      operationId: listVendorPurchaseOrders
+      summary: Track PO status on the linked trading relationship (Tier-2)
+      security:
+        - vendorSession: []
+      parameters:
+        - $ref: '#/components/parameters/VendorTenantHeader'
+      responses:
+        '200':
+          description: Purchase orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PurchaseOrder' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /vendor/invoices:
+    get:
+      tags: [PO & Invoices (vendor)]
+      operationId: listVendorInvoices
+      summary: List the vendor's own invoices (Tier-2)
+      security:
+        - vendorSession: []
+      parameters:
+        - $ref: '#/components/parameters/VendorTenantHeader'
+      responses:
+        '200':
+          description: Invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Invoice' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [PO & Invoices (vendor)]
+      operationId: submitVendorInvoice
+      summary: Submit an invoice against one of the vendor's POs (Tier-2)
+      security:
+        - vendorSession: []
+      parameters:
+        - $ref: '#/components/parameters/VendorTenantHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubmitInvoiceRequest' }
+      responses:
+        '201':
+          description: Invoice submitted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Invoice' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
 
 components:
   securitySchemes:
@@ -21,5 +167,124 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    vendorSession:
+      type: http
+      scheme: bearer
+      description: Vendor session token (Tier-2), carrying vendor_identity_id
 
-paths: {}
+  parameters:
+    VendorTenantHeader:
+      name: x-vendor-tenant-id
+      in: header
+      required: true
+      description: The buyer tenant the vendor is acting against (must be an ACTIVE relationship)
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Missing/invalid token or expired invitation
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: No active trading relationship / insufficient role
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: RFQ or invitation not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    UnprocessableEntity:
+      description: Validation error or invitation already used
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  schemas:
+    IssueInvitationRequest:
+      type: object
+      required: [vendor_id, email, display_name]
+      properties:
+        vendor_id: { type: string, format: uuid, description: Existing procurement.vendors id }
+        email: { type: string, format: email }
+        display_name: { type: string }
+
+    IssuedInvitation:
+      type: object
+      required: [invitationId, magicLinkToken, expiresAt]
+      properties:
+        invitationId: { type: string, format: uuid }
+        magicLinkToken: { type: string, description: Embed in the vendor magic-link URL }
+        expiresAt: { type: string, format: date-time }
+
+    SubmitQuotationRequest:
+      type: object
+      required: [total_amount, currency_code, validity_days]
+      properties:
+        total_amount: { type: string, description: Decimal string (never float) }
+        currency_code: { type: string, minLength: 3, maxLength: 3 }
+        validity_days: { type: integer, minimum: 1, maximum: 365 }
+
+    SubmitInvoiceRequest:
+      type: object
+      required: [po_id, invoice_number, amount, currency_code, invoice_date, due_date]
+      properties:
+        po_id: { type: string, format: uuid }
+        invoice_number: { type: string }
+        amount: { type: string, description: Decimal string }
+        currency_code: { type: string, minLength: 3, maxLength: 3 }
+        invoice_date: { type: string, format: date }
+        due_date: { type: string, format: date }
+
+    Rfq:
+      type: object
+      properties:
+        rfq_id: { type: string, format: uuid }
+        rfq_number: { type: string }
+        project_id: { type: string, format: uuid }
+        status: { type: string }
+        deadline: { type: string, format: date-time }
+
+    Quotation:
+      type: object
+      properties:
+        quotation_id: { type: string, format: uuid }
+        rfq_id: { type: string, format: uuid }
+        vendor_id: { type: string, format: uuid }
+        total_amount: { type: string }
+        currency_code: { type: string }
+        validity_days: { type: integer }
+        submitted_at: { type: string, format: date-time }
+
+    PurchaseOrder:
+      type: object
+      properties:
+        po_id: { type: string, format: uuid }
+        po_number: { type: string }
+        status: { type: string }
+        total_amount: { type: string }
+        currency_code: { type: string }
+        delivery_date: { type: string, format: date }
+        rfq_id: { type: [string, 'null'], format: uuid }
+
+    Invoice:
+      type: object
+      properties:
+        invoice_id: { type: string, format: uuid }
+        po_id: { type: string, format: uuid }
+        invoice_number: { type: string }
+        amount: { type: string }
+        currency_code: { type: string }
+        invoice_date: { type: string, format: date }
+        due_date: { type: string, format: date }
+        status: { type: string }
+
+    ErrorResponse:
+      type: object
+      required: [statusCode, message]
+      properties:
+        statusCode: { type: integer, example: 401 }
+        message: { type: string, example: 'COS-VND-004: Invitation expired' }
+        error: { type: string, example: Unauthorized }

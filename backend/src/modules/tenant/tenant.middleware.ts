@@ -27,7 +27,9 @@ export class TenantMiddleware implements NestMiddleware {
     const isAuthPath = req.path.startsWith('/api/v1/auth');
     const isHealthPath = req.path.startsWith('/api/v1/health');
     const isAdminPath = req.path.startsWith('/api/v1/admin');
-    if (isAuthPath || isHealthPath || isAdminPath) {
+    // Vendor Portal uses external (non-Keycloak) auth — VendorAuthMiddleware sets the context.
+    const isVendorPath = req.path.startsWith('/api/v1/vendor');
+    if (isAuthPath || isHealthPath || isAdminPath || isVendorPath) {
       return next();
     }
 
