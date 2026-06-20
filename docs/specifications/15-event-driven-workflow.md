@@ -1,8 +1,8 @@
 ---
 title: 'Event-driven Workflow'
-version: '1.2.0'
+version: '1.3.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-06-21'
 authors:
   - thitipongroo
 related_docs:
@@ -133,7 +133,7 @@ flowchart TD
     WN["Wait for final approval signal\n(default timeout: 48 hours)"]
     TN["Timeout → escalate to Tenant Admin"]
     RN["Reject → workflow ends\ninitiator notified, reason recorded"]
-    C["Workflow completes\nstatus updated, downstream event published\ne.g. procurement.purchase_order.approved.v1"]
+    C["Workflow completes\nstatus updated, downstream event published\ne.g. procurement.po.status_changed.v1"]
 
     S --> N1 --> W
     W -->|timeout| T --> W
@@ -187,9 +187,12 @@ Envelope Standard :
 Event Naming Convention :
 
 - Format: {domain}.{entity}.{action}.{version}
-- Example: construction.task.created.v1
-- Example: procurement.purchase_order.approved.v2
+- Example: construction.task.completed.v1
+- Example: procurement.po.status_changed.v1
 - Example: finance.budget.exceeded.v1
+- The trailing `.vN` increments on a breaking schema change (e.g. `...v1` → `...v2`). The
+  authoritative event registry is the Avro schema set (`packages/@cos/shared/src/avro`, §15.6) —
+  the examples above are real emitted events, not a placeholder catalogue.
 
 Note — Kafka topic naming vs CloudEvents type field :
 
@@ -198,9 +201,9 @@ Kafka topic names include a `{tenant_id}.` prefix for isolation (see 07-multi-te
 section 7.3). These are distinct namespaces :
 
 - Kafka topic name : `{tenant_id}.{domain}.{entity}.{action}.{version}`
-  Example : `tenant_abc.construction.task.created.v1`
+  Example : `tenant_abc.construction.task.completed.v1`
 - CloudEvents type : `{domain}.{entity}.{action}.{version}`
-  Example : `construction.task.created.v1`
+  Example : `construction.task.completed.v1`
 
 The `tenant_id` is carried in the CloudEvents `source` field or message headers, not in
 the `type` field. Consumers must validate the `tenant_id` header before processing.

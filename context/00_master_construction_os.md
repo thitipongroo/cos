@@ -1229,6 +1229,11 @@ RBAC Role Definitions (authoritative — all modules must use these):
   SITE_WORKER   — Site operations read + report submission (field worker sub-role)
   VIEWER        — Read-only across all modules (per project assignment)
 
+  External principals (NOT a CosRole — external network users, spec §6.8b / ADR-030):
+  VENDOR_PORTAL — vendor-network users on the Vendor Portal; authenticated via magic-link (Tier 1)
+                  or a vendor session token (Tier 2), scoped by platform.vendor_trading_relationships
+                  (NOT tenant RLS). Never provisioned to a tenant.
+
 Permission granularity: resource:action (e.g. project:read, boq:write)
 RBAC enforcement: NestJS Guards using JWT claims
 Tenant isolation: shared-db + tenant_id + RLS (see below) — middleware sets app.current_tenant_id
@@ -1828,6 +1833,7 @@ Generate:
       POST   /api/v1/procurement/vendors
       GET    /api/v1/procurement/vendors
       GET    /api/v1/procurement/vendors/:vendorId
+      GET    /api/v1/procurement/vendors/:vendorId/quotations  (vendor quotation history)
       DELETE /api/v1/procurement/vendors/:vendorId
     Purchase requests:
       POST   /api/v1/procurement/purchase-requests          (project_id in body)
@@ -1838,6 +1844,7 @@ Generate:
       POST   /api/v1/procurement/rfqs/:rfqId/publish|close|cancel|award
       GET    /api/v1/procurement/rfqs/:rfqId/quotations       (compare; RFQ CLOSED)
       POST   /api/v1/procurement/rfqs/:rfqId/quotations       (submit quotation)
+      POST   /api/v1/procurement/rfqs/:rfqId/invitations      (invite a vendor — issues a Vendor Portal magic-link; ADR-030)
     Purchase orders:
       POST   /api/v1/procurement/purchase-orders
       GET    /api/v1/procurement/purchase-orders              (filterable: status, project_id)
@@ -1851,6 +1858,17 @@ Generate:
       POST   /api/v1/procurement/vendor-invoices             (po_id in body)
       GET    /api/v1/procurement/vendor-invoices?po_id=
       POST   /api/v1/procurement/vendor-invoices/:invoiceId/approve
+    Vendor Portal — external vendor self-service (ADR-030; brought into MVP, overrides §28 Year 1–2
+    timeline; spec §14 Vendor Portal + docs/api/vendor.openapi.yaml; pages §20.7.12 under /vendor):
+      GET    /api/v1/vendor/rfq/:token                       (Tier-1 magic-link: open invited RFQ — no account)
+      POST   /api/v1/vendor/rfq/:token/quotation             (Tier-1: submit quotation; returns a Tier-2 vendor session)
+      GET    /api/v1/vendor/purchase-orders                  (Tier-2: track PO status; Bearer session + x-vendor-tenant-id)
+      GET    /api/v1/vendor/invoices                          (Tier-2: list own invoices)
+      POST   /api/v1/vendor/invoices                          (Tier-2: submit invoice)
+      Entities: platform.vendor_identities + platform.vendor_trading_relationships (cross-tenant, no RLS)
+                + procurement.rfq_invitations (RLS; magic-link token_hash). Reuses procurement
+                rfqs/quotations/purchase_orders/invoices — no duplicate data model.
+      Auth: VENDOR_PORTAL principal (not a CosRole); magic-link HMAC token (spec §5.4.3).
 - Decimal.js used for all financial calculations
 - Unit tests: workflow state transitions, financial calculations
 - Integration tests: full procurement lifecycle with Temporal test server
@@ -2727,6 +2745,13 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       uses the separate /admin panel §20.4)
     - Web app shell: role-filtered navigation, SSE notification bell, offline/sync indicator,
       th/en language switcher, data-table list views (spec §20.6.2)
+    - CRM module (ADR-029, retrofitted — no dedicated phase): `crm` schema
+      (crm.leads / crm.opportunities / crm.contacts); Customer = finance.customers (convert writes
+      there). APIs (spec §14 CRM, docs/api/crm.openapi.yaml):
+        GET|POST /api/v1/crm/leads · GET|POST /api/v1/crm/opportunities
+        PATCH /api/v1/crm/opportunities/:id/convert · GET|POST /api/v1/crm/contacts
+        GET /api/v1/crm/customers
+      RBAC: read = EXECUTIVE + CRM_SALES_MANAGER; write = CRM_SALES_MANAGER (+ TENANT_ADMIN).
 
 Local SQLite Schema (mirrors server entities for offline use):
   sync_queue:

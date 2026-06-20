@@ -1,8 +1,8 @@
 ---
 title: 'Tech Stack Detail'
-version: '1.1.0'
+version: '1.2.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-06-21'
 authors:
   - thitipongroo
 related_docs:
@@ -83,6 +83,8 @@ Tools:
 - Terraform
 - Apache Kafka
 - Confluent Schema Registry (Kafka schema management — see `15-event-driven-workflow.md` §15.6)
+- EMQX (self-hosted MQTT 5.0 broker for IoT telemetry; bridges to Kafka/MSK — RESOLVED, Phase 21
+  Equipment Service onward; see `13-product-architecture.md` §13.5 and `33-digital-twin-iot.md` §33.8)
 - NGINX
 - Istio (service mesh — mTLS, traffic management)
 - Temporal.io (workflow orchestration)
