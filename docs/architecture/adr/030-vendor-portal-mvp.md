@@ -55,9 +55,10 @@ vendor-management entity, ADR-022). One vendor identity → many relationships �
   HMAC-signed magic-link token (5–15 min expiry, HTTPS-only). New `procurement.rfq_invitations`
   (rfq_id, vendor_identity_id or email, token_hash, expires_at, status) holds the invitation +
   token. No Keycloak account required.
-- **Tier 2 (lightweight account):** to track PO status and submit invoices, the vendor claims an
-  account (Keycloak user linked to the vendor_identity). Onboarding is invitation-driven
-  (Procore/ACC pattern).
+- **Tier 2 (lightweight session — option A):** responding to an RFQ grants a vendor session token
+  (HMAC-signed, carrying `vendor_identity_id`) returned in the quotation response, used with an
+  `x-vendor-tenant-id` header to track PO status and submit invoices. No Keycloak account in MVP
+  (`vendor_identities.keycloak_user_id` stays NULL); a full account claim is a later enhancement.
 
 **4. RBAC — `VENDOR_PORTAL` is a separate principal, not a `CosRole`.** The 12 `CosRole` values are
 all internal; an external vendor must never receive an internal role. `VENDOR_PORTAL` is a distinct

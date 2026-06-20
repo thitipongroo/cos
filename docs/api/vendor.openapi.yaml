@@ -91,10 +91,10 @@ paths:
             schema: { $ref: '#/components/schemas/SubmitQuotationRequest' }
       responses:
         '201':
-          description: Quotation submitted
+          description: Quotation submitted; a Tier-2 vendor session is returned (ADR-030 option A)
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Quotation' }
+              schema: { $ref: '#/components/schemas/QuotationResult' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
@@ -246,6 +246,19 @@ components:
         project_id: { type: string, format: uuid }
         status: { type: string }
         deadline: { type: string, format: date-time }
+
+    QuotationResult:
+      type: object
+      required: [quotation, vendorSession, tenantId]
+      properties:
+        quotation: { $ref: '#/components/schemas/Quotation' }
+        vendorSession:
+          type: string
+          description: Tier-2 session token — send as `Bearer` for PO-status/invoice endpoints
+        tenantId:
+          type: string
+          format: uuid
+          description: The buyer tenant — send as `x-vendor-tenant-id` for Tier-2 endpoints
 
     Quotation:
       type: object

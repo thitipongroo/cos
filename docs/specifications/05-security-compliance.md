@@ -331,12 +331,12 @@ External vendor-network users authenticate **outside** the tenant Keycloak realm
   invalidated immediately after one successful use (replay-protected).
 - A valid token grants a short-lived, narrowly-scoped session limited to the invited RFQ.
 
-**Tier 2 — lightweight vendor account (PO-status tracking + invoice submission):**
+**Tier 2 — lightweight vendor session (PO-status tracking + invoice submission):**
 
-- The vendor claims an account linked to their `platform.vendor_identities` row
-  (`keycloak_user_id` populated). Onboarding is invitation-driven.
-- JWTs for `VENDOR_PORTAL` carry `vendor_identity_id` (not `tenant_id`/`role`); authorization is by
-  `platform.vendor_trading_relationships`, not tenant RLS.
+- Responding to an RFQ (Tier 1) grants a Tier-2 **vendor session token** bound to the
+  `platform.vendor_identities` row. The token is HMAC-signed and carries only `vendor_identity_id`.
+- Tier-2 requests send the session as `Bearer` plus an `x-vendor-tenant-id` header that selects the
+  buyer; authorization is by `platform.vendor_trading_relationships`, **not** tenant RLS.
 
 All vendor-portal traffic is rate-limited at Kong independently of tenant API quotas.
 

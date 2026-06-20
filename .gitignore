@@ -59,8 +59,10 @@ venv
 .pytest_cache
 .mypy_cache
 
-# Go
+# Go module vendor directories (services/*/vendor). The bare pattern also matches the web app's
+# /vendor route, so the negation below keeps the Vendor Portal frontend tracked (ADR-030).
 vendor
+!/apps/web/src/app/vendor/
 
 # Prisma
 backend/prisma/migrations/**/migration_lock.toml

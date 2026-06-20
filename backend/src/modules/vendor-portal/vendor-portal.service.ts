@@ -87,7 +87,7 @@ export class VendorPortalService {
     token: string,
     invitationId: string,
     dto: { total_amount: string; currency_code: string; validity_days: number },
-  ): Promise<QuotationRow> {
+  ): Promise<{ quotation: QuotationRow; vendorSession: string; tenantId: string }> {
     const invitation = await this.assertValidInvitation(token, invitationId);
     const vendorId = await this.resolveVendorId(invitation.vendor_identity_id);
 
@@ -99,7 +99,11 @@ export class VendorPortalService {
       validityDays: dto.validity_days,
     });
     await this.repo.markInvitationResponded(invitationId);
-    return quotation;
+
+    // Tier-1 → Tier-2 handoff (ADR-030, option A): responding grants a vendor session bound to the
+    // vendor identity, scoped to this buyer tenant, for PO-status tracking and invoice submission.
+    const vendorSession = this.magicLink.issueSessionToken(invitation.vendor_identity_id as string);
+    return { quotation, vendorSession, tenantId: this.tenantId };
   }
 
   // ── Tier 2: track PO status, submit + list invoices ─────────────────────────

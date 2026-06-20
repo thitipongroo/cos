@@ -325,5 +325,32 @@
     "createOpportunity": "สร้างโอกาส",
     "convert": "แปลงเป็นลูกค้า",
     "selectLead": "เลือก Lead"
+  },
+  "vendor": {
+    "portalTitle": "พอร์ทัลผู้ขาย",
+    "rfqUnavailable": "ลิงก์ RFQ นี้ไม่ถูกต้องหรือหมดอายุ",
+    "quotationSent": "ส่งใบเสนอราคาแล้ว",
+    "goToDashboard": "ไปที่แดชบอร์ด",
+    "rfqTitle": "คำขอใบเสนอราคา",
+    "rfqNumber": "เลขที่ RFQ",
+    "deadline": "กำหนดส่ง",
+    "submitQuotation": "ส่งใบเสนอราคา",
+    "totalAmount": "ยอดรวม",
+    "currency": "สกุลเงิน",
+    "validityDays": "ยืนราคา (วัน)",
+    "submitFailed": "ส่งไม่สำเร็จ กรุณาตรวจสอบข้อมูล",
+    "dashboardTitle": "แดชบอร์ดผู้ขาย",
+    "purchaseOrders": "ใบสั่งซื้อ",
+    "invoices": "ใบแจ้งหนี้",
+    "noSession": "ตอบ RFQ ก่อนเพื่อเข้าถึงใบสั่งซื้อและใบแจ้งหนี้",
+    "colPoNumber": "เลขที่ใบสั่งซื้อ",
+    "deliveryDate": "วันที่ส่งมอบ",
+    "noPurchaseOrders": "ยังไม่มีใบสั่งซื้อ",
+    "colInvoiceNumber": "เลขที่ใบแจ้งหนี้",
+    "invoiceDate": "วันที่ใบแจ้งหนี้",
+    "poId": "รหัสใบสั่งซื้อ",
+    "dueDate": "วันครบกำหนด",
+    "submitInvoice": "ส่งใบแจ้งหนี้",
+    "noInvoices": "ยังไม่มีใบแจ้งหนี้"
   }
 }

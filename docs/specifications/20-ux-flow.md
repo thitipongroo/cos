@@ -500,9 +500,9 @@ CRM UI (pipeline kanban, dashboards, proposal generation) remains post-MVP.
 ### 20.7.12 Vendor Portal (`VENDOR_PORTAL`)
 
 Source: §28 Vendor portal capabilities. External vendor-network users — **not** a
-tenant-scoped role. Served by a **separate `(vendor)` route group** with its own minimal external
-shell (no internal AppShell / nav / role switcher), matching SAP Ariba Network / Coupa Supplier
-Portal / Procore (external portal is a separate surface).
+tenant-scoped role. Served by a **separate `/vendor` section** (its own `app/vendor/layout.tsx`,
+outside the `(app)` AppShell) with a minimal external shell — no internal nav / role switcher,
+matching SAP Ariba Network / Coupa Supplier Portal / Procore (external portal is a separate surface).
 
 | Route                     | Page         | Purpose                                                 | Auth tier        |
 | ------------------------- | ------------ | ------------------------------------------------------- | ---------------- |

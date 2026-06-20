@@ -55,6 +55,7 @@ function build(
     issueInvitationToken: jest
       .fn()
       .mockReturnValue({ token: 'TOK', tokenHash: 'HASH', expiresAt: new Date(Date.now() + 1000) }),
+    issueSessionToken: jest.fn().mockReturnValue('SESSION'),
   };
   const service = new VendorPortalService(repo as never, identities as never, magicLink as never, {
     tenantId: 'ten-1',
@@ -149,8 +150,8 @@ describe('VendorPortalService', () => {
       );
     });
 
-    it('creates the quotation and marks the invitation responded', async () => {
-      const { service, repo } = build();
+    it('creates the quotation, marks responded, and returns a vendor session', async () => {
+      const { service, repo, magicLink } = build();
       const result = await service.submitQuotation('TOK', 'inv-1', dto);
       expect(repo.createQuotation).toHaveBeenCalledWith({
         rfqId: 'rfq-1',
@@ -160,7 +161,12 @@ describe('VendorPortalService', () => {
         validityDays: 30,
       });
       expect(repo.markInvitationResponded).toHaveBeenCalledWith('inv-1');
-      expect(result).toEqual({ quotation_id: 'q-1' });
+      expect(magicLink.issueSessionToken).toHaveBeenCalledWith('vid-1');
+      expect(result).toEqual({
+        quotation: { quotation_id: 'q-1' },
+        vendorSession: 'SESSION',
+        tenantId: 'ten-1',
+      });
     });
   });
 

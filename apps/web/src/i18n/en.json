@@ -325,5 +325,32 @@
     "createOpportunity": "Create opportunity",
     "convert": "Convert to customer",
     "selectLead": "Select a lead"
+  },
+  "vendor": {
+    "portalTitle": "Vendor Portal",
+    "rfqUnavailable": "This RFQ link is invalid or expired.",
+    "quotationSent": "Quotation submitted",
+    "goToDashboard": "Go to dashboard",
+    "rfqTitle": "Request for Quotation",
+    "rfqNumber": "RFQ number",
+    "deadline": "Deadline",
+    "submitQuotation": "Submit quotation",
+    "totalAmount": "Total amount",
+    "currency": "Currency",
+    "validityDays": "Validity (days)",
+    "submitFailed": "Submission failed. Please check your input.",
+    "dashboardTitle": "Vendor dashboard",
+    "purchaseOrders": "Purchase orders",
+    "invoices": "Invoices",
+    "noSession": "Respond to an RFQ to access purchase orders and invoices.",
+    "colPoNumber": "PO number",
+    "deliveryDate": "Delivery date",
+    "noPurchaseOrders": "No purchase orders yet.",
+    "colInvoiceNumber": "Invoice number",
+    "invoiceDate": "Invoice date",
+    "poId": "PO ID",
+    "dueDate": "Due date",
+    "submitInvoice": "Submit invoice",
+    "noInvoices": "No invoices yet."
   }
 }
