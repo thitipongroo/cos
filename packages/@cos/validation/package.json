@@ -13,9 +13,9 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
-    "dev": "tsc --watch",
+    "dev": "tsc --watch --project tsconfig.build.json",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist",
+    "clean": "rm -rf dist *.tsbuildinfo",
     "test": "jest",
     "test:unit": "jest --testPathPattern='src/'",
     "test:cov": "jest --coverage"

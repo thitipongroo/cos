@@ -10,7 +10,7 @@
   "packageManager": "pnpm@11.8.0",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "turbo run dev --concurrency=20",
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:cov": "turbo run test:cov",
