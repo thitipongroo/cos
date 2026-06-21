@@ -242,6 +242,9 @@ services:
   clamav:
     image: clamav/clamav:stable
     container_name: cos-clamav
+    # clamav/clamav:stable publishes no linux/arm64 manifest — run the amd64
+    # image under emulation (Rosetta) on Apple Silicon hosts.
+    platform: linux/amd64
     ports:
       - '${CLAMAV_PORT:-3310}:3310'
     healthcheck:
