@@ -55,10 +55,10 @@ const mockModuleRef = {
   resolve: mockResolve,
 };
 
-const EXPECTED_TOPICS = [
-  'procurement.po.created',
-  'procurement.invoice.received',
-  'procurement.po.status_changed',
+const EXPECTED_EVENT_TYPES = [
+  'procurement.po.created.v1',
+  'procurement.invoice.received.v1',
+  'procurement.po.status_changed.v1',
 ];
 
 let consumer: FinanceConsumer;
@@ -76,17 +76,17 @@ describe('onModuleInit', () => {
     expect(mockOn).toHaveBeenCalledTimes(3);
   });
 
-  it('connects with finance-consumer-group and all 3 topics', async () => {
+  it('connects with the shared finance group and all 3 event types', async () => {
     await consumer.onModuleInit();
     expect(mockConnect).toHaveBeenCalledWith(
       expect.objectContaining({
-        groupId: 'finance-consumer-group',
-        topics: expect.arrayContaining(EXPECTED_TOPICS),
+        groupId: 'finance.shared',
+        eventTypes: expect.arrayContaining(EXPECTED_EVENT_TYPES),
         fromBeginning: false,
       }),
     );
-    const args = mockConnect.mock.calls[0][0] as { topics: string[] };
-    expect(args.topics).toHaveLength(3);
+    const args = mockConnect.mock.calls[0][0] as { eventTypes: string[] };
+    expect(args.eventTypes).toHaveLength(3);
   });
 
   it('po.created handler calls svc.handlePoCreated with correct payload', async () => {

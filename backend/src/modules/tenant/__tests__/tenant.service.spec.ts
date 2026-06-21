@@ -15,6 +15,11 @@ jest.mock('@cos/shared', () => ({
     publish: jest.fn().mockResolvedValue(undefined),
     disconnect: jest.fn().mockResolvedValue(undefined),
   })),
+  KafkaTopicProvisioner: jest.fn().mockImplementation(() => ({
+    connect: jest.fn().mockResolvedValue(undefined),
+    provisionTenant: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 jest.mock('@temporalio/client', () => ({

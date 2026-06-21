@@ -19,6 +19,7 @@ const mockNotifyAwaitingApproval = jest.fn().mockResolvedValue(undefined);
 const mockCompensateAssignDedicatedDb = jest.fn().mockResolvedValue(undefined);
 const mockMigrateData = jest.fn().mockResolvedValue(undefined);
 const mockVerifyRouting = jest.fn().mockResolvedValue(undefined);
+const mockProvisionKafkaTopics = jest.fn().mockResolvedValue(undefined);
 const mockEmitProvisionedEvent = jest.fn().mockResolvedValue(undefined);
 
 const mockActivities = {
@@ -29,6 +30,7 @@ const mockActivities = {
   compensateAssignDedicatedDbActivity: mockCompensateAssignDedicatedDb,
   migrateDataActivity: mockMigrateData,
   verifyRoutingActivity: mockVerifyRouting,
+  provisionKafkaTopicsActivity: mockProvisionKafkaTopics,
   emitProvisionedEventActivity: mockEmitProvisionedEvent,
 };
 
@@ -99,6 +101,7 @@ describe('EnterpriseProvisioningWorkflow', () => {
         tenantId: baseParams.tenantId,
         rdsEndpoint: 'cos-tenant-acme-prod.xxx.rds.amazonaws.com',
       });
+      expect(mockProvisionKafkaTopics).toHaveBeenCalledWith({ tenantId: baseParams.tenantId });
       expect(mockEmitProvisionedEvent).toHaveBeenCalledWith({
         tenantId: baseParams.tenantId,
         rdsEndpoint: 'cos-tenant-acme-prod.xxx.rds.amazonaws.com',
@@ -125,9 +128,10 @@ describe('EnterpriseProvisioningWorkflow', () => {
       await handle.signal(abortSignal);
       await handle.result();
 
-      // Activities 4-5 must NOT run
+      // Activities 4-6 must NOT run
       expect(mockMigrateData).not.toHaveBeenCalled();
       expect(mockVerifyRouting).not.toHaveBeenCalled();
+      expect(mockProvisionKafkaTopics).not.toHaveBeenCalled();
       expect(mockEmitProvisionedEvent).not.toHaveBeenCalled();
 
       // Compensation must run

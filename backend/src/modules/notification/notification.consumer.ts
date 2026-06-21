@@ -10,14 +10,16 @@ import type { BaseEventEnvelope } from '@cos/types';
 
 const logger = createLogger('notification-consumer');
 
-const SUBSCRIBED_TOPICS = [
-  'site.inspection.failed',
-  'site.issue.created',
-  'procurement.po.status_changed',
-  'finance.variance.alert',
-  'site.report.created',
-  'procurement.invoice.received',
-  'file.document.quarantined',
+// Canonical event types (CloudEvents `type`) this service consumes. Subscribed per-tenant
+// via RegExp under the `notification.shared` group; tenant_id header validated by KafkaConsumer.
+const SUBSCRIBED_EVENT_TYPES = [
+  'site.inspection.failed.v1',
+  'site.issue.created.v1',
+  'procurement.po.status_changed.v1',
+  'finance.variance.alert.v1',
+  'site.report.created.v1',
+  'procurement.invoice.received.v1',
+  'file.document.quarantined.v1',
 ];
 
 @Injectable()
@@ -28,8 +30,7 @@ export class NotificationConsumer implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit(): Promise<void> {
     // Register handlers for each subscribed event type
-    for (const topic of SUBSCRIBED_TOPICS) {
-      const eventType = `${topic}.v1`;
+    for (const eventType of SUBSCRIBED_EVENT_TYPES) {
       this.kafka.on<Record<string, unknown>>(
         eventType,
         async (event: BaseEventEnvelope<Record<string, unknown>>) => {
@@ -48,12 +49,12 @@ export class NotificationConsumer implements OnModuleInit, OnModuleDestroy {
     }
 
     await this.kafka.connect({
-      groupId: 'notification-consumer-group',
-      topics: SUBSCRIBED_TOPICS,
+      groupId: 'notification.shared',
+      eventTypes: SUBSCRIBED_EVENT_TYPES,
       fromBeginning: false,
     });
 
-    logger.info({ topics: SUBSCRIBED_TOPICS }, 'NotificationConsumer started');
+    logger.info({ eventTypes: SUBSCRIBED_EVENT_TYPES }, 'NotificationConsumer started');
   }
 
   async onModuleDestroy(): Promise<void> {

@@ -70,10 +70,16 @@ describe('Kafka integration — full publish/consume cycle', () => {
     // Pre-create topics — producer uses allowAutoTopicCreation: false (production safety)
     const admin = new Kafka({ brokers: [bootstrapBroker] }).admin();
     await admin.connect();
+    // Per-tenant topic names (§7.3): {tenant_id}.{event_type}. The producer publishes
+    // to these (allowAutoTopicCreation: false), and consumers match them via RegExp.
     await admin.createTopics({
       topics: [
-        { topic: 'construction.project.created', numPartitions: 1, replicationFactor: 1 },
-        { topic: 'site.report.created', numPartitions: 1, replicationFactor: 1 },
+        {
+          topic: 'tenant-int-1.construction.project.created.v1',
+          numPartitions: 1,
+          replicationFactor: 1,
+        },
+        { topic: 'tenant-int-2.site.report.created.v1', numPartitions: 1, replicationFactor: 1 },
       ],
     });
     await admin.disconnect();
@@ -104,7 +110,7 @@ describe('Kafka integration — full publish/consume cycle', () => {
 
     await consumer.connect({
       groupId: 'cos-int-test-publish-group',
-      topics: ['construction.project.created'],
+      eventTypes: ['construction.project.created.v1'],
       fromBeginning: true,
     });
 
@@ -139,7 +145,7 @@ describe('Kafka integration — full publish/consume cycle', () => {
 
     await consumer.connect({
       groupId: 'cos-int-test-idempotency-group',
-      topics: ['site.report.created'],
+      eventTypes: ['site.report.created.v1'],
       fromBeginning: true,
     });
 

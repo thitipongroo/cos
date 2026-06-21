@@ -14,6 +14,7 @@ import type {
   compensateAssignDedicatedDbActivity,
   migrateDataActivity,
   verifyRoutingActivity,
+  provisionKafkaTopicsActivity,
   emitProvisionedEventActivity,
 } from './enterprise-provisioning.activities';
 
@@ -25,6 +26,7 @@ const acts = proxyActivities<{
   compensateAssignDedicatedDbActivity: typeof compensateAssignDedicatedDbActivity;
   migrateDataActivity: typeof migrateDataActivity;
   verifyRoutingActivity: typeof verifyRoutingActivity;
+  provisionKafkaTopicsActivity: typeof provisionKafkaTopicsActivity;
   emitProvisionedEventActivity: typeof emitProvisionedEventActivity;
 }>({
   startToCloseTimeout: '30m',
@@ -102,6 +104,11 @@ export async function enterpriseProvisioningWorkflow(
     tenantId: params.tenantId,
   });
   await acts.verifyRoutingActivity({ tenantId: params.tenantId, rdsEndpoint });
+
+  // Activity 6 — provision the tenant's per-tenant Kafka topics (§7.3) before go-live
+  state = 'PROVISIONING_TOPICS';
+  log.info('enterprise-provisioning: provisioning Kafka topics', { tenantId: params.tenantId });
+  await acts.provisionKafkaTopicsActivity({ tenantId: params.tenantId });
 
   // Emit platform.enterprise.db_provisioned.v1
   await acts.emitProvisionedEventActivity({ tenantId: params.tenantId, rdsEndpoint });

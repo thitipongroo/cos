@@ -2,7 +2,7 @@ import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import type { ClickHouseClient } from '@clickhouse/client';
-import { CLICKHOUSE_CLIENT } from './analytics.module';
+import { CLICKHOUSE_CLIENT } from './analytics.tokens';
 
 // Cache key format from spec §Phase 14 Caching Strategy:
 // analytics:{tenant_id}:{dashboard_type}:{project_id}:{date_range}

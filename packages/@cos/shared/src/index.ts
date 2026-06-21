@@ -10,6 +10,21 @@ export { KafkaConsumer } from './kafka/consumer';
 export type { MessageHandler, ConsumerOptions } from './kafka/consumer';
 export { OutboxPublisher, OutboxPoller } from './kafka/outbox';
 export { DlqPublisher } from './kafka/dlq';
+// Per-tenant topic model + provisioning (spec §7.3, §15.6/15.7, §32.4)
+export { KafkaTopicProvisioner, tenantTopicSuffixes } from './kafka/topic-provisioner';
+export type { ProvisionerOptions } from './kafka/topic-provisioner';
+export {
+  EVENT_AVSC_MAP,
+  CANONICAL_EVENT_TYPES,
+  PLATFORM_EVENTS_TOPIC,
+  PLATFORM_DLQ_TOPIC,
+  isPlatformEvent,
+  domainOf,
+  topicForEvent,
+  subjectForEvent,
+  tenantTopicPattern,
+  dlqTopicFor,
+} from './kafka/topic-catalog';
 export {
   initKafkaMetrics,
   recordProduced,

@@ -12,10 +12,12 @@ import { FinanceService } from './finance.service';
 
 const logger = createLogger('finance-consumer');
 
-const SUBSCRIBED_TOPICS = [
-  'procurement.po.created',
-  'procurement.invoice.received',
-  'procurement.po.status_changed',
+// Canonical event types (CloudEvents `type`) consumed by Finance. Subscribed per-tenant
+// via RegExp under the `finance.shared` group; tenant_id header validated by KafkaConsumer.
+const SUBSCRIBED_EVENT_TYPES = [
+  'procurement.po.created.v1',
+  'procurement.invoice.received.v1',
+  'procurement.po.status_changed.v1',
 ];
 
 @Injectable()
@@ -70,12 +72,12 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
     );
 
     await this.kafka.connect({
-      groupId: 'finance-consumer-group',
-      topics: SUBSCRIBED_TOPICS,
+      groupId: 'finance.shared',
+      eventTypes: SUBSCRIBED_EVENT_TYPES,
       fromBeginning: false,
     });
 
-    logger.info({ topics: SUBSCRIBED_TOPICS }, 'FinanceConsumer started');
+    logger.info({ eventTypes: SUBSCRIBED_EVENT_TYPES }, 'FinanceConsumer started');
   }
 
   async onModuleDestroy(): Promise<void> {

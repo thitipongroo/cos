@@ -217,6 +217,34 @@ Topic lifecycle management :
 | DLQ — SMB / Mid-market            | 14 days (2× the 7-day standard)            | Same as SMB tier        | AWS MSK topic-level config   |
 | DLQ — Enterprise                  | 60 days (2× the 30-day standard)           | Same as Enterprise tier | Dedicated MSK cluster config |
 
+**Topic provisioning — creation procedure:**
+
+Topics are created **explicitly** — producers run with `allowAutoTopicCreation: false`; the broker's
+auto-create is never relied upon. The full canonical event catalogue (§32.4) is materialised per
+tenant, created idempotently at tenant onboarding:
+
+1. **Per-tenant topic set:** one `{tenant_id}.{domain}.{entity}.{action}.v{N}` topic per
+   **non-platform** canonical event type, plus one `{tenant_id}.{domain}.dlq` per domain.
+2. **Shared platform topics** (created once, not per tenant): `platform.events` and `platform.dlq` (§15.7).
+3. **Trigger:**
+   - **SMB / Mid-market (shared cluster):** created during tenant onboarding (Phase 2) — a
+     `provisionTenantTopics` step runs immediately after the tenant record is created, before any of
+     the tenant's events are produced.
+   - **Enterprise (dedicated namespace):** created by the Phase 25 `EnterpriseProvisioningWorkflow`
+     (`provisionKafkaTopicsActivity`), after routing verification and before the
+     `platform.enterprise.db_provisioned.v1` go-live event.
+   - **Local development:** the seed script provisions the dev tenant, the `platform` pseudo-tenant
+     (used by tenant-lifecycle `identity.*` events emitted with `tenant_id = "platform"`), and the
+     shared platform topics.
+4. **Idempotency:** provisioning lists existing topics and creates only the missing ones, so
+   re-running onboarding (or the seed) is safe and produces no broker errors.
+
+**Consumer subscription (shared cluster):** a shared-group consumer subscribes to each canonical
+event type via a **per-tenant topic RegExp** (`^[^.]+\.{domain}\.{entity}\.{action}\.v{N}$`), so a
+single `{service_name}.shared` group consumes every tenant's topics — including topics for tenants
+onboarded after the consumer started. The `tenant_id` message header is validated against the
+decoded envelope before processing; a missing or mismatched header routes the message to the DLQ.
+
 **Tenant offboarding — topic cleanup procedure:**
 
 When a tenant is deprovisioned, execute in this order:

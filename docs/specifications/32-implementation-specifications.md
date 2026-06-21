@@ -442,7 +442,12 @@ compatibility) before first producer deployment.
 ### Schema Registry Rules
 
 - Compatibility mode: `BACKWARD_TRANSITIVE`
-- Subject naming: `{topic_name}-value`
+- Subject naming: **RecordNameStrategy** — the subject is the canonical event type
+  (`{domain}.{entity}.{action}.v{N}`), e.g. `procurement.po.created.v1`. There is exactly **one
+  schema per event, shared across all tenants**. Subjects MUST NOT be derived from the Kafka topic
+  name (`TopicNameStrategy`): because topic names carry a `{tenant_id}.` prefix (§7.3, §15.6),
+  `TopicNameStrategy` would register a duplicate schema per tenant. The producer registers the
+  schema once under the canonical event type regardless of the per-tenant topic it publishes to.
 - Version increment on every schema change
 - Both TypeScript interface AND Avro schema required for each event
 - No producer deployment without prior schema registration

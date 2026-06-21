@@ -11,6 +11,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
+import { KafkaTopicProvisioner } from '@cos/shared';
 
 const logger = createLogger('seed');
 
@@ -182,6 +183,21 @@ async function main(): Promise<void> {
     await seedCostCategories(tx);
     await seedInspectionTypes(tx);
   });
+
+  // Provision the dev tenant's Kafka topics (per-tenant model, spec §7.3) + the shared
+  // platform topics, so producers/consumers have their topics in local dev. Idempotent.
+  const provisioner = new KafkaTopicProvisioner();
+  await provisioner.connect();
+  try {
+    await provisioner.ensurePlatformTopics();
+    await provisioner.provisionTenant(SEED_TENANT_ID);
+    // Tenant-lifecycle events (identity.*) are emitted with tenant_id='platform' by
+    // TenantService.publishEvent — provision that pseudo-tenant's topics too.
+    await provisioner.provisionTenant('platform');
+    logger.info({ tenantId: SEED_TENANT_ID }, 'seed: kafka topics provisioned');
+  } finally {
+    await provisioner.disconnect();
+  }
 
   logger.info('seed: complete');
 }

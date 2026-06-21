@@ -8,8 +8,9 @@ import { AnalyticsService } from './analytics.service';
 import { AnalyticsExecutiveController } from './analytics.executive.controller';
 import { AnalyticsPmController } from './analytics.pm.controller';
 import { AnalyticsTrendsController } from './analytics.trends.controller';
+import { CLICKHOUSE_CLIENT } from './analytics.tokens';
 
-export const CLICKHOUSE_CLIENT = 'CLICKHOUSE_CLIENT';
+export { CLICKHOUSE_CLIENT };
 
 // Cache TTL: 5 minutes — spec §Phase 14 Caching Strategy
 const CACHE_TTL_MS = 5 * 60 * 1000;

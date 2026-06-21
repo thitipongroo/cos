@@ -1,0 +1,128 @@
+// Kafka topic + Schema Registry subject derivation — authoritative source for the
+// per-tenant topic model. Specs: §7.3 (Kafka Topic Isolation), §15.6/§15.7
+// (event naming + platform events), §32.4 (event contracts + schema registry).
+//
+// Naming model:
+//   - CloudEvents `type` / event_type : {domain}.{entity}.{action}.{version}      (no tenant prefix)
+//   - Kafka topic name (per-tenant)    : {tenant_id}.{domain}.{entity}.{action}.{version}
+//   - Platform events ({platform.*})   : shared `platform.events` topic, NOT tenant-scoped (§15.7)
+//   - DLQ topic                        : {tenant_id}.{domain}.dlq  (tenant-scoped, §7.3)
+//   - Schema Registry subject          : canonical event_type (RecordNameStrategy) — one schema
+//                                        per event, shared across all tenants (§32.4 resolution).
+
+/** Shared topic for platform-level events (Phase 25) — §15.7. */
+export const PLATFORM_EVENTS_TOPIC = 'platform.events';
+/** Shared DLQ for platform-level events. */
+export const PLATFORM_DLQ_TOPIC = 'platform.dlq';
+
+/**
+ * Canonical event catalogue (§32.4): event_type → Avro schema file.
+ * Single source of truth for both the producer (schema lookup) and the topic
+ * provisioner (per-tenant topic set).
+ */
+export const EVENT_AVSC_MAP: Record<string, string> = {
+  // Construction
+  'construction.project.created.v1': 'construction.project.created.v1.avsc',
+  'construction.project.updated.v1': 'construction.project.updated.v1.avsc',
+  'construction.project.status_changed.v1': 'construction.project.status_changed.v1.avsc',
+  'construction.project.archived.v1': 'construction.project.archived.v1.avsc',
+  'construction.boq.version_created.v1': 'construction.boq.version_created.v1.avsc',
+  'construction.boq.version_approved.v1': 'construction.boq.version_approved.v1.avsc',
+  'construction.boq.created.v1': 'construction.boq.created.v1.avsc',
+  'construction.boq.updated.v1': 'construction.boq.updated.v1.avsc',
+  'construction.task.completed.v1': 'construction.task.completed.v1.avsc',
+  'construction.delay.detected.v1': 'construction.delay.detected.v1.avsc',
+  // Procurement
+  'procurement.po.created.v1': 'procurement.po.created.v1.avsc',
+  'procurement.po.status_changed.v1': 'procurement.po.status_changed.v1.avsc',
+  'procurement.invoice.received.v1': 'procurement.invoice.received.v1.avsc',
+  'procurement.rfq.created.v1': 'procurement.rfq.created.v1.avsc',
+  'procurement.rfq.status_changed.v1': 'procurement.rfq.status_changed.v1.avsc',
+  'procurement.vendor_invoice.approved.v1': 'procurement.vendor_invoice.approved.v1.avsc',
+  'procurement.delivery.received.v1': 'procurement.delivery.received.v1.avsc',
+  // Site Ops
+  'site.report.created.v1': 'site.report.created.v1.avsc',
+  'site.report.submitted.v1': 'site.report.submitted.v1.avsc',
+  'site.inspection.failed.v1': 'site.inspection.failed.v1.avsc',
+  'site.inspection.passed.v1': 'site.inspection.passed.v1.avsc',
+  'site.issue.created.v1': 'site.issue.created.v1.avsc',
+  'site.issue.status_changed.v1': 'site.issue.status_changed.v1.avsc',
+  'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
+  // Finance
+  'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
+  'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',
+  'finance.payment.processed.v1': 'finance.payment.processed.v1.avsc',
+  'finance.variance.alert.v1': 'finance.variance.alert.v1.avsc',
+  'finance.cashflow_risk.detected.v1': 'finance.cashflow_risk.detected.v1.avsc',
+  'finance.billing.approved.v1': 'finance.billing.approved.v1.avsc',
+  'finance.ar_receipt.recorded.v1': 'finance.ar_receipt.recorded.v1.avsc',
+  // Workforce
+  'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
+  // Identity
+  'identity.tenant.created.v1': 'identity.tenant.created.v1.avsc',
+  'identity.tenant.deactivated.v1': 'identity.tenant.deactivated.v1.avsc',
+  'identity.user.created.v1': 'identity.user.created.v1.avsc',
+  'identity.user.role_changed.v1': 'identity.user.role_changed.v1.avsc',
+  // Platform
+  'platform.enterprise.contract_signed.v1': 'platform.enterprise.contract_signed.v1.avsc',
+  'platform.enterprise.db_provisioned.v1': 'platform.enterprise.db_provisioned.v1.avsc',
+  // AI
+  'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
+  // Digital Twin (Phase 24)
+  'twin.state.updated.v1': 'twin.state.updated.v1.avsc',
+  'twin.divergence.detected.v1': 'twin.divergence.detected.v1.avsc',
+  // Carbon Analytics (Phase 24 / CarbonCalculationEngine EP Phase 6)
+  'carbon.record.created.v1': 'carbon.record.created.v1.avsc',
+  // File Service
+  'file.document.uploaded.v1': 'file.document.uploaded.v1.avsc',
+  'file.document.quarantined.v1': 'file.document.quarantined.v1.avsc',
+};
+
+/** All canonical event types (CloudEvents `type`) in the catalogue. */
+export const CANONICAL_EVENT_TYPES: readonly string[] = Object.keys(EVENT_AVSC_MAP);
+
+/** Platform-level events are emitted to the shared `platform.events` topic, not per-tenant. */
+export function isPlatformEvent(eventType: string): boolean {
+  return eventType.startsWith('platform.');
+}
+
+/** First segment of an event type or topic — the bounded-context domain. */
+export function domainOf(eventTypeOrTopic: string): string {
+  return eventTypeOrTopic.split('.')[0] ?? '';
+}
+
+/**
+ * Kafka topic a published event is routed to (§7.3, §15.6).
+ * Platform events use the shared topic; all other events are per-tenant.
+ */
+export function topicForEvent(eventType: string, tenantId: string): string {
+  return isPlatformEvent(eventType) ? PLATFORM_EVENTS_TOPIC : `${tenantId}.${eventType}`;
+}
+
+/**
+ * Schema Registry subject (§32.4 — RecordNameStrategy): the canonical event type,
+ * shared across tenants so there is exactly one schema per event regardless of tenant.
+ */
+export function subjectForEvent(eventType: string): string {
+  return eventType;
+}
+
+/**
+ * RegExp matching a canonical event's per-tenant topics across every tenant
+ * (`{tenant_id}.{event_type}`). Shared-cluster consumers (§7.3) subscribe with this
+ * pattern under a single `{service}.shared` group and validate the tenant_id header.
+ * tenant_id is a UUID (no dots), so `[^.]+` matches exactly the tenant prefix segment.
+ */
+export function tenantTopicPattern(eventType: string): RegExp {
+  const escaped = eventType.replace(/[.]/g, '\\.');
+  return new RegExp(`^[^.]+\\.${escaped}$`);
+}
+
+/** DLQ topic for a failed message's original topic — `{tenant_id}.{domain}.dlq` (§7.3). */
+export function dlqTopicFor(originalTopic: string): string {
+  if (originalTopic === PLATFORM_EVENTS_TOPIC || isPlatformEvent(originalTopic)) {
+    return PLATFORM_DLQ_TOPIC;
+  }
+  const [tenantId, domain] = originalTopic.split('.');
+  return `${tenantId}.${domain}.dlq`;
+}

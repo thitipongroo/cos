@@ -637,7 +637,7 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
 - Use Confluent Schema Registry (open-source, self-hosted)
 - All schemas registered in Avro format
 - Compatibility mode: BACKWARD_TRANSITIVE (new schema must be readable by ALL previous versions, not just the immediately preceding one; source: spec §32.4)
-- Schema subject naming: {topic_name}-value
+- Schema subject naming: RecordNameStrategy — subject is the canonical event type ({domain}.{entity}.{action}.v{N}), one schema per event shared across all tenants. NOT {topic_name}-value: Kafka topics carry a {tenant_id}. prefix (§7.3), so TopicNameStrategy would duplicate schemas per tenant (source: spec §32.4)
 - Version increment on every schema change
 - Agents must generate both TypeScript interface AND Avro schema for each event
 
@@ -2356,7 +2356,7 @@ Schema Registry:
 - Version: confluent-schema-registry 7.x
 - Deployment: containerized alongside Kafka
 - Schema format: Avro (primary) + TypeScript interfaces generated from Avro
-- Subject naming convention: {topic-name}-value  (e.g. "project.created-value")
+- Subject naming convention: RecordNameStrategy — canonical event type (e.g. "procurement.po.created.v1"); one schema per event, shared across tenants (NOT {topic-name}-value — topics carry a {tenant_id}. prefix; source: spec §32.4)
 - Compatibility mode: BACKWARD_TRANSITIVE
 
   (new schema must be readable by ALL previous versions, not just the immediately preceding one;
@@ -2375,19 +2375,27 @@ Schema Registry:
 Event Versioning Strategy:
 
 - Version carried in event envelope: event_version field (semver string, e.g. "1.0")
-- Minor version: new optional fields added (backward compatible — same schema subject)
+- Minor version: new optional fields added (backward compatible — same schema subject; carried in envelope event_version, e.g. "1.0" → "1.1")
 - Major version: breaking change → new schema subject
 
-  (e.g. "project.created.v2-value") and migration consumer bridge
+  (e.g. "procurement.po.created.v2") and migration consumer bridge
 
-- Version in topic name: NOT used (version only in envelope and schema registry)
+- Major version (.vN) IS part of the event type AND the Kafka topic name (e.g. ...created.v1 → ...created.v2); the semver patch version lives in the envelope event_version field only (source: spec §15.6, §32.4)
 
 Kafka Configuration:
   Cluster: 3 brokers minimum (production) / 1 broker (development)
   Replication factor: 3 (production) / 1 (development)
   Min ISR: 2 (production)
-  Topic naming: {service}.{entity}.{event}
-                e.g. project.project.created, procurement.po.created
+  Topic naming (per-tenant, §7.3, §15.6): {tenant_id}.{domain}.{entity}.{action}.v{N}
+                e.g. tenant_abc.construction.project.created.v1, tenant_abc.procurement.po.created.v1
+                CloudEvents type / event_type (no tenant prefix): {domain}.{entity}.{action}.v{N}
+                Platform events (platform.*): shared "platform.events" topic, not tenant-scoped (§15.7)
+                DLQ: {tenant_id}.{domain}.dlq
+  Topic provisioning: explicit (producers use allowAutoTopicCreation:false); per-tenant topic set
+                created idempotently at onboarding — SMB Phase 2, Enterprise Phase 25 workflow,
+                local dev via seed (source: spec §7.3 Topic provisioning)
+  Consumer subscription: shared group {service}.shared subscribes per-tenant topics via RegExp
+                (^[^.]+\.{event_type}$) + validates tenant_id header before processing (§7.3)
   Default retention: 7 days
   Log compaction: enabled for entity state topics (project.project.*, etc.)
   Max message size: 1MB (large payloads → store in S3, reference in event)
@@ -4096,7 +4104,7 @@ APIs:
 
 Generate:
 
-- NestJS module with Kafka consumer group: notification-consumer-group
+- NestJS module with Kafka consumer group: notification.shared (shared-cluster naming {service}.shared, §7.3); subscribes per-tenant topics via RegExp + validates tenant_id header
 - Template rendering service (Jinja2-style via handlebars in TypeScript)
 - SSE (Server-Sent Events) endpoint per authenticated user session (NestJS @Sse decorator) —
   NOT Socket.IO; spec §19.2: "SSE is used for in-app delivery; WebSocket is not used for notifications"

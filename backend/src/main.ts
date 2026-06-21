@@ -16,6 +16,10 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }),
+    // rawBody: true makes Nest expose req.rawBody (Buffer) for webhook HMAC
+    // verification (Phase 25) without manually registering a content-type parser
+    // that conflicts with Nest's own JSON body parser registered during init.
+    { rawBody: true },
   );
 
   // Global prefix — source: backend/src/main.ts (C-04 resolved 2026-05-26)
@@ -48,29 +52,6 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: process.env['CORS_ORIGINS']?.split(',') ?? ['http://localhost:3001'],
     credentials: true,
-  });
-
-  // Capture raw body for webhook HMAC verification — Phase 25
-  // Overrides Fastify's built-in JSON parser to attach rawBody Buffer on the request.
-  const fastify = app.getHttpAdapter().getInstance() as unknown as {
-    addContentTypeParser: (
-      type: string,
-      opts: { parseAs: string },
-      fn: (
-        req: Record<string, unknown>,
-        body: string,
-        done: (err: Error | null, payload?: unknown) => void,
-      ) => void,
-    ) => void;
-  };
-  fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
-    (req as Record<string, unknown>)['rawBody'] = Buffer.from(body ?? '', 'utf8');
-    try {
-      done(null, JSON.parse(body ?? '{}'));
-    } catch (err) {
-      (err as NodeJS.ErrnoException & { statusCode?: number }).statusCode = 400;
-      done(err as Error);
-    }
   });
 
   const port = parseInt(process.env['PORT'] ?? '3000', 10);

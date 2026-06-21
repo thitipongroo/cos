@@ -4,7 +4,7 @@
 // Source: context/00_master_construction_os.md §Phase 13 Graph Queries
 import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { Driver, Record as Neo4jRecord, Session } from 'neo4j-driver';
-import { NEO4J_DRIVER } from './graph.module';
+import { NEO4J_DRIVER } from './graph.tokens';
 
 @Injectable()
 export class GraphService {

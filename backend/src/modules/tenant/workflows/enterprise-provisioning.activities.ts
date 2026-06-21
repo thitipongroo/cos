@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
 
@@ -210,6 +210,19 @@ export async function verifyRoutingActivity(params: RdsWithEndpointParams): Prom
     logger.info({ tenantId: params.tenantId, rdsEndpoint: params.rdsEndpoint }, 'routing.verified');
   } finally {
     await prisma.$disconnect();
+  }
+}
+
+// ── Provision per-tenant Kafka topics (§7.3) ───────────────────────────────
+
+export async function provisionKafkaTopicsActivity(params: RdsActivityParams): Promise<void> {
+  const provisioner = new KafkaTopicProvisioner();
+  try {
+    await provisioner.connect();
+    await provisioner.provisionTenant(params.tenantId);
+    logger.info({ tenantId: params.tenantId }, 'enterprise.kafka.topics.provisioned');
+  } finally {
+    await provisioner.disconnect();
   }
 }
 

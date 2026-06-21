@@ -56,7 +56,8 @@ describe('KafkaProducer', () => {
 
     expect(sendMock).toHaveBeenCalledTimes(1);
     const call = sendMock.mock.calls[0][0];
-    expect(call.topic).toBe('construction.project.created');
+    // Per-tenant topic name (§7.3): {tenant_id}.{event_type} (version retained).
+    expect(call.topic).toBe('tenant-1.construction.project.created.v1');
     expect(call.messages[0].key).toBe('tenant-1');
   });
 

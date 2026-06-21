@@ -9,73 +9,9 @@ import { randomUUID } from 'crypto';
 import { registerSchema, encodeAvro, ensureCompatibilityMode } from './schema-registry.client';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
+import { EVENT_AVSC_MAP, topicForEvent, subjectForEvent } from './topic-catalog';
 
 const logger = createLogger('kafka-producer');
-
-// Avsc filename mapping: event_type → file basename
-const EVENT_AVSC_MAP: Record<string, string> = {
-  // Construction
-  'construction.project.created.v1': 'construction.project.created.v1.avsc',
-  'construction.project.updated.v1': 'construction.project.updated.v1.avsc',
-  'construction.project.status_changed.v1': 'construction.project.status_changed.v1.avsc',
-  'construction.project.archived.v1': 'construction.project.archived.v1.avsc',
-  'construction.boq.version_created.v1': 'construction.boq.version_created.v1.avsc',
-  'construction.boq.version_approved.v1': 'construction.boq.version_approved.v1.avsc',
-  'construction.boq.created.v1': 'construction.boq.created.v1.avsc',
-  'construction.boq.updated.v1': 'construction.boq.updated.v1.avsc',
-  'construction.task.completed.v1': 'construction.task.completed.v1.avsc',
-  'construction.delay.detected.v1': 'construction.delay.detected.v1.avsc',
-  // Procurement
-  'procurement.po.created.v1': 'procurement.po.created.v1.avsc',
-  'procurement.po.status_changed.v1': 'procurement.po.status_changed.v1.avsc',
-  'procurement.invoice.received.v1': 'procurement.invoice.received.v1.avsc',
-  'procurement.rfq.created.v1': 'procurement.rfq.created.v1.avsc',
-  'procurement.rfq.status_changed.v1': 'procurement.rfq.status_changed.v1.avsc',
-  'procurement.vendor_invoice.approved.v1': 'procurement.vendor_invoice.approved.v1.avsc',
-  'procurement.delivery.received.v1': 'procurement.delivery.received.v1.avsc',
-  // Site Ops
-  'site.report.created.v1': 'site.report.created.v1.avsc',
-  'site.report.submitted.v1': 'site.report.submitted.v1.avsc',
-  'site.inspection.failed.v1': 'site.inspection.failed.v1.avsc',
-  'site.inspection.passed.v1': 'site.inspection.passed.v1.avsc',
-  'site.issue.created.v1': 'site.issue.created.v1.avsc',
-  'site.issue.status_changed.v1': 'site.issue.status_changed.v1.avsc',
-  'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
-  // Finance
-  'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
-  'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',
-  'finance.payment.processed.v1': 'finance.payment.processed.v1.avsc',
-  'finance.variance.alert.v1': 'finance.variance.alert.v1.avsc',
-  'finance.cashflow_risk.detected.v1': 'finance.cashflow_risk.detected.v1.avsc',
-  'finance.billing.approved.v1': 'finance.billing.approved.v1.avsc',
-  'finance.ar_receipt.recorded.v1': 'finance.ar_receipt.recorded.v1.avsc',
-  // Workforce
-  'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
-  // Identity
-  'identity.tenant.created.v1': 'identity.tenant.created.v1.avsc',
-  'identity.tenant.deactivated.v1': 'identity.tenant.deactivated.v1.avsc',
-  'identity.user.created.v1': 'identity.user.created.v1.avsc',
-  'identity.user.role_changed.v1': 'identity.user.role_changed.v1.avsc',
-  // Platform
-  'platform.enterprise.contract_signed.v1': 'platform.enterprise.contract_signed.v1.avsc',
-  'platform.enterprise.db_provisioned.v1': 'platform.enterprise.db_provisioned.v1.avsc',
-  // AI
-  'ai.risk_prediction.generated.v1': 'ai.risk_prediction.generated.v1.avsc',
-  // Digital Twin (Phase 24)
-  'twin.state.updated.v1': 'twin.state.updated.v1.avsc',
-  'twin.divergence.detected.v1': 'twin.divergence.detected.v1.avsc',
-  // Carbon Analytics (Phase 24 / CarbonCalculationEngine EP Phase 6)
-  'carbon.record.created.v1': 'carbon.record.created.v1.avsc',
-  // File Service
-  'file.document.uploaded.v1': 'file.document.uploaded.v1.avsc',
-  'file.document.quarantined.v1': 'file.document.quarantined.v1.avsc',
-};
-
-// topic naming: {service}.{entity}.{action} — derived from canonical event type
-function topicFromEventType(eventType: string): string {
-  // e.g. "construction.project.created.v1" → "construction.project.created"
-  return eventType.replace(/\.v\d+$/, '');
-}
 
 export interface ProduceOptions {
   /** OTel trace_id for header propagation */
@@ -130,7 +66,9 @@ export class KafkaProducer {
       event_id: randomUUID(),
     };
 
-    const topic = topicFromEventType(envelope.event_type);
+    // Per-tenant topic name (§7.3): {tenant_id}.{event_type}; platform events use the
+    // shared platform.events topic. The event_type (CloudEvents `type`) keeps no prefix.
+    const topic = topicForEvent(envelope.event_type, envelope.tenant_id);
     const schemaId = await this.getOrRegisterSchema(envelope.event_type);
     const encoded = await encodeAvro(schemaId, envelope);
 
@@ -169,7 +107,9 @@ export class KafkaProducer {
     const avscFile = EVENT_AVSC_MAP[eventType];
     if (!avscFile) throw new Error(`No Avro schema registered for event type: ${eventType}`);
 
-    const subject = `${topicFromEventType(eventType)}-value`;
+    // RecordNameStrategy (§32.4): subject is the canonical event type, shared across
+    // tenants — one schema per event regardless of the per-tenant topic it lands on.
+    const subject = subjectForEvent(eventType);
     const id = await registerSchema(subject, avscFile);
     this.schemaIds.set(eventType, id);
     return id;

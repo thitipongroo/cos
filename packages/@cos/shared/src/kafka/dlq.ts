@@ -5,6 +5,7 @@
 
 import { Kafka, Producer } from 'kafkajs';
 import { createLogger } from '@cos/logger';
+import { dlqTopicFor } from './topic-catalog';
 
 const logger = createLogger('dlq');
 
@@ -45,7 +46,9 @@ export class DlqPublisher {
   async publish(msg: DlqMessage): Promise<void> {
     if (!this.producer) throw new Error('DlqPublisher not connected');
 
-    const dlqTopic = `${msg.originalTopic}.dlq`;
+    // Tenant-scoped DLQ (§7.3): {tenant_id}.{domain}.dlq — a tenant's DLQ never
+    // receives another tenant's failed messages.
+    const dlqTopic = dlqTopicFor(msg.originalTopic);
 
     await this.producer.send({
       topic: dlqTopic,

@@ -10,6 +10,7 @@ import { decodeAvro } from './schema-registry.client';
 import { DlqPublisher } from './dlq';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
+import { isPlatformEvent, tenantTopicPattern, PLATFORM_EVENTS_TOPIC } from './topic-catalog';
 
 const logger = createLogger('kafka-consumer');
 
@@ -23,8 +24,15 @@ export type MessageHandler<T = unknown> = (
 ) => Promise<void>;
 
 export interface ConsumerOptions {
+  /** Consumer group — shared-cluster services use `{service}.shared` (spec §7.3). */
   groupId: string;
-  topics: string[];
+  /**
+   * Canonical event types to consume (CloudEvents `type`, e.g. `site.inspection.failed.v1`).
+   * Domain events are subscribed via a per-tenant topic RegExp (`{tenant_id}.{event_type}`)
+   * so one shared group reads every tenant's topics; platform events subscribe to the
+   * shared `platform.events` topic. The tenant_id header is validated before processing.
+   */
+  eventTypes: string[];
   fromBeginning?: boolean;
 }
 
@@ -55,15 +63,26 @@ export class KafkaConsumer {
     this.consumer = this.kafka.consumer({ groupId: options.groupId });
     await this.consumer.connect();
 
-    for (const topic of options.topics) {
-      await this.consumer.subscribe({ topic, fromBeginning: options.fromBeginning ?? false });
+    const fromBeginning = options.fromBeginning ?? false;
+    for (const eventType of options.eventTypes) {
+      // Platform events live on the shared platform.events topic; all other events
+      // are per-tenant, matched across tenants by RegExp (§7.3). RegExp subscription
+      // also picks up topics provisioned for tenants onboarded after startup, and
+      // never throws when no topic exists yet (unlike a literal-name subscription).
+      const topic = isPlatformEvent(eventType)
+        ? PLATFORM_EVENTS_TOPIC
+        : tenantTopicPattern(eventType);
+      await this.consumer.subscribe({ topic, fromBeginning });
     }
 
     await this.consumer.run({
       eachMessage: (payload) => this.handleMessage(payload),
     });
 
-    logger.info({ groupId: options.groupId, topics: options.topics }, 'KafkaConsumer connected');
+    logger.info(
+      { groupId: options.groupId, eventTypes: options.eventTypes },
+      'KafkaConsumer connected',
+    );
   }
 
   async disconnect(): Promise<void> {
@@ -83,6 +102,21 @@ export class KafkaConsumer {
     } catch (err) {
       logger.error({ err, topic }, 'Failed to decode Avro message — sending to DLQ');
       await this.sendToDlq(topic, message.value!, 'AVRO_DECODE_ERROR');
+      return;
+    }
+
+    const headers = message.headers ?? {};
+
+    // Tenant isolation guard (§7.3): the tenant_id header is a secondary check against
+    // the decoded envelope. A missing or mismatched header indicates a misrouted or
+    // tampered message — never process it; route to the DLQ for investigation.
+    const headerTenantId = this.headerToString(headers['tenant_id']);
+    if (!headerTenantId || headerTenantId !== event.tenant_id) {
+      logger.error(
+        { topic, header_tenant_id: headerTenantId, event_tenant_id: event.tenant_id },
+        'tenant_id header missing or does not match envelope — sending to DLQ',
+      );
+      await this.sendToDlq(topic, value, 'TENANT_ID_MISMATCH');
       return;
     }
 
@@ -110,7 +144,6 @@ export class KafkaConsumer {
     }
 
     // Extract OTel trace context from headers (QM-8)
-    const headers = message.headers ?? {};
     const traceContext = {
       traceId: this.headerToString(headers['trace_id']),
       spanId: this.headerToString(headers['span_id']),

@@ -28,14 +28,14 @@ const mockSvc = { handleEvent: mockHandleEvent };
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
-const EXPECTED_TOPICS = [
-  'site.inspection.failed',
-  'site.issue.created',
-  'procurement.po.status_changed',
-  'finance.variance.alert',
-  'site.report.created',
-  'procurement.invoice.received',
-  'file.document.quarantined',
+const EXPECTED_EVENT_TYPES = [
+  'site.inspection.failed.v1',
+  'site.issue.created.v1',
+  'procurement.po.status_changed.v1',
+  'finance.variance.alert.v1',
+  'site.report.created.v1',
+  'procurement.invoice.received.v1',
+  'file.document.quarantined.v1',
 ];
 
 let consumer: NotificationConsumer;
@@ -52,21 +52,21 @@ describe('onModuleInit', () => {
     await consumer.onModuleInit();
     expect(mockOn).toHaveBeenCalledTimes(7);
     const registeredEventTypes = mockOn.mock.calls.map((c: unknown[]) => c[0]);
-    for (const topic of EXPECTED_TOPICS) {
-      expect(registeredEventTypes).toContain(`${topic}.v1`);
+    for (const eventType of EXPECTED_EVENT_TYPES) {
+      expect(registeredEventTypes).toContain(eventType);
     }
   });
 
-  it('connects with correct group ID and all 6 topics', async () => {
+  it('connects with the shared group ID and all 7 event types', async () => {
     await consumer.onModuleInit();
     expect(mockConnect).toHaveBeenCalledWith(
       expect.objectContaining({
-        groupId: 'notification-consumer-group',
-        topics: expect.arrayContaining(EXPECTED_TOPICS),
+        groupId: 'notification.shared',
+        eventTypes: expect.arrayContaining(EXPECTED_EVENT_TYPES),
       }),
     );
-    const callArgs = mockConnect.mock.calls[0][0] as { topics: string[] };
-    expect(callArgs.topics).toHaveLength(7);
+    const callArgs = mockConnect.mock.calls[0][0] as { eventTypes: string[] };
+    expect(callArgs.eventTypes).toHaveLength(7);
   });
 
   it('connects with fromBeginning = false', async () => {
@@ -103,8 +103,7 @@ describe('onModuleInit', () => {
   it('each handler forwards to svc.handleEvent with matching event_type', async () => {
     await consumer.onModuleInit();
 
-    for (const topic of EXPECTED_TOPICS) {
-      const eventType = `${topic}.v1`;
+    for (const eventType of EXPECTED_EVENT_TYPES) {
       const call = (mockOn.mock.calls as unknown[]).find(
         (c) => (c as unknown[])[0] === eventType,
       ) as unknown[];

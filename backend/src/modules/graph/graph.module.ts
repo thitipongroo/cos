@@ -6,8 +6,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import neo4j, { Driver } from 'neo4j-driver';
 import { GraphController } from './graph.controller';
 import { GraphService } from './graph.service';
+import { NEO4J_DRIVER } from './graph.tokens';
 
-export const NEO4J_DRIVER = 'NEO4J_DRIVER';
+export { NEO4J_DRIVER };
 
 @Module({
   imports: [ConfigModule],

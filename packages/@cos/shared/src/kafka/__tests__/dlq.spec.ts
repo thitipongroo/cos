@@ -29,9 +29,9 @@ describe('DlqPublisher', () => {
     await publisher.disconnect();
   });
 
-  it('publishes to {original-topic}.dlq topic', async () => {
+  it('publishes to {tenant_id}.{domain}.dlq topic', async () => {
     await publisher.publish({
-      originalTopic: 'construction.project.created',
+      originalTopic: 'tenant-1.construction.project.created.v1',
       originalValue: Buffer.from('data'),
       reason: 'AVRO_DECODE_ERROR',
       failedAt: new Date().toISOString(),
@@ -40,7 +40,8 @@ describe('DlqPublisher', () => {
 
     expect(sendMock).toHaveBeenCalledTimes(1);
     const call = sendMock.mock.calls[0][0];
-    expect(call.topic).toBe('construction.project.created.dlq');
+    // Tenant-scoped DLQ (§7.3): {tenant_id}.{domain}.dlq.
+    expect(call.topic).toBe('tenant-1.construction.dlq');
   });
 
   it('includes failure metadata in headers', async () => {

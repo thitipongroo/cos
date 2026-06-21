@@ -45,14 +45,22 @@ jest.mock('../schema-registry.client', () => ({
 
 import { KafkaConsumer } from '../consumer';
 import { decodeAvro } from '../schema-registry.client';
+import { tenantTopicPattern } from '../topic-catalog';
 
 type HandleMessage = (p: unknown) => Promise<void>;
 
+// Default messages carry a tenant_id header matching the decoded event (tenant_id 't1'),
+// satisfying the §7.3 tenant-isolation guard. Pass overrides to merge/replace headers.
 function makeMessage(value = Buffer.from('encoded'), headers: Record<string, Buffer> = {}) {
   return {
-    topic: 'construction.project.created',
+    topic: 't1.construction.project.created.v1',
     partition: 0,
-    message: { value, headers, offset: '0', timestamp: Date.now().toString() },
+    message: {
+      value,
+      headers: { tenant_id: Buffer.from('t1'), ...headers },
+      offset: '0',
+      timestamp: Date.now().toString(),
+    },
   };
 }
 
@@ -86,7 +94,7 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
     Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
 
     const consumer = new KafkaConsumer();
-    await consumer.connect({ groupId: 'g1', topics: ['topic-a', 'topic-b'] });
+    await consumer.connect({ groupId: 'g1', eventTypes: ['topic-a', 'topic-b'] });
 
     expect(consumerMock.connect).toHaveBeenCalledTimes(1);
     expect(consumerMock.subscribe).toHaveBeenCalledTimes(2);
@@ -104,9 +112,13 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
     Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
 
     const consumer = new KafkaConsumer();
-    await consumer.connect({ groupId: 'g1', topics: ['topic-a'], fromBeginning: true });
+    await consumer.connect({ groupId: 'g1', eventTypes: ['topic-a'], fromBeginning: true });
 
-    expect(consumerMock.subscribe).toHaveBeenCalledWith({ topic: 'topic-a', fromBeginning: true });
+    // Domain event types subscribe via a per-tenant topic RegExp (§7.3).
+    expect(consumerMock.subscribe).toHaveBeenCalledWith({
+      topic: tenantTopicPattern('topic-a'),
+      fromBeginning: true,
+    });
   });
 
   it('disconnect() disconnects the underlying consumer', async () => {
@@ -120,7 +132,7 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
     Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
 
     const consumer = new KafkaConsumer();
-    await consumer.connect({ groupId: 'g1', topics: ['t'] });
+    await consumer.connect({ groupId: 'g1', eventTypes: ['t'] });
     await consumer.disconnect();
 
     expect(consumerMock.disconnect).toHaveBeenCalledTimes(1);
@@ -150,7 +162,7 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
     Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
 
     const consumer = new KafkaConsumer();
-    await consumer.connect({ groupId: 'g1', topics: ['topic-a'] });
+    await consumer.connect({ groupId: 'g1', eventTypes: ['topic-a'] });
 
     // Invoke the captured eachMessage arrow function — covers (payload) => this.handleMessage(payload)
     await capturedEachMessage!({
@@ -167,7 +179,7 @@ describe('KafkaConsumer handleMessage — null headers (line 107)', () => {
     jest.clearAllMocks();
   });
 
-  it('handles message with null headers (covers message.headers ?? {} branch)', async () => {
+  it('routes a null-headers message to the DLQ — missing tenant_id (covers headers ?? {} branch + §7.3 guard)', async () => {
     const event = {
       event_id: 'evt-null-hdr',
       event_type: 'construction.project.created.v1',
@@ -179,6 +191,7 @@ describe('KafkaConsumer handleMessage — null headers (line 107)', () => {
       payload: {},
     };
     (decodeAvro as jest.Mock).mockResolvedValueOnce(event);
+    const { DlqPublisher } = jest.requireMock('../dlq') as { DlqPublisher: jest.Mock };
     const handler = jest.fn().mockResolvedValue(undefined);
     const consumer = new KafkaConsumer();
     consumer.on('construction.project.created.v1', handler);
@@ -188,13 +201,43 @@ describe('KafkaConsumer handleMessage — null headers (line 107)', () => {
       partition: 0,
       message: {
         value: Buffer.from('enc'),
-        headers: null as never, // null → ?? {} covers right branch
+        headers: null as never, // null → ?? {} covers left branch; no tenant_id → DLQ
         offset: '0',
         timestamp: Date.now().toString(),
       },
     });
 
-    expect(handler).toHaveBeenCalledWith(event, { traceId: undefined, spanId: undefined });
+    // No tenant_id header → guard rejects, handler never runs, message goes to DLQ.
+    expect(handler).not.toHaveBeenCalled();
+    const publishMock = DlqPublisher.mock.results[0]?.value.publish as jest.Mock;
+    expect(publishMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('routes a message whose tenant_id header mismatches the envelope to the DLQ (§7.3 guard)', async () => {
+    const event = {
+      event_id: 'evt-mismatch',
+      event_type: 'construction.project.created.v1',
+      tenant_id: 't1',
+      actor_id: 'u1',
+      occurred_at: new Date().toISOString(),
+      correlation_id: 'c1',
+      event_version: '1.0',
+      payload: {},
+    };
+    (decodeAvro as jest.Mock).mockResolvedValueOnce(event);
+    const { DlqPublisher } = jest.requireMock('../dlq') as { DlqPublisher: jest.Mock };
+    const handler = jest.fn().mockResolvedValue(undefined);
+    const consumer = new KafkaConsumer();
+    consumer.on('construction.project.created.v1', handler);
+
+    // Header tenant_id 'other' ≠ envelope tenant_id 't1' → rejected.
+    await (consumer as unknown as { handleMessage: HandleMessage }).handleMessage(
+      makeMessage(Buffer.from('enc'), { tenant_id: Buffer.from('other') }),
+    );
+
+    expect(handler).not.toHaveBeenCalled();
+    const publishMock = DlqPublisher.mock.results[0]?.value.publish as jest.Mock;
+    expect(publishMock).toHaveBeenCalledTimes(1);
   });
 
   it('handles message with no value (covers !value early return on line 72)', async () => {
@@ -227,7 +270,7 @@ describe('KafkaConsumer idempotency', () => {
     const event = {
       event_id: 'evt-001',
       event_type: 'construction.project.created.v1',
-      tenant_id: 'tenant-1',
+      tenant_id: 't1',
       actor_id: 'user-1',
       occurred_at: new Date().toISOString(),
       correlation_id: 'corr-1',
@@ -244,7 +287,7 @@ describe('KafkaConsumer idempotency', () => {
       partition: 0,
       message: {
         value: Buffer.from('encoded'),
-        headers: {},
+        headers: { tenant_id: Buffer.from('t1') },
         offset: '0',
         timestamp: Date.now().toString(),
       },
@@ -262,7 +305,7 @@ describe('KafkaConsumer idempotency', () => {
     const event = {
       event_id: 'evt-002',
       event_type: 'construction.project.created.v1',
-      tenant_id: 'tenant-1',
+      tenant_id: 't1',
       actor_id: 'user-1',
       occurred_at: new Date().toISOString(),
       correlation_id: 'corr-2',
@@ -280,7 +323,7 @@ describe('KafkaConsumer idempotency', () => {
       partition: 0,
       message: {
         value: Buffer.from('encoded'),
-        headers: {},
+        headers: { tenant_id: Buffer.from('t1') },
         offset: '1',
         timestamp: Date.now().toString(),
       },
@@ -306,7 +349,7 @@ describe('KafkaConsumer — error branches', () => {
     expect(publishMock).toHaveBeenCalledTimes(1);
     expect(publishMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        originalTopic: 'construction.project.created',
+        originalTopic: 't1.construction.project.created.v1',
         reason: 'AVRO_DECODE_ERROR',
       }),
     );

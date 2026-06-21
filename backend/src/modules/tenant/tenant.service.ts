@@ -10,7 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaClient, Tenant } from '@prisma/client';
-import { KafkaProducer } from '@cos/shared';
+import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -58,6 +58,11 @@ export class TenantService {
 
       return created!;
     });
+
+    // Provision the tenant's per-tenant Kafka topic set (spec §7.3) before any of the
+    // tenant's events are produced. Idempotent; non-fatal so onboarding is not blocked
+    // by a transient Kafka outage (topics can be re-provisioned by re-running onboarding).
+    await this.provisionTenantTopics(tenant.tenantId);
 
     logger.info(
       { tenantCode: dto.tenantCode, keycloakRealm },
@@ -191,6 +196,19 @@ export class TenantService {
     return this.prisma.$queryRaw<Tenant[]>`
       SELECT * FROM platform.tenants ORDER BY created_at DESC
     `;
+  }
+
+  private async provisionTenantTopics(tenantId: string): Promise<void> {
+    const provisioner = new KafkaTopicProvisioner();
+    try {
+      await provisioner.connect();
+      await provisioner.provisionTenant(tenantId);
+      logger.info({ tenantId }, 'tenant kafka topics provisioned');
+    } catch (err) {
+      logger.error({ tenantId, err }, 'kafka.topic.provision.failed');
+    } finally {
+      await provisioner.disconnect().catch(() => undefined);
+    }
   }
 
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {
