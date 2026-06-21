@@ -25,18 +25,12 @@ export interface FsOps {
 }
 
 export class AntivirusService {
-  private clamPromise: Promise<NodeClam>;
+  private clamPromise: Promise<NodeClam> | null = null;
+  private readonly config: FileServiceConfig;
   private readonly fs: FsOps;
 
   constructor(config: FileServiceConfig, fs?: FsOps) {
-    this.clamPromise = new NodeClam().init({
-      clamdscan: {
-        host: config.clamav.host,
-        port: config.clamav.port,
-        timeout: config.clamav.timeoutMs,
-        active: true,
-      },
-    });
+    this.config = config;
     this.fs = fs ?? {
       writeFile: defaultFs.writeFile.bind(defaultFs),
       unlink: defaultFs.unlink.bind(defaultFs),
@@ -45,11 +39,35 @@ export class AntivirusService {
     };
   }
 
+  // clamd can take tens of seconds to load its virus database after the container
+  // reports healthy; connecting eagerly in the constructor races that startup and
+  // gets ECONNRESET, which — unhandled — crashes the whole process at boot. Connect
+  // lazily on first scan instead (clamd is ready by upload time). A failed init is
+  // not cached, so the next scan retries with a fresh connection.
+  private getClam(): Promise<NodeClam> {
+    if (!this.clamPromise) {
+      this.clamPromise = new NodeClam()
+        .init({
+          clamdscan: {
+            host: this.config.clamav.host,
+            port: this.config.clamav.port,
+            timeout: this.config.clamav.timeoutMs,
+            active: true,
+          },
+        })
+        .catch((err: unknown) => {
+          this.clamPromise = null;
+          throw err;
+        });
+    }
+    return this.clamPromise;
+  }
+
   async scan(buffer: Buffer): Promise<ScanResult> {
     const tmpPath = this.fs.join(this.fs.tmpdir(), `cos-scan-${uuidv4()}`);
     await this.fs.writeFile(tmpPath, buffer);
     try {
-      const clam = await this.clamPromise;
+      const clam = await this.getClam();
       const { isInfected, viruses } = await clam.scanFile(tmpPath);
       if (isInfected) {
         return { clean: false, threat: viruses?.[0] ?? 'unknown' };
