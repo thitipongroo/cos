@@ -1,5 +1,4 @@
 import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
-import KcAdminClient from '@keycloak/keycloak-admin-client';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('keycloak-admin-service');
@@ -24,8 +23,12 @@ export class KeycloakAdminService {
     this.clientSecret = process.env['KEYCLOAK_ADMIN_CLIENT_SECRET'] ?? 'cos-backend-secret-dev';
   }
 
-  private async getAuthenticatedClient(realm: string): Promise<KcAdminClient> {
-    const client = new KcAdminClient({ baseUrl: this.baseUrl, realmName: realm });
+  // @keycloak/keycloak-admin-client is ESM-only and backend compiles to CommonJS
+  // (module: Node16). Load it via dynamic import() so tsc never emits a require()
+  // of an ES module (TS1479); the return type is inferred from the client instance.
+  private async getAuthenticatedClient(realm: string) {
+    const { default: KcAdminClientCtor } = await import('@keycloak/keycloak-admin-client');
+    const client = new KcAdminClientCtor({ baseUrl: this.baseUrl, realmName: realm });
     await client.auth({
       grantType: 'client_credentials',
       clientId: this.clientId,
