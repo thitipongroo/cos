@@ -3,6 +3,10 @@
 // Runtime: Fastify (extracted from monolith for multipart upload throughput)
 // See: context/00_master_construction_os.md §Phase 9
 
+// Load .env (services/file-service/.env is symlinked to the repo-root .env) before anything reads
+// process.env. file-service is plain Fastify — it has no @nestjs/config; in production the env comes
+// from the container, where the missing .env is a harmless no-op.
+import 'dotenv/config';
 import Fastify from 'fastify';
 import multipart from '@fastify/multipart';
 import cors from '@fastify/cors';
