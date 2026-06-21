@@ -1,5 +1,3 @@
-version: '3.9'
-
 # Construction OS — Local Development Stack
 # All services start together: make dev
 # Requires: Docker Desktop with >= 8GB RAM allocated
