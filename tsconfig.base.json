@@ -26,6 +26,7 @@
     "sourceMap": true,
     "incremental": true,
     "skipLibCheck": true,
+    "preserveWatchOutput": true,
     "paths": {
       "@cos/shared": ["./packages/@cos/shared/src/index.ts"],
       "@cos/shared/*": ["./packages/@cos/shared/src/*"],

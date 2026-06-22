@@ -23,12 +23,17 @@ export class TenantMiddleware implements NestMiddleware {
   private readonly platformPrisma = new PrismaClient();
 
   async use(req: TenantRequest, _res: Response, next: NextFunction): Promise<void> {
+    // Under the Fastify adapter, NestJS middleware runs via @fastify/middie where `req`
+    // is the raw Node IncomingMessage: it exposes `.url` (path + query) but NOT Express's
+    // `.path`. Derive the path from whichever is present so this works under both adapters.
+    const path = ((req as { originalUrl?: string }).originalUrl ?? req.url ?? '').split('?')[0];
+
     // Auth endpoints bypass tenant middleware — they run in platform schema
-    const isAuthPath = req.path.startsWith('/api/v1/auth');
-    const isHealthPath = req.path.startsWith('/api/v1/health');
-    const isAdminPath = req.path.startsWith('/api/v1/admin');
+    const isAuthPath = path.startsWith('/api/v1/auth');
+    const isHealthPath = path.startsWith('/api/v1/health');
+    const isAdminPath = path.startsWith('/api/v1/admin');
     // Vendor Portal uses external (non-Keycloak) auth — VendorAuthMiddleware sets the context.
-    const isVendorPath = req.path.startsWith('/api/v1/vendor');
+    const isVendorPath = path.startsWith('/api/v1/vendor');
     if (isAuthPath || isHealthPath || isAdminPath || isVendorPath) {
       return next();
     }

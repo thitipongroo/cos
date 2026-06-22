@@ -1,6 +1,14 @@
 # Construction OS — Local Development Stack
-# All services start together: make dev
-# Requires: Docker Desktop with >= 8GB RAM allocated
+#
+# Two tiers (to fit lower-memory machines):
+#   make docker-up        → essential infra only (postgres, pgbouncer, redis, kafka,
+#                           schema-registry, minio) — ~1 GB, enough to boot the app.
+#   make docker-up-full   → everything, incl. the `full` profile (opensearch, neo4j,
+#                           clickhouse, clamav, keycloak, vault, temporal, UIs) — ~4 GB.
+#
+# Services tagged `profiles: ['full']` only start with docker-up-full. The app boots
+# without them; features that need them (search, graph, analytics, virus scan, auth,
+# workflows) degrade until you start the full profile.
 
 name: construction-os
 
@@ -143,6 +151,7 @@ services:
   opensearch:
     image: opensearchproject/opensearch:2.13.0
     container_name: cos-opensearch
+    profiles: ['full']
     environment:
       discovery.type: single-node
       OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_PASSWORD:-Cos_Os_Dev_2024!}
@@ -165,6 +174,7 @@ services:
   neo4j:
     image: neo4j:5.19-community
     container_name: cos-neo4j
+    profiles: ['full']
     environment:
       NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-cos_neo4j_password}
       NEO4J_PLUGINS: '["apoc"]'
@@ -189,6 +199,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.3-alpine
     container_name: cos-clickhouse
+    profiles: ['full']
     environment:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-cos}
@@ -243,6 +254,7 @@ services:
     # clamav/clamav:stable publishes no linux/arm64 manifest — run the amd64
     # image under emulation (Rosetta) on Apple Silicon hosts.
     platform: linux/amd64
+    profiles: ['full']
     ports:
       - '${CLAMAV_PORT:-3310}:3310'
     healthcheck:
@@ -258,6 +270,7 @@ services:
   vault:
     image: hashicorp/vault:1.16
     container_name: cos-vault
+    profiles: ['full']
     command: vault server -dev -dev-root-token-id=${VAULT_DEV_ROOT_TOKEN:-cos-vault-root-token}
     environment:
       VAULT_DEV_ROOT_TOKEN_ID: ${VAULT_DEV_ROOT_TOKEN:-cos-vault-root-token}
@@ -286,6 +299,7 @@ services:
   temporal:
     image: temporalio/auto-setup:1.24.0
     container_name: cos-temporal
+    profiles: ['full']
     environment:
       DB: postgresql
       DB_PORT: 5432
@@ -306,6 +320,7 @@ services:
   temporal-ui:
     image: temporalio/ui:2.26.2
     container_name: cos-temporal-ui
+    profiles: ['full']
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_CORS_ORIGINS: http://localhost:3000
@@ -320,6 +335,7 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0.4
     container_name: cos-keycloak
+    profiles: ['full']
     command: start-dev --import-realm
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
@@ -353,6 +369,7 @@ services:
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: cos-kafka-ui
+    profiles: ['full']
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092

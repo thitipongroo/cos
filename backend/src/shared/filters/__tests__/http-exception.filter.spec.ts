@@ -173,4 +173,90 @@ describe('GlobalExceptionFilter', () => {
       });
     });
   });
+
+  // The filter must write responses under any adapter and never throw — under Fastify
+  // (Reply.send), and under @fastify/middie middleware errors (raw Node ServerResponse).
+  describe('adapter-agnostic response writing', () => {
+    function hostWith(response: unknown): ArgumentsHost {
+      return {
+        switchToHttp: () => ({
+          getResponse: () => response,
+          getRequest: () => ({ requestId: 'r' }),
+        }),
+      } as unknown as ArgumentsHost;
+    }
+
+    it('uses Fastify Reply API (status + send) when json is absent', () => {
+      const send = jest.fn();
+      const status = jest.fn().mockReturnThis();
+      filter.catch(new NotFoundException('nope'), hostWith({ status, send }));
+      expect(status).toHaveBeenCalledWith(404);
+      expect(send).toHaveBeenCalledWith({
+        error: expect.objectContaining({ code: 'COS-GENERAL-404', message: 'nope' }),
+      });
+    });
+
+    it('falls back to Fastify code() when status() is absent', () => {
+      const send = jest.fn();
+      const code = jest.fn();
+      filter.catch(new Error('boom'), hostWith({ code, send }));
+      expect(code).toHaveBeenCalledWith(500);
+      expect(send).toHaveBeenCalledWith({
+        error: expect.objectContaining({ code: 'COS-GENERAL-500' }),
+      });
+    });
+
+    it('sends via send() even when neither status() nor code() exist', () => {
+      const send = jest.fn();
+      filter.catch(new NotFoundException('nope'), hostWith({ send }));
+      expect(send).toHaveBeenCalledWith({
+        error: expect.objectContaining({ code: 'COS-GENERAL-404' }),
+      });
+    });
+
+    it('writes to a raw Node ServerResponse (statusCode + setHeader + end)', () => {
+      const end = jest.fn();
+      const setHeader = jest.fn();
+      const res: { statusCode: number; setHeader: jest.Mock; end: jest.Mock } = {
+        statusCode: 0,
+        setHeader,
+        end,
+      };
+      filter.catch(new NotFoundException('nope'), hostWith(res));
+      expect(res.statusCode).toBe(404);
+      expect(setHeader).toHaveBeenCalledWith('content-type', 'application/json; charset=utf-8');
+      const written = JSON.parse((end as jest.Mock).mock.calls[0][0] as string) as {
+        error: { code: string };
+      };
+      expect(written.error.code).toBe('COS-GENERAL-404');
+    });
+
+    it('writes to a raw response that has no setHeader', () => {
+      const end = jest.fn();
+      const res: { statusCode: number; end: jest.Mock } = { statusCode: 0, end };
+      filter.catch(new Error('x'), hostWith(res));
+      expect(res.statusCode).toBe(500);
+      expect(end).toHaveBeenCalled();
+    });
+
+    it('does not throw when the response is unwritable', () => {
+      expect(() => filter.catch(new Error('x'), hostWith({}))).not.toThrow();
+    });
+
+    it('does not throw when writing the response itself throws (Error)', () => {
+      const status = jest.fn(() => {
+        throw new Error('socket closed');
+      });
+      const json = jest.fn();
+      expect(() => filter.catch(new Error('x'), hostWith({ status, json }))).not.toThrow();
+    });
+
+    it('does not throw when writing throws a non-Error value', () => {
+      const status = jest.fn(() => {
+        throw 'raw string failure';
+      });
+      const json = jest.fn();
+      expect(() => filter.catch(new Error('x'), hostWith({ status, json }))).not.toThrow();
+    });
+  });
 });

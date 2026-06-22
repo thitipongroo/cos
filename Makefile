@@ -1,7 +1,10 @@
 # Construction OS — Makefile
 # Usage: make <target>
 
-.PHONY: help setup dev test build migrate seed clean lint type-check docker-up docker-down
+.PHONY: help setup dev dev-backend dev-web dev-file dev-clean dev-ports-free dev-infra-ready test build migrate seed clean lint type-check docker-up docker-up-full docker-down
+
+# Dev ports: backend=3000, web=3001, file-service=3002
+DEV_PORTS := 3000 3001 3002
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 BOLD  := $(shell tput bold 2>/dev/null || echo "")
@@ -18,14 +21,44 @@ help: ## Show this help
 setup: ## Initial local setup (copies .env, installs deps, starts Docker)
 	@bash scripts/setup/local-dev.sh
 
-dev: ## Start all services in development mode
-	@pnpm run dev
+dev: dev-clean dev-infra-ready dev-ports-free ## Start all services in development mode
+	@# --ui=stream (passed to turbo, not the tasks): the turbo Rust TUI hides which task
+	@# actually failed — when one persistent dev task crashes, turbo tears the rest down
+	@# and every box shows `[ELIFECYCLE] Command failed`. Stream output prints the real
+	@# `Failed: @cos/<pkg>#dev` line and the crashing task's error inline.
+	@pnpm exec turbo run dev --concurrency=20 --ui=stream
 
-docker-up: ## Start all Docker services (infrastructure only)
+dev-backend: dev-clean dev-infra-ready dev-ports-free ## Run ONLY backend (deps built once) — light, for low-RAM machines
+	@pnpm exec turbo run dev --filter=@cos/backend --ui=stream
+
+dev-web: dev-clean dev-infra-ready dev-ports-free ## Run ONLY the web app (deps built once)
+	@pnpm exec turbo run dev --filter=@cos/web --ui=stream
+
+dev-file: dev-clean dev-infra-ready dev-ports-free ## Run ONLY file-service (deps built once)
+	@pnpm exec turbo run dev --filter=@cos/file-service --ui=stream
+
+dev-clean: ## Kill stale dev watchers/servers orphaned by a previous run
+	@bash scripts/dev/kill-stale-dev.sh
+
+dev-infra-ready: ## Block until Docker infra (db, kafka, redis, etc.) is healthy
+	@bash scripts/dev/wait-for-infra.sh
+
+dev-ports-free: ## Kill stale dev-server processes holding ports 3000/3001/3002
+	@pids=$$(lsof -tiTCP:$(shell echo $(DEV_PORTS) | tr ' ' ',') -sTCP:LISTEN 2>/dev/null); \
+	if [ -n "$$pids" ]; then \
+	  echo "$(CYAN)Freeing stale dev ports ($(DEV_PORTS)): killing PIDs$(RESET) $$pids"; \
+	  kill -9 $$pids 2>/dev/null || true; \
+	  sleep 1; \
+	fi
+
+docker-up: ## Start essential Docker infra (db, redis, kafka, schema-registry, minio)
 	@docker compose up -d
 
-docker-down: ## Stop all Docker services
-	@docker compose down
+docker-up-full: ## Start ALL Docker infra incl. heavy optional services (full profile)
+	@docker compose --profile full up -d
+
+docker-down: ## Stop all Docker services (essential + full profile)
+	@docker compose --profile full down
 
 # ─── Quality ──────────────────────────────────────────────────────────────────
 lint: ## Run ESLint across all packages
