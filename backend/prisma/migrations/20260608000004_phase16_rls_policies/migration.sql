@@ -30,12 +30,13 @@ DO $$ DECLARE
   t record;
 BEGIN
   FOR t IN
-    SELECT schemaname, tablename
+    -- information_schema.columns exposes table_schema/table_name (not schemaname/tablename).
+    SELECT table_schema AS schemaname, table_name AS tablename
     FROM information_schema.columns
     WHERE column_name = 'tenant_id'
       AND table_schema IN ('projects', 'boq', 'procurement', 'finance', 'site_ops',
                            'files', 'ai', 'notifications', 'platform')
-    GROUP BY schemaname, tablename
+    GROUP BY table_schema, table_name
   LOOP
     EXECUTE format('ALTER TABLE %I.%I ENABLE ROW LEVEL SECURITY', t.schemaname, t.tablename);
     EXECUTE format('ALTER TABLE %I.%I FORCE ROW LEVEL SECURITY', t.schemaname, t.tablename);
@@ -46,14 +47,16 @@ BEGIN
       t.schemaname, t.tablename
     );
 
-    EXECUTE format($$
+    -- Inner dollar-quote uses a distinct tag (dollar-pol-dollar); reusing the outer tag
+    -- would close the surrounding DO block early and break parsing.
+    EXECUTE format($pol$
       CREATE POLICY rls_tenant_isolation ON %I.%I
         AS PERMISSIVE
         FOR ALL
         TO app_user
         USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
         WITH CHECK (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
-    $$, t.schemaname, t.tablename);
+    $pol$, t.schemaname, t.tablename);
   END LOOP;
 END $$;
 

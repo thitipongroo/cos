@@ -12,6 +12,9 @@ datasource db {
   provider = "postgresql"
   // Application connects via PgBouncer (QM-18) — never directly to port 5432
   url      = env("DATABASE_URL")
+  // Migrations need a direct (non-pooled) connection — PgBouncer transaction mode breaks
+  // Prisma advisory locks and migration DDL. Set to the direct Postgres port (5432).
+  directUrl = env("DIRECT_DATABASE_URL")
   schemas  = ["platform", "files"]
 }
 
