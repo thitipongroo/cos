@@ -41,14 +41,22 @@ Isolation model: **Shared DB + tenant_id** (SMB tier, MVP baseline) — see §7 
 ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
 ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY tenant_isolation ON {schema}.{table}
-  AS RESTRICTIVE
+-- Exactly ONE policy per domain table, AS PERMISSIVE, named rls_tenant_isolation.
+CREATE POLICY rls_tenant_isolation ON {schema}.{table}
+  AS PERMISSIVE
+  FOR ALL
+  TO app_user
   USING (
     -- NULLIF: an empty/unset GUC yields NULL → zero rows, instead of an
     -- "invalid input syntax for uuid" error (ADR-031).
     tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
-  );
+  )
+  WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid);
 ```
+
+Use `AS PERMISSIVE`, not `AS RESTRICTIVE`: a lone RESTRICTIVE policy grants no access (it can only
+narrow, never grant), and with one policy per table the OR/AND distinction is moot. Keep it to a
+single tenant-isolation policy — a second permissive policy would OR-widen access. See §7.7.
 
 `app.current_tenant_id` is set by the application at the start of each request (via
 `TenantPrismaService.run()`, which runs `SET LOCAL app.current_tenant_id` inside the transaction).
@@ -227,7 +235,8 @@ Projects :
 - budget
 - start_date
 - end_date
-- estimated_completion_date — nullable DATE; entered by PM manually (PATCH /api/v1/projects/:id); used as input for AI delay risk detection (falls back to end_date when null)
+- estimated_completion_date — nullable DATE; entered by PM manually (PATCH /api/v1/projects/:id); used as input for
+  AI delay risk detection (falls back to end_date when null)
 
 Building :
 
@@ -757,7 +766,8 @@ Lead → (qualify) → Opportunity → (win) → Customer
 
 - Lead : first point of contact, not yet qualified
 - Opportunity : qualified lead with commercial intent, tied to lead_id
-- Contact : a person record — associated to Lead (N contacts per Lead); accessible from Customer via lead_id chain (Customer → Opportunity → Lead → Contact)
+- Contact : a person record — associated to Lead (N contacts per Lead); accessible from Customer via lead_id
+  chain (Customer → Opportunity → Lead → Contact)
 - Customer : created upon Opportunity won — references original lead_id via opportunity
 
 Relationship :
@@ -855,4 +865,8 @@ See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strat
 | [PostgreSQL-RLS] | PostgreSQL Row Security Policies                                     | [postgresql/docs](https://www.postgresql.org/docs/current/ddl-rowsecurity.html) |
 | [ISO-8601]       | Data Elements and Interchange Formats — Date and Time Representation | ISO 8601:2004                                                                   |
 
-> 📎 See also: [09-data-architecture](09-data-architecture.md) · [10-construction-ontology](10-construction-ontology.md) · [12-construction-knowledge-graph](12-construction-knowledge-graph.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [05-security-compliance](05-security-compliance.md)
+> 📎 See also: [05-security-compliance](05-security-compliance.md)
+> · [07-multi-tenant-architecture](07-multi-tenant-architecture.md)
+> · [09-data-architecture](09-data-architecture.md)
+> · [10-construction-ontology](10-construction-ontology.md)
+> · [12-construction-knowledge-graph](12-construction-knowledge-graph.md)

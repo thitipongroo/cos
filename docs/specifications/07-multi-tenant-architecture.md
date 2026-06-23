@@ -205,10 +205,13 @@ Topic naming format :
 
 Isolation by tier :
 
-- SMB / Mid-market — shared Kafka **cluster/infrastructure**; topics are per-tenant using the `{tenant_id}.` prefix above; tenant_id is also enforced in message headers as a secondary validation guard; consumer validates header before processing
+- SMB / Mid-market — shared Kafka **cluster/infrastructure**; topics are per-tenant using the `{tenant_id}.`
+  prefix above; tenant_id is also enforced in message headers as a secondary validation guard; consumer validates header
+  before processing
 - Enterprise — dedicated Kafka namespace (MSK namespace isolation or separate MSK cluster for fully on-premise)
 
-> 📎 See [15-event-driven-workflow §15.6](15-event-driven-workflow.md) for the canonical distinction between Kafka topic names (`{tenant_id}.domain.entity.action.v1`) and CloudEvents `type` field (`domain.entity.action.v1`).
+> 📎 See [15-event-driven-workflow §15.6](15-event-driven-workflow.md) for the canonical distinction between
+> Kafka topic names (`{tenant_id}.domain.entity.action.v1`) and CloudEvents `type` field (`domain.entity.action.v1`).
 
 Consumer group naming :
 
@@ -263,15 +266,23 @@ decoded envelope before processing; a missing or mismatched header routes the me
 
 When a tenant is deprovisioned, execute in this order:
 
-1. Halt all consumer groups scoped to the tenant (`{service_name}.{tenant_id}` groups for Enterprise; for SMB / Mid-market, halt per-tenant processing at the service layer — shared consumer groups continue serving other tenants)
-2. Wait for in-flight messages to drain — poll consumer lag until lag = 0, or timeout after 30 minutes, whichever comes first
-3. Publish `platform.tenant.deprovisioned.v1` on the platform management topic (triggers downstream cleanup in all subscribing services)
-4. **SMB / Mid-market:** messages carry `tenant_id` in headers — natural expiry per retention policy is preferred; if PDPA/GDPR requires immediate erasure, delete and recreate affected topic partitions (destructive — requires operator sign-off)
-5. **Enterprise:** delete the dedicated Kafka namespace and all topics within it (irreversible; requires operator sign-off + 24-hour hold before execution)
+1. Halt all consumer groups scoped to the tenant (`{service_name}.{tenant_id}` groups for Enterprise; for
+   SMB / Mid-market, halt per-tenant processing at the service layer — shared consumer groups continue serving other tenants)
+2. Wait for in-flight messages to drain — poll consumer lag until lag = 0, or timeout after 30 minutes, whichever
+   comes first
+3. Publish `platform.tenant.deprovisioned.v1` on the platform management topic (triggers downstream cleanup in all
+   subscribing services)
+4. **SMB / Mid-market:** messages carry `tenant_id` in headers — natural expiry per retention policy is preferred;
+   if PDPA/GDPR requires immediate erasure, delete and recreate affected topic partitions (destructive — requires
+   operator sign-off)
+5. **Enterprise:** delete the dedicated Kafka namespace and all topics within it (irreversible; requires operator
+   sign-off + 24-hour hold before execution)
 6. Remove all Kafka ACL entries associated with the tenant
-7. Record in the immutable audit log: `{ event: "kafka.tenant.topics.deleted", tenant_id, topic_count, namespace, deleted_at, operator }`
+7. Record in the immutable audit log:
+   `{ event: "kafka.tenant.topics.deleted", tenant_id, topic_count, namespace,deleted_at, operator }`
 
-Note: Steps 4 and 5 are irreversible. Never execute without written deprovisioning authorization from the tenant or a legal hold release.
+Note: Steps 4 and 5 are irreversible. Never execute without written deprovisioning authorization from the tenant
+or a legal hold release.
 
 ---
 
@@ -279,7 +290,8 @@ Note: Steps 4 and 5 are irreversible. Never execute without written deprovisioni
 
 Strategy :
 
-- SMB / Mid-market — shared Neo4j database; all graph nodes include `tenant_id` property; all queries include `WHERE n.tenant_id = $tenant_id` guard clause enforced at service layer
+- SMB / Mid-market — shared Neo4j database; all graph nodes include `tenant_id` property; all queries
+  include `WHERE n.tenant_id = $tenant_id` guard clause enforced at service layer
 - Enterprise — dedicated Neo4j database per tenant (Neo4j Enterprise supports multiple named databases per instance)
 
 Query enforcement :
@@ -311,14 +323,17 @@ Steps :
 1. Tenant registration request received (via platform admin API)
 2. Tenant record created in `tenants` table with unique `tenant_id` (UUID)
 3. Keycloak assignment: shared realm for SMB/mid-market; dedicated realm created for enterprise.
-   **Protocol mappers MUST be configured** on every realm (shared or dedicated) per `05-security-compliance` §5.4.2 — mappers for `tenant_id`, `user_id`, and `role` are required before any user can authenticate. Missing mappers cause Kong Gateway to reject all requests.
+   **Protocol mappers MUST be configured** on every realm (shared or dedicated) per `05-security-compliance`
+   §5.4.2 — mappers for `tenant_id`, `user_id`, and `role` are required before any user can authenticate.
+   Missing mappers cause Kong Gateway to reject all requests.
 4. Database provisioning:
    - SMB: no migration needed — `tenant_id` already in all tables
    - Mid-market: no migration needed — same Shared DB + tenant_id model as SMB
    - Enterprise: new database provisioned and migrated
 5. Kafka namespace initialized
 6. S3 prefix initialized (zero-byte marker object written to confirm access)
-7. Encryption key generated and stored, keyed by `tenant_id` — AWS Secrets Manager (cloud deployments); HashiCorp Vault (on-premise and hybrid deployments — see 04-tech-stack section 4.4)
+7. Encryption key generated and stored, keyed by `tenant_id` — AWS Secrets Manager (cloud deployments);
+   HashiCorp Vault (on-premise and hybrid deployments — see 04-tech-stack section 4.4)
 8. Default roles seeded per RBAC matrix (see 06-rbac-permission-matrix)
 9. Provisioning event published: `platform.tenant.provisioned.v1`
 10. Welcome notification dispatched to tenant admin (see 19-notification-architecture)
@@ -327,26 +342,27 @@ Steps :
 
 ## 7.7 PostgreSQL Schema Convention
 
-One named PostgreSQL schema per domain module. All schemas are global (shared across tenants); tenant isolation is enforced by `tenant_id` column + RLS.
+One named PostgreSQL schema per domain module. All schemas are global (shared across tenants); tenant isolation is
+enforced by `tenant_id` column + RLS.
 
 ### Schema registry
 
-| PostgreSQL Schema     | Module / Purpose                     | tenant_id required                                                  | Notes                                          |
-| --------------------- | ------------------------------------ | ------------------------------------------------------------------- | ---------------------------------------------- |
-| `platform`            | Identity, Tenant system              | No (cross-tenant)                                                   | Holds `tenants`, `users`, `tenant_memberships`, `audit_logs` |
-| `projects`            | Project Management                   | Yes                                                                 |                                                |
-| `boq`                 | Bill of Quantities                   | Yes                                                                 |                                                |
-| `procurement`         | Procurement                          | Yes                                                                 |                                                |
-| `site_ops`            | Site Operations                      | Yes                                                                 |                                                |
-| `finance`             | Finance                              | Yes                                                                 |                                                |
-| `files`               | File Service                         | Yes                                                                 |                                                |
-| `notifications`       | Notification Service                 | Yes (nullable on `notification_templates` — null = system template) |                                                |
-| `equipment`           | Equipment Service                    | Yes                                                                 |                                                |
-| `workforce`           | Workforce Service                    | Yes                                                                 |                                                |
-| `ai`                  | AI Token Tracking                    | Yes                                                                 |                                                |
-| `equipment_telemetry` | IoT Telemetry (TimescaleDB)          | Yes                                                                 | Hypertable — partitioned by `recorded_at`      |
-| `workforce_telemetry` | Attendance / Biometric (TimescaleDB) | Yes                                                                 | Hypertable — partitioned by `recorded_at`      |
-| `digital_twin`        | Digital Twin / IoT (TimescaleDB, Phase 24) | Yes                                                           | TwinState hypertable — partitioned by `recorded_at`; see `33-digital-twin-iot` §33.4 |
+| PostgreSQL Schema     | Module / Purpose                           | tenant_id required                                                  | Notes                                                                                |
+| --------------------- | ------------------------------------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `platform`            | Identity, Tenant system                    | No (cross-tenant)                                                   | Holds `tenants`, `users`, `tenant_memberships`, `audit_logs`                         |
+| `projects`            | Project Management                         | Yes                                                                 |                                                                                      |
+| `boq`                 | Bill of Quantities                         | Yes                                                                 |                                                                                      |
+| `procurement`         | Procurement                                | Yes                                                                 |                                                                                      |
+| `site_ops`            | Site Operations                            | Yes                                                                 |                                                                                      |
+| `finance`             | Finance                                    | Yes                                                                 |                                                                                      |
+| `files`               | File Service                               | Yes                                                                 |                                                                                      |
+| `notifications`       | Notification Service                       | Yes (nullable on `notification_templates` — null = system template) |                                                                                      |
+| `equipment`           | Equipment Service                          | Yes                                                                 |                                                                                      |
+| `workforce`           | Workforce Service                          | Yes                                                                 |                                                                                      |
+| `ai`                  | AI Token Tracking                          | Yes                                                                 |                                                                                      |
+| `equipment_telemetry` | IoT Telemetry (TimescaleDB)                | Yes                                                                 | Hypertable — partitioned by `recorded_at`                                            |
+| `workforce_telemetry` | Attendance / Biometric (TimescaleDB)       | Yes                                                                 | Hypertable — partitioned by `recorded_at`                                            |
+| `digital_twin`        | Digital Twin / IoT (TimescaleDB, Phase 24) | Yes                                                                 | TwinState hypertable — partitioned by `recorded_at`; see `33-digital-twin-iot` §33.4 |
 
 > **Future schemas (not yet provisioned):** CRM entities (Lead, Opportunity, Contact, Customer) and
 > additional master-data entities (Material, etc.) in `11-database-schema` §11.2 receive their owning
@@ -355,20 +371,32 @@ One named PostgreSQL schema per domain module. All schemas are global (shared ac
 
 ### RLS policy standard
 
-Every domain table (all schemas except `platform`) MUST have RLS enabled:
+Every domain table (all schemas except `platform`) MUST have RLS enabled, with **exactly one
+`AS PERMISSIVE` policy** named `rls_tenant_isolation`:
 
 ```sql
 ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
 ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
 
-CREATE POLICY tenant_isolation ON {schema}.{table}
-  AS RESTRICTIVE
+CREATE POLICY rls_tenant_isolation ON {schema}.{table}
+  AS PERMISSIVE
+  FOR ALL
+  TO app_user
   USING (
     -- NULLIF: an empty/unset GUC yields NULL → zero rows, instead of an
     -- "invalid input syntax for uuid" error (ADR-031).
     tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
-  );
+  )
+  WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid);
 ```
+
+**Use `AS PERMISSIVE`, not `AS RESTRICTIVE`**: PERMISSIVE policies are OR-combined,
+RESTRICTIVE are AND-combined — but a *lone* RESTRICTIVE policy grants no access at all (RESTRICTIVE
+narrows; it never grants), so the table would deny every row. With exactly one policy per table the
+OR/AND distinction is moot, so the canonical form is a single PERMISSIVE policy (matching AWS SaaS
+Factory and Crunchy Data). Keep it to ONE tenant-isolation policy per table: a second permissive
+"lookup/read-all" policy would OR-widen access across tenants. Defence-in-depth comes from the
+non-owner `app_user` role + application-layer `WHERE tenant_id`, not from a second RLS policy.
 
 `app.current_tenant_id` is set by the application at the start of every request before any query
 executes (via `TenantPrismaService.run()`, which wraps each call in a transaction running
@@ -455,4 +483,6 @@ This threshold determines when database sharding evaluation must begin.
 | [MinIO]          | MinIO Object Storage Documentation                                 | [min/docs](https://min.io/docs/minio/linux/index.html)                          |
 | [Kubernetes]     | Kubernetes Documentation                                           | [kubernetes/docs](https://kubernetes.io/docs/home/)                             |
 
-> 📎 See also: [05-security-compliance](05-security-compliance.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [11-database-schema](11-database-schema.md)
+> 📎 See also: [05-security-compliance](05-security-compliance.md)
+> · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [08-enterprise-deployment](08-enterprise-deployment.md)
+> · [11-database-schema](11-database-schema.md)

@@ -50,6 +50,20 @@ auth** and **connect as a non-owner role so RLS applies**.
    default privileges on all 15 domain schemas (migration `20260623000001`). Platform /
    cross-tenant / admin services keep the privileged `cos` connection (`DATABASE_URL`).
 
+3. **Exactly one `AS PERMISSIVE` tenant-isolation policy per domain table**, named
+   `rls_tenant_isolation` (migration `20260623000002` consolidates three legacy conventions —
+   `tenant_isolation` AS RESTRICTIVE, `rls_tenant_isolation` AS PERMISSIVE, and
+   `<table>_tenant_isolation` AS PERMISSIVE — into this single form). Rationale: PostgreSQL
+   combines PERMISSIVE policies with OR and RESTRICTIVE with AND, but a *lone* RESTRICTIVE policy
+   grants no access (RESTRICTIVE narrows, never grants) — so the spec's original `AS RESTRICTIVE`
+   single-policy template would have denied every row; it only worked because a redundant
+   PERMISSIVE duplicate happened to grant access. With one policy per table the OR/AND distinction
+   is moot, so the canonical form is a single PERMISSIVE policy, matching AWS SaaS Factory and
+   Crunchy Data's tenant-isolation examples. Keeping it to one policy also avoids the OR-widening
+   footgun (a second permissive lookup policy widening access across tenants). The `platform`
+   schema is excluded — its tables carry deliberate bespoke policies (cross-tenant `rls_tenants_read`
+   lookup, `rls_users_tenant` incl. system users, immutable `rls_audit_*`).
+
 ## Rationale
 
 - Middleware-before-guards is a fixed NestJS ordering; the spec's pre-auth middleware was not
