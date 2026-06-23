@@ -43,10 +43,15 @@ ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY tenant_isolation ON {schema}.{table}
   AS RESTRICTIVE
-  USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+  USING (
+    -- NULLIF: an empty/unset GUC yields NULL → zero rows, instead of an
+    -- "invalid input syntax for uuid" error (ADR-031).
+    tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
+  );
 ```
 
-`app.current_tenant_id` is set by the application at the start of each request.
+`app.current_tenant_id` is set by the application at the start of each request (via
+`TenantPrismaService.run()`, which runs `SET LOCAL app.current_tenant_id` inside the transaction).
 
 ### Schema registry — full list
 
