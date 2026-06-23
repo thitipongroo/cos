@@ -3,15 +3,25 @@
 //   BEGIN; SET LOCAL app.current_tenant_id = '{tenant_id}'; <query>; COMMIT;
 // SET LOCAL reverts on COMMIT/ROLLBACK — safe with PgBouncer transaction mode (QM-18).
 // NEVER use singleton scope — tenant context is per-request.
+//
+// Tenant context is read LAZILY in run(), NOT in the constructor: NestJS instantiates
+// request-scoped providers BEFORE guards run, so at construction time req.user (set by
+// JwtAuthGuard → KeycloakJwtStrategy) is not yet populated. By run() time the handler is
+// executing — auth has completed and req.user is present.
 
 import { Injectable, Scope, Inject, UnauthorizedException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { PrismaClient } from '@prisma/client';
-import type { Request } from 'express';
+import type { AuthenticatedUser } from '../../identity/strategies/keycloak-jwt.strategy';
 import { withRetry } from '@cos/database';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('tenant-prisma');
+
+// Minimal request shape — only the authenticated user is needed (avoids an express dependency).
+interface RequestWithUser {
+  user?: AuthenticatedUser;
+}
 
 // UUID validation — prevents injection via app.current_tenant_id
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -24,19 +34,29 @@ function assertSafeTenantId(id: string): void {
 
 @Injectable({ scope: Scope.REQUEST })
 export class TenantPrismaService {
-  private readonly prisma: PrismaClient;
-  private readonly tenantId: string;
+  // Lazily created per dedicated-DB URL (shared tenants reuse the default DATABASE_URL client).
+  private prisma?: PrismaClient;
 
-  constructor(@Inject(REQUEST) request: Request & { tenantId?: string; dedicatedDbUrl?: string }) {
-    const id = request.tenantId;
+  constructor(@Inject(REQUEST) private readonly request: RequestWithUser) {}
+
+  // Resolve tenant context from the authenticated user (available at handler time).
+  private resolveContext(): { tenantId: string; dedicatedDbUrl?: string } {
+    const user = this.request.user;
+    const id = user?.tenant_id;
     if (!id) {
       throw new UnauthorizedException('Tenant context missing from request');
     }
     assertSafeTenantId(id);
-    this.tenantId = id;
-    this.prisma = new PrismaClient({
-      datasources: { db: { url: request.dedicatedDbUrl ?? process.env['DATABASE_URL'] } },
-    });
+    return { tenantId: id, dedicatedDbUrl: user?.dedicatedDbUrl };
+  }
+
+  private getClient(dedicatedDbUrl?: string): PrismaClient {
+    if (!this.prisma) {
+      this.prisma = new PrismaClient({
+        datasources: { db: { url: dedicatedDbUrl ?? process.env['DATABASE_URL'] } },
+      });
+    }
+    return this.prisma;
   }
 
   /**
@@ -51,16 +71,18 @@ export class TenantPrismaService {
       >,
     ) => Promise<T>,
   ): Promise<T> {
+    const { tenantId, dedicatedDbUrl } = this.resolveContext();
+    const prisma = this.getClient(dedicatedDbUrl);
     return withRetry(() =>
-      this.prisma.$transaction(async (tx) => {
-        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${this.tenantId}'`);
-        logger.debug({ tenantId: this.tenantId }, 'TenantPrismaService: tenant_id set');
+      prisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+        logger.debug({ tenantId }, 'TenantPrismaService: tenant_id set');
         return fn(tx);
       }),
     );
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.prisma.$disconnect();
+    await this.prisma?.$disconnect();
   }
 }

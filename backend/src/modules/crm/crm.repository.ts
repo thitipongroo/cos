@@ -52,14 +52,14 @@ export interface CrmCustomerRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class CrmRepository {
-  private readonly tenantId: string;
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId ?? '';
+  }
 
   constructor(
     private readonly db: TenantPrismaService,
-    @Inject(REQUEST) request: { tenantId?: string },
-  ) {
-    this.tenantId = request.tenantId ?? '';
-  }
+    @Inject(REQUEST) private readonly request: { tenantId?: string },
+  ) {}
 
   // ── Leads ───────────────────────────────────────────────────────────────────
 

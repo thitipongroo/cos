@@ -25,6 +25,7 @@ import { ComplianceModule } from './modules/compliance/compliance.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
+import { TenantContextInterceptor } from './shared/interceptors/tenant-context.interceptor';
 import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
 
@@ -68,6 +69,9 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     // RequestIdInterceptor must be first — sets request.requestId before AuditInterceptor runs
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
+    // Projects req.user (set by JwtAuthGuard) onto req.tenantId/tenantCode/userId/userRole
+    // before the route handler runs. Must precede AuditInterceptor (which reads tenant context).
+    { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
     // HTTP metrics — records http_request_duration_seconds and http_requests_total (Phase 15)
     { provide: APP_INTERCEPTOR, useClass: HttpMetricsInterceptor },
     // Global audit interceptor — logs all mutating operations (QM-4, Phase 16 RLS)

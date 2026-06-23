@@ -34,8 +34,12 @@ const OS_ISSUES_INDEX = 'site-issues';
 
 @Injectable({ scope: Scope.REQUEST })
 export class SiteOpsService {
-  private readonly tenantId: string;
-  private readonly userId: string;
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId ?? '';
+  }
+  private get userId(): string {
+    return (this.request as { userId?: string }).userId ?? '';
+  }
   private readonly correlationId: string;
   private readonly kafka: KafkaProducer;
   private readonly openSearch: OpenSearchClient;
@@ -43,14 +47,12 @@ export class SiteOpsService {
   constructor(
     private readonly repo: SiteOpsRepository,
     @Inject(REQUEST)
-    request: Request & {
+    private readonly request: Request & {
       tenantId?: string;
       userId?: string;
       correlationId?: string;
     },
   ) {
-    this.tenantId = request.tenantId ?? '';
-    this.userId = request.userId ?? '';
     this.correlationId = request.correlationId ?? randomUUID();
     this.kafka = new KafkaProducer();
     this.openSearch = new OpenSearchClient({

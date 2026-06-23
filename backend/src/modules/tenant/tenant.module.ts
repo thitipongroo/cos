@@ -1,7 +1,6 @@
-import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TenantService } from './tenant.service';
 import { TenantController } from './tenant.controller';
-import { TenantMiddleware } from './tenant.middleware';
 import { TenantPrismaService } from './prisma/tenant-prisma.service';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
@@ -10,6 +9,11 @@ import { TenantSettingsRepository } from './settings.repository';
 import { TenantSettingsController } from './settings.controller';
 import { IdentityModule } from '../identity/identity.module';
 
+// Tenant context (req.tenantId/tenantCode/userId/userRole) is resolved in
+// KeycloakJwtStrategy.validate(), which runs as part of JwtAuthGuard — AFTER the JWT is
+// verified. It was previously a pre-auth middleware, but NestJS runs middleware before
+// guards, so it never saw req.user and every authenticated request 401'd. The
+// TenantMiddleware class is kept only for the TenantRequest type and its unit tests.
 @Module({
   imports: [IdentityModule],
   providers: [
@@ -22,15 +26,4 @@ import { IdentityModule } from '../identity/identity.module';
   controllers: [TenantController, UserController, TenantSettingsController],
   exports: [TenantService, TenantPrismaService, UserService],
 })
-export class TenantModule implements NestModule {
-  configure(consumer: MiddlewareConsumer): void {
-    consumer
-      .apply(TenantMiddleware)
-      .exclude(
-        { path: 'api/v1/health/(.*)', method: RequestMethod.ALL },
-        { path: 'api/v1/auth/(.*)', method: RequestMethod.ALL },
-        { path: 'api/v1/admin/(.*)', method: RequestMethod.ALL },
-      )
-      .forRoutes('*');
-  }
-}
+export class TenantModule {}

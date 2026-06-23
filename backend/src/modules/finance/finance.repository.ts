@@ -136,14 +136,14 @@ export interface CashflowDueRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class FinanceRepository {
-  private readonly tenantId: string;
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId ?? '';
+  }
 
   constructor(
     private readonly db: TenantPrismaService,
-    @Inject(REQUEST) request: Request & { tenantId?: string },
-  ) {
-    this.tenantId = request.tenantId ?? '';
-  }
+    @Inject(REQUEST) private readonly request: Request & { tenantId?: string },
+  ) {}
 
   // ── project_budgets ───────────────────────────────────────────────────────
 

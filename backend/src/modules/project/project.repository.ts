@@ -80,14 +80,14 @@ function decodeCursor(cursor: string): { projectId: string; createdAt: string } 
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectRepository {
-  private readonly tenantId: string;
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId ?? '';
+  }
 
   constructor(
     private readonly tenantPrisma: TenantPrismaService,
-    @Inject(REQUEST) request: Request & { tenantId?: string },
-  ) {
-    this.tenantId = request.tenantId ?? '';
-  }
+    @Inject(REQUEST) private readonly request: Request & { tenantId?: string },
+  ) {}
 
   async create(dto: CreateProjectDto, createdBy: string): Promise<ProjectRow> {
     const rows = await this.tenantPrisma.run(

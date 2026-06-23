@@ -16,14 +16,14 @@ export interface TenantSettingsRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class TenantSettingsRepository {
-  private readonly tenantId: string;
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId ?? '';
+  }
 
   constructor(
     private readonly db: TenantPrismaService,
-    @Inject(REQUEST) request: { tenantId?: string },
-  ) {
-    this.tenantId = request.tenantId ?? '';
-  }
+    @Inject(REQUEST) private readonly request: { tenantId?: string },
+  ) {}
 
   async find(): Promise<TenantSettingsRow | null> {
     const rows = await this.db.run(

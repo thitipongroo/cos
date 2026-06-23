@@ -18,7 +18,8 @@ export class AuditInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<{
       method: string;
-      path: string;
+      url?: string;
+      originalUrl?: string;
       user?: JwtPayload;
       tenantId?: string;
       ip: string;
@@ -34,14 +35,17 @@ export class AuditInterceptor implements NestInterceptor {
       return next.handle(); // Auth/admin endpoints — skip audit
     }
 
+    // Fastify exposes `url` (path + query), not Express's `path`.
+    const path = (request.originalUrl ?? request.url ?? '').split('?')[0];
+
     return next.handle().pipe(
       tap({
         next: () => {
           this.writeAuditLog({
             tenantId: request.tenantId!,
             actorId: user.user_id,
-            action: `${request.method} ${request.path}`,
-            resourceType: this.extractResourceType(request.path),
+            action: `${request.method} ${path}`,
+            resourceType: this.extractResourceType(path),
             // @pdpa: ip_address is stored in audit_logs only (operational necessity)
             ipAddress: request.ip,
           }).catch((err) =>

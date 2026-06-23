@@ -33,8 +33,12 @@ const OS_INDEX = 'cos_projects';
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectService {
-  private readonly tenantId: string;
-  private readonly userId: string;
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId ?? '';
+  }
+  private get userId(): string {
+    return (this.request as { userId?: string }).userId ?? '';
+  }
   private readonly userRole: string;
   private readonly correlationId: string;
   private readonly openSearch: OpenSearchClient;
@@ -43,13 +47,11 @@ export class ProjectService {
   constructor(
     private readonly repo: ProjectRepository,
     @Inject(REQUEST)
-    request: Request & {
+    private readonly request: Request & {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
   ) {
-    this.tenantId = request.tenantId ?? '';
-    this.userId = request.user?.user_id ?? '';
     this.userRole = request.user?.role ?? '';
     this.correlationId = randomUUID();
     this.openSearch = new OpenSearchClient({

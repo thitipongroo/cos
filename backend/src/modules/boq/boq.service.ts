@@ -29,21 +29,23 @@ const logger = createLogger('boq-service');
 
 @Injectable({ scope: Scope.REQUEST })
 export class BoqService {
-  private readonly tenantId: string;
-  private readonly userId: string;
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId ?? '';
+  }
+  private get userId(): string {
+    return (this.request as { userId?: string }).userId ?? '';
+  }
   private readonly correlationId: string;
   private readonly kafka: KafkaProducer;
 
   constructor(
     private readonly repo: BoqRepository,
     @Inject(REQUEST)
-    request: Request & {
+    private readonly request: Request & {
       tenantId?: string;
       user?: { user_id?: string; role?: string };
     },
   ) {
-    this.tenantId = request.tenantId ?? '';
-    this.userId = request.user?.user_id ?? '';
     this.correlationId = randomUUID();
     this.kafka = new KafkaProducer();
   }
