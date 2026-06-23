@@ -81,10 +81,11 @@ auth** and **connect as a non-owner role so RLS applies**.
 - Behaviour/outcomes of §7.7 (active-tenant check, `dedicatedDbUrl ?? shared`, RLS,
   `platform.*` on shared DB) are preserved; only the *mechanism* (where resolution runs and
   which role connects) changed.
-- Follow-up: harden RLS policies to `NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid`
-  so a missing tenant GUC yields zero rows instead of an `invalid input syntax for uuid`
-  error (today the app always sets the GUC via `TenantPrismaService.run`, so this is
-  defence-in-depth only).
+- RLS policies read the tenant GUC as `NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid`
+  so a missing/empty GUC yields zero rows instead of an `invalid input syntax for uuid` error
+  (defence-in-depth; the app always sets the GUC via `TenantPrismaService.run`). The phase16
+  RLS migration was also made idempotent (added the missing `DROP POLICY IF EXISTS` for the
+  `rls_audit_select` / `rls_audit_insert` policies so re-applies don't fail).
 
 ## References
 

@@ -4,7 +4,7 @@
 -- RLS is the PRIMARY tenant isolation mechanism. Application-layer WHERE tenant_id = $1
 -- is SECONDARY defense-in-depth (see spec §7.7).
 --
--- Policy USING clause: tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid
+-- Policy USING clause: tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
 -- The application sets this via: SET LOCAL app.current_tenant_id = '<uuid>';
 -- (wrapped in each Prisma transaction via middleware)
 --
@@ -54,8 +54,8 @@ BEGIN
         AS PERMISSIVE
         FOR ALL
         TO app_user
-        USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
-        WITH CHECK (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
+        USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid)
+        WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid)
     $pol$, t.schemaname, t.tablename);
   END LOOP;
 END $$;
@@ -68,14 +68,16 @@ ALTER TABLE platform.audit_logs FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS rls_tenant_isolation ON platform.audit_logs;
 DROP POLICY IF EXISTS rls_audit_no_update ON platform.audit_logs;
 DROP POLICY IF EXISTS rls_audit_no_delete ON platform.audit_logs;
+DROP POLICY IF EXISTS rls_audit_select ON platform.audit_logs;
+DROP POLICY IF EXISTS rls_audit_insert ON platform.audit_logs;
 
 CREATE POLICY rls_audit_select ON platform.audit_logs
   AS PERMISSIVE FOR SELECT TO app_user
-  USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+  USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid);
 
 CREATE POLICY rls_audit_insert ON platform.audit_logs
   AS PERMISSIVE FOR INSERT TO app_user
-  WITH CHECK (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+  WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid);
 
 -- UPDATE and DELETE on audit_logs: no policy = denied for app_user (RLS default-deny)
 
@@ -96,10 +98,10 @@ DROP POLICY IF EXISTS rls_users_tenant ON platform.users;
 CREATE POLICY rls_users_tenant ON platform.users
   AS PERMISSIVE FOR ALL TO app_user
   USING (
-    tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid
+    tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
     OR tenant_id IS NULL  -- system users
   )
-  WITH CHECK (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+  WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid);
 
 -- ─── platform.tenant_memberships ─────────────────────────────────────────────
 ALTER TABLE platform.tenant_memberships ENABLE ROW LEVEL SECURITY;
@@ -108,8 +110,8 @@ ALTER TABLE platform.tenant_memberships FORCE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS rls_tenant_memberships ON platform.tenant_memberships;
 CREATE POLICY rls_tenant_memberships ON platform.tenant_memberships
   AS PERMISSIVE FOR ALL TO app_user
-  USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
-  WITH CHECK (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+  USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid)
+  WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid);
 
 -- ─── Grant table privileges to app_user ──────────────────────────────────────
 DO $$ DECLARE
