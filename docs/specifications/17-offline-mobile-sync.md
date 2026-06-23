@@ -162,6 +162,30 @@ Local cache constraints :
 
 ---
 
+## 17.8 Expo Native Build Setup (WatermelonDB JSI)
+
+WatermelonDB 0.28 ships native JSI code, so on Expo (SDK 51) it requires native wiring and a
+**custom development client — it does NOT run in Expo Go**. Required setup in `apps/mobile`:
+
+- **Config plugin (community, version-matched to the SDK):** `@skam22/watermelondb-expo-plugin@^51.0.0`
+  for Expo SDK 51. The original `@morrowdigital/watermelondb-expo-plugin` now tracks SDK 54, and npm
+  `latest` for the skam22 fork is `50.0.2`, so SDK 51 must be pinned `^51`. WatermelonDB's own docs give
+  no Expo guidance — these plugins are community-maintained, not first-party.
+- **`expo-build-properties`** in `app.json` `plugins`: Android `kotlinVersion 1.8.10`,
+  `compileSdkVersion`/`targetSdkVersion 33`, `packagingOptions.pickFirst ["**/libc++_shared.so"]`; iOS
+  `extraPods` entry for `simdjson` with `path: ../node_modules/@nozbe/simdjson` and `modular_headers: true`.
+- **`@nozbe/simdjson`** (WatermelonDB's transitive dep) added as a **direct dependency** of `apps/mobile`,
+  pinned to the version WatermelonDB requires (`3.9.4`), so pnpm symlinks it at
+  `node_modules/@nozbe/simdjson` for the iOS pod `path` to resolve — pnpm keeps transitive deps under
+  `.pnpm/`, so the README's `node_modules/...` path does not resolve otherwise.
+- **`babel.config.js`:** `["@babel/plugin-proposal-decorators", { legacy: true }]` — required by
+  WatermelonDB's `@field`/`@text`/`@date` model decorators.
+- **Build / entry:** `app.json` `main` must be `expo-router/entry`; produce the dev client via
+  `npx expo run:ios` / `run:android` (or EAS). The exact build-properties values differ per plugin
+  version — copy them from the README of the version you install.
+
+---
+
 ## References
 
 | ID             | Title                                                              | Source                                                                                        |

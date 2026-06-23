@@ -221,6 +221,18 @@ Tests for the React Native offline sync engine (see `17-offline-mobile-sync`).
 - Jest + mock WatermelonDB adapter for unit-level sync logic
 - Detox for device-level sync integration tests (real device / emulator)
 
+### Detox conventions (offline simulation + visibility)
+
+- **Detox has NO built-in connectivity API.** `device.setStatusBar(...)` is cosmetic only (no `network`
+  key), and the `@react-native-community/netinfo` Jest mock does **not** apply to Detox (Detox runs the
+  real binary against the real native module). To simulate offline/online, use an **app-level test hook**:
+  a dev/E2E-only override (gated by `EXPO_PUBLIC_E2E=1`) that `useNetworkStatus` consults, driven from
+  Detox via a deep link (`cos://e2e/network?online=0|1`) so connectivity toggles **mid-test without
+  relaunch**. Android may also use `adb shell svc wifi/data`; iOS simulators have no programmatic airplane mode.
+- **Visibility idiom:** use `await waitFor(element).toBeVisible().withTimeout(ms)`. There is **no**
+  synchronous boolean `element(...).isVisible()` (it is an unimplemented Detox feature request) — for
+  conditional branches wrap `waitFor(...).toBeVisible()` in try/catch.
+
 ---
 
 ## 30.8 API Contract Testing
