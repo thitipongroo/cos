@@ -52,8 +52,13 @@ export class TenantPrismaService {
 
   private getClient(dedicatedDbUrl?: string): PrismaClient {
     if (!this.prisma) {
+      // Tenant-scoped queries connect as the non-superuser app role (APP_DATABASE_URL) so
+      // PostgreSQL RLS is actually enforced. Platform/cross-tenant services keep their own
+      // privileged connection (DATABASE_URL). Falls back to DATABASE_URL if APP_DATABASE_URL
+      // is unset. Enterprise dedicated DBs pass dedicatedDbUrl (already an app-role URL).
+      const sharedUrl = process.env['APP_DATABASE_URL'] ?? process.env['DATABASE_URL'];
       this.prisma = new PrismaClient({
-        datasources: { db: { url: dedicatedDbUrl ?? process.env['DATABASE_URL'] } },
+        datasources: { db: { url: dedicatedDbUrl ?? sharedUrl } },
       });
     }
     return this.prisma;

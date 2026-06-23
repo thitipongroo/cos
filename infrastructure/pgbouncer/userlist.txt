@@ -1,6 +1,10 @@
 ; PgBouncer userlist — local dev only.
-; Plaintext password (matches POSTGRES_PASSWORD default in docker-compose.yml) so PgBouncer
-; can perform SCRAM-SHA-256 authentication to PostgreSQL 16 (which stores SCRAM verifiers).
-; The edoburu/pgbouncer image otherwise auto-generates an md5 userlist, which cannot do
-; SCRAM auth to the server ("wrong password type"). Production injects this via Vault/SM.
+; Plaintext passwords (match POSTGRES_PASSWORD / app_user password) so PgBouncer can perform
+; SCRAM-SHA-256 authentication to PostgreSQL 16 (which stores SCRAM verifiers). The
+; edoburu/pgbouncer image otherwise auto-generates an md5 userlist, which cannot do SCRAM
+; auth to the server ("wrong password type"). Production injects this via Vault/SM.
+;
+;   cos       — superuser/owner; used by migrations, seed, and platform/cross-tenant services
+;   app_user  — non-superuser app role; used by tenant-scoped queries so RLS is enforced
 "cos" "cos_dev_password"
+"app_user" "app_user_dev_password"

@@ -127,8 +127,11 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, account }) {
-      // Initial sign-in.
-      if (user) {
+      // Initial sign-in via the OTP (Credentials) provider — `user` carries the tokens
+      // from authorize(). Gated on `user.accessToken` so the Keycloak OIDC sign-in (whose
+      // `user` is the OIDC profile with no accessToken/role) falls through to the account
+      // branch below, which decodes the role/tenant claims from the access token.
+      if (user?.accessToken) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
         token.userId = user.id;
