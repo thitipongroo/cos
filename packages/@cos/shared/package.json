@@ -12,8 +12,9 @@
     }
   },
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
-    "dev": "tsc --watch --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.build.json && pnpm run copy:avro",
+    "dev": "pnpm run copy:avro && tsc --watch --project tsconfig.build.json",
+    "copy:avro": "mkdir -p dist/avro && cp src/avro/*.avsc dist/avro/",
     "type-check": "tsc --noEmit",
     "clean": "rm -rf dist *.tsbuildinfo",
     "test": "jest --testPathPattern='src/'",
