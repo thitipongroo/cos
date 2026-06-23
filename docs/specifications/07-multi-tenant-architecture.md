@@ -76,15 +76,29 @@ See runbook: `docs/runbooks/dedicated-db-provisioning.md`.
 
 #### Routing mechanism — HTTP requests
 
-Every HTTP request passes through `TenantMiddleware` before reaching any controller:
+Tenant context is resolved **during JWT authentication**, not in a pre-auth middleware.
+NestJS runs middleware *before* guards, so a pre-auth middleware cannot read `req.user`
+(which the Passport `KeycloakJwtStrategy` / `JwtAuthGuard` populates). Resolution therefore
+happens after auth (see ADR-031):
 
-1. `TenantMiddleware` queries `platform.tenants` for `tenant_code` and `dedicated_db_url`
-2. Sets `req.dedicatedDbUrl` on the request object (undefined if NULL)
-3. `TenantPrismaService` (request-scoped) reads `request.dedicatedDbUrl ?? process.env['DATABASE_URL']`
-4. All domain queries in that request use the resolved DB URL
+1. `KeycloakJwtStrategy.validate()` rejects tokens missing `tenant_id`/`role`, queries
+   `platform.tenants` for `tenant_code` and `dedicated_db_url`, verifies the tenant is
+   active, and attaches them to `req.user` (`AuthenticatedUser`).
+2. `TenantContextInterceptor` (global) projects `req.user.{tenant_id, user_id, role,
+   tenantCode, dedicatedDbUrl}` onto `req.{tenantId, userId, userRole, tenantCode,
+   dedicatedDbUrl}` before the route handler runs.
+3. `TenantPrismaService` (request-scoped) reads that context lazily in `run()` and connects
+   as the non-superuser **`app_user`** role (`APP_DATABASE_URL`, or `dedicatedDbUrl` for
+   Enterprise) so RLS is actually enforced; each call is wrapped in a transaction that runs
+   `SET LOCAL app.current_tenant_id`.
+4. All domain queries in that request use the resolved DB URL + role.
 
-`platform.*` tables are always accessed via `DATABASE_URL` regardless of tier — platform schema
-never moves to a dedicated DB.
+`platform.*` tables and cross-tenant/admin operations are always accessed via the privileged
+`DATABASE_URL` (role `cos`) regardless of tier — they do **not** use `app_user`, and the
+platform schema never moves to a dedicated DB.
+
+> NOTE: a pre-auth `TenantMiddleware` was originally specified here; it is retained only as a type holder and is not
+> registered, because middleware cannot see `req.user` under NestJS ordering.
 
 #### Routing mechanism — non-HTTP paths (Temporal activities, Kafka consumers)
 

@@ -224,8 +224,11 @@ Standard OIDC claim `sub` remains the Keycloak user UUID — it maps to `platfor
 **Enforcement:**
 
 - Kong Gateway validates `tenant_id` is present on every inbound request
-- NestJS `KeycloakJwtStrategy` rejects tokens missing `tenant_id` or `role`
-- `TenantMiddleware` extracts `tenant_id` and `user_id` into request context
+- NestJS `KeycloakJwtStrategy.validate()` rejects tokens missing `tenant_id` or `role`, and
+  resolves the tenant (active check) into `req.user` during authentication
+- A global `TenantContextInterceptor` projects `tenant_id` / `user_id` / `role` from
+  `req.user` into request context (`req.tenantId` / `userId` / `userRole`); tenant-scoped
+  queries then run as the non-superuser `app_user` role so RLS is enforced
 - No other naming variant (`cos_tenant_id`, `tenantId`, `cos_role`) is authoritative
 
 ### 5.4.2 Keycloak Protocol Mapper Specification
