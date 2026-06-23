@@ -156,6 +156,9 @@ importers:
       '@cos/types':
         specifier: workspace:*
         version: link:../../packages/@cos/types
+      '@fontsource/inter-tight':
+        specifier: ^5.2.7
+        version: 5.2.7
       '@tanstack/react-query':
         specifier: ^5.40.0
         version: 5.100.14(react@18.3.1)
@@ -2045,6 +2048,9 @@ packages:
 
   '@flatten-js/interval-tree@1.1.4':
     resolution: {integrity: sha512-o4emRDDvGdkwX18BSVSXH8q27qAL7Z2WDHSN75C8xyRSE4A8UOkig0mWSGoT5M5KaTHZxoLmalFwOTQmbRusUg==}
+
+  '@fontsource/inter-tight@5.2.7':
+    resolution: {integrity: sha512-44TmSfHdNQus/3MWOMIonUEnbxwQhiaFo2sfBJEGIE4c7TN+GO6kfLzsTH4Nu52BC9HDZFl9fPQ6Cwzp9vYTtQ==}
 
   '@google-cloud/kms@5.5.0':
     resolution: {integrity: sha512-feaZLZ0G64gxejaemMUSliBkbzEicgXP+AFxt8DRUjRBTbP8qpHlZcGQxC+J+YF1pg0sTcV+WNy2syGW23irpA==}
@@ -12813,6 +12819,8 @@ snapshots:
       - supports-color
 
   '@flatten-js/interval-tree@1.1.4': {}
+
+  '@fontsource/inter-tight@5.2.7': {}
 
   '@google-cloud/kms@5.5.0':
     dependencies:

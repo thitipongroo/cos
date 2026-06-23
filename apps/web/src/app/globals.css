@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens — mirrors docs/specifications/32-implementation-specifications.md §32.7
+ * (web/PWA tier). Mobile (--mobile-*) tokens are React Native only and excluded here.
+ * Tailwind theme (tailwind.config.js) references these variables for colours + radius.
+ */
+:root {
+  /* Brand colour tokens (web/PWA + desktop) */
+  --cos-navy: #0b1020; /* Infrastructure Core — wordmark, headers, dark UI */
+  --cos-blue: #2563eb; /* System Blue — CTAs, active states, navigation */
+  --cos-cyan: #06b6d4; /* AI Cyan — AI modules, insights, event highlights */
+  --cos-gray: #64748b; /* Steel Gray — secondary text, borders, inactive */
+  --cos-white: #f8fafc; /* Concrete White — page backgrounds, surfaces, reports */
+
+  /* Dark theme tokens (applied under .dark) */
+  --cos-dark-bg: #020617;
+  --cos-dark-surface: #0f172a;
+  --cos-dark-elevated: #111827;
+  --cos-dark-text: #f8fafc;
+  --cos-dark-muted: #94a3b8;
+  --cos-dark-blue: #2563eb;
+  --cos-dark-cyan: #22d3ee;
+  --cos-dark-success: #10b981;
+  --cos-dark-warning: #f59e0b;
+  --cos-dark-danger: #ef4444;
+
+  /* Web border-radius tokens */
+  --web-radius-sm: 4px;
+  --web-radius-md: 8px;
+  --web-radius-lg: 12px;
+  --web-radius-xl: 16px;
+}
+
+@layer base {
+  body {
+    background-color: var(--cos-white);
+    color: var(--cos-navy);
+    font-size: 14px; /* §32.7 base unit (compact enterprise SaaS standard) */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Dark theme — toggled via <html class="dark"> (tokens from §32.7 Dark Theme) */
+  .dark body {
+    background-color: var(--cos-dark-bg);
+    color: var(--cos-dark-text);
+  }
+}

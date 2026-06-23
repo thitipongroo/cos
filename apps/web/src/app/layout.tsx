@@ -1,4 +1,10 @@
 import type { Metadata, Viewport } from 'next';
+// Brand font: Inter Tight (§32.7) — weights 400 body / 500 labels / 600 headings / 700 wordmark.
+import '@fontsource/inter-tight/400.css';
+import '@fontsource/inter-tight/500.css';
+import '@fontsource/inter-tight/600.css';
+import '@fontsource/inter-tight/700.css';
+import './globals.css';
 import { ServiceWorkerRegistration } from '../components/pwa/ServiceWorkerRegistration';
 import { Providers } from './providers';
 
