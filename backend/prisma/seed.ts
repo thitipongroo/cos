@@ -18,6 +18,14 @@ const logger = createLogger('seed');
 const SEED_TENANT_ID = process.env['SEED_TENANT_ID'] ?? '00000000-0000-4000-8000-000000000001';
 const SEED_CREATED_BY = process.env['SEED_CREATED_BY'] ?? '00000000-0000-4000-8000-000000000000';
 
+// Dev login identity — mirrors the dev@cos.local user baked into the Keycloak realm import
+// (infrastructure/keycloak/realms/construction-os-realm.json). SEED_KEYCLOAK_USER_ID must
+// match that user's id so platform.users links to the Keycloak account. user_id matches the
+// `user_id` attribute on the Keycloak user (→ JWT claim). Login: dev@cos.local / Dev12345!
+const SEED_USER_ID = process.env['SEED_USER_ID'] ?? '00000000-0000-4000-8000-000000000010';
+const SEED_KEYCLOAK_USER_ID =
+  process.env['SEED_KEYCLOAK_USER_ID'] ?? 'c69cd999-42f2-4268-ae8f-328bbb9e6cf8';
+
 type Tx = Omit<
   PrismaClient,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
@@ -174,8 +182,31 @@ async function seedInspectionTypes(tx: Tx): Promise<void> {
 
 // ─── main ──────────────────────────────────────────────────────────────────────
 
+// Dev tenant + dev user (platform schema). Required for the dev@cos.local Keycloak login to
+// resolve a valid, active tenant on the backend. Runs as the seed superuser (RLS bypassed).
+async function seedPlatformDevTenant(): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO platform.tenants
+      (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+    VALUES
+      (${SEED_TENANT_ID}::uuid, 'DEV', 'Dev Tenant', 'construction-os', 'PROFESSIONAL', true)
+    ON CONFLICT (tenant_id) DO NOTHING
+  `;
+  await prisma.$executeRaw`
+    INSERT INTO platform.users
+      (user_id, tenant_id, keycloak_user_id, email, display_name, is_active, mfa_enabled)
+    VALUES
+      (${SEED_USER_ID}::uuid, ${SEED_TENANT_ID}::uuid, ${SEED_KEYCLOAK_USER_ID}::uuid,
+       'dev@cos.local', 'Dev User', true, false)
+    ON CONFLICT (user_id) DO NOTHING
+  `;
+  logger.info({ tenantId: SEED_TENANT_ID, userId: SEED_USER_ID }, 'seed: dev tenant + user done');
+}
+
 async function main(): Promise<void> {
   logger.info({ tenantId: SEED_TENANT_ID, createdBy: SEED_CREATED_BY }, 'seed: starting');
+
+  await seedPlatformDevTenant();
 
   await withTenantCtx(async (tx) => {
     await seedWorkCategories(tx);

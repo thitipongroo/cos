@@ -13,6 +13,10 @@ CREATE EXTENSION IF NOT EXISTS "unaccent";
 -- Platform schema: cross-tenant system tables (identity, tenants, audit)
 CREATE SCHEMA IF NOT EXISTS platform;
 
+-- Keycloak schema: Keycloak (KC_DB_SCHEMA=keycloak) stores its tables here. Keycloak
+-- creates its own tables but NOT the schema itself, so it must exist before startup.
+CREATE SCHEMA IF NOT EXISTS keycloak;
+
 -- Application role with limited privileges (used by the application)
 DO $$
 BEGIN

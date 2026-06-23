@@ -63,11 +63,15 @@ async function refreshBackendToken(refreshToken: string): Promise<BackendTokens 
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    // Path B — Keycloak OIDC for office/management roles.
+    // Path B — Keycloak OIDC for office/management roles. `cos-web` is a PUBLIC client
+    // (publicClient: true in the realm) using PKCE with no client secret, so the token
+    // endpoint auth method is 'none' and PKCE is enforced.
     KeycloakProvider({
-      clientId: process.env.KEYCLOAK_WEB_CLIENT_ID ?? '',
+      clientId: process.env.KEYCLOAK_WEB_CLIENT_ID ?? 'cos-web',
       clientSecret: process.env.KEYCLOAK_WEB_CLIENT_SECRET ?? '',
       issuer: process.env.KEYCLOAK_ISSUER ?? '',
+      client: { token_endpoint_auth_method: 'none' },
+      checks: ['pkce', 'state'],
     }),
 
     // Path A — phone + SMS OTP for field roles. The browser first calls

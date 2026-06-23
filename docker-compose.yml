@@ -64,8 +64,14 @@ services:
       DEFAULT_POOL_SIZE: 25
       SERVER_IDLE_TIMEOUT: 600
       ADMIN_USERS: ${POSTGRES_USER:-cos}
+      # PostgreSQL 16 stores SCRAM-SHA-256 verifiers; PgBouncer must use scram + a plaintext
+      # userlist (mounted below) to auth to the server. Without this the image's auto-generated
+      # md5 userlist fails server login with "wrong password type".
+      AUTH_TYPE: scram-sha-256
     ports:
       - '${PGBOUNCER_PORT:-6432}:5432'
+    volumes:
+      - ./infrastructure/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -338,8 +344,10 @@ services:
     profiles: ['full']
     command: start-dev --import-realm
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-cos_keycloak_admin}
+      # Keycloak 24 uses KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD to create the initial
+      # admin (KC_BOOTSTRAP_ADMIN_* is Keycloak 26+ syntax and is silently ignored here).
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-cos_keycloak_admin}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-construction_os}
       KC_DB_USERNAME: ${POSTGRES_USER:-cos}
