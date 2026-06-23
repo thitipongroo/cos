@@ -811,9 +811,9 @@ Web/Desktop typography scale:
   --web-line-body:     1.6
   --web-line-small:    1.5
 
-  Tailwind config mapping:
-    text-[32px] → display, text-2xl → h1, text-xl → h2
-    text-base(16px) → h3, text-sm(14px) → body, text-xs(12px) → small
+  Tailwind config mapping (theme.extend.fontSize — named token utilities, as implemented):
+    text-display(32/700) text-h1(24/600) text-h2(20/600) text-h3(16/500)
+    text-body(14/400)    text-small(12/400) text-tiny(11/400)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SPACING TOKENS (mobile — source: MOBILE_UX_GUIDELINES.md)
@@ -845,7 +845,8 @@ Web/Desktop spacing scale:
   --web-radius-lg: 12px   Cards, modals
   --web-radius-xl: 16px   Large panels
 
-  Tailwind mapping: p-4=16px, p-6=24px, gap-2=8px, gap-4=16px, rounded-lg=8px
+  Tailwind mapping: p-4=16px, p-6=24px, gap-2=8px, gap-4=16px (default 4px scale = --web-space-*)
+  Radius (theme.extend.borderRadius → --web-radius-*): rounded=4px(sm) rounded-md=8px rounded-lg=12px rounded-xl=16px
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 TOUCH TARGET STANDARDS (mobile — source: MOBILE_UX_GUIDELINES.md)
@@ -929,6 +930,27 @@ REACT NATIVE DARK MODE TOKENS
   Usage in React Native:
     const { colors } = useTheme()  — expo-navigation theme provider
     style={{ backgroundColor: colors.surface }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WEB TOKEN WIRING (Next.js — apps/web) — REQUIRED, else nothing renders styled
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Defining the tokens above is NOT enough — the Tailwind/PostCSS pipeline must be
+wired or every page renders unstyled (utility classes match no compiled CSS).
+This was the actual failure mode once. Required files (all must exist):
+
+  apps/web/postcss.config.js     plugins: tailwindcss + autoprefixer (Next auto-loads it)
+  apps/web/tailwind.config.js    content: ['./src/**/*.{ts,tsx,js,jsx}']; darkMode: 'class';
+                                 theme.extend maps tokens (colors cos.*, borderRadius sm/md/lg/xl,
+                                 fontSize display/h1/h2/h3/body/small/tiny, fontFamily sans = Inter
+                                 Tight stack). Use extend so the default palette keeps working.
+  apps/web/src/app/globals.css   @tailwind base/components/utilities + :root{ --cos-* / --web-* }
+                                 + .dark{} overrides (dark-theme tokens)
+  apps/web/src/app/layout.tsx    import '@fontsource/inter-tight/{400,500,600,700}.css' then
+                                 import './globals.css'  (global CSS only loads from a layout)
+
+  Spacing: do NOT override — Tailwind default 4px scale already equals the --web-space-* tokens.
+  Verify: a production-style build emits non-empty utility CSS (compiling globals.css yields >0 bytes).
 
 ```
 
