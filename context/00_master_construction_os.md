@@ -354,7 +354,7 @@ API Gateway Responsibilities (source §4.8, §16.2):
   Rate limiting:     Kong Gateway per tenant and per API key (spec §4.8)
                      Default limits enforced at Kong: auth 10/min/IP, general 100/min/user,
                      file upload 20/min/user, AI 20/min/tenant (spec §05 §5.5, QM-7)
-  Tenant routing:    Kong routes to upstream; NestJS middleware sets app.current_tenant_id from JWT
+  Tenant routing:    Kong routes to upstream; tenant resolved in KeycloakJwtStrategy.validate + TenantContextInterceptor (not a pre-auth middleware), then TenantPrismaService sets app.current_tenant_id as app_user (ADR-031)
   API analytics:     Kong plugin collects usage; ClickHouse for aggregation (Phase 14)
   Request validation:class-validator (NestJS) + Pydantic (FastAPI) — per endpoint (business logic)
   API monetization:  Kong usage plans plugin — quota per tenant tier (SMB 50K/month, Mid-market 100K/month, Enterprise configurable)
@@ -1236,7 +1236,7 @@ RBAC Role Definitions (authoritative — all modules must use these):
 
 Permission granularity: resource:action (e.g. project:read, boq:write)
 RBAC enforcement: NestJS Guards using JWT claims
-Tenant isolation: shared-db + tenant_id + RLS (see below) — middleware sets app.current_tenant_id
+Tenant isolation: shared-db + tenant_id + RLS (see below) — tenant resolved in JWT auth (strategy.validate + TenantContextInterceptor), TenantPrismaService sets app.current_tenant_id as app_user (ADR-031)
 
 Authorization: RBAC + ABAC (from source §13.2):
   RBAC (Role-Based Access Control):
@@ -1269,9 +1269,14 @@ Tenant Isolation Model (FINAL — spec §7, §7.7, §21-mvp-scope):
         ENABLE and FORCE must be applied TOGETHER (FORCE = table owner cannot bypass RLS):
           ALTER TABLE {schema}.{table} ENABLE ROW LEVEL SECURITY;
           ALTER TABLE {schema}.{table} FORCE ROW LEVEL SECURITY;
-          CREATE POLICY tenant_isolation ON {schema}.{table}
-            AS RESTRICTIVE
-            USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid);
+          -- Exactly ONE policy per domain table, AS PERMISSIVE, named rls_tenant_isolation (ADR-031).
+          -- NOT RESTRICTIVE: a lone RESTRICTIVE policy grants no access; NULLIF guards an empty/unset GUC.
+          CREATE POLICY rls_tenant_isolation ON {schema}.{table}
+            AS PERMISSIVE
+            FOR ALL
+            TO app_user
+            USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid)
+            WITH CHECK (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid);
         The application role (app_user) must NEVER be granted BYPASSRLS (spec §9.7.3).
         RLS migration rollback must DISABLE ROW LEVEL SECURITY and DROP POLICY for every policy created.
     - Application layer also filters WHERE tenant_id = $1 as secondary defense-in-depth
@@ -3510,11 +3515,12 @@ Security Requirements:
     Auth endpoints: 10 req/min per IP (brute force protection)
   Secret management: Kubernetes Secrets + sealed-secrets (kubeseal)
     No plaintext secrets in code, ConfigMaps, or environment files
-  Tenant isolation: validated at middleware layer (every request)
+  Tenant isolation: resolved during JWT auth (KeycloakJwtStrategy.validate + TenantContextInterceptor), not a pre-auth middleware (ADR-031)
     Cross-tenant data access: IMPOSSIBLE via API layer
     PostgreSQL RLS: PRIMARY enforcement on all domain schema tables (mandatory from MVP, spec §7.7)
       Purpose: prevents cross-tenant data access at DB level — enforced even if application layer is bypassed
-      Policy: USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::uuid)
+      Enforced via the non-superuser app_user role (connecting as owner/superuser cos bypasses RLS) — ADR-031
+      Policy: USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid)
       Note: RLS is PRIMARY isolation. Application-layer WHERE tenant_id = $1 is SECONDARY defense-in-depth.
 
 WAF:
