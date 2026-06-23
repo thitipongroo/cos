@@ -8,7 +8,9 @@
 //   server-side conflict resolution via the sync endpoint POST /api/v1/sync/resolve.
 //   The Detox test simulates User A's device; User B's write is applied via the test API.
 
+import axios from 'axios';
 import { device, element, by, waitFor } from 'detox';
+import { isVisible, firstVisible, setNetworkConnected } from './helpers';
 
 const USER_A_PHONE = process.env['E2E_USER_A_PHONE'] || '+66800000003';
 const SYNC_API_URL = process.env['E2E_API_URL'] || 'http://localhost:3001';
@@ -19,9 +21,8 @@ const USER_B_PROGRESS = 70;
 const EXPECTED_RESOLVED_PROGRESS = Math.max(USER_A_PROGRESS, USER_B_PROGRESS);
 
 async function applyUserBProgressViaApi(taskId: string, progress: number): Promise<void> {
-  const axios = await import('axios');
   const token = process.env['E2E_API_TOKEN'] || '';
-  await axios.default.post(
+  await axios.post(
     `${SYNC_API_URL}/api/v1/sync/resolve`,
     {
       entity_type: 'task',
@@ -70,23 +71,21 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       .toBeVisible()
       .withTimeout(10_000);
 
-    await device.setStatusBar({ network: 'none' });
+    await setNetworkConnected(false);
     await waitFor(element(by.id('offline-banner')))
       .toBeVisible()
       .withTimeout(5_000);
 
-    const taskItem = element(by.id(`task-${TEST_TASK_ID}`))
-      .atIndex(0)
-      .or(element(by.id('task-item')).atIndex(0));
+    const taskItem = await firstVisible([`task-${TEST_TASK_ID}`, 'task-item']);
 
-    if (await taskItem.isVisible()) {
+    if (await isVisible(taskItem)) {
       await taskItem.tap();
       await waitFor(element(by.id('task-detail-screen')))
         .toBeVisible()
         .withTimeout(5_000);
 
       const progressInput = element(by.id('progress-input'));
-      if (await progressInput.isVisible()) {
+      if (await isVisible(progressInput)) {
         await progressInput.clearText();
         await progressInput.typeText(String(USER_A_PROGRESS));
         await element(by.id('save-progress-button')).tap();
@@ -98,7 +97,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
 
     await applyUserBProgressViaApi(TEST_TASK_ID, USER_B_PROGRESS).catch(() => null);
 
-    await device.setStatusBar({ network: 'wifi' });
+    await setNetworkConnected(true);
 
     await waitFor(element(by.id('sync-status-bar')))
       .toBeVisible()
@@ -107,7 +106,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       .toBeVisible()
       .withTimeout(30_000);
 
-    if (await taskItem.isVisible()) {
+    if (await isVisible(taskItem)) {
       await taskItem.tap();
       await waitFor(element(by.id('progress-display')))
         .toBeVisible()
@@ -124,10 +123,10 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       .withTimeout(10_000);
 
     const conflictBadge = element(by.id('conflict-badge')).atIndex(0);
-    const isVisible = await conflictBadge.isVisible();
-    if (isVisible) {
+    const badgeVisible = await isVisible(conflictBadge);
+    if (badgeVisible) {
       const conflictText = element(by.text(/conflict.*progress|progress.*conflict/i));
-      const notVisible = !(await conflictText.isVisible());
+      const notVisible = !(await isVisible(conflictText));
       expect(notVisible).toBe(true);
     }
   });
@@ -142,7 +141,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       .withTimeout(15_000);
 
     const pendingSyncCount = element(by.id('pending-sync-count'));
-    if (await pendingSyncCount.isVisible()) {
+    if (await isVisible(pendingSyncCount)) {
       await waitFor(element(by.text('0')))
         .toBeVisible()
         .withTimeout(10_000);

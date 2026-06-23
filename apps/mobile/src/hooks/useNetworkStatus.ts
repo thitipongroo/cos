@@ -4,10 +4,18 @@
 
 import { useState, useEffect } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import { getForcedOnline, subscribeNetworkOverride } from '../lib/e2e/networkOverride';
 
 interface NetworkStatus {
   isOnline: boolean;
   connectionType: string | null;
+}
+
+function fromNetInfo(state: NetInfoState): NetworkStatus {
+  return {
+    isOnline: state.isConnected === true && state.isInternetReachable !== false,
+    connectionType: state.type,
+  };
 }
 
 export function useNetworkStatus(): NetworkStatus {
@@ -17,22 +25,35 @@ export function useNetworkStatus(): NetworkStatus {
   });
 
   useEffect(() => {
+    // E2E override wins when set (no-op/null in production — see lib/e2e/networkOverride).
+    const applyForced = (): boolean => {
+      const forced = getForcedOnline();
+      if (forced === null) return false;
+      setStatus({ isOnline: forced, connectionType: forced ? 'e2e' : 'none' });
+      return true;
+    };
+
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
-      setStatus({
-        isOnline: state.isConnected === true && state.isInternetReachable !== false,
-        connectionType: state.type,
-      });
+      if (applyForced()) return;
+      setStatus(fromNetInfo(state));
     });
 
     // Fetch current state immediately on mount
     NetInfo.fetch().then((state) => {
-      setStatus({
-        isOnline: state.isConnected === true && state.isInternetReachable !== false,
-        connectionType: state.type,
-      });
+      if (applyForced()) return;
+      setStatus(fromNetInfo(state));
     });
 
-    return unsubscribe;
+    // React to E2E override changes; on clear, fall back to the real network state.
+    const unsubscribeOverride = subscribeNetworkOverride(() => {
+      if (applyForced()) return;
+      NetInfo.fetch().then((state) => setStatus(fromNetInfo(state)));
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeOverride();
+    };
   }, []);
 
   return status;

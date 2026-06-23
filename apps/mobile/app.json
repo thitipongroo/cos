@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "Construction OS",
+    "slug": "cos",
+    "scheme": "cos",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.constructionos.cos",
+      "infoPlist": {
+        "UIBackgroundModes": ["fetch", "processing"]
+      }
+    },
+    "android": {
+      "package": "com.constructionos.cos"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "1.8.10",
+            "compileSdkVersion": 33,
+            "targetSdkVersion": 33,
+            "packagingOptions": { "pickFirst": ["**/libc++_shared.so"] }
+          },
+          "ios": {
+            "extraPods": [
+              {
+                "name": "simdjson",
+                "path": "../node_modules/@nozbe/simdjson",
+                "configurations": ["Debug", "Release"],
+                "modular_headers": true
+              }
+            ]
+          }
+        }
+      ],
+      "@skam22/watermelondb-expo-plugin",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Construction OS to access your camera to capture site photos.",
+          "microphonePermission": "Allow Construction OS to record audio for site voice notes."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Construction OS to tag site reports with your location."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow Construction OS to record voice notes on site."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

@@ -3,7 +3,8 @@
 //   connectivity → record queued → sync on reconnect"
 // Strategy: WatermelonDB + expo-sqlite sync_queue (Phase 10 spec)
 
-import { device, element, by, expect as waitFor } from 'detox';
+import { device, element, by, waitFor } from 'detox';
+import { isVisible, setNetworkConnected } from './helpers';
 
 const WORKER_PHONE = process.env['E2E_WORKER_PHONE'] || '+66800000001';
 
@@ -57,7 +58,7 @@ describe('Offline Check-In — Worker', () => {
       .toBeVisible()
       .withTimeout(10_000);
 
-    await device.setStatusBar({ network: 'none' });
+    await setNetworkConnected(false);
 
     const checkInButton = element(by.id('check-in-button'));
     await waitFor(checkInButton).toBeVisible().withTimeout(5_000);
@@ -71,7 +72,7 @@ describe('Offline Check-In — Worker', () => {
       .toBeVisible()
       .withTimeout(8_000);
 
-    await device.setStatusBar({ network: 'wifi' });
+    await setNetworkConnected(true);
   });
 
   it('sync queue item is uploaded when connectivity is restored', async () => {
@@ -79,14 +80,14 @@ describe('Offline Check-In — Worker', () => {
       .toBeVisible()
       .withTimeout(10_000);
 
-    await device.setStatusBar({ network: 'none' });
+    await setNetworkConnected(false);
 
     const checkInButton = element(by.id('check-in-button'));
-    if (await checkInButton.isVisible()) {
+    if (await isVisible(checkInButton)) {
       await checkInButton.tap();
     }
 
-    await device.setStatusBar({ network: 'wifi' });
+    await setNetworkConnected(true);
 
     await waitFor(element(by.id('sync-status-bar')))
       .toBeVisible()
@@ -98,12 +99,12 @@ describe('Offline Check-In — Worker', () => {
   });
 
   it('offline banner disappears when connectivity is restored', async () => {
-    await device.setStatusBar({ network: 'none' });
+    await setNetworkConnected(false);
     await waitFor(element(by.id('offline-banner')))
       .toBeVisible()
       .withTimeout(8_000);
 
-    await device.setStatusBar({ network: 'wifi' });
+    await setNetworkConnected(true);
     await waitFor(element(by.id('offline-banner')))
       .not.toBeVisible()
       .withTimeout(10_000);

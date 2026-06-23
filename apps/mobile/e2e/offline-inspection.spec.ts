@@ -4,6 +4,7 @@
 // Storage: WatermelonDB (checklist data) + expo-file-system cache (photo) (Phase 10)
 
 import { device, element, by, waitFor } from 'detox';
+import { isVisible, setNetworkConnected } from './helpers';
 
 const INSPECTOR_PHONE = process.env['E2E_INSPECTOR_PHONE'] || '+66800000002';
 
@@ -61,11 +62,11 @@ describe('Offline Inspection — Inspector', () => {
       .withTimeout(10_000);
 
     const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    if (await inspectionTab.isVisible()) {
+    if (await isVisible(inspectionTab)) {
       await inspectionTab.tap();
     }
 
-    await device.setStatusBar({ network: 'none' });
+    await setNetworkConnected(false);
 
     await waitFor(element(by.id('offline-banner')))
       .toBeVisible()
@@ -80,14 +81,14 @@ describe('Offline Inspection — Inspector', () => {
       .withTimeout(8_000);
 
     const firstChecklistItem = element(by.id('checklist-item')).atIndex(0);
-    if (await firstChecklistItem.isVisible()) {
+    if (await isVisible(firstChecklistItem)) {
       const passButton = element(by.id('checklist-pass-button')).atIndex(0);
-      if (await passButton.isVisible()) {
+      if (await isVisible(passButton)) {
         await passButton.tap();
       }
     }
 
-    await device.setStatusBar({ network: 'wifi' });
+    await setNetworkConnected(true);
   });
 
   it('inspector can attach a photo offline and it queues for upload', async () => {
@@ -96,18 +97,18 @@ describe('Offline Inspection — Inspector', () => {
       .withTimeout(10_000);
 
     const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    if (await inspectionTab.isVisible()) {
+    if (await isVisible(inspectionTab)) {
       await inspectionTab.tap();
     }
 
-    await device.setStatusBar({ network: 'none' });
+    await setNetworkConnected(false);
 
     const firstInspection = element(by.id('inspection-item')).atIndex(0);
-    if (await firstInspection.isVisible()) {
+    if (await isVisible(firstInspection)) {
       await firstInspection.tap();
 
       const addPhotoButton = element(by.id('add-photo-button'));
-      if (await addPhotoButton.isVisible()) {
+      if (await isVisible(addPhotoButton)) {
         await addPhotoButton.tap();
 
         await waitFor(element(by.text(/queued|pending upload|offline/i)))
@@ -116,7 +117,7 @@ describe('Offline Inspection — Inspector', () => {
       }
     }
 
-    await device.setStatusBar({ network: 'wifi' });
+    await setNetworkConnected(true);
   });
 
   it('queued inspection data and photo sync on connectivity restore', async () => {
@@ -124,8 +125,8 @@ describe('Offline Inspection — Inspector', () => {
       .toBeVisible()
       .withTimeout(10_000);
 
-    await device.setStatusBar({ network: 'none' });
-    await device.setStatusBar({ network: 'wifi' });
+    await setNetworkConnected(false);
+    await setNetworkConnected(true);
 
     await waitFor(element(by.id('sync-status-bar')))
       .toBeVisible()

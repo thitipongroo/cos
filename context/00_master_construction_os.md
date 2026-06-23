@@ -2760,6 +2760,16 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Media cache:    expo-file-system for offline photo queue
     Background sync: expo-background-fetch + expo-task-manager
     Network detect: @react-native-community/netinfo
+    Native build:   WatermelonDB JSI ⇒ custom dev-client REQUIRED (Expo Go cannot load it).
+                   @skam22/watermelondb-expo-plugin@^51 (SDK-version-matched) + expo-build-properties
+                   (Android kotlin 1.8.10 / compileSdk 33; iOS simdjson pod) + babel
+                   @babel/plugin-proposal-decorators(legacy) for @field models; add @nozbe/simdjson@3.9.4
+                   as a direct dep so pnpm exposes node_modules/@nozbe/simdjson for the pod path.
+                   app.json main = expo-router/entry; build via expo run:ios/android (or EAS).
+    E2E offline:    Detox has NO connectivity API (setStatusBar is cosmetic; NetInfo jest mock is unit-only).
+                   App-level hook (gated EXPO_PUBLIC_E2E=1): deep link cos://e2e/network?online=0|1 →
+                   networkOverride → useNetworkStatus. Visibility idiom: waitFor().toBeVisible().withTimeout()
+                   (no boolean isVisible()). See spec §17.8 + §30.7.
 
   Web App Stack (Target B — apps/web/ directory):
     Framework:      Next.js + next-pwa plugin (Workbox-based)
