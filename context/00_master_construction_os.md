@@ -952,6 +952,26 @@ This was the actual failure mode once. Required files (all must exist):
   Spacing: do NOT override — Tailwind default 4px scale already equals the --web-space-* tokens.
   Verify: a production-style build emits non-empty utility CSS (compiling globals.css yields >0 bytes).
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MOBILE TOKEN WIRING (React Native + Expo — apps/mobile) — REQUIRED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RN has no CSS variables — the --mobile-* tokens must be a typed module, the brand
+font loaded via expo-font, and components must reference the theme (not hardcode).
+
+  apps/mobile/src/theme/tokens.ts   export colors (--mobile-*), typography (hero/title/body/
+                                    caption/label), spacing (xs–xl), touchTarget, fontFamily
+                                    (InterTight_400Regular/500Medium/600SemiBold/700Bold)
+  Brand font                        add expo-font + @expo-google-fonts/inter-tight; useFonts(...)
+                                    in app/_layout.tsx, hold render until fontsLoaded
+  Components                        use colors.* / fontFamily.* — never hardcode hex or fontWeight
+                                    (select weight via fontFamily with custom fonts)
+  app.json (or app.config.js)       MUST exist with expo-router + expo-font plugins and
+                                    main: 'expo-router/entry', or the app never boots / fonts never load
+
+  Do NOT reuse web --cos-* on mobile: --mobile-primary #0066FF ≠ --cos-blue #2563EB (by design).
+  Verify: apps/mobile type-checks and components import theme/tokens (no hardcoded hex).
+
 ```
 
 ---

@@ -3,6 +3,7 @@
 
 import { View, Text, StyleSheet } from 'react-native';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { colors, fontFamily } from '../theme/tokens';
 
 export function OfflineBanner() {
   const { isOnline } = useNetworkStatus();
@@ -18,14 +19,14 @@ export function OfflineBanner() {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#E53E3E',
+    backgroundColor: colors.danger,
     paddingVertical: 6,
     paddingHorizontal: 16,
     alignItems: 'center',
   },
   text: {
-    color: '#FFFFFF',
+    color: colors.bg,
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
   },
 });

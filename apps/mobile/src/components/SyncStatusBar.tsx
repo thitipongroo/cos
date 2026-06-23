@@ -5,6 +5,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { usePendingCount } from '../hooks/usePendingCount';
 import { useSyncStore } from '../store/syncStore';
+import { colors, fontFamily } from '../theme/tokens';
 
 export function SyncStatusBar() {
   const status = useSyncStatus();
@@ -40,8 +41,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  pending: { backgroundColor: '#ECC94B' },
-  error: { backgroundColor: '#E53E3E' },
-  label: { fontSize: 11, fontWeight: '600', color: '#1A202C' },
-  sub: { fontSize: 10, color: '#4A5568' },
+  pending: { backgroundColor: colors.syncing },
+  error: { backgroundColor: colors.danger },
+  label: { fontSize: 11, fontFamily: fontFamily.semibold, color: colors.textPrimary },
+  sub: { fontSize: 10, fontFamily: fontFamily.regular, color: colors.textSecondary },
 });

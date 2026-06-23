@@ -22,7 +22,7 @@ importers:
     devDependencies:
       '@pact-foundation/pact':
         specifier: ^16.5.0
-        version: 16.5.0(debug@4.4.3)
+        version: 16.5.0
       '@playwright/test':
         specifier: ^1.61.0
         version: 1.61.0
@@ -68,6 +68,9 @@ importers:
       '@cos/types':
         specifier: workspace:*
         version: link:../../packages/@cos/types
+      '@expo-google-fonts/inter-tight':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@nozbe/watermelondb':
         specifier: ^0.28.0
         version: 0.28.0
@@ -98,6 +101,9 @@ importers:
       expo-file-system:
         specifier: ~17.0.0
         version: 17.0.1(expo@51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.0(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.29)(react@18.2.0))(react@18.2.0))
+      expo-font:
+        specifier: ~12.0.10
+        version: 12.0.10(expo@51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.0(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.29)(react@18.2.0))(react@18.2.0))
       expo-location:
         specifier: ~17.0.0
         version: 17.0.1(expo@51.0.39(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(react-native@0.74.0(@babel/core@7.29.7)(@babel/preset-env@7.29.7(@babel/core@7.29.7))(@types/react@18.3.29)(react@18.2.0))(react@18.2.0))
@@ -1899,6 +1905,9 @@ packages:
   '@eslint/plugin-kit@0.7.2':
     resolution: {integrity: sha512-+CNAzxglkrpNf/kKywqQfk74QjtceuOE7Qm+AF8miRvPF/wmmK5+OJOgVh3AVTT3RP2mH3+FOaxlE5v72owk0A==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@expo-google-fonts/inter-tight@0.4.2':
+    resolution: {integrity: sha512-/b4YLh8v145nMfrtw0FF2EB8eRhw/SVt/LdhzN1+Faz/uSFvZkF7EtxfipV8iacDSb1PUqyssHd0tZjlzhhf2g==}
 
   '@expo/bunyan@4.0.1':
     resolution: {integrity: sha512-+Lla7nYSiHZirgK+U/uYzsLv/X+HaJienbD5AKX1UQZHYfWaP+9uuQluRB4GrEVWF0GZ7vEVp/jzaOT9k/SQlg==}
@@ -12436,6 +12445,8 @@ snapshots:
       '@eslint/core': 1.2.1
       levn: 0.4.1
 
+  '@expo-google-fonts/inter-tight@0.4.2': {}
+
   '@expo/bunyan@4.0.1':
     dependencies:
       uuid: 8.3.2
@@ -14495,7 +14506,7 @@ snapshots:
       '@pact-foundation/pact-core-linux-x64-musl': 19.2.0
       '@pact-foundation/pact-core-windows-x64': 19.2.0
 
-  '@pact-foundation/pact@16.5.0(debug@4.4.3)':
+  '@pact-foundation/pact@16.5.0':
     dependencies:
       '@pact-foundation/pact-core': 19.2.0
       axios: 1.18.0(debug@4.4.3)
@@ -14504,7 +14515,7 @@ snapshots:
       express: 5.2.1
       graphql: 16.14.2
       graphql-tag: 2.12.7(graphql@16.14.2)
-      http-proxy: 1.18.1(debug@4.4.3)
+      http-proxy: 1.18.1
       https-proxy-agent: 9.1.0
       js-base64: 3.7.8
       lodash: 4.18.1
@@ -18859,7 +18870,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  http-proxy@1.18.1(debug@4.4.3):
+  http-proxy@1.18.1:
     dependencies:
       eventemitter3: 4.0.7
       follow-redirects: 1.16.0(debug@4.4.3)

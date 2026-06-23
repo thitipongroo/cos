@@ -772,6 +772,24 @@ Notes:
 Do **not** implement on mobile: tables (use cards), navigation deeper than 3 levels,
 modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
 
+### Mobile Implementation — token wiring (React Native + Expo)
+
+As with web, defining the mobile tokens above is **not** sufficient — they take effect only when
+wired into the React Native app. The contract for `apps/mobile`:
+
+| Item | Required content |
+| ---- | ---------------- |
+| `src/theme/tokens.ts` | Export the `--mobile-*` colours, typography (hero/title/body/caption/label), spacing (xs–xl), touch-target minimums, and `fontFamily` names as typed JS objects (RN has no CSS variables — tokens are a module, not `:root`). |
+| Brand font | Add `expo-font` + `@expo-google-fonts/inter-tight`; load `InterTight_400Regular/500Medium/600SemiBold/700Bold` via `useFonts` in the root `app/_layout.tsx` and hold render until `fontsLoaded`. |
+| Components | Use `colors.*` / `fontFamily.*` from the theme — never hardcode hex or `fontWeight`. With custom fonts, select weight by `fontFamily` (e.g. `fontFamily.semibold`), not `fontWeight`. |
+| Expo config | `app.json` (or `app.config.js`) MUST exist with `expo-router` + `expo-font` plugins and `main: 'expo-router/entry'`, or the app does not boot and fonts never load. |
+
+Notes:
+
+- Mobile tokens are React-Native-only; do **not** reuse web `--cos-*` values (e.g. `--mobile-primary`
+  `#0066FF` ≠ `--cos-blue` `#2563EB`, by design — outdoor sunlight visibility).
+- **Verification:** `apps/mobile` type-checks and the components reference `theme/tokens` (no hardcoded hex).
+
 ---
 
 ## 32.8 Known Deferred Deliverables

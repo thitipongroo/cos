@@ -3,6 +3,7 @@
 
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { useConflicts } from '../hooks/useConflicts';
+import { colors, fontFamily } from '../theme/tokens';
 
 interface ConflictBadgeProps {
   onPress?: () => void;
@@ -31,14 +32,14 @@ const styles = StyleSheet.create({
     minWidth: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#E53E3E',
+    backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
   },
   text: {
-    color: '#FFFFFF',
+    color: colors.bg,
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: fontFamily.bold,
   },
 });
