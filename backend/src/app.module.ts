@@ -22,6 +22,8 @@ import { MasterDataModule } from './modules/master-data/master-data.module';
 import { GraphModule } from './modules/graph/graph.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
+import { WorkforceModule } from './modules/workforce/workforce.module';
+import { SyncModule } from './modules/sync/sync.module';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
@@ -56,6 +58,8 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
     GraphModule,
     AnalyticsModule,
     ComplianceModule,
+    WorkforceModule, // Phase 22 — now wired (required for self check-in /workers/me, option A)
+    SyncModule, // Finding 2 — generic offline sync API (/sync/delta, /sync/push, /sync/resolve)
     // Remaining modules added per phase:
     // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)
