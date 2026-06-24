@@ -20,4 +20,15 @@ describe('decodeJwtPayload', () => {
     expect(decodeJwtPayload('')).toEqual({});
     expect(decodeJwtPayload('only.two')).toEqual({});
   });
+
+  it('returns {} when no atob is available in the runtime', () => {
+    const original = globalThis.atob;
+    // @ts-expect-error — simulate a runtime without atob
+    delete globalThis.atob;
+    try {
+      expect(decodeJwtPayload(makeToken({ user_id: 'u-1' }))).toEqual({});
+    } finally {
+      globalThis.atob = original;
+    }
+  });
 });

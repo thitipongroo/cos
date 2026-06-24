@@ -33,7 +33,7 @@ const INVITE_ROLES = [
 
 @ApiTags('Vendor Portal (buyer)')
 @ApiBearerAuth()
-@Controller('api/v1/procurement/rfqs')
+@Controller('procurement/rfqs')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class VendorInvitationController {
   constructor(private readonly service: VendorPortalService) {}
@@ -53,7 +53,7 @@ export class VendorInvitationController {
 }
 
 @ApiTags('Vendor Portal (vendor)')
-@Controller('api/v1/vendor')
+@Controller('vendor')
 export class VendorPortalController {
   constructor(private readonly service: VendorPortalService) {}
 

@@ -79,7 +79,7 @@ export class WorkerController {
 
 @ApiTags('Workforce')
 @ApiBearerAuth()
-@Controller('api/v1/projects/:projectId/workforce')
+@Controller('projects/:projectId/workforce')
 export class ProjectWorkforceController {
   constructor(private readonly service: WorkforceService) {}
 
@@ -105,7 +105,7 @@ export class ProjectWorkforceController {
 
 @ApiTags('Workforce')
 @ApiBearerAuth()
-@Controller('api/v1/timesheets')
+@Controller('timesheets')
 export class TimesheetController {
   constructor(private readonly service: WorkforceService) {}
 

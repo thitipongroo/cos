@@ -22,7 +22,7 @@ import { RecordUtilizationDto } from './dto/record-utilization.dto';
 
 @ApiTags('Equipment')
 @ApiBearerAuth()
-@Controller('api/v1/equipment')
+@Controller('equipment')
 export class EquipmentController {
   constructor(private readonly service: EquipmentService) {}
 
@@ -87,7 +87,7 @@ export class EquipmentController {
 
 @ApiTags('Equipment')
 @ApiBearerAuth()
-@Controller('api/v1/projects/:projectId/equipment')
+@Controller('projects/:projectId/equipment')
 export class ProjectEquipmentController {
   constructor(private readonly service: EquipmentService) {}
 
