@@ -26,36 +26,43 @@ describe('TenantMiddleware', () => {
   });
 
   it('bypasses tenant lookup for /api/v1/auth/* paths', async () => {
-    const req = { path: '/api/v1/auth/otp/request', user: undefined } as TenantRequest;
+    const req = { url: '/api/v1/auth/otp/request', user: undefined } as TenantRequest;
     await middleware.use(req, res, noop);
     expect(noop).toHaveBeenCalledTimes(1);
     expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
   });
 
   it('bypasses tenant lookup for /api/v1/health/* paths', async () => {
-    const req = { path: '/api/v1/health/live', user: undefined } as TenantRequest;
+    const req = { url: '/api/v1/health/live', user: undefined } as TenantRequest;
     await middleware.use(req, res, noop);
     expect(noop).toHaveBeenCalledTimes(1);
   });
 
   it('bypasses tenant lookup for /api/v1/admin/* paths', async () => {
-    const req = { path: '/api/v1/admin/tenants', user: undefined } as TenantRequest;
+    const req = { url: '/api/v1/admin/tenants', user: undefined } as TenantRequest;
     await middleware.use(req, res, noop);
     expect(noop).toHaveBeenCalledTimes(1);
   });
 
   it('throws UnauthorizedException when no tenantId in JWT', async () => {
     const req = {
-      path: '/api/v1/projects',
+      url: '/api/v1/projects',
       user: { user_id: 'user-1', role: 'PROJECT_MANAGER' }, // no tenant_id
     } as unknown as TenantRequest;
+    await expect(middleware.use(req, res, noop)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('falls back to an empty path when neither originalUrl nor url is present', async () => {
+    // Exercises the final `?? ''` branch in `originalUrl ?? req.url ?? ''`: no path → not a bypass
+    // route → tenant resolution runs and rejects (no authenticated user).
+    const req = { user: undefined } as unknown as TenantRequest;
     await expect(middleware.use(req, res, noop)).rejects.toThrow(UnauthorizedException);
   });
 
   it('throws UnauthorizedException when tenant not found or inactive', async () => {
     (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
     const req = {
-      path: '/api/v1/projects',
+      url: '/api/v1/projects',
       user: { tenant_id: 'tenant-x', user_id: 'user-1', role: 'PROJECT_MANAGER' },
     } as unknown as TenantRequest;
     await expect(middleware.use(req, res, noop)).rejects.toThrow(UnauthorizedException);
@@ -64,7 +71,7 @@ describe('TenantMiddleware', () => {
   it('injects tenantCode and userId into request', async () => {
     (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([{ tenant_code: 'acme_corp' }]);
     const req = {
-      path: '/api/v1/projects',
+      url: '/api/v1/projects',
       user: { tenant_id: 'tenant-1', user_id: 'user-1', role: 'PROJECT_MANAGER' },
     } as unknown as TenantRequest;
     await middleware.use(req, res, noop);

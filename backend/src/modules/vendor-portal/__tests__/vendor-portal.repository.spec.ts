@@ -92,5 +92,6 @@ describe('VendorPortalRepository', () => {
   it('defaults tenantId to empty string when request has none', () => {
     const r = new VendorPortalRepository({ run: jest.fn() } as never, {});
     expect(r).toBeInstanceOf(VendorPortalRepository);
+    expect((r as unknown as { tenantId: string }).tenantId).toBe('');
   });
 });

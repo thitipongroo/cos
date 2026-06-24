@@ -43,6 +43,7 @@ const mockRepo = {
   deleteTransactionBySource: jest.fn(),
   createPayment: jest.fn(),
   findPayments: jest.fn(),
+  approvePayment: jest.fn(),
   findAllBudgets: jest.fn(),
   createCustomer: jest.fn(),
   listCustomers: jest.fn(),
@@ -58,7 +59,11 @@ const mockRepo = {
   findPendingPaymentsDue: jest.fn(),
 };
 
-const mockRequest = { tenantId: 'tenant-uuid-001', user: { user_id: 'user-uuid-001' } };
+const mockRequest = {
+  tenantId: 'tenant-uuid-001',
+  userId: 'user-uuid-001', // read by services (projected from req.user.user_id by TenantContextInterceptor, ADR-031)
+  user: { user_id: 'user-uuid-001' },
+};
 
 // ── Fixtures ───────────────────────────────────────────────────────────────
 
@@ -145,7 +150,10 @@ describe('constructor', () => {
         { provide: REQUEST, useValue: {} },
       ],
     }).compile();
-    expect(await m.resolve<FinanceService>(FinanceService)).toBeDefined();
+    const noCtx = await m.resolve<FinanceService>(FinanceService);
+    expect(noCtx).toBeDefined();
+    expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
+    expect((noCtx as unknown as { userId: string }).userId).toBe('');
   });
 });
 
@@ -697,6 +705,20 @@ describe('emitEvent error handling', () => {
     it('approveBilling throws when not DRAFT', async () => {
       mockRepo.findBillingById.mockResolvedValue({ ...draftBilling, status: 'ISSUED' });
       await expect(service.approveBilling('bill-1', 'EXECUTIVE')).rejects.toBeInstanceOf(
+        UnprocessableEntityException,
+      );
+    });
+
+    it('approvePayment PENDING → PROCESSED', async () => {
+      mockRepo.approvePayment.mockResolvedValue({ payment_id: 'pay-1', status: 'PROCESSED' });
+      const r = await service.approvePayment('pay-1');
+      expect(r.status).toBe('PROCESSED');
+      expect(mockRepo.approvePayment).toHaveBeenCalledWith('pay-1');
+    });
+
+    it('approvePayment throws when not found or not PENDING', async () => {
+      mockRepo.approvePayment.mockResolvedValue(null);
+      await expect(service.approvePayment('pay-x')).rejects.toBeInstanceOf(
         UnprocessableEntityException,
       );
     });

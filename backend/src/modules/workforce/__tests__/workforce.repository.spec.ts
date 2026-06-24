@@ -61,6 +61,21 @@ describe('WorkforceRepository', () => {
     });
   });
 
+  describe('findWorkerByUserId', () => {
+    it('returns worker linked to the user when found', async () => {
+      const row = { worker_id: 'w-1', user_id: 'u-1' };
+      mockPrisma.$queryRaw.mockResolvedValue([row]);
+      const result = await repo.findWorkerByUserId('u-1');
+      expect(result).toBe(row);
+    });
+
+    it('returns null when the user has no linked worker', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const result = await repo.findWorkerByUserId('u-none');
+      expect(result).toBeNull();
+    });
+  });
+
   describe('allocateWorker', () => {
     it('inserts allocation and returns first row', async () => {
       const row = { allocation_id: 'alloc-1' };

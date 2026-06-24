@@ -40,7 +40,10 @@ describe('TenantSettingsRepository', () => {
         { provide: REQUEST, useValue: {} },
       ],
     }).compile();
-    expect(await m.resolve<TenantSettingsRepository>(TenantSettingsRepository)).toBeDefined();
+    const noCtx = await m.resolve<TenantSettingsRepository>(TenantSettingsRepository);
+    expect(noCtx).toBeDefined();
+    // Invoke the lazy getter so its `?? ''` no-context fallback branch executes (ADR-031).
+    expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
   });
 
   it('find returns row then null', async () => {

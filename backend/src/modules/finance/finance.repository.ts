@@ -362,6 +362,22 @@ export class FinanceRepository {
     return rows[0]!;
   }
 
+  // Approve a PENDING payment → PROCESSED. Returns null if not found / not pending (tenant-scoped).
+  async approvePayment(paymentId: string): Promise<PaymentRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<PaymentRow[]>`
+        UPDATE finance.payments
+        SET status = 'PROCESSED'::finance."PaymentStatus"
+        WHERE payment_id = ${paymentId}::uuid
+          AND tenant_id = ${this.tenantId}::uuid
+          AND status = 'PENDING'::finance."PaymentStatus"
+        RETURNING *
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
   // Tenant-wide payments (AIP-132 AP queue); optional project_id filter (spec §14).
   async findPayments(params: {
     project_id?: string;

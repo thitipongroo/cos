@@ -12,6 +12,7 @@ const mockSvc = {
   listCostTransactions: jest.fn(),
   recordPayment: jest.fn(),
   listPayments: jest.fn(),
+  approvePayment: jest.fn(),
   getVarianceReport: jest.fn(),
   createCustomer: jest.fn(),
   listCustomers: jest.fn(),
@@ -36,6 +37,11 @@ describe('FinanceController', () => {
   it('getBudget delegates to svc.getBudgetSummary', () => {
     ctrl.getBudget('p-001');
     expect(mockSvc.getBudgetSummary).toHaveBeenCalledWith('p-001');
+  });
+
+  it('approvePayment delegates to svc.approvePayment', () => {
+    ctrl.approvePayment('pay-1');
+    expect(mockSvc.approvePayment).toHaveBeenCalledWith('pay-1');
   });
 
   it('createOrUpdateBudget delegates to svc.createOrUpdateBudget', () => {

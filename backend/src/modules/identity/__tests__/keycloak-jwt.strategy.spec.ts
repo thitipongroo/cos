@@ -33,24 +33,48 @@ describe('KeycloakJwtStrategy', () => {
       iat: Math.floor(Date.now() / 1000),
     };
 
-    it('returns payload when all required claims present', () => {
-      const result = strategy.validate(validPayload);
-      expect(result).toBe(validPayload);
+    // validate() is async: after the claim check it queries platform.tenants to confirm the tenant
+    // is active and enrich req.user with tenant_code / dedicated_db_url. Stub that query per test.
+    const stubTenantQuery = (
+      rows: Array<{ tenant_code: string; dedicated_db_url: string | null }>,
+    ) => {
+      (strategy as unknown as { platformPrisma: { $queryRaw: jest.Mock } }).platformPrisma = {
+        $queryRaw: jest.fn().mockResolvedValue(rows),
+      };
+    };
+
+    it('returns enriched user when claims present and tenant active', async () => {
+      stubTenantQuery([{ tenant_code: 'acme', dedicated_db_url: null }]);
+      const result = await strategy.validate(validPayload);
+      expect(result.tenantCode).toBe('acme');
+      expect(result.tenant_id).toBe('tenant-1');
+      expect(result.dedicatedDbUrl).toBeUndefined();
     });
 
-    it('throws UnauthorizedException when tenant_id is missing', () => {
+    it('passes through a dedicated DB URL when present', async () => {
+      stubTenantQuery([{ tenant_code: 'acme', dedicated_db_url: 'postgres://dedicated' }]);
+      const result = await strategy.validate(validPayload);
+      expect(result.dedicatedDbUrl).toBe('postgres://dedicated');
+    });
+
+    it('throws UnauthorizedException when tenant_id is missing', async () => {
       const payload = { ...validPayload, tenant_id: undefined } as never;
-      expect(() => strategy.validate(payload)).toThrow(UnauthorizedException);
+      await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException when role is missing', () => {
+    it('throws UnauthorizedException when role is missing', async () => {
       const payload = { ...validPayload, role: undefined } as never;
-      expect(() => strategy.validate(payload)).toThrow(UnauthorizedException);
+      await expect(strategy.validate(payload)).rejects.toThrow(UnauthorizedException);
     });
 
-    it('throws with message about missing claims', () => {
+    it('throws with message about missing claims', async () => {
       const payload = { ...validPayload, tenant_id: undefined } as never;
-      expect(() => strategy.validate(payload)).toThrow('Missing required claims in JWT');
+      await expect(strategy.validate(payload)).rejects.toThrow('Missing required claims in JWT');
+    });
+
+    it('throws UnauthorizedException when the tenant is not found or inactive', async () => {
+      stubTenantQuery([]);
+      await expect(strategy.validate(validPayload)).rejects.toThrow('Tenant not found or inactive');
     });
   });
 });

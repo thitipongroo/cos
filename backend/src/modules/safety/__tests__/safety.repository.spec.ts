@@ -35,7 +35,9 @@ describe('SafetyRepository', () => {
         { provide: REQUEST, useValue: {} },
       ],
     }).compile();
-    expect(await m.resolve<SafetyRepository>(SafetyRepository)).toBeDefined();
+    const noCtx = await m.resolve<SafetyRepository>(SafetyRepository);
+    expect(noCtx).toBeDefined();
+    expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
   });
 
   it('createIncident with and without task_id', async () => {

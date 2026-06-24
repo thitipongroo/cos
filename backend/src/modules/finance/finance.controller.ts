@@ -53,6 +53,7 @@ const BILLING_APPROVE_ROLES = [
   CosRole.EXECUTIVE,
   CosRole.TENANT_ADMIN,
 ] as const;
+const PAYMENT_APPROVE_ROLES = [CosRole.FINANCE, CosRole.TENANT_ADMIN] as const;
 const CONTRACT_WRITE_ROLES = [CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN] as const;
 const CUSTOMER_WRITE_ROLES = [
   CosRole.FINANCE,
@@ -146,6 +147,15 @@ export class FinanceController {
       page: parsePage(page),
       limit: parseLimit(limit),
     });
+  }
+
+  @Patch('finance/payments/:paymentId/approve')
+  @Roles(...PAYMENT_APPROVE_ROLES)
+  @ApiOperation({ summary: 'Approve a pending payment (FINANCE) → PROCESSED' })
+  @ApiParam({ name: 'paymentId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  approvePayment(@Param('paymentId') paymentId: string) {
+    return this.svc.approvePayment(paymentId);
   }
 
   // GET /api/v1/finance/reports/variance

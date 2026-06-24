@@ -37,7 +37,9 @@ describe('CrmRepository', () => {
         { provide: REQUEST, useValue: {} },
       ],
     }).compile();
-    expect(await m.resolve<CrmRepository>(CrmRepository)).toBeDefined();
+    const noCtx = await m.resolve<CrmRepository>(CrmRepository);
+    expect(noCtx).toBeDefined();
+    expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
   });
 
   it('createLead with all fields and with none (null branches)', async () => {

@@ -270,6 +270,17 @@ export class FinanceService {
     return { items: rows, total, page: params.page, limit: params.limit };
   }
 
+  // Approve a PENDING payment (FINANCE). 422 if the payment is missing or not PENDING.
+  async approvePayment(paymentId: string): Promise<PaymentRow> {
+    const updated = await this.repo.approvePayment(paymentId);
+    if (!updated) {
+      throw new UnprocessableEntityException(
+        `Payment ${paymentId} not found or not in PENDING status`,
+      );
+    }
+    return updated;
+  }
+
   // ── Variance Report ───────────────────────────────────────────────────────
 
   async getVarianceReport(): Promise<

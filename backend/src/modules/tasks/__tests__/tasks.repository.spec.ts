@@ -35,7 +35,9 @@ describe('TasksRepository', () => {
         { provide: REQUEST, useValue: {} },
       ],
     }).compile();
-    expect(await m.resolve<TasksRepository>(TasksRepository)).toBeDefined();
+    const noCtx = await m.resolve<TasksRepository>(TasksRepository);
+    expect(noCtx).toBeDefined();
+    expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
   });
 
   it('createTask with all optional fields provided', async () => {

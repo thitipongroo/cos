@@ -45,6 +45,8 @@ const mockRepo = {
 
 const mockRequest = {
   tenantId: 'tenant-uuid-001',
+  // userId is what services read (projected by TenantContextInterceptor from req.user.user_id, ADR-031).
+  userId: 'user-uuid-001',
   user: { user_id: 'user-uuid-001', role: 'PROJECT_MANAGER' },
 };
 
@@ -130,7 +132,10 @@ describe('BoqService', () => {
         ],
       }).compile();
       const noCtxService = await module.resolve<BoqService>(BoqService);
-      expect(noCtxService).toBeDefined();
+      // Invoke the lazy getters so the `?? ''` fallback branches actually execute (ADR-031 made
+      // these getters lazy; merely constructing the service no longer touches them).
+      expect((noCtxService as unknown as { tenantId: string }).tenantId).toBe('');
+      expect((noCtxService as unknown as { userId: string }).userId).toBe('');
     });
   });
 

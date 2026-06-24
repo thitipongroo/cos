@@ -44,6 +44,8 @@ describe('BoqRepository', () => {
     }).compile();
     const repoNoTenant = await module.resolve<BoqRepository>(BoqRepository);
     expect(repoNoTenant).toBeDefined();
+    // Invoke the lazy getter so its `?? ''` no-context fallback branch executes (ADR-031).
+    expect((repoNoTenant as unknown as { tenantId: string }).tenantId).toBe('');
   });
 
   it('createVersion calls $queryRaw with correct parameters', async () => {

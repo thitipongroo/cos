@@ -31,6 +31,7 @@ jest.mock('@temporalio/client', () => ({
 
 import { TenantService } from '../tenant.service';
 import { PrismaClient } from '@prisma/client';
+import { KafkaTopicProvisioner } from '@cos/shared';
 import { Connection, Client } from '@temporalio/client';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
@@ -70,6 +71,54 @@ describe('TenantService', () => {
         'admin-1',
       );
       expect(result).toEqual(mockTenant);
+    });
+
+    it('swallows Kafka topic-provisioning failures (tenant creation still succeeds)', async () => {
+      (KafkaTopicProvisioner as jest.Mock).mockImplementationOnce(() => ({
+        connect: jest.fn().mockResolvedValue(undefined),
+        provisionTenant: jest.fn().mockRejectedValue(new Error('kafka down')),
+        disconnect: jest.fn().mockResolvedValue(undefined),
+      }));
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
+          };
+          return fn(tx);
+        },
+      );
+
+      const result = await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+      expect(result).toEqual(mockTenant); // catch block logged the error but did not rethrow
+    });
+
+    it('ignores a provisioner disconnect failure (finally .catch swallows it)', async () => {
+      (KafkaTopicProvisioner as jest.Mock).mockImplementationOnce(() => ({
+        connect: jest.fn().mockResolvedValue(undefined),
+        provisionTenant: jest.fn().mockResolvedValue(undefined),
+        disconnect: jest.fn().mockRejectedValue(new Error('disconnect failed')),
+      }));
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
+          };
+          return fn(tx);
+        },
+      );
+
+      const result = await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+      expect(result).toEqual(mockTenant); // disconnect rejection swallowed by `.catch(() => undefined)`
     });
 
     it('throws ConflictException when tenant_code already exists', async () => {

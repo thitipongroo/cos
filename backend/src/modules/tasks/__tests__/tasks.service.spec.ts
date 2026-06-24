@@ -57,7 +57,9 @@ it('constructor tolerates missing request context', async () => {
       { provide: REQUEST, useValue: {} },
     ],
   }).compile();
-  expect(await m.resolve<TasksService>(TasksService)).toBeDefined();
+  const noCtx = await m.resolve<TasksService>(TasksService);
+  expect(noCtx).toBeDefined();
+  expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
 });
 
 it('listTasks returns paginated envelope', async () => {

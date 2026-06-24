@@ -20,6 +20,7 @@ const makeRepo = () => ({
   createWorker: jest.fn(),
   findAllWorkers: jest.fn(),
   findWorkerById: jest.fn(),
+  findWorkerByUserId: jest.fn(),
   allocateWorker: jest.fn(),
   getProjectWorkforce: jest.fn(),
   recordAttendance: jest.fn(),
@@ -328,6 +329,20 @@ describe('WorkforceService', () => {
       expect(repo.submitTimesheet).toHaveBeenCalledWith(
         expect.objectContaining({ regular_hours: 0 }),
       );
+    });
+  });
+
+  describe('getMyWorker', () => {
+    it('returns the worker linked to the user', async () => {
+      const worker = { worker_id: 'w-1', user_id: 'u-1' };
+      repo.findWorkerByUserId.mockResolvedValue(worker);
+      await expect(service.getMyWorker('u-1')).resolves.toBe(worker);
+      expect(repo.findWorkerByUserId).toHaveBeenCalledWith('u-1');
+    });
+
+    it('throws NotFoundException when no worker is linked', async () => {
+      repo.findWorkerByUserId.mockResolvedValue(null);
+      await expect(service.getMyWorker('u-none')).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });

@@ -51,7 +51,8 @@ describe('ProjectRepository', () => {
       const tenantPrisma = {
         run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
       };
-      expect(() => new ProjectRepository(tenantPrisma as never, {} as never)).not.toThrow();
+      const noCtx = new ProjectRepository(tenantPrisma as never, {} as never);
+      expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
     });
   });
 

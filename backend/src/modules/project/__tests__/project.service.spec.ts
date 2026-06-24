@@ -79,6 +79,21 @@ async function buildService(repo: ProjectRepository, reqOverride = {}): Promise<
 }
 
 describe('ProjectService', () => {
+  describe('constructor — no-context fallback (lines 37, 40)', () => {
+    it('uses empty string when tenantId/userId are absent from request (covers ?? right branch)', async () => {
+      const module = await Test.createTestingModule({
+        providers: [
+          ProjectService,
+          { provide: ProjectRepository, useValue: makeRepo() },
+          { provide: REQUEST, useValue: {} },
+        ],
+      }).compile();
+      const noCtx = await module.resolve<ProjectService>(ProjectService);
+      expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
+      expect((noCtx as unknown as { userId: string }).userId).toBe('');
+    });
+  });
+
   describe('create()', () => {
     it('creates a project and returns it', async () => {
       const repo = makeRepo();

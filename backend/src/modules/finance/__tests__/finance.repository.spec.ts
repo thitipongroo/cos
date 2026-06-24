@@ -409,6 +409,17 @@ describe('FinanceRepository', () => {
     expect(r.status).toBe('PAID');
   });
 
+  it('approvePayment returns the updated row (PENDING → PROCESSED)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ payment_id: 'pay-1', status: 'PROCESSED' }]);
+    const r = await repo.approvePayment('pay-1');
+    expect(r?.status).toBe('PROCESSED');
+  });
+
+  it('approvePayment returns null when not found / not pending', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    expect(await repo.approvePayment('pay-x')).toBeNull();
+  });
+
   it('createArReceipt with optional fields provided', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([arReceiptRow]);
     const r = await repo.createArReceipt({

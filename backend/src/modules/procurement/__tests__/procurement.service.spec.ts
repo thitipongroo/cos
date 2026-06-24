@@ -852,6 +852,8 @@ describe('private helper branches', () => {
     }).compile();
     const svc = await module.resolve<ProcurementService>(ProcurementService);
     expect(svc).toBeDefined();
+    expect((svc as unknown as { tenantId: string }).tenantId).toBe('');
+    expect((svc as unknown as { userId: string }).userId).toBe('');
   });
 
   it('publishEvent — logs error but does not throw when Kafka fails (covers catch branch)', async () => {

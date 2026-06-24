@@ -153,6 +153,7 @@ describe('ProcurementRepository', () => {
     }).compile();
     const r = await module.resolve<ProcurementRepository>(ProcurementRepository);
     expect(r).toBeDefined();
+    expect((r as unknown as { tenantId: string }).tenantId).toBe('');
   });
 
   // ── Vendors ────────────────────────────────────────────────────────────────

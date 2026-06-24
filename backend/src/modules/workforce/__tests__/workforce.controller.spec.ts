@@ -11,6 +11,7 @@ const makeSvc = () => ({
   createWorker: jest.fn().mockResolvedValue({ worker_id: 'w-1' }),
   listWorkers: jest.fn().mockResolvedValue([]),
   getWorker: jest.fn().mockResolvedValue({ worker_id: 'w-1' }),
+  getMyWorker: jest.fn().mockResolvedValue({ worker_id: 'w-1' }),
   recordAttendance: jest.fn().mockResolvedValue({ log_id: 'log-1' }),
   getAttendanceHistory: jest.fn().mockResolvedValue([]),
   allocateToProject: jest.fn().mockResolvedValue({ allocation_id: 'alloc-1' }),
@@ -34,6 +35,13 @@ describe('WorkerController', () => {
     const ctrl = new WorkerController(svc as never);
     ctrl.list();
     expect(svc.listWorkers).toHaveBeenCalled();
+  });
+
+  it('getMyWorker — resolves the worker linked to the request user', () => {
+    const svc = makeSvc();
+    const ctrl = new WorkerController(svc as never);
+    ctrl.getMyWorker({ userId: 'u-1' } as never);
+    expect(svc.getMyWorker).toHaveBeenCalledWith('u-1');
   });
 
   it('getOne — delegates to service.getWorker', () => {

@@ -154,6 +154,9 @@ describe('constructor', () => {
     }).compile();
     const noCtxService = await module.resolve<SiteOpsService>(SiteOpsService);
     expect(noCtxService).toBeDefined();
+    // Lazy getters (ADR-031): invoke them to exercise the `?? ''` fallback branches.
+    expect((noCtxService as unknown as { tenantId: string }).tenantId).toBe('');
+    expect((noCtxService as unknown as { userId: string }).userId).toBe('');
   });
 });
 

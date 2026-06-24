@@ -207,5 +207,6 @@ describe('VendorPortalService', () => {
   it('defaults tenantId to empty string when request lacks it', () => {
     const service = new VendorPortalService({} as never, {} as never, {} as never, {});
     expect(service).toBeInstanceOf(VendorPortalService);
+    expect((service as unknown as { tenantId: string }).tenantId).toBe('');
   });
 });
