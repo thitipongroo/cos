@@ -2787,6 +2787,10 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - SyncManager class with full queue processing logic
     - ConflictHandler implementing three resolution strategies from Phase 6
     - DeltaSyncClient (Axios-based, handles auth token injection)
+      [IMPLEMENTED: the wired delta-pull caller is `runDeltaSync()` (src/sync/runDeltaSync.ts),
+      triggered from (app)/_layout on entry; it pulls GET /sync/delta for all six entity types
+      (task/site_report/issue/attendance/safety/material), upserts into local WatermelonDB, and
+      advances the syncStore.lastSyncAt cursor. See spec §17.9. The DeltaSyncClient class is superseded.]
     - BackgroundSyncTask (expo-task-manager registration)
     - PhotoUploadQueue with chunked upload support
     - React hooks: useSyncStatus(), usePendingCount(), useConflicts()
@@ -2805,8 +2809,10 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         * PROJECT_MANAGER: home (triage) · projects · procurement (status) · dashboard · profile
         * EXECUTIVE: home (KPI) · portfolio (health cards) · alerts (risk feed) · reports
           (AI summary) — read-only/offline-cached · profile
-        * FINANCE: home · payments (swipe-approve, queued offline) · budget (variance) · invoices · profile
-        * PROCUREMENT_OFFICER/PROC_MANAGER: home · rfqs · orders · deliveries (photo + qty, offline) · profile
+        * FINANCE: home · payments (approve PENDING→PROCESSED via PATCH /finance/payments/:id/approve,
+          queued offline) · budget (allocated/committed/actual/variance from GET /finance/budget/:id) · invoices · profile
+        * PROCUREMENT_OFFICER/PROC_MANAGER: home · rfqs · orders · deliveries (record via
+          POST /procurement/deliveries, photo + qty, offline) · profile
     - Shared mobile components (§32.7 Mobile Core Component Library): PhotoCapture, VoiceNoteButton,
       TaskCard, QuickActionCard, StatusChip, OptimisticList, MobileInput, NumberPicker, IconPicker
     - Every screen exposes the testIDs consumed by the Detox E2E specs (apps/mobile/e2e/*)

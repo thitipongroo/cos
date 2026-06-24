@@ -143,6 +143,7 @@ Before starting any implementation task:
 ### QM-1 — Test Coverage
 
 - Unit test coverage **100% lines and 100% branches** for all new modules (source: spec §30.3, §30.12); measured by `jest --coverage` with thresholds `{"global":{"lines":100,"branches":100}}` or `pytest --cov` with `--cov-fail-under=99` for lines (branch coverage enforced in jest config)
+  - **Backend gate is genuinely green** (98 suites / 1305 tests, 100/100/100/100). Two recurring traps to avoid: (1) request-scoped services read **`req.userId` / `req.tenantId`** (projected by `TenantContextInterceptor` from `req.user`, ADR-031) — unit-test mocks must set `userId`/`tenantId`, not only `req.user.user_id`; (2) the `?? ''` fallback in each lazy `tenantId`/`userId` getter is covered by **invoking the getter** on an empty-`REQUEST` instance (`expect((svc as unknown as {tenantId:string}).tenantId).toBe('')`) — merely constructing the service does not. `TenantPrismaService` validates context lazily in `run()` (not the constructor).
 - Integration tests required for every public API endpoint
 - Contract tests required whenever a new inter-service HTTP contract is introduced
 - E2E tests required for every critical user workflow (site report, procurement approval, cost tracking):

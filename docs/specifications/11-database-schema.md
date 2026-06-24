@@ -222,6 +222,26 @@ UNIQUE: `(tenant_id, vendor_identity_id)`
 
 ---
 
+### platform.sync_tombstones
+
+Generic deletion tracking for offline sync. `GET /sync/delta` reads this table to return `deleted[]`
+to mobile clients (so a row deleted on the server is removed from the device's local cache). Lives in
+the `platform` schema (cross-domain) and is tenant-isolated by the standard single PERMISSIVE
+`rls_tenant_isolation` policy (§11.0). Per-entity delete→tombstone wiring is deferred (the contract is
+complete; until each entity records here, `deleted[]` is empty).
+
+| Column         | Type        | Constraints                  | Notes                                   |
+| -------------- | ----------- | ---------------------------- | --------------------------------------- |
+| `tombstone_id` | UUID        | PK DEFAULT gen_random_uuid() |                                         |
+| `tenant_id`    | UUID        | NOT NULL                     | RLS isolation key                       |
+| `entity_type`  | VARCHAR(64) | NOT NULL                     | e.g. `task`, `issue`, `site_report`     |
+| `entity_id`    | UUID        | NOT NULL                     | server id of the deleted row            |
+| `deleted_at`   | TIMESTAMPTZ | NOT NULL DEFAULT now()       | delta cursor compares `> since`         |
+
+INDEX: `(tenant_id, entity_type, deleted_at)` — the delta lookup path.
+
+---
+
 ## 11.2 Core Entities
 
 Projects :

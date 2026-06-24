@@ -229,6 +229,7 @@ POST /api/v1/projects
 | `GET`   | `/api/v1/finance/cost-transactions`              | List cost transactions (tenant-wide)   | FINANCE, PM, EXEC, ADMIN       |
 | `POST`  | `/api/v1/finance/payments`                       | Record payment vs a vendor invoice     | FINANCE, ADMIN                 |
 | `GET`   | `/api/v1/finance/payments`                       | List payments / AP queue (tenant-wide) | FINANCE, PM, EXEC, ADMIN       |
+| `PATCH` | `/api/v1/finance/payments/{payment_id}/approve`  | Approve pending payment (→ PROCESSED)  | FINANCE, ADMIN                 |
 | `GET`   | `/api/v1/finance/reports/variance`               | Budget variance across projects        | FINANCE, EXEC, ADMIN           |
 | `POST`  | `/api/v1/finance/customers`                      | Register a client/customer             | FINANCE, PM, CRM, ADMIN        |
 | `GET`   | `/api/v1/finance/customers`                      | List customers                         | FINANCE, PM, EXEC, PROC, ADMIN |

@@ -186,6 +186,38 @@ WatermelonDB 0.28 ships native JSI code, so on Expo (SDK 51) it requires native 
 
 ---
 
+## 17.9 Delta Sync (server → device pull)
+
+The push path (queued mutations → `POST /sync/push`) is complemented by a **delta pull** that brings
+server-side changes down to the device:
+
+- **Caller:** `runDeltaSync()` (`apps/mobile/src/sync/runDeltaSync.ts`) calls `GET /sync/delta` with the
+  registered entity types and the last-sync cursor (`syncStore.lastSyncAt`, defaulting to epoch on first
+  run). It applies the response's `updated[]` (upsert by server id) and `deleted[]` (remove across tables)
+  inside a single WatermelonDB write, marks applied rows `sync_status = 'SYNCED'`, then advances the cursor
+  to the response's `server_timestamp`.
+- **Trigger:** invoked from `(app)/_layout` on entering the authenticated app (best-effort; offline is
+  ignored, local cache is kept). The previously-unused `DeltaSyncClient` class is superseded by this caller.
+- **Entity types applied → local tables** (all six the server's delta registry emits):
+
+  | Server entity type | Local table                    | Schema |
+  | ------------------ | ------------------------------ | ------ |
+  | `task`             | `local_tasks`                  | v2     |
+  | `site_report`      | `local_site_reports`           | v1     |
+  | `issue`            | `local_issues`                 | v1     |
+  | `attendance`       | `local_attendance`             | v2     |
+  | `safety`           | `local_incidents`              | v4     |
+  | `material`         | `local_material_consumptions`  | v4     |
+
+- **Schema version:** `DB_VERSION = 4`. v3→v4 (`migrations.ts`) adds `local_incidents` and
+  `local_material_consumptions` as read caches so the delta pull can apply `safety`/`material`. These two
+  tables are **populated by delta but not yet read by any screen** — a consuming UI (which role / what view)
+  is a product-owner decision (Rule 38), not yet specified.
+- **Deletion source:** `deleted[]` is read from `platform.sync_tombstones`; per-entity delete→tombstone
+  wiring is deferred (today the list is empty until each entity records tombstones).
+
+---
+
 ## References
 
 | ID             | Title                                                              | Source                                                                                        |
