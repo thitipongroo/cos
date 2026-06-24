@@ -1,14 +1,22 @@
-import { View, Text, StyleSheet } from 'react-native';
+// Invoices screen — FINANCE: vendor invoices list (read). Source: GET /procurement/vendor-invoices.
+
+import { FetchListScreen } from '../../components/FetchListScreen';
+
+type Row = Record<string, unknown>;
 
 export default function InvoicesScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Invoices</Text>
-    </View>
+    <FetchListScreen<Row>
+      heading="Invoices"
+      endpoint="/procurement/vendor-invoices"
+      testID="invoices-screen"
+      itemTestID="invoice-item"
+      emptyText="No invoices"
+      mapItem={(r) => ({
+        key: String(r['vendor_invoice_id'] ?? r['invoice_id'] ?? ''),
+        title: String(r['invoice_number'] ?? r['vendor_invoice_id'] ?? '—'),
+        status: r['status'] as string | undefined,
+      })}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '600' },
-});

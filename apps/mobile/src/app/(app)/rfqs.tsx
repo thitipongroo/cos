@@ -1,14 +1,22 @@
-import { View, Text, StyleSheet } from 'react-native';
+// RFQs screen — PROCUREMENT: RFQ list with status. Source: GET /procurement/rfqs.
 
-export default function RFQsScreen() {
+import { FetchListScreen } from '../../components/FetchListScreen';
+
+type Row = Record<string, unknown>;
+
+export default function RfqsScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>RFQs</Text>
-    </View>
+    <FetchListScreen<Row>
+      heading="RFQs"
+      endpoint="/procurement/rfqs"
+      testID="rfqs-screen"
+      itemTestID="rfq-item"
+      emptyText="No RFQs"
+      mapItem={(r) => ({
+        key: String(r['rfq_id'] ?? ''),
+        title: String(r['rfq_number'] ?? r['rfq_id'] ?? '—'),
+        status: r['status'] as string | undefined,
+      })}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '600' },
-});

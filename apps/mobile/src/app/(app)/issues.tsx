@@ -7,6 +7,7 @@ import { database } from '../../db/database';
 import Issue from '../../db/models/Issue';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
+import { ProjectPicker } from '../../components/ProjectPicker';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 export default function IssuesScreen() {
@@ -32,14 +33,7 @@ export default function IssuesScreen() {
     <View testID="issues-screen" style={styles.container}>
       <Text style={styles.heading}>Issues</Text>
 
-      <TextInput
-        testID="issue-project-input"
-        style={styles.input}
-        placeholder="Project ID"
-        placeholderTextColor={colors.textSecondary}
-        value={projectId}
-        onChangeText={setProjectId}
-      />
+      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="issue-title-input"
         style={styles.input}

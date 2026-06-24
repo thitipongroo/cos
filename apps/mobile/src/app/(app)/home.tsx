@@ -5,13 +5,14 @@
 // manually here (same limitation as Report/Issues) — replace with a cached picker later.
 
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { database } from '../../db/database';
 import Issue from '../../db/models/Issue';
 import Attendance from '../../db/models/Attendance';
 import { useCollection } from '../../hooks/useCollection';
 import { usePendingCount } from '../../hooks/usePendingCount';
 import { getMyWorker, recordCheckIn } from '../../api/workforce';
+import { ProjectPicker } from '../../components/ProjectPicker';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 export default function HomeScreen() {
@@ -64,16 +65,7 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <Text style={styles.label}>Check in to project</Text>
-      <TextInput
-        testID="check-in-project-input"
-        style={styles.input}
-        placeholder="Project ID"
-        placeholderTextColor={colors.textSecondary}
-        value={projectId}
-        onChangeText={setProjectId}
-        editable={!busy}
-      />
+      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TouchableOpacity
         testID="check-in-button"
         style={[styles.checkIn, (busy || !projectId.trim()) && styles.disabled]}

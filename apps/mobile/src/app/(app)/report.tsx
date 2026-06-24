@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { database } from '../../db/database';
 import SiteReport from '../../db/models/SiteReport';
+import { ProjectPicker } from '../../components/ProjectPicker';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 function todayIso(): string {
@@ -37,14 +38,7 @@ export default function ReportScreen() {
     <View testID="report-screen" style={styles.container}>
       <Text style={styles.heading}>Daily Report</Text>
 
-      <TextInput
-        testID="report-project-input"
-        style={styles.input}
-        placeholder="Project ID"
-        placeholderTextColor={colors.textSecondary}
-        value={projectId}
-        onChangeText={setProjectId}
-      />
+      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="report-summary-input"
         style={[styles.input, styles.multiline]}

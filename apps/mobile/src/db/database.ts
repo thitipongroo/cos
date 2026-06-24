@@ -12,6 +12,9 @@ import Photo from './models/Photo';
 import Task from './models/Task';
 import Attendance from './models/Attendance';
 import SafetyChecklist from './models/SafetyChecklist';
+import Project from './models/Project';
+import Incident from './models/Incident';
+import MaterialConsumption from './models/MaterialConsumption';
 
 const adapter = new SQLiteAdapter({
   schema,
@@ -26,7 +29,17 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [SiteReport, Issue, Photo, Task, Attendance, SafetyChecklist],
+  modelClasses: [
+    SiteReport,
+    Issue,
+    Photo,
+    Task,
+    Attendance,
+    SafetyChecklist,
+    Project,
+    Incident,
+    MaterialConsumption,
+  ],
 });
 
-export { SiteReport, Issue, Photo, Task, Attendance, SafetyChecklist };
+export { SiteReport, Issue, Photo, Task, Attendance, SafetyChecklist, Project };

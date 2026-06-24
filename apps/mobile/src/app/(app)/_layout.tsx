@@ -11,9 +11,11 @@
 //   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries | Profile
 //   TENANT_ADMIN/VIEWER/others: Home | Profile (minimal access)
 
+import { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { CosRole } from '@cos/types';
+import { runDeltaSync } from '../../sync/runDeltaSync';
 
 type TabConfig = {
   name: string;
@@ -49,6 +51,13 @@ const ALL_TABS: TabConfig[] = [
 export default function AppLayout() {
   const role = useAuthStore((s) => s.role) as CosRole | null;
 
+  // Pull server-side delta into local WatermelonDB on entering the app (best-effort; offline ignored).
+  useEffect(() => {
+    runDeltaSync().catch(() => {
+      /* offline or transient — local cache stays as-is */
+    });
+  }, []);
+
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       {ALL_TABS.map((tab) => {
@@ -65,6 +74,8 @@ export default function AppLayout() {
           />
         );
       })}
+      {/* Reachable via ConflictBadge (router.push), never shown as a bottom tab. */}
+      <Tabs.Screen name="conflict-review" options={{ href: null }} />
     </Tabs>
   );
 }

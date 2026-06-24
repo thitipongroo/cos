@@ -8,7 +8,7 @@
 
 import { appSchema, tableSchema } from '@nozbe/watermelondb';
 
-export const DB_VERSION = 2;
+export const DB_VERSION = 4;
 
 export const schema = appSchema({
   version: DB_VERSION,
@@ -101,6 +101,51 @@ export const schema = appSchema({
         { name: 'version', type: 'number' },
         { name: 'items', type: 'string' }, // JSON array of checklist item definitions
         { name: 'responses', type: 'string', isOptional: true }, // JSON of worker answers
+        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
+      ],
+    }),
+
+    // ── local_projects ──────────────────────────────────────────────────────
+    // Read-only offline cache of projects (§17.4 stale-while-revalidate) — used by the project
+    // pickers on Report/Issues/Home. Refreshed from GET /projects when online.
+    tableSchema({
+      name: 'local_projects',
+      columns: [
+        { name: 'project_id', type: 'string' }, // server UUID
+        { name: 'project_code', type: 'string' },
+        { name: 'project_name', type: 'string' },
+        { name: 'status', type: 'string' },
+      ],
+    }),
+
+    // ── local_incidents ───────────────────────────────────────────────────────
+    // Read cache of safety incidents (site_ops.incidents), populated by delta-sync (entity
+    // type `safety`) so EXEC/engineer screens can read incidents offline. v3 → v4.
+    tableSchema({
+      name: 'local_incidents',
+      columns: [
+        { name: 'incident_id', type: 'string' }, // server UUID
+        { name: 'project_id', type: 'string' },
+        { name: 'incident_type', type: 'string' },
+        { name: 'severity', type: 'string' }, // LOW | MEDIUM | HIGH | CRITICAL
+        { name: 'status', type: 'string' },
+        { name: 'created_at', type: 'string', isOptional: true }, // ISO timestamp
+        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
+      ],
+    }),
+
+    // ── local_material_consumptions ───────────────────────────────────────────
+    // Read cache of material consumption records (site_ops.material_consumptions), populated by
+    // delta-sync (entity type `material`, append-only). v3 → v4.
+    tableSchema({
+      name: 'local_material_consumptions',
+      columns: [
+        { name: 'consumption_id', type: 'string' }, // server UUID
+        { name: 'project_id', type: 'string' },
+        { name: 'material_name', type: 'string' },
+        { name: 'quantity', type: 'number' },
+        { name: 'unit', type: 'string' },
+        { name: 'consumed_at', type: 'string', isOptional: true }, // ISO timestamp
         { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
       ],
     }),
