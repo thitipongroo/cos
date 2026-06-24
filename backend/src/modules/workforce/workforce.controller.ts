@@ -8,11 +8,13 @@ import {
   Body,
   Param,
   Query,
+  Req,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import type { TenantRequest } from '../tenant/tenant.middleware';
 import { WorkforceService } from './workforce.service';
 import { CreateWorkerDto } from './dto/create-worker.dto';
 import { AllocateWorkerDto } from './dto/allocate-worker.dto';
@@ -21,7 +23,11 @@ import { SubmitTimesheetDto } from './dto/timesheet.dto';
 
 @ApiTags('Workforce')
 @ApiBearerAuth()
-@Controller('api/v1/workers')
+// 'workers' (NOT 'api/v1/workers') — the app already sets a global 'api/v1' prefix, so the
+// redundant prefix here would double to /api/v1/api/v1/workers. Fixed for the check-in endpoints.
+// KNOWN ISSUE: the sibling ProjectWorkforce/Timesheet controllers (and equipment/vendor/rfqs) still
+// carry the redundant 'api/v1' prefix — flagged for a separate cleanup.
+@Controller('workers')
 export class WorkerController {
   constructor(private readonly service: WorkforceService) {}
 
@@ -36,6 +42,13 @@ export class WorkerController {
   @ApiOperation({ summary: 'List workers (tenant-scoped)' })
   list() {
     return this.service.listWorkers();
+  }
+
+  // NOTE: must precede @Get(':id') so 'me' is not parsed as a UUID id.
+  @Get('me')
+  @ApiOperation({ summary: 'Resolve the worker linked to the current user (self check-in)' })
+  getMyWorker(@Req() req: TenantRequest) {
+    return this.service.getMyWorker(req.userId!);
   }
 
   @Get(':id')

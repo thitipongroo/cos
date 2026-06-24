@@ -12,6 +12,7 @@ export interface WorkerRow {
   trade_type: string;
   employment_type: string;
   contact_phone: string | null;
+  user_id: string | null;
   is_active: boolean;
   created_at: Date;
 }
@@ -62,21 +63,34 @@ export class WorkforceRepository {
     trade_type: string;
     employment_type: string;
     contact_phone: string | null;
+    user_id: string | null;
   }): Promise<WorkerRow> {
     const rows = await this.db.run(
       (tx) => tx.$queryRaw<WorkerRow[]>`
       INSERT INTO workforce.workers (
-        worker_id, tenant_id, employee_code, full_name, trade_type, employment_type, contact_phone
+        worker_id, tenant_id, employee_code, full_name, trade_type, employment_type,
+        contact_phone, user_id
       ) VALUES (
         ${params.worker_id}::uuid, ${params.tenant_id}::uuid,
         ${params.employee_code}, ${params.full_name}, ${params.trade_type},
         ${params.employment_type}::workforce.employment_type_enum,
-        ${params.contact_phone}
+        ${params.contact_phone}, ${params.user_id}::uuid
       )
       RETURNING *
     `,
     );
     return rows[0];
+  }
+
+  async findWorkerByUserId(userId: string): Promise<WorkerRow | null> {
+    const rows = await this.db.run(
+      (tx) => tx.$queryRaw<WorkerRow[]>`
+      SELECT * FROM workforce.workers
+      WHERE user_id = ${userId}::uuid AND is_active = true
+      LIMIT 1
+    `,
+    );
+    return rows[0] ?? null;
   }
 
   async findAllWorkers(): Promise<WorkerRow[]> {

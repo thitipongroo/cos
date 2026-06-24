@@ -31,6 +31,7 @@ describe('WorkforceRepository', () => {
         trade_type: 'CARPENTER',
         employment_type: 'FULL_TIME',
         contact_phone: null,
+        user_id: null,
       });
       expect(result).toBe(row);
     });

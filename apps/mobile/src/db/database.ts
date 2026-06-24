@@ -5,12 +5,17 @@
 import { Database } from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
 import { schema } from './schema';
+import { migrations } from './migrations';
 import SiteReport from './models/SiteReport';
 import Issue from './models/Issue';
 import Photo from './models/Photo';
+import Task from './models/Task';
+import Attendance from './models/Attendance';
+import SafetyChecklist from './models/SafetyChecklist';
 
 const adapter = new SQLiteAdapter({
   schema,
+  migrations,
   dbName: 'cos_offline',
   jsi: true, // JSI enables WAL mode + synchronous reads
   onSetUpError: (error) => {
@@ -21,7 +26,7 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [SiteReport, Issue, Photo],
+  modelClasses: [SiteReport, Issue, Photo, Task, Attendance, SafetyChecklist],
 });
 
-export { SiteReport, Issue, Photo };
+export { SiteReport, Issue, Photo, Task, Attendance, SafetyChecklist };

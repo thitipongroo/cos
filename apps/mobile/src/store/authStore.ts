@@ -6,6 +6,8 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
 import { CosRole } from '@cos/types';
+import { requestOtp as requestOtpApi, verifyOtp as verifyOtpApi } from '../api/auth';
+import { decodeJwtPayload } from '../lib/jwt';
 
 const ACCESS_TOKEN_KEY = 'cos_access_token';
 const REFRESH_TOKEN_KEY = 'cos_refresh_token';
@@ -33,6 +35,12 @@ interface AuthState {
     role: CosRole;
   }) => Promise<void>;
 
+  /** Path A: request an SMS OTP for the given phone number. */
+  requestOtp: (phoneNumber: string) => Promise<{ expiresInSeconds: number }>;
+
+  /** Path A: verify OTP, decode the issued token for user_id/role, and persist the session. */
+  verifyOtp: (phoneNumber: string, otp: string) => Promise<void>;
+
   /** Update access token after silent refresh (refresh token still valid). */
   updateAccessToken: (accessToken: string) => Promise<void>;
 
@@ -40,7 +48,7 @@ interface AuthState {
   logout: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: false,
   accessToken: null,
   refreshToken: null,
@@ -86,6 +94,23 @@ export const useAuthStore = create<AuthState>((set) => ({
       SecureStore.setItemAsync(SESSION_AT_KEY, now),
     ]);
     set({ isAuthenticated: true, accessToken, refreshToken, userId, role });
+  },
+
+  requestOtp: async (phoneNumber) => {
+    return requestOtpApi(phoneNumber);
+  },
+
+  verifyOtp: async (phoneNumber, otp) => {
+    const tokens = await verifyOtpApi(phoneNumber, otp);
+    const claims = decodeJwtPayload(tokens.accessToken);
+    const userId = typeof claims['user_id'] === 'string' ? claims['user_id'] : '';
+    const role = claims['role'] as CosRole;
+    await get().setTokens({
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      userId,
+      role,
+    });
   },
 
   updateAccessToken: async (accessToken) => {

@@ -22,4 +22,9 @@ export class CreateWorkerDto {
   @IsOptional()
   @IsString()
   contact_phone?: string;
+
+  /** Optional link to the auth user (platform.users.user_id) so this worker can self check-in. */
+  @IsOptional()
+  @IsString()
+  user_id?: string;
 }

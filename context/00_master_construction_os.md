@@ -2793,6 +2793,23 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - Zustand store slices: syncStore, offlineStore
     - Unit tests: SyncManager, ConflictHandler, DeltaSyncClient
     - UI components: SyncStatusBar, ConflictBadge, OfflineBanner
+    - Feature screens (role-based, FULL functional + offline + testIDs — per the Role-based
+      navigation spec above). ADDED per product-owner ruling: the role screens were specified in
+      the navigation section but were absent from this Generate list; the mobile feature UI is owned
+      by Phase 10. Wire each screen to the existing stores/hooks/WatermelonDB models/API:
+        * Auth: login (Path A phone + OTP) wired to authStore + role-based post-login routing
+        * SITE_WORKER: home (KPI) · tasks (list + detail + progress input, offline) · report
+          (daily report form) · issues (quick issue + list) · profile
+        * SITE_ENGINEER: reports (review) · issues (escalation) · inspections (list → checklist →
+          pass/fail + photo) · conflict-review screen · profile
+        * PROJECT_MANAGER: home (triage) · projects · procurement (status) · dashboard · profile
+        * EXECUTIVE: home (KPI) · portfolio (health cards) · alerts (risk feed) · reports
+          (AI summary) — read-only/offline-cached · profile
+        * FINANCE: home · payments (swipe-approve, queued offline) · budget (variance) · invoices · profile
+        * PROCUREMENT_OFFICER/PROC_MANAGER: home · rfqs · orders · deliveries (photo + qty, offline) · profile
+    - Shared mobile components (§32.7 Mobile Core Component Library): PhotoCapture, VoiceNoteButton,
+      TaskCard, QuickActionCard, StatusChip, OptimisticList, MobileInput, NumberPicker, IconPicker
+    - Every screen exposes the testIDs consumed by the Detox E2E specs (apps/mobile/e2e/*)
 
   Generate (Web App — apps/web/):
     - next-pwa configuration with Workbox strategies

@@ -46,6 +46,7 @@ export class WorkforceService {
       trade_type: dto.trade_type,
       employment_type: dto.employment_type,
       contact_phone: dto.contact_phone ?? null,
+      user_id: dto.user_id ?? null,
     });
     logger.info({ worker_id: worker.worker_id }, 'worker created');
     return worker;
@@ -53,6 +54,15 @@ export class WorkforceService {
 
   async listWorkers(): Promise<WorkerRow[]> {
     return this.repo.findAllWorkers();
+  }
+
+  /** Resolve the worker linked to the authenticated user (for self check-in). */
+  async getMyWorker(userId: string): Promise<WorkerRow> {
+    const worker = await this.repo.findWorkerByUserId(userId);
+    if (!worker) {
+      throw new NotFoundException('No worker profile linked to this user');
+    }
+    return worker;
   }
 
   async getWorker(id: string): Promise<WorkerRow> {
