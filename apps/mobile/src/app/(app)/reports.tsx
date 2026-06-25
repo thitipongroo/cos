@@ -1,10 +1,25 @@
-// Reports screen — SITE_ENGINEER review of submitted site reports.
-// Fetches GET /site/reports (review is online; offline shows the last fetched list).
+// Reports screen — SITE_ENGINEER review of submitted site reports + record material consumption.
+// Review list: GET /site/reports (online; offline shows the last fetched list).
+// Material (PO ruling M1/M2 — embedded here, owned by SITE_ENGINEER): tap a report → record material
+// against that report_id. Material is a child of a site report (server: createMaterialConsumption(
+// reportId, dto)), so it attaches to an existing report. Create enqueues a 'material' sync_queue item
+// → SyncManager pushes to /sync/push → SiteOpsService.createMaterialConsumption; the recorded row
+// flows back into local_material_consumptions on the next delta pull (no local-write here, since the
+// delta cache keys on project_id while creation keys on report_id).
 
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { get } from '../../api/client';
+import { enqueue } from '../../db/sync-queue';
 import { StatusChip } from '../../components/StatusChip';
 import { ConflictBadge } from '../../components/ConflictBadge';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
@@ -20,6 +35,11 @@ export default function ReportsScreen() {
   const router = useRouter();
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [matName, setMatName] = useState('');
+  const [qty, setQty] = useState('');
+  const [unit, setUnit] = useState('');
+  const [savedFor, setSavedFor] = useState<string | null>(null);
 
   const load = async (): Promise<void> => {
     setLoading(true);
@@ -37,6 +57,22 @@ export default function ReportsScreen() {
     void load();
   }, []);
 
+  const canRecord = matName.trim() !== '' && qty.trim() !== '' && unit.trim() !== '';
+
+  const recordMaterial = (reportId: string): void => {
+    enqueue('material', reportId, 'CREATE', {
+      report_id: reportId,
+      material_name: matName.trim(),
+      quantity: qty.trim(),
+      unit: unit.trim(),
+      consumed_at: new Date().toISOString(),
+    });
+    setSavedFor(reportId);
+    setMatName('');
+    setQty('');
+    setUnit('');
+  };
+
   return (
     <View testID="reports-screen" style={styles.container}>
       <View style={styles.headerRow}>
@@ -49,13 +85,66 @@ export default function ReportsScreen() {
         keyExtractor={(r) => r.report_id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={<Text style={styles.empty}>No reports</Text>}
-        renderItem={({ item }) => (
-          <View testID="report-item" style={styles.item}>
-            <Text style={styles.itemTitle}>{item.report_date}</Text>
-            {item.summary ? <Text style={styles.sub}>{item.summary}</Text> : null}
-            <StatusChip label={item.status} />
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const open = selectedReportId === item.report_id;
+          return (
+            <TouchableOpacity
+              testID="report-item"
+              style={styles.item}
+              onPress={() => setSelectedReportId(open ? null : item.report_id)}
+            >
+              <Text style={styles.itemTitle}>{item.report_date}</Text>
+              {item.summary ? <Text style={styles.sub}>{item.summary}</Text> : null}
+              <StatusChip label={item.status} />
+
+              {open ? (
+                <View testID="material-form" style={styles.matForm}>
+                  <Text style={styles.matHeading}>Record material used</Text>
+                  <TextInput
+                    testID="material-name-input"
+                    style={styles.input}
+                    placeholder="Material (e.g. Portland Cement 50kg)"
+                    placeholderTextColor={colors.textSecondary}
+                    value={matName}
+                    onChangeText={setMatName}
+                  />
+                  <View style={styles.qtyRow}>
+                    <TextInput
+                      testID="material-qty-input"
+                      style={[styles.input, styles.qtyInput]}
+                      placeholder="Qty (e.g. 12.5)"
+                      placeholderTextColor={colors.textSecondary}
+                      keyboardType="decimal-pad"
+                      value={qty}
+                      onChangeText={setQty}
+                    />
+                    <TextInput
+                      testID="material-unit-input"
+                      style={[styles.input, styles.qtyInput]}
+                      placeholder="Unit (e.g. bag)"
+                      placeholderTextColor={colors.textSecondary}
+                      value={unit}
+                      onChangeText={setUnit}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    testID="record-material-button"
+                    style={[styles.button, !canRecord && styles.buttonDisabled]}
+                    onPress={() => recordMaterial(item.report_id)}
+                    disabled={!canRecord}
+                  >
+                    <Text style={styles.buttonText}>Record material</Text>
+                  </TouchableOpacity>
+                  {savedFor === item.report_id ? (
+                    <Text testID="material-saved" style={styles.saved}>
+                      Recorded — will sync when online
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );
@@ -84,6 +173,42 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.regular,
     color: colors.textSecondary,
+  },
+  matForm: { marginTop: spacing.sm, gap: spacing.xs },
+  matHeading: {
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.semibold,
+    color: colors.textSecondary,
+  },
+  input: {
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textPrimary,
+  },
+  qtyRow: { flexDirection: 'row', gap: spacing.xs },
+  qtyInput: { flex: 1 },
+  button: {
+    minHeight: 44,
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonDisabled: { opacity: 0.5 },
+  buttonText: {
+    color: colors.bg,
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.body.fontSize,
+  },
+  saved: {
+    color: colors.success,
+    fontFamily: fontFamily.medium,
+    fontSize: typography.caption.fontSize,
   },
   empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

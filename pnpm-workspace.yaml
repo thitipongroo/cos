@@ -1,5 +1,11 @@
 packages:
   - 'apps/*'
+  # apps/mobile is intentionally EXCLUDED from the pnpm workspace: React Native + Expo + Metro +
+  # CocoaPods assume a flat (hoisted) node_modules, which pnpm's isolated linker breaks (Metro cannot
+  # resolve transitive expo-*/@react-native/* packages). It installs standalone with
+  # node-linker=hoisted (apps/mobile/.npmrc) via `pnpm install --ignore-workspace`, consuming
+  # @cos/types as a file: dependency. Nothing in turbo/CI references @cos/mobile.
+  - '!apps/mobile'
   - 'backend'
   - 'services/*'
   - 'packages/@cos/*'
@@ -14,6 +20,11 @@ overrides:
   'picomatch@>=4.0.0 <4.0.4': '4.0.4'
   'glob@>=10.2.0 <10.5.0': '10.5.0'
   '@xmldom/xmldom@<0.8.12': '^0.9.10'
+  # @expo/plist@0.1.3 (Expo 51 prebuild, dev/build-only) was written for the @xmldom/xmldom 0.7 API;
+  # the security bump above forces 0.9.10 on it, whose stricter DOMParser breaks `expo prebuild`
+  # (mimeType undefined). Scope @expo/plist back to 0.7.7 — it is a build-time CLI tool, not in any
+  # runtime/production bundle, so the <0.8.12 CVE does not apply to it.
+  '@expo/plist>@xmldom/xmldom': '0.7.7'
   'protobufjs@<=7.5.5': '^7.5.6'
   'tmp@<0.2.6': '^0.2.7'
   '@remix-run/server-runtime@<2.17.5': '2.17.5'

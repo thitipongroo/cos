@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import { ClsModule } from 'nestjs-cls';
 import Redis from 'ioredis';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
@@ -34,6 +35,14 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
+    // Global CLS (AsyncLocalStorage) — carries authenticated tenant context across guards,
+    // interceptors and (formerly request-scoped) providers. Under Fastify, Passport's req.user does
+    // NOT survive into downstream handlers (Fastify clones the request), so JwtAuthGuard publishes the
+    // tenant context into CLS and TenantPrismaService reads it from there. `mount` wraps every request
+    // in cls.run() before guards run, so values set in the guard persist through the whole pipeline.
+    // useEnterWith: true is required under Fastify — Fastify's middleware does not await the rest of
+    // the request inside the cls.run() callback, so the context must be entered via als.enterWith().
+    ClsModule.forRoot({ global: true, middleware: { mount: true, useEnterWith: true } }),
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({

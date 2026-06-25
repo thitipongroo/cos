@@ -2804,8 +2804,11 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         * Auth: login (Path A phone + OTP) wired to authStore + role-based post-login routing
         * SITE_WORKER: home (KPI) · tasks (list + detail + progress input, offline) · report
           (daily report form) · issues (quick issue + list) · profile
-        * SITE_ENGINEER: reports (review) · issues (escalation) · inspections (list → checklist →
-          pass/fail + photo) · conflict-review screen · profile
+        * SITE_ENGINEER: reports (review + record material consumption per report — enqueues 'material'
+          with report_id → /sync/push, PO ruling M1/M2) · issues (escalation) · inspections (list →
+          checklist → pass/fail + photo) · conflict-review screen · profile
+        * SAFETY_OFFICER: home · incidents (report safety incident offline — local_incidents PENDING +
+          enqueue 'safety' → /sync/push → createIncident, PO ruling D1/D2) · profile
         * PROJECT_MANAGER: home (triage) · projects · procurement (status) · dashboard · profile
         * EXECUTIVE: home (KPI) · portfolio (health cards) · alerts (risk feed) · reports
           (AI summary) — read-only/offline-cached · profile

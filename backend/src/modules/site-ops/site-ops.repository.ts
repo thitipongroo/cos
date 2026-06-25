@@ -271,8 +271,8 @@ export class SiteOpsRepository {
                OR project_id = ${params.project_id ?? null}::uuid)
           AND (${params.severity ?? null} IS NULL
                OR severity = ${params.severity ?? null})
-          AND (${params.status ?? null} IS NULL
-               OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL
+               OR status = ${params.status ?? null}::text)
         ORDER BY created_at DESC
         LIMIT ${params.limit} OFFSET ${offset}
       `,
@@ -286,8 +286,8 @@ export class SiteOpsRepository {
                OR project_id = ${params.project_id ?? null}::uuid)
           AND (${params.severity ?? null} IS NULL
                OR severity = ${params.severity ?? null})
-          AND (${params.status ?? null} IS NULL
-               OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL
+               OR status = ${params.status ?? null}::text)
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };
@@ -365,8 +365,8 @@ export class SiteOpsRepository {
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL
-               OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL
+               OR status = ${params.status ?? null}::text)
         ORDER BY inspected_at DESC
         LIMIT ${params.limit} OFFSET ${offset}
       `,
@@ -378,8 +378,8 @@ export class SiteOpsRepository {
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL
-               OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL
+               OR status = ${params.status ?? null}::text)
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };

@@ -1,4 +1,6 @@
-// Unit tests for TenantPrismaService — assertSafeTenantId, run(), onModuleDestroy
+// Unit tests for TenantPrismaService — assertSafeTenantId, getClient (URL resolution + caching),
+// run(), onModuleDestroy. The service is a singleton that reads tenant context from CLS (nestjs-cls),
+// so tests establish context via the real ClsService (ClsServiceManager.getClsService().run()).
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
@@ -16,64 +18,87 @@ jest.mock('@cos/logger', () => ({
 }));
 
 import { UnauthorizedException } from '@nestjs/common';
+import { ClsServiceManager } from 'nestjs-cls';
 import { TenantPrismaService } from '../prisma/tenant-prisma.service';
 import { PrismaClient } from '@prisma/client';
 
 const VALID_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
-function makeService(tenantId: string): TenantPrismaService {
-  // resolveContext() reads the tenant id from the authenticated JWT user (req.user.tenant_id), ADR-031.
-  const request = { user: { tenant_id: tenantId } } as never;
-  return new TenantPrismaService(request);
+// Run fn inside a CLS context, optionally seeding the tenant context the service reads. Passing
+// store=null runs inside an active context with nothing set (clsTenantId() → ''); calling the service
+// outside runInCls() entirely exercises the cls.isActive()===false path.
+function runInCls<T>(store: Record<string, string> | null, fn: () => Promise<T>): Promise<T> {
+  const cls = ClsServiceManager.getClsService();
+  return cls.run(async () => {
+    if (store) for (const [k, v] of Object.entries(store)) cls.set(k, v);
+    return fn();
+  });
 }
 
 describe('TenantPrismaService', () => {
-  // Tenant context is validated LAZILY in run() (ADR-031), not the constructor. resolveContext()
-  // is the first statement of run() and throws before any DB client is created, so invalid/missing
-  // tenant ids reject the run() promise rather than throwing at construction time.
-  describe('tenant validation (lazy, in run())', () => {
-    const noop = async (): Promise<undefined> => undefined;
+  const ORIGINAL_ENV = { ...process.env };
+  const noop = async (): Promise<undefined> => undefined;
 
-    it('rejects with UnauthorizedException when tenantId is missing', async () => {
-      await expect(new TenantPrismaService({} as never).run(noop)).rejects.toThrow(
+  beforeEach(() => {
+    (PrismaClient as jest.Mock).mockClear();
+  });
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+  });
+
+  describe('tenant validation (lazy, in run())', () => {
+    it('rejects with UnauthorizedException when no CLS context is active', async () => {
+      // No runInCls wrapper → cls.isActive() is false → clsTenantId() returns ''.
+      await expect(new TenantPrismaService().run(noop)).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('rejects with UnauthorizedException when CLS is active but tenantId is unset', async () => {
+      const svc = new TenantPrismaService();
+      await expect(runInCls(null, () => svc.run(noop))).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('rejects with UnauthorizedException for a non-UUID tenant id', async () => {
+      const svc = new TenantPrismaService();
+      await expect(runInCls({ tenantId: 'INVALID' }, () => svc.run(noop))).rejects.toThrow(
         UnauthorizedException,
       );
     });
 
-    it('rejects with UnauthorizedException for non-UUID string (uppercase word)', async () => {
-      await expect(makeService('INVALID').run(noop)).rejects.toThrow(UnauthorizedException);
+    it('rejects with UnauthorizedException for tenant-code format (not a UUID)', async () => {
+      const svc = new TenantPrismaService();
+      await expect(runInCls({ tenantId: 'acme_corp' }, () => svc.run(noop))).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
-    it('rejects with UnauthorizedException for tenant code format (not a UUID)', async () => {
-      await expect(makeService('acme_corp').run(noop)).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('rejects with UnauthorizedException for alphanumeric non-UUID', async () => {
-      await expect(makeService('tenant123').run(noop)).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('constructs without throwing (validation deferred to run)', () => {
-      expect(() => makeService(VALID_UUID)).not.toThrow();
-    });
-
-    it('constructs successfully for UUID with uppercase hex', () => {
-      expect(() => makeService('A1B2C3D4-E5F6-7890-ABCD-EF1234567890')).not.toThrow();
+    it('accepts a UUID with uppercase hex', async () => {
+      process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/db';
+      const svc = new TenantPrismaService();
+      const upper = 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890';
+      (PrismaClient as jest.Mock).mockImplementationOnce(() => ({
+        $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+          cb({ $executeRawUnsafe: jest.fn() }),
+        ),
+        $disconnect: jest.fn(),
+      }));
+      await expect(runInCls({ tenantId: upper }, () => svc.run(noop))).resolves.toBeUndefined();
     });
   });
 
   describe('run', () => {
     it('executes fn inside a transaction with SET LOCAL app.current_tenant_id', async () => {
+      process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/db';
       const executeRawUnsafe = jest.fn().mockResolvedValue(undefined);
       const txMock = { $executeRawUnsafe: executeRawUnsafe };
-      // Set up BEFORE constructing service so the new PrismaClient() picks it up
       (PrismaClient as jest.Mock).mockImplementationOnce(() => ({
         $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) => cb(txMock)),
         $disconnect: jest.fn().mockResolvedValue(undefined),
       }));
 
-      const service = makeService(VALID_UUID);
+      const svc = new TenantPrismaService();
       const fn = jest.fn().mockResolvedValue('result');
-      const result = await service.run(fn);
+      const result = await runInCls({ tenantId: VALID_UUID }, () => svc.run(fn));
 
       expect(executeRawUnsafe).toHaveBeenCalledWith(
         `SET LOCAL app.current_tenant_id = '${VALID_UUID}'`,
@@ -83,17 +108,86 @@ describe('TenantPrismaService', () => {
     });
   });
 
+  describe('getClient — datasource URL resolution & caching', () => {
+    function stubClient(): void {
+      (PrismaClient as jest.Mock).mockImplementation(() => ({
+        $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+          cb({ $executeRawUnsafe: jest.fn() }),
+        ),
+        $disconnect: jest.fn().mockResolvedValue(undefined),
+      }));
+    }
+
+    it('uses APP_DATABASE_URL for shared tenants', async () => {
+      process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/app';
+      delete process.env['DATABASE_URL'];
+      stubClient();
+      await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
+      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
+        datasources: { db: { url: 'postgresql://app@localhost/app' } },
+      });
+    });
+
+    it('falls back to DATABASE_URL when APP_DATABASE_URL is unset', async () => {
+      delete process.env['APP_DATABASE_URL'];
+      process.env['DATABASE_URL'] = 'postgresql://super@localhost/db';
+      stubClient();
+      await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
+      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
+        datasources: { db: { url: 'postgresql://super@localhost/db' } },
+      });
+    });
+
+    it('falls back to empty string when neither env var is set', async () => {
+      delete process.env['APP_DATABASE_URL'];
+      delete process.env['DATABASE_URL'];
+      stubClient();
+      await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
+      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
+        datasources: { db: { url: '' } },
+      });
+    });
+
+    it('uses the dedicated DB URL when present (enterprise tenant)', async () => {
+      process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/app';
+      stubClient();
+      const dedicated = 'postgresql://app@dedicated/ent';
+      await runInCls({ tenantId: VALID_UUID, dedicatedDbUrl: dedicated }, () =>
+        new TenantPrismaService().run(noop),
+      );
+      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
+        datasources: { db: { url: dedicated } },
+      });
+    });
+
+    it('reuses a cached client for the same URL across runs', async () => {
+      process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/app';
+      stubClient();
+      const svc = new TenantPrismaService();
+      await runInCls({ tenantId: VALID_UUID }, () => svc.run(noop));
+      await runInCls({ tenantId: VALID_UUID }, () => svc.run(noop));
+      expect(PrismaClient as jest.Mock).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('onModuleDestroy', () => {
-    it('disconnects the Prisma client', async () => {
+    it('disconnects every cached Prisma client', async () => {
+      process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/app';
       const disconnectMock = jest.fn().mockResolvedValue(undefined);
       (PrismaClient as jest.Mock).mockImplementationOnce(() => ({
-        $transaction: jest.fn(),
+        $transaction: jest.fn((cb: (tx: unknown) => Promise<unknown>) =>
+          cb({ $executeRawUnsafe: jest.fn() }),
+        ),
         $disconnect: disconnectMock,
       }));
-      const service = makeService(VALID_UUID);
-      await service.run(async () => undefined); // lazily creates + caches the client (getClient)
-      await service.onModuleDestroy();
+      const svc = new TenantPrismaService();
+      await runInCls({ tenantId: VALID_UUID }, () => svc.run(noop)); // populates the client cache
+      await svc.onModuleDestroy();
       expect(disconnectMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a no-op when no clients were created', async () => {
+      await expect(new TenantPrismaService().onModuleDestroy()).resolves.toBeUndefined();
     });
   });
 });

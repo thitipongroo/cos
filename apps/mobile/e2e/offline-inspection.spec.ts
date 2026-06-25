@@ -4,13 +4,15 @@
 // Storage: WatermelonDB (checklist data) + expo-file-system cache (photo) (Phase 10)
 
 import { device, element, by, waitFor } from 'detox';
-import { isVisible, setNetworkConnected } from './helpers';
+import { isVisible, setNetworkConnected, resetSession } from './helpers';
 
 const INSPECTOR_PHONE = process.env['E2E_INSPECTOR_PHONE'] || '+66800000002';
 
 describe('Offline Inspection — Inspector', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
+    await resetSession(); // iOS keychain survives reinstall — force a logged-out start
+    await device.reloadReactNative();
   });
 
   afterAll(async () => {
@@ -18,6 +20,8 @@ describe('Offline Inspection — Inspector', () => {
   });
 
   beforeEach(async () => {
+    // Session survives the JS reload now that authenticated calls no longer 401 (CLS tenant-context
+    // fix), so reloading resets navigation to home while keeping the user logged in.
     await device.reloadReactNative();
   });
 

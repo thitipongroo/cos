@@ -210,9 +210,19 @@ server-side changes down to the device:
   | `material`         | `local_material_consumptions`  | v4     |
 
 - **Schema version:** `DB_VERSION = 4`. v3→v4 (`migrations.ts`) adds `local_incidents` and
-  `local_material_consumptions` as read caches so the delta pull can apply `safety`/`material`. These two
-  tables are **populated by delta but not yet read by any screen** — a consuming UI (which role / what view)
-  is a product-owner decision (Rule 38), not yet specified.
+  `local_material_consumptions` as read caches so the delta pull can apply `safety`/`material`.
+- **Offline write UI (PO ruling D1–D4 + M1/M2):** `local_incidents` / `local_material_consumptions` are
+  surfaced for read/write per §17.4:
+  - **Incidents — SAFETY_OFFICER**, dedicated `incidents` tab (`(app)/incidents.tsx`). Create writes a
+    `local_incidents` row (`sync_status = PENDING`, reactive list via `useCollection`) **and** enqueues a
+    `'safety'` sync_queue item → SyncManager `/sync/push` → `SafetyService.createIncident`.
+  - **Material — SITE_ENGINEER**, embedded in the engineer `reports` screen (material is a child of a
+    site report; server `createMaterialConsumption(reportId, dto)`). Recording enqueues a `'material'`
+    item carrying `report_id` → `/sync/push` → `SiteOpsService.createMaterialConsumption`. No local write
+    on create (the delta cache keys on `project_id` while creation keys on `report_id`); the recorded row
+    returns via the next delta pull.
+  - Known limitation (same as the issues screen): `PENDING`→`SYNCED` reconciliation and delta-dedup of
+    locally-created rows are not yet wired.
 - **Deletion source:** `deleted[]` is read from `platform.sync_tombstones`; per-entity delete→tombstone
   wiring is deferred (today the list is empty until each entity records tombstones).
 

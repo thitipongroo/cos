@@ -1,8 +1,8 @@
 // Root layout — Expo Router entry point.
 // Guards all (app) routes: redirects unauthenticated users to (auth)/login.
 
-import { useEffect } from 'react';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Slot, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
 import {
@@ -11,6 +11,7 @@ import {
   InterTight_600SemiBold,
   InterTight_700Bold,
 } from '@expo-google-fonts/inter-tight';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
 import { initSyncQueue } from '../db/sync-queue';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
@@ -18,31 +19,43 @@ import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
 function AuthGate() {
   const router = useRouter();
   const segments = useSegments();
+  const navState = useRootNavigationState();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   useEffect(() => {
+    // Wait until the root navigator is actually mounted, otherwise expo-router throws
+    // "Attempted to navigate before mounting the Root Layout component".
+    if (!navState?.key) return;
     const inAuthGroup = segments[0] === '(auth)';
     if (!isAuthenticated && !inAuthGroup) {
       router.replace('/(auth)/login');
     } else if (isAuthenticated && inAuthGroup) {
       router.replace('/(app)/home');
     }
-  }, [isAuthenticated, segments, router]);
+  }, [navState?.key, isAuthenticated, segments, router]);
 
   return null;
 }
 
 export default function RootLayout() {
   // Brand font: Inter Tight (§32.7) — weights 400 body / 500 labels / 600 headings / 700 wordmark.
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     InterTight_400Regular,
     InterTight_500Medium,
     InterTight_600SemiBold,
     InterTight_700Bold,
   });
 
+  // Gate the first render until the persisted session is restored, so AuthGate makes its
+  // authenticated/unauthenticated decision ONCE with the correct state (avoids a login↔home flip
+  // race after a cold start / reloadReactNative). `.finally` guarantees we never block forever.
+  const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     initSyncQueue();
+    void useAuthStore
+      .getState()
+      .hydrate()
+      .finally(() => setHydrated(true));
   }, []);
 
   // E2E-only: let Detox toggle simulated connectivity via `cos://e2e/network?online=0|1`.
@@ -52,22 +65,36 @@ export default function RootLayout() {
     const handle = (url: string | null): void => {
       if (!url) return;
       const { hostname, path, queryParams } = Linking.parse(url);
-      if (hostname !== 'e2e' || path !== 'network') return;
-      const online = queryParams?.['online'];
-      if (typeof online === 'string') setForcedOnline(online === '1' || online === 'true');
+      if (hostname !== 'e2e') return;
+      if (path === 'network') {
+        const online = queryParams?.['online'];
+        if (typeof online === 'string') setForcedOnline(online === '1' || online === 'true');
+      } else if (path === 'reset') {
+        // Clear any persisted session so a suite can start from a known logged-out state — the iOS
+        // keychain survives app reinstall (`delete: true`), so without this the login tests would
+        // launch already authenticated. See e2e/helpers.ts resetSession().
+        setForcedOnline(null);
+        void useAuthStore.getState().logout();
+      }
     };
     Linking.getInitialURL().then(handle);
     const sub = Linking.addEventListener('url', ({ url }) => handle(url));
     return () => sub.remove();
   }, []);
 
-  // Hold the UI until the brand font is ready so text never flashes in a fallback face.
-  if (!fontsLoaded) return null;
+  // Note: we intentionally do NOT block rendering on font load. expo-font applies the brand face as
+  // soon as it resolves; blocking here risked a permanently blank screen if the font hangs/fails in a
+  // release build. `fontsLoaded`/`fontError` are referenced so the values are not flagged unused.
+  void fontsLoaded;
+  void fontError;
+
+  // Hold until the session is hydrated (fast local SecureStore read) so AuthGate routes correctly.
+  if (!hydrated) return null;
 
   return (
-    <>
+    <SafeAreaProvider>
       <AuthGate />
       <Slot />
-    </>
+    </SafeAreaProvider>
   );
 }

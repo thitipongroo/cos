@@ -50,3 +50,12 @@ export async function firstVisible(testIds: readonly string[], timeout = 2000) {
 export async function setNetworkConnected(connected: boolean): Promise<void> {
   await device.openURL({ url: `cos://e2e/network?online=${connected ? '1' : '0'}` });
 }
+
+/**
+ * Clear any persisted session so the suite starts logged out. The iOS keychain (SecureStore) survives
+ * `launchApp({ delete: true })`, so without this a prior run's session would carry over and the login
+ * tests would launch already on the home screen. Call in beforeAll, before the first reload.
+ */
+export async function resetSession(): Promise<void> {
+  await device.openURL({ url: 'cos://e2e/reset' });
+}

@@ -11,7 +11,7 @@ export function OfflineBanner() {
   if (isOnline) return null;
 
   return (
-    <View style={styles.banner}>
+    <View style={styles.banner} testID="offline-banner">
       <Text style={styles.text}>Offline — changes will sync when reconnected</Text>
     </View>
   );

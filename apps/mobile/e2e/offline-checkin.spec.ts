@@ -4,13 +4,15 @@
 // Strategy: WatermelonDB + expo-sqlite sync_queue (Phase 10 spec)
 
 import { device, element, by, waitFor } from 'detox';
-import { isVisible, setNetworkConnected } from './helpers';
+import { isVisible, setNetworkConnected, resetSession } from './helpers';
 
 const WORKER_PHONE = process.env['E2E_WORKER_PHONE'] || '+66800000001';
 
 describe('Offline Check-In — Worker', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
+    await resetSession(); // iOS keychain survives reinstall — force a logged-out start
+    await device.reloadReactNative();
   });
 
   afterAll(async () => {

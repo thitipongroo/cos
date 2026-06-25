@@ -350,7 +350,8 @@ Every new service, module, or background job must include:
   - Never rename a column in a single migration — add new + copy data + remove old (3-step)
   - Never change a column's type directly — create new column, migrate data, drop old
   - Never drop a column used by any deployed code
-  - Every migration must have a verified rollback script committed alongside it in `migrations/rollbacks/`
+  - Every migration must have a verified rollback script committed in `prisma/rollbacks/` (NOT inside `prisma/migrations/` — Prisma `migrate deploy` treats every subdirectory of `migrations/` as a migration and fails P3015 on one lacking `migration.sql`)
+  - Name migrations `<timestamp>_<action>_<subject>` (e.g. `add_phone_number_to_users`); **never prefix with `phaseN_`** — build-phase numbers are work-tracking metadata, not schema identity. The directory name is stored in `_prisma_migrations.migration_name`, so renaming an applied migration needs a matching `UPDATE` on every environment — pick the final name up front (see `docs/specifications/09-data-architecture.md`)
 - **API backward compatibility** — old clients must not break during upgrades
   - Never remove a JSON field from a response — mark as deprecated with `@deprecated` in OpenAPI, keep for 6 months
   - Never change a field's type in the same version
@@ -700,7 +701,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Write or update `docs/api/error-codes.md` when adding new error codes (QM-10)
 - Create an ADR in `docs/architecture/adr/` for every architectural decision (QM-11)
 - Validate database migrations for backward compatibility before applying (QM-9)
-- Commit a rollback script alongside every database migration in `migrations/rollbacks/` (QM-9)
+- Commit a rollback script for every database migration in `prisma/rollbacks/` (QM-9) — kept OUTSIDE `prisma/migrations/` so `prisma migrate deploy` does not treat it as a migration (P3015)
 - Register every new Kafka schema in the Schema Registry before the first producer deployment (QM-9); subject = canonical event type (**RecordNameStrategy**, one schema per event shared across tenants — never `{topic_name}-value`; topics carry a `{tenant_id}.` prefix) (spec §32.4)
 - Provision Kafka topics **explicitly** — producers use `allowAutoTopicCreation: false`; the per-tenant topic set (`{tenant_id}.{domain}.{entity}.{action}.v{N}` + `{tenant_id}.{domain}.dlq`) is created idempotently at tenant onboarding (SMB Phase 2, Enterprise Phase 25 workflow, local dev via seed); platform events use the shared `platform.events` topic. Shared consumers subscribe via per-tenant topic RegExp under a `{service}.shared` group and validate the `tenant_id` header before processing (spec §7.3, §15.6)
 - Gate every user-facing feature and high-risk change behind a feature flag before production (QM-15)

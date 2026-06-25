@@ -21,6 +21,18 @@ function generateOtp(): string {
     .padStart(OTP_LENGTH, '0');
 }
 
+// E2E auth bypass — DOUBLE-GATED: only when E2E_AUTH_BYPASS=true AND NODE_ENV !== 'production'.
+// When active, requestOtp() stores a DETERMINISTIC OTP (E2E_TEST_OTP, default '123456') so automated
+// Detox specs can log in without an SMS round-trip. verifyOtp() is UNCHANGED — it still validates the
+// submitted OTP against the stored one, so no verification step is skipped. This flag must never be set
+// in production (it is additionally hard-gated off when NODE_ENV === 'production').
+function e2eFixedOtp(): string | null {
+  if (process.env['E2E_AUTH_BYPASS'] === 'true' && process.env['NODE_ENV'] !== 'production') {
+    return process.env['E2E_TEST_OTP'] ?? '123456';
+  }
+  return null;
+}
+
 @Injectable()
 export class OtpService {
   private readonly sns: SNSClient;
@@ -33,9 +45,12 @@ export class OtpService {
 
   /** Request OTP — sends SMS and stores hashed OTP in Redis. */
   async requestOtp(phoneNumber: string): Promise<{ expiresInSeconds: number }> {
-    await this.enforceDailyLimit(phoneNumber);
+    const fixedOtp = e2eFixedOtp();
+    // The E2E bypass also skips the per-phone daily rate limit: automated suites request many OTPs for
+    // the same test phone. Production (bypass inactive) always enforces the limit.
+    if (!fixedOtp) await this.enforceDailyLimit(phoneNumber);
 
-    const otp = generateOtp();
+    const otp = fixedOtp ?? generateOtp();
     const attemptsKey = `otp:attempts:${phoneNumber}`;
     const otpKey = `otp:value:${phoneNumber}`;
 

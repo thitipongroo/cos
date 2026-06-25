@@ -1,6 +1,7 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useT } from '../../i18n';
@@ -26,7 +27,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white md:block">
-        <div className="px-4 py-4 text-lg font-bold text-gray-800">{t('common.appName')}</div>
+        <div className="px-4 py-4">
+          <Image
+            src="/icons/logo-dark.png"
+            alt={t('common.appName')}
+            width={180}
+            height={31}
+            priority
+            className="h-auto w-[180px]"
+          />
+        </div>
         <nav className="px-2">
           {items.map((item) => {
             const active = pathname === item.href;

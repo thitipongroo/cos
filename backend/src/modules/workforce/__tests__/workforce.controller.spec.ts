@@ -6,6 +6,8 @@ import {
   ProjectWorkforceController,
   TimesheetController,
 } from '../workforce.controller';
+import { ClsServiceManager } from 'nestjs-cls';
+import { CLS_USER_ID } from '../../../shared/context/cls-context';
 
 const makeSvc = () => ({
   createWorker: jest.fn().mockResolvedValue({ worker_id: 'w-1' }),
@@ -42,6 +44,17 @@ describe('WorkerController', () => {
     const ctrl = new WorkerController(svc as never);
     ctrl.getMyWorker({ userId: 'u-1' } as never);
     expect(svc.getMyWorker).toHaveBeenCalledWith('u-1');
+  });
+
+  it('getMyWorker — falls back to the CLS user id when req.userId is absent (Fastify)', async () => {
+    const svc = makeSvc();
+    const ctrl = new WorkerController(svc as never);
+    const cls = ClsServiceManager.getClsService();
+    await cls.run(async () => {
+      cls.set(CLS_USER_ID, 'cls-user-9');
+      ctrl.getMyWorker({} as never);
+    });
+    expect(svc.getMyWorker).toHaveBeenCalledWith('cls-user-9');
   });
 
   it('getOne — delegates to service.getWorker', () => {

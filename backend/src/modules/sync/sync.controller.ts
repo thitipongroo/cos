@@ -1,12 +1,23 @@
 // Sync Controller — generic offline sync (Finding 2). Global prefix 'api/v1' → /api/v1/sync/*.
 
-import { Controller, Get, Post, Body, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SyncService } from './sync.service';
 import { PushItemDto } from './dto/sync.dto';
+import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 
 @ApiTags('Sync')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('sync')
 export class SyncController {
   constructor(private readonly service: SyncService) {}

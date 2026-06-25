@@ -1,12 +1,18 @@
 {
   "expo": {
-    "name": "Construction OS",
+    "name": "COS",
     "slug": "cos",
     "scheme": "cos",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B1020"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.constructionos.cos",
@@ -15,7 +21,14 @@
       }
     },
     "android": {
-      "package": "com.constructionos.cos"
+      "package": "com.constructionos.cos",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B1020"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -61,7 +74,8 @@
         {
           "microphonePermission": "Allow Construction OS to record voice notes on site."
         }
-      ]
+      ],
+      "./plugins/withPodfileFixes"
     ],
     "experiments": {
       "typedRoutes": false

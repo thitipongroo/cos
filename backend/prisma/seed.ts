@@ -200,6 +200,78 @@ async function seedPlatformDevTenant(): Promise<void> {
        'dev@cos.local', 'Dev User', true, false)
     ON CONFLICT (user_id) DO NOTHING
   `;
+
+  // Field-staff users for SMS-OTP (Path A) login. Phone numbers match the Detox e2e specs
+  // (apps/mobile/e2e/*); keycloak_user_id / user_id / role mirror the realm users in
+  // construction-os-realm.json so the post-OTP Keycloak Direct Grant resolves a real account.
+  const FIELD_USERS = [
+    {
+      userId: '00000000-0000-4000-8000-000000000011',
+      kcId: '00000000-0000-4000-8000-000000000021',
+      phone: '+66800000001',
+      email: 'somchai.jaidee@devtenant.co.th',
+      name: 'Somchai Jaidee',
+      role: 'SITE_WORKER',
+    },
+    {
+      userId: '00000000-0000-4000-8000-000000000012',
+      kcId: '00000000-0000-4000-8000-000000000022',
+      phone: '+66800000002',
+      email: 'pranee.suksai@devtenant.co.th',
+      name: 'Pranee Suksai',
+      role: 'SITE_ENGINEER',
+    },
+    {
+      // User A for the sync-conflict E2E (task progress Max-wins). SITE_WORKER because the Tasks tab
+      // (task detail + progress update) is a SITE_WORKER screen.
+      userId: '00000000-0000-4000-8000-000000000013',
+      kcId: '00000000-0000-4000-8000-000000000023',
+      phone: '+66800000003',
+      email: 'anan.thongdee@devtenant.co.th',
+      name: 'Anan Thongdee',
+      role: 'SITE_WORKER',
+    },
+  ] as const;
+  for (const u of FIELD_USERS) {
+    await prisma.$executeRaw`
+      INSERT INTO platform.users
+        (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled)
+      VALUES
+        (${u.userId}::uuid, ${SEED_TENANT_ID}::uuid, ${u.kcId}::uuid,
+         ${u.email}, ${u.name}, ${u.phone}, true, false)
+      ON CONFLICT (user_id) DO NOTHING
+    `;
+    await prisma.$executeRaw`
+      INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
+      VALUES (${SEED_TENANT_ID}::uuid, ${u.userId}::uuid, ${u.role}::platform."CosRoleEnum")
+      ON CONFLICT (tenant_id, user_id) DO NOTHING
+    `;
+  }
+
+  // Workforce profile for the SITE_WORKER field user, so GET /workers/me (self check-in, option A)
+  // resolves a worker. Linked via user_id to the +66800000001 account. Superuser insert (RLS bypass).
+  await prisma.$executeRaw`
+    INSERT INTO workforce.workers
+      (worker_id, tenant_id, employee_code, full_name, trade_type, employment_type, is_active, user_id)
+    VALUES
+      ('00000000-0000-4000-8000-000000000031'::uuid, ${SEED_TENANT_ID}::uuid, 'EMP-001',
+       'Somchai Jaidee', 'General Labour', 'PERMANENT'::workforce.employment_type_enum, true,
+       '00000000-0000-4000-8000-000000000011'::uuid)
+    ON CONFLICT (worker_id) DO NOTHING
+  `;
+
+  // One inspection for the SITE_ENGINEER, so GET /site/inspections returns a row and the offline
+  // inspection E2E has an item to open. inspected_by = the +66800000002 user. Superuser insert.
+  await prisma.$executeRaw`
+    INSERT INTO site_ops.inspections
+      (inspection_id, project_id, tenant_id, checklist_id, status, inspected_by, inspected_at, notes)
+    VALUES
+      ('00000000-0000-4000-8000-000000000041'::uuid, '00000000-0000-4000-8000-000000000061'::uuid,
+       ${SEED_TENANT_ID}::uuid, '00000000-0000-4000-8000-000000000051'::uuid, 'PENDING',
+       '00000000-0000-4000-8000-000000000012'::uuid, now(), 'E2E seed inspection')
+    ON CONFLICT (inspection_id) DO NOTHING
+  `;
+
   logger.info({ tenantId: SEED_TENANT_ID, userId: SEED_USER_ID }, 'seed: dev tenant + user done');
 }
 

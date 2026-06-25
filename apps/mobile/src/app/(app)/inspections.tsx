@@ -15,6 +15,7 @@ import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 interface InspectionRow {
   inspection_id: string;
   checklist_id: string;
+  project_id: string;
   status: string;
 }
 
@@ -45,6 +46,22 @@ export default function InspectionsScreen() {
 
   const openChecklist = (): void => {
     setActive(checklists[0] ?? null);
+    setPassed({});
+    setSubmitted(false);
+  };
+
+  // Open an inspection's checklist for offline review/fill. Prefer a cached local checklist matching the
+  // inspection; otherwise open a shell keyed to the inspection so it can still be filled and queued.
+  const openInspection = (item: InspectionRow): void => {
+    const cached = checklists.find((c) => c.checklistId === item.checklist_id) ?? checklists[0];
+    setActive(
+      cached ??
+        ({
+          checklistId: item.checklist_id,
+          projectId: item.project_id,
+          itemsJson: '[]',
+        } as unknown as SafetyChecklist),
+    );
     setPassed({});
     setSubmitted(false);
   };
@@ -125,10 +142,14 @@ export default function InspectionsScreen() {
         keyExtractor={(i) => i.inspection_id}
         ListEmptyComponent={<Text style={styles.empty}>No inspections</Text>}
         renderItem={({ item }) => (
-          <View testID="inspection-item" style={styles.item}>
+          <TouchableOpacity
+            testID="inspection-item"
+            style={styles.item}
+            onPress={() => openInspection(item)}
+          >
             <Text style={styles.itemTitle}>{item.inspection_id.slice(0, 8)}</Text>
             <StatusChip label={item.status} />
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>

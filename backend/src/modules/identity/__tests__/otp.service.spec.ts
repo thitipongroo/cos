@@ -108,3 +108,50 @@ describe('OtpService — production SNS path (line 105)', () => {
     expect(snsMock.send).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('OtpService — E2E auth bypass (double-gated)', () => {
+  const orig = {
+    bypass: process.env['E2E_AUTH_BYPASS'],
+    testOtp: process.env['E2E_TEST_OTP'],
+    env: process.env['NODE_ENV'],
+  };
+
+  beforeEach(() => {
+    Object.keys(redisMock).forEach((k) => delete redisMock[k]);
+  });
+
+  afterEach(() => {
+    const restore = (k: string, v: string | undefined) =>
+      v === undefined ? delete process.env[k] : (process.env[k] = v);
+    restore('E2E_AUTH_BYPASS', orig.bypass);
+    restore('E2E_TEST_OTP', orig.testOtp);
+    restore('NODE_ENV', orig.env);
+  });
+
+  it('stores the default fixed OTP 123456 when bypass is enabled (non-production)', async () => {
+    process.env['E2E_AUTH_BYPASS'] = 'true';
+    process.env['NODE_ENV'] = 'development';
+    delete process.env['E2E_TEST_OTP'];
+    await new OtpService().requestOtp('+66800000001');
+    expect(redisMock['otp:value:+66800000001']).toBe('123456');
+  });
+
+  it('honours the E2E_TEST_OTP override when bypass is enabled', async () => {
+    process.env['E2E_AUTH_BYPASS'] = 'true';
+    process.env['NODE_ENV'] = 'development';
+    process.env['E2E_TEST_OTP'] = '999999';
+    await new OtpService().requestOtp('+66800000002');
+    expect(redisMock['otp:value:+66800000002']).toBe('999999');
+  });
+
+  it('hard-gates the bypass OFF in production even if E2E_AUTH_BYPASS=true', async () => {
+    process.env['E2E_AUTH_BYPASS'] = 'true';
+    process.env['NODE_ENV'] = 'production';
+    process.env['E2E_TEST_OTP'] = '123456';
+    const svc = new OtpService();
+    (svc as unknown as { sns: { send: jest.Mock } }).sns.send = jest.fn().mockResolvedValue({});
+    await svc.requestOtp('+66800000003');
+    // Bypass returned null (production gate) → a random 6-digit OTP was generated, not the fixed one.
+    expect(redisMock['otp:value:+66800000003']).toMatch(/^\d{6}$/);
+  });
+});

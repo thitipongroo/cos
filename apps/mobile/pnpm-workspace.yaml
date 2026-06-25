@@ -1,0 +1,16 @@
+# apps/mobile is a STANDALONE pnpm workspace, excluded from the repo-root workspace
+# (see ../../pnpm-workspace.yaml: `!apps/mobile`). This makes apps/mobile its own workspace root, so
+# `pnpm install` run from here uses these settings — no `--node-linker=hoisted` flag needed.
+#
+# WHY hoisted: React Native + Expo (SDK 51) + Metro + CocoaPods require a FLAT node_modules. pnpm's
+# default isolated linker breaks Metro's resolution of transitive expo-*/@react-native/* packages, and
+# pnpm cannot scope hoisting to one package inside a workspace (no yarn-style nohoist; negative
+# hoist-pattern does not work with node-linker=hoisted). In pnpm 10/11 the `nodeLinker` setting lives in
+# pnpm-workspace.yaml, NOT .npmrc. Expo SDK 54+ adds isolated-deps support — revisit after upgrading.
+packages: []
+nodeLinker: hoisted
+
+# detox + dtrace-provider compile native code during install (needed for the iOS Detox runner).
+allowBuilds:
+  detox: true
+  dtrace-provider: true

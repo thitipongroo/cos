@@ -1,6 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useT } from '../../i18n';
@@ -19,7 +20,14 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-center text-2xl font-bold text-gray-800">{t('common.appName')}</h1>
+        <Image
+          src="/icons/logo-dark.png"
+          alt={t('common.appName')}
+          width={200}
+          height={34}
+          priority
+          className="mx-auto mb-2 h-auto w-[200px]"
+        />
         <p className="mb-6 text-center text-sm text-gray-500">{t('auth.login.office')}</p>
 
         {hasError && (

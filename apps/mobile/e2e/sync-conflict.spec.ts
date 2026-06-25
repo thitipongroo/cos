@@ -10,7 +10,7 @@
 
 import axios from 'axios';
 import { device, element, by, waitFor } from 'detox';
-import { isVisible, firstVisible, setNetworkConnected } from './helpers';
+import { isVisible, firstVisible, setNetworkConnected, resetSession } from './helpers';
 
 const USER_A_PHONE = process.env['E2E_USER_A_PHONE'] || '+66800000003';
 const SYNC_API_URL = process.env['E2E_API_URL'] || 'http://localhost:3001';
@@ -39,7 +39,9 @@ async function applyUserBProgressViaApi(taskId: string, progress: number): Promi
 
 describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
   beforeAll(async () => {
-    await device.launchApp({ newInstance: true });
+    await device.launchApp({ newInstance: true, delete: true });
+    await resetSession(); // iOS keychain survives reinstall — force a logged-out start
+    await device.reloadReactNative();
   });
 
   afterAll(async () => {
@@ -47,6 +49,8 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
   });
 
   beforeEach(async () => {
+    // Session survives the JS reload now that authenticated calls no longer 401 (CLS tenant-context
+    // fix), so reloading resets navigation to home while keeping the user logged in.
     await device.reloadReactNative();
   });
 
@@ -142,7 +146,9 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
 
     const pendingSyncCount = element(by.id('pending-sync-count'));
     if (await isVisible(pendingSyncCount)) {
-      await waitFor(element(by.text('0')))
+      // Scope the "0" to the pending-sync-count KPI — several elements on Home legitimately read "0"
+      // (open issues, sync bar), so an unscoped by.text('0') matches multiple and is ambiguous.
+      await waitFor(element(by.text('0').withAncestor(by.id('pending-sync-count'))))
         .toBeVisible()
         .withTimeout(10_000);
     }

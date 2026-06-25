@@ -12,14 +12,17 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { TenantRequest } from '../tenant/tenant.middleware';
+import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { WorkforceService } from './workforce.service';
 import { CreateWorkerDto } from './dto/create-worker.dto';
 import { AllocateWorkerDto } from './dto/allocate-worker.dto';
 import { RecordAttendanceDto } from './dto/attendance.dto';
 import { SubmitTimesheetDto } from './dto/timesheet.dto';
+import { clsUserId } from '../../shared/context/cls-context';
 
 @ApiTags('Workforce')
 @ApiBearerAuth()
@@ -27,6 +30,7 @@ import { SubmitTimesheetDto } from './dto/timesheet.dto';
 // redundant prefix here would double to /api/v1/api/v1/workers. Fixed for the check-in endpoints.
 // KNOWN ISSUE: the sibling ProjectWorkforce/Timesheet controllers (and equipment/vendor/rfqs) still
 // carry the redundant 'api/v1' prefix — flagged for a separate cleanup.
+@UseGuards(JwtAuthGuard)
 @Controller('workers')
 export class WorkerController {
   constructor(private readonly service: WorkforceService) {}
@@ -48,7 +52,9 @@ export class WorkerController {
   @Get('me')
   @ApiOperation({ summary: 'Resolve the worker linked to the current user (self check-in)' })
   getMyWorker(@Req() req: TenantRequest) {
-    return this.service.getMyWorker(req.userId!);
+    // req.userId is set by TenantContextInterceptor on most paths; under Fastify it may be absent, so
+    // fall back to CLS (populated by JwtAuthGuard). See shared/context/cls-context.ts.
+    return this.service.getMyWorker(req.userId ?? clsUserId());
   }
 
   @Get(':id')
@@ -79,6 +85,7 @@ export class WorkerController {
 
 @ApiTags('Workforce')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('projects/:projectId/workforce')
 export class ProjectWorkforceController {
   constructor(private readonly service: WorkforceService) {}
@@ -105,6 +112,7 @@ export class ProjectWorkforceController {
 
 @ApiTags('Workforce')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('timesheets')
 export class TimesheetController {
   constructor(private readonly service: WorkforceService) {}

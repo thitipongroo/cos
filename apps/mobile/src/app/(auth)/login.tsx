@@ -10,9 +10,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import logoDark from '../../../assets/logo-dark.png';
 
 type Step = 'phone' | 'otp';
 
@@ -54,7 +56,13 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Construction OS</Text>
+      <Image
+        testID="brand-logo"
+        source={logoDark}
+        style={styles.logo}
+        resizeMode="contain"
+        accessibilityLabel="Construction OS"
+      />
 
       {step === 'phone' ? (
         <>
@@ -127,11 +135,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     gap: spacing.md,
   },
-  title: {
-    fontSize: typography.hero.fontSize,
-    fontFamily: fontFamily.bold,
-    color: colors.textPrimary,
-    textAlign: 'center',
+  logo: {
+    // COS wordmark + mark, transparent PNG (~876×150, ~5.8:1). Dark-text variant for the white
+    // login background; resizeMode="contain" preserves the aspect ratio within this box.
+    width: 280,
+    height: 48,
+    alignSelf: 'center',
     marginBottom: spacing.lg,
   },
   input: {

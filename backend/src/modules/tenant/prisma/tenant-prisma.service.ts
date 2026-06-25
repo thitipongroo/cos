@@ -1,27 +1,21 @@
 // TenantPrismaService — ADR-008
-// Request-scoped service. Wraps every Prisma call in:
+// SINGLETON service. Wraps every Prisma call in:
 //   BEGIN; SET LOCAL app.current_tenant_id = '{tenant_id}'; <query>; COMMIT;
 // SET LOCAL reverts on COMMIT/ROLLBACK — safe with PgBouncer transaction mode (QM-18).
-// NEVER use singleton scope — tenant context is per-request.
 //
-// Tenant context is read LAZILY in run(), NOT in the constructor: NestJS instantiates
-// request-scoped providers BEFORE guards run, so at construction time req.user (set by
-// JwtAuthGuard → KeycloakJwtStrategy) is not yet populated. By run() time the handler is
-// executing — auth has completed and req.user is present.
+// Tenant context is read from CLS (AsyncLocalStorage via nestjs-cls), populated by JwtAuthGuard. This
+// replaces the previous Scope.REQUEST + @Inject(REQUEST) design: under @nestjs/platform-fastify the
+// injected REQUEST could be a different instance than the one Passport decorated with req.user, so the
+// tenant context never reached this provider (every authenticated call failed "Tenant context
+// missing"). A singleton reading CLS also removes the request-scope performance/connection-cap cost.
 
-import { Injectable, Scope, Inject, UnauthorizedException } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
+import { Injectable, OnModuleDestroy, UnauthorizedException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import type { AuthenticatedUser } from '../../identity/strategies/keycloak-jwt.strategy';
 import { withRetry } from '@cos/database';
 import { createLogger } from '@cos/logger';
+import { clsTenantId, clsDedicatedDbUrl } from '../../../shared/context/cls-context';
 
 const logger = createLogger('tenant-prisma');
-
-// Minimal request shape — only the authenticated user is needed (avoids an express dependency).
-interface RequestWithUser {
-  user?: AuthenticatedUser;
-}
 
 // UUID validation — prevents injection via app.current_tenant_id
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -32,36 +26,33 @@ function assertSafeTenantId(id: string): void {
   }
 }
 
-@Injectable({ scope: Scope.REQUEST })
-export class TenantPrismaService {
-  // Lazily created per dedicated-DB URL (shared tenants reuse the default DATABASE_URL client).
-  private prisma?: PrismaClient;
+@Injectable()
+export class TenantPrismaService implements OnModuleDestroy {
+  // One PrismaClient per datasource URL (shared tenants reuse the APP_DATABASE_URL client; enterprise
+  // dedicated DBs get their own). Cached on the singleton, so keyed by URL rather than per-request.
+  private readonly clients = new Map<string, PrismaClient>();
 
-  constructor(@Inject(REQUEST) private readonly request: RequestWithUser) {}
-
-  // Resolve tenant context from the authenticated user (available at handler time).
   private resolveContext(): { tenantId: string; dedicatedDbUrl?: string } {
-    const user = this.request.user;
-    const id = user?.tenant_id;
-    if (!id) {
+    const tenantId = clsTenantId();
+    if (!tenantId) {
       throw new UnauthorizedException('Tenant context missing from request');
     }
-    assertSafeTenantId(id);
-    return { tenantId: id, dedicatedDbUrl: user?.dedicatedDbUrl };
+    assertSafeTenantId(tenantId);
+    return { tenantId, dedicatedDbUrl: clsDedicatedDbUrl() };
   }
 
   private getClient(dedicatedDbUrl?: string): PrismaClient {
-    if (!this.prisma) {
-      // Tenant-scoped queries connect as the non-superuser app role (APP_DATABASE_URL) so
-      // PostgreSQL RLS is actually enforced. Platform/cross-tenant services keep their own
-      // privileged connection (DATABASE_URL). Falls back to DATABASE_URL if APP_DATABASE_URL
-      // is unset. Enterprise dedicated DBs pass dedicatedDbUrl (already an app-role URL).
-      const sharedUrl = process.env['APP_DATABASE_URL'] ?? process.env['DATABASE_URL'];
-      this.prisma = new PrismaClient({
-        datasources: { db: { url: dedicatedDbUrl ?? sharedUrl } },
-      });
+    // Tenant-scoped queries connect as the non-superuser app role (APP_DATABASE_URL) so PostgreSQL RLS
+    // is enforced. Falls back to DATABASE_URL if APP_DATABASE_URL is unset. Enterprise dedicated DBs
+    // pass dedicatedDbUrl (already an app-role URL).
+    const sharedUrl = process.env['APP_DATABASE_URL'] ?? process.env['DATABASE_URL'];
+    const url = dedicatedDbUrl ?? sharedUrl ?? '';
+    let client = this.clients.get(url);
+    if (!client) {
+      client = new PrismaClient({ datasources: { db: { url } } });
+      this.clients.set(url, client);
     }
-    return this.prisma;
+    return client;
   }
 
   /**
@@ -88,6 +79,6 @@ export class TenantPrismaService {
   }
 
   async onModuleDestroy(): Promise<void> {
-    await this.prisma?.$disconnect();
+    await Promise.all([...this.clients.values()].map((c) => c.$disconnect()));
   }
 }

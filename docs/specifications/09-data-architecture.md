@@ -195,7 +195,8 @@ Writes go to DB first (Path 1). Path 2 operates as a separate CDC stream.
 
 ### Dashboard Access
 
-- Role-based dashboard views: each role (defined in 06-rbac-permission-matrix section 6.2) sees only the modules and metrics relevant to their function
+- Role-based dashboard views: each role (defined in 06-rbac-permission-matrix section 6.2) sees only the modules and
+  metrics relevant to their function
 - No external BI tool in MVP — dashboards are built directly in the Next.js frontend, querying the Analytics Service
 - Post-MVP: evaluate embedded BI (e.g., Apache Superset self-hosted) for custom report builder capability
 
@@ -327,14 +328,21 @@ Every migration file committed to `backend/prisma/migrations/` **must** have a c
 rollback script committed in the **same PR** at:
 
 ```text
-backend/prisma/migrations/rollbacks/<migration-timestamp-and-name>.rollback.sql
+backend/prisma/rollbacks/<migration-timestamp-and-name>.rollback.sql
 ```
 
 Naming convention — mirror the migration directory name exactly:
 
 | Migration file path | Rollback file path |
 | --- | --- |
-| `migrations/<timestamp>_<name>/migration.sql` | `migrations/rollbacks/<timestamp>_<name>.rollback.sql` |
+| `migrations/<timestamp>_<name>/migration.sql` | `rollbacks/<timestamp>_<name>.rollback.sql` |
+
+`<name>` **must** be `<action>_<subject>` describing the change (e.g. `add_phone_number_to_users`,
+`workforce_service`). **Do NOT prefix with `phaseN_`** (build-phase numbers like `phase22_`) — phase
+numbers are work-tracking metadata, not part of the schema's identity, and they made the migration
+history harder to read. The directory name is also the value stored in `_prisma_migrations.migration_name`,
+so renaming an already-applied migration requires a matching `UPDATE` on every environment — pick the
+final name up front.
 
 **Rollback script requirements:**
 
@@ -388,4 +396,7 @@ Row-Level Security migrations have additional requirements:
 | [pgvector]    | pgvector: Vector Similarity Search for Postgres                    | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)                     |
 | [MinIO]       | MinIO Object Storage Documentation                                 | [min.io/docs/minio/linux/index.html](https://min.io/docs/minio/linux/index.html)         |
 
-> 📎 See also: [04-tech-stack](04-tech-stack.md) · [10-construction-ontology](10-construction-ontology.md) · [11-database-schema](11-database-schema.md) · [15-event-driven-workflow](15-event-driven-workflow.md)
+> 📎 See also: [04-tech-stack](04-tech-stack.md)
+> · [10-construction-ontology](10-construction-ontology.md)
+> · [11-database-schema](11-database-schema.md)
+> · [15-event-driven-workflow](15-event-driven-workflow.md)

@@ -560,7 +560,52 @@
       "requiredActions": [],
       "realmRoles": ["default-roles-construction-os"],
       "notBefore": 0,
-      "groups": []
+      "groups": [],
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users"]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000021",
+      "username": "+66800000001",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Somchai",
+      "lastName": "Jaidee",
+      "attributes": {
+        "tenant_id": ["00000000-0000-4000-8000-000000000001"],
+        "role": ["SITE_WORKER"],
+        "user_id": ["00000000-0000-4000-8000-000000000011"]
+      },
+      "realmRoles": ["default-roles-construction-os"]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000022",
+      "username": "+66800000002",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Pranee",
+      "lastName": "Suksai",
+      "attributes": {
+        "tenant_id": ["00000000-0000-4000-8000-000000000001"],
+        "role": ["SITE_ENGINEER"],
+        "user_id": ["00000000-0000-4000-8000-000000000012"]
+      },
+      "realmRoles": ["default-roles-construction-os"]
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000023",
+      "username": "+66800000003",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Anan",
+      "lastName": "Thongdee",
+      "attributes": {
+        "tenant_id": ["00000000-0000-4000-8000-000000000001"],
+        "role": ["SITE_WORKER"],
+        "user_id": ["00000000-0000-4000-8000-000000000013"]
+      },
+      "realmRoles": ["default-roles-construction-os"]
     }
   ],
   "scopeMappings": [
@@ -822,6 +867,16 @@
             "access.token.claim": "true",
             "claim.name": "clientAddress",
             "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "cos-backend-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "cos-backend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
           }
         }
       ],
