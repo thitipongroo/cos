@@ -76,7 +76,7 @@ Expected response:
 { "message": "Dedicated DB assigned" }
 ```
 
-From this point, all new requests for the tenant are routed to the dedicated instance via `TenantMiddleware` → `TenantPrismaService`. Non-HTTP paths (Temporal activities, Kafka consumers) resolve the URL via `getDbUrlForTenant()`.
+From this point, all new requests for the tenant are routed to the dedicated instance: `KeycloakJwtStrategy.validate()` resolves the tenant's `dedicated_db_url`, `JwtAuthGuard` publishes it into CLS, and `TenantPrismaService` connects there (see ADR-031 — there is no pre-auth `TenantMiddleware`; it is retained only as a type holder). Non-HTTP paths (Temporal activities, Kafka consumers) resolve the URL via `getDbUrlForTenant()`.
 
 ---
 

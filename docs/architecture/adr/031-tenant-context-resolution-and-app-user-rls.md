@@ -1,7 +1,7 @@
 # ADR-031: Tenant context resolution after auth + dedicated `app_user` role for RLS enforcement
 
 **Date:** 2026-06-23
-**Status:** Accepted
+**Status:** Accepted (amended 2026-06-26 — see [Update](#update-2026-06-26--cls-propagation-under-fastify-tenantprismaservice-is-a-singleton))
 **Deciders:** Product owner / engineering lead
 **Tags:** architecture | security | data
 
@@ -39,9 +39,11 @@ auth** and **connect as a non-owner role so RLS applies**.
      `AuthenticatedUser` (→ `req.user`).
    - A global `TenantContextInterceptor` projects `req.user.*` onto
      `req.{tenantId, userId, userRole, tenantCode, dedicatedDbUrl}` before the handler.
+     *(Unreliable under the Fastify adapter — see Update 2026-06-26.)*
    - `TenantPrismaService` (request-scoped) reads the context **lazily in `run()`** (request-
      scoped providers are constructed before guards run, so it cannot read it in the
      constructor) and wraps each call in a transaction with `SET LOCAL app.current_tenant_id`.
+     *(Now a singleton reading CLS — see Update 2026-06-26.)*
    - `TenantMiddleware` is no longer registered (kept only for the `TenantRequest` type + its
      unit tests).
 
@@ -100,6 +102,39 @@ auth** and **connect as a non-owner role so RLS applies**.
   (defence-in-depth; the app always sets the GUC via `TenantPrismaService.run`). The phase16
   RLS migration was also made idempotent (added the missing `DROP POLICY IF EXISTS` for the
   `rls_audit_select` / `rls_audit_insert` policies so re-applies don't fail).
+
+## Update (2026-06-26) — CLS propagation under Fastify; `TenantPrismaService` is a singleton
+
+Bringing the request pipeline up on `@nestjs/platform-fastify` surfaced a second ordering problem
+beyond the original middleware-before-guards one. **Fastify clones the request object** between the
+guard and the downstream pipeline, so the `req.user` that Passport assigns in `JwtAuthGuard` — and the
+`req.*` fields the `TenantContextInterceptor` projects from it — did **not** reach interceptors or
+request-scoped providers. Every authenticated tenant-scoped call still failed with
+"Tenant context missing from request", even though auth itself succeeded.
+
+**Resolution — carry the context in CLS (AsyncLocalStorage), not on the request object:**
+
+- Added `nestjs-cls`. `ClsModule.forRoot({ global: true, middleware: { mount: true, useEnterWith: true } })`
+  opens a CLS context per request. `useEnterWith: true` is **required** under Fastify, whose middleware
+  does not await the remainder of the request inside the `cls.run()` callback.
+- `JwtAuthGuard.handleRequest()` publishes `tenant_id, user_id, role, tenantCode, dedicatedDbUrl` into
+  CLS — the one place that sees the validated user reliably under Fastify (it receives the user as a
+  direct argument). Helpers in `shared/context/cls-context.ts` (`clsTenantId()`, `clsUserId()`,
+  `clsDedicatedDbUrl()`) read it back, guarded by `cls.isActive()`.
+- **`TenantPrismaService` is now a singleton** (was `Scope.REQUEST`). It reads the tenant context from
+  CLS in `run()` and caches one `PrismaClient` per datasource URL. This also removes the
+  per-request provider-instantiation and connection-cap cost.
+- `TenantContextInterceptor` is retained as a secondary path (it still projects `req.user.*` onto
+  `req.*` for non-Fastify code paths / handlers that read `req`); handlers that need a value fall back
+  to CLS, e.g. `WorkerController.getMyWorker` uses `req.userId ?? clsUserId()`.
+- **Security fix found in passing:** the `sync` and `workforce` controllers had no `@UseGuards(JwtAuthGuard)`
+  and were reachable unauthenticated; the guard was added (which is also what populates CLS for them).
+
+What did **not** change: the `app_user` / `cos` split (Decision §2), the single PERMISSIVE
+`rls_tenant_isolation` policy (Decision §3), and the `SET LOCAL app.current_tenant_id` mechanism — only
+*how* the resolved context travels from the guard to `TenantPrismaService` (CLS instead of the cloned
+request). Coverage: `tenant-prisma.service`, `jwt-auth.guard`, `cls-context`, and the touched
+controllers are at 100% line/branch.
 
 ## References
 

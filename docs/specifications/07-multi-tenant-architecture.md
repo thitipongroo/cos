@@ -84,13 +84,21 @@ happens after auth (see ADR-031):
 1. `KeycloakJwtStrategy.validate()` rejects tokens missing `tenant_id`/`role`, queries
    `platform.tenants` for `tenant_code` and `dedicated_db_url`, verifies the tenant is
    active, and attaches them to `req.user` (`AuthenticatedUser`).
-2. `TenantContextInterceptor` (global) projects `req.user.{tenant_id, user_id, role,
-   tenantCode, dedicatedDbUrl}` onto `req.{tenantId, userId, userRole, tenantCode,
-   dedicatedDbUrl}` before the route handler runs.
-3. `TenantPrismaService` (request-scoped) reads that context lazily in `run()` and connects
+2. `JwtAuthGuard.handleRequest()` publishes the authenticated context
+   (`tenant_id, user_id, role, tenantCode, dedicatedDbUrl`) into CLS (AsyncLocalStorage via
+   `nestjs-cls`). This is the **reliable** channel: under `@nestjs/platform-fastify` the request is
+   cloned, so Passport's `req.user` does not survive into downstream guards / interceptors /
+   providers. `ClsModule.forRoot({ global: true, middleware: { mount: true, useEnterWith: true } })`
+   opens the context for every request (`useEnterWith: true` is required under Fastify, whose
+   middleware does not await the rest of the request inside `cls.run()`). The global
+   `TenantContextInterceptor` still projects `req.user.*` onto `req.{tenantId, userId, userRole,
+   tenantCode, dedicatedDbUrl}` as a secondary path for code that reads `req` directly (handlers fall
+   back to CLS, e.g. `req.userId ?? clsUserId()`).
+3. `TenantPrismaService` (a **singleton**) reads that context from CLS in `run()` and connects
    as the non-superuser **`app_user`** role (`APP_DATABASE_URL`, or `dedicatedDbUrl` for
    Enterprise) so RLS is actually enforced; each call is wrapped in a transaction that runs
-   `SET LOCAL app.current_tenant_id`.
+   `SET LOCAL app.current_tenant_id`. It caches one `PrismaClient` per datasource URL. (It was
+   originally request-scoped + read `req.user`; that broke under Fastify's request cloning)
 4. All domain queries in that request use the resolved DB URL + role.
 
 `platform.*` tables and cross-tenant/admin operations are always accessed via the privileged
