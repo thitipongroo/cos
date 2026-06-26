@@ -327,7 +327,7 @@ Do NOT reassign runtimes. Do NOT combine runtimes within a service.
 Infrastructure stack (all required — versions authoritative in spec §4.3 Databases + §4.4 Infrastructure; mirrored here):
 
 - PostgreSQL 16          — primary relational store
-- TimescaleDB 2.x        — time-series telemetry (equipment, IoT, workforce)
+- TimescaleDB 2.x        — time-series telemetry (equipment, IoT, workforce); PostgreSQL extension, co-located on primary instance, split on volume trigger (ADR-032)
 - Redis 7                — cache and session store
 - Apache Kafka 3.x       — event streaming
 - OpenSearch 2.x         — full-text and vector search
@@ -3748,14 +3748,16 @@ CI/CD Pipeline (ArgoCD GitOps):
     Steps:
       1. lint (ESLint, Prettier)
       2. type-check (tsc --noEmit)
-      3. unit-tests (all services in parallel)
-      4. build Docker images (parallel per service)
-      5. Trivy security scan (per image)
-      6. push to ECR (on main/staging/production branch only)
-      7. update image tag in GitOps repo (commit new tag → triggers ArgoCD sync)
-      8. smoke tests + E2E tests (post-deploy, staging only — ArgoCD PostSync wave 1: smoke
+      3. build (turbo run build — all packages/services; runs on EVERY PR; tsc --noEmit is
+         NOT a build, so this gate catches nest/next build + emit failures pre-merge; ADR-033)
+      4. unit-tests (all services in parallel)
+      5. build Docker images (parallel per service; main/staging branches only)
+      6. Trivy security scan (per image)
+      7. push to ECR (on main/staging/production branch only)
+      8. update image tag in GitOps repo (commit new tag → triggers ArgoCD sync)
+      9. smoke tests + E2E tests (post-deploy, staging only — ArgoCD PostSync wave 1: smoke
          health/auth/core-read < 30s; Playwright wave 2: critical user journeys)
-      9. load tests (weekly scheduled, staging only — k6; spec §30.9; NOT per-deploy)
+      10. load tests (weekly scheduled, staging only — k6; spec §30.9; NOT per-deploy)
 
   ArgoCD — CD (GitOps, self-healing):
     - Monitors GitOps repo for image tag changes
@@ -4605,7 +4607,9 @@ Divergence:   { entityId, plannedState, actualState, gap: number,
                 severity: ENUM(LOW, MEDIUM, HIGH) }
 
 Infrastructure:
-  Storage:   TimescaleDB (time-series twin states — same instance as Phase 21/22)
+  Storage:   TimescaleDB (time-series twin states — co-located on primary PostgreSQL
+             instance through Stages 1–3, split to dedicated instance only on volume
+             trigger; same instance as Phase 21/22; see ADR-032)
   Graph:     Neo4j (twin entity relationships — same instance as Phase 13)
   Streaming: Kafka topic: twin.state.updated (consumers: AI Gateway, Analytics)
   Cache:     Redis (current twin state per project — TTL 5 min)

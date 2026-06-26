@@ -170,8 +170,9 @@ Tools :
 
 Pipeline :
 
-- PR opened → GitHub Actions → unit tests + lint + type check + Docker build
-- Merge to main → image tagged and pushed to ECR → ArgoCD detects and syncs to staging
+- PR opened → GitHub Actions → lint + type check + **build (`turbo run build`)** + unit/integration/isolation/contract
+  tests + dependency audit (build gate runs on every PR — `tsc --noEmit` is not a build)
+- Merge to main → Docker images built and pushed to ECR → ArgoCD detects and syncs to staging
 - Promotion to production → manual approval gate in ArgoCD UI
 - Rollback → ArgoCD GitOps revert (previous image tag)
 

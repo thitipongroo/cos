@@ -713,7 +713,9 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Emit a Kafka event for every workflow state transition — all transitions in RFQ and PO state machines must produce a typed event via `@cos/shared` (master §9; spec §32.6)
 - Concrete guards in `backend/src/shared/guards/` — `@cos/rbac` for decorators/metadata keys only (spec §06 §6.9)
 - Use **EMQX** self-hosted on EKS as IoT MQTT broker (Phase 21+); pipeline: IoT device → EMQX →
-  Kafka (MSK) → TimescaleDB; RESOLVED (source: spec §13.5, `33-digital-twin-iot`)
+  Kafka (MSK) → TimescaleDB; RESOLVED (source: spec §13.5, `33-digital-twin-iot`).
+  TimescaleDB is a PostgreSQL extension co-located on the primary instance through
+  Stages 1–3, split to a dedicated instance only on the volume trigger in ADR-032
 - Use **scikit-learn + XGBoost** for all Phase 23 ML models (DelayForecastModel, SafetyVisionModel,
   GraphMLModel, RiskClassifier); RESOLVED (source: spec §22-ai-architecture §22.6)
 - Use **W&B Cloud** (`wandb.ai`) for MLOps experiment monitoring (Phase 23+); API key in AWS SM;
@@ -777,6 +779,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - **Define design tokens without wiring the React Native app (mobile)** — same pitfall, different mechanism: RN has no CSS vars, so the §32.7 `--mobile-*` tokens must be a typed module (`apps/mobile/src/theme/tokens.ts`), the brand font loaded via `expo-font` + `@expo-google-fonts/inter-tight` (`useFonts` in `app/_layout.tsx`), and components must reference the theme (never hardcode hex/`fontWeight`). The app also needs an Expo config (`app.json` with `expo-router` + `expo-font` plugins, `main: 'expo-router/entry'`) or it never boots (spec §32.7 → Mobile Implementation)
 - **Expect WatermelonDB to run in Expo Go** — it ships native JSI, so it needs a **custom dev-client** (`expo run:ios/android` or EAS), the SDK-version-matched config plugin (`@skam22/watermelondb-expo-plugin@^51` for SDK 51), `expo-build-properties` (Android kotlin 1.8.10/compileSdk 33; iOS `simdjson` pod), the legacy decorators babel plugin (`@field` models), and `@nozbe/simdjson@3.9.4` as a **direct dep** so pnpm exposes `node_modules/@nozbe/simdjson` for the pod path (spec §17.8)
 - **Simulate offline in Detox via `device.setStatusBar`/NetInfo jest mock** — neither works: Detox has no connectivity API (setStatusBar is cosmetic) and the NetInfo jest mock is unit-only (Detox runs the real binary). Use an app-level hook gated by `EXPO_PUBLIC_E2E=1` (deep link `cos://e2e/network` → `useNetworkStatus`); and there is **no boolean `element().isVisible()`** — use `await waitFor(el).toBeVisible().withTimeout()` (spec §30.7)
+- **Call `useSearchParams()` / `usePathname()` / `useRouter()` (or any CSR-bailout hook) without a `<Suspense>` boundary in a Next.js App Router page** — these hooks opt the subtree into client-side rendering, and `next build` fails the static export of the route with `missing-suspense-with-csr-bailout` ("Error occurred prerendering page"). `tsc --noEmit` (the `type-check` gate) does NOT catch this — only the `build` gate does (ADR-033). Isolate the hook in a child component and wrap it: `export default function Page(){ return <Suspense fallback={…}><Inner/></Suspense> }`. Example fix: `apps/web/src/app/login/page.tsx` (spec §32.7 → Web Implementation)
 - Implement BigQuery or Snowflake — analytics uses ClickHouse only
 - Implement LangGraph in Phase 11–12 — Phase 12 uses plain Python sequential pipeline; LangGraph
   deferred to LAYER-C-001 decision for Layer C autonomous AI (source: spec §22-ai-architecture §22.3)
@@ -905,6 +908,8 @@ docs/architecture/adr/                              — Architecture Decision Re
 docs/architecture/adr/000-template.md              — ADR template
 docs/architecture/adr/008-shared-db-tenant-id-rls.md               — Shared DB + tenant_id + PostgreSQL RLS standard (current, Phase 2 revision)
 docs/architecture/adr/015-database-retry-helpers.md               — Database retry helper pattern for Prisma transient errors (Phase 1)
+docs/architecture/adr/032-timescaledb-colocated-then-split.md     — TimescaleDB co-located on primary PostgreSQL; split to dedicated instance on volume trigger (Phase 1 decision)
+docs/architecture/adr/033-ci-build-gate.md                        — CI `build` (turbo run build) gate runs on every PR; tsc --noEmit is not a build (Phase 1 decision)
 
 # SLO & Reliability
 docs/slo/dashboard-registry.md                      — Grafana dashboard IDs per SLO (Phase 15)

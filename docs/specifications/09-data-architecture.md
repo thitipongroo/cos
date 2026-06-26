@@ -122,6 +122,10 @@ AI Data :
 | Vector embeddings       | pgvector (MVP) → Weaviate (at scale) |
 | Streaming events        | Kafka                                |
 
+> **TimescaleDB deployment posture:** TimescaleDB is a PostgreSQL extension (see `04-tech-stack` §4.3), so time-series
+> telemetry is **co-located on the primary PostgreSQL instance** through Stages 1–3, then split to a dedicated TimescaleDB
+> instance only when a measured volume trigger is crossed.
+
 ---
 
 ## 9.4 Data Flow

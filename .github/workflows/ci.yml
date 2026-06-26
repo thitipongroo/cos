@@ -49,6 +49,33 @@ jobs:
         run: pnpm exec prisma generate
       - run: pnpm run type-check
 
+  # ─── Step 2b: Build (turbo run build) ───────────────────────────────────────
+  # Runs on EVERY PR (and main/staging). type-check is `tsc --noEmit` — it does NOT
+  # emit artifacts or exercise the real build toolchain (nest build, next build,
+  # tsconfig.build.json emit, @cos/shared copy:avro). This gate catches build/emit
+  # failures on the PR instead of after merge in build-docker (see ADR-033).
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      # pnpm-lock.yaml is committed — use --frozen-lockfile to enforce reproducible installs (Rule 29)
+      - run: pnpm install --frozen-lockfile
+      # Prisma client must be generated before build — backend re-exports generated types
+      - name: Generate Prisma client
+        working-directory: backend
+        run: pnpm exec prisma generate
+      # Turborepo remote cache via GitHub Actions — same mechanism as build-docker
+      - name: Build all packages and services
+        run: pnpm run build
+        env:
+          TURBO_CACHE: 'remote:rw'
+
   # ─── Step 3: Unit Tests + Coverage Enforcement ─────────────────────────────
   # Decision 2/7 (2026-05-31): jest.config created in Phase 1; coverage enforced
   # from Phase 1 onwards per QM-1 (spec §30.3): 100% lines / 100% branches.
@@ -176,7 +203,7 @@ jobs:
   build-docker:
     name: Build Docker — ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: [lint, type-check, unit-tests, integration-tests, isolation-tests, contract-tests]
+    needs: [lint, type-check, build, unit-tests, integration-tests, isolation-tests, contract-tests]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
       matrix:

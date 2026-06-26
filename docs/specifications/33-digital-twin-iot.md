@@ -371,6 +371,8 @@ queries TimescaleDB directly.
 ### Infrastructure Scaling Notes
 
 - Redis TTL: 5 minutes per project (invalidated on state write) — defined in `docs/api/digital-twin.openapi.yaml`
+- TimescaleDB deployment: co-located on the primary PostgreSQL instance (extension), split to a dedicated instance only
+  on the volume trigger
 - TimescaleDB chunk interval: set based on IoT write frequency profiling at Phase 24 planning gate — not pre-specified
 - IoT message throughput: sized at Phase 24 planning gate based on device count and sensor sampling rate — not pre-specified
 - BIM file upload: async — files stored in object storage, ingestion triggered via Kafka event

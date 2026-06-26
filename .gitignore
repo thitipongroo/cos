@@ -9,6 +9,13 @@ build
 out
 coverage
 
+# next-pwa generated service worker (build artifacts emitted to apps/web/public; hash varies per build)
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/workbox-*.js
+apps/web/public/workbox-*.js.map
+apps/web/public/fallback-*.js
+
 # Environment
 .env
 .env.local

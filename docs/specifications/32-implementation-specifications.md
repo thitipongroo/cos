@@ -110,13 +110,13 @@ All domain services depend on the shared event SDK output from Phase 8.
 
 ### SaaS Maturity Model — Phase to Stage Mapping
 
-| Stage   | Name                     | Phases                                                                                                      |
-| ------- | ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Stage 1 | Multi-tenant MVP         | Phase 1–2 (Foundation + Auth)                                                                               |
-| Stage 2 | Multi-project SaaS       | Phase 3–7 (Core Domains)                                                                                    |
-| Stage 3 | Multi-company Enterprise | Phase 8–14, 25 (Events + AI + Analytics + Enterprise Provisioning)                                          |
+| Stage   | Name                     | Phases                                                                                                                                                 |
+| ------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Stage 1 | Multi-tenant MVP         | Phase 1–2 (Foundation + Auth)                                                                                                                          |
+| Stage 2 | Multi-project SaaS       | Phase 3–7 (Core Domains)                                                                                                                               |
+| Stage 3 | Multi-company Enterprise | Phase 8–14, 25 (Events + AI + Analytics + Enterprise Provisioning)                                                                                     |
 | Stage 4 | Cross-region Deployment  | Phase 17 + multi-region Terraform module (active-passive, primary ap-southeast-7 Bangkok, DR ap-southeast-1 — GLOB-001 §8.8; Route 53 latency routing) |
-| Stage 5 | AI-native Ecosystem      | Phase 23–24 (MLOps + Digital Twin)                                                                          |
+| Stage 5 | AI-native Ecosystem      | Phase 23–24 (MLOps + Digital Twin)                                                                                                                     |
 
 > **Phase 24 — Digital Twin:** Phase 24 corresponds to the Digital Twin / IoT capability in
 > 28-ecosystem-expansion section 28.2 Phase 5 (Smart Infrastructure Layer). The full Phase 24
@@ -372,7 +372,8 @@ class EmbeddingProvider(ABC):
 | `LLMProvider`       | `OpenAILangChainProvider` | OpenAI GPT-4o                 | `langchain-openai>=0.2` — default model: `gpt-4o`, cost fallback: `gpt-4o-mini` |
 | `EmbeddingProvider` | `OpenAIEmbeddingProvider` | OpenAI text-embedding-3-small | `langchain-openai>=0.2` — model: `text-embedding-3-small`, 1536 dimensions      |
 
-> **Rule:** If a new LLM or embedding provider is evaluated, it must implement the abstract class above — never swap the implementation by monkey-patching the resolved class.
+> **Rule:** If a new LLM or embedding provider is evaluated, it must implement the abstract class above — never swap the
+> implementation by monkey-patching the resolved class.
 
 ---
 
@@ -416,28 +417,28 @@ compatibility) before first producer deployment.
 
 ### Event Payload Specifications
 
-| #   | Event Type                               | Key Payload Fields                                                                                                                                                                                                                                                                         |
-| --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 1   | `construction.project.created.v1`        | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by`                                                                    |
-| 2   | `construction.boq.version_created.v1`    | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by`                                                                                                                                                                                  |
-| 3   | `procurement.po.created.v1`              | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)}                                                                                               |
-| 4   | `procurement.invoice.received.v1`        | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date`                                                                                                                                                                             |
-| 5   | `site.report.created.v1`                 | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count`                                                                                                                                                                         |
-| 6   | `site.inspection.failed.v1`              | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at`                                                                                                                                                                     |
-| 7   | `construction.task.completed.v1`         | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days`                                                                                                                                                     |
-| 8   | `construction.delay.detected.v1`         | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+) |
-| 9   | `workforce.checkin.created.v1`           | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable)                                                                                                                                                     |
-| 10  | `site.material.consumed.v1`              | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at`                                                                                                                                                                  |
-| 11  | `procurement.delivery.received.v1`       | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean                                                                                                                        |
-| 12  | `finance.budget.exceeded.v1`             | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at`                                                                                                                            |
-| 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                            |
-| 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE)                                                                                                                  |
-| 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                           |
-| 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                            |
-| 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                          |
-| 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                              |
-| 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                               |
-| 20  | `construction.boq.updated.v1`            | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217)                                   |
+| # | Event Type | Key Payload Fields |
+| --- | --- | --- |
+| 1 | `construction.project.created.v1` | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by` |
+| 2 | `construction.boq.version_created.v1` | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by` |
+| 3 | `procurement.po.created.v1` | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)} |
+| 4 | `procurement.invoice.received.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date` |
+| 5 | `site.report.created.v1` | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count` |
+| 6 | `site.inspection.failed.v1` | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at` |
+| 7 | `construction.task.completed.v1` | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days` |
+| 8 | `construction.delay.detected.v1` | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+) |
+| 9 | `workforce.checkin.created.v1` | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable) |
+| 10 | `site.material.consumed.v1` | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at` |
+| 11 | `procurement.delivery.received.v1` | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean |
+| 12 | `finance.budget.exceeded.v1` | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at` |
+| 13 | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due` |
+| 14 | `finance.cashflow_risk.detected.v1` | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE) |
+| 15 | `ai.risk_prediction.generated.v1` | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version` |
+| 16 | `finance.budget.variance_detected.v1` | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at` |
+| 17 | `file.document.uploaded.v1` | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type` |
+| 18 | `file.document.quarantined.v1` | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown) |
+| 19 | `construction.boq.created.v1` | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project |
+| 20 | `construction.boq.updated.v1` | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217) |
 
 ### Schema Registry Rules
 
@@ -459,10 +460,13 @@ Non-canonical schemas MUST be migrated before Phase 8 (Multi-company Enterprise 
 
 **Rules:**
 
-1. All new event producers MUST use canonical schema files (`.v1.avsc`) only — never create new schemas under the legacy naming pattern.
+1. All new event producers MUST use canonical schema files (`.v1.avsc`) only — never create new schemas under the legacy
+   naming pattern.
 2. Existing consumers of non-canonical schemas must migrate to canonical equivalents before Phase 8.
-3. A non-canonical file is removed only after all consumers have migrated to the canonical replacement and migration is verified.
-4. To add a canonical event: (1) add entry to §32.4 Event Payload Specifications, (2) create `.v1.avsc` file, (3) migrate consumers, (4) delete legacy file.
+3. A non-canonical file is removed only after all consumers have migrated to the canonical replacement and migration is
+   verified.
+4. To add a canonical event: (1) add entry to §32.4 Event Payload Specifications, (2) create `.v1.avsc` file,
+   (3) migrate consumers, (4) delete legacy file.
 
 #### Required Canonical Names — Pending Spec Addition
 
@@ -731,8 +735,23 @@ Notes:
 - **Spacing:** do not override Tailwind's scale — its default 4px base already equals the
   `--web-space-*` tokens (`p-4`=16px, `p-6`=24px, …).
 - **Radius:** `rounded`=4px (sm), `rounded-md`=8px, `rounded-lg`=12px, `rounded-xl`=16px (mapped to `--web-radius-*`).
-- **Font:** brand font is `@fontsource/inter-tight` (weights 400/500/600/700); fallback `Inter, -apple-system, system-ui, sans-serif`.
-- **Verification:** a build must emit non-empty utility CSS (compiling `globals.css` yields > 0 bytes) — an empty result means the pipeline is not wired.
+- **Font:** brand font is `@fontsource/inter-tight` (weights 400/500/600/700); fallback `Inter, -apple-system, system-ui,
+  sans-serif`.
+- **Verification:** a build must emit non-empty utility CSS (compiling `globals.css` yields > 0 bytes) — an empty result
+  means the pipeline is not wired.
+
+### Web Implementation — App Router build constraints (Next.js)
+
+These constraints are enforced by the CI `build` gate (`turbo run build`), not by `type-check`
+(`tsc --noEmit` does not run `next build`) — see `30-testing-strategy` §30.12.
+
+- **CSR-bailout hooks require a `<Suspense>` boundary.** `useSearchParams()`, `usePathname()`, and `useRouter()` opt
+  the subtree into client-side rendering; without an enclosing `<Suspense>`, `next build` fails the route's static
+  export with `missing-suspense-with-csr-bailout` ("Error occurred prerendering page"). Isolate the hook in a child
+  component and wrap it: `export default function Page() { return <Suspense fallback={…}><Inner /></Suspense>; }`.
+- **next-pwa output is a build artifact, never committed.** With `next-pwa` (`dest: 'public'`), the production build
+  emits `apps/web/public/sw.js`, `workbox-*.js` (hash varies per build), and optionally `sw.js.map` / `fallback-*.js`.
+  These are git-ignored (`.gitignore`) — regenerated on every build; committing them produces churn and stale service workers.
 
 #### Mobile Spacing
 
@@ -811,10 +830,12 @@ implementation in the same PR.
 
 When OTP verification succeeds, before creating the COS user record:
 
-1. Call `POST /admin/realms/{realm}/users` with `username=phone`, `enabled=true`, custom attributes `tenant_id`, `user_id`, `role`
+1. Call `POST /admin/realms/{realm}/users` with `username=phone`, `enabled=true`, custom attributes `tenant_id`,
+   `user_id`, `role`
 2. Retrieve Keycloak UUID from `Location` response header
 3. Call `PUT /admin/realms/{realm}/users/{id}/reset-password` — set ephemeral one-time credential (`temporary: true`)
-4. Call Keycloak Direct Grant: `POST /realms/{realm}/protocol/openid-connect/token` with `grant_type=password`, username=phone, password=ephemeralCredential — returns RS256 access token + refresh token
+4. Call Keycloak Direct Grant: `POST /realms/{realm}/protocol/openid-connect/token` with `grant_type=password`,
+   username=phone, password=ephemeralCredential — returns RS256 access token + refresh token
 5. Create `platform.users` record with `keycloak_user_id` = Keycloak UUID
 6. Create `platform.tenant_memberships` record; emit `identity.user.created.v1`
 
@@ -822,7 +843,8 @@ When OTP verification succeeds, before creating the COS user record:
 
 When a Tenant Admin creates a Path B user:
 
-1. Call `POST /admin/realms/{realm}/users` with `username=email`, `email`, `enabled=true`, custom attributes `tenant_id`, `user_id`, `role`
+1. Call `POST /admin/realms/{realm}/users` with `username=email`, `email`, `enabled=true`, custom attributes `tenant_id`,
+   `user_id`, `role`
 2. Retrieve Keycloak UUID from `Location` response header
 3. Set user attributes: `tenant_id`, `user_id`, `role` (see `05-security-compliance` §5.4.2)
 4. Create `platform.users` record with `keycloak_user_id` = Keycloak UUID
@@ -837,7 +859,8 @@ When a Tenant Admin creates a Path B user:
   - `getDirectGrantToken(phone, ephemeralCredential, realm): Promise<KeycloakTokenResponse>` — Path A token exchange
   - `deleteUser(userId, realm): Promise<void>` — rollback on downstream failure
 - `directAccessGrantsEnabled: true` on `cos-backend` Keycloak client (required for Direct Grant)
-- Keycloak Admin credentials: client `cos-backend` with `realm-management` role — inject via `KEYCLOAK_ADMIN_CLIENT_SECRET` env var (AWS Secrets Manager / Vault — see `05-security-compliance` §5.2; never hardcode)
+- Keycloak Admin credentials: client `cos-backend` with `realm-management` role — inject via `KEYCLOAK_ADMIN_CLIENT_SECRET`
+  env var (AWS Secrets Manager / Vault — see `05-security-compliance` §5.2; never hardcode)
 
 ### Phase 6 — Site Operations
 
@@ -882,7 +905,7 @@ Rationale: reaching a non-critical-path stub in production means either a miscon
 tenant was granted access to a feature before it was activated. Failing fast makes the problem
 immediately visible.
 
-#### Type B — Critical-path integrations where the service must remain operational without the integration (IoT, specified per phase)
+#### Type B — Critical-path integrations where the service must remain operational without the integration (IoT)
 
 The stub **must**:
 
@@ -989,4 +1012,12 @@ at two mandatory gates:
 | [W3C-DesignTokens] | W3C Design Tokens Community Group Report                           | [tr.designtokens.org/format](https://tr.designtokens.org/format/)                                                           |
 | [IEEE-754]         | IEEE Standard for Floating-Point Arithmetic                        | IEEE Std 754-2019                                                                                                           |
 
-> 📎 See also: [03-system-design](03-system-design.md) — service decomposition and architecture overview · [09-data-architecture](09-data-architecture.md) — data domains and storage strategy · [11-database-schema](11-database-schema.md) — core entity schemas · [14-api-architecture](14-api-architecture.md) — API contracts and endpoint patterns · [15-event-driven-workflow](15-event-driven-workflow.md) — event bus and workflow architecture · [20-ux-flow](20-ux-flow.md) — role-based UX flows · [21-mvp-scope](21-mvp-scope.md) — MVP modules and phase scope · [30-testing-strategy](30-testing-strategy.md) — test strategy for event contracts, state machines, and financial precision rules defined here
+> 📎 See also: [03-system-design](03-system-design.md) — service decomposition and architecture overview
+> · [09-data-architecture](09-data-architecture.md) — data domains and storage strategy
+> · [11-database-schema](11-database-schema.md) — core entity schemas
+> · [14-api-architecture](14-api-architecture.md) — API contracts and endpoint patterns
+> · [15-event-driven-workflow](15-event-driven-workflow.md) — event bus and workflow architecture
+> · [20-ux-flow](20-ux-flow.md) — role-based UX flows
+> · [21-mvp-scope](21-mvp-scope.md) — MVP modules and phase scope
+> · [30-testing-strategy](30-testing-strategy.md) — test strategy for event contracts, state machines, and financial
+> precision rules defined here

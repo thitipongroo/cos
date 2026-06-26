@@ -379,6 +379,7 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | Gate                                     | Trigger               | Blocks                                      |
 | ---------------------------------------- | --------------------- | ------------------------------------------- |
 | Lint + type check                        | Every PR              | PR merge                                    |
+| Build (`turbo run build`)                | Every PR              | PR merge — see ADR-033                      |
 | Unit tests                               | Every PR              | PR merge                                    |
 | Unit coverage 100% lines + 100% branches | Every PR              | PR merge                                    |
 | Integration tests                        | Every PR              | PR merge                                    |
