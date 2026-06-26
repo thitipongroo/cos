@@ -4,6 +4,7 @@ import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { useT } from '../../i18n';
 
 /**
@@ -11,8 +12,13 @@ import { useT } from '../../i18n';
  * Keycloak login page handles email+password AND the MFA (TOTP) step required
  * for TENANT_ADMIN/FINANCE, so no separate web MFA page is introduced (no new
  * auth mechanism per §20.6). Path A (field roles) is reached via the OTP link.
+ *
+ * `useSearchParams()` forces client-side rendering and must be read inside a
+ * <Suspense> boundary, otherwise Next.js fails the static export of this route
+ * ("missing-suspense-with-csr-bailout"). The reader is isolated in LoginContent
+ * and the page shell provides the boundary.
  */
-export default function LoginPage() {
+function LoginContent() {
   const t = useT();
   const searchParams = useSearchParams();
   const hasError = searchParams.get('error') !== null;
@@ -51,5 +57,13 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-gray-50" />}>
+      <LoginContent />
+    </Suspense>
   );
 }
