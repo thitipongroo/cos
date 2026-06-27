@@ -13,6 +13,7 @@
     "test": "jest",
     "test:unit": "jest --testPathPattern='src/'",
     "test:integration": "jest --config jest.integration.config.js --runInBand",
+    "test:workflows": "jest --config jest.workflows.config.js",
     "test:cov": "jest --coverage",
     "test:watch": "jest --watch",
     "migrate": "prisma migrate deploy",

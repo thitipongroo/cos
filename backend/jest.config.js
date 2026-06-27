@@ -43,6 +43,10 @@ module.exports = {
     // Phase 25 deliverable: enterprise-provisioning activities provision real infrastructure
     // (dedicated RDS, VPC peering, Route 53). Tested in Phase 25 integration tests.
     '!src/**/enterprise-provisioning.activities.ts',
+    // Temporal *.workflow.spec.ts run serially via jest.workflows.config.js (not in this run),
+    // so don't count the spec files themselves here. The source they exercise (*.workflow.ts) is
+    // already excluded above; activities are covered by their own *.activities.spec.ts.
+    '!src/**/*.workflow.spec.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'json-summary'],
@@ -53,13 +57,18 @@ module.exports = {
     },
   },
   testEnvironment: 'node',
-  // Temporal TestWorkflowEnvironment embeds a test server per process.
-  // At high worker counts concurrent servers conflict and cause flaky timeouts.
-  // maxWorkers: 2 keeps at most 2 test servers alive simultaneously.
   maxWorkers: 2,
-  // Integration tests (test/) require real infra (Redis, Keycloak, DB).
-  // They run via test:integration; exclude from unit test:cov.
-  testPathIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/test/'],
+  testTimeout: 15000,
+  // Temporal *.workflow.spec.ts each start a TestWorkflowEnvironment server; in parallel workers the
+  // servers starve each other (flaky hook + "Workflow execution timed out" errors). They are
+  // excluded here and run serially via jest.workflows.config.js (pnpm test:workflows). Their only
+  // non-excluded coverage is the spec files themselves, which are excluded from collectCoverageFrom
+  // above — so this is coverage-neutral. Integration tests (test/) run via test:integration.
+  testPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/test/',
+    '\\.workflow\\.spec\\.ts$',
+  ],
   moduleNameMapper: {
     '^@keycloak/keycloak-admin-client$': '<rootDir>/src/__mocks__/keycloak-admin-client.js',
     '^@cos/shared$': '<rootDir>/../packages/@cos/shared/src/index.ts',

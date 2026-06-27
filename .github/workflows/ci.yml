@@ -99,6 +99,11 @@ jobs:
       - name: Unit tests + coverage — backend
         working-directory: backend
         run: pnpm run test:cov
+      # Temporal workflow specs run serially (own TestWorkflowEnvironment server each) — see
+      # jest.workflows.config.js; excluded from test:cov above to avoid parallel-server flakiness.
+      - name: Temporal workflow tests (serial) — backend
+        working-directory: backend
+        run: pnpm run test:workflows
       - name: Unit tests + coverage — @cos/shared
         working-directory: packages/@cos/shared
         run: pnpm run test:cov

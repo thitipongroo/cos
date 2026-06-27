@@ -30,6 +30,10 @@
       "inputs": ["src/**", "test/**", "tsconfig*.json"],
       "outputs": []
     },
+    "test:workflows": {
+      "inputs": ["src/**", "tsconfig*.json", "jest.workflows.config*"],
+      "outputs": []
+    },
     "lint": {
       "inputs": ["src/**", "*.ts", "*.js", ".eslintrc*", "eslint.config*"],
       "outputs": []
