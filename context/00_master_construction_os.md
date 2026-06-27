@@ -3750,14 +3750,20 @@ CI/CD Pipeline (ArgoCD GitOps):
       2. type-check (tsc --noEmit)
       3. build (turbo run build — all packages/services; runs on EVERY PR; tsc --noEmit is
          NOT a build, so this gate catches nest/next build + emit failures pre-merge; ADR-033)
-      4. unit-tests (all services in parallel)
-      5. build Docker images (parallel per service; main/staging branches only)
-      6. Trivy security scan (per image)
-      7. push to ECR (on main/staging/production branch only)
-      8. update image tag in GitOps repo (commit new tag → triggers ArgoCD sync)
-      9. smoke tests + E2E tests (post-deploy, staging only — ArgoCD PostSync wave 1: smoke
+      4. unit-tests (all services in parallel; 100% line + 100% branch coverage, QM-1).
+         Temporal *.workflow.spec.ts run as a SERIAL step (pnpm test:workflows) — see the
+         Phase 18 Temporal workflow test pattern; spec §30.12
+      5. integration-tests (Testcontainers — backend pnpm test:integration, --runInBand; spec §30.4)
+      6. isolation-tests (multi-tenant — cross-tenant query must return zero rows; spec §30.6)
+      7. contract-tests (Pact consumer-driven; spec §30.8)
+      8. dependency-audit (pnpm audit + pip-audit + govulncheck — blocks on High/Critical)
+      9. build Docker images (parallel per service; main/staging branches only)
+      10. Trivy security scan (per image)
+      11. push to ECR (on main/staging/production branch only)
+      12. update image tag in GitOps repo (commit new tag → triggers ArgoCD sync)
+      13. smoke tests + E2E tests (post-deploy, staging only — ArgoCD PostSync wave 1: smoke
          health/auth/core-read < 30s; Playwright wave 2: critical user journeys)
-      10. load tests (weekly scheduled, staging only — k6; spec §30.9; NOT per-deploy)
+      14. load tests (weekly scheduled, staging only — k6; spec §30.9; NOT per-deploy)
 
   ArgoCD — CD (GitOps, self-healing):
     - Monitors GitOps repo for image tag changes
@@ -3928,7 +3934,7 @@ Generate:
     2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
     3. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
 - Pact consumer test examples for Finance ← Procurement
-- GitHub Actions integration: unit tests on every PR, load tests weekly scheduled on staging (not per-deploy; spec §30.9)
+- GitHub Actions integration: lint + type-check + build + unit (incl. serial Temporal workflow step) + integration + isolation + contract + dependency-audit on every PR (spec §30.12); load tests weekly scheduled on staging (not per-deploy; spec §30.9)
 - Test data factories (factory_bot pattern — plain TypeScript functions, minimal required fields, spread overrides) per entity — location: packages/@cos/test-utils/src/factories.ts, naming: build<EntityName>Dto for request DTOs; RESOLVED 2026-06-13, see spec §30.13
 - Database reset utility for integration tests (truncate + reseed)
 - API version sunset dates and tenant notification log: docs/api/deprecation-schedule.md
