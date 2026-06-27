@@ -108,9 +108,26 @@ Target coverage by layer:
 
 ### Tooling
 
-- **Testcontainers** — spins up real Docker containers for PostgreSQL, Redis, Kafka per test run
-- **NestJS testing module** — bootstraps the full module graph without HTTP server
-- Tests run in CI with `docker-compose` test profile
+- **Testcontainers** — spins up real Docker containers per test run. Backend specs share
+  `test/helpers/integration-infra.ts`; run via `pnpm --filter @cos/backend test:integration`
+  (`jest.integration.config.js`, `--runInBand`).
+- **NestJS testing module** — bootstraps the full `AppModule` (HTTP via supertest)
+
+#### Harness conventions (non-obvious, enforced by `integration-infra.ts`)
+
+- **DB image must be `timescale/timescaledb:*`**, not plain `postgres` — migrations call `create_hypertable`
+  (TimescaleDB extension). Plain postgres fails to migrate.
+- **Point the app at the container**: set `APP_DATABASE_URL` (the role the app connects with, falling back to
+  `DATABASE_URL`) **and** `DIRECT_DATABASE_URL` (migrations) at the container URL, or the app reads/writes a different
+  DB than the one migrated.
+- **Migrate from a cwd without a `.env`** (absolute `--schema`) — the Prisma CLI gives `.env` precedence over the passed
+  `DATABASE_URL`, otherwise it migrates the dev DB instead of the container.
+- **Tenant context via CLS** — override `JwtAuthGuard` with a guard that publishes `tenantId`/`userId`/`userRole`
+  into CLS; a bare `canActivate: () => true` boots the app but leaves context empty → `401`. Tenant ids must be valid
+  UUIDs (the `@IsUUID` version nibble too).
+- **RLS** is only enforced for the non-superuser `app_user` role; use an `app_user` connection (not the container superuser)
+  to exercise RLS policies.
+- Kafka/OpenSearch network clients are stubbed globally via `test/helpers/integration-mocks.ts`.
 
 ### Critical Integration Tests
 
@@ -383,6 +400,7 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | Unit tests                               | Every PR              | PR merge                                    |
 | Unit coverage 100% lines + 100% branches | Every PR              | PR merge                                    |
 | Integration tests                        | Every PR              | PR merge                                    |
+| Temporal workflow tests (serial)         | Every PR              | PR merge — own jest config                  |
 | Multi-tenant isolation tests             | Every PR              | PR merge                                    |
 | API contract tests (Pact)                | Every PR              | PR merge                                    |
 | Dependency audit (pnpm/govulncheck/pip)  | Every PR              | PR merge (High/Critical)                    |

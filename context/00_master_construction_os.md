@@ -3895,7 +3895,9 @@ Pact Contract Tests:
 
 Testcontainers Setup:
   Shared test setup (all integration tests):
-    - PostgreSQL container (per service schema)
+    - PostgreSQL container (per service schema) — backend uses the timescale/timescaledb image
+      (migrations call create_hypertable, ADR-032); point APP_DATABASE_URL + DIRECT_DATABASE_URL
+      at the container and migrate from a cwd without a .env (Prisma CLI gives .env precedence). See spec §30.4.
     - Redis container
     - Kafka + Schema Registry container
     - MinIO container (File Service tests only)
@@ -3941,6 +3943,13 @@ Async fake timer test pattern (Rule 30 — required for retry helpers, pollers, 
   Wrong pattern (causes test hangs with multi-step retries):
     jest.runAllTimers(); jest.runAllTimers(); // synchronous — microtask queue not drained between calls
   Applies to: withRetry, OutboxPoller, any class using setTimeout/setInterval internally
+
+Temporal workflow test pattern (parallel TestWorkflowEnvironment time-skipping servers starve each other):
+  *.workflow.spec.ts run SERIALLY via jest.workflows.config.js (maxWorkers:1, pnpm test:workflows),
+  excluded from the parallel test:cov run AND from collectCoverageFrom (coverage-neutral: *.workflow.ts
+  is already coverage-excluded; activities are covered by their own *.activities.spec.ts).
+  CI runs test:workflows as a separate serial gate after test:cov. Symptom if run in parallel:
+  flaky "Exceeded timeout for a hook" + "WorkflowFailedError: Workflow execution timed out". See spec §30.12.
 
 
 Constraints:
