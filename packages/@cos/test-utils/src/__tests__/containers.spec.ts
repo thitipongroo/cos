@@ -24,19 +24,48 @@ const mockRedisBuilder = {
 
 const mockStartedKafka = {
   stop: jest.fn().mockResolvedValue(undefined),
-  getBootstrapServers: jest.fn().mockReturnValue('localhost:9092'),
+  // getKafkaBroker() builds `${getHost()}:${getMappedPort(9093)}` (containers.ts)
+  getHost: jest.fn().mockReturnValue('localhost'),
+  getMappedPort: jest.fn().mockReturnValue(9092),
 };
 const mockKafkaBuilder = {
   withKraft: jest.fn().mockReturnThis(),
+  withNetwork: jest.fn().mockReturnThis(),
+  withNetworkAliases: jest.fn().mockReturnThis(),
   start: jest.fn().mockResolvedValue(mockStartedKafka),
 };
+
+const mockStartedClickhouse = {
+  stop: jest.fn().mockResolvedValue(undefined),
+  getHost: jest.fn().mockReturnValue('localhost'),
+  getMappedPort: jest.fn().mockReturnValue(8123),
+};
+const mockClickhouseBuilder = {
+  start: jest.fn().mockResolvedValue(mockStartedClickhouse),
+};
+
+// Schema Registry runs as a GenericContainer on a shared Network (testcontainers core module).
+const mockStartedSchemaRegistry = {
+  stop: jest.fn().mockResolvedValue(undefined),
+  getHost: jest.fn().mockReturnValue('localhost'),
+  getMappedPort: jest.fn().mockReturnValue(8081),
+};
+const mockGenericBuilder = {
+  withNetwork: jest.fn().mockReturnThis(),
+  withNetworkAliases: jest.fn().mockReturnThis(),
+  withExposedPorts: jest.fn().mockReturnThis(),
+  withEnvironment: jest.fn().mockReturnThis(),
+  start: jest.fn().mockResolvedValue(mockStartedSchemaRegistry),
+};
+const mockStartedNetwork = { stop: jest.fn().mockResolvedValue(undefined) };
+const mockNetworkBuilder = { start: jest.fn().mockResolvedValue(mockStartedNetwork) };
 
 const mockStartedNeo4j = {
   stop: jest.fn().mockResolvedValue(undefined),
   getBoltUri: jest.fn().mockReturnValue('bolt://localhost:7687'),
 };
 const mockNeo4jBuilder = {
-  withoutAuthentication: jest.fn().mockReturnThis(),
+  withPassword: jest.fn().mockReturnThis(),
   start: jest.fn().mockResolvedValue(mockStartedNeo4j),
 };
 
@@ -64,6 +93,13 @@ jest.mock('@testcontainers/neo4j', () => ({
 jest.mock('@testcontainers/minio', () => ({
   MinioContainer: jest.fn(() => mockMinioBuilder),
 }));
+jest.mock('@testcontainers/clickhouse', () => ({
+  ClickHouseContainer: jest.fn(() => mockClickhouseBuilder),
+}));
+jest.mock('testcontainers', () => ({
+  GenericContainer: jest.fn(() => mockGenericBuilder),
+  Network: jest.fn(() => mockNetworkBuilder),
+}));
 
 import {
   startContainers,
@@ -72,7 +108,11 @@ import {
   getRedisUrl,
   getKafkaBroker,
   getNeo4jUrl,
+  getSchemaRegistryUrl,
+  getClickHouseUrl,
 } from '../containers';
+import type { StartedTestContainer } from 'testcontainers';
+import type { StartedClickHouseContainer } from '@testcontainers/clickhouse';
 import type { StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import type { StartedRedisContainer } from '@testcontainers/redis';
 import type { StartedKafkaContainer } from '@testcontainers/kafka';
@@ -131,6 +171,18 @@ describe('startContainers', () => {
     const result = await startContainers();
     expect(result).toEqual({});
   });
+
+  it('starts clickhouse when clickhouse is true', async () => {
+    const result = await startContainers({ clickhouse: true });
+    expect(result.clickhouse).toBe(mockStartedClickhouse);
+  });
+
+  it('starts kafka + schema registry on a shared network when schemaRegistry is true', async () => {
+    const result = await startContainers({ schemaRegistry: true });
+    expect(result.kafka).toBe(mockStartedKafka);
+    expect(result.schemaRegistry).toBe(mockStartedSchemaRegistry);
+    expect(result._kafkaNetwork).toBe(mockStartedNetwork);
+  });
 });
 
 describe('stopContainers', () => {
@@ -171,5 +223,15 @@ describe('URL helpers', () => {
   it('getNeo4jUrl returns bolt URI', () => {
     const url = getNeo4jUrl(mockStartedNeo4j as unknown as StartedNeo4jContainer);
     expect(url).toBe('bolt://localhost:7687');
+  });
+
+  it('getSchemaRegistryUrl returns http URL from host + mapped 8081', () => {
+    const url = getSchemaRegistryUrl(mockStartedSchemaRegistry as unknown as StartedTestContainer);
+    expect(url).toBe('http://localhost:8081');
+  });
+
+  it('getClickHouseUrl returns http URL from host + mapped 8123', () => {
+    const url = getClickHouseUrl(mockStartedClickhouse as unknown as StartedClickHouseContainer);
+    expect(url).toBe('http://localhost:8123');
   });
 });

@@ -12,6 +12,7 @@ import { TenantModule } from './modules/tenant/tenant.module';
 import { ProjectModule } from './modules/project/project.module';
 import { BoqModule } from './modules/boq/boq.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
+import { FinanceModule } from './modules/finance/finance.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { SafetyModule } from './modules/safety/safety.module';
@@ -56,6 +57,7 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
     ProjectModule,
     BoqModule,
     ProcurementModule,
+    FinanceModule,
     SiteOpsModule,
     TasksModule,
     SafetyModule,
@@ -70,7 +72,6 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
     WorkforceModule, // Phase 22 — now wired (required for self check-in /workers/me, option A)
     SyncModule, // Finding 2 — generic offline sync API (/sync/delta, /sync/push, /sync/resolve)
     // Remaining modules added per phase:
-    // Phase 7: FinanceModule
     // Phase 8: (Kafka/event infra wired into all modules)
     // Phase 9: (FileService is a separate deployable)
     // Phase 21: EquipmentModule

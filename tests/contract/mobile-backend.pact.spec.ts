@@ -10,9 +10,14 @@
 // Run consumer: jest tests/contract/mobile-backend.pact.spec.ts
 // Run provider verification: PACT_PROVIDER_URL=http://... jest tests/contract/provider-verify.spec.ts
 
-import { PactV3, MatchersV3 } from '@pact-foundation/pact';
+// Import the consumer-only v3 entry (not the package root, which loads the provider
+// verifier → an ESM-only https-proxy-agent that jest cannot transform).
+import { PactV3, MatchersV3 } from '@pact-foundation/pact/src/v3';
 
-const { like, uuid, iso8601DateTimeWithMillis, eachLike } = MatchersV3;
+const { like, uuid, datetime, eachLike } = MatchersV3;
+// pact v3 replaced the v2 `iso8601DateTimeWithMillis()` matcher with `datetime(format, example)`.
+const iso8601DateTimeWithMillis = () =>
+  datetime("yyyy-MM-dd'T'HH:mm:ss.SSSX", '2026-06-26T00:00:00.000Z');
 
 const PACT_DIR = `${__dirname}/../../pacts`;
 
@@ -69,7 +74,8 @@ describe('Mobile ← Project Module (GET /api/v1/projects)', () => {
         },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic contract JSON body
+      const body = (await res.json()) as any;
       expect(Array.isArray(body.data)).toBe(true);
       expect(body.data.length).toBeGreaterThan(0);
       const project = body.data[0];
@@ -142,7 +148,8 @@ describe('Mobile ← Site-Ops Module (POST /api/v1/sync/resolve)', () => {
         }),
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic contract JSON body
+      const body = (await res.json()) as any;
       expect(body.conflict_status).toBe('ACCEPTED');
       expect(body).toHaveProperty('server_version');
     });
@@ -196,7 +203,8 @@ describe('Mobile ← Site-Ops Module (POST /api/v1/sync/resolve)', () => {
         }),
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic contract JSON body
+      const body = (await res.json()) as any;
       expect(body.conflict_status).toBe('CONFLICT_REJECTED');
     });
   });
@@ -242,7 +250,8 @@ describe('Mobile ← Notification Module (GET /api/v1/notifications)', () => {
         },
       });
       expect(res.status).toBe(200);
-      const body = await res.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic contract JSON body
+      const body = (await res.json()) as any;
       expect(Array.isArray(body.data)).toBe(true);
       expect(typeof body.unread_count).toBe('number');
     });

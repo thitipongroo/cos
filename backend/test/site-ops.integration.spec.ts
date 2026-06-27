@@ -8,6 +8,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
+import {
+  startIntegrationInfra,
+  stopIntegrationInfra,
+  clsAuthGuard,
+  type IntegrationInfra,
+} from './helpers/integration-infra';
 import { AppModule } from '../src/app.module';
 import { buildCreateSiteReportDto } from '@cos/test-utils';
 import { SiteOpsRepository } from '../src/modules/site-ops/site-ops.repository';
@@ -19,11 +25,15 @@ import type {
 
 const ENGINEER_TOKEN = 'Bearer test-engineer-token';
 const ADMIN_TOKEN = 'Bearer test-admin-token';
+const TENANT_ID = 'ee000004-0001-4000-8000-000000000001';
+const ADMIN_ID = 'ee000004-0002-4000-8000-000000000001';
+const ENGINEER_ID = 'ee000004-0003-4000-8000-000000000001';
 
 const REPORT_ID_A = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
-const REPORT_ID_B = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
-const ISSUE_ID_A = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
-const PROJECT_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
+// Valid UUID v4 (version nibble 4, variant 8) — @IsUUID() rejects an arbitrary-version nibble.
+const REPORT_ID_B = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const ISSUE_ID_A = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const PROJECT_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 function makeServerReport(overrides: Partial<SiteReportRow> = {}): SiteReportRow {
   return {
@@ -78,47 +88,49 @@ function makeConflictRecord(): ConflictRecordRow {
 }
 
 describe('SiteOps Integration (Phase 6)', () => {
+  let infra: IntegrationInfra;
   let app: INestApplication;
 
   beforeAll(async () => {
+    infra = await startIntegrationInfra();
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+      VALUES (${TENANT_ID}::uuid, 'acme_corp', 'SiteOps Integration Tenant', 'siteops-realm', 'STARTER'::platform."PlanType", true)
+    `;
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue({
-        canActivate: (ctx: {
-          switchToHttp: () => {
-            getRequest: () => {
-              headers: { authorization: string };
-              tenantId: string;
-              tenantCode: string;
-              userId: string;
-              user: { user_id: string; role: string };
-            };
-          };
-        }) => {
-          const req = ctx.switchToHttp().getRequest();
-          const auth = req.headers['authorization'];
-          req.tenantId = 'tenant-integration-001';
-          req.tenantCode = 'acme_corp';
-          req.userId = auth === ADMIN_TOKEN ? 'admin-001' : 'engineer-001';
-          req.user =
-            auth === ADMIN_TOKEN
-              ? { user_id: 'admin-001', role: 'TENANT_ADMIN' }
-              : { user_id: 'engineer-001', role: 'SITE_ENGINEER' };
-          return true;
-        },
-      })
+      .useValue(
+        clsAuthGuard((req) => {
+          const auth = (req['headers'] as Record<string, string>)?.['authorization'];
+          return auth === ADMIN_TOKEN
+            ? {
+                tenant_id: TENANT_ID,
+                user_id: ADMIN_ID,
+                role: 'TENANT_ADMIN',
+                tenantCode: 'acme_corp',
+              }
+            : {
+                tenant_id: TENANT_ID,
+                user_id: ENGINEER_ID,
+                role: 'SITE_ENGINEER',
+                tenantCode: 'acme_corp',
+              };
+        }),
+      )
       .compile();
 
     app = module.createNestApplication();
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
-  });
+  }, 180_000);
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await stopIntegrationInfra(infra);
   });
 
   // ── HTTP contract + validation ─────────────────────────────────────────────

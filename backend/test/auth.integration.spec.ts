@@ -9,14 +9,19 @@ jest.mock('@aws-sdk/client-sns', () => ({
   PublishCommand: jest.fn(),
 }));
 
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
+import {
+  startIntegrationInfra,
+  stopIntegrationInfra,
+  clsAuthGuard,
+  type IntegrationInfra,
+} from './helpers/integration-infra';
 import { AppModule } from '../src/app.module';
+import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { KeycloakAdminService } from '../src/modules/identity/keycloak-admin.service';
 import type { KeycloakTokenResponse } from '../src/modules/identity/keycloak-admin.service';
 
@@ -51,39 +56,19 @@ function buildRealmJwt(realm: string): string {
 }
 
 describe('Auth Integration (Testcontainers — PostgreSQL + Redis)', () => {
-  let pgContainer: StartedPostgreSqlContainer;
-  let redisContainer: StartedRedisContainer;
+  let infra: IntegrationInfra;
   let app: INestApplication;
   let redis: Redis;
   let prisma: PrismaClient;
 
   beforeAll(async () => {
-    [pgContainer, redisContainer] = await Promise.all([
-      new PostgreSqlContainer('postgres:16-alpine').start(),
-      new RedisContainer('redis:7-alpine').start(),
-    ]);
+    infra = await startIntegrationInfra();
+    prisma = infra.prisma;
 
-    const pgUrl = pgContainer.getConnectionUri();
-    const redisUrl = `redis://${redisContainer.getHost()}:${redisContainer.getMappedPort(6379)}`;
-
-    process.env['DATABASE_URL'] = pgUrl;
-    process.env['REDIS_URL'] = redisUrl;
-
-    // Run Prisma migrations — inline require avoids top-level import of node built-ins
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { execSync } = require('child_process') as typeof import('child_process');
-    const backendDir = `${__dirname}/..`;
-    execSync('pnpm prisma migrate deploy', {
-      cwd: backendDir,
-      env: { ...process.env, DATABASE_URL: pgUrl },
-      stdio: 'inherit',
-    });
-
-    // Seed: tenant → user → membership
-    prisma = new PrismaClient({ datasources: { db: { url: pgUrl } } });
+    // Seed: tenant → user → membership (enums live in the platform schema)
     await prisma.$executeRaw`
       INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
-      VALUES (${TENANT_ID}::uuid, 'test-tenant', 'Test Tenant', ${REALM}, 'STARTER'::"PlanType", true)
+      VALUES (${TENANT_ID}::uuid, 'test-tenant', 'Test Tenant', ${REALM}, 'STARTER'::platform."PlanType", true)
     `;
     await prisma.$executeRaw`
       INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, phone_number, email, display_name)
@@ -91,7 +76,7 @@ describe('Auth Integration (Testcontainers — PostgreSQL + Redis)', () => {
     `;
     await prisma.$executeRaw`
       INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
-      VALUES (${TENANT_ID}::uuid, ${USER_ID}::uuid, 'SITE_WORKER'::"CosRoleEnum")
+      VALUES (${TENANT_ID}::uuid, ${USER_ID}::uuid, 'SITE_WORKER'::platform."CosRoleEnum")
     `;
 
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -106,6 +91,16 @@ describe('Auth Integration (Testcontainers — PostgreSQL + Redis)', () => {
         createEmailUser: jest.fn().mockResolvedValue({ keycloakUserId: KC_USER_ID }),
         deleteUser: jest.fn().mockResolvedValue(undefined),
       })
+      // Protected endpoints (e.g. logout) require the JwtAuthGuard; substitute the seeded user.
+      .overrideGuard(JwtAuthGuard)
+      .useValue(
+        clsAuthGuard(() => ({
+          tenant_id: TENANT_ID,
+          user_id: USER_ID,
+          role: 'SITE_WORKER',
+          tenantCode: 'test-tenant',
+        })),
+      )
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -113,14 +108,13 @@ describe('Auth Integration (Testcontainers — PostgreSQL + Redis)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
 
-    redis = new Redis(redisUrl);
-  }, 120_000);
+    redis = new Redis(infra.redisUrl);
+  }, 180_000);
 
   afterAll(async () => {
-    await redis.quit();
-    await prisma.$disconnect();
-    await app.close();
-    await Promise.all([pgContainer.stop(), redisContainer.stop()]);
+    await redis?.quit();
+    await app?.close();
+    await stopIntegrationInfra(infra);
   });
 
   // ─── Health check ──────────────────────────────────────────────────────────
@@ -213,11 +207,11 @@ describe('Auth Integration (Testcontainers — PostgreSQL + Redis)', () => {
   // ─── Logout (Keycloak revocation) ─────────────────────────────────────────
 
   describe('POST /api/v1/auth/logout', () => {
-    it('revokes refresh token and returns 200', () => {
+    it('revokes refresh token and returns 204', () => {
       return request(app.getHttpServer())
         .post('/api/v1/auth/logout')
         .send({ refreshToken: buildRealmJwt(REALM) })
-        .expect(200);
+        .expect(204); // controller declares @HttpCode(NO_CONTENT)
     });
   });
 });

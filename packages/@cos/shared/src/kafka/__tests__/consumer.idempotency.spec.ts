@@ -45,7 +45,7 @@ jest.mock('../schema-registry.client', () => ({
 
 import { KafkaConsumer } from '../consumer';
 import { decodeAvro } from '../schema-registry.client';
-import { tenantTopicPattern } from '../topic-catalog';
+import { tenantTopicPattern, PLATFORM_EVENTS_TOPIC } from '../topic-catalog';
 
 type HandleMessage = (p: unknown) => Promise<void>;
 
@@ -118,6 +118,29 @@ describe('KafkaConsumer connect/disconnect (lines 54-72)', () => {
     expect(consumerMock.subscribe).toHaveBeenCalledWith({
       topic: tenantTopicPattern('topic-a'),
       fromBeginning: true,
+    });
+  });
+
+  it('connect() subscribes platform.* events to the shared platform topic (covers ternary platform branch)', async () => {
+    const { Kafka } = jest.requireMock('kafkajs') as { Kafka: jest.Mock };
+    const consumerMock = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      subscribe: jest.fn().mockResolvedValue(undefined),
+      run: jest.fn().mockResolvedValue(undefined),
+      disconnect: jest.fn().mockResolvedValue(undefined),
+    };
+    Kafka.mockImplementationOnce(() => ({ consumer: jest.fn().mockReturnValue(consumerMock) }));
+
+    const consumer = new KafkaConsumer();
+    await consumer.connect({
+      groupId: 'g1',
+      eventTypes: ['platform.enterprise.contract_signed.v1'],
+    });
+
+    // Platform events live on the shared platform.events topic, not a per-tenant RegExp (§7.3).
+    expect(consumerMock.subscribe).toHaveBeenCalledWith({
+      topic: PLATFORM_EVENTS_TOPIC,
+      fromBeginning: false,
     });
   });
 

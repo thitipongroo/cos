@@ -586,6 +586,28 @@ describe('createRfq', () => {
     expect(result.rfq_id).toBe('rfq-uuid-001');
     expect(mockRepo.setRfqWorkflowId).toHaveBeenCalled();
   });
+
+  it('covers both TEMPORAL_ADDRESS env-defined and default branches (line 654)', async () => {
+    const original = process.env['TEMPORAL_ADDRESS'];
+    const startRfq = async (rfqNumber: string) => {
+      mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture });
+      mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+      return service.createRfq({
+        project_id: 'project-uuid-001',
+        rfq_number: rfqNumber,
+        deadline: new Date(Date.now() + 7 * 86400 * 1000).toISOString(),
+      });
+    };
+    try {
+      process.env['TEMPORAL_ADDRESS'] = 'temporal.internal:7233';
+      expect((await startRfq('RFQ-002')).rfq_id).toBe('rfq-uuid-001');
+      delete process.env['TEMPORAL_ADDRESS'];
+      expect((await startRfq('RFQ-003')).rfq_id).toBe('rfq-uuid-001');
+    } finally {
+      if (original === undefined) delete process.env['TEMPORAL_ADDRESS'];
+      else process.env['TEMPORAL_ADDRESS'] = original;
+    }
+  });
 });
 
 describe('RFQ — additional happy paths', () => {

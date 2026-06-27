@@ -8,19 +8,33 @@ jest.mock('@opensearch-project/opensearch', () => ({
   })),
 }));
 
-jest.mock('@cos/shared', () => ({
-  KafkaProducer: jest.fn().mockImplementation(() => ({
+// Keep real @cos/shared exports (event types, topic catalog, etc.); stub only the Kafka
+// network clients so AppModule boots without a broker. KafkaConsumer is used by the
+// notification/event consumers wired into AppModule.
+jest.mock('@cos/shared', () => {
+  const actual = jest.requireActual('@cos/shared');
+  const noopKafka = {
     connect: jest.fn().mockResolvedValue(undefined),
     publish: jest.fn().mockResolvedValue(undefined),
+    subscribe: jest.fn().mockResolvedValue(undefined),
+    on: jest.fn(), // KafkaConsumer.on(eventType, handler) — NotificationConsumer.onModuleInit registers handlers
     disconnect: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
+  };
+  return {
+    ...actual,
+    KafkaProducer: jest.fn().mockImplementation(() => noopKafka),
+    KafkaConsumer: jest.fn().mockImplementation(() => noopKafka),
+  };
+});
 
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
+import { ClsServiceManager } from 'nestjs-cls';
+import type { ExecutionContext } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { buildCreateProjectDto } from '@cos/test-utils';
@@ -34,20 +48,40 @@ let mockRole = 'PROJECT_MANAGER';
 
 describe('Project Integration (Testcontainers — PostgreSQL)', () => {
   let pgContainer: StartedPostgreSqlContainer;
+  let redisContainer: StartedRedisContainer;
   let app: INestApplication;
   let prisma: PrismaClient;
 
   beforeAll(async () => {
-    pgContainer = await new PostgreSqlContainer('postgres:16-alpine').start();
+    // Migrations create TimescaleDB hypertables (create_hypertable), so the DB image must ship
+    // the TimescaleDB extension (ADR-032) — plain postgres:16-alpine lacks it.
+    pgContainer = await new PostgreSqlContainer('timescale/timescaledb:latest-pg16').start();
     const pgUrl = pgContainer.getConnectionUri();
+    // AppModule's ThrottlerModule requires REDIS_URL and a reachable Redis at init (QM-7).
+    redisContainer = await new RedisContainer('redis:7-alpine').start();
     process.env['DATABASE_URL'] = pgUrl;
+    // Migrations run DDL over a direct (non-pooled) connection via directUrl (schema.prisma).
+    process.env['DIRECT_DATABASE_URL'] = pgUrl;
+    // TenantPrismaService.getClient connects via APP_DATABASE_URL (the RLS app role), falling back
+    // to DATABASE_URL only if unset. Set BEFORE app.init so ConfigModule's .env load does not point
+    // the app at the dev DB — otherwise the app reads/writes a different database than we migrate.
+    process.env['APP_DATABASE_URL'] = pgUrl;
+    process.env['REDIS_URL'] = redisContainer.getConnectionUrl();
 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { execSync } = require('child_process') as typeof import('child_process');
-    const backendDir = `${__dirname}/..`;
-    execSync('pnpm prisma migrate deploy', {
-      cwd: backendDir,
-      env: { ...process.env, DATABASE_URL: pgUrl },
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const os = require('os') as typeof import('os');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const nodePath = require('path') as typeof import('path');
+    const schemaPath = nodePath.resolve(__dirname, '../prisma/schema.prisma');
+    const prismaBin = nodePath.resolve(__dirname, '../node_modules/.bin/prisma');
+    // Run from a dir WITHOUT a .env: Prisma's CLI gives .env precedence over the passed
+    // DATABASE_URL, which would migrate the dev DB instead of the container. backend/.env is a
+    // symlink, and Prisma only searches the schema dir + cwd for .env — neither applies here.
+    execSync(`"${prismaBin}" migrate deploy --schema "${schemaPath}"`, {
+      cwd: os.tmpdir(),
+      env: { ...process.env, DATABASE_URL: pgUrl, DIRECT_DATABASE_URL: pgUrl },
       stdio: 'inherit',
     });
 
@@ -56,7 +90,7 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
     await prisma.$executeRaw`
       INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
       VALUES (${TENANT_ID}::uuid, 'proj-int', 'Project Integration Tenant',
-              'proj-realm', 'STARTER'::"PlanType", true)
+              'proj-realm', 'STARTER'::platform."PlanType", true)
     `;
     await prisma.$executeRaw`
       INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
@@ -64,14 +98,33 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
     `;
     await prisma.$executeRaw`
       INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
-      VALUES (${TENANT_ID}::uuid, ${USER_ID}::uuid, 'PROJECT_MANAGER'::"CosRoleEnum")
+      VALUES (${TENANT_ID}::uuid, ${USER_ID}::uuid, 'PROJECT_MANAGER'::platform."CosRoleEnum")
     `;
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
+      // Mirror the real JwtAuthGuard (ADR-031): publish the tenant/user context into CLS so
+      // TenantPrismaService sets app.current_tenant_id and services resolve tenantId/role.
+      // A bare `canActivate: () => true` boots the app but leaves the context empty → 401.
       .overrideGuard(JwtAuthGuard)
-      .useValue({ canActivate: () => true })
+      .useValue({
+        canActivate: (ctx: ExecutionContext) => {
+          const req = ctx
+            .switchToHttp()
+            .getRequest<{ user?: { tenant_id?: string; user_id?: string; role?: string } }>();
+          const u = req.user;
+          const cls = ClsServiceManager.getClsService();
+          if (u?.tenant_id && cls.isActive()) {
+            cls.set('tenantId', u.tenant_id);
+            cls.set('userId', u.user_id);
+            cls.set('userRole', u.role);
+            cls.set('tenantCode', 'proj-int');
+            cls.set('dedicatedDbUrl', undefined);
+          }
+          return true;
+        },
+      })
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -89,9 +142,10 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
   }, 120_000);
 
   afterAll(async () => {
-    await prisma.$disconnect();
-    await app.close();
-    await pgContainer.stop();
+    await prisma?.$disconnect();
+    await app?.close();
+    await pgContainer?.stop();
+    await redisContainer?.stop();
   });
 
   // ─── Full CRUD ─────────────────────────────────────────────────────────────

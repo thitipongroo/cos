@@ -88,7 +88,9 @@ export function isPlatformEvent(eventType: string): boolean {
 
 /** First segment of an event type or topic — the bounded-context domain. */
 export function domainOf(eventTypeOrTopic: string): string {
-  return eventTypeOrTopic.split('.')[0] ?? '';
+  // String.split() always returns at least one element ('' for an empty input), so [0] is
+  // always a string — no nullish fallback needed (an unreachable `?? ''` is an uncovered branch).
+  return eventTypeOrTopic.split('.')[0];
 }
 
 /**

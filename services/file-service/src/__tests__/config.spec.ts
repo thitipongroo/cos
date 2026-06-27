@@ -5,8 +5,9 @@ describe('loadConfig', () => {
 
   beforeEach(() => {
     process.env['DATABASE_URL'] = 'postgresql://cos:pass@localhost:6432/db';
-    process.env['MINIO_ACCESS_KEY'] = 'test-key';
-    process.env['MINIO_SECRET_KEY'] = 'test-secret';
+    // MinIO S3 credentials come from the server root creds (docker-compose + .env), per config.ts.
+    process.env['MINIO_ROOT_USER'] = 'test-key';
+    process.env['MINIO_ROOT_PASSWORD'] = 'test-secret';
   });
 
   afterEach(() => {
@@ -19,7 +20,7 @@ describe('loadConfig', () => {
 
   it('loads defaults when optional vars are absent', () => {
     const cfg = loadConfig();
-    expect(cfg.port).toBe(3001);
+    expect(cfg.port).toBe(3002);
     expect(cfg.minio.endPoint).toBe('localhost');
     expect(cfg.minio.useSSL).toBe(false);
     expect(cfg.clamav.host).toBe('clamav');
@@ -30,8 +31,8 @@ describe('loadConfig', () => {
     expect(cfg.signedUrlTtlSeconds).toBe(3600);
   });
 
-  it('reads PORT from environment', () => {
-    process.env['PORT'] = '4000';
+  it('reads FILE_SERVICE_PORT from environment', () => {
+    process.env['FILE_SERVICE_PORT'] = '4000';
     expect(loadConfig().port).toBe(4000);
   });
 
@@ -95,13 +96,13 @@ describe('loadConfig', () => {
     expect(() => loadConfig()).toThrow('DATABASE_URL');
   });
 
-  it('throws when MINIO_ACCESS_KEY is missing', () => {
-    delete process.env['MINIO_ACCESS_KEY'];
-    expect(() => loadConfig()).toThrow('MINIO_ACCESS_KEY');
+  it('throws when MINIO_ROOT_USER is missing', () => {
+    delete process.env['MINIO_ROOT_USER'];
+    expect(() => loadConfig()).toThrow('MINIO_ROOT_USER');
   });
 
-  it('throws when MINIO_SECRET_KEY is missing', () => {
-    delete process.env['MINIO_SECRET_KEY'];
-    expect(() => loadConfig()).toThrow('MINIO_SECRET_KEY');
+  it('throws when MINIO_ROOT_PASSWORD is missing', () => {
+    delete process.env['MINIO_ROOT_PASSWORD'];
+    expect(() => loadConfig()).toThrow('MINIO_ROOT_PASSWORD');
   });
 });

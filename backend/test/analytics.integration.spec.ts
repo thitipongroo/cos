@@ -5,6 +5,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
+import {
+  startIntegrationInfra,
+  stopIntegrationInfra,
+  type IntegrationInfra,
+} from './helpers/integration-infra';
 import { AppModule } from '../src/app.module';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { CLICKHOUSE_CLIENT } from '../src/modules/analytics/analytics.module';
@@ -67,9 +72,14 @@ const noopCache = {
 // ── Suite ─────────────────────────────────────────────────────────────────────
 
 describe('Analytics API Integration (Phase 14)', () => {
+  let infra: IntegrationInfra;
   let app: INestApplication;
 
   beforeAll(async () => {
+    // AppModule's ThrottlerModule needs REDIS_URL + a reachable Redis at init; every test below
+    // builds its own AppModule, so start shared infra once and let all of them read the env.
+    infra = await startIntegrationInfra();
+
     // Each test overrides ClickHouse with appropriate row fixtures below;
     // this beforeAll sets up shared infrastructure.
     const module: TestingModule = await Test.createTestingModule({
@@ -100,7 +110,8 @@ describe('Analytics API Integration (Phase 14)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await stopIntegrationInfra(infra);
   });
   beforeEach(() => {
     jest.clearAllMocks();

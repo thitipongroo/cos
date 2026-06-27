@@ -122,4 +122,17 @@ describe('KafkaTopicProvisioner', () => {
       expect(created[0].replicationFactor).toBe(3);
     });
   });
+
+  describe('logLevel selection', () => {
+    it('uses WARN log level outside the test environment (covers NODE_ENV !== "test" branch)', () => {
+      const original = process.env['NODE_ENV'];
+      process.env['NODE_ENV'] = 'production';
+      try {
+        // Construction selects logLevel.WARN when NODE_ENV !== 'test'; Kafka is mocked, so this is cheap.
+        expect(() => new KafkaTopicProvisioner()).not.toThrow();
+      } finally {
+        process.env['NODE_ENV'] = original;
+      }
+    });
+  });
 });

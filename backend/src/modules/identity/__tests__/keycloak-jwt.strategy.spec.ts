@@ -20,6 +20,26 @@ describe('KeycloakJwtStrategy', () => {
     strategy = new KeycloakJwtStrategy();
   });
 
+  it('covers both KEYCLOAK_URL/REALM env-defined and default branches (lines 30-31)', () => {
+    const origUrl = process.env['KEYCLOAK_URL'];
+    const origRealm = process.env['KEYCLOAK_REALM'];
+    try {
+      // env-defined branch (left of ??)
+      process.env['KEYCLOAK_URL'] = 'https://keycloak.example.com';
+      process.env['KEYCLOAK_REALM'] = 'cos-acme';
+      expect(() => new KeycloakJwtStrategy()).not.toThrow();
+      // default branch (right of ??)
+      delete process.env['KEYCLOAK_URL'];
+      delete process.env['KEYCLOAK_REALM'];
+      expect(() => new KeycloakJwtStrategy()).not.toThrow();
+    } finally {
+      if (origUrl === undefined) delete process.env['KEYCLOAK_URL'];
+      else process.env['KEYCLOAK_URL'] = origUrl;
+      if (origRealm === undefined) delete process.env['KEYCLOAK_REALM'];
+      else process.env['KEYCLOAK_REALM'] = origRealm;
+    }
+  });
+
   describe('validate', () => {
     const validPayload: JwtPayload = {
       sub: 'user-1',

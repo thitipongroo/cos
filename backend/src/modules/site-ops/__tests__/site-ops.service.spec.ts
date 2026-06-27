@@ -158,6 +158,29 @@ describe('constructor', () => {
     expect((noCtxService as unknown as { tenantId: string }).tenantId).toBe('');
     expect((noCtxService as unknown as { userId: string }).userId).toBe('');
   });
+
+  it('covers both OPENSEARCH_URL env-defined and default branches (line 59)', async () => {
+    const original = process.env['OPENSEARCH_URL'];
+    const build = async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          SiteOpsService,
+          { provide: SiteOpsRepository, useValue: mockRepo },
+          { provide: REQUEST, useValue: MOCK_REQUEST },
+        ],
+      }).compile();
+      return module.resolve<SiteOpsService>(SiteOpsService);
+    };
+    try {
+      process.env['OPENSEARCH_URL'] = 'http://opensearch.internal:9200';
+      expect(await build()).toBeDefined();
+      delete process.env['OPENSEARCH_URL'];
+      expect(await build()).toBeDefined();
+    } finally {
+      if (original === undefined) delete process.env['OPENSEARCH_URL'];
+      else process.env['OPENSEARCH_URL'] = original;
+    }
+  });
 });
 
 // ── createSiteReport ──────────────────────────────────────────────────────

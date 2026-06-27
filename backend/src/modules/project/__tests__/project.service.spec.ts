@@ -92,6 +92,19 @@ describe('ProjectService', () => {
       expect((noCtx as unknown as { tenantId: string }).tenantId).toBe('');
       expect((noCtx as unknown as { userId: string }).userId).toBe('');
     });
+
+    it('covers both OPENSEARCH_URL env-defined and default branches (line 58)', async () => {
+      const original = process.env['OPENSEARCH_URL'];
+      try {
+        process.env['OPENSEARCH_URL'] = 'http://opensearch.internal:9200';
+        expect(await buildService(makeRepo())).toBeDefined();
+        delete process.env['OPENSEARCH_URL'];
+        expect(await buildService(makeRepo())).toBeDefined();
+      } finally {
+        if (original === undefined) delete process.env['OPENSEARCH_URL'];
+        else process.env['OPENSEARCH_URL'] = original;
+      }
+    });
   });
 
   describe('create()', () => {

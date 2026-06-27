@@ -12,7 +12,7 @@
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:unit": "jest --testPathPattern='src/'",
-    "test:integration": "jest --testPathPattern='test/' --runInBand",
+    "test:integration": "jest --config jest.integration.config.js --runInBand",
     "test:cov": "jest --coverage",
     "test:watch": "jest --watch",
     "migrate": "prisma migrate deploy",

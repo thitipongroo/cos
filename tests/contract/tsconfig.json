@@ -3,7 +3,8 @@
   "compilerOptions": {
     "module": "CommonJS",
     "moduleResolution": "node",
-    "outDir": "../../dist/tests/contract"
+    "outDir": "../../dist/tests/contract",
+    "types": ["jest", "node"]
   },
   "include": ["./**/*.ts"]
 }

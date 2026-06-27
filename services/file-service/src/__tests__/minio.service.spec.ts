@@ -17,6 +17,10 @@ jest.mock('minio', () => ({
     removeObject: mockRemoveObject,
     copyObject: mockCopyObject,
   })),
+  // minio 7.1.4's only typed copyObject overload requires a CopyConditions arg, so the service
+  // constructs `new CopyConditions()`. Defined inline (constructable jest.fn) so the factory does
+  // not eagerly read an out-of-scope const (TDZ) — without it the runtime throws "not a constructor".
+  CopyConditions: jest.fn(),
 }));
 
 const config = {
@@ -128,6 +132,7 @@ describe('MinioService', () => {
         'cos-quarantine-tid-1',
         '2026/06/fid-1/test.jpg',
         '/cos-tid-1/2026/06/fid-1/test.jpg',
+        expect.anything(),
       );
       expect(mockRemoveObject).toHaveBeenCalledWith('cos-tid-1', '2026/06/fid-1/test.jpg');
     });
@@ -151,6 +156,7 @@ describe('MinioService', () => {
         'cos-tid-1',
         '2026/06/fid-1/test.jpg',
         '/cos-quarantine-tid-1/2026/06/fid-1/test.jpg',
+        expect.anything(),
       );
       expect(mockRemoveObject).toHaveBeenCalledWith(
         'cos-quarantine-tid-1',

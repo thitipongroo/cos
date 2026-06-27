@@ -7,49 +7,63 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
+import {
+  startIntegrationInfra,
+  stopIntegrationInfra,
+  clsAuthGuard,
+  type IntegrationInfra,
+} from './helpers/integration-infra';
 import { AppModule } from '../src/app.module';
 import { buildCreateWorkerDto, buildCreateCheckInDto } from '@cos/test-utils';
 
 const ENGINEER_TOKEN = 'Bearer test-engineer-token';
-const TENANT_ID = 'tenant-integration-001';
-const WORKER_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-const PROJECT_ID = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
-const TIMESHEET_ID = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
+const TENANT_ID = 'ee000005-0001-4000-8000-000000000001';
+const ENGINEER_ID = 'ee000005-0002-4000-8000-000000000001';
+// Valid UUID v4 (version nibble 4, variant 8) — @IsUUID() rejects an arbitrary-version nibble.
+const WORKER_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+const PROJECT_ID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+const TIMESHEET_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
 
 describe('Workforce Integration (Phase 22)', () => {
+  let infra: IntegrationInfra;
   let app: INestApplication;
 
   beforeAll(async () => {
+    infra = await startIntegrationInfra();
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+      VALUES (${TENANT_ID}::uuid, 'workforce-int', 'Workforce Integration Tenant', 'wf-realm', 'STARTER'::platform."PlanType", true)
+    `;
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+      VALUES (${ENGINEER_ID}::uuid, ${TENANT_ID}::uuid, 'kc-wf', 'eng@workforce-int.test', 'Engineer User')
+    `;
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue({
-        canActivate: (ctx: {
-          switchToHttp: () => {
-            getRequest: () => {
-              headers: { authorization: string };
-              tenantId: string;
-              user: { user_id: string; sub: string; role: string };
-            };
-          };
-        }) => {
-          const req = ctx.switchToHttp().getRequest();
-          req.tenantId = TENANT_ID;
-          req.user = { user_id: 'engineer-001', sub: 'engineer-001', role: 'SITE_ENGINEER' };
-          return true;
-        },
-      })
+      .useValue(
+        clsAuthGuard(() => ({
+          tenant_id: TENANT_ID,
+          user_id: ENGINEER_ID,
+          role: 'SITE_ENGINEER',
+          tenantCode: 'workforce-int',
+        })),
+      )
       .compile();
 
     app = module.createNestApplication();
-    // WorkerController has api/v1 embedded — do NOT set global prefix
+    // Workforce controllers declare bare paths (workers, projects/:id/workforce, timesheets);
+    // the api/v1 prefix is applied globally like every other module.
+    app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
-  });
+  }, 180_000);
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await stopIntegrationInfra(infra);
   });
 
   // ── POST /api/v1/workers ───────────────────────────────────────────────────

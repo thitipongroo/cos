@@ -6,12 +6,16 @@
 // Run via: pnpm test:integration
 // Uses @testcontainers/postgresql — real PostgreSQL with migrations applied.
 
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
+import { ClsServiceManager } from 'nestjs-cls';
+import {
+  startIntegrationInfra,
+  stopIntegrationInfra,
+  type IntegrationInfra,
+} from './helpers/integration-infra';
 import { AppModule } from '../src/app.module';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
 import { TenantMiddleware, TenantRequest } from '../src/modules/tenant/tenant.middleware';
@@ -23,41 +27,30 @@ const USER_A_ID = 'aaaaaaaa-0001-4000-8000-000000000011';
 const USER_B_ID = 'bbbbbbbb-0002-4000-8000-000000000022';
 
 describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
-  let pgContainer: StartedPostgreSqlContainer;
-  let redisContainer: StartedRedisContainer;
+  let infra: IntegrationInfra;
   let prisma: PrismaClient;
+  // RLS is only enforced for the non-superuser app_user role; the container superuser bypasses it.
+  // A dedicated app_user connection is required to actually exercise the RLS policies.
+  let appUserPrisma: PrismaClient;
   let app: INestApplication;
-  let pgUrl: string;
 
   beforeAll(async () => {
-    [pgContainer, redisContainer] = await Promise.all([
-      new PostgreSqlContainer('postgres:16-alpine').start(),
-      new RedisContainer('redis:7-alpine').start(),
-    ]);
+    infra = await startIntegrationInfra();
+    prisma = infra.prisma;
 
-    pgUrl = pgContainer.getConnectionUri();
-    const redisUrl = `redis://${redisContainer.getHost()}:${redisContainer.getMappedPort(6379)}`;
+    // app_user gets LOGIN + password via migration 20260623000001; build its connection URL by
+    // swapping the superuser credentials on the container URI.
+    const appUrl = new URL(infra.pgUrl);
+    appUrl.username = 'app_user';
+    appUrl.password = 'app_user_dev_password';
+    appUserPrisma = new PrismaClient({ datasources: { db: { url: appUrl.toString() } } });
 
-    process.env['DATABASE_URL'] = pgUrl;
-    process.env['REDIS_URL'] = redisUrl;
-
-    // Run all Prisma migrations (including Phase 16 RLS policies)
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { execSync } = require('child_process') as typeof import('child_process');
-    execSync('pnpm prisma migrate deploy', {
-      cwd: `${__dirname}/..`,
-      env: { ...process.env, DATABASE_URL: pgUrl },
-      stdio: 'inherit',
-    });
-
-    prisma = new PrismaClient({ datasources: { db: { url: pgUrl } } });
-
-    // Seed: two tenants with one user each
+    // Seed: two tenants with one user each (enums live in the platform schema)
     await prisma.$executeRaw`
       INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
       VALUES
-        (${TENANT_A_ID}::uuid, 'tenant-a', 'Tenant A', 'realm-a', 'STARTER'::"PlanType", true),
-        (${TENANT_B_ID}::uuid, 'tenant-b', 'Tenant B', 'realm-b', 'STARTER'::"PlanType", true)
+        (${TENANT_A_ID}::uuid, 'tenant-a', 'Tenant A', 'realm-a', 'STARTER'::platform."PlanType", true),
+        (${TENANT_B_ID}::uuid, 'tenant-b', 'Tenant B', 'realm-b', 'STARTER'::platform."PlanType", true)
     `;
     await prisma.$executeRaw`
       INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, phone_number, email, display_name)
@@ -68,8 +61,8 @@ describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
     await prisma.$executeRaw`
       INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
       VALUES
-        (${TENANT_A_ID}::uuid, ${USER_A_ID}::uuid, 'PROJECT_MANAGER'::"CosRoleEnum"),
-        (${TENANT_B_ID}::uuid, ${USER_B_ID}::uuid, 'PROJECT_MANAGER'::"CosRoleEnum")
+        (${TENANT_A_ID}::uuid, ${USER_A_ID}::uuid, 'PROJECT_MANAGER'::platform."CosRoleEnum"),
+        (${TENANT_B_ID}::uuid, ${USER_B_ID}::uuid, 'PROJECT_MANAGER'::platform."CosRoleEnum")
     `;
 
     // Build NestJS app with mocked auth + tenant middleware
@@ -86,12 +79,22 @@ describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
           const req = ctx.switchToHttp().getRequest();
           // Determine which tenant to impersonate from test header
           const impersonate = req.headers['x-test-tenant'] ?? TENANT_A_ID;
+          const userId = impersonate === TENANT_A_ID ? USER_A_ID : USER_B_ID;
           req.user = {
-            user_id: impersonate === TENANT_A_ID ? USER_A_ID : USER_B_ID,
+            user_id: userId,
             tenant_id: impersonate,
             role: 'PROJECT_MANAGER',
             sub: impersonate === TENANT_A_ID ? 'kc-a' : 'kc-b',
           };
+          // Publish context into CLS like the real JwtAuthGuard (ADR-031) so services resolve tenant.
+          const cls = ClsServiceManager.getClsService();
+          if (cls.isActive()) {
+            cls.set('tenantId', impersonate);
+            cls.set('userId', userId);
+            cls.set('userRole', 'PROJECT_MANAGER');
+            cls.set('tenantCode', impersonate === TENANT_A_ID ? 'tenant-a' : 'tenant-b');
+            cls.set('dedicatedDbUrl', undefined);
+          }
           return true;
         },
       })
@@ -116,37 +119,35 @@ describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
   }, 120_000);
 
   afterAll(async () => {
-    await prisma.$disconnect();
-    await app.close();
-    await Promise.all([pgContainer.stop(), redisContainer.stop()]);
+    await app?.close();
+    await appUserPrisma?.$disconnect();
+    await stopIntegrationInfra(infra);
   });
 
   // ── Layer 1: PostgreSQL RLS ────────────────────────────────────────────────
 
   describe('PostgreSQL RLS isolation', () => {
+    // SET LOCAL is transaction-scoped and cannot take a bind parameter, so set + query must run in
+    // one transaction via $executeRawUnsafe. Use the app_user connection so RLS is actually enforced.
     it('returns zero rows when querying tenant B user records with tenant A context', async () => {
-      // Set current_tenant_id = TENANT_A via session variable
-      await prisma.$executeRaw`SET LOCAL app.current_tenant_id = ${TENANT_A_ID}`;
-
-      // Query for tenant B's user — RLS must filter this out
-      const rows = await prisma.$queryRaw<{ user_id: string }[]>`
-        SELECT user_id FROM platform.users
-        WHERE tenant_id = ${TENANT_B_ID}::uuid
-      `;
-
-      // RLS policy: USING (tenant_id = current_setting('app.current_tenant_id')::uuid OR tenant_id IS NULL)
+      const rows = await appUserPrisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${TENANT_A_ID}'`);
+        return tx.$queryRawUnsafe<{ user_id: string }[]>(
+          `SELECT user_id FROM platform.users WHERE tenant_id = '${TENANT_B_ID}'::uuid`,
+        );
+      });
+      // RLS policy: USING (tenant_id = current_setting('app.current_tenant_id')::uuid)
       // tenant_id = TENANT_B ≠ current_tenant_id = TENANT_A → filtered out
       expect(rows).toHaveLength(0);
     });
 
     it('returns rows belonging to the current tenant context', async () => {
-      await prisma.$executeRaw`SET LOCAL app.current_tenant_id = ${TENANT_A_ID}`;
-
-      const rows = await prisma.$queryRaw<{ user_id: string }[]>`
-        SELECT user_id FROM platform.users
-        WHERE tenant_id = ${TENANT_A_ID}::uuid
-      `;
-
+      const rows = await appUserPrisma.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${TENANT_A_ID}'`);
+        return tx.$queryRawUnsafe<{ user_id: string }[]>(
+          `SELECT user_id FROM platform.users WHERE tenant_id = '${TENANT_A_ID}'::uuid`,
+        );
+      });
       expect(rows.length).toBeGreaterThan(0);
     });
   });

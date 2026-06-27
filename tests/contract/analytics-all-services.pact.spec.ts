@@ -6,9 +6,14 @@
 // Run consumer: jest tests/contract/analytics-all-services.pact.spec.ts
 // Run provider verification: PACT_PROVIDER_URL=http://... jest tests/contract/provider-verify.spec.ts
 
-import { PactV3, MatchersV3 } from '@pact-foundation/pact';
+// Import the consumer-only v3 entry (not the package root, which loads the provider
+// verifier → an ESM-only https-proxy-agent that jest cannot transform).
+import { PactV3, MatchersV3 } from '@pact-foundation/pact/src/v3';
 
-const { like, uuid, iso8601DateTimeWithMillis } = MatchersV3;
+const { like, uuid, datetime } = MatchersV3;
+// pact v3 replaced the v2 `iso8601DateTimeWithMillis()` matcher with `datetime(format, example)`.
+const iso8601DateTimeWithMillis = () =>
+  datetime("yyyy-MM-dd'T'HH:mm:ss.SSSX", '2026-06-26T00:00:00.000Z');
 
 const PACT_DIR = `${__dirname}/../../pacts`;
 

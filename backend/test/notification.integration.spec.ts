@@ -7,6 +7,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { JwtAuthGuard } from '../src/modules/identity/guards/jwt-auth.guard';
+import {
+  startIntegrationInfra,
+  stopIntegrationInfra,
+  clsAuthGuard,
+  type IntegrationInfra,
+} from './helpers/integration-infra';
 import { AppModule } from '../src/app.module';
 import { buildNotificationPreferenceDto, buildRegisterDeviceDto } from '@cos/test-utils';
 import { NotificationService } from '../src/modules/notification/notification.service';
@@ -14,7 +20,7 @@ import { NotificationRepository } from '../src/modules/notification/notification
 import type { NotificationRow } from '../src/modules/notification/notification.repository';
 
 const USER_TOKEN = 'Bearer test-user-token';
-const TENANT_ID = 'tenant-integration-001';
+const TENANT_ID = 'ee000002-0001-4000-8000-000000000001';
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const NOTIF_ID = '22222222-2222-2222-2222-222222222222';
 
@@ -36,39 +42,43 @@ function makeNotificationRow(overrides: Partial<NotificationRow> = {}): Notifica
 }
 
 describe('Notification Integration (Phase 20)', () => {
+  let infra: IntegrationInfra;
   let app: INestApplication;
 
   beforeAll(async () => {
+    infra = await startIntegrationInfra();
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
+      VALUES (${TENANT_ID}::uuid, 'notif-int', 'Notification Integration Tenant', 'notif-realm', 'STARTER'::platform."PlanType", true)
+    `;
+    await infra.prisma.$executeRaw`
+      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name)
+      VALUES (${USER_ID}::uuid, ${TENANT_ID}::uuid, 'kc-notif', 'eng@notif-int.test', 'Engineer User')
+    `;
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideGuard(JwtAuthGuard)
-      .useValue({
-        canActivate: (ctx: {
-          switchToHttp: () => {
-            getRequest: () => {
-              headers: { authorization: string };
-              tenantId: string;
-              user: { user_id: string; role: string };
-            };
-          };
-        }) => {
-          const req = ctx.switchToHttp().getRequest();
-          req.tenantId = TENANT_ID;
-          req.user = { user_id: USER_ID, role: 'SITE_ENGINEER' };
-          return true;
-        },
-      })
+      .useValue(
+        clsAuthGuard(() => ({
+          tenant_id: TENANT_ID,
+          user_id: USER_ID,
+          role: 'SITE_ENGINEER',
+          tenantCode: 'notif-int',
+        })),
+      )
       .compile();
 
     app = module.createNestApplication();
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
-  });
+  }, 180_000);
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
+    await stopIntegrationInfra(infra);
   });
 
   // ── GET /notifications ─────────────────────────────────────────────────────

@@ -72,6 +72,9 @@ export class ProjectController {
   }
 
   @Post(':id/transitions')
+  // A transition mutates an existing project (it does not create a resource) → 200, not the
+  // POST default 201; matches the documented @ApiResponse below.
+  @HttpCode(HttpStatus.OK)
   @Roles(CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Trigger a project status transition' })
   @ApiParam({ name: 'id', format: 'uuid' })
