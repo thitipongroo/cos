@@ -2,7 +2,7 @@
 // Validates RS256-signed JWTs issued by Keycloak via JWKS endpoint.
 // No session store — stateless validation (QM-4).
 
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, OnModuleDestroy } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
@@ -21,10 +21,18 @@ export interface AuthenticatedUser extends JwtPayload {
 }
 
 @Injectable()
-export class KeycloakJwtStrategy extends PassportStrategy(Strategy, 'keycloak-jwt') {
+export class KeycloakJwtStrategy
+  extends PassportStrategy(Strategy, 'keycloak-jwt')
+  implements OnModuleDestroy
+{
   // Tenant resolution happens here (during JWT auth), NOT in a pre-auth middleware —
   // NestJS runs middleware before guards, so a middleware can never see req.user.
   private readonly platformPrisma = new PrismaClient();
+
+  /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.platformPrisma.$disconnect();
+  }
 
   constructor() {
     const keycloakUrl = process.env['KEYCLOAK_URL'] ?? 'http://localhost:8090';

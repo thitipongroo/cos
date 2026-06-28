@@ -98,3 +98,15 @@ describe('KeycloakJwtStrategy', () => {
     });
   });
 });
+
+describe('KeycloakJwtStrategy onModuleDestroy', () => {
+  it('disconnects the platform Prisma client on shutdown', async () => {
+    const strategy = new KeycloakJwtStrategy();
+    const disconnect = jest.fn().mockResolvedValue(undefined);
+    (strategy as unknown as { platformPrisma: { $disconnect: jest.Mock } }).platformPrisma = {
+      $disconnect: disconnect,
+    };
+    await strategy.onModuleDestroy();
+    expect(disconnect).toHaveBeenCalledTimes(1);
+  });
+});

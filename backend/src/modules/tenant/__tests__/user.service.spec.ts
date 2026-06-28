@@ -315,3 +315,13 @@ describe('UserService', () => {
     });
   });
 });
+
+describe('UserService onModuleDestroy', () => {
+  it('disconnects Prisma on shutdown', async () => {
+    const svc = new UserService({} as never);
+    await svc.onModuleDestroy();
+    expect(
+      (svc as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,
+    ).toHaveBeenCalledTimes(1);
+  });
+});

@@ -2,7 +2,13 @@
 // Runs on POST, PUT, PATCH, DELETE for all tenant-scoped endpoints.
 // PII must never appear in logs — uses IDs only (QM-4, QM-8).
 
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import {
+  Injectable,
+  NestInterceptor,
+  ExecutionContext,
+  CallHandler,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
@@ -12,8 +18,13 @@ const logger = createLogger('audit-interceptor');
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 @Injectable()
-export class AuditInterceptor implements NestInterceptor {
+export class AuditInterceptor implements NestInterceptor, OnModuleDestroy {
   private readonly prisma = new PrismaClient();
+
+  /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.prisma.$disconnect();
+  }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<{

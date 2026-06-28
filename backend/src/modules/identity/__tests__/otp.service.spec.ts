@@ -21,6 +21,7 @@ jest.mock('ioredis', () => ({
       return parseInt(redisMock[key]!, 10);
     }),
     expire: jest.fn(),
+    quit: jest.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -153,5 +154,13 @@ describe('OtpService — E2E auth bypass (double-gated)', () => {
     await svc.requestOtp('+66800000003');
     // Bypass returned null (production gate) → a random 6-digit OTP was generated, not the fixed one.
     expect(redisMock['otp:value:+66800000003']).toMatch(/^\d{6}$/);
+  });
+});
+
+describe('OtpService onModuleDestroy', () => {
+  it('quits the Redis connection on shutdown', async () => {
+    const svc = new OtpService();
+    await svc.onModuleDestroy();
+    expect((svc as unknown as { redis: { quit: jest.Mock } }).redis.quit).toHaveBeenCalledTimes(1);
   });
 });

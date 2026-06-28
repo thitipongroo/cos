@@ -17,4 +17,8 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/test/helpers/integration-mocks.ts'],
   // Container startup + migrations + per-test app.init need generous time (applies to hooks too).
   testTimeout: 120_000,
+  // No forceExit: every long-lived handle AppModule opens (Redis for throttler/OTP/MFA, the MFA
+  // PrismaClient) is closed via onModuleDestroy on app.close(), and Testcontainers are stopped in
+  // afterAll — so Jest exits on its own. If this ever hangs again, run with --detectOpenHandles to
+  // find the NEW unclosed handle rather than masking it with forceExit.
 };

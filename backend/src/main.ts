@@ -54,6 +54,12 @@ async function bootstrap(): Promise<void> {
     credentials: true,
   });
 
+  // Graceful shutdown — on SIGTERM/SIGINT (e.g. Kubernetes rolling deploy) Nest runs every
+  // provider's onModuleDestroy, closing the Redis/Prisma/ClickHouse clients owned across the
+  // modules. Without this, those handles are only closed on an explicit app.close() (tests), and
+  // in production they would be severed abruptly when the pod is killed.
+  app.enableShutdownHooks();
+
   const port = parseInt(process.env['PORT'] ?? '3000', 10);
   await app.listen(port, '0.0.0.0');
 }

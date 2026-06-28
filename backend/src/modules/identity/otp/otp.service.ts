@@ -3,7 +3,13 @@
 // OTP: 6-digit numeric, TTL 5min in Redis, max 3 attempts, 10 req/phone/day.
 // SMS gateway: AWS SNS (ap-southeast-1) via @aws-sdk/client-sns.
 
-import { Injectable, BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { Redis } from 'ioredis';
 import { createLogger } from '@cos/logger';
@@ -34,13 +40,18 @@ function e2eFixedOtp(): string | null {
 }
 
 @Injectable()
-export class OtpService {
+export class OtpService implements OnModuleDestroy {
   private readonly sns: SNSClient;
   private readonly redis: Redis;
 
   constructor() {
     this.sns = new SNSClient({ region: process.env['AWS_REGION'] ?? 'ap-southeast-1' });
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
+  }
+
+  /** Close the Redis connection on shutdown so the socket + reconnect timer do not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.redis.quit();
   }
 
   /** Request OTP — sends SMS and stores hashed OTP in Redis. */

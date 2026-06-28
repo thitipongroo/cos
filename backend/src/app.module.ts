@@ -5,7 +5,6 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { ClsModule } from 'nestjs-cls';
-import Redis from 'ioredis';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
 import { TenantModule } from './modules/tenant/tenant.module';
@@ -32,6 +31,7 @@ import { RequestIdInterceptor } from './shared/interceptors/request-id.intercept
 import { TenantContextInterceptor } from './shared/interceptors/tenant-context.interceptor';
 import { CloudflareWafMiddleware } from './shared/middleware/cloudflare-waf.middleware';
 import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.middleware';
+import { TracingShutdownService } from './shared/tracing-shutdown.service';
 
 @Module({
   imports: [
@@ -48,7 +48,10 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         throttlers: [{ ttl: 60000, limit: 100 }],
-        storage: new ThrottlerStorageRedisService(new Redis(cfg.getOrThrow<string>('REDIS_URL'))),
+        // Pass the URL (not a pre-built Redis): ThrottlerStorageRedisService then OWNS the client and
+        // closes it in its own onModuleDestroy (disconnectRequired=true). Passing a Redis instance
+        // leaves disconnectRequired falsy, so the socket leaks past app.close() and hangs Jest.
+        storage: new ThrottlerStorageRedisService(cfg.getOrThrow<string>('REDIS_URL')),
       }),
     }),
     TerminusModule,
@@ -90,6 +93,8 @@ import { SecureHeadersMiddleware } from './shared/middleware/secure-headers.midd
     { provide: APP_INTERCEPTOR, useClass: HttpMetricsInterceptor },
     // Global audit interceptor — logs all mutating operations (QM-4, Phase 16 RLS)
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
+    // Closes the OpenTelemetry SDK (Prometheus exporter) on graceful shutdown (enableShutdownHooks)
+    TracingShutdownService,
   ],
 })
 export class AppModule implements NestModule {

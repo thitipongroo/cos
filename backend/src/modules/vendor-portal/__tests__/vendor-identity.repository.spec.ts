@@ -1,5 +1,8 @@
 jest.mock('@prisma/client', () => ({
-  PrismaClient: jest.fn().mockImplementation(() => ({ $queryRaw: jest.fn() })),
+  PrismaClient: jest.fn().mockImplementation(() => ({
+    $queryRaw: jest.fn(),
+    $disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 import { VendorIdentityRepository } from '../vendor-identity.repository';
@@ -68,5 +71,15 @@ describe('VendorIdentityRepository', () => {
   it('findActiveRelationship returns null when none', async () => {
     q.mockResolvedValue([]);
     expect(await repo.findActiveRelationship('vid-1', 'ten-1')).toBeNull();
+  });
+});
+
+describe('VendorIdentityRepository onModuleDestroy', () => {
+  it('disconnects Prisma on shutdown', async () => {
+    const r = new VendorIdentityRepository();
+    await r.onModuleDestroy();
+    expect(
+      (r as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,
+    ).toHaveBeenCalledTimes(1);
   });
 });

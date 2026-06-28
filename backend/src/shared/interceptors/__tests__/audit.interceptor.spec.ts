@@ -3,6 +3,7 @@
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     $executeRaw: jest.fn().mockResolvedValue(undefined),
+    $disconnect: jest.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -113,5 +114,15 @@ describe('AuditInterceptor', () => {
         done();
       });
     });
+  });
+});
+
+describe('AuditInterceptor onModuleDestroy', () => {
+  it('disconnects Prisma on shutdown', async () => {
+    const i = new AuditInterceptor();
+    await i.onModuleDestroy();
+    expect(
+      (i as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,
+    ).toHaveBeenCalledTimes(1);
   });
 });

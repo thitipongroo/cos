@@ -3,6 +3,7 @@
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     $queryRaw: jest.fn(),
+    $disconnect: jest.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -78,5 +79,15 @@ describe('TenantMiddleware', () => {
     expect(req.tenantCode).toBe('acme_corp');
     expect(req.userId).toBe('user-1');
     expect(noop).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TenantMiddleware onModuleDestroy', () => {
+  it('disconnects the platform Prisma client on shutdown', async () => {
+    const mw = new TenantMiddleware();
+    await mw.onModuleDestroy();
+    expect(
+      (mw as unknown as { platformPrisma: { $disconnect: jest.Mock } }).platformPrisma.$disconnect,
+    ).toHaveBeenCalledTimes(1);
   });
 });

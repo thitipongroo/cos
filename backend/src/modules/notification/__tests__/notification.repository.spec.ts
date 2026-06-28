@@ -33,6 +33,7 @@ beforeEach(() => {
   );
   (PrismaClient as jest.Mock).mockImplementation(() => ({
     $transaction: mockPrismaTransaction,
+    $disconnect: jest.fn().mockResolvedValue(undefined),
   }));
   repo = new NotificationRepository(mockDb as never);
 });
@@ -364,5 +365,15 @@ describe('findUsersByRole', () => {
     const result = await repo.findUsersByRole('tenant-001', ['SITE_ENGINEER', 'PROJECT_MANAGER']);
     expect(result).toHaveLength(2);
     expect(result[0].email).toBe('eng@example.com');
+  });
+});
+
+describe('NotificationRepository onModuleDestroy', () => {
+  it('disconnects the platform Prisma client on shutdown', async () => {
+    await repo.onModuleDestroy();
+    expect(
+      (repo as unknown as { platformPrisma: { $disconnect: jest.Mock } }).platformPrisma
+        .$disconnect,
+    ).toHaveBeenCalledTimes(1);
   });
 });

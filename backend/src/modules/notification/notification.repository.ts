@@ -3,7 +3,7 @@
 // tenant_id is used as a column filter on every query.
 // findUsersByRole queries platform.* — always uses shared DB via platformPrisma.
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { NotificationPrismaService } from './notification-prisma.service';
 
@@ -54,13 +54,18 @@ export interface DeviceTokenRow {
 // ── Repository ─────────────────────────────────────────────────────────────
 
 @Injectable()
-export class NotificationRepository {
+export class NotificationRepository implements OnModuleDestroy {
   // platform.* tables always stay on the shared DB — never move to dedicated DB
   private readonly platformPrisma = new PrismaClient({
     datasources: { db: { url: process.env['DATABASE_URL'] } },
   });
 
   constructor(private readonly db: NotificationPrismaService) {}
+
+  /** Close the platform Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.platformPrisma.$disconnect();
+  }
 
   // ── templates ──────────────────────────────────────────────────────────────
 

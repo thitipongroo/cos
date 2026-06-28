@@ -8,6 +8,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { PrismaClient, Tenant } from '@prisma/client';
 import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
@@ -18,10 +19,15 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 const logger = createLogger('tenant-service');
 
 @Injectable()
-export class TenantService {
+export class TenantService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
   private readonly prisma = new PrismaClient();
   private readonly kafka = new KafkaProducer();
+
+  /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.prisma.$disconnect();
+  }
 
   async createTenant(dto: CreateTenantDto, createdBy: string): Promise<Tenant> {
     const existing = await this.prisma.$queryRaw<Array<{ tenant_id: string }>>`

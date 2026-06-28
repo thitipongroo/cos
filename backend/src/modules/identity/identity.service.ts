@@ -3,7 +3,7 @@
 // Path B: Keycloak OIDC — this service handles refresh/logout proxy only.
 // Refresh token rotation: Keycloak handles natively (refreshTokenMaxReuse: 0 in realm JSON).
 
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
 import { KeycloakAdminService } from './keycloak-admin.service';
@@ -19,10 +19,15 @@ export interface TokenResult {
 }
 
 @Injectable()
-export class IdentityService {
+export class IdentityService implements OnModuleDestroy {
   private readonly prisma = new PrismaClient();
 
   constructor(private readonly keycloakAdmin: KeycloakAdminService) {}
+
+  /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.prisma.$disconnect();
+  }
 
   /**
    * Issue Keycloak tokens for a verified OTP phone login (Path A).

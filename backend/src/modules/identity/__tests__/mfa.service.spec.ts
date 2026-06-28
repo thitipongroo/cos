@@ -15,6 +15,7 @@ jest.mock('ioredis', () => ({
     del: jest.fn(async (...keys: string[]) => {
       keys.forEach((k) => delete redisMock[k]);
     }),
+    quit: jest.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -26,6 +27,7 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     $executeRaw: mockExecuteRaw,
     $queryRaw: mockQueryRaw,
+    $disconnect: jest.fn().mockResolvedValue(undefined),
   })),
 }));
 
@@ -157,5 +159,18 @@ describe('MfaService', () => {
 
       expect(mockVerify).toHaveBeenCalledWith({ token: '123456', secret: 'DB_SECRET' });
     });
+  });
+});
+
+describe('MfaService onModuleDestroy', () => {
+  it('quits Redis and disconnects Prisma on shutdown', async () => {
+    const svc = new MfaService();
+    await svc.onModuleDestroy();
+    const cast = svc as unknown as {
+      redis: { quit: jest.Mock };
+      prisma: { $disconnect: jest.Mock };
+    };
+    expect(cast.redis.quit).toHaveBeenCalledTimes(1);
+    expect(cast.prisma.$disconnect).toHaveBeenCalledTimes(1);
   });
 });

@@ -9,6 +9,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
@@ -50,12 +51,17 @@ export interface PaginatedUsers {
 }
 
 @Injectable()
-export class UserService {
+export class UserService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (platform.users is cross-tenant)
   private readonly prisma = new PrismaClient();
   private readonly kafka = new KafkaProducer();
 
   constructor(private readonly keycloakAdmin: KeycloakAdminService) {}
+
+  /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.prisma.$disconnect();
+  }
 
   async listUsers(tenantId: string, params: PaginationParams): Promise<PaginatedUsers> {
     const { limit, offset } = params;

@@ -2,7 +2,7 @@
 // Runs after JWT guard — tenant_id comes from validated JWT claim.
 // Verifies tenant is active; sets req.tenantId, req.tenantCode, req.userId, req.userRole.
 
-import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NestMiddleware, UnauthorizedException, OnModuleDestroy } from '@nestjs/common';
 // @types/express added to devDeps — NestJS uses express-compatible types even with Fastify adapter
 import type { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
@@ -19,8 +19,13 @@ export interface TenantRequest extends Request {
 }
 
 @Injectable()
-export class TenantMiddleware implements NestMiddleware {
+export class TenantMiddleware implements NestMiddleware, OnModuleDestroy {
   private readonly platformPrisma = new PrismaClient();
+
+  /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.platformPrisma.$disconnect();
+  }
 
   async use(req: TenantRequest, _res: Response, next: NextFunction): Promise<void> {
     // Under the Fastify adapter, NestJS middleware runs via @fastify/middie where `req`

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleDestroy, Inject } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
@@ -15,15 +15,21 @@ export { CLICKHOUSE_CLIENT };
 // Cache TTL: 5 minutes — spec §Phase 14 Caching Strategy
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+// The CacheModule factory below OWNS this Redis client but @nestjs/cache-manager never closes the
+// underlying ioredis on shutdown, so the socket + reconnect timer leak past app.close(). Hold a
+// module-scoped reference and quit it in AnalyticsModule.onModuleDestroy (Nest invokes lifecycle
+// hooks on module classes). Module is a singleton imported once, so a single reference is correct.
+let cacheRedis: Redis | undefined;
+
 @Module({
   imports: [
     ConfigModule,
     CacheModule.registerAsync({
       inject: [ConfigService],
       useFactory: async (cfg: ConfigService) => {
-        const client = new Redis(cfg.getOrThrow<string>('REDIS_URL'));
+        cacheRedis = new Redis(cfg.getOrThrow<string>('REDIS_URL'));
         return {
-          store: await redisInsStore(client),
+          store: await redisInsStore(cacheRedis),
           ttl: CACHE_TTL_MS,
         };
       },
@@ -46,4 +52,12 @@ const CACHE_TTL_MS = 5 * 60 * 1000;
   ],
   exports: [AnalyticsService],
 })
-export class AnalyticsModule {}
+export class AnalyticsModule implements OnModuleDestroy {
+  constructor(@Inject(CLICKHOUSE_CLIENT) private readonly clickhouse: ClickHouseClient) {}
+
+  /** Close the cache Redis client and the ClickHouse client on shutdown so neither leaks. */
+  async onModuleDestroy(): Promise<void> {
+    await cacheRedis?.quit().catch(() => undefined);
+    await this.clickhouse.close().catch(() => undefined);
+  }
+}

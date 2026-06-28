@@ -2,7 +2,7 @@
 // These are CROSS-TENANT platform tables (no RLS, ADR-030), so access uses a plain PrismaClient —
 // NOT TenantPrismaService (which is tenant-scoped). Same pattern as tenant.service / identity.service.
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 export interface VendorIdentityRow {
@@ -22,8 +22,13 @@ export interface TradingRelationshipRow {
 }
 
 @Injectable()
-export class VendorIdentityRepository {
+export class VendorIdentityRepository implements OnModuleDestroy {
   private readonly prisma = new PrismaClient();
+
+  /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
+  async onModuleDestroy(): Promise<void> {
+    await this.prisma.$disconnect();
+  }
 
   async findIdentityByEmail(email: string): Promise<VendorIdentityRow | null> {
     const rows = await this.prisma.$queryRaw<VendorIdentityRow[]>`

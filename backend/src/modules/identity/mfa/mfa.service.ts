@@ -3,7 +3,12 @@
 // Enrollment: generate secret → store in Redis → user verifies → commit to DB.
 // Authentication: verify TOTP token against DB-stored secret during login.
 
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { authenticator } from 'otplib';
 import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
@@ -15,12 +20,18 @@ const logger = createLogger('mfa-service');
 const PENDING_SECRET_TTL_SECONDS = 600;
 
 @Injectable()
-export class MfaService {
+export class MfaService implements OnModuleDestroy {
   private readonly redis: Redis;
   private readonly prisma = new PrismaClient();
 
   constructor() {
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
+  }
+
+  /** Close the Redis connection and the dedicated Prisma client on shutdown so neither leaks. */
+  async onModuleDestroy(): Promise<void> {
+    await this.redis.quit();
+    await this.prisma.$disconnect();
   }
 
   /**
