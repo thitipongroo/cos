@@ -4881,6 +4881,30 @@ ROOT CAUSE PREVENTION RULES (prevent recurring bugs):
     (root cause of Phase 6 gaps: OpenSearch indexing, integration tests,
     ConflictRecord notification, site.material.consumed)
 
+  Rule 39 — Close every long-lived handle on shutdown (prevents Bug-class: leaked
+    Redis/Prisma/ClickHouse/OTel handles → Jest integration runner hangs after specs
+    pass, and ungraceful production shutdown on SIGTERM). Authoritative decision: ADR-034.
+    Any provider that constructs a long-lived client (new Redis / new PrismaClient /
+    ClickHouse / any socket or HTTP client) MUST close it via a Nest lifecycle hook:
+    (a) Provider-owned client → implement OnModuleDestroy → redis.quit() /
+        prisma.$disconnect() / client.close().
+    (b) Client created inside a MODULE FACTORY (no provider owns it) → close it from the
+        module class's OnModuleDestroy (Nest runs lifecycle hooks on module classes); or
+        hand ownership to a library that closes it (pass the Redis URL — not a pre-built
+        new Redis(...) — to ThrottlerStorageRedisService so disconnectRequired=true).
+    (c) Resources started OUTSIDE Nest DI (OTel SDK + Prometheus exporter in main.ts) →
+        a provider implementing OnApplicationShutdown calls shutdownTracing().
+    (d) main.ts MUST call app.enableShutdownHooks() before app.listen() so SIGTERM/SIGINT
+        fire the hooks in production; tests fire them via app.close().
+    (e) Integration jest config MUST NOT use forceExit (it masks leaks) — a hang after
+        specs pass signals a NEW unclosed handle; diagnose with --detectOpenHandles.
+    (f) Every new onModuleDestroy/onApplicationShutdown needs a unit test (invoke it,
+        assert quit/$disconnect/close/shutdownTracing called) to keep QM-1 100% coverage.
+    Reference implementations: finance/exchange-rate.service.ts,
+    identity/otp/otp.service.ts, shared/tracing-shutdown.service.ts.
+    (root cause: ~12 providers created clients with no cleanup → BOQ integration ran
+    32 min before being killed; pods severed connections abruptly on SIGTERM)
+
 25. When a rule in this document conflicts with a command in a Phase:
 
     THIS RULE SECTION takes precedence — surface the conflict, do not guess.

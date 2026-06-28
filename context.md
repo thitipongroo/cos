@@ -544,6 +544,25 @@ many tenants and replicas, PostgreSQL `max_connections` is exhausted. A connecti
 - **Tenant scale limit documentation** — before Stage 2 go-live, load-test the PgBouncer + PostgreSQL stack and record the maximum concurrent tenants at acceptable latency in `docs/architecture/tenant-scale-limits.md`; this threshold determines when DatabaseSharding evaluation must begin
 - Local development (Docker Compose): PgBouncer container required in `docker-compose.yml`; dev mode Vault and PgBouncer must start together with the application
 
+**Graceful shutdown — close every long-lived handle (ADR-034):**
+
+- Every provider that owns a long-lived client (Redis, PrismaClient, ClickHouse, or any socket/HTTP
+  client) MUST close it on shutdown: implement `OnModuleDestroy` and call `redis.quit()` /
+  `prisma.$disconnect()` / `client.close()`. Reference implementations: `finance/exchange-rate.service.ts`,
+  `identity/otp/otp.service.ts`, `identity/mfa/mfa.service.ts`.
+- A client created inside a module factory (no provider owns it) is closed from the **module class's**
+  `OnModuleDestroy` (Nest invokes lifecycle hooks on module classes) — e.g. `AnalyticsModule` (cache Redis +
+  ClickHouse). For `@nestjs/throttler`, pass the **Redis URL** (not a pre-built `new Redis(...)`) to
+  `ThrottlerStorageRedisService` so the library owns and closes the client (`disconnectRequired=true`).
+- Resources started OUTSIDE Nest DI (the OpenTelemetry SDK + Prometheus exporter in `main.ts`) are closed
+  via a provider implementing `OnApplicationShutdown` (`shared/tracing-shutdown.service.ts` → `shutdownTracing()`).
+- `main.ts` MUST call `app.enableShutdownHooks()` before `app.listen()` so `SIGTERM`/`SIGINT` (K8s rolling
+  deploy) run the hooks above; without it they only fire on an explicit `app.close()` (tests).
+- Integration config MUST NOT use `forceExit` — with handles closed Jest exits on its own; a future hang then
+  signals a real new leak (diagnose with `--detectOpenHandles`, never mask with `forceExit`).
+- Every new `onModuleDestroy`/`onApplicationShutdown` needs a unit test (invoke the hook, assert
+  `quit`/`$disconnect`/`close`/`shutdownTracing` called) to keep QM-1 100% line+branch coverage.
+
 ---
 
 ## PHASE 19 VERIFICATION PROTOCOL
@@ -708,6 +727,9 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Include all required security headers in every HTTP response (QM-4)
 - Use class-validator (TypeScript/NestJS) or Pydantic (Python) for all API input validation — never hand-written `if` checks alone (QM-4)
 - Connect application to **PgBouncer** (transaction mode), never directly to PostgreSQL port 5432 (QM-18)
+- Close every long-lived handle (Redis/Prisma/ClickHouse/HTTP client, OTel SDK) on shutdown via
+  `OnModuleDestroy`/`OnApplicationShutdown`; call `app.enableShutdownHooks()` in `main.ts`; never use
+  `forceExit` to mask a leak (QM-18; ADR-034)
 - Follow the entity-specific conflict resolution strategy from Phase 6 when implementing `ConflictHandler` (QM-9) — never invent a new strategy without an ADR
 - Inject runtime secrets via **AWS Secrets Manager** (cloud/AWS EKS) or **HashiCorp Vault** (on-premise/hybrid) per spec §5.2 and ADR-013; store Kubernetes Secret objects in git only as **SealedSecret** via kubeseal (QM-4)
 - Emit a Kafka event for every workflow state transition — all transitions in RFQ and PO state machines must produce a typed event via `@cos/shared` (master §9; spec §32.6)
@@ -721,7 +743,7 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Use **W&B Cloud** (`wandb.ai`) for MLOps experiment monitoring (Phase 23+); API key in AWS SM;
   RESOLVED (source: spec §22-ai-architecture §22.6)
 
-**ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–38):**
+**ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–39):**
 
 - Rule 26 — Before adding `import { X } from 'pkg'` to any source file, verify 'pkg' is in that package's own `package.json` (not root or another package). Add it if missing. (prevents missing runtime deps)
 - Rule 27 — When adding any new script to any `package.json`, add the corresponding task to root `turbo.json` in the same commit. (prevents missing turbo tasks)
@@ -766,6 +788,15 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   the spec Generate list is the complete and exhaustive obligation list.
   The product owner approval in step (c) is the human gate that closes the reasoning gap
   that automation cannot close.
+- Rule 39 — **Close every long-lived handle on shutdown** (prevents leaked Redis/Prisma/ClickHouse/OTel
+  handles → Jest integration runner hangs after specs pass, and ungraceful production shutdown on SIGTERM).
+  Authoritative decision: ADR-034; full mandate in QM-18 (Graceful shutdown).
+  (a) Provider that owns a client → `OnModuleDestroy` → `redis.quit()`/`prisma.$disconnect()`/`client.close()`
+  (b) Module-factory client (no provider owns it) → close from the **module class's** `OnModuleDestroy`; for
+  `@nestjs/throttler` pass the Redis URL (not a pre-built `new Redis`) so the library closes it
+  (c) Resources outside Nest DI (OTel SDK in `main.ts`) → provider with `OnApplicationShutdown` → `shutdownTracing()`
+  (d) `main.ts` MUST call `app.enableShutdownHooks()` before `app.listen()`; never use `forceExit` to mask a leak
+  (e) Every new `onModuleDestroy`/`onApplicationShutdown` needs a unit test → keep QM-1 100% line+branch coverage
 
 ### Never
 

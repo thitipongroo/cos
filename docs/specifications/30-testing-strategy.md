@@ -128,6 +128,10 @@ Target coverage by layer:
 - **RLS** is only enforced for the non-superuser `app_user` role; use an `app_user` connection (not the container superuser)
   to exercise RLS policies.
 - Kafka/OpenSearch network clients are stubbed globally via `test/helpers/integration-mocks.ts`.
+- **No `forceExit`** — the suite closes every long-lived handle on `app.close()` (each provider's
+  `OnModuleDestroy`/`OnApplicationShutdown` quits its Redis / disconnects its Prisma / closes its ClickHouse and the
+  OTel SDK), so Jest exits on its own. A hang after the specs pass means a NEW unclosed handle — diagnose with
+  `--detectOpenHandles`; never re-add `forceExit` to mask it.
 
 ### Critical Integration Tests
 
