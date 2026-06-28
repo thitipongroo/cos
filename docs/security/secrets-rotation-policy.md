@@ -16,6 +16,7 @@
 | Keycloak admin password                | All             | 90 days (manual)     | Keycloak admin console + SM/Vault update                       | Engineering   |
 | Keycloak client secret (`cos-backend`) | All             | 180 days             | Keycloak admin console + SM/Vault update                       | Engineering   |
 | JWT signing keys (Path A — HS256)      | All             | 180 days             | Rotate JWT_SECRET → rolling restart (tokens invalidated)       | Engineering   |
+| App secret encryption key (`APP_SECRET_ENCRYPTION_KEY`) | All | 180 days | Decrypt-with-old + re-encrypt-with-new all stored secrets, then SM/Vault update (see procedure; ADR-035) | Engineering |
 | Keycloak RS256 keypair (Path B)        | All             | 180 days             | Keycloak JWKS rotation (zero-downtime — overlap period 7 days) | Keycloak auto |
 | AWS SNS credentials (OTP)              | Cloud           | 90 days              | AWS IAM role rotation (prefer IAM role over long-lived keys)   | AWS IAM       |
 | MinIO access/secret keys               | All             | 90 days (manual)     | Update SM/Vault → rolling restart                              | Engineering   |
@@ -56,6 +57,19 @@
 4. After 7 days: deactivate old keypair
 5. No user impact — token validation is stateless via JWKS
 
+### App secret encryption key (`APP_SECRET_ENCRYPTION_KEY` — AES-256-GCM, ADR-035)
+
+> **Note:** This key directly encrypts stored secrets (currently `platform.users.mfa_totp_secret`).
+> There is no key-version field, so rotation requires re-encrypting every stored value with the new
+> key in one coordinated step. A lost key makes existing values unrecoverable (affected users must
+> re-enrol MFA).
+
+1. Generate the new key: `openssl rand -hex 32`
+2. Stage both keys (old + new) and run the re-encryption job: for each non-NULL `mfa_totp_secret`,
+   `decryptSecret` with the old key → `encryptSecret` with the new key → `UPDATE`
+3. Store the new key in AWS SM / Vault; remove the old key once re-encryption is verified
+4. Coordinate during a low-traffic window (see `docs/runbooks/deployment-windows.md`)
+
 ---
 
 ## First rotation schedule (Phase 2 → Stage 2 transition)
@@ -65,6 +79,7 @@ All secrets must be rotated in staging at least once before Stage 1 → 2 transi
 - [ ] PostgreSQL credentials rotated in staging — verified new credentials work
 - [ ] Keycloak RS256 keypair rotated — verified zero-downtime
 - [ ] JWT_SECRET rotated — verified re-authentication flow works
+- [ ] APP_SECRET_ENCRYPTION_KEY rotated — verified re-encryption job + MFA authenticate still works
 - [ ] MinIO credentials rotated — verified file upload still works
 
 Record rotation execution results in `cos-audit/audit-<timestamp>.log`.

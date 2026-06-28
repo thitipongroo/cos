@@ -130,7 +130,7 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 | `display_name`     | VARCHAR(255) | NOT NULL                     |                                                  |
 | `is_active`        | BOOLEAN      | NOT NULL DEFAULT true        |                                                  |
 | `mfa_enabled`      | BOOLEAN      | NOT NULL DEFAULT false       |                                                  |
-| `mfa_totp_secret`  | VARCHAR(255) | NULL                         | TOTP secret; NULL until MFA enrollment completes |
+| `mfa_totp_secret`  | VARCHAR(255) | NULL                         | TOTP secret, encrypted at rest (app-layer AES-256-GCM, ADR-035); NULL until MFA enrollment completes |
 | `created_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
 | `updated_at`       | TIMESTAMPTZ  | NOT NULL DEFAULT now()       |                                                  |
 
