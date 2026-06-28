@@ -15,8 +15,20 @@ jest.mock('ioredis', () => ({
     del: jest.fn(async (...keys: string[]) => {
       keys.forEach((k) => delete redisMock[k]);
     }),
+    incr: jest.fn(async (key: string) => {
+      redisMock[key] = String(parseInt(redisMock[key] ?? '0', 10) + 1);
+      return parseInt(redisMock[key]!, 10);
+    }),
+    expire: jest.fn(),
     quit: jest.fn().mockResolvedValue(undefined),
   })),
+}));
+
+// secret-cipher is exercised by its own spec; here we stub it so MFA tests stay deterministic.
+// `enc:` prefix models encryption; decrypt of an un-prefixed value is a no-op (legacy/plain secret).
+jest.mock('../../../shared/crypto/secret-cipher', () => ({
+  encryptSecret: (s: string) => `enc:${s}`,
+  decryptSecret: (s: string) => (s.startsWith('enc:') ? s.slice(4) : s),
 }));
 
 // ── Prisma mock ───────────────────────────────────────────────────────────────
@@ -158,6 +170,52 @@ describe('MfaService', () => {
       await service.authenticate('user-1', '123456');
 
       expect(mockVerify).toHaveBeenCalledWith({ token: '123456', secret: 'DB_SECRET' });
+    });
+
+    it('decrypts an encrypted stored secret before verifying', async () => {
+      mockQueryRaw.mockResolvedValue([{ mfa_enabled: true, mfa_totp_secret: 'enc:REALSEED' }]);
+      mockVerify.mockReturnValue(true);
+
+      await service.authenticate('user-1', '123456');
+
+      expect(mockVerify).toHaveBeenCalledWith({ token: '123456', secret: 'REALSEED' });
+    });
+
+    // ── brute-force lockout (QM-7) ──────────────────────────────────────────
+    it('throws 429 and does not query the DB when already locked out (>= 5 failures)', async () => {
+      redisMock['mfa:fail:user-1'] = '5';
+      await expect(service.authenticate('user-1', '000000')).rejects.toMatchObject({ status: 429 });
+      expect(mockQueryRaw).not.toHaveBeenCalled();
+    });
+
+    it('increments the failure counter and sets the lockout TTL on the first invalid token', async () => {
+      mockQueryRaw.mockResolvedValue([{ mfa_enabled: true, mfa_totp_secret: 'enc:SEED' }]);
+      mockVerify.mockReturnValue(false);
+
+      await expect(service.authenticate('user-1', '000000')).rejects.toThrow(UnauthorizedException);
+      expect(redisMock['mfa:fail:user-1']).toBe('1');
+      const redis = (service as unknown as { redis: { expire: jest.Mock } }).redis;
+      expect(redis.expire).toHaveBeenCalledWith('mfa:fail:user-1', 900);
+    });
+
+    it('does not reset the TTL on a subsequent invalid token (counter already exists)', async () => {
+      redisMock['mfa:fail:user-1'] = '2';
+      mockQueryRaw.mockResolvedValue([{ mfa_enabled: true, mfa_totp_secret: 'enc:SEED' }]);
+      mockVerify.mockReturnValue(false);
+
+      await expect(service.authenticate('user-1', '000000')).rejects.toThrow(UnauthorizedException);
+      expect(redisMock['mfa:fail:user-1']).toBe('3');
+      const redis = (service as unknown as { redis: { expire: jest.Mock } }).redis;
+      expect(redis.expire).not.toHaveBeenCalled();
+    });
+
+    it('clears the failure counter on a successful authentication', async () => {
+      redisMock['mfa:fail:user-1'] = '2';
+      mockQueryRaw.mockResolvedValue([{ mfa_enabled: true, mfa_totp_secret: 'enc:SEED' }]);
+      mockVerify.mockReturnValue(true);
+
+      await service.authenticate('user-1', '123456');
+      expect(redisMock['mfa:fail:user-1']).toBeUndefined();
     });
   });
 });

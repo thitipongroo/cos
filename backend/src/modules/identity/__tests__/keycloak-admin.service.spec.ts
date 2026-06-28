@@ -6,9 +6,15 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-import KcAdminClient from '@keycloak/keycloak-admin-client';
 import { UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
 import { KeycloakAdminService } from '../keycloak-admin.service';
+
+// @keycloak/keycloak-admin-client is ESM-only; a static default import emits a require() of an ES
+// module under CommonJS (TS1479, the same trap the production service dodges via dynamic import()).
+// Acquire it via require() — jest's moduleNameMapper still redirects this to the CJS mock stub
+// (src/__mocks__/keycloak-admin-client.js).
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const KcAdminClient = require('@keycloak/keycloak-admin-client');
 
 const MockKcAdminClient = KcAdminClient as unknown as jest.Mock;
 
@@ -69,6 +75,19 @@ describe('KeycloakAdminService', () => {
       expect((svc as unknown as { clientSecret: string }).clientSecret).toBe(
         'cos-backend-secret-dev',
       );
+    });
+
+    it('throws in production when KEYCLOAK_ADMIN_CLIENT_SECRET is absent (fail-fast, no dev fallback)', () => {
+      const prevEnv = process.env['NODE_ENV'];
+      delete process.env['KEYCLOAK_ADMIN_CLIENT_SECRET'];
+      process.env['NODE_ENV'] = 'production';
+      try {
+        expect(() => new KeycloakAdminService()).toThrow(
+          'KEYCLOAK_ADMIN_CLIENT_SECRET must be set in production',
+        );
+      } finally {
+        process.env['NODE_ENV'] = prevEnv;
+      }
     });
   });
 

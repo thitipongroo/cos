@@ -20,7 +20,13 @@ export class KeycloakAdminService {
   constructor() {
     this.baseUrl = process.env['KEYCLOAK_URL'] ?? 'http://localhost:8090';
     this.clientId = process.env['KEYCLOAK_ADMIN_CLIENT_ID'] ?? 'cos-backend';
-    this.clientSecret = process.env['KEYCLOAK_ADMIN_CLIENT_SECRET'] ?? 'cos-backend-secret-dev';
+    const secret = process.env['KEYCLOAK_ADMIN_CLIENT_SECRET'];
+    // Fail-fast in production: the dev placeholder secret must never be used outside local/dev —
+    // production injects the real secret via AWS Secrets Manager / Vault (QM-4).
+    if (!secret && process.env['NODE_ENV'] === 'production') {
+      throw new Error('KEYCLOAK_ADMIN_CLIENT_SECRET must be set in production');
+    }
+    this.clientSecret = secret ?? 'cos-backend-secret-dev';
   }
 
   // @keycloak/keycloak-admin-client is ESM-only and backend compiles to CommonJS

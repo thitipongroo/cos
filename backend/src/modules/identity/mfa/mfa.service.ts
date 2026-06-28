@@ -7,17 +7,23 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  HttpException,
+  HttpStatus,
   OnModuleDestroy,
 } from '@nestjs/common';
 import { authenticator } from 'otplib';
 import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import { createLogger } from '@cos/logger';
+import { encryptSecret, decryptSecret } from '../../../shared/crypto/secret-cipher';
 
 const logger = createLogger('mfa-service');
 
 // Pending enrollment secret lives in Redis for 10 minutes — user must verify within this window.
 const PENDING_SECRET_TTL_SECONDS = 600;
+// Brute-force protection on the TOTP login step (QM-7): lock out after 5 failures for 15 minutes.
+const MFA_MAX_ATTEMPTS = 5;
+const MFA_LOCKOUT_TTL_SECONDS = 900;
 
 @Injectable()
 export class MfaService implements OnModuleDestroy {
@@ -66,9 +72,11 @@ export class MfaService implements OnModuleDestroy {
     if (!valid) {
       throw new UnauthorizedException('Invalid TOTP token');
     }
+    // Encrypt the TOTP seed at the application layer before persisting (defense-in-depth above
+    // DB SSE-KMS) so DB read access alone cannot recover a usable MFA seed.
     await this.prisma.$executeRaw`
       UPDATE platform.users
-      SET mfa_totp_secret = ${secret},
+      SET mfa_totp_secret = ${encryptSecret(secret)},
           mfa_enabled     = true,
           updated_at      = now()
       WHERE user_id = ${userId}::uuid
@@ -82,6 +90,15 @@ export class MfaService implements OnModuleDestroy {
    * Called during Path B login after password auth succeeds.
    */
   async authenticate(userId: string, token: string): Promise<void> {
+    const lockKey = `mfa:fail:${userId}`;
+    const failures = parseInt((await this.redis.get(lockKey)) ?? '0', 10);
+    if (failures >= MFA_MAX_ATTEMPTS) {
+      throw new HttpException(
+        'Too many failed MFA attempts — try again later',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
     const rows = await this.prisma.$queryRaw<
       Array<{
         mfa_enabled: boolean;
@@ -97,10 +114,16 @@ export class MfaService implements OnModuleDestroy {
     if (!user?.mfa_enabled || !user.mfa_totp_secret) {
       throw new BadRequestException('MFA not enrolled for this user');
     }
-    const valid = authenticator.verify({ token, secret: user.mfa_totp_secret });
+    const secret = decryptSecret(user.mfa_totp_secret);
+    const valid = authenticator.verify({ token, secret });
     if (!valid) {
+      const count = await this.redis.incr(lockKey);
+      if (count === 1) {
+        await this.redis.expire(lockKey, MFA_LOCKOUT_TTL_SECONDS);
+      }
       throw new UnauthorizedException('Invalid TOTP token');
     }
+    await this.redis.del(lockKey);
     logger.info({ userId }, 'mfa.authenticate.ok');
   }
 }

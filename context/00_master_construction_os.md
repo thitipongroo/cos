@@ -1340,7 +1340,7 @@ Secret Management: conditional per deployment type (spec §5.2)
   Secret injection: environment variables at pod startup (both paths)
   Dynamic secrets: cloud → AWS SM rotation Lambda (per resource type); on-prem → Vault DB engine (PostgreSQL TTL 24h)
 
-Entities (PostgreSQL — all in schema: identity):
+Entities (PostgreSQL — all in schema: platform):
   tenants:
     tenant_id        UUID PK DEFAULT gen_random_uuid()
     tenant_code      VARCHAR(50) UNIQUE NOT NULL
@@ -1361,7 +1361,7 @@ Entities (PostgreSQL — all in schema: identity):
     display_name    VARCHAR(255) NOT NULL
     is_active       BOOLEAN DEFAULT true
     mfa_enabled     BOOLEAN DEFAULT false
-    mfa_totp_secret VARCHAR(255) NULL
+    mfa_totp_secret VARCHAR(255) NULL  -- encrypted at rest (app-layer AES-256-GCM, ADR-035)
     created_at      TIMESTAMPTZ DEFAULT now()
     updated_at      TIMESTAMPTZ DEFAULT now()
     INDEX: (tenant_id, email)
@@ -1443,24 +1443,24 @@ Generate:
                PUT /admin/realms/{realm}/users/{id}/reset-password (ephemeral one-time credential)
                Set user attributes: tenant_id, user_id, role (see spec §5.4.2)
       Step 2 — COS: create platform.users record with keycloak_user_id = keycloakUserId
-               create platform.tenant_memberships record; emit user.created
+               create platform.tenant_memberships record; emit identity.user.created.v1
     Path B user creation (TWO STEPS — via KeycloakAdminService):
       Step 1 — Keycloak: KeycloakAdminService.createEmailUser(email, displayName, realm)
                POST /admin/realms/{realm}/users → get keycloakUserId
                Set user attributes: tenant_id, user_id, role (see spec §5.4.2)
       Step 2 — COS: create platform.users record with keycloak_user_id = keycloakUserId
-               create platform.tenant_memberships record; emit user.created
+               create platform.tenant_memberships record; emit identity.user.created.v1
     Keycloak Admin API integration implemented in Phase 2 — KD-AUTH-001 READY
     (see spec §32-implementation-specifications §32.8 for full implementation spec)
 
 - Kafka events:
 
-    tenant.created                     { tenant_id, tenant_code, tenant_name, plan_type, dedicated_db_url? }
-    tenant.deactivated                 { tenant_id }
+    identity.tenant.created.v1         { tenant_id, tenant_code, tenant_name, plan_type, dedicated_db_url? }
+    identity.tenant.deactivated.v1     { tenant_id }
     platform.enterprise.contract_signed  { tenant_id, contract_reference? }  ← Phase 25; Admin Panel OR CRM webhook
     platform.enterprise.db_provisioned   { tenant_id, rds_endpoint }         ← Phase 25; EnterpriseProvisioningWorkflow completion
-    user.created       { tenant_id, user_id, email, role }  ← emitted from POST /api/v1/users
-    user.role_changed  { tenant_id, user_id, old_role, new_role }  ← emitted from PATCH /api/v1/users/:userId/role
+    identity.user.created.v1       { tenant_id, user_id, email, role }  ← emitted from POST /api/v1/users
+    identity.user.role_changed.v1  { tenant_id, user_id, old_role, new_role }  ← emitted from PATCH /api/v1/users/:userId/role
 
 npm packages required in backend/package.json — add BEFORE implementing (Rule 26):
   dependencies:    @nestjs/passport, @nestjs/jwt, passport, passport-jwt, @aws-sdk/client-sns, @keycloak/keycloak-admin-client

@@ -66,6 +66,12 @@ describe('OtpService', () => {
     await expect(service.verifyOtp('+66812345679', '123456')).rejects.toThrow(BadRequestException);
   });
 
+  it('verifyOtp throws BadRequestException for an OTP of the wrong length (constant-time guard)', async () => {
+    await service.requestOtp('+66812345678');
+    // 5-digit submission — exercises the length-mismatch branch before timingSafeEqual.
+    await expect(service.verifyOtp('+66812345678', '12345')).rejects.toThrow(BadRequestException);
+  });
+
   it('verifyOtp throws TooManyRequestsException after 3 failed attempts', async () => {
     await service.requestOtp('+66812345678');
     // 3 failed attempts

@@ -14,6 +14,11 @@ import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { Redis } from 'ioredis';
 import { createLogger } from '@cos/logger';
 
+// node:crypto builtin — loaded via require() (the in-repo idiom for builtins, cf.
+// platform-webhook.service.ts) so it resolves under CommonJS without a package.json dep.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { randomInt, timingSafeEqual } = require('crypto') as typeof import('crypto');
+
 const logger = createLogger('otp-service');
 
 const OTP_TTL_SECONDS = 300; // 5 minutes
@@ -22,9 +27,17 @@ const OTP_DAILY_LIMIT = 10;
 const OTP_LENGTH = 6;
 
 function generateOtp(): string {
-  return Math.floor(Math.random() * 10 ** OTP_LENGTH)
+  // crypto.randomInt is a CSPRNG — Math.random() is predictable and must never mint a credential.
+  return randomInt(0, 10 ** OTP_LENGTH)
     .toString()
     .padStart(OTP_LENGTH, '0');
+}
+
+// Constant-time OTP comparison — avoids leaking how many leading digits matched via response timing.
+function otpMatches(submitted: string, expected: string): boolean {
+  const a = Buffer.from(submitted);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 // E2E auth bypass — DOUBLE-GATED: only when E2E_AUTH_BYPASS=true AND NODE_ENV !== 'production'.
@@ -54,7 +67,12 @@ export class OtpService implements OnModuleDestroy {
     await this.redis.quit();
   }
 
-  /** Request OTP — sends SMS and stores hashed OTP in Redis. */
+  /**
+   * Request OTP — sends SMS and stores the OTP in Redis.
+   * Stored as the raw value (not hashed): Redis is ephemeral with a 5-min TTL, never persisted to disk
+   * or git, and a hash of a 6-digit code is trivially brute-forced (10^6 preimages) so it adds no real
+   * protection. Confidentiality rests on Redis access control + short TTL.
+   */
   async requestOtp(phoneNumber: string): Promise<{ expiresInSeconds: number }> {
     const fixedOtp = e2eFixedOtp();
     // The E2E bypass also skips the per-phone daily rate limit: automated suites request many OTPs for
@@ -99,7 +117,7 @@ export class OtpService implements OnModuleDestroy {
       );
     }
 
-    if (storedOtp !== otp) {
+    if (!otpMatches(otp, storedOtp)) {
       await this.redis.incr(attemptsKey);
       logger.warn({ phone: '[REDACTED]' }, 'OTP verification failed');
       throw new BadRequestException('Invalid OTP');
