@@ -8,33 +8,36 @@ import (
 	neo4j "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-// ApplyConstraints creates NODE KEY constraints for all 8 Phase 13 node labels.
+// ApplyConstraints creates composite UNIQUENESS constraints on (id, tenant_id) for all 8
+// Phase 13 node labels. Uniqueness (not NODE KEY) is used because NODE KEY requires Neo4j
+// Enterprise; composite uniqueness is supported on Community and enforces the same key
+// uniqueness (without the additional property-existence guarantee).
 // Safe to call on every startup — IF NOT EXISTS prevents duplicate constraint errors.
 func ApplyConstraints(ctx context.Context, driver neo4j.DriverWithContext) error {
 	constraints := []string{
 		`CREATE CONSTRAINT kg_project_key IF NOT EXISTS
-		 FOR (n:Project) REQUIRE (n.project_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Project) REQUIRE (n.project_id, n.tenant_id) IS UNIQUE`,
 
 		`CREATE CONSTRAINT kg_task_key IF NOT EXISTS
-		 FOR (n:Task) REQUIRE (n.task_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Task) REQUIRE (n.task_id, n.tenant_id) IS UNIQUE`,
 
 		`CREATE CONSTRAINT kg_material_key IF NOT EXISTS
-		 FOR (n:Material) REQUIRE (n.material_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Material) REQUIRE (n.material_id, n.tenant_id) IS UNIQUE`,
 
 		`CREATE CONSTRAINT kg_vendor_key IF NOT EXISTS
-		 FOR (n:Vendor) REQUIRE (n.vendor_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Vendor) REQUIRE (n.vendor_id, n.tenant_id) IS UNIQUE`,
 
 		`CREATE CONSTRAINT kg_inspection_key IF NOT EXISTS
-		 FOR (n:Inspection) REQUIRE (n.inspection_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Inspection) REQUIRE (n.inspection_id, n.tenant_id) IS UNIQUE`,
 
 		`CREATE CONSTRAINT kg_invoice_key IF NOT EXISTS
-		 FOR (n:Invoice) REQUIRE (n.invoice_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Invoice) REQUIRE (n.invoice_id, n.tenant_id) IS UNIQUE`,
 
 		`CREATE CONSTRAINT kg_contract_key IF NOT EXISTS
-		 FOR (n:Contract) REQUIRE (n.contract_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Contract) REQUIRE (n.contract_id, n.tenant_id) IS UNIQUE`,
 
 		`CREATE CONSTRAINT kg_delay_key IF NOT EXISTS
-		 FOR (n:Delay) REQUIRE (n.delay_id, n.tenant_id) IS NODE KEY`,
+		 FOR (n:Delay) REQUIRE (n.delay_id, n.tenant_id) IS UNIQUE`,
 	}
 
 	session := driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeWrite})

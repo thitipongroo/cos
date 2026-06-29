@@ -14,7 +14,7 @@ from opentelemetry import trace
 from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.trace.sampling import ParentBasedSampler, TraceIdRatioBased
+from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
@@ -32,7 +32,7 @@ def configure_telemetry(app=None) -> None:
         SERVICE_VERSION: service_version,
     })
 
-    sampler = ParentBasedSampler(root=TraceIdRatioBased(sampling_ratio))
+    sampler = ParentBased(root=TraceIdRatioBased(sampling_ratio))
 
     exporter = OTLPSpanExporter(endpoint=f"{otlp_endpoint}/v1/traces")
 

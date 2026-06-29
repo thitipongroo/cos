@@ -6,6 +6,10 @@
 generator client {
   provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
+  // Alpine (node:*-alpine) ships OpenSSL 3.x with musl libc. Without an explicit target Prisma
+  // generated the openssl-1.1.x musl engine, which fails at runtime ("libssl.so.1.1: not found").
+  // Pin the musl + openssl-3.0.x engines for both CPU arches (x64 CI, arm64 local) plus native.
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {

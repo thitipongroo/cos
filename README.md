@@ -109,7 +109,7 @@ make up-apps          # full infra + ALL app services in containers (backend, fi
                       #   ai-gateway/embedding/ocr, analytics/kg workers)
 ```
 
-`make up-apps` (= `docker compose --profile full --profile apps up -d --build`) runs the entire
+`make docker-apps-up-full` (= `docker compose --profile full --profile apps up -d --build`) runs the entire
 stack in Docker — this is the literal "all services start with Docker Compose" path. For the fast
 day-to-day inner loop, prefer `make dev` (turbo on host, native hot-reload) with infra from
 `make docker-up`/`docker-up-full`.

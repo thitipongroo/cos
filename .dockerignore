@@ -1,0 +1,34 @@
+# Build context excludes for root-context images (backend, file-service).
+# Never copy host node_modules into the image: they were created against the host's
+# pnpm store, so `COPY . .` would leave the image's modules dir inconsistent and pnpm
+# would try to purge+reinstall it (ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY in a
+# non-interactive build). The image installs its own deps in the deps/builder stage.
+**/node_modules
+
+# Build outputs / caches — regenerated inside the image
+**/dist
+**/.next
+**/.turbo
+**/coverage
+# TS incremental build state — MUST be excluded. The @cos/* packages put their
+# tsBuildInfoFile at the package root (not in dist), and tsc with `incremental: true`
+# skips emit when a stale buildinfo says "up to date". Letting a host buildinfo leak in
+# via `COPY . .` makes `tsc` emit nothing → dependents fail with TS2307 on @cos/* dist.
+**/*.tsbuildinfo
+
+# VCS
+.git
+.gitignore
+
+# Local env / secrets — never bake into an image (keep the template only)
+.env
+.env.*
+!.env.example
+
+# Logs / OS cruft
+**/*.log
+**/.DS_Store
+
+# React Native native build dirs — large, never needed by backend/file-service images
+apps/mobile/ios
+apps/mobile/android

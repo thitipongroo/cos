@@ -1,9 +1,29 @@
+import os
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from pydantic import BaseModel
 
-_PROMPTS_DIR = Path(__file__).resolve().parents[4] / "ai" / "prompts"
+
+def _resolve_prompts_dir() -> Path:
+    """Locate the ai/prompts directory.
+
+    In containers the service code is flattened to /app, so the old fixed-depth
+    `parents[4]` walk does not apply (and was off-by-one for the monorepo too).
+    Prefer the PROMPTS_DIR env var; otherwise walk up to find an `ai/prompts` dir
+    (works from services/ai-gateway/templates/loader.py on host and in tests).
+    """
+    env = os.environ.get("PROMPTS_DIR")
+    if env:
+        return Path(env)
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / "ai" / "prompts"
+        if candidate.is_dir():
+            return candidate
+    raise FileNotFoundError("Could not locate ai/prompts; set the PROMPTS_DIR env var")
+
+
+_PROMPTS_DIR = _resolve_prompts_dir()
 
 
 def _get_env() -> Environment:

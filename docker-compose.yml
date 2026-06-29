@@ -222,7 +222,10 @@ services:
       - '${CLICKHOUSE_NATIVE_PORT:-9000}:9000'
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ./infrastructure/clickhouse/users.d:/etc/clickhouse-server/users.d:ro
+      # Mount the single profile-settings file (not the whole users.d dir) read-only, so the
+      # ClickHouse entrypoint can still write its generated default-user.xml into users.d when
+      # CLICKHOUSE_USER is set — a `:ro` mount of the directory makes that write fail (read-only fs).
+      - ./infrastructure/clickhouse/users.d/analytics.xml:/etc/clickhouse-server/users.d/analytics.xml:ro
       - ./infrastructure/clickhouse/initdb.d:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test:
@@ -313,7 +316,10 @@ services:
     container_name: cos-temporal
     profiles: ['full']
     environment:
-      DB: postgresql
+      # temporalio/auto-setup 1.24.0 config template only has datastore branches for
+      # cassandra / mysql8 / postgres12 / postgres12_pgx — "postgresql" matches none, so the
+      # "default" datastore is never emitted ("missing config for datastore default"). Use postgres12.
+      DB: postgres12
       DB_PORT: 5432
       POSTGRES_USER: ${POSTGRES_USER:-cos}
       POSTGRES_PWD: ${POSTGRES_PASSWORD:-cos_dev_password}
@@ -362,6 +368,10 @@ services:
       KC_HTTP_ENABLED: 'true'
       KC_HOSTNAME_STRICT: 'false'
       KC_LOG_LEVEL: warn
+      # Expose /health, /health/ready, /health/live on the main HTTP port (8080) for the
+      # healthcheck below. Keycloak 24 serves health on 8080 (the dedicated management port
+      # is a Keycloak 25+ default). Without this the endpoints 404.
+      KC_HEALTH_ENABLED: 'true'
     ports:
       - '${KEYCLOAK_PORT:-8090}:8080'
     volumes:
@@ -371,7 +381,14 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ['CMD-SHELL', 'curl -sf http://localhost:8080/health/ready || exit 1']
+      # The Keycloak 24 distroless image ships no curl/wget, but its /bin/sh supports /dev/tcp.
+      # Open a socket to the health endpoint and assert an HTTP 200 status line (200 = ready,
+      # 503 = not ready) — status-line check is independent of the JSON body formatting.
+      test:
+        [
+          'CMD-SHELL',
+          "exec 3<>/dev/tcp/localhost/8080; printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; head -n1 <&3 | grep -q '200'",
+        ]
       interval: 30s
       timeout: 10s
       retries: 10
@@ -432,7 +449,7 @@ services:
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
       TEMPORAL_ADDRESS: temporal:7233
       KEYCLOAK_URL: http://keycloak:8080
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-cos-platform}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-construction-os}
       OPENSEARCH_URL: http://opensearch:9200
       NEO4J_URI: bolt://neo4j:7687
       NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
@@ -456,7 +473,9 @@ services:
       opensearch: { condition: service_healthy }
       temporal: { condition: service_started }
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/v1/health/live || exit 1']
+      # 127.0.0.1 (not localhost): the app listens on IPv4 0.0.0.0; localhost resolves to IPv6 ::1
+      # inside the container (/etc/hosts), which is refused.
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3000/api/v1/health/live || exit 1']
       interval: 15s
       timeout: 10s
       retries: 10
@@ -507,7 +526,8 @@ services:
       # ClamAV needs ~120s to load virus defs; file-service scans lazily on upload, so do not block on healthy
       clamav: { condition: service_started }
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:3002/health/live || exit 1']
+      # 127.0.0.1 (not localhost) — see backend healthcheck note (IPv6 ::1 refused).
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3002/health/live || exit 1']
       interval: 15s
       timeout: 10s
       retries: 10
@@ -535,8 +555,13 @@ services:
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://:${REDIS_PASSWORD:-cos_redis_password}@redis:6379
       OTEL_SERVICE_NAME: ai-gateway
+      # Prompt templates live at repo-root ai/prompts (not inside the service build context),
+      # mounted read-only below. loader.py reads this env (falls back to an upward search on host).
+      PROMPTS_DIR: /app/ai/prompts
     ports:
       - '${AI_GATEWAY_PORT:-8000}:8000'
+    volumes:
+      - ./ai/prompts:/app/ai/prompts:ro
     depends_on:
       kafka: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -546,7 +571,7 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')",
         ]
       interval: 15s
       timeout: 10s
@@ -579,7 +604,7 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')",
         ]
       interval: 15s
       timeout: 10s
@@ -615,7 +640,7 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')",
         ]
       interval: 15s
       timeout: 10s

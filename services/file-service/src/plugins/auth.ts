@@ -8,6 +8,11 @@ import { buildError } from '../errors';
 
 export const authPlugin = fp(async (app: FastifyInstance) => {
   app.addHook('onRequest', async (request: FastifyRequest, reply: FastifyReply) => {
+    // Health/liveness probes are unauthenticated — they carry no Kong-forwarded identity headers.
+    if (request.url === '/health/live' || request.url === '/health/ready') {
+      return;
+    }
+
     const tenantId = request.headers['x-tenant-id'] as string | undefined;
     const userId = request.headers['x-user-id'] as string | undefined;
 
