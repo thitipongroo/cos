@@ -742,8 +742,9 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   Stages 1–3, split to a dedicated instance only on the volume trigger in ADR-032
 - Use **scikit-learn + XGBoost** for all Phase 23 ML models (DelayForecastModel, SafetyVisionModel,
   GraphMLModel, RiskClassifier); RESOLVED (source: spec §22-ai-architecture §22.6)
-- Use **W&B Cloud** (`wandb.ai`) for MLOps experiment monitoring (Phase 23+); API key in AWS SM;
-  RESOLVED (source: spec §22-ai-architecture §22.6)
+- Use **MLflow** (experiment tracking + model registry) + **Evidently AI** (open-source, self-hosted —
+  model/output evaluation + drift) for Phase 23+ MLOps; no external SaaS/API key. W&B removed —
+  RESOLVED (source: spec §22-ai-architecture §22.6; ADR-038)
 
 **ROOT CAUSE PREVENTION RULES — applied on every implementation task (Rules 26–39):**
 

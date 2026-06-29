@@ -134,7 +134,7 @@ within each group.
 | **TimescaleDB**                                     | PostgreSQL extension for time-series data. Used for telemetry and IoT sensor data. See `04-tech-stack` section 4.3.                                                                                         |
 | **WAL** (Write-Ahead Log)                           | PostgreSQL's durability mechanism. Debezium reads the WAL to detect data changes without impacting application writes.                                                                                      |
 | **WatermelonDB**                                    | SQLite-backed offline database for React Native mobile app. See `04-tech-stack` section 4.1.                                                                                                                |
-| **Weights & Biases**                                | MLOps experiment tracking and model evaluation platform. Used to log training runs, compare model versions, and track evaluation metrics. See `04-tech-stack` section 4.6.                                  |
+| **Evidently AI**                                    | Open-source, self-hosted MLOps tool for model/output evaluation and data/concept drift monitoring. Paired with MLflow (experiment tracking + registry). See `04-tech-stack` section 4.6.                                  |
 
 ---
 

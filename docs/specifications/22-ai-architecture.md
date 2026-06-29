@@ -497,16 +497,17 @@ routers are trained on preference data (RouteLLM, arXiv:2406.18665).
 
 ---
 
-### Experiment Monitoring
+### Experiment Monitoring & Evaluation
 
-**Decision:** W&B Cloud (`wandb.ai`) — no self-hosted infrastructure needed.
+**Decision:** MLflow (experiment tracking) + Evidently AI (evaluation & drift) — both open-source,
+self-hosted.
 
-| Attribute | Value                                                                    |
-| --------- | ------------------------------------------------------------------------ |
-| Service   | Weights & Biases Cloud (wandb.ai)                                        |
-| Auth      | W&B API key stored in AWS Secrets Manager                                |
-| Usage     | Log training runs, metrics, model artifacts from Phase 23 MLOps pipeline |
-| Interface | `ExperimentMonitoring.logRun(config, metrics): void`                     |
+| Attribute | Value                                                                                                                        |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Service   | MLflow Tracking (self-hosted, same server as Model Registry) + Evidently AI (OSS, self-hosted)                               |
+| Auth      | In-cluster — no external SaaS / API key                                                                                      |
+| Usage     | MLflow: log training runs, params, metrics, artifacts (Phase 23). Evidently AI: model/output evaluation + data/concept drift |
+| Interface | `ExperimentMonitoring.logRun(config, metrics): void` (MLflow-backed)                                                         |
 
 ---
 

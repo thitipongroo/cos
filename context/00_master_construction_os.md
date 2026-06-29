@@ -1118,7 +1118,7 @@ backend/prisma/           — Database schema and migrations
 ai/
   prompts/                — Prompt templates (versioned)
   chains/                 — LangChain chain definitions
-  (AI output evaluation — it is operationalized via MLflow / W&B / Evidently AI on a monthly cadence; see docs/specifications/30-testing-strategy.md §30.11)
+  (AI output evaluation — it is operationalized via MLflow / Evidently AI on a monthly cadence; see docs/specifications/30-testing-strategy.md §30.11)
 
 docs/
   architecture/           — Architecture decision records (ADRs)
@@ -3069,7 +3069,7 @@ MLOps Stack (from source §19.4 — separate Phase 23, referenced here):
   Apache Airflow 2.x  — training pipeline orchestration
   Kubeflow Pipelines  — Kubernetes-native ML workflows
   Feast               — feature store
-  Weights & Biases    — experiment monitoring (RESOLVED: W&B Cloud, wandb.ai; source: spec §22-ai-architecture §22.6)
+  Evidently AI        — model/output evaluation + drift monitoring (open-source, self-hosted; replaced W&B per ADR-038; source: spec §22-ai-architecture §22.6)
   Full MLOps implementation: Phase 23
   Phase 11 generates: interfaces for model versioning and deployment
     ModelRegistry — interface for MLflow model registration post-training
@@ -4455,8 +4455,8 @@ MLOps Stack (from source §19.4):
   Apache Airflow 2.x — pipeline orchestration (DAG-based)
   Kubeflow Pipelines — Kubernetes-native ML workflow execution
   Feast             — feature store (serving layer for ML features)
-  Weights & Biases  — experiment monitoring
-    W&B Cloud (wandb.ai); API key in AWS SM (see spec §22.6)
+  Evidently AI      — model/output evaluation + drift monitoring
+    open-source, self-hosted; in-cluster, no external SaaS/API key (replaced W&B per ADR-038; see spec §22.6)
 
 Training Data Sources (from source §19.1):
   - site_reports (PostgreSQL → Data Lake)
@@ -4529,10 +4529,10 @@ Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-archite
                 or data deletions — generate stub only, governance review required
 
   ExperimentMonitoring:
-    Integrated with: W&B Cloud (wandb.ai) — RESOLVED: cloud, not self-hosted
-    Interface: { logRun(experimentName: str, metrics: dict, params: dict): RunRef }
-    Auth:     W&B API key stored in AWS Secrets Manager
-    Note:     provider RESOLVED — W&B Cloud; source: spec §22-ai-architecture §22.6
+    Integrated with: MLflow Tracking (experiment runs/metrics) + Evidently AI (evaluation + drift) — self-hosted
+    Interface: { logRun(experimentName: str, metrics: dict, params: dict): RunRef }  (MLflow-backed)
+    Auth:     in-cluster — no external SaaS / API key
+    Note:     provider RESOLVED — MLflow + Evidently AI (replaced W&B per ADR-038); source: spec §22-ai-architecture §22.6
 
   DelayForecastModel:
     Trigger:  after Phase 23 DAG dag-train-delay-model has run with 90+ days production data

@@ -112,11 +112,11 @@ Tools :
 
 Stack :
 
-- MLflow
+- MLflow (experiment tracking + model registry)
 - Kubeflow
 - Feast
 - Airflow
-- Weights & Biases
+- Evidently AI (open-source, self-hosted — model/output evaluation + drift monitoring)
 
 See 24-ai-training-pipeline section 24.4 for the full MLOps configuration and how each
 tool is used in the training pipeline.

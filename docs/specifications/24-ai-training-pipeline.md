@@ -55,7 +55,7 @@ Operational Data
 → Cleaning
 → Feature Engineering  (Feast feature store)
 → Model Training       (Kubeflow Pipelines)
-→ Evaluation           (Weights & Biases)
+→ Evaluation           (Evidently AI)
 → Deployment           (MLflow model registry → Kubernetes serving)
 → Monitoring           (drift detection, performance metrics)
 → Retraining           (triggered by drift or scheduled cycle)
@@ -97,11 +97,11 @@ is considered post-Stage 3 only (see section 24.5 Strategy note).
 
 Stack :
 
-- MLflow
+- MLflow (experiment tracking + model registry)
 - Kubeflow
 - Feast
 - Airflow
-- Weights & Biases
+- Evidently AI (model/output evaluation + drift)
 
 ---
 
