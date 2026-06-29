@@ -4334,8 +4334,9 @@ Stub in Phase 21 (generate stub — implement when triggered):
     Common event types: GPS_POSITION, FUEL_LEVEL, ENGINE_HOURS, IGNITION_ON/OFF,
                         IDLE_ALERT, GEOFENCE_BREACH
     Candidates: AWS IoT Core, Azure IoT Hub, self-hosted EMQX (MQTT broker)
-    Note:     IoT platform RESOLVED — EMQX self-hosted on EKS (MQTT broker)
-              EMQX → Kafka (MSK) connector built-in; consistent with AWS-native stack
+    Note:     IoT platform RESOLVED — EMQX self-hosted on EKS, open-source edition (Apache-2.0)
+              EMQX → IoT Ingestion Worker → Kafka (MSK); the custom worker forwards telemetry
+              (NOT EMQX's native/Enterprise Kafka data-bridge, which is a paid feature)
               Azure IoT Hub excluded; AWS IoT Core deferred (device mgmt at scale only)
 
 Constraints:

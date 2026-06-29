@@ -35,14 +35,14 @@ related_docs:
 
 ## 33.0 Standards Reference
 
-| Domain                  | Standard                                        | Version                  | Role                                                                                           |
-| ----------------------- | ----------------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------- |
-| IoT messaging           | MQTT — OASIS Standard                           | Version 5.0 (2019-03-07) | Normative — device-to-platform telemetry protocol                                              |
-| BIM data exchange       | Industry Foundation Classes (IFC) — ISO 16739-1 | IFC4 (ISO 16739-1:2018)  | Normative — BIM element identifier format and file exchange for BIM Integration                |
-| Embodied carbon factors | EN 15804:2012+A2:2019 / ISO 21930:2017          | Current                  | Normative — EPD life cycle module A1–A3 as the basis for material carbon emission factors      |
-| GHG accounting          | ISO 14064-1:2018                                | 2018                     | Informative — organizational GHG inventory framework for tenant carbon reporting               |
+| Domain                  | Standard                                        | Version                  | Role                                                                                                              |
+| ----------------------- | ----------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| IoT messaging           | MQTT — OASIS Standard                           | Version 5.0 (2019-03-07) | Normative — device-to-platform telemetry protocol                                                                 |
+| BIM data exchange       | Industry Foundation Classes (IFC) — ISO 16739-1 | IFC4 (ISO 16739-1:2018)  | Normative — BIM element identifier format and file exchange for BIM Integration                                   |
+| Embodied carbon factors | EN 15804:2012+A2:2019 / ISO 21930:2017          | Current                  | Normative — EPD life cycle module A1–A3 as the basis for material carbon emission factors                         |
+| GHG accounting          | ISO 14064-1:2018                                | 2018                     | Informative — organizational GHG inventory framework for tenant carbon reporting                                  |
 | Event envelope          | Base Event Envelope (CloudEvents-inspired)      | §32.4                    | Normative — COS Base Event Envelope (see 15-event-driven-workflow §15.6 + 32-implementation-specifications §32.4) |
-| Event schema            | Apache Avro / Confluent Schema Registry         | —                        | Normative — event schema format and compatibility (see 32-implementation-specifications §32.4) |
+| Event schema            | Apache Avro / Confluent Schema Registry         | —                        | Normative — event schema format and compatibility (see 32-implementation-specifications §32.4)                    |
 
 **Normative** = implementation must comply with the standard.
 **Informative** = provides context and calculation methodology; does not mandate specific tooling.
@@ -71,7 +71,8 @@ capability per the SaaS Maturity Model in 32-implementation-specifications secti
 **What this phase does NOT include:**
 
 - Hardware manufacturing or device firmware (platform integrates with third-party IoT devices)
-- BIM authoring tools (platform consumes BIM data via IFC.js parser, IFC format ISO 16739-1:2018; see `13-product-architecture` §13.4)
+- BIM authoring tools (platform consumes BIM data via IFC.js parser, IFC format ISO 16739-1:2018;
+ see `13-product-architecture` §13.4)
 - Autonomous construction control (humans remain in the loop for all physical actions)
 
 > ⚠️ **Stage gate:** Phase 24 may not begin until Phase 4 (Financial Infrastructure,
@@ -235,10 +236,15 @@ Aggregated daily summaries retained indefinitely (ClickHouse).
 
 **Carbon factor library:** Maintained as a configurable reference table per tenant.
 
-- Emission factors follow **EN 15804:2012+A2:2019** (Europe) / **ISO 21930:2017** (international) — life cycle module **A1–A3** (raw material supply + transport to manufacturer + manufacturing). These modules define embodied carbon for construction materials.
-- Carbon factor unit: **kgCO₂e per declared unit** (e.g., per kg, per m³, per piece — matching the EPD's declared unit for that material).
-- Source of factors: EPD programme operators (e.g., EPD International, IBU, BRE) or national inventory data compliant with **ISO 14064-1:2018**.
-- Factors are configurable per tenant and per material. The platform does not ship a pre-loaded factor database — tenants load factors from their chosen EPD source.
+- Emission factors follow **EN 15804:2012+A2:2019** (Europe) / **ISO 21930:2017** (international) — life cycle module
+ **A1–A3** (raw material supply + transport to manufacturer + manufacturing). These modules define embodied carbon for
+  construction materials.
+- Carbon factor unit: **kgCO₂e per declared unit** (e.g., per kg, per m³, per piece — matching the EPD's declared unit
+ for that material).
+- Source of factors: EPD programme operators (e.g., EPD International, IBU, BRE) or national inventory data compliant
+ with **ISO 14064-1:2018**.
+- Factors are configurable per tenant and per material. The platform does not ship a pre-loaded factor database — tenants
+ load factors from their chosen EPD source.
 - `carbon_factor_source` MUST be recorded for every factor used to enable audit trail.
 
 **Carbon Reporting Framework — GHG Protocol:**
@@ -350,7 +356,8 @@ queries TimescaleDB directly.
 
 **Implementation rule:**
 
-- BIM Integration — spec defined (IFC.js parser, IFC format, see `13-product-architecture` §13.4). **Must be implemented** before Phase 24 begins.
+- BIM Integration — spec defined (IFC.js parser, IFC format, see `13-product-architecture` §13.4). **Must be implemented**
+ before Phase 24 begins.
 - IoT Device Integration — must be provisioned as a stub (safe defaults) from Phase 21 onward.
   The Digital Twin Service must compile and start with this stub returning safe defaults before
   the integration is live. See `32-implementation-specifications` §32.9 for stub pattern.
@@ -364,9 +371,15 @@ queries TimescaleDB directly.
 | Component             | Technology                                 | Purpose                                                            |
 | --------------------- | ------------------------------------------ | ------------------------------------------------------------------ |
 | Time-series database  | TimescaleDB (PostgreSQL extension)         | TwinState hypertable — IoT event storage and point-in-time queries |
-| IoT message broker    | EMQX self-hosted on EKS                    | Telemetry ingestion; EMQX→Kafka (MSK) connector built-in           |
+| IoT message broker    | EMQX self-hosted on EKS (OSS)              | Telemetry ingestion → Kafka via IoT Ingestion Worker (see note)    |
 | BIM storage           | Object storage (MinIO/S3, separate bucket) | BIM file storage — large files (100 MB–10 GB)                      |
 | Carbon factor library | PostgreSQL table                           | Reference data — emission factors by material type                 |
+
+> **EMQX edition (RESOLVED):** EMQX runs as the **open-source edition (Apache-2.0)** — no
+> license cost. It does **not** use EMQX's native/Enterprise Kafka data-bridge; telemetry is
+> forwarded to Kafka (MSK) by the custom **IoT Ingestion Worker** per the §33.8 write path
+> (`IoT → EMQX → IoT Ingestion Worker → Kafka`). The Enterprise Kafka data-bridge is a paid
+> feature and is intentionally not used.
 
 ### Infrastructure Scaling Notes
 
@@ -422,7 +435,8 @@ The Phase 24 planning gate is triggered when both conditions are met:
 
 **Owner:** thitipongroo
 
-28-ecosystem-expansion §28.4 defines metrics for Phases 1–4 only. No Phase 5 (Smart Infrastructure) metrics are specified in this document.
+28-ecosystem-expansion §28.4 defines metrics for Phases 1–4 only. No Phase 5 (Smart Infrastructure) metrics are specified
+ in this document.
 
 Metrics MUST be defined before Phase 24 begins, covering at minimum:
 
@@ -489,4 +503,6 @@ General project delay / cost models use gradient boosting ML (see §22.7 INT-003
 
 ---
 
-> 📎 See also: [22-ai-architecture](22-ai-architecture.md) · [28-ecosystem-expansion](28-ecosystem-expansion.md) · [32-implementation-specifications](32-implementation-specifications.md) · [09-data-architecture](09-data-architecture.md) · [15-event-driven-workflow](15-event-driven-workflow.md)
+> 📎 See also: [22-ai-architecture](22-ai-architecture.md) · [28-ecosystem-expansion](28-ecosystem-expansion.md)
+> · [32-implementation-specifications](32-implementation-specifications.md) · [09-data-architecture](09-data-architecture.md)
+> · [15-event-driven-workflow](15-event-driven-workflow.md)

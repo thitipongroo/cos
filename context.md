@@ -734,8 +734,10 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - Inject runtime secrets via **AWS Secrets Manager** (cloud/AWS EKS) or **HashiCorp Vault** (on-premise/hybrid) per spec §5.2 and ADR-013; store Kubernetes Secret objects in git only as **SealedSecret** via kubeseal (QM-4)
 - Emit a Kafka event for every workflow state transition — all transitions in RFQ and PO state machines must produce a typed event via `@cos/shared` (master §9; spec §32.6)
 - Concrete guards in `backend/src/shared/guards/` — `@cos/rbac` for decorators/metadata keys only (spec §06 §6.9)
-- Use **EMQX** self-hosted on EKS as IoT MQTT broker (Phase 21+); pipeline: IoT device → EMQX →
-  Kafka (MSK) → TimescaleDB; RESOLVED (source: spec §13.5, `33-digital-twin-iot`).
+- Use **EMQX** (open-source edition, Apache-2.0) self-hosted on EKS as IoT MQTT broker (Phase 21+);
+  pipeline: IoT device → EMQX → **IoT Ingestion Worker** → Kafka (MSK) → TimescaleDB; the custom
+  worker forwards telemetry to Kafka — EMQX's native/Enterprise Kafka data-bridge (paid) is NOT
+  used; RESOLVED (source: spec §13.5, `33-digital-twin-iot` §33.8).
   TimescaleDB is a PostgreSQL extension co-located on the primary instance through
   Stages 1–3, split to a dedicated instance only on the volume trigger in ADR-032
 - Use **scikit-learn + XGBoost** for all Phase 23 ML models (DelayForecastModel, SafetyVisionModel,

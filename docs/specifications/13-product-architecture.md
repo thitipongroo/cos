@@ -43,7 +43,14 @@ Foundation :
 - Audit logs
 - Notifications
 - Workflow engine
-- Document engine (implemented by Document Service in 03-system-design section 3.2; sits above the File Service storage layer). **MVP scope:** OCR only (Phase 11 AI OCR Pipeline) + file storage (Phase 9 File Service). **Post-MVP:** version management, format conversion, and drawing viewer are not in the MVP phase plan (absent from §21.2) — implement when scheduled post-MVP.
+- Document engine
+  > (implemented by Document Service in 03-system-design section 3.2; sits above the File Service storage layer).
+  >
+  > **MVP scope:** OCR only (Phase 11 AI OCR Pipeline) + file storage (Phase 9 File Service).
+  >
+  > **Post-MVP:** version management, format conversion, and drawing viewer are not in the MVP phase plan
+  >
+  > (absent from §21.2) — implement when scheduled post-MVP.
 - API gateway
 - Event bus
 
@@ -106,7 +113,8 @@ Features :
 
 - Multi-project
 - Workflow automation
-- AI forecasting (Layer B Analytical AI — activates when Layer B is released post-MVP; see 22-ai-architecture section 22.2 and 21-mvp-scope section 21.4)
+- AI forecasting (Layer B Analytical AI — activates when Layer B is released post-MVP; see 22-ai-architecture section
+  22.2 and 21-mvp-scope section 21.4)
 - Advanced finance
 
 ### Enterprise Package
@@ -172,7 +180,8 @@ WHT is calculated as a hook inside the Avalara AvaTax flow. WHT certificate refe
 
 ### ERP Integration — Strategy Pattern
 
-**Decision:** Strategy pattern with a common `ERPIntegration` interface and one concrete adapter per ERP system. Each ERP system has its own STUB pending a real customer onboarding with that system.
+**Decision:** Strategy pattern with a common `ERPIntegration` interface and one concrete adapter per ERP system.
+ Each ERP system has its own STUB pending a real customer onboarding with that system.
 
 **Common interface (all adapters implement this):**
 
@@ -203,7 +212,8 @@ For stub implementation behaviour (Type A — fail-fast), see `32-implementation
 
 ### CRM Integration — Strategy Pattern
 
-**Decision:** Generic webhook receiver + per-CRM field mapper (Strategy pattern). Each CRM system has its own STUB pending a real tenant that uses that CRM.
+**Decision:** Generic webhook receiver + per-CRM field mapper (Strategy pattern). Each CRM system has its own STUB pending
+ a real tenant that uses that CRM.
 
 **Data flow (one direction only — CRM → COS):**
 
@@ -273,7 +283,8 @@ interface BIMQuantities {
 **Implementation path:**
 
 1. IFC.js (open-source parser — `@thatopen/engine` or `web-ifc`) — platform-agnostic, handles all BIM software
-2. Autodesk Forge API / Trimble Connect API — optional vendor-specific connectors (add only if a tenant requires cloud-based BIM platform sync)
+2. Autodesk Forge API / Trimble Connect API — optional vendor-specific connectors (add only if a tenant requires
+ cloud-based BIM platform sync)
 
 Both integration points ship as stubs until a tenant requests IFC import.
 For stub implementation behaviour (Type A — fail-fast), see `32-implementation-specifications` §32.9.
@@ -296,7 +307,8 @@ Quota tracked via Kong usage plans plugin; metering data fed to ClickHouse for b
 
 **Per-API-key quota (marketplace integrations):**
 
-Each OAuth2 client credentials API key is subject to an additional per-key monthly cap, independent of the tenant total. No single key may consume more than 20% of the tenant's monthly quota.
+Each OAuth2 client credentials API key is subject to an additional per-key monthly cap, independent of the tenant total.
+ No single key may consume more than 20% of the tenant's monthly quota.
 
 | Tier       | Per-API-key monthly limit                    | Overage action                    |
 | ---------- | -------------------------------------------- | --------------------------------- |
@@ -306,9 +318,13 @@ Each OAuth2 client credentials API key is subject to an additional per-key month
 
 Kong enforces both limits simultaneously: tenant total quota and per-key quota. A request is rejected if either is exceeded.
 
-> **Scope:** Monthly quota applies to **external API traffic only** — third-party integrations authenticating via OAuth2 client credentials flow (ERP adapters, CRM webhooks, marketplace integrations, developer API keys). Internal web and mobile app traffic (authenticated via user JWT from Keycloak/COS identity service) is **not subject to monthly quota** and is governed solely by the per-minute rate limits in `14-api-architecture` §14.2.
+> **Scope:** Monthly quota applies to **external API traffic only** — third-party integrations authenticating via OAuth2
+> client credentials flow (ERP adapters, CRM webhooks, marketplace integrations, developer API keys). Internal web and
+> mobile app traffic (authenticated via user JWT from Keycloak/COS identity service) is **not subject to monthly quota**
+> and is governed solely by the per-minute rate limits in `14-api-architecture` §14.2.
 >
-> Kong distinguishes traffic by auth method: requests using OAuth2 client credentials (`client_id` + `client_secret`) are metered against the quota; requests using user Bearer JWTs are not.
+> Kong distinguishes traffic by auth method: requests using OAuth2 client credentials (`client_id` + `client_secret`) are
+> metered against the quota; requests using user Bearer JWTs are not.
 
 ---
 
@@ -340,7 +356,8 @@ interface BiometricCheckIn {
 type BiometricMethod = 'FINGERPRINT' | 'FACE_ID' | 'IRIS';
 ```
 
-Vendor SDK is injected via DI at deployment time. No vendor is selected at the platform level — each site configures their vendor adapter. Credentials and SDK config stored per-site in AWS Secrets Manager / Vault.
+Vendor SDK is injected via DI at deployment time. No vendor is selected at the platform level — each site configures their
+ vendor adapter. Credentials and SDK config stored per-site in AWS Secrets Manager / Vault.
 
 ---
 
@@ -353,7 +370,7 @@ Vendor SDK is injected via DI at deployment time. No vendor is selected at the p
 | Protocol        | MQTT 5.0 (OASIS Standard 2019)                               |
 | QoS             | QoS 1 minimum for telemetry; QoS 2 for critical state events |
 | Topic structure | `cos/v1/devices/{device_id}/telemetry`                       |
-| Broker          | **EMQX self-hosted on EKS** (RESOLVED — master Phase 21 + `33-digital-twin-iot` §33.8; EMQX→Kafka MSK connector built-in; AWS IoT Core deferred, Azure IoT Hub excluded) |
+| Broker          | **EMQX self-hosted on EKS (open-source, Apache-2.0)**        |
 | Interface       | `IoTIntegration.publishTelemetry(deviceId, payload): void`   |
 | Trigger         | Implement when first tenant deploys GPS-tracked equipment    |
 
@@ -389,4 +406,5 @@ Vendor SDK is injected via DI at deployment time. No vendor is selected at the p
 
 ---
 
-> 📎 See also: [03-system-design](03-system-design.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md) · [14-api-architecture](14-api-architecture.md) · [21-mvp-scope](21-mvp-scope.md)
+> 📎 See also: [03-system-design](03-system-design.md) · [06-rbac-permission-matrix](06-rbac-permission-matrix.md)
+> · [14-api-architecture](14-api-architecture.md) · [21-mvp-scope](21-mvp-scope.md)
