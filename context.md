@@ -148,23 +148,23 @@ Before starting any implementation task:
 - Contract tests required whenever a new inter-service HTTP contract is introduced
 - E2E tests required for every critical user workflow (site report, procurement approval, cost tracking):
   - Web: Playwright 1.x — `tests/e2e/`; 10 scenarios (spec §30.5):
-      1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
-      2. project create — PM creates project; status transitions DRAFT → ACTIVE
-      3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
-      4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
-      5. Procurement flow — Create PR → generate RFQ → receive quotation → approve PO →
-         record delivery → approve vendor invoice
-      6. Daily site report — Site Engineer submits report with manpower count and blockers
-      7. Budget exceeded alert — Cost transaction pushes project over budget → Executive receives push notification
-      8. Safety incident — Safety Officer reports incident → PM receives push notification →
-         acknowledged within 30 min SLA
-      9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
-      10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
+    1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
+    2. project create — PM creates project; status transitions DRAFT → ACTIVE
+    3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
+    4. dashboard view — Executive loads analytics dashboard; ClickHouse queries complete within P95 < 3s SLA
+    5. Procurement flow — Create PR → generate RFQ → receive quotation → approve PO →
+       record delivery → approve vendor invoice
+    6. Daily site report — Site Engineer submits report with manpower count and blockers
+    7. Budget exceeded alert — Cost transaction pushes project over budget → Executive receives push notification
+    8. Safety incident — Safety Officer reports incident → PM receives push notification →
+       acknowledged within 30 min SLA
+    9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
+    10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
   - Mobile: Detox (React Native) — `apps/mobile/e2e/`; 3 scenarios (spec §30.5):
-      1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
-      2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
-      3. Sync conflict resolution — Two users update same task progress_percent while offline →
-         Max-wins applied on sync (higher value wins; progress is monotonic)
+    1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
+    2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
+    3. Sync conflict resolution — Two users update same task progress_percent while offline →
+       Max-wins applied on sync (higher value wins; progress is monotonic)
 - Test files must be committed in the same PR as the implementation — never as a follow-up
 - For financial calculation logic, procurement approval flows, and permission checks → mutation testing required (`stryker` for TypeScript, `mutmut` for Python); mutation score ≥ 70%
 
@@ -265,17 +265,17 @@ Before starting any implementation task:
 These are enforced targets. If an implementation does not meet them, do not ship — optimize or escalate.
 Source: spec §31.6 (targets corrected to match spec SLO definitions)
 
-| Metric                                       | Target                                         | Measurement                                  |
-| -------------------------------------------- | ---------------------------------------------- | -------------------------------------------- |
-| API p95 latency (read endpoints — GET)       | **< 300ms**                                    | Grafana / k6 load test                       |
-| API p99 latency (read endpoints — GET)       | < 500ms                                        | Grafana / k6 load test                       |
-| API p95 latency (write endpoints — POST/PUT) | **< 500ms**                                    | Grafana / k6 load test                       |
-| API p99 latency (write endpoints — POST/PUT) | < 1s                                           | Grafana / k6 load test                       |
-| Dashboard / analytics (ClickHouse)           | p95 < 1s                                       | Grafana / k6 load test                       |
-| AI report generation                         | p95 < 5s                                       | Grafana / k6 load test                       |
-| Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                        |
-| Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network             |
-| Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                           |
+| Metric                                       | Target                                         | Measurement                                                                             |
+| -------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
+| API p95 latency (read endpoints — GET)       | **< 300ms**                                    | Grafana / k6 load test                                                                  |
+| API p99 latency (read endpoints — GET)       | < 500ms                                        | Grafana / k6 load test                                                                  |
+| API p95 latency (write endpoints — POST/PUT) | **< 500ms**                                    | Grafana / k6 load test                                                                  |
+| API p99 latency (write endpoints — POST/PUT) | < 1s                                           | Grafana / k6 load test                                                                  |
+| Dashboard / analytics (ClickHouse)           | p95 < 1s                                       | Grafana / k6 load test                                                                  |
+| AI report generation                         | p95 < 5s                                       | Grafana / k6 load test                                                                  |
+| Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                                                                   |
+| Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network                                                        |
+| Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                                                                      |
 | k6 sustained load (100 VU × 5 min)           | 0 errors, p95 within budget                    | Weekly scheduled — `scripts/loadtest/api-baseline.js` (staging); Phase 19 one-time gate |
 
 The k6 load test runs on a **weekly schedule against staging** — not per-PR (source: spec §30.9). Results are advisory: alert Engineering Lead if p95 latency increases > 20% vs. previous week. Load tests do not block PR merge. Note: Phase 19 automated check #7 runs a one-time load test gate before production go-live.
@@ -930,6 +930,8 @@ docs/security/csp-policy.md                         — Content Security Policy 
 docs/security/cors-policy.md                        — CORS allowed origins per environment (Phase 3)
 docs/security/pentest-findings.md                   — External pentest findings and resolution status (before Stage 1→2)
 infrastructure/terraform/aws/kms.tf                 — KMS customer-managed key definitions (Phase 17)
+infrastructure/kubernetes/external-secrets/         — ESO ExternalSecrets: AWS SM → K8s Secret cos-<svc>-secrets (cloud secret delivery; spec §08 §8.6)
+infrastructure/kubernetes/sealed-secrets/           — SealedSecrets (kubeseal): git-committed / on-prem secret path; same cos-<svc>-secrets names
 
 # API & Documentation
 docs/api/                                           — OpenAPI 3.1 specs (auto-generated per service: auth.openapi.yaml, boq.openapi.yaml, graph.openapi.yaml, analytics.openapi.yaml, etc.; QM-2 convention: docs/api/{service}.openapi.yaml; full canonical list: spec §14.3)
@@ -941,6 +943,7 @@ docs/architecture/adr/008-shared-db-tenant-id-rls.md               — Shared DB
 docs/architecture/adr/015-database-retry-helpers.md               — Database retry helper pattern for Prisma transient errors (Phase 1)
 docs/architecture/adr/032-timescaledb-colocated-then-split.md     — TimescaleDB co-located on primary PostgreSQL; split to dedicated instance on volume trigger (Phase 1 decision)
 docs/architecture/adr/033-ci-build-gate.md                        — CI `build` (turbo run build) gate runs on every PR; tsc --noEmit is not a build (Phase 1 decision)
+docs/architecture/adr/036-compose-profiles-local-app-services.md  — Docker Compose `apps` profile to run app services in containers locally (Phase 1 enhancement; `make up-apps`)
 
 # SLO & Reliability
 docs/slo/dashboard-registry.md                      — Grafana dashboard IDs per SLO (Phase 15)
@@ -974,6 +977,11 @@ cos-audit/                                          — Product owner sign-off a
 # Observability Infrastructure
 infrastructure/monitoring/otel-collector/otel-collector-config.yml — OTel collector config (includes trace sampling configuration)
 infrastructure/synthetics/                          — Synthetic monitoring probe definitions for Grafana Synthetic Monitoring / OpenTelemetry Collector (Phase 15)
+
+# Lint & Format Config
+.markdownlint.json / .markdownlintignore            — markdownlint rules + legacy-tree excludes (CI lints changed .md only; §30.12)
+.yamllint                                           — yamllint rules (CI gate, repo-wide; §30.12)
+.sqlfluff / .sqlfluffignore                         — sqlfluff PostgreSQL lint config + immutable-migration excludes (CI gate; §30.12)
 
 # Stage Marker
 .cos-stage                                          — Machine-readable current stage number; read by STEP 2 auto-detect

@@ -60,13 +60,13 @@ defined in section 30.12.
 
 Target coverage by layer:
 
-| Layer       | Target                                   | Tooling                                |
-| ----------- | ---------------------------------------- | -------------------------------------- |
+| Layer       | Target                                                           | Tooling                                |
+| ----------- | ---------------------------------------------------------------- | -------------------------------------- |
 | Unit        | 100% lines + 100% branches per service (see §30.3, §30.12; QM-1) | Jest (Node.js/NestJS), pytest (Python) |
-| Integration | Key service boundaries and DB queries    | Jest + Testcontainers                  |
-| E2E         | Critical user journeys (10–20 scenarios) | Playwright (web), Detox (mobile)       |
-| Contract    | All public API endpoints                 | Pact.io (consumer-driven contracts)    |
-| Load        | Peak usage scenarios                     | k6                                     |
+| Integration | Key service boundaries and DB queries                            | Jest + Testcontainers                  |
+| E2E         | Critical user journeys (10–20 scenarios)                         | Playwright (web), Detox (mobile)       |
+| Contract    | All public API endpoints                                         | Pact.io (consumer-driven contracts)    |
+| Load        | Peak usage scenarios                                             | k6                                     |
 
 ---
 
@@ -90,7 +90,8 @@ Target coverage by layer:
 ### Key Invariants to Test
 
 - `tenant_id` is always injected into DB queries — never accepts null
-- Soft delete filter (`WHERE deleted_at IS NULL`) is applied in all queries (including GET by ID — soft-deleted records return 404)
+- Soft delete filter (`WHERE deleted_at IS NULL`) is applied in all queries (including GET by ID — soft-deleted records
+  return 404)
 - Approval threshold logic returns the correct approver chain for all THB ranges
 - Event naming convention follows `{domain}.{entity}.{action}.{version}` format
 
@@ -159,7 +160,8 @@ Scenarios for MVP:
 1. **Procurement flow** — Create PR → generate RFQ → receive quotation → approve PO → record delivery → approve vendor invoice
 2. **Daily site report** — Site Engineer submits report with manpower count and blockers
 3. **Budget exceeded alert** — Cost transaction pushes project over budget → Executive receives push notification
-4. **Safety incident** — Safety Officer reports incident → PM receives push notification → incident acknowledged within 30 min SLA
+4. **Safety incident** — Safety Officer reports incident → PM receives push notification → incident acknowledged within
+   30 min SLA
 5. **QC inspection** — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
 6. **Approval escalation** — Approver does not respond in 48 hours → next approver is notified
 7. **Login** — User authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
@@ -173,7 +175,8 @@ Scenarios:
 
 1. **Offline check-in** — Worker checks in with no connectivity → record queued → sync on reconnect
 2. **Offline inspection** — Inspector fills checklist offline → photo attached → sync on reconnect
-3. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
+3. **Sync conflict resolution** — Two users update same task `progress_percent` while offline → Max-wins applied on sync
+   (higher value wins; progress is monotonic)
 
 ### Environment
 
@@ -210,15 +213,15 @@ in production, independently of CI/CD. Results are emitted as Prometheus metrics
 trigger the `TenantIsolationBreach` alert (see §31.7 of
 [31-monitoring-observability](31-monitoring-observability.md)).
 
-| Property       | Value                                                                     |
-| -------------- | ------------------------------------------------------------------------- |
-| Schedule       | `*/5 * * * *` (every 5 minutes)                                           |
-| Test fixtures  | `tenant_fixture_a`, `tenant_fixture_b` (production-only test tenants)     |
-| Scope          | Same 5 checks as PR gate (PostgreSQL, Neo4j, Kafka, S3, API)              |
-| Pass           | `tenant_isolation_check_result{check_name} = 1` (all checks)              |
-| Fail           | `tenant_isolation_check_result{check_name} = 0` → TenantIsolationBreach   |
-| Alert          | §31.7 TenantIsolationBreach - pages security lead immediately             |
-| Location       | `infrastructure/monitoring/isolation-probe/` (CronJob + test script)      |
+| Property      | Value                                                                   |
+| ------------- | ----------------------------------------------------------------------- |
+| Schedule      | `*/5 * * * *` (every 5 minutes)                                         |
+| Test fixtures | `tenant_fixture_a`, `tenant_fixture_b` (production-only test tenants)   |
+| Scope         | Same 5 checks as PR gate (PostgreSQL, Neo4j, Kafka, S3, API)            |
+| Pass          | `tenant_isolation_check_result{check_name} = 1` (all checks)            |
+| Fail          | `tenant_isolation_check_result{check_name} = 0` → TenantIsolationBreach |
+| Alert         | §31.7 TenantIsolationBreach - pages security lead immediately           |
+| Location      | `infrastructure/monitoring/isolation-probe/` (CronJob + test script)    |
 
 ---
 
@@ -330,15 +333,15 @@ The NestJS ThrottlerGuard must have a dedicated unit test.
 
 Required test cases:
 
-| Test case | Assertion |
-| --- | --- |
-| Request within limit | Returns 200; does not throw |
-| Request exceeding default limit (101st within 60 s) | Throws `ThrottlerException`; response is HTTP 429 |
-| Auth endpoint exceeds limit (11th within 60 s) | Throws `ThrottlerException`; `@Throttle` override applied |
+| Test case                                             | Assertion                                                 |
+| ----------------------------------------------------- | --------------------------------------------------------- |
+| Request within limit                                  | Returns 200; does not throw                               |
+| Request exceeding default limit (101st within 60 s)   | Throws `ThrottlerException`; response is HTTP 429         |
+| Auth endpoint exceeds limit (11th within 60 s)        | Throws `ThrottlerException`; `@Throttle` override applied |
 | File upload endpoint exceeds limit (21st within 60 s) | Throws `ThrottlerException`; `@Throttle` override applied |
-| `Retry-After` header present on 429 | Header value equals seconds until reset window |
-| Counter resets after TTL expires | Next request after TTL returns 200 |
-| Redis storage used (not in-memory) | `ThrottlerStorageRedisService` is injected and called |
+| `Retry-After` header present on 429                   | Header value equals seconds until reset window            |
+| Counter resets after TTL expires                      | Next request after TTL returns 200                        |
+| Redis storage used (not in-memory)                    | `ThrottlerStorageRedisService` is injected and called     |
 
 Tests must mock `ThrottlerStorageRedisService` — do not connect to a real Redis instance in
 unit tests. Integration tests against a real Redis are covered in the e2e test suite.
@@ -397,23 +400,26 @@ unit tests. Integration tests against a real Redis are covered in the e2e test s
 
 CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.9:
 
-| Gate                                     | Trigger               | Blocks                                      |
-| ---------------------------------------- | --------------------- | ------------------------------------------- |
-| Lint + type check                        | Every PR              | PR merge                                    |
-| Build (`turbo run build`)                | Every PR              | PR merge — see ADR-033                      |
-| Unit tests                               | Every PR              | PR merge                                    |
-| Unit coverage 100% lines + 100% branches | Every PR              | PR merge                                    |
-| Integration tests                        | Every PR              | PR merge                                    |
-| Temporal workflow tests (serial)         | Every PR              | PR merge — own jest config                  |
-| Multi-tenant isolation tests             | Every PR              | PR merge                                    |
-| API contract tests (Pact)                | Every PR              | PR merge                                    |
-| Dependency audit (pnpm/govulncheck/pip)  | Every PR              | PR merge (High/Critical)                    |
-| Security SAST (SonarQube)                | Every PR              | PR merge (High severity) — ⏸ DEFERRED       |
-| Smoke tests (ArgoCD PostSync wave 1)     | Post-deploy (staging) | Blocks E2E wave 2                           |
-| E2E tests (Playwright)                   | Merge to `main`       | Staging deploy                              |
-| E2E tests (Detox — React Native mobile)  | Merge to `main`       | Staging deploy                              |
-| Load tests (k6)                          | Weekly scheduled      | Alert only (not blocking)                   |
-| DAST (OWASP ZAP)                         | Weekly scheduled      | Alert only (not blocking)                   |
+| Gate                                      | Trigger               | Blocks                                |
+| ----------------------------------------- | --------------------- | ------------------------------------- |
+| Lint + type check                         | Every PR              | PR merge                              |
+| YAML lint (yamllint)                      | Every PR              | PR merge                              |
+| SQL lint (sqlfluff, PostgreSQL)           | Every PR              | PR merge                              |
+| Markdown lint (markdownlint, changed .md) | Every PR              | PR merge                              |
+| Build (`turbo run build`)                 | Every PR              | PR merge — see ADR-033                |
+| Unit tests                                | Every PR              | PR merge                              |
+| Unit coverage 100% lines + 100% branches  | Every PR              | PR merge                              |
+| Integration tests                         | Every PR              | PR merge                              |
+| Temporal workflow tests (serial)          | Every PR              | PR merge — own jest config            |
+| Multi-tenant isolation tests              | Every PR              | PR merge                              |
+| API contract tests (Pact)                 | Every PR              | PR merge                              |
+| Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)              |
+| Security SAST (SonarQube)                 | Every PR              | PR merge (High severity) — ⏸ DEFERRED |
+| Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2                     |
+| E2E tests (Playwright)                    | Merge to `main`       | Staging deploy                        |
+| E2E tests (Detox — React Native mobile)   | Merge to `main`       | Staging deploy                        |
+| Load tests (k6)                           | Weekly scheduled      | Alert only (not blocking)             |
+| DAST (OWASP ZAP)                          | Weekly scheduled      | Alert only (not blocking)             |
 
 ---
 
@@ -473,25 +479,25 @@ build<EntityName>       — seed data factories (used for direct DB seeding)
 
 ### Current factories
 
-| Factory | Type | Fields |
-| --- | --- | --- |
-| `buildTenant` | seed | id, name, slug, tier, active, created_at |
-| `buildUser` | seed | id, tenant_id, email, name, role, created_at |
-| `buildProject` | seed | id, tenant_id, name, status, budget, currency, created_at |
-| `buildDocument` | seed | id, tenant_id, project_id, name, mime_type, size_bytes, storage_key, uploaded_by, created_at |
-| `buildInvoice` | seed | id, tenant_id, project_id, vendor_id, amount, currency, status, due_date, created_at |
-| `buildCreateProjectDto` | DTO | project_code, project_name, project_type, budget_amount, budget_currency, start_date, end_date |
-| `buildCreateVendorDto` | DTO | vendor_code, vendor_name, contact_email |
-| `buildCreatePurchaseRequestDto` | DTO | pr_number, required_date |
-| `buildCreateRfqDto` | DTO | project_id, rfq_number |
-| `buildCreatePurchaseOrderDto` | DTO | vendor_id, project_id, po_number |
-| `buildCreateBoqItemDto` | DTO | category_id, description, unit, quantity |
-| `buildSetBudgetDto` | DTO | total_budget_amount, total_budget_currency |
-| `buildCreateSiteReportDto` | DTO | project_id, report_date |
-| `buildCreateWorkerDto` | DTO | employee_code, full_name, trade_type, employment_type |
-| `buildCreateCheckInDto` | DTO | project_id, check_in_at |
-| `buildNotificationPreferenceDto` | DTO | event_type, channel, is_enabled |
-| `buildRegisterDeviceDto` | DTO | push_token, platform |
+| Factory                          | Type | Fields                                                                                         |
+| -------------------------------- | ---- | ---------------------------------------------------------------------------------------------- |
+| `buildTenant`                    | seed | id, name, slug, tier, active, created_at                                                       |
+| `buildUser`                      | seed | id, tenant_id, email, name, role, created_at                                                   |
+| `buildProject`                   | seed | id, tenant_id, name, status, budget, currency, created_at                                      |
+| `buildDocument`                  | seed | id, tenant_id, project_id, name, mime_type, size_bytes, storage_key, uploaded_by, created_at   |
+| `buildInvoice`                   | seed | id, tenant_id, project_id, vendor_id, amount, currency, status, due_date, created_at           |
+| `buildCreateProjectDto`          | DTO  | project_code, project_name, project_type, budget_amount, budget_currency, start_date, end_date |
+| `buildCreateVendorDto`           | DTO  | vendor_code, vendor_name, contact_email                                                        |
+| `buildCreatePurchaseRequestDto`  | DTO  | pr_number, required_date                                                                       |
+| `buildCreateRfqDto`              | DTO  | project_id, rfq_number                                                                         |
+| `buildCreatePurchaseOrderDto`    | DTO  | vendor_id, project_id, po_number                                                               |
+| `buildCreateBoqItemDto`          | DTO  | category_id, description, unit, quantity                                                       |
+| `buildSetBudgetDto`              | DTO  | total_budget_amount, total_budget_currency                                                     |
+| `buildCreateSiteReportDto`       | DTO  | project_id, report_date                                                                        |
+| `buildCreateWorkerDto`           | DTO  | employee_code, full_name, trade_type, employment_type                                          |
+| `buildCreateCheckInDto`          | DTO  | project_id, check_in_at                                                                        |
+| `buildNotificationPreferenceDto` | DTO  | event_type, channel, is_enabled                                                                |
+| `buildRegisterDeviceDto`         | DTO  | push_token, platform                                                                           |
 
 ### When NOT to use a factory
 

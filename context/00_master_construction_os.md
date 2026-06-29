@@ -1164,13 +1164,18 @@ Generate:
   dev mode Vault and PgBouncer must start together with the application;
   application must connect to PgBouncer address — never directly to PostgreSQL port 5432
 
+- Docker Compose `apps` profile (ADR-036): optional tier running the app services (backend,
+  file-service, ai-gateway/embedding/ocr, analytics/kg workers) in containers —
+  `docker compose --profile full --profile apps up` / `make up-apps`. Day-to-day dev still uses
+  `make dev` (turbo on host); the infra-only default is unchanged.
+
 - Istio local dev: skip Istio for Docker Compose (use plain networking locally)
 
   Istio enabled from dev Kubernetes environment onwards
 
 - HashiCorp Vault: dev mode container for local secret injection
 - .env.example with all required variables documented
-- GitHub Actions: CI pipeline (lint → build → test → docker build)
+- GitHub Actions: CI pipeline (lint → build → test → docker build); lint adds yamllint/sqlfluff/markdownlint — §30.12
 - Makefile with: setup, dev, test, build, migrate, seed targets
 - root README with architecture overview and getting started
 - Git hooks: initialize Husky (husky init); create .husky/pre-commit running lint-staged;

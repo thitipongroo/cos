@@ -1,15 +1,7 @@
-# SQL Fluff Ignore
-
-## Node Module
-
 node_modules/
-
-## Immutable migrations — never edited after apply (QM-9). Applies to Prisma and service-level migrations
-
+# Immutable migrations — never edited after apply (QM-9). Applies to Prisma and service-level migrations.
 backend/prisma/migrations/
 backend/prisma/rollbacks/
 services/*/migrations/
-
-## ClickHouse SQL is a different dialect (not postgres)
-
+# ClickHouse SQL is a different dialect (not postgres)
 infrastructure/clickhouse/

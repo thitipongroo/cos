@@ -43,9 +43,11 @@ jobs:
         run: yamllint .
       - name: sqlfluff
         run: sqlfluff lint .
-      # markdownlint runs on CHANGED Markdown files only — the repo's docs/ + context/ trees carry a
-      # large pre-existing backlog, so a repo-wide gate is not feasible; new/edited .md must be clean
-      # (uses .markdownlint.json). Whole changed file is linted, so touching a legacy doc means tidying it.
+      # markdownlint runs on CHANGED Markdown files only — a repo-wide gate is not feasible
+      # (~101k pre-existing violations). The large legacy reference trees (docs/specifications/,
+      # context/, context.md) carry that backlog and are excluded here AND in .markdownlintignore;
+      # all other new/edited .md must be clean (uses .markdownlint.json). markdownlint lints the
+      # whole changed file, so touching a non-excluded legacy doc means tidying it.
       - name: markdownlint (changed Markdown only)
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -53,8 +55,9 @@ jobs:
           else
             base="${{ github.event.before }}"
           fi
-          changed=$(git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' 2>/dev/null || true)
-          if [ -z "$changed" ]; then echo "No changed Markdown files — skipping."; exit 0; fi
+          changed=$(git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' \
+            ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' 2>/dev/null || true)
+          if [ -z "$changed" ]; then echo "No changed (non-legacy) Markdown files — skipping."; exit 0; fi
           echo "Changed Markdown files:"; echo "$changed"
           echo "$changed" | xargs pnpm exec markdownlint-cli2
 

@@ -1,0 +1,6 @@
+node_modules/
+# Large legacy reference docs carrying a pre-existing markdownlint backlog — not gated
+# (the CI markdownlint step lints only changed Markdown OUTSIDE these trees).
+docs/specifications/
+context/
+context.md
