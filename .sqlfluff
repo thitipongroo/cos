@@ -1,0 +1,8 @@
+# sqlfluff config — lints hand-authored PostgreSQL only.
+# Scope (see .sqlfluffignore): Prisma migrations/rollbacks are immutable (QM-9 — never edit an
+# applied migration) and ClickHouse SQL is a different dialect, so both are excluded.
+[sqlfluff]
+dialect = postgres
+templater = raw
+# Line length is not enforced for SQL in this repo (consistent with Prettier owning width elsewhere).
+exclude_rules = LT05

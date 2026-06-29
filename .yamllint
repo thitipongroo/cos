@@ -1,0 +1,33 @@
+# yamllint config — structural YAML checks for CI.
+# Formatting (indentation width, line length) is owned by Prettier; this config keeps the
+# checks Prettier does NOT cover (syntax errors, duplicate keys, trailing spaces, bad
+# truthy values) and disables purely-cosmetic rules to avoid conflicting with Prettier.
+extends: default
+
+ignore: |
+  node_modules/
+  dist/
+  build/
+  .next/
+  coverage/
+  .turbo/
+  pnpm-lock.yaml
+  # Helm templates contain Go template syntax ({{ }}) — not valid YAML (cf. .prettierignore)
+  infrastructure/helm/**/templates/
+  # Generated OpenAPI specs (QM-2) — format owned by the generator, not hand-edited
+  docs/api/
+
+rules:
+  line-length: disable # Prettier governs width (printWidth 100); repo does not enforce 80
+  document-start: disable # leading `---` is optional across the repo
+  comments-indentation: disable
+  comments:
+    min-spaces-from-content: 1
+  truthy:
+    check-keys: false # allow on/off/yes/no as values (common in k8s/CI YAML)
+  braces:
+    max-spaces-inside: 1 # Prettier formats `{ key: val }` with inner spaces
+  # octal-values left at default (disabled): `defaultMode: 0555` in k8s manifests is a valid,
+  # intentional octal file mode — flagging/rewriting it risks breaking the manifest.
+  key-duplicates: enable
+  empty-values: disable

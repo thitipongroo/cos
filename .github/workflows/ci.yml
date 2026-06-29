@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history so the markdownlint step can diff changed files vs the base
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -29,6 +31,32 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
       - run: pnpm run format:check
+      # YAML + SQL linters (Python). yamllint runs repo-wide (see .yamllint); sqlfluff lints only
+      # hand-authored PostgreSQL — immutable migrations/rollbacks + ClickHouse are excluded (.sqlfluffignore).
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install yamllint + sqlfluff
+        run: pip install yamllint==1.38.0 sqlfluff==4.2.2
+      - name: yamllint
+        run: yamllint .
+      - name: sqlfluff
+        run: sqlfluff lint .
+      # markdownlint runs on CHANGED Markdown files only — the repo's docs/ + context/ trees carry a
+      # large pre-existing backlog, so a repo-wide gate is not feasible; new/edited .md must be clean
+      # (uses .markdownlint.json). Whole changed file is linted, so touching a legacy doc means tidying it.
+      - name: markdownlint (changed Markdown only)
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          changed=$(git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' 2>/dev/null || true)
+          if [ -z "$changed" ]; then echo "No changed Markdown files — skipping."; exit 0; fi
+          echo "Changed Markdown files:"; echo "$changed"
+          echo "$changed" | xargs pnpm exec markdownlint-cli2
 
   # ─── Step 2: Type Check ─────────────────────────────────────────────────────
   type-check:

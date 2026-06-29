@@ -6,8 +6,8 @@
 // node:crypto builtin — loaded via require() (the in-repo idiom for builtins, cf.
 // platform-webhook.service.ts) so it resolves under CommonJS without a package.json dep.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { createCipheriv, createDecipheriv, randomBytes } =
-  require('crypto') as typeof import('crypto');
+const nodeCrypto = require('crypto') as typeof import('crypto');
+const { createCipheriv, createDecipheriv, randomBytes } = nodeCrypto;
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_BYTES = 12; // GCM standard nonce length

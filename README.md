@@ -6,7 +6,8 @@ An AI-native Construction Operating System built for global enterprise scale.
 
 ## Architecture Overview
 
-Construction OS is a **modular monolith** — one NestJS deployable containing all domain modules, with separate deployables only for language-boundary services (Python AI, Go workers).
+Construction OS is a **modular monolith** — one NestJS deployable containing all domain modules, with
+separate deployables only for language-boundary services (Python AI, Go workers).
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
