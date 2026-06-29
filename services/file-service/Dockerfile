@@ -13,6 +13,6 @@ WORKDIR /app
 COPY --from=builder --chown=cosuser:cosgroup /app/services/file-service/dist ./dist
 COPY --from=builder --chown=cosuser:cosgroup /app/services/file-service/node_modules ./node_modules
 USER cosuser
-EXPOSE 3001
-HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD wget -qO- http://localhost:3001/health/live || exit 1
+EXPOSE 3002
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 CMD wget -qO- http://localhost:3002/health/live || exit 1
 CMD ["node", "dist/main.js"]

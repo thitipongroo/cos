@@ -1,14 +1,20 @@
 # Construction OS — Local Development Stack
 #
-# Two tiers (to fit lower-memory machines):
+# Three tiers (to fit lower-memory machines):
 #   make docker-up        → essential infra only (postgres, pgbouncer, redis, kafka,
 #                           schema-registry, minio) — ~1 GB, enough to boot the app.
-#   make docker-up-full   → everything, incl. the `full` profile (opensearch, neo4j,
+#   make docker-up-full   → all infra, incl. the `full` profile (opensearch, neo4j,
 #                           clickhouse, clamav, keycloak, vault, temporal, UIs) — ~4 GB.
+#   make up-apps          → full infra + the `apps` profile (backend + file-service +
+#                           ai-gateway/embedding/ocr + analytics/kg workers), all in
+#                           containers. Satisfies "all services start with Docker Compose"
+#                           (see docs/architecture/adr/036-compose-profiles-local-app-services.md).
+#                           The fast day-to-day inner loop is still `make dev` (turbo on host);
+#                           the apps profile is for parity / full-stack-in-Docker.
 #
-# Services tagged `profiles: ['full']` only start with docker-up-full. The app boots
-# without them; features that need them (search, graph, analytics, virus scan, auth,
-# workflows) degrade until you start the full profile.
+# Services tagged `profiles: ['full']` start only with the full profile; `profiles: ['apps']`
+# start only with the apps profile. App services depend on heavy infra in the `full` profile,
+# so the apps tier enables BOTH profiles: `docker compose --profile full --profile apps up`.
 
 name: construction-os
 
@@ -387,5 +393,296 @@ services:
     depends_on:
       - kafka
       - schema-registry
+    networks:
+      - cos-network
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # Application services — profile: apps (ADR-036)
+  #
+  # Run with full infra co-enabled:  docker compose --profile full --profile apps up
+  # (or `make up-apps`). Each service reuses its production Dockerfile, inherits the dev
+  # `.env` (required:false), and overrides only hostname-bearing vars to service-DNS so the
+  # app connects to containers (pgbouncer/kafka/redis/... ) instead of localhost. The fast
+  # day-to-day loop is still `make dev` (turbo on host); this tier is for parity.
+  # ══════════════════════════════════════════════════════════════════════════
+
+  # ─── Backend (NestJS modular monolith) ───────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: cos-backend
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: '3000'
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+      # App connects via PgBouncer (QM-18) — never directly to postgres:5432
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cos}:${POSTGRES_PASSWORD:-cos_dev_password}@pgbouncer:5432/${POSTGRES_DB:-construction_os}
+      # Tenant-scoped non-superuser role (app_user — LOGIN+password set by migration
+      # 20260623000001_app_user_login_and_grants) so PostgreSQL RLS is enforced (ADR-031)
+      APP_DATABASE_URL: postgresql://app_user:app_user_dev_password@pgbouncer:5432/${POSTGRES_DB:-construction_os}
+      # Prisma migrations connect DIRECT (non-pooled) — postgres, not pgbouncer (QM-9 / schema.prisma directUrl)
+      DIRECT_DATABASE_URL: postgresql://${POSTGRES_USER:-cos}:${POSTGRES_PASSWORD:-cos_dev_password}@postgres:5432/${POSTGRES_DB:-construction_os}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-cos_redis_password}@redis:6379
+      KAFKA_BROKERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      TEMPORAL_ADDRESS: temporal:7233
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-cos-platform}
+      OPENSEARCH_URL: http://opensearch:9200
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-cos_neo4j_password}
+      CLICKHOUSE_URL: http://clickhouse:8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-cos}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-cos_ch_password}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-analytics}
+      OTEL_SERVICE_NAME: cos-backend
+    ports:
+      - '${PORT:-3000}:3000'
+    depends_on:
+      postgres: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
+      redis: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+      schema-registry: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+      neo4j: { condition: service_healthy }
+      clickhouse: { condition: service_healthy }
+      opensearch: { condition: service_healthy }
+      temporal: { condition: service_started }
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/api/v1/health/live || exit 1']
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    develop:
+      watch:
+        - path: ./backend/src
+          action: rebuild
+        - path: ./backend/package.json
+          action: rebuild
+    networks:
+      - cos-network
+
+  # ─── File Service (Fastify) ───────────────────────────────────────────────
+  file-service:
+    build:
+      context: .
+      dockerfile: services/file-service/Dockerfile
+    container_name: cos-file-service
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      FILE_SERVICE_PORT: '3002'
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cos}:${POSTGRES_PASSWORD:-cos_dev_password}@pgbouncer:5432/${POSTGRES_DB:-construction_os}
+      KAFKA_BROKERS: kafka:9092
+      TEMPORAL_ADDRESS: temporal:7233
+      # MinIO listens on 9000 INSIDE the network (host maps 9100→9000)
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: '9000'
+      MINIO_USE_SSL: 'false'
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-cos_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-cos_minio_password}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: '3310'
+      OPENSEARCH_HOST: http://opensearch:9200
+    ports:
+      - '${FILE_SERVICE_PORT:-3002}:3002'
+    depends_on:
+      postgres: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
+      kafka: { condition: service_healthy }
+      minio: { condition: service_healthy }
+      opensearch: { condition: service_healthy }
+      temporal: { condition: service_started }
+      # ClamAV needs ~120s to load virus defs; file-service scans lazily on upload, so do not block on healthy
+      clamav: { condition: service_started }
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3002/health/live || exit 1']
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    develop:
+      watch:
+        - path: ./services/file-service/src
+          action: rebuild
+        - path: ./services/file-service/package.json
+          action: rebuild
+    networks:
+      - cos-network
+
+  # ─── AI Gateway (FastAPI) ─────────────────────────────────────────────────
+  ai-gateway:
+    build:
+      context: ./services/ai-gateway
+      dockerfile: Dockerfile
+    container_name: cos-ai-gateway
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      REDIS_URL: redis://:${REDIS_PASSWORD:-cos_redis_password}@redis:6379
+      OTEL_SERVICE_NAME: ai-gateway
+    ports:
+      - '${AI_GATEWAY_PORT:-8000}:8000'
+    depends_on:
+      kafka: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    develop:
+      watch:
+        - path: ./services/ai-gateway
+          action: rebuild
+    networks:
+      - cos-network
+
+  # ─── AI Embedding Worker (FastAPI) ────────────────────────────────────────
+  ai-embedding-worker:
+    build:
+      context: ./services/ai-embedding-worker
+      dockerfile: Dockerfile
+    container_name: cos-ai-embedding-worker
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      OTEL_SERVICE_NAME: ai-embedding-worker
+    ports:
+      - '${AI_EMBEDDING_PORT:-8001}:8000'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    develop:
+      watch:
+        - path: ./services/ai-embedding-worker
+          action: rebuild
+    networks:
+      - cos-network
+
+  # ─── AI OCR Pipeline (FastAPI) ────────────────────────────────────────────
+  ai-ocr-pipeline:
+    build:
+      context: ./services/ai-ocr-pipeline
+      dockerfile: Dockerfile
+    container_name: cos-ai-ocr-pipeline
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      FILE_SERVICE_URL: http://file-service:3002
+      OTEL_SERVICE_NAME: ai-ocr-pipeline
+    ports:
+      - '${AI_OCR_PORT:-8002}:8000'
+    depends_on:
+      file-service: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    develop:
+      watch:
+        - path: ./services/ai-ocr-pipeline
+          action: rebuild
+    networks:
+      - cos-network
+
+  # ─── Analytics Worker (Go) — internal only (health-only until Phase 24) ───
+  analytics-worker:
+    build:
+      context: ./services/analytics-worker
+      dockerfile: Dockerfile
+    container_name: cos-analytics-worker
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: '8090'
+      OTEL_SERVICE_NAME: analytics-worker
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8090/health/live || exit 1']
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    develop:
+      watch:
+        - path: ./services/analytics-worker
+          action: rebuild
+    networks:
+      - cos-network
+
+  # ─── KG Ingestion Worker (Go) — internal only (Kafka → Neo4j) ─────────────
+  kg-ingestion-worker:
+    build:
+      context: ./services/kg-ingestion-worker
+      dockerfile: Dockerfile
+    container_name: cos-kg-ingestion-worker
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-cos_neo4j_password}
+      KAFKA_BROKERS: kafka:9092
+      PORT: '8090'
+      OTEL_SERVICE_NAME: kg-ingestion-worker
+    depends_on:
+      neo4j: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8090/health/live || exit 1']
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    develop:
+      watch:
+        - path: ./services/kg-ingestion-worker
+          action: rebuild
     networks:
       - cos-network

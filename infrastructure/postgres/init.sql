@@ -17,17 +17,8 @@ CREATE SCHEMA IF NOT EXISTS platform;
 -- creates its own tables but NOT the schema itself, so it must exist before startup.
 CREATE SCHEMA IF NOT EXISTS keycloak;
 
--- Application role with limited privileges (used by the application)
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'cos_app') THEN
-    CREATE ROLE cos_app WITH LOGIN PASSWORD 'cos_app_password' NOSUPERUSER NOCREATEDB NOCREATEROLE;
-  END IF;
-END
-$$;
-
-GRANT USAGE ON SCHEMA platform TO cos_app;
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA platform TO cos_app;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA platform TO cos_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA platform GRANT ALL ON TABLES TO cos_app;
-ALTER DEFAULT PRIVILEGES IN SCHEMA platform GRANT ALL ON SEQUENCES TO cos_app;
+-- Application role: the least-privilege, RLS-enforcing role is `app_user`. It is created
+-- (NOLOGIN) and granted by the Prisma RLS migration 20260608000004_rls_policies, then given
+-- LOGIN + password + CRUD grants across all domain schemas (incl. platform) by
+-- 20260623000001_app_user_login_and_grants. Migrations are the single source of truth for
+-- app_user — do not also create/grant it here (ADR-031).

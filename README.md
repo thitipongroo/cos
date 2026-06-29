@@ -95,6 +95,24 @@ Or use the all-in-one setup script:
 make setup
 ```
 
+### Local run tiers (Docker Compose profiles)
+
+The Compose stack has three tiers (see ADR-036):
+
+```bash
+make docker-up        # essential infra only (postgres, pgbouncer, redis, kafka,
+                      #   schema-registry, minio) — ~1 GB
+make docker-up-full   # all infra incl. heavy services (opensearch, neo4j, clickhouse,
+                      #   clamav, keycloak, vault, temporal, UIs) — ~4 GB
+make up-apps          # full infra + ALL app services in containers (backend, file-service,
+                      #   ai-gateway/embedding/ocr, analytics/kg workers)
+```
+
+`make up-apps` (= `docker compose --profile full --profile apps up -d --build`) runs the entire
+stack in Docker — this is the literal "all services start with Docker Compose" path. For the fast
+day-to-day inner loop, prefer `make dev` (turbo on host, native hot-reload) with infra from
+`make docker-up`/`docker-up-full`.
+
 ### Running Tests
 
 ```bash

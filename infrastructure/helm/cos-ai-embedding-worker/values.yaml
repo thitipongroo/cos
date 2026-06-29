@@ -27,8 +27,11 @@ env:
   OTEL_SERVICE_NAME: 'ai-embedding-worker'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
 envFrom:
+  # This service currently reads no secrets (only OTEL_SERVICE_NAME via env). Mark the secret
+  # optional so the pod starts without it; add keys here if/when it needs credentials.
   - secretRef:
       name: cos-ai-embedding-worker-secrets
+      optional: true
 serviceAccount:
   create: true
   name: 'cos-ai-embedding-worker'

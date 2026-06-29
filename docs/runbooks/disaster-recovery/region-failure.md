@@ -1,8 +1,9 @@
-# DR Runbook: Complete Region Failure (ap-southeast-1)
+# DR Runbook: Complete Region Failure (primary ap-southeast-7)
 
 **Source:** QM-12 — "DR runbooks must exist for: complete region failure"  
 **RTO target:** 30 minutes (production)  
-**Architecture:** Active-passive; primary `ap-southeast-1` (Thailand); DR region via Terraform multi-region module
+**Architecture:** Active-passive; primary `ap-southeast-7` (Bangkok, Thailand); DR `ap-southeast-1`
+(Singapore) via Terraform multi-region module (QM-5, QM-13, GLOB-001)
 
 > **Stage 1–3 note:** Multi-region failover is architected but not yet required.
 > This runbook is prepared per QM-12. Execute only when primary region is confirmed unavailable.
@@ -18,7 +19,7 @@ Before executing failover, confirm the outage is regional (not a local network i
 open https://health.aws.amazon.com/
 
 # Check from multiple external sources
-curl -I https://ap-southeast-1.console.aws.amazon.com/ --max-time 10
+curl -I https://ap-southeast-7.console.aws.amazon.com/ --max-time 10
 curl -I https://status.aws.amazon.com/ --max-time 10
 
 # Confirm EKS cluster is unreachable
@@ -81,14 +82,38 @@ aws rds wait db-instance-available \
   --region $DR_REGION \
   --db-instance-identifier cos-postgres-dr
 
-# Update application DATABASE_URL secret in DR region
+# Update application DB connection secrets (DATABASE_URL + APP_DATABASE_URL) in DR region.
+# The app uses TWO roles (ADR-031): `cos` (privileged, DATABASE_URL) for platform/cross-tenant,
+# and `app_user` (non-superuser, APP_DATABASE_URL) for tenant-scoped RLS-enforced queries.
+# BOTH must be re-pointed — if APP_DATABASE_URL is missed, the app falls back to DATABASE_URL
+# (cos superuser) and PostgreSQL RLS is silently bypassed.
+
+# Resolve the promoted DR database endpoint
+DR_DB_HOST=$(aws rds describe-db-instances \
+  --region $DR_REGION \
+  --db-instance-identifier cos-postgres-dr \
+  --query 'DBInstances[0].Endpoint.Address' --output text)
+
+# Define the role passwords by extracting them from the existing secrets (Secrets Manager is
+# replicated to the DR region, so they hold the correct passwords). We only re-point the host.
+# Assumes passwords contain no '@'.
+extract_pw() { sed -E 's|^postgresql://[^:]+:([^@]+)@.*$|\1|'; }
+DB_PASS=$(aws secretsmanager get-secret-value --region $DR_REGION \
+  --secret-id cos/production/DATABASE_URL --query SecretString --output text | extract_pw)
+APP_DB_PASS=$(aws secretsmanager get-secret-value --region $DR_REGION \
+  --secret-id cos/production/APP_DATABASE_URL --query SecretString --output text | extract_pw)
+
+# Privileged platform / cross-tenant connection — role `cos`
 aws secretsmanager update-secret \
   --region $DR_REGION \
   --secret-id cos/production/DATABASE_URL \
-  --secret-string "postgresql://cos_app:$DB_PASS@$(aws rds describe-db-instances \
-    --region $DR_REGION \
-    --db-instance-identifier cos-postgres-dr \
-    --query 'DBInstances[0].Endpoint.Address' --output text):5432/cos_production"
+  --secret-string "postgresql://cos:$DB_PASS@$DR_DB_HOST:5432/cos_production"
+
+# Tenant-scoped, RLS-enforcing connection — role `app_user`
+aws secretsmanager update-secret \
+  --region $DR_REGION \
+  --secret-id cos/production/APP_DATABASE_URL \
+  --secret-string "postgresql://app_user:$APP_DB_PASS@$DR_DB_HOST:5432/cos_production"
 ```
 
 ---
@@ -126,7 +151,7 @@ curl -s https://api.construction-os.io/health/ready | python3 -m json.tool
 
 ---
 
-## Step 7 — Failback to Primary (when ap-southeast-1 recovers)
+## Step 7 — Failback to Primary (when ap-southeast-7 recovers)
 
 1. Confirm primary region is stable for > 1 hour before failback
 2. Synchronize data: DR PostgreSQL → primary (pg_dump / AWS DMS)
@@ -135,4 +160,5 @@ curl -s https://api.construction-os.io/health/ready | python3 -m json.tool
 5. Verify primary is serving traffic
 6. Schedule post-mortem
 
-**Data residency:** Thai PDPA data must return to `ap-southeast-1` after recovery — do not leave data in DR region permanently without legal review (QM-5, QM-13).
+**Data residency:** Thai PDPA data must return to `ap-southeast-7` after recovery — do not leave data
+in the DR region permanently without legal review (QM-5, QM-13).

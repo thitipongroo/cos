@@ -57,8 +57,11 @@ docker-up: ## Start essential Docker infra (db, redis, kafka, schema-registry, m
 docker-up-full: ## Start ALL Docker infra incl. heavy optional services (full profile)
 	@docker compose --profile full up -d
 
-docker-down: ## Stop all Docker services (essential + full profile)
-	@docker compose --profile full down
+up-apps: ## Start full infra + ALL app services in containers (apps profile — ADR-036)
+	@docker compose --profile full --profile apps up -d --build
+
+docker-down: ## Stop all Docker services (essential + full + apps profiles)
+	@docker compose --profile full --profile apps down
 
 # ─── Quality ──────────────────────────────────────────────────────────────────
 lint: ## Run ESLint across all packages
