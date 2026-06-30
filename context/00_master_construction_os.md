@@ -1135,8 +1135,8 @@ Tooling:
 - Node.js runtime: 24.x (root `package.json` `engines.node` `>=24.0.0`; Docker images use `node:24-alpine`)
 - Package manager: pnpm 11.9.x with workspace protocol (root `package.json` pins `packageManager: pnpm@11.9.0`; `engines.pnpm` `>=11.0.0`)
 - Monorepo orchestration: Turborepo 2.x
-- TypeScript: 5.4+ (strict mode, no implicit any)
-- Linting: ESLint 9.x with @cos/eslint-config
+- TypeScript: 6.x (strict mode, no implicit any)
+- Linting: ESLint 10.x flat config (root `eslint.config.mjs`)
 - Formatting: Prettier 3.x
 - Git hooks: Husky 9.x + lint-staged
 - CI/CD: GitHub Actions
