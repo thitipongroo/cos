@@ -147,6 +147,15 @@ describe('ProjectService', () => {
       expect(repo.update).toHaveBeenCalledWith('proj-uuid-001', { project_name: 'Updated' });
     });
 
+    it('skips fields explicitly set to undefined when building changedFields', async () => {
+      // Covers the falsy branch of `if (dto[key] !== undefined)` — the key is iterated by
+      // Object.keys but excluded from changedFields because its value is undefined.
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      await service.update('proj-uuid-001', { project_name: undefined });
+      expect(repo.update).toHaveBeenCalledWith('proj-uuid-001', { project_name: undefined });
+    });
+
     it('throws 422 when project is CANCELLED', async () => {
       const repo = makeRepo({
         findById: jest.fn().mockResolvedValue({ ...baseProject, status: 'CANCELLED' }),

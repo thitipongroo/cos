@@ -130,9 +130,8 @@ export class OutboxPoller {
         }
       }
 
-      if (rows.length > 0) {
-        logger.debug({ count: rows.length }, 'OutboxPoller: published events');
-      }
+      // rows.length is guaranteed > 0 here — the empty case returned early above.
+      logger.debug({ count: rows.length }, 'OutboxPoller: published events');
     } catch (err) {
       logger.error({ err }, 'OutboxPoller: poll error');
     }

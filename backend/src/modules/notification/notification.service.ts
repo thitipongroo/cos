@@ -148,6 +148,8 @@ export class NotificationService {
         return;
       }
 
+      /* istanbul ignore else -- Channel is exhaustively IN_APP|EMAIL|LINE and the first two
+         return above, so this guard is always true; kept as a defensive, self-documenting check */
       if (channel === 'LINE') {
         // line_user_id sourced from env for MVP; per-tenant in Stage 2
         const lineUserId = process.env[`LINE_USER_ID_${userId.replace(/-/g, '_')}`] ?? '';

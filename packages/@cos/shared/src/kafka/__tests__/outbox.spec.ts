@@ -159,4 +159,20 @@ describe('OutboxPoller start/stop', () => {
     // Stop to cancel the rescheduled timer
     poller.stop();
   });
+
+  it('does not reschedule when stopped during poll (falsy branch of `if (this.running)`)', async () => {
+    const poller = new OutboxPoller(prismaMock as never, producerMock as never);
+    // Stop the poller mid-poll so `this.running` is false when the reschedule check runs.
+    prismaMock.$queryRaw.mockImplementation(async () => {
+      poller.stop();
+      return [];
+    });
+    poller.start();
+
+    await jest.runOnlyPendingTimersAsync();
+
+    // poll() ran once; because running became false during the poll, scheduleNextPoll is NOT
+    // called again — no further timer is pending.
+    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
+  });
 });

@@ -69,6 +69,15 @@ describe('shutdownTracing', () => {
     await shutdownTracing();
     expect(shutdownMock).toHaveBeenCalledTimes(1);
   });
+
+  it('no-ops when SDK is already null (falsy branch of `if (sdk)`)', async () => {
+    // First shutdown sets the module-level sdk back to null; the second call must
+    // exercise the falsy branch deterministically (independent of cross-describe state).
+    initTracing('test-service');
+    await shutdownTracing(); // sdk -> null
+    await expect(shutdownTracing()).resolves.toBeUndefined(); // sdk is null -> falsy branch
+    expect(shutdownMock).toHaveBeenCalledTimes(1); // not invoked on the second call
+  });
 });
 
 describe('getTraceId', () => {

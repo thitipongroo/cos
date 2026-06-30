@@ -78,6 +78,16 @@ describe('AntivirusService', () => {
     expect(mockInit).toHaveBeenCalledTimes(1);
   });
 
+  it('reuses the cached connection on subsequent scans — init runs once', async () => {
+    // Covers the falsy branch of `if (!this.clamPromise)`: a successful init is cached, so the
+    // second scan reuses the existing connection instead of reconnecting.
+    mockScanFile.mockResolvedValue({ isInfected: false, viruses: [] });
+    const svc = new AntivirusService(config, makeMockFs());
+    await svc.scan(Buffer.from('first'));
+    await svc.scan(Buffer.from('second'));
+    expect(mockInit).toHaveBeenCalledTimes(1);
+  });
+
   it('does not cache a failed init — a later scan retries the connection', async () => {
     mockInit.mockRejectedValueOnce(new Error('ECONNRESET'));
     const svc = new AntivirusService(config, makeMockFs());

@@ -481,6 +481,39 @@ describe('submitInspection', () => {
       expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
     );
   });
+
+  it('emits neither passed nor failed event when status is REQUIRES_REINSPECTION', async () => {
+    // Covers the falsy branch of `else if (dto.status === 'FAILED')` — a third status
+    // (REQUIRES_REINSPECTION) matches neither PASSED nor FAILED.
+    mockRepo.findChecklistById.mockResolvedValue(makeChecklist());
+    mockRepo.createInspection.mockResolvedValue({
+      inspection_id: 'insp-3',
+      project_id: 'project-1',
+      tenant_id: 'tenant-uuid-1',
+      checklist_id: 'checklist-1',
+      status: 'REQUIRES_REINSPECTION',
+      inspected_by: 'user-uuid-1',
+      inspected_at: new Date(),
+      notes: null,
+    } satisfies InspectionRow);
+
+    await service.submitInspection({
+      project_id: 'project-1',
+      checklist_id: 'checklist-1',
+      status: InspectionStatus.REQUIRES_REINSPECTION,
+      inspected_at: '2026-06-04T08:00:00Z',
+    });
+
+    expect(mockRepo.createInspection).toHaveBeenCalled();
+    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    expect(instance.publish).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: expect.stringContaining('inspection.passed') }),
+    );
+    expect(instance.publish).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: expect.stringContaining('inspection.failed') }),
+    );
+  });
 });
 
 // ── resolveConflict ───────────────────────────────────────────────────────

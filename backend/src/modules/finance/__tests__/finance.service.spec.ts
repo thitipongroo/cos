@@ -770,6 +770,7 @@ describe('emitEvent error handling', () => {
       ]);
       mockRepo.findPendingPaymentsDue.mockResolvedValue([
         { due_date: at(3), amount: '5000.0000' }, // bucket 0
+        { due_date: at(200), amount: '88888.0000' }, // beyond horizon → dropped (outflow drop branch)
       ]);
 
       const periods = await service.getCashflowForecast('proj-uuid-001');

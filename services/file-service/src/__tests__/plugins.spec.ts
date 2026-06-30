@@ -147,6 +147,27 @@ describe('authPlugin', () => {
     expect(res.statusCode).toBe(401);
     expect(JSON.parse(res.body).error.traceId).toBe('unknown');
   });
+
+  it('skips auth for /health/live — early return, no tenant headers required', async () => {
+    // Covers the health-path early-return branch in auth.ts (left operand of the ||)
+    const app = Fastify();
+    await app.register(authPlugin);
+    app.get('/health/live', async () => ({ status: 'ok' }));
+
+    const res = await app.inject({ method: 'GET', url: '/health/live' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body).status).toBe('ok');
+  });
+
+  it('skips auth for /health/ready — covers the second health-path branch', async () => {
+    // Covers the right operand of the || (url === '/health/ready')
+    const app = Fastify();
+    await app.register(authPlugin);
+    app.get('/health/ready', async () => ({ status: 'ok' }));
+
+    const res = await app.inject({ method: 'GET', url: '/health/ready' });
+    expect(res.statusCode).toBe(200);
+  });
 });
 
 // ── Security plugin ─────────────────────────────────────────────────────────
