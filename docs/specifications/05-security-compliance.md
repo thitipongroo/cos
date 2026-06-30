@@ -297,8 +297,10 @@ Keycloak Admin REST API during user provisioning) and mapped to the JWT access t
 
 **Path A (phone/OTP via Keycloak Direct Grant):**
 
-SMS gateway (authoritative): **AWS SNS** (region `ap-southeast-1` SMS-capable endpoint), via AWS SDK v3
-`@aws-sdk/client-sns` (`SNSClient.publish()`). OTP delivery is the only step that uses SNS; token
+SMS gateway: cloud (authoritative) = **AWS SNS** (region `ap-southeast-1` SMS-capable endpoint), via
+AWS SDK v3 `@aws-sdk/client-sns` (`SNSClient.publish()`). **On-premise** = pluggable provider behind
+the `SmsSender` abstraction (in-country aggregator / SMPP / customer gateway).
+OTP delivery is the only step that uses the SMS gateway; token
 issuance is Keycloak (below). OTP parameters: 6-digit numeric, TTL 5 min, max 3 attempts per session,
 rate-limited 10 OTP requests per phone per day (see §14.3). A Thai SMS fallback applies if +66 delivery
 rate < 95%.

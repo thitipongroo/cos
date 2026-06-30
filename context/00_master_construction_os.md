@@ -1250,8 +1250,9 @@ Authentication Decision (TWO PATHS — from file 01):
     OTP send/verify: custom NestJS logic — NOT a Keycloak extension
     Token issuance: Keycloak Direct Grant (grant_type=password) after successful OTP verification
       — ephemeral credential set via Keycloak Admin API, used once, then discarded
-    SMS Gateway provider: AWS SNS (ap-southeast-1)
+    SMS Gateway provider: cloud = AWS SNS (ap-southeast-1)
       Implementation: AWS SDK v3 @aws-sdk/client-sns — SNSClient.publish()
+      On-prem: pluggable SmsSender provider (in-country aggregator / SMPP / customer gateway) — ADR-040
       Interface: { sendOTP(phoneNumber: string, otp: string): Promise<void> }
       Fallback: Thai SMS fallback when +66 delivery rate < 95%
       Pre-launch: submit AWS Support case to exit SMS sandbox (1-2 business days)
