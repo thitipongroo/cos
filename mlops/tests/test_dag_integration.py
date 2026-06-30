@@ -93,15 +93,15 @@ class TestUpdateFeatureStoreDagStructure:
 class TestDagSchedules:
     def test_export_data_is_daily(self, dagbag):
         dag = dagbag.dags["dag-export-training-data"]
-        assert dag.schedule_interval == "@daily"
+        assert dag.schedule == "@daily"
 
     def test_update_feature_store_is_daily(self, dagbag):
         dag = dagbag.dags["dag-update-feature-store"]
-        assert dag.schedule_interval == "@daily"
+        assert dag.schedule == "@daily"
 
     def test_model_evaluation_has_no_schedule(self, dagbag):
         dag = dagbag.dags["dag-model-evaluation"]
-        assert dag.schedule_interval is None
+        assert dag.schedule is None
 
 
 # ─── Task callable tests with mocked data ────────────────────────────────────

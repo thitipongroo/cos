@@ -8,7 +8,7 @@ TODO: implement each task when data thresholds are met (Phase 23+ production dat
 
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 default_args = {
     "owner": "cos-mlops",
@@ -21,7 +21,7 @@ dag = DAG(
     dag_id="dag-export-training-data",
     default_args=default_args,
     description="Daily export: PostgreSQL/ClickHouse → MinIO data lake (Parquet)",
-    schedule_interval="@daily",
+    schedule="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     tags=["mlops", "data-export"],

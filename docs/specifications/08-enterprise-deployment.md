@@ -173,6 +173,20 @@ Network requirements :
 - DNS entry pointing to the platform domain
 - TLS certificate: enterprise CA or self-signed acceptable for on-premise
 
+### Kubernetes distribution (on-premise / Dedicated Tenant)
+
+Production on-premise clusters are **self-managed** (no EKS control plane). Distribution — RESOLVED:
+
+- **Default: k3s** — CNCF-conformant; HA via embedded etcd (3-server quorum, see table above);
+  Apache-2.0 (no licence cost); already used in dev. POC-validated (HA control plane + COS Helm charts).
+- **Regulated / sovereign tenants requiring CIS-benchmark or FIPS hardening: RKE2** — CIS-hardened +
+  FIPS by default; Apache-2.0; strong air-gap install. Requires a Linux POC (k3s-vs-RKE2 + air-gap +
+  etcd snapshot-restore) before the first such production deployment.
+- Cloud tiers remain on **AWS EKS** (§8.1–8.3); dev uses **k3s** (k3d on macOS/Windows). Helm charts + ArgoCD apps
+  are identical across EKS and either on-prem distro.
+- Before on-prem go-live: validate air-gap install + **etcd snapshot-restore** (QM-12 RTO/RPO) +
+  CIS scan on Linux.
+
 ---
 
 ## 8.6 Deployment Packaging

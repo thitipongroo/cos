@@ -78,12 +78,14 @@ Storage:
 
 Tools:
 
-- Kubernetes
+- Kubernetes (cloud: AWS EKS; on-premise self-managed: **k3s** default / **RKE2** for
+  CIS-/FIPS-regulated tenants; dev: k3s — k3d for macOS/Windows)
 - Docker
 - Terraform
 - Apache Kafka
 - Confluent Schema Registry (Kafka schema management — see `15-event-driven-workflow.md` §15.6)
-- EMQX (self-hosted MQTT 5.0 broker for IoT telemetry; bridges to Kafka/MSK — RESOLVED, Phase 21
+- EMQX (open-source edition, self-hosted MQTT 5.0 broker for IoT telemetry; bridged to Kafka/MSK via
+  the custom IoT Ingestion Worker — NOT EMQX's native/Enterprise Kafka data-bridge — RESOLVED, Phase 21
   Equipment Service onward; see `13-product-architecture.md` §13.5 and `33-digital-twin-iot.md` §33.8)
 - NGINX
 - Istio (service mesh — mTLS, traffic management)

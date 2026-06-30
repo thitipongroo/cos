@@ -8,7 +8,7 @@ TODO: implement each task after data threshold is met.
 
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 default_args = {
     "owner": "cos-mlops",
@@ -21,7 +21,7 @@ dag = DAG(
     dag_id="dag-train-risk-classifier",
     default_args=default_args,
     description="Weekly retraining of RiskClassifier (XGBoost multi-class LOW/MEDIUM/HIGH/CRITICAL)",
-    schedule_interval="0 4 * * 0",
+    schedule="0 4 * * 0",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     tags=["mlops", "training", "risk-classifier"],
@@ -48,7 +48,7 @@ def load_features(**context):
 def train_classifier(**context):
     """
     TODO: train XGBoost multi-class classifier (LOW/MEDIUM/HIGH/CRITICAL).
-    Log to W&B Cloud and MLflow.
+    Log experiment runs/metrics to MLflow Tracking; evaluation/drift via Evidently AI.
     Algorithm: XGBoost multi-class; source: spec §22-ai-architecture §22.7 ML Models.
     """
     raise NotImplementedError("train_classifier — RiskClassifier training not yet active")

@@ -61,6 +61,24 @@ jobs:
           echo "Changed Markdown files:"; echo "$changed"
           echo "$changed" | xargs pnpm exec markdownlint-cli2
 
+  # ─── MLOps tests (Python / Airflow 3.x DAGs) ────────────────────────────────
+  mlops-tests:
+    name: MLOps Tests (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # mlops Python deps are split per service because airflow/mlflow/feast cannot co-resolve
+      # in one env (feast needs uvicorn<=0.34.0, airflow-core needs uvicorn>=0.37.0). requirements-dev.txt
+      # = base + airflow + pytest — what mlops/tests/ needs (test_dag_integration loads DAGs via DagBag).
+      - name: Install mlops test dependencies
+        run: pip install -r mlops/requirements-dev.txt
+      - name: Run mlops tests
+        run: pytest mlops/tests/ -q
+
   # ─── Step 2: Type Check ─────────────────────────────────────────────────────
   type-check:
     name: Type Check

@@ -1,0 +1,4 @@
+# MLflow Tracking + model-registry server env (spec §22.6 Model Registry — K8s Deployment).
+# SEPARATE env. mlflow 3.14.0 requires_python ">=3.10"; bumped 2.x→3.x per decision 2026-06-30.
+# If the artifact store is S3/MinIO, add boto3/botocore (see requirements-base) to the server image.
+mlflow==3.14.0

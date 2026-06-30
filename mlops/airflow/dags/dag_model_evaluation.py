@@ -6,7 +6,7 @@ Purpose: Evaluate all models on holdout set, log metrics to MLflow, gate promoti
 
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 default_args = {
     "owner": "cos-mlops",
@@ -19,7 +19,7 @@ dag = DAG(
     dag_id="dag-model-evaluation",
     default_args=default_args,
     description="Post-training evaluation: holdout set metrics → MLflow; gates model promotion",
-    schedule_interval=None,  # triggered by training DAGs via TriggerDagRunOperator
+    schedule=None,  # triggered by training DAGs via TriggerDagRunOperator
     start_date=datetime(2026, 1, 1),
     catchup=False,
     tags=["mlops", "evaluation"],

@@ -122,13 +122,10 @@ spec:
             cpu: '4'
             memory: '8Gi'
         env:
+          # MLflow Tracking (experiment runs/metrics) + Evidently AI (evaluation/drift) are
+          # self-hosted in-cluster — no external SaaS API key. W&B removed per ADR-038.
           - name: MLFLOW_TRACKING_URI
             value: 'http://mlflow.cos.svc.cluster.local:5000'
-          - name: WANDB_API_KEY
-            valueFrom:
-              secretKeyRef:
-                name: wandb-secrets
-                key: api_key
 
     - name: evaluate-model
       inputs:

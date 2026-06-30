@@ -6,7 +6,7 @@ Purpose: Refresh Feast feature views from PostgreSQL/ClickHouse → Redis online
 
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 default_args = {
     "owner": "cos-mlops",
@@ -19,7 +19,7 @@ dag = DAG(
     dag_id="dag-update-feature-store",
     default_args=default_args,
     description="Daily refresh of Feast feature views → Redis online store",
-    schedule_interval="@daily",
+    schedule="@daily",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     tags=["mlops", "feature-store", "feast"],

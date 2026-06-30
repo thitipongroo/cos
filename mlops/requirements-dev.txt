@@ -1,0 +1,6 @@
+# Test deps for `pytest mlops/tests/` (installed by CI on Python 3.12).
+# Includes airflow (via requirements-airflow.txt → base) because test_dag_integration.py loads
+# the DAGs through Airflow's DagBag. feast/mlflow are NOT needed by the tests (no test imports
+# them at module level), and feast cannot co-install with airflow anyway (uvicorn conflict).
+-r requirements-airflow.txt
+pytest==9.1.1

@@ -3065,8 +3065,8 @@ Generate:
 - Integration tests: full RAG query pipeline using StubLLMProvider (no real API call)
 
 MLOps Stack (from source §19.4 — separate Phase 23, referenced here):
-  MLflow 2.x          — experiment tracking, model registry
-  Apache Airflow 2.x  — training pipeline orchestration
+  MLflow 3.x          — experiment tracking, model registry (bumped 2.x→3.x: latest stable, product-owner decision 2026-06-30)
+  Apache Airflow 3.x  — training pipeline orchestration (bumped 2.x→3.x: latest stable, product-owner decision 2026-06-30)
   Kubeflow Pipelines  — Kubernetes-native ML workflows
   Feast               — feature store
   Evidently AI        — model/output evaluation + drift monitoring (open-source, self-hosted; replaced W&B per ADR-038; source: spec §22-ai-architecture §22.6)
@@ -3698,7 +3698,7 @@ Cloud Provider Decision:
   Note to agent: mark all cloud-specific resources with comment: # CLOUD: AWS
 
 Kubernetes Cluster Specification (production):
-  Control plane: managed (EKS, GKE) or self-managed — follows cloud provider decision
+  Control plane: cloud = managed (EKS); on-premise = self-managed — k3s (default) / RKE2 (CIS-/FIPS-regulated tenants) — RESOLVED ADR-039 (dev: k3s)
   Node groups:
     system-pool:    2x nodes, t3.medium (control plane components)
     app-pool:       min 3, max 10 nodes, t3.xlarge (application services)
@@ -3717,7 +3717,8 @@ Kubernetes Cluster Specification (production):
 
 Environments:
   local:    Docker Compose (all services + dependencies on single machine)
-  dev:      Kubernetes single-node (k3s or minikube) — auto-deployed on PR merge to dev
+  dev:      Kubernetes single-node k3s (k3d for macOS/Windows laptops) — auto-deployed on PR merge to dev
+            (standardised on k3s for dev/prod parity; minikube removed — product-owner decision 2026-06-30)
   staging:  Kubernetes multi-node — mirrors production spec at 50% size
   production: Kubernetes multi-node — full spec above
 
@@ -4451,8 +4452,8 @@ Build MLOps Pipeline for continuous model training and deployment.
 Depends on: Phase 11 (AI Foundation), Phase 14 (Analytics — training data source)
 
 MLOps Stack (from source §19.4):
-  MLflow 2.x        — experiment tracking and model registry
-  Apache Airflow 2.x — pipeline orchestration (DAG-based)
+  MLflow 3.x        — experiment tracking and model registry (bumped 2.x→3.x: latest stable, product-owner decision 2026-06-30)
+  Apache Airflow 3.x — pipeline orchestration (DAG-based) (bumped 2.x→3.x: latest stable, product-owner decision 2026-06-30)
   Kubeflow Pipelines — Kubernetes-native ML workflow execution
   Feast             — feature store (serving layer for ML features)
   Evidently AI      — model/output evaluation + drift monitoring

@@ -1,0 +1,5 @@
+# Feast feature-store env (spec §22.6 Feature Store). SEPARATE env: feast cannot co-install with
+# airflow (uvicorn conflict). feast 0.64.0 has a CORE dep `pandas<3,>=1.4.3` — hence base pins
+# pandas 2.x. Versions = latest official on PyPI 2026-06-30.
+-r requirements-base.txt
+feast==0.64.0

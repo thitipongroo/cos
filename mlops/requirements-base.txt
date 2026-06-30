@@ -1,0 +1,14 @@
+# mlops SHARED runtime deps — used by the data-export path (export_to_parquet.py) and the tests.
+#
+# WHY SPLIT: the heavy MLOps tools (airflow / mlflow / feast) each get their OWN file because they
+# cannot co-resolve in a single environment — e.g. feast 0.64.0 needs uvicorn<=0.34.0 while
+# apache-airflow-core 3.2.2 needs uvicorn>=0.37.0 (proven ResolutionImpossible). They are deployed
+# as separate services anyway (airflow scheduler/worker, MLflow server, Feast).
+#
+# Versions = latest official on PyPI (2026-06-30). pandas pinned to latest 2.x (2.3.3) NOT 3.0.3:
+# feast (spec-mandated, §4.6/§22.6) has a CORE dep `pandas<3,>=1.4.3`.
+boto3==1.43.36
+botocore==1.43.36
+pandas==2.3.3
+psycopg2-binary==2.9.12
+pyarrow==24.0.0

@@ -1,8 +1,8 @@
 """
 ExperimentMonitoring interface stub — Phase 23
-Integrated with: W&B Cloud (wandb.ai) — RESOLVED: cloud, not self-hosted
-Auth: W&B API key stored in AWS Secrets Manager
-Source: spec §22-ai-architecture §22.7 Experiment Monitoring
+Integrated with: MLflow Tracking (runs/metrics) + Evidently AI (evaluation + drift)
+  — self-hosted, in-cluster; no external SaaS / API key. Replaced W&B per ADR-038.
+Source: spec §22-ai-architecture §22.6 Experiment Monitoring & Evaluation
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ class ExperimentMonitoringPort(Protocol):
 
 
 class ExperimentMonitoringStub:
-    """Stub — replace with WandBExperimentMonitoring when W&B API key is configured."""
+    """Stub — replace with the MLflow-backed implementation (MLflow Tracking + Evidently AI) when Phase 23 is activated."""
 
     def log_run(
         self,
@@ -38,5 +38,5 @@ class ExperimentMonitoringStub:
     ) -> RunRef:
         raise NotImplementedError(
             "ExperimentMonitoring.log_run — not yet implemented; "
-            "requires W&B API key in AWS Secrets Manager and network access to wandb.ai"
+            "requires the self-hosted MLflow Tracking server (Phase 23)"
         )

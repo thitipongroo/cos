@@ -8,7 +8,7 @@ TODO: implement each task after data threshold is met (Phase 23+ production data
 
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 default_args = {
     "owner": "cos-mlops",
@@ -21,7 +21,7 @@ dag = DAG(
     dag_id="dag-train-delay-model",
     default_args=default_args,
     description="Weekly retraining of DelayForecastModel (XGBoost regressor)",
-    schedule_interval="0 2 * * 0",
+    schedule="0 2 * * 0",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     tags=["mlops", "training", "delay-model"],
@@ -49,7 +49,7 @@ def load_features(**context):
 def train_model(**context):
     """
     TODO: train XGBoost regressor using loaded features.
-    Log experiment to W&B Cloud (ExperimentMonitoring.logRun).
+    Log experiment metrics to MLflow Tracking (ExperimentMonitoring.logRun); evaluation via Evidently AI.
     Log run to MLflow (ModelRegistry.registerModel).
     Algorithm: XGBoost regressor; source: spec §22-ai-architecture §22.6 ML Models.
     """
