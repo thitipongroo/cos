@@ -283,7 +283,7 @@ services:
 
   # ─── HashiCorp Vault (dev mode — local secret injection) ──────────────────
   vault:
-    image: hashicorp/vault:1.16
+    image: hashicorp/vault:1.21
     container_name: cos-vault
     profiles: ['full']
     command: vault server -dev -dev-root-token-id=${VAULT_DEV_ROOT_TOKEN:-cos-vault-root-token}
@@ -312,7 +312,7 @@ services:
 
   # ─── Temporal (Workflow Engine) ────────────────────────────────────────────
   temporal:
-    image: temporalio/auto-setup:1.24.0
+    image: temporalio/auto-setup:1.29.7
     container_name: cos-temporal
     profiles: ['full']
     environment:
@@ -336,7 +336,7 @@ services:
       - cos-network
 
   temporal-ui:
-    image: temporalio/ui:2.26.2
+    image: temporalio/ui:2.51.1
     container_name: cos-temporal-ui
     profiles: ['full']
     environment:

@@ -12,7 +12,7 @@
   "dependencies": {
     "@cos/types": "workspace:*",
     "@fontsource/inter-tight": "^5.2.7",
-    "@tanstack/react-query": "^5.40.0",
+    "@tanstack/react-query": "^5.101.2",
     "idb": "^8.0.0",
     "next": "^14.2.0",
     "next-auth": "^4.24.0",
