@@ -12,9 +12,9 @@ packages:
 
 overrides:
   # Single fastify version — file-service imports fastify directly while @nestjs/platform-fastify
-  # pulls its own; a duplicate (4.28.1 + 4.29.1) breaks file-service's plugin type augmentation
-  # (FastifyTypeProvider mismatch, missing multipartErrors/swagger). Pin both to one v4 release.
-  fastify: '4.29.1'
+  # pulls its own; a duplicate breaks file-service's plugin type augmentation (FastifyTypeProvider
+  # mismatch). Pin both to one v5 release (NestJS 11 / ADR-042 requires Fastify 5).
+  fastify: '5.9.0'
   multer: '^2.1.1'
   lodash: '^4.18.1'
   'picomatch@>=4.0.0 <4.0.4': '4.0.4'
@@ -32,16 +32,7 @@ overrides:
 
 auditConfig:
   ignoreCves:
-    # Locked by @nestjs/platform-fastify@10 (fastify@4) — needs NestJS 11 upgrade
-    - CVE-2026-6270
-    - CVE-2026-22031
-    - CVE-2026-2880
-    - CVE-2026-33804
-    - CVE-2026-25223
-    - CVE-2026-2293
-    - CVE-2026-33011
-    - CVE-2026-6321
-    - CVE-2026-6322
+    # (fastify@4 / @nestjs/platform-fastify@10 CVEs removed — resolved by NestJS 11 + Fastify 5, ADR-042)
     # Locked by next@14 — needs Next.js 15 upgrade
     - CVE-2026-44578
     - CVE-2026-44573

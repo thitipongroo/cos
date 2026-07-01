@@ -13,9 +13,17 @@ const AUTH_LIMIT = 10;
 const FILE_LIMIT = 20;
 
 function makeStorageMock(totalHits: number, timeToExpire = TTL_MS): jest.Mocked<ThrottlerStorage> {
+  // @nestjs/throttler v6: increment(key, ttl, limit, blockDuration, name) resolves
+  // { totalHits, timeToExpire, isBlocked, timeToBlockExpire } — the storage decides isBlocked from
+  // the limit, and the guard throttles on isBlocked. Compute it from the injected limit arg.
   return {
-    increment: jest.fn().mockResolvedValue({ totalHits, timeToExpire }),
-  };
+    increment: jest.fn().mockImplementation(async (_key: string, _ttl: number, limit: number) => ({
+      totalHits,
+      timeToExpire,
+      isBlocked: totalHits > limit,
+      timeToBlockExpire: totalHits > limit ? timeToExpire : 0,
+    })),
+  } as unknown as jest.Mocked<ThrottlerStorage>;
 }
 
 function makeContext(ip = '127.0.0.1', url = '/api/v1/projects'): ExecutionContext {
@@ -123,6 +131,13 @@ describe('ThrottlerGuard', () => {
     await guard.canActivate(makeContext());
 
     expect(storage.increment).toHaveBeenCalledTimes(1);
-    expect(storage.increment).toHaveBeenCalledWith(expect.any(String), TTL_MS);
+    // v6 signature: increment(key, ttl, limit, blockDuration, throttlerName)
+    expect(storage.increment).toHaveBeenCalledWith(
+      expect.any(String),
+      TTL_MS,
+      expect.any(Number),
+      expect.any(Number),
+      'default',
+    );
   });
 });

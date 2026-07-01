@@ -22,17 +22,8 @@ import sys
 # Advisory IDs suppressed because they are blocked by a scheduled major-version upgrade.
 # Each entry documents the blocking package and the required upgrade path.
 SUPPRESSED_GHSA = {
-    # ── @nestjs/platform-fastify@10 locks fastify@4 and @fastify/middie@8 ──
-    # Fix: upgrade NestJS 10 → 11 (deferred — Phase 31)
-    "GHSA-72c6-fx6q-fr5w",  # CVE-2026-6270  @fastify/middie auth bypass (CRITICAL)
-    "GHSA-cxrg-g7r8-w69p",  # CVE-2026-22031 @fastify/middie path bypass
-    "GHSA-8p85-9qpw-fwgw",  # CVE-2026-2880  @fastify/middie improper path normalization
-    "GHSA-v9ww-2j6r-98q6",  # CVE-2026-33804 @fastify/middie deprecated-flag bypass
-    "GHSA-jx2c-rxcm-jvmq",  # CVE-2026-25223 fastify Content-Type tab bypass
-    "GHSA-r4wm-x892-vjmx",  # CVE-2026-2293  @nestjs/platform-fastify URL encoding bypass
-    "GHSA-wf42-42fg-fg84",  # CVE-2026-33011 @nestjs/platform-fastify HEAD bypass
-    "GHSA-q3j6-qgpj-74h6",  # CVE-2026-6321  fast-uri path traversal
-    "GHSA-v39h-62p7-jpjc",  # CVE-2026-6322  fast-uri host confusion
+    # ── fastify@4 / @fastify/middie@8 / @nestjs/platform-fastify@10 advisories removed:
+    #    resolved by the NestJS 11 + Fastify 5 upgrade (ADR-042). ──
     # ── next@14 ──
     # Fix: upgrade Next.js 14 → 15 (deferred — Phase 31)
     "GHSA-h25m-26qc-wcjf",  # no CVE        DoS via HTTP request deserialization
