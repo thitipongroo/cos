@@ -105,7 +105,7 @@ services:
 
   # ─── Apache Kafka 3.x (KRaft mode — no ZooKeeper) ────────────────────────
   kafka:
-    image: confluentinc/cp-kafka:7.6.0
+    image: confluentinc/cp-kafka:8.3.0
     container_name: cos-kafka
     environment:
       KAFKA_NODE_ID: 1
@@ -139,7 +139,7 @@ services:
 
   # ─── Confluent Schema Registry ────────────────────────────────────────────
   schema-registry:
-    image: confluentinc/cp-schema-registry:7.6.0
+    image: confluentinc/cp-schema-registry:8.3.0
     container_name: cos-schema-registry
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
@@ -153,7 +153,14 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:8081/subjects || exit 1']
+      # Confluent Platform 8 slimmed the image and dropped curl/wget/nc — use a bash /dev/tcp probe.
+      test:
+        [
+          'CMD',
+          'bash',
+          '-c',
+          "exec 3<>/dev/tcp/localhost/8081; printf 'GET /subjects HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; head -n1 <&3 | grep -q 200",
+        ]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -163,7 +170,7 @@ services:
 
   # ─── OpenSearch 2.x (full-text + vector search) ───────────────────────────
   opensearch:
-    image: opensearchproject/opensearch:2.13.0
+    image: opensearchproject/opensearch:3.7.0
     container_name: cos-opensearch
     profiles: ['full']
     environment:
@@ -186,7 +193,7 @@ services:
 
   # ─── Neo4j 5.x (Knowledge Graph) ─────────────────────────────────────────
   neo4j:
-    image: neo4j:5.19-community
+    image: neo4j:2026.05.0-community-ubi10
     container_name: cos-neo4j
     profiles: ['full']
     environment:
@@ -211,7 +218,7 @@ services:
 
   # ─── ClickHouse 24.x (Analytics OLAP) ────────────────────────────────────
   clickhouse:
-    image: clickhouse/clickhouse-server:24.3-alpine
+    image: clickhouse/clickhouse-server:26.3-alpine
     container_name: cos-clickhouse
     profiles: ['full']
     environment:
@@ -353,15 +360,16 @@ services:
 
   # ─── Keycloak 24.x — Identity Provider (Phase 2) ─────────────────────────
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.4
+    image: quay.io/keycloak/keycloak:26.6.4
     container_name: cos-keycloak
     profiles: ['full']
     command: start-dev --import-realm
     environment:
-      # Keycloak 24 uses KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD to create the initial
-      # admin (KC_BOOTSTRAP_ADMIN_* is Keycloak 26+ syntax and is silently ignored here).
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-cos_keycloak_admin}
+      # Keycloak 26 renamed the initial-admin bootstrap vars to KC_BOOTSTRAP_ADMIN_USERNAME/PASSWORD
+      # (the Keycloak 24 KEYCLOAK_ADMIN/KEYCLOAK_ADMIN_PASSWORD are removed). Only used on first init;
+      # Keycloak 26 runs Liquibase to migrate the existing realm schema on startup.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-cos_keycloak_admin}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-construction_os}
       KC_DB_USERNAME: ${POSTGRES_USER:-cos}
@@ -389,7 +397,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          "exec 3<>/dev/tcp/localhost/8080; printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; head -n1 <&3 | grep -q '200'",
+          "exec 3<>/dev/tcp/localhost/9000; printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; head -n1 <&3 | grep -q '200'",
         ]
       interval: 30s
       timeout: 10s

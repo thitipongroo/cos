@@ -5,7 +5,7 @@ import '@fontsource/inter-tight/500.css';
 import '@fontsource/inter-tight/600.css';
 import '@fontsource/inter-tight/700.css';
 import './globals.css';
-import { ServiceWorkerRegistration } from '../components/pwa/ServiceWorkerRegistration';
+import { SerwistProvider } from '@serwist/turbopack/react';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th">
       <body>
-        <ServiceWorkerRegistration />
+        <SerwistProvider swUrl="/serwist/sw.js" />
         <Providers>{children}</Providers>
       </body>
     </html>

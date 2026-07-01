@@ -41,21 +41,14 @@
             "kotlinVersion": "1.8.10",
             "compileSdkVersion": 33,
             "targetSdkVersion": 33,
-            "packagingOptions": { "pickFirst": ["**/libc++_shared.so"] }
+            "packagingOptions": {
+              "pickFirst": ["**/libc++_shared.so"]
+            }
           },
-          "ios": {
-            "extraPods": [
-              {
-                "name": "simdjson",
-                "path": "../node_modules/@nozbe/simdjson",
-                "configurations": ["Debug", "Release"],
-                "modular_headers": true
-              }
-            ]
-          }
+          "ios": {}
         }
       ],
-      "@skam22/watermelondb-expo-plugin",
+      "@morrowdigital/watermelondb-expo-plugin",
       [
         "expo-camera",
         {
@@ -67,12 +60,6 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow Construction OS to tag site reports with your location."
-        }
-      ],
-      [
-        "expo-av",
-        {
-          "microphonePermission": "Allow Construction OS to record voice notes on site."
         }
       ],
       "./plugins/withPodfileFixes"

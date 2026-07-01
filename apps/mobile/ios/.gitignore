@@ -28,3 +28,7 @@ project.xcworkspace
 
 # CocoaPods
 /Pods/
+
+# Custom derivedDataPath used for local builds (regenerable — never commit)
+build_out/
+DerivedData/

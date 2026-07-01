@@ -9,12 +9,9 @@ build
 out
 coverage
 
-# next-pwa generated service worker (build artifacts emitted to apps/web/public; hash varies per build)
-apps/web/public/sw.js
-apps/web/public/sw.js.map
-apps/web/public/workbox-*.js
-apps/web/public/workbox-*.js.map
-apps/web/public/fallback-*.js
+# Serwist (@serwist/turbopack) serves the service worker from the /serwist/[path] route handler
+# (bundled into .next at build time), so no service-worker artifacts land in apps/web/public — ADR-047.
+# The former next-pwa public/ artifacts (sw.js, workbox-*.js, fallback-*.js) are no longer generated.
 
 # Environment
 .env

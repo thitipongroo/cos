@@ -1,5 +1,5 @@
-// Offline fallback page — shown by Workbox when navigation request fails offline.
-// next-pwa precaches this route during build via runtimeCaching.
+// Offline fallback page — shown when a navigation request fails offline.
+// Serwist precaches this route at build time (see sw.ts defaultCache / precache manifest, ADR-047).
 
 export default function OfflinePage() {
   return (
