@@ -33,11 +33,8 @@ overrides:
 auditConfig:
   ignoreCves:
     # (fastify@4 / @nestjs/platform-fastify@10 CVEs removed — resolved by NestJS 11 + Fastify 5, ADR-042)
-    # Locked by next@14 — needs Next.js 15 upgrade
-    - CVE-2026-44578
-    - CVE-2026-44573
-    # Locked by @opentelemetry/sdk-node@0.51 — needs full OTel stack upgrade
-    - CVE-2026-44902
+    # (next@14 CVEs removed — resolved by Next 16 + React 19, ADR-043)
+    # (OTel sdk-node@0.51 CVE removed — resolved by sdk-node 0.219 upgrade, ADR-044)
     # Dev-only: locked by expo@51 CLI (tar@6) — needs Expo 52 upgrade
     - CVE-2026-24842
     - CVE-2026-23745
@@ -60,6 +57,7 @@ allowBuilds:
   dtrace-provider: true
   prisma: true
   protobufjs: true
+  sharp: true
   ssh2: true
   unrs-resolver: true
 
@@ -82,3 +80,4 @@ minimumReleaseAgeExclude:
   - '@typescript-eslint/utils@8.62.1'
   - '@typescript-eslint/visitor-keys@8.62.1'
   - prettier@3.9.4
+  - recharts@3.9.1

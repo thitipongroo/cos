@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { StatusChip } from '../../../../components/ui/StatusChip';
 import { ProjectTabs } from '../../../../components/project/ProjectTabs';
@@ -25,7 +25,8 @@ import { formatDate, formatMoney } from '../../../../lib/format';
 const TRANSITIONS: ProjectTransitionTarget[] = ['ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'];
 
 /** PM project detail (§20.7.2): status + transition, members, documents, BOQ summary. */
-export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+export default function ProjectDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const { id } = params;
   const { t, locale } = useI18n();
   const readOnly = useReadOnly();

@@ -1,4 +1,5 @@
 'use client';
+import { use } from 'react';
 
 import { ProjectTabs } from '../../../../../components/project/ProjectTabs';
 import { DataTable, type Column } from '../../../../../components/ui/DataTable';
@@ -8,7 +9,8 @@ import type { PurchaseOrderRow, PurchaseRequestRow, RfqRow } from '../../../../.
 import { formatDate } from '../../../../../lib/format';
 
 /** PM read-only procurement status for a project (§20.7.2 → Phase 5 read). */
-export default function ProjectProcurementPage({ params }: { params: { id: string } }) {
+export default function ProjectProcurementPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const { id } = params;
   const { t, locale } = useI18n();
   const { prs, rfqs, pos } = useProjectProcurement(id);

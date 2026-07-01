@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { PMDashboard } from '../../../components/analytics/PMDashboard';
 import type {
   PmDashboardRow,
@@ -24,7 +24,8 @@ interface PMState {
   siteTrend: SiteTrendRow[];
 }
 
-export default function PMDashboardPage({ searchParams }: { searchParams: PageSearchParams }) {
+export default function PMDashboardPage(props: { searchParams: Promise<PageSearchParams> }) {
+  const searchParams = use(props.searchParams);
   const [state, setState] = useState<PMState>({
     site: [],
     cost: [],

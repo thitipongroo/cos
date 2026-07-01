@@ -35,9 +35,9 @@ networks:
     driver: bridge
 
 services:
-  # ─── PostgreSQL 16 + TimescaleDB 2.x ─────────────────────────────────────
+  # ─── PostgreSQL 18 + TimescaleDB 2.x ─────────────────────────────────────
   postgres:
-    image: timescale/timescaledb:latest-pg16
+    image: timescale/timescaledb:latest-pg18
     container_name: cos-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-cos}
@@ -46,7 +46,9 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PG18+ Docker images store data in a major-version subdirectory and expect the mount at
+      # /var/lib/postgresql (not /var/lib/postgresql/data) — docker-library/postgres#1259.
+      - postgres_data:/var/lib/postgresql
       - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-cos} -d ${POSTGRES_DB:-construction_os}']
@@ -86,7 +88,7 @@ services:
 
   # ─── Redis 7 ──────────────────────────────────────────────────────────────
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: cos-redis
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-cos_redis_password}
     ports:

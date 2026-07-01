@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { ExecutiveDashboard } from '../../../components/analytics/ExecutiveDashboard';
 import type { ExecutiveDashboardRow } from '../../../components/analytics/ExecutiveDashboard';
 
@@ -12,11 +12,8 @@ interface PageSearchParams {
   dateRange?: string;
 }
 
-export default function ExecutiveDashboardPage({
-  searchParams,
-}: {
-  searchParams: PageSearchParams;
-}) {
+export default function ExecutiveDashboardPage(props: { searchParams: Promise<PageSearchParams> }) {
+  const searchParams = use(props.searchParams);
   const [data, setData] = useState<ExecutiveDashboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

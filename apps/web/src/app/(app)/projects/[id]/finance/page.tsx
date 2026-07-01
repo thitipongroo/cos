@@ -1,4 +1,5 @@
 'use client';
+import { use } from 'react';
 
 import { ProjectTabs } from '../../../../../components/project/ProjectTabs';
 import { useI18n } from '../../../../../i18n';
@@ -15,7 +16,8 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 /** PM read-only finance summary for a project (§20.7.2 → Phase 7 read). */
-export default function ProjectFinancePage({ params }: { params: { id: string } }) {
+export default function ProjectFinancePage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const { id } = params;
   const { t, locale } = useI18n();
   const summaryQuery = useFinanceSummary(id);

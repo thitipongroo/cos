@@ -1,4 +1,5 @@
 'use client';
+import { use } from 'react';
 
 import { useI18n } from '../../../../../i18n';
 import { useFinanceSummary } from '../../../../../lib/api/queries';
@@ -14,7 +15,8 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 /** Project budget detail (§20.7.4 → GET /finance/budget/:projectId). */
-export default function FinanceBudgetDetailPage({ params }: { params: { projectId: string } }) {
+export default function FinanceBudgetDetailPage(props: { params: Promise<{ projectId: string }> }) {
+  const params = use(props.params);
   const { projectId } = params;
   const { t, locale } = useI18n();
   const summaryQuery = useFinanceSummary(projectId);

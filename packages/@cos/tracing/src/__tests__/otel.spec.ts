@@ -21,7 +21,7 @@ jest.mock('@opentelemetry/exporter-prometheus', () => ({
 }));
 
 jest.mock('@opentelemetry/resources', () => ({
-  Resource: jest.fn().mockImplementation((attrs: Record<string, unknown>) => attrs),
+  resourceFromAttributes: jest.fn().mockImplementation((attrs: Record<string, unknown>) => attrs),
 }));
 
 const mockGetSpan = jest.fn();

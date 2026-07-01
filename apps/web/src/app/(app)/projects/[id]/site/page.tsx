@@ -1,4 +1,5 @@
 'use client';
+import { use } from 'react';
 
 import { ProjectTabs } from '../../../../../components/project/ProjectTabs';
 import { DataTable, type Column } from '../../../../../components/ui/DataTable';
@@ -8,7 +9,8 @@ import type { IssueRow, SiteReportRow } from '../../../../../lib/api/types';
 import { formatDate } from '../../../../../lib/format';
 
 /** PM read-only site summary for a project (§20.7.2 → Phase 6): reports + issue triage. */
-export default function ProjectSitePage({ params }: { params: { id: string } }) {
+export default function ProjectSitePage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const { id } = params;
   const { t, locale } = useI18n();
   const reportsQuery = useProjectSiteReports(id);

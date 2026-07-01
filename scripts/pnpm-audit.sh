@@ -24,16 +24,8 @@ import sys
 SUPPRESSED_GHSA = {
     # ── fastify@4 / @fastify/middie@8 / @nestjs/platform-fastify@10 advisories removed:
     #    resolved by the NestJS 11 + Fastify 5 upgrade (ADR-042). ──
-    # ── next@14 ──
-    # Fix: upgrade Next.js 14 → 15 (deferred — Phase 31)
-    "GHSA-h25m-26qc-wcjf",  # no CVE        DoS via HTTP request deserialization
-    "GHSA-q4gf-8mx6-v5v3",  # no CVE        DoS with Server Components
-    "GHSA-8h8q-6873-q5fj",  # no CVE        DoS with Server Components (variant)
-    "GHSA-c4j6-fc7j-m34r",  # CVE-2026-44578 SSRF in app router
-    "GHSA-36qx-fr4f-26g5",  # CVE-2026-44573 middleware/proxy bypass in Pages Router
-    # ── @opentelemetry/sdk-node@0.51 ──
-    # Fix: upgrade full OTel stack to 0.217+ (deferred — Phase 31)
-    "GHSA-q7rr-3cgh-j5r3",  # CVE-2026-44902 Prometheus exporter crash via malformed HTTP
+    # ── next@14 advisories removed: resolved by the Next 16 + React 19 upgrade (ADR-043). ──
+    # ── @opentelemetry/sdk-node advisory removed: resolved by the sdk-node 0.219 upgrade (ADR-044). ──
     # ── expo@51 CLI → tar@6 (dev-only build tool) ──
     # Fix: upgrade expo 51 → 52 (deferred — Phase 31)
     "GHSA-34x7-hfp2-rc4v",  # CVE-2026-24842 tar arbitrary file create/overwrite

@@ -27,7 +27,7 @@ jest.mock('@opentelemetry/exporter-prometheus', () => ({
   PrometheusExporter: jest.fn().mockImplementation(() => ({})),
 }));
 jest.mock('@opentelemetry/resources', () => ({
-  Resource: jest.fn().mockImplementation((a) => a),
+  resourceFromAttributes: jest.fn().mockImplementation((a) => a),
 }));
 
 import { createMetrics } from '../metrics';

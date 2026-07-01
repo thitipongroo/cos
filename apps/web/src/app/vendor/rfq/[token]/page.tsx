@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, use } from 'react';
 import Link from 'next/link';
 import { useI18n } from '../../../../i18n';
 import { useVendorRfq, useSubmitQuotation } from '../../../../lib/api/vendor';
 
 /** Tier-1 magic-link page (§20.7.12): open an invited RFQ and submit a quotation — no account. */
-export default function VendorRfqPage({ params }: { params: { token: string } }) {
+export default function VendorRfqPage(props: { params: Promise<{ token: string }> }) {
+  const params = use(props.params);
   const { token } = params;
   const { t } = useI18n();
   const rfq = useVendorRfq(token);

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "next build --webpack",
     "dev": "next dev -p 3001",
     "start": "next start -p 3001",
     "lint": "eslint src",
@@ -14,19 +14,19 @@
     "@fontsource/inter-tight": "^5.2.7",
     "@tanstack/react-query": "^5.101.2",
     "idb": "^8.0.0",
-    "next": "^14.2.0",
+    "next": "^16.2.9",
     "next-auth": "^4.24.0",
     "next-pwa": "^5.6.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "recharts": "^2.12.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "recharts": "^3.9.1",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.2",
     "@types/node": "^20.12.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "tailwindcss": "^4.3.2",
     "typescript": "^5.4.0"
   }

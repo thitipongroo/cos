@@ -2,7 +2,7 @@ import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { context, metrics, trace } from '@opentelemetry/api';
 
 let sdk: NodeSDK | null = null;
@@ -34,7 +34,9 @@ export function initTracing(serviceNameOrOptions: string | TracingOptions): void
     prometheusPort = parseInt(process.env.PROMETHEUS_PORT ?? '9464', 10),
   } = opts;
 
-  const resource = new Resource({
+  // @opentelemetry/resources v2 removed `new Resource(...)` in favour of the resourceFromAttributes
+  // factory (ADR-044).
+  const resource = resourceFromAttributes({
     'service.name': serviceName,
     'service.version': serviceVersion,
   });

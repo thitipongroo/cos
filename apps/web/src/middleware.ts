@@ -4,7 +4,11 @@
  * (configured as the next-auth signIn page). Auth pages, the next-auth API,
  * the PWA offline shell, and static assets are excluded from the matcher.
  */
-export { default } from 'next-auth/middleware';
+// Next 16's build analyzer requires the middleware default to be a resolvable function value; a
+// bare `export { default } from '...'` re-export is not recognized. Import then re-export instead.
+import authMiddleware from 'next-auth/middleware';
+
+export default authMiddleware;
 
 export const config = {
   matcher: [
