@@ -329,7 +329,7 @@ TH-specific logic is not silently applied to non-TH tenants.
 
 ## 20.6 Web Application — Authentication and Session
 
-> **Platform:** `apps/web/` (Next.js + next-pwa) — tablet/laptop browser, online + offline
+> **Platform:** `apps/web/` (Next.js + Serwist) — tablet/laptop browser, online + offline
 > (deployable: `32-implementation-specifications` §32.2).
 > **Scope:** the web app is a **full operational client** for all roles — not a dashboard-only
 > surface. It renders the same authentication paths and RBAC model defined for the platform;
@@ -359,7 +359,7 @@ The web login renders **both** authentication paths already defined in §5.4 (ma
   `role` claim (RBAC) — a role never sees navigation for pages it cannot access.
 - **In-app notifications:** notification bell fed by SSE (`19-notification-architecture` §19.2,
   §19 "active in web UI") — never WebSocket.
-- **Offline indicator + sync status:** PWA offline support via next-pwa + IndexedDB
+- **Offline indicator + sync status:** PWA offline support via Serwist + IndexedDB
   (Phase 10 Target B). Offline-capable pages mirror the mobile sync entities (site reports,
   issues, inspections, deliveries); read views are served from cache when offline.
 - **Language switcher:** `th` / `en` per §20.5.

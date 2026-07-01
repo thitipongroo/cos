@@ -164,13 +164,14 @@ Local cache constraints :
 
 ## 17.8 Expo Native Build Setup (WatermelonDB JSI)
 
-WatermelonDB 0.28 ships native JSI code, so on Expo (SDK 51) it requires native wiring and a
+WatermelonDB 0.28 ships native JSI code, so on Expo (SDK 56) it requires native wiring and a
 **custom development client — it does NOT run in Expo Go**. Required setup in `apps/mobile`:
 
-- **Config plugin (community, version-matched to the SDK):** `@skam22/watermelondb-expo-plugin@^51.0.0`
-  for Expo SDK 51. The original `@morrowdigital/watermelondb-expo-plugin` now tracks SDK 54, and npm
-  `latest` for the skam22 fork is `50.0.2`, so SDK 51 must be pinned `^51`. WatermelonDB's own docs give
-  no Expo guidance — these plugins are community-maintained, not first-party.
+- **Config plugin (community-maintained):** `@morrowdigital/watermelondb-expo-plugin@^2.3.3` for Expo SDK 56.
+  This plugin uses independent semver (2.x), not SDK-matched version numbers. The `@skam22` fork previously
+  used for SDK 51 was abandoned at SDK 51 and is no longer viable for current SDKs, so the config plugin was
+  switched to `@morrowdigital` (ADR-046). WatermelonDB's own docs give no Expo guidance — these plugins are
+  community-maintained, not first-party.
 - **`expo-build-properties`** in `app.json` `plugins`: Android `kotlinVersion 1.8.10`,
   `compileSdkVersion`/`targetSdkVersion 33`, `packagingOptions.pickFirst ["**/libc++_shared.so"]`; iOS
   `extraPods` entry for `simdjson` with `path: ../node_modules/@nozbe/simdjson` and `modular_headers: true`.

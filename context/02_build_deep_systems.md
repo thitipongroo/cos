@@ -759,7 +759,7 @@ Platform decision (confirmed by product owner — see 00_master_construction_os.
 
   Target B: Web App — apps/web/ (tablet/laptop browser — online + offline)
     Local storage: IndexedDB via idb library (typed wrapper)
-    Background sync: Service Worker + Background Sync API (next-pwa / Workbox)
+    Background sync: Service Worker + Background Sync API (Serwist / @serwist/turbopack)
     Users: ALL roles on tablet/laptop — online AND offline, no app switching required
 
 Requirements (apply to Target A and Target B):
@@ -774,7 +774,7 @@ Generate:
 
 - React Native sync engine (WatermelonDB 0.28.x via ExpoSQLiteAdapter + SyncManager class;
                             expo-sqlite directly for sync_queue table only)
-- Web App sync engine (IndexedDB + Service Worker queue via next-pwa/Workbox)
+- Web App sync engine (IndexedDB + Service Worker queue via Serwist/@serwist/turbopack)
 - shared sync API endpoints (same REST API, shared server-side)
 - merge strategies per entity type
 - retry orchestration

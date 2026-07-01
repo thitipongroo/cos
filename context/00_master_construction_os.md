@@ -254,7 +254,7 @@ DEPLOYABLE UNITS (derived from: docs/specifications/32-implementation-specificat
 │ KG Ingestion Worker            │ Go               │ Neo4j ingestion            │
 │ (services/*-worker/)           │                  │                            │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
-│ Web App (apps/web/)            │ Next.js+next-pwa │ Tablet/laptop online+offline│
+│ Web App (apps/web/)            │ Next.js+Serwist  │ Tablet/laptop online+offline│
 │ Mobile (apps/mobile/)          │ React Native     │ Smartphone native app      │
 └────────────────────────────────┴──────────────────┴────────────────────────────┘
 
@@ -326,13 +326,13 @@ Do NOT reassign runtimes. Do NOT combine runtimes within a service.
 
 Infrastructure stack (all required — versions authoritative in spec §4.3 Databases + §4.4 Infrastructure; mirrored here):
 
-- PostgreSQL 16          — primary relational store
+- PostgreSQL 18          — primary relational store
 - TimescaleDB 2.x        — time-series telemetry (equipment, IoT, workforce); PostgreSQL extension, co-located on primary instance, split on volume trigger (ADR-032)
-- Redis 7                — cache and session store
-- Apache Kafka 3.x       — event streaming
-- OpenSearch 2.x         — full-text and vector search
-- Neo4j 5.x              — knowledge graph
-- ClickHouse 24.x        — analytics OLAP
+- Redis 8                — cache and session store
+- Apache Kafka 4.x       — event streaming (Confluent Platform 8.x images)
+- OpenSearch 3.x         — full-text and vector search
+- Neo4j 2026.x           — knowledge graph (CalVer release line)
+- ClickHouse 26.x        — analytics OLAP
 - pgvector (extension)   — vector embeddings in PostgreSQL
 - Weaviate               — vector DB (alternative/supplement to pgvector for AI workloads)
 - MinIO                  — S3-compatible object storage
@@ -1056,7 +1056,7 @@ Naming Conventions:
 
 Directory Structure (authoritative — monolith architecture):
 apps/
-  web/                    — Next.js + next-pwa unified web app (@cos/web) — online + offline
+  web/                    — Next.js + Serwist unified web app (@cos/web) — online + offline
   mobile/                 — React Native + Expo application (@cos/mobile)
 
 backend/                  — NestJS Modular Monolith (ONE deployable)
@@ -2657,7 +2657,7 @@ Build offline-first mobile sync engine.
 ARCHITECTURE DECISION (resolves previous contradiction — aligned with source §18.2):
   Source file §8.1 specifies BOTH React Native AND IndexedDB in same section.
   Source file §18.2 clarifies: "IndexedDB (PWA-native; IndexedDB for web/PWA builds)"
-  — meaning Web App (apps/web/) uses IndexedDB for offline via next-pwa, not React Native.
+  — meaning Web App (apps/web/) uses IndexedDB for offline via Serwist, not React Native.
 
   PLATFORM DECISION — FINAL (confirmed by product owner):
   ทุก role สามารถใช้ได้ทุก platform โดยเลือกตามอุปกรณ์:
@@ -2666,7 +2666,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
   │ อุปกรณ์                        │ Platform                        │
   ├──────────────────────────────┼─────────────────────────────────┤
   │ Smartphone (online/offline)  │ React Native เท่านั้น              │
-  │ Tablet/laptop                │ Web App (Next.js + next-pwa)    │
+  │ Tablet/laptop                │ Web App (Next.js + Serwist)     │
   └──────────────────────────────┴─────────────────────────────────┘
 
   Rules:
@@ -2685,12 +2685,12 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                    NOT plain expo-sqlite — WatermelonDB provides observable queries,
                    lazy loading, and batch writes required for offline construction data
 
-  Target B: Web App (Next.js + next-pwa) — tablet/laptop browser, online + offline
+  Target B: Web App (Next.js + Serwist) — tablet/laptop browser, online + offline
     Users:         ALL roles
     Device:        tablet/laptop browser — ไม่รองรับ smartphone
     Connectivity:  online AND offline — Service Worker handles both transparently
     Local Storage: IndexedDB via idb library (offline entity cache)
-    Background sync: Background Sync API via Workbox — mutation replay on reconnect
+    Background sync: Background Sync API via Serwist — mutation replay on reconnect
 
   SCOPE IMPACT — สำคัญมาก:
     React Native ต้องรองรับ ALL roles ไม่ใช่แค่ on-site roles
@@ -2768,7 +2768,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Background sync: expo-background-fetch + expo-task-manager
     Network detect: @react-native-community/netinfo
     Native build:   WatermelonDB JSI ⇒ custom dev-client REQUIRED (Expo Go cannot load it).
-                   @skam22/watermelondb-expo-plugin@^51 (SDK-version-matched) + expo-build-properties
+                   @morrowdigital/watermelondb-expo-plugin@^2.3.3 (SDK 56; @skam22 fork abandoned at SDK 51) + expo-build-properties
                    (Android kotlin 1.8.10 / compileSdk 33; iOS simdjson pod) + babel
                    @babel/plugin-proposal-decorators(legacy) for @field models; add @nozbe/simdjson@3.9.4
                    as a direct dep so pnpm exposes node_modules/@nozbe/simdjson for the pod path.
@@ -2779,11 +2779,11 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                    (no boolean isVisible()). See spec §17.8 + §30.7.
 
   Web App Stack (Target B — apps/web/ directory):
-    Framework:      Next.js + next-pwa plugin (Workbox-based)
+    Framework:      Next.js + Serwist (@serwist/turbopack — Workbox-successor, Turbopack-compatible)
     Local Storage:  IndexedDB via idb library (typed wrapper)
     State:          Zustand + React Query
     Background sync: Service Worker + Background Sync API
-    Offline pages:  precached via Workbox during build
+    Offline pages:  precached via Serwist during build (precache manifest injected into the SW)
     Target users:   ALL roles — tablet/laptop browser ONLY
     Device:         NOT smartphone (product owner confirmed)
     Connectivity:   online + offline — no app switching; Service Worker handles transparently
@@ -2828,10 +2828,10 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - Every screen exposes the testIDs consumed by the Detox E2E specs (apps/mobile/e2e/*)
 
   Generate (Web App — apps/web/):
-    - next-pwa configuration with Workbox strategies
+    - Serwist configuration (@serwist/turbopack: withSerwist + createSerwistRoute) with runtime caching strategies
     - IndexedDB schema using idb library (typed, versioned)
     - PWA sync service using Background Sync API + IndexedDB queue
-    - Service worker registration in Next.js _app.tsx
+    - Service worker registration via SerwistProvider in the Next.js App Router root layout (app/layout.tsx)
     - Offline fallback pages
     - Install prompt component (beforeinstallprompt handler)
     - Web authentication: login (Path A SMS OTP + Path B email/password), MFA challenge,
@@ -3380,7 +3380,7 @@ Performance SLA (authoritative — all dashboard queries must meet these):
   Real-time metrics:     < 30 seconds lag (for critical alerts only)
 
 ClickHouse Strategy:
-  Version: ClickHouse 24.x
+  Version: ClickHouse 26.x
   Data ingestion: Kafka → ClickHouse via Kafka engine tables (native integration)
   Materialized views: pre-aggregate metrics at ingestion time
     (NOT query-time aggregation — ensures P95 SLA is met)
@@ -3858,7 +3858,7 @@ Constraints:
 Build testing strategy.
 
 Testing Tools (authoritative):
-  Unit testing (TypeScript):   Jest 29.x + @nestjs/testing
+  Unit testing (TypeScript):   Jest 30.x + @nestjs/testing
   Unit testing (Python):       pytest 8.x + pytest-asyncio
   Unit testing (Go):           testing package (stdlib) + testify
   Integration testing:         Jest + Supertest (NestJS) + testcontainers-node

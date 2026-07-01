@@ -37,14 +37,14 @@ related_docs:
 
 ## 34.0 Standards Reference
 
-| Domain           | Standard                                | Version | Role                                                                                     |
-| ---------------- | --------------------------------------- | ------- | ---------------------------------------------------------------------------------------- |
-| Workflow engine  | Temporal                                | —       | Normative — durable execution, signal handlers, compensation                             |
-| Event envelope   | Base Event Envelope (CloudEvents-inspired) | §32.4 | Normative — COS Base Event Envelope (see 15-event-driven-workflow §15.6 + 32-implementation-specifications §32.4) |
-| Event schema     | Apache Avro / Confluent Schema Registry | —       | Normative — schema format and compatibility (see 32-implementation-specifications §32.4) |
-| Webhook security | HMAC-SHA256                             | —       | Normative — request signature verification for CRM webhook                               |
-| IaC              | HashiCorp Terraform                     | ~> 5.0  | Normative — AWS RDS provisioning module                                                  |
-| Database         | AWS RDS PostgreSQL 16                   | 16      | Normative — dedicated DB per Enterprise tenant; matches shared-DB major version (master infra stack) |
+| Domain           | Standard                                   | Role                                                                                                              |
+| ---------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| Workflow engine  | Temporal                                   | Normative — durable execution, signal handlers, compensation                                                      |
+| Event envelope   | Base Event Envelope (CloudEvents-inspired) | Normative — COS Base Event Envelope (see 15-event-driven-workflow §15.6 + 32-implementation-specifications §32.4) |
+| Event schema     | Apache Avro / Confluent Schema Registry    | Normative — schema format and compatibility (see 32-implementation-specifications §32.4)                          |
+| Webhook security | HMAC-SHA256                                | Normative — request signature verification for CRM webhook                                                        |
+| IaC              | HashiCorp Terraform                        | Normative — AWS RDS provisioning module                                                                           |
+| Database         | AWS RDS PostgreSQL.                        | Normative — dedicated DB per Enterprise tenant; matches shared-DB major version (master infra stack)              |
 
 **Normative** = implementation must comply.
 
@@ -140,7 +140,7 @@ Query: `workflowState` — returns current state string
 
 | #   | Activity                         | State after        | Description                                                                                                       | Compensation                             |
 | --- | -------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| 1   | `createRdsActivity`              | CREATING_RDS       | AWS `CreateDBInstance` — PostgreSQL 16, db.t3.medium, 100 GB GP3, per-tenant KMS key                              | `DeleteDBInstance`                       |
+| 1   | `createRdsActivity`              | CREATING_RDS       | AWS `CreateDBInstance` — PostgreSQL, db.t3.medium, 100 GB GP3, per-tenant KMS key                                 | `DeleteDBInstance`                       |
 | 2   | `runMigrationsActivity`          | RUNNING_MIGRATIONS | `prisma migrate deploy` against new DB URL via `execSync`                                                         | None                                     |
 | 3   | `assignDedicatedDbActivity`      | ASSIGNING_DB       | `UPDATE platform.tenants SET dedicated_db_url = ?`                                                                | `SET dedicated_db_url = NULL`            |
 | —   | `notifyAwaitingApprovalActivity` | AWAITING_APPROVAL  | Insert notification rows for all SYSTEM_ADMIN users                                                               | None                                     |
@@ -205,7 +205,7 @@ Terraform module: `infrastructure/terraform/modules/rds-tenant/`
 
 | Parameter              | Value                                                  |
 | ---------------------- | ------------------------------------------------------ |
-| Engine                 | PostgreSQL 16                                          |
+| Engine                 | PostgreSQL                                             |
 | Instance class         | `db.t3.medium` (default; negotiable per contract)      |
 | Storage type           | GP3                                                    |
 | Allocated storage      | 100 GB (auto-scales to 1 TB)                           |

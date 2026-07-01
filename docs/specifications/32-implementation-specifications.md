@@ -164,7 +164,7 @@ The platform deploys as distinct units. Do **not** merge runtimes or split prema
 | AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                         |
 | Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                                 |
 | KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion — Kafka client: `github.com/IBM/sarama` (pure Go; consumer group: `kg-consumer-group`) |
-| Web App (`apps/web/`)                                 | Next.js + next-pwa  | Tablet/laptop browser — online + offline unified                                                       |
+| Web App (`apps/web/`)                                 | Next.js + Serwist   | Tablet/laptop browser — online + offline unified                                                       |
 | Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                                  |
 
 ### Service Extraction Rules
@@ -749,9 +749,14 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
   the subtree into client-side rendering; without an enclosing `<Suspense>`, `next build` fails the route's static
   export with `missing-suspense-with-csr-bailout` ("Error occurred prerendering page"). Isolate the hook in a child
   component and wrap it: `export default function Page() { return <Suspense fallback={…}><Inner /></Suspense>; }`.
-- **next-pwa output is a build artifact, never committed.** With `next-pwa` (`dest: 'public'`), the production build
-  emits `apps/web/public/sw.js`, `workbox-*.js` (hash varies per build), and optionally `sw.js.map` / `fallback-*.js`.
-  These are git-ignored (`.gitignore`) — regenerated on every build; committing them produces churn and stale service workers.
+- **Serwist serves the service worker from a route — nothing is emitted to `public/`.** PWA is provided by
+  `@serwist/turbopack` (Workbox-successor, Turbopack-compatible; next-pwa is webpack-only and unmaintained — ADR-047).
+  The SW source lives at `apps/web/src/app/sw.ts` (excluded from `tsconfig.json` so its WebWorker lib does not conflict
+  with the app's DOM types) and is bundled by `esbuild-wasm` at build time via the `/serwist/[path]` route handler
+  (`createSerwistRoute`, `dynamic = 'force-static'`), which serves `/serwist/sw.js` with `Service-Worker-Allowed: /`.
+  The client registers it via `<SerwistProvider swUrl="/serwist/sw.js">` in `app/layout.tsx`, and `next.config.mjs`
+  wraps the config with `withSerwist`. Unlike next-pwa (`dest: 'public'`), **no `sw.js` / `workbox-*.js` artifacts land
+  in `apps/web/public/`** — the SW is part of the `.next` build output, so there is nothing to git-ignore under `public/`.
 
 #### Mobile Spacing
 
