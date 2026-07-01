@@ -5,6 +5,7 @@
 
 import { Injectable } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { getDbUrlForTenant } from '../tenant/utils/get-db-url';
 
 @Injectable()
@@ -19,9 +20,7 @@ export class NotificationPrismaService {
     ) => Promise<T>,
   ): Promise<T> {
     const dbUrl = await getDbUrlForTenant(tenantId);
-    const prisma = new PrismaClient({
-      datasources: { db: { url: dbUrl } },
-    });
+    const prisma = createPrismaClient(dbUrl);
     try {
       return await prisma.$transaction(async (tx) => {
         return fn(tx);

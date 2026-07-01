@@ -18,6 +18,13 @@ jest.mock('@prisma/client', () => {
   };
 });
 
+// Prisma 7 (ADR-041): the connection URL is passed to the pg driver adapter, not `datasources`.
+jest.mock('@prisma/adapter-pg', () => ({
+  PrismaPg: jest.fn().mockImplementation((cfg: { connectionString: string }) => ({
+    __connectionString: cfg.connectionString,
+  })),
+}));
+
 const { _mocks } = jest.requireMock('@prisma/client') as {
   _mocks: {
     $transaction: jest.Mock;
@@ -27,6 +34,7 @@ const { _mocks } = jest.requireMock('@prisma/client') as {
 };
 
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
 import { NotificationPrismaService } from '../notification-prisma.service';
 
@@ -51,9 +59,7 @@ describe('run', () => {
     const fn = jest.fn().mockResolvedValue('result');
     const result = await svc.run('tenant-abc', fn);
     expect(getDbUrlForTenant).toHaveBeenCalledWith('tenant-abc');
-    expect(PrismaClient).toHaveBeenCalledWith({
-      datasources: { db: { url: 'postgresql://tenant-db/testdb' } },
-    });
+    expect(PrismaPg).toHaveBeenCalledWith({ connectionString: 'postgresql://tenant-db/testdb' });
     expect(_mocks.$transaction).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(_mocks.mockTx);
     expect(result).toBe('result');
@@ -87,12 +93,8 @@ describe('run', () => {
     await svc.run('t2', jest.fn().mockResolvedValue(undefined));
 
     expect(PrismaClient).toHaveBeenCalledTimes(2);
-    expect(PrismaClient).toHaveBeenNthCalledWith(1, {
-      datasources: { db: { url: 'postgresql://db1' } },
-    });
-    expect(PrismaClient).toHaveBeenNthCalledWith(2, {
-      datasources: { db: { url: 'postgresql://db2' } },
-    });
+    expect(PrismaPg).toHaveBeenNthCalledWith(1, { connectionString: 'postgresql://db1' });
+    expect(PrismaPg).toHaveBeenNthCalledWith(2, { connectionString: 'postgresql://db2' });
     expect(getDbUrlForTenant).toHaveBeenNthCalledWith(1, 't1');
     expect(getDbUrlForTenant).toHaveBeenNthCalledWith(2, 't2');
   });

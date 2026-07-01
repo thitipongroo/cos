@@ -60,7 +60,12 @@ const PM_ROWS = [
 
 function makeChClient(rows: unknown[]) {
   const resultSet = { json: jest.fn().mockResolvedValue(rows) };
-  return { query: jest.fn().mockResolvedValue(resultSet) };
+  // close() is invoked by AnalyticsModule.onModuleDestroy on app shutdown (ADR-034 graceful
+  // shutdown); the mock must provide it or teardown throws "close is not a function".
+  return {
+    query: jest.fn().mockResolvedValue(resultSet),
+    close: jest.fn().mockResolvedValue(undefined),
+  };
 }
 
 const noopCache = {
@@ -132,7 +137,10 @@ describe('Analytics API Integration (Phase 14)', () => {
 
     it('returns 503 when ClickHouse is unavailable', async () => {
       // override ClickHouse to throw
-      const failingCh = { query: jest.fn().mockRejectedValue(new Error('connection refused')) };
+      const failingCh = {
+        query: jest.fn().mockRejectedValue(new Error('connection refused')),
+        close: jest.fn().mockResolvedValue(undefined),
+      };
       const mod: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
         .overrideGuard(JwtAuthGuard)
         .useValue({ canActivate: () => true })

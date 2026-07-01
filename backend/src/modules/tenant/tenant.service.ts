@@ -10,7 +10,8 @@ import {
   BadRequestException,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { PrismaClient, Tenant } from '@prisma/client';
+import { Tenant } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
@@ -21,7 +22,7 @@ const logger = createLogger('tenant-service');
 @Injectable()
 export class TenantService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
-  private readonly prisma = new PrismaClient();
+  private readonly prisma = createPrismaClient();
   private readonly kafka = new KafkaProducer();
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */

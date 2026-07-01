@@ -11,7 +11,7 @@
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('tombstone-prune-service');
@@ -20,7 +20,7 @@ const MS_PER_DAY = 86_400_000;
 
 @Injectable()
 export class TombstonePruneService implements OnModuleDestroy {
-  private readonly prisma = new PrismaClient();
+  private readonly prisma = createPrismaClient();
 
   private retentionDays(): number {
     const raw = process.env['SYNC_TOMBSTONE_RETENTION_DAYS'];

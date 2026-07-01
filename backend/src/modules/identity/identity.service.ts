@@ -4,7 +4,7 @@
 // Refresh token rotation: Keycloak handles natively (refreshTokenMaxReuse: 0 in realm JSON).
 
 import { Injectable, UnauthorizedException, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
 import { KeycloakAdminService } from './keycloak-admin.service';
 import type { KeycloakTokenResponse } from './keycloak-admin.service';
@@ -20,7 +20,7 @@ export interface TokenResult {
 
 @Injectable()
 export class IdentityService implements OnModuleDestroy {
-  private readonly prisma = new PrismaClient();
+  private readonly prisma = createPrismaClient();
 
   constructor(private readonly keycloakAdmin: KeycloakAdminService) {}
 

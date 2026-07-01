@@ -4,8 +4,9 @@
 // All tenant entity schemas are defined and migrated per-phase
 
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  provider = "prisma-client-js"
+  // multiSchema is GA since Prisma 6 — no longer a preview feature. The "schemas" field on the
+  // datasource below keeps working without it.
   // Alpine (node:*-alpine) ships OpenSSL 3.x with musl libc. Without an explicit target Prisma
   // generated the openssl-1.1.x musl engine, which fails at runtime ("libssl.so.1.1: not found").
   // Pin the musl + openssl-3.0.x engines for both CPU arches (x64 CI, arm64 local) plus native.
@@ -14,11 +15,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // Application connects via PgBouncer (QM-18) — never directly to port 5432
-  url      = env("DATABASE_URL")
-  // Migrations need a direct (non-pooled) connection — PgBouncer transaction mode breaks
-  // Prisma advisory locks and migration DDL. Set to the direct Postgres port (5432).
-  directUrl = env("DIRECT_DATABASE_URL")
+  // Prisma 7 (ADR-041): connection URLs moved out of the schema. Runtime connects via the
+  // @prisma/adapter-pg driver adapter on DATABASE_URL (PgBouncer, QM-18); Prisma Migrate/CLI uses
+  // DIRECT_DATABASE_URL via prisma.config.ts.
   schemas  = ["platform", "files"]
 }
 

@@ -11,7 +11,7 @@ import {
   BadRequestException,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
@@ -53,7 +53,7 @@ export interface PaginatedUsers {
 @Injectable()
 export class UserService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (platform.users is cross-tenant)
-  private readonly prisma = new PrismaClient();
+  private readonly prisma = createPrismaClient();
   private readonly kafka = new KafkaProducer();
 
   constructor(private readonly keycloakAdmin: KeycloakAdminService) {}

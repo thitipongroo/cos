@@ -9,6 +9,13 @@ jest.mock('@prisma/client', () => ({
   })),
 }));
 
+// Prisma 7 (ADR-041): the connection URL is passed to the pg driver adapter, not `datasources`.
+jest.mock('@prisma/adapter-pg', () => ({
+  PrismaPg: jest.fn().mockImplementation((cfg: { connectionString: string }) => ({
+    __connectionString: cfg.connectionString,
+  })),
+}));
+
 jest.mock('@cos/database', () => ({
   withRetry: jest.fn((fn: () => unknown) => fn()),
 }));
@@ -21,6 +28,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ClsServiceManager } from 'nestjs-cls';
 import { TenantPrismaService } from '../prisma/tenant-prisma.service';
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
 const VALID_UUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
@@ -41,6 +49,7 @@ describe('TenantPrismaService', () => {
 
   beforeEach(() => {
     (PrismaClient as jest.Mock).mockClear();
+    (PrismaPg as jest.Mock).mockClear();
   });
 
   afterEach(() => {
@@ -123,9 +132,7 @@ describe('TenantPrismaService', () => {
       delete process.env['DATABASE_URL'];
       stubClient();
       await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
-        datasources: { db: { url: 'postgresql://app@localhost/app' } },
-      });
+      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: 'postgresql://app@localhost/app' });
     });
 
     it('falls back to DATABASE_URL when APP_DATABASE_URL is unset', async () => {
@@ -133,8 +140,8 @@ describe('TenantPrismaService', () => {
       process.env['DATABASE_URL'] = 'postgresql://super@localhost/db';
       stubClient();
       await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
-        datasources: { db: { url: 'postgresql://super@localhost/db' } },
+      expect(PrismaPg).toHaveBeenCalledWith({
+        connectionString: 'postgresql://super@localhost/db',
       });
     });
 
@@ -143,9 +150,7 @@ describe('TenantPrismaService', () => {
       delete process.env['DATABASE_URL'];
       stubClient();
       await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
-        datasources: { db: { url: '' } },
-      });
+      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: '' });
     });
 
     it('uses the dedicated DB URL when present (enterprise tenant)', async () => {
@@ -155,9 +160,7 @@ describe('TenantPrismaService', () => {
       await runInCls({ tenantId: VALID_UUID, dedicatedDbUrl: dedicated }, () =>
         new TenantPrismaService().run(noop),
       );
-      expect((PrismaClient as jest.Mock).mock.calls[0][0]).toEqual({
-        datasources: { db: { url: dedicated } },
-      });
+      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: dedicated });
     });
 
     it('reuses a cached client for the same URL across runs', async () => {

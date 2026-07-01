@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { authenticator } from 'otplib';
 import { Redis } from 'ioredis';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
 import { encryptSecret, decryptSecret } from '../../../shared/crypto/secret-cipher';
 
@@ -28,7 +28,7 @@ const MFA_LOCKOUT_TTL_SECONDS = 900;
 @Injectable()
 export class MfaService implements OnModuleDestroy {
   private readonly redis: Redis;
-  private readonly prisma = new PrismaClient();
+  private readonly prisma = createPrismaClient();
 
   constructor() {
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');

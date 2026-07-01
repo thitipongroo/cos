@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { randomUUID } from 'crypto';
@@ -85,7 +85,7 @@ export async function runMigrationsActivity(params: RdsWithEndpointParams): Prom
 // ── Activity 3: assignDedicatedDbActivity ─────────────────────────────────
 
 export async function assignDedicatedDbActivity(params: RdsWithEndpointParams): Promise<void> {
-  const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } });
+  const prisma = createPrismaClient(DATABASE_URL);
   try {
     const dbUrl = buildDbUrl(params.rdsEndpoint);
     await prisma.$executeRaw`
@@ -104,7 +104,7 @@ export async function assignDedicatedDbActivity(params: RdsWithEndpointParams): 
 export async function compensateAssignDedicatedDbActivity(
   params: RdsActivityParams,
 ): Promise<void> {
-  const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } });
+  const prisma = createPrismaClient(DATABASE_URL);
   try {
     await prisma.$executeRaw`
       UPDATE platform.tenants
@@ -120,7 +120,7 @@ export async function compensateAssignDedicatedDbActivity(
 // ── Human gate: notifyAwaitingApprovalActivity ─────────────────────────────
 
 export async function notifyAwaitingApprovalActivity(params: RdsActivityParams): Promise<void> {
-  const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } });
+  const prisma = createPrismaClient(DATABASE_URL);
   try {
     const [tenant] = await prisma.$queryRaw<Array<{ tenant_name: string; tenant_code: string }>>`
       SELECT tenant_name, tenant_code FROM platform.tenants
@@ -162,7 +162,7 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
   const dedicatedDbUrl = buildDbUrl(params.rdsEndpoint);
 
   // Check if tenant has existing domain data — skip migration if empty
-  const prisma = new PrismaClient({ datasources: { db: { url: sharedDbUrl } } });
+  const prisma = createPrismaClient(sharedDbUrl);
   let hasData = false;
   try {
     const [row] = await prisma.$queryRaw<Array<{ cnt: bigint }>>`
@@ -195,7 +195,7 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
 
 export async function verifyRoutingActivity(params: RdsWithEndpointParams): Promise<void> {
   const dbUrl = buildDbUrl(params.rdsEndpoint);
-  const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
+  const prisma = createPrismaClient(dbUrl);
   try {
     await prisma.$queryRaw`SELECT 1 AS ok`;
     const [row] = await prisma.$queryRaw<Array<{ dedicated_db_url: string | null }>>`
@@ -250,7 +250,7 @@ export async function emitProvisionedEventActivity(params: RdsWithEndpointParams
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function getPlatformTenantCode(tenantId: string): Promise<string> {
-  const prisma = new PrismaClient({ datasources: { db: { url: DATABASE_URL } } });
+  const prisma = createPrismaClient(DATABASE_URL);
   try {
     const [row] = await prisma.$queryRaw<Array<{ tenant_code: string }>>`
       SELECT tenant_code FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid LIMIT 1

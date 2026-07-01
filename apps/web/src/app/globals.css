@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tailwind v4: load the existing JS config (§32.7 tokens) via @config, then import the
+   framework. Path is relative to this CSS file (src/app/ → apps/web/tailwind.config.js). */
+@config "../../tailwind.config.js";
+@import 'tailwindcss';
 
 /*
  * Design tokens — mirrors docs/specifications/32-implementation-specifications.md §32.7

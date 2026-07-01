@@ -4,7 +4,7 @@
 // findUsersByRole queries platform.* — always uses shared DB via platformPrisma.
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { NotificationPrismaService } from './notification-prisma.service';
 
 // ── Row types ──────────────────────────────────────────────────────────────
@@ -56,9 +56,7 @@ export interface DeviceTokenRow {
 @Injectable()
 export class NotificationRepository implements OnModuleDestroy {
   // platform.* tables always stay on the shared DB — never move to dedicated DB
-  private readonly platformPrisma = new PrismaClient({
-    datasources: { db: { url: process.env['DATABASE_URL'] } },
-  });
+  private readonly platformPrisma = createPrismaClient(process.env['DATABASE_URL']);
 
   constructor(private readonly db: NotificationPrismaService) {}
 

@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage"
   },
   "dependencies": {
-    "zod": "^3.22.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

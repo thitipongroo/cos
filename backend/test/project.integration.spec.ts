@@ -33,6 +33,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { ClsServiceManager } from 'nestjs-cls';
 import type { ExecutionContext } from '@nestjs/common';
 import { AppModule } from '../src/app.module';
@@ -79,13 +80,16 @@ describe('Project Integration (Testcontainers — PostgreSQL)', () => {
     // Run from a dir WITHOUT a .env: Prisma's CLI gives .env precedence over the passed
     // DATABASE_URL, which would migrate the dev DB instead of the container. backend/.env is a
     // symlink, and Prisma only searches the schema dir + cwd for .env — neither applies here.
-    execSync(`"${prismaBin}" migrate deploy --schema "${schemaPath}"`, {
+    // Prisma 7 reads the migration URL from prisma.config.ts; pass --config since cwd is os.tmpdir()
+    // (ADR-041).
+    const configPath = nodePath.resolve(__dirname, '../prisma.config.ts');
+    execSync(`"${prismaBin}" migrate deploy --schema "${schemaPath}" --config "${configPath}"`, {
       cwd: os.tmpdir(),
       env: { ...process.env, DATABASE_URL: pgUrl, DIRECT_DATABASE_URL: pgUrl },
       stdio: 'inherit',
     });
 
-    prisma = new PrismaClient({ datasources: { db: { url: pgUrl } } });
+    prisma = createPrismaClient(pgUrl);
 
     await prisma.$executeRaw`
       INSERT INTO platform.tenants (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)

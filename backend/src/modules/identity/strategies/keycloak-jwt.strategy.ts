@@ -6,7 +6,7 @@ import { Injectable, UnauthorizedException, OnModuleDestroy } from '@nestjs/comm
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { JwtPayload } from '../jwt.payload';
 import { createLogger } from '@cos/logger';
 
@@ -27,7 +27,7 @@ export class KeycloakJwtStrategy
 {
   // Tenant resolution happens here (during JWT auth), NOT in a pre-auth middleware —
   // NestJS runs middleware before guards, so a middleware can never see req.user.
-  private readonly platformPrisma = new PrismaClient();
+  private readonly platformPrisma = createPrismaClient();
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {

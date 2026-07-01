@@ -11,6 +11,7 @@
 
 import { Injectable, OnModuleDestroy, UnauthorizedException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { withRetry } from '@cos/database';
 import { createLogger } from '@cos/logger';
 import { clsTenantId, clsDedicatedDbUrl } from '../../../shared/context/cls-context';
@@ -49,7 +50,7 @@ export class TenantPrismaService implements OnModuleDestroy {
     const url = dedicatedDbUrl ?? sharedUrl ?? '';
     let client = this.clients.get(url);
     if (!client) {
-      client = new PrismaClient({ datasources: { db: { url } } });
+      client = createPrismaClient(url);
       this.clients.set(url, client);
     }
     return client;

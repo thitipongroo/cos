@@ -10,6 +10,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { ClsServiceManager } from 'nestjs-cls';
 import {
   startIntegrationInfra,
@@ -43,7 +44,7 @@ describe('Cross-tenant Isolation (Integration — Testcontainers)', () => {
     const appUrl = new URL(infra.pgUrl);
     appUrl.username = 'app_user';
     appUrl.password = 'app_user_dev_password';
-    appUserPrisma = new PrismaClient({ datasources: { db: { url: appUrl.toString() } } });
+    appUserPrisma = createPrismaClient(appUrl.toString());
 
     // Seed: two tenants with one user each (enums live in the platform schema)
     await prisma.$executeRaw`

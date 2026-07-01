@@ -10,7 +10,7 @@ import {
   OnModuleDestroy,
 } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
 import { JwtPayload } from '../../modules/identity/jwt.payload';
 
@@ -19,7 +19,7 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 @Injectable()
 export class AuditInterceptor implements NestInterceptor, OnModuleDestroy {
-  private readonly prisma = new PrismaClient();
+  private readonly prisma = createPrismaClient();
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {

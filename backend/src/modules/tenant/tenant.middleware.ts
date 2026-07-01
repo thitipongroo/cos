@@ -5,7 +5,7 @@
 import { Injectable, NestMiddleware, UnauthorizedException, OnModuleDestroy } from '@nestjs/common';
 // @types/express added to devDeps — NestJS uses express-compatible types even with Fastify adapter
 import type { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('tenant-middleware');
@@ -20,7 +20,7 @@ export interface TenantRequest extends Request {
 
 @Injectable()
 export class TenantMiddleware implements NestMiddleware, OnModuleDestroy {
-  private readonly platformPrisma = new PrismaClient();
+  private readonly platformPrisma = createPrismaClient();
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {

@@ -2,12 +2,10 @@
 // Always queries platform.tenants via DATABASE_URL (platform schema never moves to dedicated DB).
 // Returns dedicated_db_url if set (enterprise), else DATABASE_URL (shared DB).
 
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 
 export async function getDbUrlForTenant(tenantId: string): Promise<string> {
-  const prisma = new PrismaClient({
-    datasources: { db: { url: process.env['DATABASE_URL'] } },
-  });
+  const prisma = createPrismaClient(process.env['DATABASE_URL']);
   try {
     const rows = await prisma.$queryRaw<Array<{ dedicated_db_url: string | null }>>`
       SELECT dedicated_db_url FROM platform.tenants

@@ -12,6 +12,7 @@
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer, StartedRedisContainer } from '@testcontainers/redis';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../src/shared/prisma/create-prisma-client';
 import { execSync } from 'child_process';
 import * as os from 'os';
 import * as nodePath from 'path';
@@ -41,13 +42,16 @@ export async function startIntegrationInfra(): Promise<IntegrationInfra> {
 
   const schemaPath = nodePath.resolve(__dirname, '../../prisma/schema.prisma');
   const prismaBin = nodePath.resolve(__dirname, '../../node_modules/.bin/prisma');
-  execSync(`"${prismaBin}" migrate deploy --schema "${schemaPath}"`, {
+  // Prisma 7 reads the migration datasource URL from prisma.config.ts. It auto-discovers that file
+  // in the cwd, but we run from os.tmpdir() (to dodge .env precedence), so point at it with --config.
+  const configPath = nodePath.resolve(__dirname, '../../prisma.config.ts');
+  execSync(`"${prismaBin}" migrate deploy --schema "${schemaPath}" --config "${configPath}"`, {
     cwd: os.tmpdir(), // no .env here → Prisma uses the env vars we set above
     env: { ...process.env, DATABASE_URL: pgUrl, DIRECT_DATABASE_URL: pgUrl },
     stdio: 'inherit',
   });
 
-  const prisma = new PrismaClient({ datasources: { db: { url: pgUrl } } });
+  const prisma = createPrismaClient(pgUrl);
   return { pgContainer, redisContainer, pgUrl, redisUrl, prisma };
 }
 

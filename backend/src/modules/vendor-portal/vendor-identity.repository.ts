@@ -3,7 +3,7 @@
 // NOT TenantPrismaService (which is tenant-scoped). Same pattern as tenant.service / identity.service.
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 
 export interface VendorIdentityRow {
   vendor_identity_id: string;
@@ -23,7 +23,7 @@ export interface TradingRelationshipRow {
 
 @Injectable()
 export class VendorIdentityRepository implements OnModuleDestroy {
-  private readonly prisma = new PrismaClient();
+  private readonly prisma = createPrismaClient();
 
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {

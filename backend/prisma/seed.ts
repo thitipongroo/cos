@@ -9,7 +9,11 @@
 // All inserts use ON CONFLICT DO NOTHING — idempotent; safe to run multiple times.
 // RLS bypass: each batch runs inside a transaction with SET LOCAL app.current_tenant_id.
 
+// Load .env before reading DATABASE_URL: Prisma 7's driver adapter (createPrismaClient) reads
+// process.env directly and — unlike the old @prisma/client — does not auto-load .env (ADR-041).
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
 import { KafkaTopicProvisioner } from '@cos/shared';
 
@@ -31,7 +35,7 @@ type Tx = Omit<
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >;
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function withTenantCtx<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
   return prisma.$transaction(async (tx) => {

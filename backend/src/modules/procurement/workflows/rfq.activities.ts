@@ -4,6 +4,7 @@
 // Workflows (rfq.workflow.ts) call these via proxyActivities — determinism preserved.
 
 import { PrismaClient } from '@prisma/client';
+import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 
@@ -25,9 +26,7 @@ async function withTenantTx<T>(
   fn: (prisma: PrismaClient) => Promise<T>,
 ): Promise<T> {
   const dbUrl = await getDbUrlForTenant(tenantId);
-  const prisma = new PrismaClient({
-    datasources: { db: { url: dbUrl } },
-  });
+  const prisma = createPrismaClient(dbUrl);
   try {
     return await prisma.$transaction(async (tx) => {
       await (tx as PrismaClient).$executeRawUnsafe(

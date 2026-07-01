@@ -15,24 +15,40 @@ export { CLICKHOUSE_CLIENT };
 // Cache TTL: 5 minutes — spec §Phase 14 Caching Strategy
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
-// The CacheModule factory below OWNS this Redis client but @nestjs/cache-manager never closes the
-// underlying ioredis on shutdown, so the socket + reconnect timer leak past app.close(). Hold a
-// module-scoped reference and quit it in AnalyticsModule.onModuleDestroy (Nest invokes lifecycle
-// hooks on module classes). Module is a singleton imported once, so a single reference is correct.
-let cacheRedis: Redis | undefined;
+// The cache Redis client is a PROVIDER (not a module-scoped `let`) so each AnalyticsModule instance
+// owns its own client and closes it in onModuleDestroy (ADR-034). A module-scoped variable leaks
+// when the module is instantiated more than once (e.g. integration tests build the app per-suite):
+// every instance's CacheModule factory overwrites the shared reference, so all but the last client
+// leak their socket + reconnect timer past app.close() and hang Jest.
+const CACHE_REDIS = Symbol('ANALYTICS_CACHE_REDIS');
+
+// Owns the cache Redis client and exports it. Imported by both AnalyticsModule (so its class can
+// close the client) and the CacheModule.registerAsync below (so the store uses the same instance).
+// Nest treats the imported module as one instance per AnalyticsModule, so client and closer match.
+@Module({
+  imports: [ConfigModule],
+  providers: [
+    {
+      provide: CACHE_REDIS,
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService): Redis => new Redis(cfg.getOrThrow<string>('REDIS_URL')),
+    },
+  ],
+  exports: [CACHE_REDIS],
+})
+class CacheRedisModule {}
 
 @Module({
   imports: [
     ConfigModule,
+    CacheRedisModule,
     CacheModule.registerAsync({
-      inject: [ConfigService],
-      useFactory: async (cfg: ConfigService) => {
-        cacheRedis = new Redis(cfg.getOrThrow<string>('REDIS_URL'));
-        return {
-          store: await redisInsStore(cacheRedis),
-          ttl: CACHE_TTL_MS,
-        };
-      },
+      imports: [CacheRedisModule],
+      inject: [CACHE_REDIS],
+      useFactory: async (redis: Redis) => ({
+        store: await redisInsStore(redis),
+        ttl: CACHE_TTL_MS,
+      }),
     }),
   ],
   controllers: [AnalyticsExecutiveController, AnalyticsPmController, AnalyticsTrendsController],
@@ -53,11 +69,14 @@ let cacheRedis: Redis | undefined;
   exports: [AnalyticsService],
 })
 export class AnalyticsModule implements OnModuleDestroy {
-  constructor(@Inject(CLICKHOUSE_CLIENT) private readonly clickhouse: ClickHouseClient) {}
+  constructor(
+    @Inject(CLICKHOUSE_CLIENT) private readonly clickhouse: ClickHouseClient,
+    @Inject(CACHE_REDIS) private readonly cacheRedis: Redis,
+  ) {}
 
   /** Close the cache Redis client and the ClickHouse client on shutdown so neither leaks. */
   async onModuleDestroy(): Promise<void> {
-    await cacheRedis?.quit().catch(() => undefined);
+    await this.cacheRedis.quit().catch(() => undefined);
     await this.clickhouse.close().catch(() => undefined);
   }
 }
