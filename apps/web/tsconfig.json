@@ -12,6 +12,7 @@
       }
     ],
     "outDir": ".next",
+    "rootDir": "../..",
     "allowJs": true,
     "noEmit": true,
     "isolatedModules": true

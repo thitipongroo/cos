@@ -1,0 +1,6 @@
+# Test dependencies for `pytest` (installed on Python 3.12 in CI / local dev; not shipped in the
+# runtime image, which uses requirements.txt only). pytest 9.x matches the repo standard set by
+# mlops/requirements-dev.txt; pytest-asyncio is required because pytest.ini sets asyncio_mode = auto.
+-r requirements.txt
+pytest==9.1.1
+pytest-asyncio==1.3.0

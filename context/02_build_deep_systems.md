@@ -749,7 +749,7 @@ Platform decision (confirmed by product owner — see 00_master_construction_os.
 
   Target A: React Native (smartphone — iOS/Android)
     Local storage: WatermelonDB 0.28.x with ExpoSQLiteAdapter
-                   (expo-sqlite ~15.x underneath, WAL mode enabled)
+                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
                    — primary ORM for ALL main business entities (reports, PRs, POs, etc.)
                    expo-sqlite directly — used ONLY for sync_queue infrastructure table
     NOT IndexedDB — IndexedDB is a browser API, unavailable in React Native

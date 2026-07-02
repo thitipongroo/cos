@@ -2681,7 +2681,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Device:        iOS/Android smartphone — ไม่รองรับ tablet browser
     Connectivity:  offline-first, sync เมื่อ online
     Local Storage: WatermelonDB 0.28.x with custom ExpoSQLiteAdapter
-                   (expo-sqlite ~15.x underneath, WAL mode enabled)
+                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
                    NOT plain expo-sqlite — WatermelonDB provides observable queries,
                    lazy loading, and batch writes required for offline construction data
 
@@ -2762,7 +2762,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Navigation:     Expo Router (file-based, role-aware routing)
     State:          Zustand + React Query
     Local DB:       WatermelonDB 0.28.x with custom ExpoSQLiteAdapter
-                   (expo-sqlite ~15.x underneath, WAL mode enabled)
+                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
                    sync_queue infrastructure uses expo-sqlite directly (no WatermelonDB)
     Media cache:    expo-file-system for offline photo queue
     Background sync: expo-background-fetch + expo-task-manager
@@ -3859,7 +3859,7 @@ Build testing strategy.
 
 Testing Tools (authoritative):
   Unit testing (TypeScript):   Jest 30.x + @nestjs/testing
-  Unit testing (Python):       pytest 8.x + pytest-asyncio
+  Unit testing (Python):       pytest 9.x + pytest-asyncio
   Unit testing (Go):           testing package (stdlib) + testify
   Integration testing:         Jest + Supertest (NestJS) + testcontainers-node
   E2E testing:                 Playwright 1.x (web) + Detox (React Native mobile)

@@ -92,7 +92,9 @@ export default function AppLayout() {
                   // href: null hides the tab from the tab bar while keeping the route mountable
                   href: visible ? undefined : null,
                   // E2E navigation hook. The inspection suite taps by.id('inspection-tab').
-                  tabBarTestID: tab.name === 'inspections' ? 'inspection-tab' : `${tab.name}-tab`,
+                  // React Navigation 7 (expo-router 56) renamed tabBarTestID → tabBarButtonTestID.
+                  tabBarButtonTestID:
+                    tab.name === 'inspections' ? 'inspection-tab' : `${tab.name}-tab`,
                 }}
               />
             );

@@ -14,19 +14,19 @@ class TestRAGRetrievalLogic:
 
     def test_top_k_default_is_five(self):
         import yaml
-        chain_config_path = Path(__file__).resolve().parents[4] / "ai" / "chains" / "rag.yaml"
+        chain_config_path = Path(__file__).resolve().parents[3] / "ai" / "chains" / "rag.yaml"
         config = yaml.safe_load(chain_config_path.read_text())
         assert config["retrieval"]["top_k"] == 5
 
     def test_max_context_tokens_is_4000(self):
         import yaml
-        chain_config_path = Path(__file__).resolve().parents[4] / "ai" / "chains" / "rag.yaml"
+        chain_config_path = Path(__file__).resolve().parents[3] / "ai" / "chains" / "rag.yaml"
         config = yaml.safe_load(chain_config_path.read_text())
         assert config["retrieval"]["max_context_tokens"] == 4000
 
     def test_hybrid_search_backends_specified(self):
         import yaml
-        chain_config_path = Path(__file__).resolve().parents[4] / "ai" / "chains" / "rag.yaml"
+        chain_config_path = Path(__file__).resolve().parents[3] / "ai" / "chains" / "rag.yaml"
         config = yaml.safe_load(chain_config_path.read_text())
         hs = config["retrieval"]["hybrid_search"]
         assert hs["keyword_backend"] == "opensearch"
@@ -34,20 +34,20 @@ class TestRAGRetrievalLogic:
 
     def test_reranker_activates_below_threshold(self):
         import yaml
-        chain_config_path = Path(__file__).resolve().parents[4] / "ai" / "chains" / "rag.yaml"
+        chain_config_path = Path(__file__).resolve().parents[3] / "ai" / "chains" / "rag.yaml"
         config = yaml.safe_load(chain_config_path.read_text())
         assert config["reranking"]["activate_when_p95_relevance_below"] == 0.7
 
     def test_document_chunk_size_is_500(self):
         import yaml
-        chain_config_path = Path(__file__).resolve().parents[4] / "ai" / "chains" / "rag.yaml"
+        chain_config_path = Path(__file__).resolve().parents[3] / "ai" / "chains" / "rag.yaml"
         config = yaml.safe_load(chain_config_path.read_text())
         assert config["chunking"]["documents"]["chunk_size"] == 500
         assert config["chunking"]["documents"]["chunk_overlap"] == 100
 
     def test_site_report_uses_single_chunk_strategy(self):
         import yaml
-        chain_config_path = Path(__file__).resolve().parents[4] / "ai" / "chains" / "rag.yaml"
+        chain_config_path = Path(__file__).resolve().parents[3] / "ai" / "chains" / "rag.yaml"
         config = yaml.safe_load(chain_config_path.read_text())
         assert config["chunking"]["site_reports"]["strategy"] == "single_chunk"
 

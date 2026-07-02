@@ -3,7 +3,9 @@
 // Upload target: POST /api/v1/files/upload (multipart) — File Service Phase 9.
 // Retry: up to 3 attempts per photo; marks FAILED on exhaustion (spec §Phase 10 Media Cache).
 
-import * as FileSystem from 'expo-file-system';
+// Expo SDK 54+ moved the classic FileSystem API (uploadAsync / FileSystemUploadType) to the
+// `expo-file-system/legacy` subpath; the new `expo-file-system` root no longer exports them (ADR-046).
+import * as FileSystem from 'expo-file-system/legacy';
 
 const MAX_RETRIES = 3;
 const UPLOAD_URL = '/api/v1/files/upload';

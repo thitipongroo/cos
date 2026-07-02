@@ -43,13 +43,15 @@ class HallucinationGuard:
         if not (0.0 <= float(confidence) <= 1.0):
             return GuardResult(passed=False, reason=f"confidence out of range: {confidence}")
 
+        # Check 2: source attribution — confidence == 0 means no source attribution at all.
+        # Must run before the low-confidence threshold below, otherwise `< CONFIDENCE_THRESHOLD`
+        # swallows the zero case and this check becomes dead code.
+        if float(confidence) == 0.0:
+            return GuardResult(passed=False, reason="zero confidence indicates no source attribution")
+
         # Check 4: low confidence threshold
         if float(confidence) < CONFIDENCE_THRESHOLD:
             return GuardResult(passed=False, reason="LOW_CONFIDENCE")
-
-        # Check 2: source attribution — presence of confidence > 0 confirms LLM used context
-        if float(confidence) == 0.0:
-            return GuardResult(passed=False, reason="zero confidence indicates no source attribution")
 
         # Check 5: contradiction — numbers in summary absent from context
         hallucination_flagged = self._check_contradiction(summary, context)

@@ -11,9 +11,10 @@ const config: Config = {
   moduleNameMapper: {
     // Native module mocks
     '^expo-sqlite$': '<rootDir>/src/__mocks__/expo-sqlite.ts',
+    // expo-file-system + its SDK-54+ `/legacy` subpath (uploadAsync / FileSystemUploadType) → same mock
+    '^expo-file-system(/legacy)?$': '<rootDir>/src/__mocks__/expo-file-system.ts',
     '^expo-background-fetch$': '<rootDir>/src/__mocks__/expo-background-fetch.ts',
     '^expo-task-manager$': '<rootDir>/src/__mocks__/expo-task-manager.ts',
-    '^expo-file-system$': '<rootDir>/src/__mocks__/expo-file-system.ts',
     '^expo-battery$': '<rootDir>/src/__mocks__/expo-battery.ts',
     '^@react-native-community/netinfo$': '<rootDir>/src/__mocks__/netinfo.ts',
     '^@nozbe/watermelondb$': '<rootDir>/src/__mocks__/watermelondb.ts',

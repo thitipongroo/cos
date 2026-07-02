@@ -30,6 +30,6 @@
     "@types/react-dom": "^19.2.3",
     "esbuild-wasm": "0.28.1",
     "tailwindcss": "^4.3.2",
-    "typescript": "^5.4.0"
+    "typescript": "^6.0.3"
   }
 }
