@@ -194,6 +194,39 @@ jobs:
             packages/@cos/tracing/coverage/
             packages/@cos/config/coverage/
 
+  # ─── Step 3b: Mobile Tests (apps/mobile — standalone Expo/RN workspace) ──────
+  # apps/mobile is EXCLUDED from the repo-root pnpm workspace (React Native + Metro
+  # need a hoisted node_modules — see ../../pnpm-workspace.yaml `!apps/mobile`), so it
+  # is NOT covered by the lint / type-check / unit-tests jobs above. This job installs
+  # it standalone and runs the same three gates. The root install provides the shared
+  # eslint config + binary (apps/mobile has no local eslint of its own).
+  mobile-tests:
+    name: Mobile Tests (apps/mobile — type-check + eslint + jest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      # Root deps provide the shared eslint config + binary used to lint apps/mobile.
+      - run: pnpm install --frozen-lockfile
+      # apps/mobile is its own pnpm workspace root (own pnpm-lock.yaml) — install standalone.
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
+      # ESLint uses the shared root config (same rules the pre-commit hook enforces on mobile).
+      - name: ESLint — apps/mobile
+        run: pnpm exec eslint apps/mobile/src
+      - name: Type-check — apps/mobile
+        working-directory: apps/mobile
+        run: pnpm run type-check
+      # jest.config.ts enforces the 100% lines / 100% branches coverage gate (QM-1).
+      - name: Unit tests + coverage — apps/mobile
+        working-directory: apps/mobile
+        run: pnpm run test:cov
+
   # ─── Step 4a: Integration Tests ─────────────────────────────────────────────
   # Source: spec §30.4 — Testcontainers (PostgreSQL, Redis) per test run; blocks PR merge
   integration-tests:

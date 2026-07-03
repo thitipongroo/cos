@@ -39,3 +39,6 @@ minimumReleaseAgeExclude:
   - expo-location@56.0.19
   - expo-router@56.2.12
   - expo-task-manager@56.0.20
+
+patchedDependencies:
+  '@nozbe/watermelondb@0.28.0': patches/@nozbe__watermelondb@0.28.0.patch

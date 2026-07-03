@@ -1,6 +1,8 @@
 import { PhotoUploadQueue } from '../PhotoUploadQueue';
 import type { PhotoRepository, PendingPhoto } from '../PhotoUploadQueue';
-import * as FileSystem from 'expo-file-system';
+// Import from the same `/legacy` subpath the source uses (SDK 54+); the jest moduleNameMapper
+// maps both `expo-file-system` and `expo-file-system/legacy` to the same mock.
+import * as FileSystem from 'expo-file-system/legacy';
 
 const BASE_URL = 'https://api.example.com';
 

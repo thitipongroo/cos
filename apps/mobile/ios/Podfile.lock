@@ -93,6 +93,8 @@ PODS:
     - RNScreens
   - ExpoSecureStore (56.0.4):
     - ExpoModulesCore
+  - ExpoSplashScreen (56.0.11):
+    - ExpoModulesCore
   - ExpoSQLite (56.0.5):
     - ExpoModulesCore
   - ExpoSymbols (56.0.6):
@@ -2258,7 +2260,7 @@ DEPENDENCIES:
   - Expo (from `../node_modules/expo`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
   - ExpoBackgroundFetch (from `../node_modules/expo-background-fetch/ios`)
-  - ExpoBattery (from `../node_modules/expo-battery/ios`)
+  - "ExpoBattery (from `../node_modules/.pnpm/expo-battery@56.0.4_expo@56.0.13_react@19.2.3/node_modules/expo-battery/ios`)"
   - ExpoCamera (from `../node_modules/expo-camera/ios/ExpoCamera.podspec`)
   - ExpoCameraBarcodeScanning (from `../node_modules/expo-camera/ios/ExpoCameraBarcodeScanning.podspec`)
   - "ExpoDomWebView (from `../node_modules/@expo/dom-webview/ios`)"
@@ -2274,7 +2276,8 @@ DEPENDENCIES:
   - ExpoModulesWorklets (from `../node_modules/expo-modules-core/ExpoModulesWorklets.podspec`)
   - ExpoModulesWorkletsAdapter (from `../node_modules/expo-modules-core`)
   - ExpoRouter (from `../node_modules/expo-router/ios`)
-  - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
+  - "ExpoSecureStore (from `../node_modules/.pnpm/expo-secure-store@56.0.4_expo@56.0.13/node_modules/expo-secure-store/ios`)"
+  - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSQLite (from `../node_modules/expo-sqlite/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
@@ -2361,9 +2364,9 @@ DEPENDENCIES:
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
-  - "simdjson (from `/Users/thitipongroo/workspace/github-profile/cos/apps/mobile/node_modules/@nozbe/simdjson`)"
+  - "simdjson (from `/Users/thitipongroo/workspace/github-profile/cos/apps/mobile/node_modules/.pnpm/@nozbe+simdjson@3.9.4/node_modules/@nozbe/simdjson`)"
   - UMAppLoader (from `../node_modules/unimodules-app-loader/ios`)
-  - "WatermelonDB (from `../node_modules/@nozbe/watermelondb`)"
+  - "WatermelonDB (from `../node_modules/.pnpm/@nozbe+watermelondb@0.28.0/node_modules/@nozbe/watermelondb`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 EXTERNAL SOURCES:
@@ -2376,7 +2379,7 @@ EXTERNAL SOURCES:
   ExpoBackgroundFetch:
     :path: "../node_modules/expo-background-fetch/ios"
   ExpoBattery:
-    :path: "../node_modules/expo-battery/ios"
+    :path: "../node_modules/.pnpm/expo-battery@56.0.4_expo@56.0.13_react@19.2.3/node_modules/expo-battery/ios"
   ExpoCamera:
     :podspec: "../node_modules/expo-camera/ios/ExpoCamera.podspec"
   ExpoCameraBarcodeScanning:
@@ -2408,7 +2411,9 @@ EXTERNAL SOURCES:
   ExpoRouter:
     :path: "../node_modules/expo-router/ios"
   ExpoSecureStore:
-    :path: "../node_modules/expo-secure-store/ios"
+    :path: "../node_modules/.pnpm/expo-secure-store@56.0.4_expo@56.0.13/node_modules/expo-secure-store/ios"
+  ExpoSplashScreen:
+    :path: "../node_modules/expo-splash-screen/ios"
   ExpoSQLite:
     :path: "../node_modules/expo-sqlite/ios"
   ExpoSymbols:
@@ -2581,11 +2586,11 @@ EXTERNAL SOURCES:
   RNWorklets:
     :path: "../node_modules/react-native-worklets"
   simdjson:
-    :path: "/Users/thitipongroo/workspace/github-profile/cos/apps/mobile/node_modules/@nozbe/simdjson"
+    :path: "/Users/thitipongroo/workspace/github-profile/cos/apps/mobile/node_modules/.pnpm/@nozbe+simdjson@3.9.4/node_modules/@nozbe/simdjson"
   UMAppLoader:
     :path: "../node_modules/unimodules-app-loader/ios"
   WatermelonDB:
-    :path: "../node_modules/@nozbe/watermelondb"
+    :path: "../node_modules/.pnpm/@nozbe+watermelondb@0.28.0/node_modules/@nozbe/watermelondb"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -2611,6 +2616,7 @@ SPEC CHECKSUMS:
   ExpoModulesWorkletsAdapter: 27e871b4c0cfecf905aca3d4086e3dabd5da3a40
   ExpoRouter: 53f9afee4aa2449efe5ef710a52e1a4d41c5f4ee
   ExpoSecureStore: f1bd083c1b7b8d4142013ffcc0082d377d9f49f4
+  ExpoSplashScreen: d012bb405b5127e37c469ce0e8e53f538d6a8704
   ExpoSQLite: eba0f88d7c17165f4af12fb311b30d5a6a34b00e
   ExpoSymbols: 377747de25bcb1ab68ec68f23d81fb81d43eae83
   ExpoSystemUI: 8f4fb641c6a6ebe2a01dda0fbd3fdd952ab5823a

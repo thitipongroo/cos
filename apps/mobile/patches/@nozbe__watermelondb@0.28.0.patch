@@ -1,0 +1,22 @@
+diff --git a/native/android-jsi/src/main/cpp/CMakeLists.txt b/native/android-jsi/src/main/cpp/CMakeLists.txt
+index 79d961e8a1b3a292d93cd5bfc4dff303d7151cd6..1d6cb208eeaa577efbd029589fb213bbd3250a1a 100755
+--- a/native/android-jsi/src/main/cpp/CMakeLists.txt
++++ b/native/android-jsi/src/main/cpp/CMakeLists.txt
+@@ -14,8 +14,15 @@ set(WMELON_JSI_BUMP 4)
+ 
+ get_filename_component(_nativeTesterPath "../../../../../node_modules/@nozbe/sqlite/" REALPATH)
+ get_filename_component(_nozbePath "../../../../../../../../../native/node_modules/react-native/ReactCommon/jsi/jsi/" REALPATH)
+-
+-if(EXISTS "${_nativeTesterPath}")
++get_filename_component(_pnpmPath "../../../../../../../../../../@nozbe/sqlite/" REALPATH)
++
++if(EXISTS "${_pnpmPath}")
++        # pnpm hoisted layout: this package sits at node_modules/.pnpm/<pkg>/node_modules/@nozbe/watermelondb,
++        # so the hoisted top-level node_modules (where @nozbe/sqlite, @nozbe/simdjson and react-native live)
++        # is 10 levels up from this cpp dir — not the 5/7 the flat-layout branches below assume.
++        set(NODE_MODULES_PATH_WM ../../../../../../../../../..)
++        set(NODE_MODULES_PATH_RN ../../../../../../../../../..)
++elseif(EXISTS "${_nativeTesterPath}")
+         # these paths work for WatermelonDB native tester
+         set(NODE_MODULES_PATH_WM ../../../../../node_modules/)
+         set(NODE_MODULES_PATH_RN ../../../../../node_modules/)

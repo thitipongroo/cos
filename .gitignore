@@ -9,6 +9,9 @@ build
 out
 coverage
 
+# Expo local state/cache (apps/mobile) — regenerated per machine, must not be committed (expo-doctor)
+.expo/
+
 # Serwist (@serwist/turbopack) serves the service worker from the /serwist/[path] route handler
 # (bundled into .next at build time), so no service-worker artifacts land in apps/web/public — ADR-047.
 # The former next-pwa public/ artifacts (sw.js, workbox-*.js, fallback-*.js) are no longer generated.
