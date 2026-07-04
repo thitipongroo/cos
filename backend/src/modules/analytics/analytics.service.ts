@@ -62,6 +62,24 @@ export class AnalyticsService {
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
   ) {}
 
+  // Cache is best-effort: a cache-store outage must never fail an analytics request
+  // (it degrades to a direct ClickHouse query). Guards against store-adapter errors.
+  private async cacheGet<T>(key: string): Promise<T | undefined> {
+    try {
+      return (await this.cache.get<T>(key)) ?? undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async cacheSet(key: string, value: unknown): Promise<void> {
+    try {
+      await this.cache.set(key, value);
+    } catch {
+      /* cache unavailable — skip write, response is unaffected */
+    }
+  }
+
   // ── Executive Dashboard ────────────────────────────────────────────────────
   // GET /api/v1/analytics/executive?projectIds[]=...&dateRange=...
   // Data: project_cost_daily + procurement_activity_daily
@@ -72,7 +90,7 @@ export class AnalyticsService {
     riskThresholdPct = 10,
   ): Promise<ExecutiveDashboardRow[]> {
     const key = cacheKey(tenantId, 'executive', projectIds.sort().join(','), dateRange);
-    const cached = await this.cache.get<ExecutiveDashboardRow[]>(key);
+    const cached = await this.cacheGet<ExecutiveDashboardRow[]>(key);
     if (cached) return cached;
 
     const [startDate, endDate] = this.parseDateRange(dateRange);
@@ -129,7 +147,7 @@ export class AnalyticsService {
       });
 
       const rows = await result.json<ExecutiveDashboardRow>();
-      await this.cache.set(key, rows);
+      await this.cacheSet(key, rows);
       return rows;
     } catch (_err) {
       throw new ServiceUnavailableException('Analytics query failed — ClickHouse unavailable');
@@ -145,7 +163,7 @@ export class AnalyticsService {
     dateRange: string,
   ): Promise<PmDashboardRow[]> {
     const key = cacheKey(tenantId, 'pm', projectId, dateRange);
-    const cached = await this.cache.get<PmDashboardRow[]>(key);
+    const cached = await this.cacheGet<PmDashboardRow[]>(key);
     if (cached) return cached;
 
     const [startDate, endDate] = this.parseDateRange(dateRange);
@@ -171,7 +189,7 @@ export class AnalyticsService {
       });
 
       const rows = await result.json<PmDashboardRow>();
-      await this.cache.set(key, rows);
+      await this.cacheSet(key, rows);
       return rows;
     } catch (_err) {
       throw new ServiceUnavailableException('Analytics query failed — ClickHouse unavailable');
@@ -185,7 +203,7 @@ export class AnalyticsService {
     dateRange: string,
   ): Promise<CostTrendRow[]> {
     const key = cacheKey(tenantId, 'cost-trend', projectId, dateRange);
-    const cached = await this.cache.get<CostTrendRow[]>(key);
+    const cached = await this.cacheGet<CostTrendRow[]>(key);
     if (cached) return cached;
 
     const [startDate, endDate] = this.parseDateRange(dateRange);
@@ -209,7 +227,7 @@ export class AnalyticsService {
       });
 
       const rows = await result.json<CostTrendRow>();
-      await this.cache.set(key, rows);
+      await this.cacheSet(key, rows);
       return rows;
     } catch (_err) {
       throw new ServiceUnavailableException('Analytics query failed — ClickHouse unavailable');
@@ -223,7 +241,7 @@ export class AnalyticsService {
     dateRange: string,
   ): Promise<ProcurementTrendRow[]> {
     const key = cacheKey(tenantId, 'procurement-trend', projectId, dateRange);
-    const cached = await this.cache.get<ProcurementTrendRow[]>(key);
+    const cached = await this.cacheGet<ProcurementTrendRow[]>(key);
     if (cached) return cached;
 
     const [startDate, endDate] = this.parseDateRange(dateRange);
@@ -249,7 +267,7 @@ export class AnalyticsService {
       });
 
       const rows = await result.json<ProcurementTrendRow>();
-      await this.cache.set(key, rows);
+      await this.cacheSet(key, rows);
       return rows;
     } catch (_err) {
       throw new ServiceUnavailableException('Analytics query failed — ClickHouse unavailable');
@@ -263,7 +281,7 @@ export class AnalyticsService {
     dateRange: string,
   ): Promise<SiteTrendRow[]> {
     const key = cacheKey(tenantId, 'site-trend', projectId, dateRange);
-    const cached = await this.cache.get<SiteTrendRow[]>(key);
+    const cached = await this.cacheGet<SiteTrendRow[]>(key);
     if (cached) return cached;
 
     const [startDate, endDate] = this.parseDateRange(dateRange);
@@ -289,7 +307,7 @@ export class AnalyticsService {
       });
 
       const rows = await result.json<SiteTrendRow>();
-      await this.cache.set(key, rows);
+      await this.cacheSet(key, rows);
       return rows;
     } catch (_err) {
       throw new ServiceUnavailableException('Analytics query failed — ClickHouse unavailable');

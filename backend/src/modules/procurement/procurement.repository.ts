@@ -385,7 +385,7 @@ export class ProcurementRepository {
         SELECT * FROM procurement.purchase_requests
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
         ORDER BY created_at DESC
         LIMIT ${params.limit} OFFSET ${offset}`,
     );
@@ -395,7 +395,7 @@ export class ProcurementRepository {
         SELECT COUNT(*)::bigint AS count FROM procurement.purchase_requests
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)`,
     );
     return { rows, total: Number(countRows[0].count) };
   }
@@ -413,7 +413,7 @@ export class ProcurementRepository {
         SELECT * FROM procurement.rfqs
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
         ORDER BY created_at DESC
         LIMIT ${params.limit} OFFSET ${offset}`,
     );
@@ -423,7 +423,7 @@ export class ProcurementRepository {
         SELECT COUNT(*)::bigint AS count FROM procurement.rfqs
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)`,
     );
     return { rows, total: Number(countRows[0].count) };
   }
@@ -441,7 +441,7 @@ export class ProcurementRepository {
         SELECT * FROM procurement.purchase_orders
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
         ORDER BY created_at DESC
         LIMIT ${params.limit} OFFSET ${offset}`,
     );
@@ -451,7 +451,7 @@ export class ProcurementRepository {
         SELECT COUNT(*)::bigint AS count FROM procurement.purchase_orders
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)`,
     );
     return { rows, total: Number(countRows[0].count) };
   }
@@ -630,7 +630,7 @@ export class ProcurementRepository {
         SELECT * FROM procurement.invoices
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
         ORDER BY invoice_date DESC
         LIMIT ${params.limit} OFFSET ${offset}`,
     );
@@ -640,7 +640,7 @@ export class ProcurementRepository {
         SELECT COUNT(*)::bigint AS count FROM procurement.invoices
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.po_id ?? null}::uuid IS NULL OR po_id = ${params.po_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})`,
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)`,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };
   }

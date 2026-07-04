@@ -269,8 +269,8 @@ export class SiteOpsRepository {
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.severity ?? null} IS NULL
-               OR severity = ${params.severity ?? null})
+          AND (${params.severity ?? null}::text IS NULL
+               OR severity = ${params.severity ?? null}::text)
           AND (${params.status ?? null}::text IS NULL
                OR status = ${params.status ?? null}::text)
         ORDER BY created_at DESC
@@ -284,8 +284,8 @@ export class SiteOpsRepository {
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${params.project_id ?? null}::uuid IS NULL
                OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.severity ?? null} IS NULL
-               OR severity = ${params.severity ?? null})
+          AND (${params.severity ?? null}::text IS NULL
+               OR severity = ${params.severity ?? null}::text)
           AND (${params.status ?? null}::text IS NULL
                OR status = ${params.status ?? null}::text)
       `,
