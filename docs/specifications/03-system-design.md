@@ -127,7 +127,7 @@ flowchart TB
 ```mermaid
 flowchart TB
     Web["Web app\n(Next.js)"]
-    Mob["Mobile app\n(Expo / React Native + WatermelonDB)"]
+    Mob["Mobile app\n(Expo / React Native + Drizzle/expo-sqlite)"]
     GW["API Gateway\n(Kong)"]
     API["Modular Monolith\n(NestJS)"]
     FS["File Service\n(Fastify)"]

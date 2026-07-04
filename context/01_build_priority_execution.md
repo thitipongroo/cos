@@ -324,7 +324,7 @@ Constraints:
     with 90-day notice after /api/v2 is stable
 
 --- Section F: Mobile Platform Decision ---
-📎 See also: 00_master_construction_os.md §Phase 10 — MOBILE OFFLINE ENGINE for authoritative WatermelonDB + ExpoSQLiteAdapter spec
+📎 See also: 00_master_construction_os.md §Phase 10 — MOBILE OFFLINE ENGINE for the authoritative offline-DB spec (Drizzle + expo-sqlite, spec 17 §17.10 / ADR-048)
 
 Platform decision:
   Technology: React Native (Expo managed workflow)
@@ -332,12 +332,12 @@ Platform decision:
     - Single codebase for iOS and Android
     - Expo Camera, Expo FileSystem, and Expo SQLite cover all offline needs
     - Expo EAS Build enables OTA updates without app store review cycle
-    - React Native offline-first libraries (WatermelonDB) are mature
+    - React Native offline-first storage on first-party expo-sqlite (+ Drizzle ORM) — spec 17 §17.10
     - Team JavaScript/TypeScript skills transfer directly
 
-  Local storage for offline: WatermelonDB (SQLite-backed)
-    Rationale: Replaces IndexedDB (web-only). WatermelonDB is designed
-    for React Native offline-first apps with sync engine support.
+  Local storage for offline: Drizzle ORM on expo-sqlite (SQLite-backed)
+    Rationale: Replaces IndexedDB (web-only). First-party Expo module + TS-first ORM;
+    custom sync engine per spec 17 (decision record §17.10 / ADR-048, 2026-07-04).
 
   OTA updates: Expo EAS Update (critical fixes without app store wait)
 
@@ -346,7 +346,7 @@ Platform decision:
 Generate:
 MUST-HAVE:
   - Expo project scaffold (TypeScript, managed workflow)
-  - WatermelonDB schema matching server-side schemas
+  - Local offline schema (Drizzle/expo-sqlite) matching server-side schemas
   - Navigation architecture (React Navigation, tab + stack hybrid)
   - Auth state management (token storage in SecureStore)
   - API client with offline queue (requests queued when offline,
@@ -470,7 +470,7 @@ Storage and delivery:
   - Photos are attached to report_id — not standalone entities
 
 Offline behavior:
-  - Photos are stored locally (WatermelonDB attachment) when offline
+  - Photos are stored locally (expo-file-system file + local_photos metadata row) when offline
   - Upload queue processes in background when connectivity returns
   - User sees upload progress per photo
   - Report is marked "submitted (photos pending)" until all photos uploaded
@@ -504,7 +504,7 @@ Storage:
 
 --- Offline Requirements ---
 
-Local storage: WatermelonDB (SQLite-backed, React Native)
+Local storage: Drizzle ORM on expo-sqlite (SQLite-backed, React Native — spec 17 §17.10)
 
 Offline behavior:
   - All report creation and editing works fully offline
@@ -566,7 +566,7 @@ MUST-HAVE:
     - GET /api/v1/issues (list with filters)
 
   Mobile (React Native):
-    - WatermelonDB schema for offline reports, issues, photos
+    - Drizzle/expo-sqlite schema for offline reports, issues, photos
     - Offline sync engine (queue + retry + conflict handler)
     - Daily report submission flow (4-screen max)
     - Issue reporting flow

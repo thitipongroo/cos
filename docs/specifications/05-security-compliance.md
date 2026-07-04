@@ -632,8 +632,8 @@ Zero-trust + mTLS (Istio) for cross-boundary calls · secrets in Vault / AWS Sec
 
 ## 5.10 Software Supply-Chain Security
 
-Aligns with OWASP Top 10:2025 **A03 — Software Supply-Chain Failures**. Community mobile plugins
-(e.g. WatermelonDB Expo plugins) are a specific, tracked exposure.
+Aligns with OWASP Top 10:2025 **A03 — Software Supply-Chain Failures**. Community mobile plugins are a specific,
+ tracked exposure.
 
 Requirements:
 
