@@ -24,7 +24,8 @@ master: 00_master_construction_os.md
 > **Lifecycle stage:** BUILD — Priority Execution (MVP Phase 1–19)
 > **Previous:** None — this is the starting point
 > **Next:** 02_build_deep_systems.md (parallel BUILD detail)
-> **Note:** Use alongside 02_build_deep_systems.md for full build context. File 02 provides deep implementation detail for the same BUILD stage
+> **Note:** Use alongside 02_build_deep_systems.md for full build context. File 02 provides deep implementation detail
+> for the same BUILD stage
 > **Version:** 1.0
 > **Last updated:** 2026-05-25
 >
@@ -633,7 +634,8 @@ EXIT CRITERIA (Priority 1 is complete when):
 
 ## PRIORITY 2 — PROCUREMENT VISIBILITY
 
-> 📎 **See also:** `00_master_construction_os.md §Phase 5 — PROCUREMENT SERVICE` for full state machine, event schema, and API spec
+> 📎 **See also:** `00_master_construction_os.md §Phase 5 — PROCUREMENT SERVICE` for full state machine, event schema,
+> and API spec
 
 ```text
 Build Procurement Visibility Module.

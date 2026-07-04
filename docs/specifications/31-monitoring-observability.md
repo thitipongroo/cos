@@ -484,4 +484,6 @@ are emitted to the SLO Burn Rate dashboard family (§31.8).
 
 ---
 
-> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [19-notification-architecture](19-notification-architecture.md) · [30-testing-strategy](30-testing-strategy.md)
+> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md)
+> · [08-enterprise-deployment](08-enterprise-deployment.md) · [15-event-driven-workflow](15-event-driven-workflow.md)
+> · [19-notification-architecture](19-notification-architecture.md) · [30-testing-strategy](30-testing-strategy.md)

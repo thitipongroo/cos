@@ -738,7 +738,8 @@ Constraints:
 
 ## OFFLINE SYNC ENGINE COMMAND
 
-> 📎 **See also:** `00_master_construction_os.md §Phase 10 — MOBILE OFFLINE ENGINE` — authoritative offline-DB spec (Drizzle + expo-sqlite, spec 17 §17.10 / ADR-048) and conflict resolution strategies
+> 📎 **See also:** `00_master_construction_os.md §Phase 10 — MOBILE OFFLINE ENGINE` — authoritative offline-DB spec
+> (Drizzle + expo-sqlite, spec 17 §17.10 / ADR-048) and conflict resolution strategies
 
 ```text
 Build offline-first synchronization engine.

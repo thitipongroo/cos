@@ -195,7 +195,8 @@ Production on-premise clusters are **self-managed** (no EKS control plane). Dist
 
 On-premise and Dedicated Tenant deployments are packaged as Helm charts :
 
-- One Helm chart per deployable unit (see 32-implementation-specifications section 32.2 for the full list of deployable units)
+- One Helm chart per deployable unit (see 32-implementation-specifications section 32.2 for the full list of
+  deployable units)
 - Umbrella Helm chart for full-stack deployment
 - `values.yaml` configures: deployment tier, resource limits, external service endpoints,
   tenant isolation model
@@ -452,4 +453,5 @@ live · [ ] utilization + carbon-proxy dashboard exists · [ ] right-sizing revi
 | [SOC2]       | SOC 2 Type II Trust Service Criteria                | AICPA TSC 2017                                                                                               |
 | [ISO27001]   | Information Security Management Systems             | ISO/IEC 27001:2022                                                                                           |
 
-> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [18-enterprise-saas-scaling](18-enterprise-saas-scaling.md)
+> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md)
+> · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [18-enterprise-saas-scaling](18-enterprise-saas-scaling.md)
