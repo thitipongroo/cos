@@ -1009,11 +1009,13 @@ Exit criteria (Phase 11 is complete when):
 - **Security** — STRIDE per external surface (`05 §5.9`); SBOM + SLSA per release (`05 §5.10`);
   PDPA hard-requirements (`05 §5.3`).
 - **AI security & governance** — OWASP LLM Top 10 (`22 §22.8`) + model governance (`22 §22.9`) for
-  the AI-expansion phases.
+  the AI-expansion phases; AI engineering — RAG-eval + prompt registry + per-tenant token/cost cap
+  (COST-001) + semantic cache (`22 §22.10`).
 - **Cost & sustainability** — FinOps cost-per-tenant + unit economics (`08 §8.10`); compute
   sustainability / scale-to-zero (`08 §8.11`).
-- **Accessibility** — WCAG 2.2 AA (`20 §20.8`). **Capacity** — capacity planning + load test before
-  each Maturity-Stage promotion (`18 §18.4`).
+- **Accessibility** — WCAG 2.2 AA (`20 §20.8`). **Frontend performance** — Core Web Vitals
+  (LCP/INP/CLS p75, `31 §31.6`) via RUM + Lighthouse CI gate (`30 §30.9`). **Capacity** — capacity
+  planning + load test before each Maturity-Stage promotion (`18 §18.4`).
 - **Risk & phase authoring** — active risks and the phase-authoring template are in
   `00_master_construction_os.md` § Risk Register / § Phase Template.
 

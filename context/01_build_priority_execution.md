@@ -1350,7 +1350,9 @@ Business outcomes (measured at 90 days):
 - **Accessibility** — WCAG 2.2 AA for every field-facing screen (`20 §20.8`) — an operational
   requirement for one-handed, gloved, sunlight use, not only compliance.
 - **AI security** — OWASP LLM row + HallucinationGuard for the AI Compatibility Layer (Priority 5)
-  (`22 §22.8`).
+  (`22 §22.8`); AI engineering — RAG-eval + per-tenant token/cost cap (COST-001) (`22 §22.10`).
+- **Frontend performance** — Core Web Vitals (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1 at p75; `31 §31.6`)
+  via RUM + Lighthouse CI gate (`30 §30.9`) — must hold on low-end field devices, not only fast ones.
 - **Delivery** — DORA targets from CI (`31 §31.12`); no manual deploy paths.
 - **Disaster recovery** — RTO/RPO per tier validated by game-day (`08 §8.2`, `31 §31.11`).
 - **Risk & phase authoring** — active risks and the phase-authoring template are in

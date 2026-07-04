@@ -899,7 +899,7 @@ All paths are relative to the repository root.
 
 ```text
 # Context & Specification
-context/00_master_construction_os.md                — MASTER: all decisions, all phases, all EPs; § ENGINEERING GOVERNANCE = Phase Template · Risk Register (R-01..R-09) · Roadmap horizons (NOW/NEXT/LATER/VISION)
+context/00_master_construction_os.md                — MASTER: all decisions, all phases, all EPs; § ENGINEERING GOVERNANCE = Phase Template · Risk Register (R-01..R-09) · Roadmap horizons (NOW/NEXT/LATER/VISION) · Phase Register (Ph1–25: objective/deps/risks/exit/effort)
 context/01_build_priority_execution.md              — BUILD stage context
 context/02_build_deep_systems.md                    — BUILD stage deep detail (use with 01)
 context/03_operationalize_execution.md              — OPERATIONALIZE stage context
@@ -920,8 +920,10 @@ docs/specifications/08-enterprise-deployment.md §8.2 — RTO/RPO per tier; §8.
 docs/specifications/09-data-architecture.md §9.8     — Data governance (MDM, lineage, catalog)
 docs/specifications/18-enterprise-saas-scaling.md §18.4 — Capacity planning + load-test gate
 docs/specifications/20-ux-flow.md §20.8              — Accessibility (WCAG 2.2 AA)
-docs/specifications/22-ai-architecture.md §22.8      — AI security (OWASP LLM Top 10); §22.9 model governance; §22.10 RAG-eval/prompt-registry/token-cap/semantic-cache
-docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget; §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
+docs/specifications/22-ai-architecture.md §22.7      — AI integration decisions (registry); §22.8 AI security (OWASP LLM Top 10); §22.9 model governance; §22.10 RAG-eval/prompt-registry/token-cap/semantic-cache
+docs/specifications/23-ai-native-operating-model.md §23.5 — Human-AI governance structure (STEW-001)
+docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend gate (Core Web Vitals + bundle budget)
+docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget + Frontend Web Vitals (LCP/INP/CLS); §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
 # Readiness & Verification
 scripts/readiness/verify-production-readiness.sh    — Auto-verify 30 [AUTO] checks (Phase 19)

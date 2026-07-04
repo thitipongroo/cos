@@ -1055,8 +1055,10 @@ Constraints:
 **PHASE 5 — AI & Intelligence Layer** · spec `22,23,24` · risk `R-03`
 
 - Accept: [ ] AI outputs pass the HallucinationGuard; [ ] an OWASP LLM row exists per AI surface
-  (`22 §22.8`); [ ] model/prompt governance logged (`22 §22.9`)
-- Metric: AI report p95 < 5 s (`31 §31.6`) · Exit: AI-assist ships only behind guardrails + audit
+  (`22 §22.8`); [ ] model/prompt governance logged (`22 §22.9`); [ ] RAG quality eval + per-tenant
+  token/cost cap (COST-001) enforced (`22 §22.10`)
+- Metric: AI report p95 < 5 s (`31 §31.6`); RAG faithfulness/context-precision on the eval set
+  (`22 §22.10`) · Exit: AI-assist ships only behind guardrails + audit + token cap
 
 **PHASE 6 — Mobile & Offline Systems** · spec `17` · risk `R-01, R-04`
 

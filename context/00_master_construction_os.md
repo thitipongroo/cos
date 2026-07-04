@@ -233,8 +233,9 @@ gate, Dependencies, Risks, Exit criteria. RECOMMENDED: Scope In/Out, Effort.
 domain; on conflict **spec wins** (per `context.md`) and the conflict is reported. Non-functional
 targets (availability, latency, RTO/RPO, security, cost) are **inherited** from the specs — SLO
 `31 §31.6`, DR `08 §8.2`, security `05 §5.9`, supply-chain `05 §5.10`, AI security `22 §22.8`,
-accessibility `20 §20.8`, FinOps/sustainability `08 §8.10`/`§8.11`, DORA `31 §31.12`, capacity
-`18 §18.4` — phases reference them, never restate the numbers.
+AI engineering (RAG-eval / token cap / cache) `22 §22.10`, accessibility `20 §20.8`, frontend Web
+Vitals `31 §31.6` + Lighthouse `30 §30.9`, FinOps/sustainability `08 §8.10`/`§8.11`, DORA `31 §31.12`,
+capacity `18 §18.4` — phases reference them, never restate the numbers.
 
 **Acceptance-criteria quality bar** — each box MUST be falsifiable by evidence:
 
@@ -287,8 +288,10 @@ annually (may be rewritten or dropped; excluded from capacity planning).
 > **Where each standard now lives** (deep content is in the specs; this section is the execution index):
 > phase-authoring → § Phase Template · risk → § Risk Register · reliability/SLO → `31 §31.6` · chaos+DORA
 > → `31 §31.11`/`§31.12` · DR → `08 §8.2` · FinOps/sustainability → `08 §8.10`/`§8.11` · security/STRIDE
-> → `05 §5.9`/`§5.10` · AI security → `22 §22.8`/`§22.9` · accessibility → `20 §20.8` · C4 → `03 §3.4` ·
-> capacity → `18 §18.4` · data governance → `09 §9.8`.
+> → `05 §5.9`/`§5.10` · AI security → `22 §22.8`/`§22.9` · AI engineering (RAG-eval, prompt registry,
+> per-tenant token cap COST-001, semantic cache) → `22 §22.10` · accessibility → `20 §20.8` · frontend
+> Web Vitals (LCP/INP/CLS) → `31 §31.6` + Lighthouse CI `30 §30.9` · C4 → `03 §3.4` · capacity →
+> `18 §18.4` · data governance → `09 §9.8`.
 
 ### Phase Register (Objective · Dependencies · Risks · Exit · Effort)
 
@@ -386,12 +389,14 @@ carries real integration surface.
 **Phase 11 — AI Foundation** · deps `Ph8, Ph9` · risk `R-03, R-09`
 
 - Objective: RAG + LLM Gateway foundation.
-- Exit: RAG pipeline + HallucinationGuard live; OWASP LLM row per AI surface (`22 §22.8`).
+- Exit: RAG pipeline + HallucinationGuard live; OWASP LLM row per AI surface (`22 §22.8`);
+  per-tenant token/cost cap (COST-001) + semantic cache at the gateway (`22 §22.10`).
 
 **Phase 12 — AI Report Assistant** · deps `Ph11` · risk `R-03`
 
 - Objective: AI-assisted report generation.
-- Exit: AI report p95 < 5 s (`31 §31.6`); output advisory + audited.
+- Exit: AI report p95 < 5 s (`31 §31.6`); RAG quality eval passes on the eval set (`22 §22.10`);
+  output advisory + audited.
 
 **Phase 13 — Knowledge Graph** · deps `Ph3–7, Ph11` · risk `R-09`
 
@@ -421,7 +426,8 @@ carries real integration surface.
 **Phase 18 — Testing** · deps `Ph1–17, Ph20–25` · risk `R-06`
 
 - Objective: full test suite + quality gates.
-- Exit: coverage 100/100 (QM-1); mutation score ≥ 70%; load test passes at target concurrency.
+- Exit: coverage 100/100 (QM-1); mutation score ≥ 70%; load test passes at target concurrency;
+  Lighthouse CI frontend gate (Core Web Vitals + bundle budget) green (`30 §30.9`).
 
 **Phase 19 — Final Production Readiness** · deps `Ph1–18` · risk `R-05, R-06`
 
