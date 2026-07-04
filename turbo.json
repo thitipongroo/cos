@@ -34,6 +34,10 @@
       "inputs": ["src/**", "tsconfig*.json", "jest.workflows.config*"],
       "outputs": []
     },
+    "test:mutation": {
+      "inputs": ["src/**", "tsconfig*.json", "jest.config*", "stryker.config*"],
+      "outputs": ["reports/mutation/**"]
+    },
     "lint": {
       "inputs": ["src/**", "*.ts", "*.js", ".eslintrc*", "eslint.config*"],
       "outputs": []

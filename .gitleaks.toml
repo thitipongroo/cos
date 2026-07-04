@@ -1,0 +1,11 @@
+# Gitleaks configuration (QM-4 — pre-commit + CI secret scanning).
+# Extends the default ruleset; allowlists documented-placeholder files only.
+# Never allowlist a real secret — rotate it and rewrite history instead
+# (see docs/security/secrets-rotation-policy.md).
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = ".env.example contains documented placeholders only (REPLACE_ME_*, dev-only literals verified in audit 2026-07-04) — never real credentials"
+paths = ['''^\.env\.example$''']
