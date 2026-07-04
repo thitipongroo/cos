@@ -304,3 +304,25 @@ describe('AnalyticsService — getExecutiveDashboard riskThreshold', () => {
     expect(callArgs.query_params.riskThreshold).toBe(10);
   });
 });
+
+// ── Cache store outage — best-effort degradation ─────────────────────────────
+// cacheGet() must swallow a throwing cache store and degrade to a direct ClickHouse
+// query rather than fail the request (analytics.service.ts:71 — the catch → return undefined).
+describe('AnalyticsService — cache store outage degrades gracefully', () => {
+  it('falls back to ClickHouse when cache.get throws', async () => {
+    const rows = [{ eventDate: '2026-01-01', committed: '500', actual: '450' }];
+    const cache = {
+      get: jest.fn().mockRejectedValue(new Error('cache store unavailable')),
+      set: jest.fn().mockResolvedValue(undefined),
+      del: jest.fn().mockResolvedValue(undefined),
+    };
+    const ch = makeClickHouseClient(rows);
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getCostTrend('t1', 'p1', '2026-01-01,2026-06-30');
+
+    expect(result).toEqual(rows);
+    expect(cache.get).toHaveBeenCalledTimes(1);
+    expect(ch.query).toHaveBeenCalledTimes(1);
+  });
+});
