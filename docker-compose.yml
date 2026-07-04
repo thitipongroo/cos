@@ -5,7 +5,7 @@
 #                           schema-registry, minio) — ~1 GB, enough to boot the app.
 #   make docker-up-full   → all infra, incl. the `full` profile (opensearch, neo4j,
 #                           clickhouse, clamav, keycloak, vault, temporal, UIs) — ~4 GB.
-#   make up-apps          → full infra + the `apps` profile (backend + file-service +
+#   make docker-apps-up-full → full infra + the `apps` profile (backend + file-service +
 #                           ai-gateway/embedding/ocr + analytics/kg workers), all in
 #                           containers. Satisfies "all services start with Docker Compose"
 #                           (see docs/architecture/adr/036-compose-profiles-local-app-services.md).
@@ -427,7 +427,7 @@ services:
   # Application services — profile: apps (ADR-036)
   #
   # Run with full infra co-enabled:  docker compose --profile full --profile apps up
-  # (or `make up-apps`). Each service reuses its production Dockerfile, inherits the dev
+  # (or `make docker-apps-up-full`). Each service reuses its production Dockerfile, inherits the dev
   # `.env` (required:false), and overrides only hostname-bearing vars to service-DNS so the
   # app connects to containers (pgbouncer/kafka/redis/... ) instead of localhost. The fast
   # day-to-day loop is still `make dev` (turbo on host); this tier is for parity.

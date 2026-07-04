@@ -969,7 +969,7 @@ docs/architecture/adr/008-shared-db-tenant-id-rls.md               — Shared DB
 docs/architecture/adr/015-database-retry-helpers.md               — Database retry helper pattern for Prisma transient errors (Phase 1)
 docs/architecture/adr/032-timescaledb-colocated-then-split.md     — TimescaleDB co-located on primary PostgreSQL; split to dedicated instance on volume trigger (Phase 1 decision)
 docs/architecture/adr/033-ci-build-gate.md                        — CI `build` (turbo run build) gate runs on every PR; tsc --noEmit is not a build (Phase 1 decision)
-docs/architecture/adr/036-compose-profiles-local-app-services.md  — Docker Compose `apps` profile to run app services in containers locally (Phase 1 enhancement; `make up-apps`)
+docs/architecture/adr/036-compose-profiles-local-app-services.md  — Docker Compose `apps` profile to run app services in containers locally (Phase 1 enhancement; `make docker-apps-up-full`)
 
 # SLO & Reliability
 docs/slo/dashboard-registry.md                      — Grafana dashboard IDs per SLO (Phase 15)

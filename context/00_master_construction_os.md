@@ -1439,7 +1439,7 @@ Generate:
 
 - Docker Compose `apps` profile (ADR-036): optional tier running the app services (backend,
   file-service, ai-gateway/embedding/ocr, analytics/kg workers) in containers —
-  `docker compose --profile full --profile apps up` / `make up-apps`. Day-to-day dev still uses
+  `docker compose --profile full --profile apps up` / `make docker-apps-up-full`. Day-to-day dev still uses
   `make dev` (turbo on host); the infra-only default is unchanged.
 
 - Istio local dev: skip Istio for Docker Compose (use plain networking locally)

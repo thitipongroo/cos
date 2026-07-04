@@ -105,8 +105,8 @@ make docker-up        # essential infra only (postgres, pgbouncer, redis, kafka,
                       #   schema-registry, minio) — ~1 GB
 make docker-up-full   # all infra incl. heavy services (opensearch, neo4j, clickhouse,
                       #   clamav, keycloak, vault, temporal, UIs) — ~4 GB
-make up-apps          # full infra + ALL app services in containers (backend, file-service,
-                      #   ai-gateway/embedding/ocr, analytics/kg workers)
+make docker-apps-up-full   # full infra + ALL app services in containers (backend, file-service,
+                           #   ai-gateway/embedding/ocr, analytics/kg workers)
 ```
 
 `make docker-apps-up-full` (= `docker compose --profile full --profile apps up -d --build`) runs the entire
