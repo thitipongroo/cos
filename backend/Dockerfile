@@ -39,6 +39,11 @@ COPY . .
 # Generate the Prisma client before any TS build. Both @cos/database and backend re-export
 # Prisma's generated types; without the generated client, tx/$queryRaw<T> degrade to `unknown`
 # (TS18046 in workforce.repository.ts). Mirrors CI's "prisma generate" step that runs before build.
+# prisma.config.ts calls env('DIRECT_DATABASE_URL'), which throws (PrismaConfigEnvError) if unset —
+# and .env is .dockerignore'd, so nothing sets it at build time. `generate` only reads the schema
+# (it never connects), so a build-only placeholder satisfies the strict env() check. This ENV lives
+# ONLY in the builder stage; the runner (stage 3, separate FROM) gets the real value at runtime.
+ENV DIRECT_DATABASE_URL="postgresql://build:build@localhost:5432/build"
 RUN pnpm --filter @cos/backend exec prisma generate
 # Build backend AND its @cos/* workspace deps in topological order ("..."). backend/tsconfig.build.json
 # clears `paths`, so `nest build` resolves @cos/* via node_modules → dist — those dists must exist
