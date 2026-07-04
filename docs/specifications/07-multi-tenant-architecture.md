@@ -77,7 +77,7 @@ See runbook: `docs/runbooks/dedicated-db-provisioning.md`.
 #### Routing mechanism — HTTP requests
 
 Tenant context is resolved **during JWT authentication**, not in a pre-auth middleware.
-NestJS runs middleware *before* guards, so a pre-auth middleware cannot read `req.user`
+NestJS runs middleware _before_ guards, so a pre-auth middleware cannot read `req.user`
 (which the Passport `KeycloakJwtStrategy` / `JwtAuthGuard` populates). Resolution therefore
 happens after auth (see ADR-031):
 
@@ -92,7 +92,7 @@ happens after auth (see ADR-031):
    opens the context for every request (`useEnterWith: true` is required under Fastify, whose
    middleware does not await the rest of the request inside `cls.run()`). The global
    `TenantContextInterceptor` still projects `req.user.*` onto `req.{tenantId, userId, userRole,
-   tenantCode, dedicatedDbUrl}` as a secondary path for code that reads `req` directly (handlers fall
+tenantCode, dedicatedDbUrl}` as a secondary path for code that reads `req` directly (handlers fall
    back to CLS, e.g. `req.userId ?? clsUserId()`).
 3. `TenantPrismaService` (a **singleton**) reads that context from CLS in `run()` and connects
    as the non-superuser **`app_user`** role (`APP_DATABASE_URL`, or `dedicatedDbUrl` for
@@ -399,7 +399,7 @@ CREATE POLICY rls_tenant_isolation ON {schema}.{table}
 ```
 
 **Use `AS PERMISSIVE`, not `AS RESTRICTIVE`**: PERMISSIVE policies are OR-combined,
-RESTRICTIVE are AND-combined — but a *lone* RESTRICTIVE policy grants no access at all (RESTRICTIVE
+RESTRICTIVE are AND-combined — but a _lone_ RESTRICTIVE policy grants no access at all (RESTRICTIVE
 narrows; it never grants), so the table would deny every row. With exactly one policy per table the
 OR/AND distinction is moot, so the canonical form is a single PERMISSIVE policy (matching AWS SaaS
 Factory and Crunchy Data). Keep it to ONE tenant-isolation policy per table: a second permissive
@@ -435,9 +435,9 @@ model: each pod holds a connection pool, and with many tenants and replicas Post
 
 **PgBouncer is the required connection pooler** for all environments (local, staging, production).
 
-| Deployment | Location | Mode |
-| ---------- | -------- | ---- |
-| Local dev | Docker Compose container (`cos-pgbouncer`) | transaction |
+| Deployment | Location                                                                        | Mode        |
+| ---------- | ------------------------------------------------------------------------------- | ----------- |
+| Local dev  | Docker Compose container (`cos-pgbouncer`)                                      | transaction |
 | Kubernetes | `infrastructure/kubernetes/pgbouncer/` — Deployment + Service + ConfigMap + PDB | transaction |
 
 Kubernetes PodDisruptionBudget: `minAvailable: 1`.
@@ -457,12 +457,12 @@ An integration test must assert the connection string resolves to PgBouncer.
 
 ### Baseline configuration
 
-| Parameter | Value | Notes |
-| --------- | ----- | ----- |
-| `default_pool_size` | 25 per database | Tune before Stage 2 based on Grafana observations |
-| `max_client_conn` | 1000 | |
-| `server_idle_timeout` | 600 s | |
-| `pool_mode` | transaction | See above |
+| Parameter             | Value           | Notes                                             |
+| --------------------- | --------------- | ------------------------------------------------- |
+| `default_pool_size`   | 25 per database | Tune before Stage 2 based on Grafana observations |
+| `max_client_conn`     | 1000            |                                                   |
+| `server_idle_timeout` | 600 s           |                                                   |
+| `pool_mode`           | transaction     | See above                                         |
 
 ### Grafana metrics (required)
 

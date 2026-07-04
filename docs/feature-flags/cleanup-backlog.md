@@ -26,24 +26,24 @@ its deadline has passed.
 
 | Flag key                                 | Domain       | Description                             | Current rollout % | Rollout started | Owner            |
 | ---------------------------------------- | ------------ | --------------------------------------- | ----------------- | --------------- | ---------------- |
-| `s1.procurement.rfq-workflow`            | Procurement  | Full PR→RFQ→PO Temporal workflow        |         0%        |         —       | Engineering lead |
-| `s1.ai.report-generation`                | AI Gateway   | GPT-4o report generation endpoint       |         0%        |         —       | Engineering lead |
-| `s1.mobile.offline-sync-v2`              | Mobile       | WatermelonDB delta sync engine          |         0%        |         —       | Engineering lead |
-| `s1.finance.budget-alerts`               | Finance      | Budget exceeded push notifications      |         0%        |         —       | Engineering lead |
-| `s1.analytics.clickhouse-exec-dashboard` | Analytics    | Executive ClickHouse dashboard          |         0%        |         —       | Engineering lead |
-| `s1.notifications.expo-push`             | Notification | Expo push notification channel          |         0%        |         —       | Engineering lead |
-| `s1.knowledge-graph.neo4j-sync`          | Graph        | Neo4j kg-ingestion-worker sync          |         0%        |         —       | Engineering lead |
-| `s1.equipment.telemetry-ingest`          | Equipment    | TimescaleDB telemetry pipeline          |         0%        |         —       | Engineering lead |
-| `s1.workforce.overtime-calc`             | Workforce    | Thai overtime calculation engine        |         0%        |         —       | Engineering lead |
-| `s1.platform.enterprise-provisioning`    | Platform     | Enterprise tenant provisioning workflow |         0%        |         —       | Engineering lead |
+| `s1.procurement.rfq-workflow`            | Procurement  | Full PR→RFQ→PO Temporal workflow        | 0%                | —               | Engineering lead |
+| `s1.ai.report-generation`                | AI Gateway   | GPT-4o report generation endpoint       | 0%                | —               | Engineering lead |
+| `s1.mobile.offline-sync-v2`              | Mobile       | WatermelonDB delta sync engine          | 0%                | —               | Engineering lead |
+| `s1.finance.budget-alerts`               | Finance      | Budget exceeded push notifications      | 0%                | —               | Engineering lead |
+| `s1.analytics.clickhouse-exec-dashboard` | Analytics    | Executive ClickHouse dashboard          | 0%                | —               | Engineering lead |
+| `s1.notifications.expo-push`             | Notification | Expo push notification channel          | 0%                | —               | Engineering lead |
+| `s1.knowledge-graph.neo4j-sync`          | Graph        | Neo4j kg-ingestion-worker sync          | 0%                | —               | Engineering lead |
+| `s1.equipment.telemetry-ingest`          | Equipment    | TimescaleDB telemetry pipeline          | 0%                | —               | Engineering lead |
+| `s1.workforce.overtime-calc`             | Workforce    | Thai overtime calculation engine        | 0%                | —               | Engineering lead |
+| `s1.platform.enterprise-provisioning`    | Platform     | Enterprise tenant provisioning workflow | 0%                | —               | Engineering lead |
 
 ---
 
 ## Scheduled for removal (100% rollout reached — remove by deadline)
 
 | Flag key     | 100% reached | Removal deadline | Cleanup ticket | Status |
-| ------------ | ------------ | ---------------- | -------------- |--------|
-| _(none yet)_ |      —       |        —         |        —       |   —    |
+| ------------ | ------------ | ---------------- | -------------- | ------ |
+| _(none yet)_ | —            | —                | —              | —      |
 
 ---
 
@@ -51,7 +51,7 @@ its deadline has passed.
 
 | Flag key     | Domain | Removed date | Removed in PR/commit |
 | ------------ | ------ | ------------ | -------------------- |
-| _(none yet)_ |    —   |       —      |          —           |
+| _(none yet)_ | —      | —            | —                    |
 
 ---
 

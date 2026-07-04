@@ -58,7 +58,7 @@ Core Services :
 - Document Service (implements the "Document engine" capability defined in 13-product-architecture Layer 1;
   sits above File Service). MVP delivers OCR (Phase 11 AI OCR Pipeline) + file storage (Phase 9 File Service);
   version management, format conversion, and drawing viewer are post-MVP (not in §21.2 / the Phase plan) — see
-13-product-architecture §13.1
+  13-product-architecture §13.1
 
 Domain Services :
 

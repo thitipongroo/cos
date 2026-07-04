@@ -21,23 +21,23 @@ Application → @cos/logger (JSON) → Promtail (agent) → Loki
 
 ### Application logs (all services)
 
-| Tier | Storage | Retention | Trigger |
-|------|---------|-----------|---------|
-| Hot | Loki on S3 (standard) | **30 days** | Default Loki retention config |
-| Cold | S3 Glacier | **1 year** (12 months from ingestion) | S3 lifecycle rule: move on day 31 |
-| Delete | — | After 1 year | S3 lifecycle rule: expire on day 365 |
+| Tier   | Storage               | Retention                             | Trigger                              |
+| ------ | --------------------- | ------------------------------------- | ------------------------------------ |
+| Hot    | Loki on S3 (standard) | **30 days**                           | Default Loki retention config        |
+| Cold   | S3 Glacier            | **1 year** (12 months from ingestion) | S3 lifecycle rule: move on day 31    |
+| Delete | —                     | After 1 year                          | S3 lifecycle rule: expire on day 365 |
 
 Scope: NestJS backend, Fastify file-service, FastAPI ai-gateway, FastAPI ai-embedding-worker,
 FastAPI ai-ocr-pipeline, Go analytics-worker, Go kg-ingestion-worker, Next.js web (server-side).
 
 ### Compliance / audit logs
 
-| Tier | Storage | Retention | Trigger |
-|------|---------|-----------|---------|
-| Hot | Loki on S3 (standard) | 30 days | Default |
-| Cold | S3 Glacier | 1 year | S3 lifecycle |
+| Tier               | Storage                 | Retention                  | Trigger                                  |
+| ------------------ | ----------------------- | -------------------------- | ---------------------------------------- |
+| Hot                | Loki on S3 (standard)   | 30 days                    | Default                                  |
+| Cold               | S3 Glacier              | 1 year                     | S3 lifecycle                             |
 | Compliance archive | S3 Glacier Deep Archive | **7 years** from ingestion | S3 lifecycle rule: transition on day 366 |
-| Delete | — | After 7 years | S3 lifecycle rule: expire on day 2557 |
+| Delete             | —                       | After 7 years              | S3 lifecycle rule: expire on day 2557    |
 
 Scope: `audit_logs` table events shipped to Loki; authentication events; authorization failures;
 data export events; admin actions; all PDPA-relevant data subject events.
@@ -47,41 +47,41 @@ in Promtail pipeline and routed to the compliance retention bucket (`cos-logs-co
 
 ### Distributed traces (Tempo)
 
-| Tier | Storage | Retention |
-|------|---------|-----------|
-| Hot | Tempo object storage | **14 days** |
-| Delete | — | Auto-purge after 14 days |
+| Tier   | Storage              | Retention                |
+| ------ | -------------------- | ------------------------ |
+| Hot    | Tempo object storage | **14 days**              |
+| Delete | —                    | Auto-purge after 14 days |
 
 ### Metrics (Prometheus TSDB)
 
-| Tier | Storage | Retention |
-|------|---------|-----------|
-| Local TSDB | Prometheus | **15 days** |
-| Long-term | Thanos object storage (S3) | **1 year** |
-| Delete | — | Auto-purge per Thanos compaction policy |
+| Tier       | Storage                    | Retention                               |
+| ---------- | -------------------------- | --------------------------------------- |
+| Local TSDB | Prometheus                 | **15 days**                             |
+| Long-term  | Thanos object storage (S3) | **1 year**                              |
+| Delete     | —                          | Auto-purge per Thanos compaction policy |
 
 ### Kafka event logs (topic retention)
 
-| Topic pattern | Retention | Rationale |
-|---------------|-----------|-----------|
-| `cos.*.created`, `cos.*.updated` | **7 days** | Operational replay window |
-| `cos.finance.*` | **30 days** | Financial reconciliation window |
-| `cos.audit.*` | **90 days** | Compliance event replay |
-| `cos.dlq.*` (dead-letter) | **30 days** | Investigation window |
+| Topic pattern                    | Retention   | Rationale                       |
+| -------------------------------- | ----------- | ------------------------------- |
+| `cos.*.created`, `cos.*.updated` | **7 days**  | Operational replay window       |
+| `cos.finance.*`                  | **30 days** | Financial reconciliation window |
+| `cos.audit.*`                    | **90 days** | Compliance event replay         |
+| `cos.dlq.*` (dead-letter)        | **30 days** | Investigation window            |
 
 Topic retention is set via Kafka broker config (`retention.ms`) in
 `infrastructure/kubernetes/kafka/kafka-topic-configs.yaml`.
 
 ### Infrastructure / system logs
 
-| Source | Retention |
-|--------|-----------|
-| Kubernetes node logs (kubelet, containerd) | 7 days |
-| Kubernetes API server audit logs | 90 days |
-| Kong Gateway access logs | 30 days (Loki) |
-| PgBouncer logs | 14 days (Loki) |
-| PostgreSQL slow query logs | 30 days (Loki) |
-| ClickHouse query logs | 14 days (Loki) |
+| Source                                     | Retention      |
+| ------------------------------------------ | -------------- |
+| Kubernetes node logs (kubelet, containerd) | 7 days         |
+| Kubernetes API server audit logs           | 90 days        |
+| Kong Gateway access logs                   | 30 days (Loki) |
+| PgBouncer logs                             | 14 days (Loki) |
+| PostgreSQL slow query logs                 | 30 days (Loki) |
+| ClickHouse query logs                      | 14 days (Loki) |
 
 ---
 
@@ -89,14 +89,14 @@ Topic retention is set via Kafka broker config (`retention.ms`) in
 
 **PII must never appear in any log field** (QM-5, QM-8).
 
-| Forbidden | Required alternative |
-|-----------|---------------------|
-| Full name | `user_id` (UUID) |
-| Phone number | `[REDACTED]` |
-| Email address | `user_id` (UUID) |
-| National ID | `[REDACTED]` |
-| GPS coordinates | Project / zone ID only |
-| JWT payload content | `token_id` claim only |
+| Forbidden           | Required alternative   |
+| ------------------- | ---------------------- |
+| Full name           | `user_id` (UUID)       |
+| Phone number        | `[REDACTED]`           |
+| Email address       | `user_id` (UUID)       |
+| National ID         | `[REDACTED]`           |
+| GPS coordinates     | Project / zone ID only |
+| JWT payload content | `token_id` claim only  |
 
 Violations detected by log scanning job in CI (`scripts/ci/scan-log-pii.sh`) — build fails if
 raw PII pattern detected in log output during integration tests.
@@ -111,7 +111,7 @@ raw PII pattern detected in log output during integration tests.
 
 ```yaml
 limits_config:
-  retention_period: 720h   # 30 days hot tier
+  retention_period: 720h # 30 days hot tier
 
 compactor:
   retention_enabled: true
@@ -161,6 +161,7 @@ lifecycle_rule {
 ## Verification
 
 Before Stage 1 → Stage 2 gate:
+
 - [ ] Loki retention config deployed and tested (verify old logs are purged after 30 days in staging)
 - [ ] S3 lifecycle rules applied to `cos-logs-{env}` and `cos-logs-compliance-{env}`
 - [ ] Compliance log routing pipeline (Promtail labels) verified end-to-end
@@ -170,8 +171,8 @@ Before Stage 1 → Stage 2 gate:
 
 ## Review schedule
 
-| Trigger | Action |
-|---------|--------|
+| Trigger            | Action                                                                 |
+| ------------------ | ---------------------------------------------------------------------- |
 | Annually (January) | Verify all retention periods comply with current PDPA / accounting law |
-| New service added | Add log source entry to this document |
-| Regulatory change | Update affected periods within 30 days |
+| New service added  | Add log source entry to this document                                  |
+| Regulatory change  | Update affected periods within 30 days                                 |

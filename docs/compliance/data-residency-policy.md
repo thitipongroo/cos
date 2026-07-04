@@ -10,11 +10,11 @@ MSK, ClickHouse) must honour the residency assignment of the tenant's home regio
 
 ## 2. Region assignments
 
-| Tenant origin   | Primary region             | DR region          | Governing law                        |
-| --------------- | -------------------------- | ------------------ | ------------------------------------ |
-| Thai tenants    | `ap-southeast-7` (Bangkok) | `ap-southeast-1`   | PDPA — data must not leave Thailand  |
-| EU tenants      | `eu-west-1` (Ireland)      | —                  | GDPR                                 |
-| Other / default | `ap-southeast-1` (Singapore) | —                | Platform default                     |
+| Tenant origin   | Primary region               | DR region        | Governing law                       |
+| --------------- | ---------------------------- | ---------------- | ----------------------------------- |
+| Thai tenants    | `ap-southeast-7` (Bangkok)   | `ap-southeast-1` | PDPA — data must not leave Thailand |
+| EU tenants      | `eu-west-1` (Ireland)        | —                | GDPR                                |
+| Other / default | `ap-southeast-1` (Singapore) | —                | Platform default                    |
 
 ## 3. Enforcement rules
 
@@ -32,12 +32,12 @@ MSK, ClickHouse) must honour the residency assignment of the tenant's home regio
 
 ## 4. Implementation checkpoints
 
-| Layer         | Control                                                          | Owner             |
-| ------------- | ---------------------------------------------------------------- | ----------------- |
-| Terraform     | S3 buckets created per region; RDS instances per region          | Infrastructure    |
-| Application   | `TenantRoutingMiddleware` selects regional DB URL before queries  | Backend           |
-| CI/CD         | Terraform workspace per region (`dev`, `staging`, `production`)  | DevOps            |
-| Audit         | Data residency compliance reviewed annually (spec §5.1.3)        | Compliance        |
+| Layer       | Control                                                          | Owner          |
+| ----------- | ---------------------------------------------------------------- | -------------- |
+| Terraform   | S3 buckets created per region; RDS instances per region          | Infrastructure |
+| Application | `TenantRoutingMiddleware` selects regional DB URL before queries | Backend        |
+| CI/CD       | Terraform workspace per region (`dev`, `staging`, `production`)  | DevOps         |
+| Audit       | Data residency compliance reviewed annually (spec §5.1.3)        | Compliance     |
 
 ## 5. Related documents
 

@@ -44,11 +44,11 @@ and 16-enterprise-event-flow) and routed to recipients based on their role and p
 
 ## 19.2 Notification Channels
 
-| Channel       | Delivery                                     | Use Case                                         |
-| ------------- | -------------------------------------------- | ------------------------------------------------ |
-| In-app (web)  | SSE (Server-Sent Events)                     | Real-time alerts while user is active in web UI  |
-| Push (mobile) | Expo Push Notifications (APNs / FCM)         | Alerts to field users on React Native app        |
-| Email         | SendGrid (MVP) / AWS SES (production target) | Non-urgent summaries, daily digests, escalations |
+| Channel       | Delivery                                     | Use Case                                                                         |
+| ------------- | -------------------------------------------- | -------------------------------------------------------------------------------- |
+| In-app (web)  | SSE (Server-Sent Events)                     | Real-time alerts while user is active in web UI                                  |
+| Push (mobile) | Expo Push Notifications (APNs / FCM)         | Alerts to field users on React Native app                                        |
+| Email         | SendGrid (MVP) / AWS SES (production target) | Non-urgent summaries, daily digests, escalations                                 |
 | LINE          | LINE Messaging API (push message)            | Parallel channel; tenant configures LINE Channel Access Token in tenant settings |
 
 Implemented channel adapters (backend `notification/adapters/`): Expo Push, SendGrid (email), LINE Messaging.

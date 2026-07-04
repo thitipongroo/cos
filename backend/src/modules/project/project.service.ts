@@ -78,10 +78,7 @@ export class ProjectService {
       project_code: project.project_code,
       project_name: project.project_name,
       project_type: project.project_type as
-        | 'RESIDENTIAL'
-        | 'COMMERCIAL'
-        | 'INFRASTRUCTURE'
-        | 'INDUSTRIAL',
+        'RESIDENTIAL' | 'COMMERCIAL' | 'INFRASTRUCTURE' | 'INDUSTRIAL',
       budget: {
         amount: project.budget_amount ?? '0.0000',
         currency_code: project.budget_currency ?? 'THB',

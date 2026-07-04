@@ -10,17 +10,17 @@
 
 ## Active deprecations
 
-| Endpoint / Schema | Version deprecated in | Deprecation date | Sunset date | Notice sent | Replacement |
-|-------------------|-----------------------|-----------------|-------------|-------------|-------------|
-| _(no active deprecations)_ | | | | | |
+| Endpoint / Schema          | Version deprecated in | Deprecation date | Sunset date | Notice sent | Replacement |
+| -------------------------- | --------------------- | ---------------- | ----------- | ----------- | ----------- |
+| _(no active deprecations)_ |                       |                  |             |             |             |
 
 ---
 
 ## Completed deprecations (removed)
 
 | Endpoint / Schema | Deprecated | Sunset | Removed in |
-|-------------------|-----------|--------|------------|
-| _(none yet)_ | | | |
+| ----------------- | ---------- | ------ | ---------- |
+| _(none yet)_      |            |        |            |
 
 ---
 
@@ -64,6 +64,7 @@ Send final 15-day warning to tenants still calling the deprecated endpoint.
 ## Tenant notification format
 
 Notifications are sent via:
+
 - In-platform notification (SSE push to all ADMIN users of affected tenants)
 - Email to the tenant's registered admin email
 
@@ -92,14 +93,16 @@ If you have questions, contact support at support@construction-os.app.
 ## Kafka schema deprecations
 
 Kafka schema changes follow QM-9 backward compatibility rules:
+
 - Compatibility mode: `BACKWARD_TRANSITIVE` (all versions readable by new consumer)
 - Schema Registry: Confluent Schema Registry at `http://schema-registry:8081`
 
-| Topic | Schema version | Deprecated version | Sunset date | Notes |
-|-------|---------------|-------------------|-------------|-------|
-| _(no active schema deprecations)_ | | | | |
+| Topic                             | Schema version | Deprecated version | Sunset date | Notes |
+| --------------------------------- | -------------- | ------------------ | ----------- | ----- |
+| _(no active schema deprecations)_ |                |                    |             |       |
 
 Procedure for schema deprecation:
+
 1. Register new schema version in Schema Registry
 2. Update all producers to emit new version
 3. Keep old consumer support for 90 days (BACKWARD_TRANSITIVE guarantees this automatically)
@@ -118,8 +121,8 @@ Procedure for schema deprecation:
 
 ## Review schedule
 
-| Trigger | Action |
-|---------|--------|
-| Any `@deprecated` added to OpenAPI spec | Add row to Active deprecations; send tenant notification |
-| Every 30 days | Check Active deprecations table; send reminder to non-migrated tenants |
-| Sunset date reached | Remove endpoint; update table; send final notice |
+| Trigger                                 | Action                                                                 |
+| --------------------------------------- | ---------------------------------------------------------------------- |
+| Any `@deprecated` added to OpenAPI spec | Add row to Active deprecations; send tenant notification               |
+| Every 30 days                           | Check Active deprecations table; send reminder to non-migrated tenants |
+| Sunset date reached                     | Remove endpoint; update table; send final notice                       |

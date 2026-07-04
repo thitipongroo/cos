@@ -9,3 +9,5 @@ coverage
 pnpm-lock.yaml
 # Helm templates contain Go template syntax ({{ }}) — not valid YAML
 infrastructure/helm/**/templates/**
+# Local Claude Code session state — never committed (globally gitignored), not format-gated
+.claude/

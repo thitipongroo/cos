@@ -88,7 +88,7 @@ importers:
         version: 56.0.5(expo@56.0.13)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       expo-task-manager:
         specifier: ~56.0.20
-        version: 56.0.20(expo@56.0.13)(react-native@0.85.3(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
+        version: 56.0.20(expo@56.0.13)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))
       intl-messageformat:
         specifier: ^10.7.0
         version: 10.7.18

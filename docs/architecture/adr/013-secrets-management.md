@@ -13,9 +13,8 @@
 
 The platform needs runtime secrets (DB credentials, API keys, JWT signing keys) across **cloud** and
 **on-premise/hybrid** deployments, with **no secrets in code or git history** (QM-4). The secret
-*store* and the *delivery mechanism* into pods are both part of the decision. This is fully specified
-in `05-security-compliance` §5.2 and was referenced as "ADR-013" in `context.md` (lines 204, 734,
-824) — but the ADR file itself was never created. This ADR records the existing decision so those
+_store_ and the _delivery mechanism_ into pods are both part of the decision. This is fully specified
+in `05-security-compliance` §5.2 and was referenced as "ADR-013" in `context.md` (lines 204, 734, 824) — but the ADR file itself was never created. This ADR records the existing decision so those
 references resolve.
 
 ## Decision
@@ -38,7 +37,7 @@ references resolve.
 - Cloud-native managed secrets (AWS SM) where available; **Vault** for on-prem / data-sovereignty
   deployments (consistent with the self-host capability — §8.4).
 - SealedSecret keeps the GitOps repository safe to store the few Secret objects that must be in git.
-- Splitting *store* vs *delivery* makes the decision explicit and portable across environments.
+- Splitting _store_ vs _delivery_ makes the decision explicit and portable across environments.
 
 ## Consequences
 

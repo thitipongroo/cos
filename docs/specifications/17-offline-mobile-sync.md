@@ -214,14 +214,14 @@ server-side changes down to the device:
   cache is kept). The previously-unused `DeltaSyncClient` class is superseded by this caller.
 - **Entity types applied → local tables** (all six the server's delta registry emits):
 
-  | Server entity type | Local table                    | Schema |
-  | ------------------ | ------------------------------ | ------ |
-  | `task`             | `local_tasks`                  | v2     |
-  | `site_report`      | `local_site_reports`           | v1     |
-  | `issue`            | `local_issues`                 | v1     |
-  | `attendance`       | `local_attendance`             | v2     |
-  | `safety`           | `local_incidents`              | v4     |
-  | `material`         | `local_material_consumptions`  | v4     |
+  | Server entity type | Local table                   | Schema |
+  | ------------------ | ----------------------------- | ------ |
+  | `task`             | `local_tasks`                 | v2     |
+  | `site_report`      | `local_site_reports`          | v1     |
+  | `issue`            | `local_issues`                | v1     |
+  | `attendance`       | `local_attendance`            | v2     |
+  | `safety`           | `local_incidents`             | v4     |
+  | `material`         | `local_material_consumptions` | v4     |
 
 - **Schema version:** `DB_VERSION = 4`. v3→v4 (`migrations.ts`) adds `local_incidents` and
   `local_material_consumptions` as read caches so the delta pull can apply `safety`/`material`.
@@ -270,15 +270,15 @@ The `sync_queue` table already uses `expo-sqlite` directly and is unchanged.
 
 ### Migration scope (verified against `apps/mobile`)
 
-| Item | Change |
-| ---- | ------ |
-| 9 model classes (`src/db/models/`) | → Drizzle schema tables (incl. `local_photos` — metadata-only, file stays in `expo-file-system`) |
-| `useCollection` hook (8 screens) | → `useLiveQuery` |
-| Write paths (7 files incl. `runDeltaSync.ts`, `api/projects.ts`) | → Drizzle inserts/updates |
-| `schema.ts` + `migrations.ts` (v1–v4) | → versioned runtime DDL (`PRAGMA user_version`) — see implementation note under DECISION |
-| `sync_queue` (`sync-queue.ts`) | **unchanged** (already expo-sqlite) |
-| §17.8 native setup (config plugin, `@nozbe/simdjson` pin, decorators babel plugin), CMake pnpm patch | **removed entirely** |
-| Sync protocol (§17.2/§17.9), conflict rules (§17.3/§17.5), priority (§17.6), limits (§17.7), Detox e2e scenarios (§30.5) | **unchanged** — e2e suite doubles as the behavioral regression gate |
+| Item                                                                                                                     | Change                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| 9 model classes (`src/db/models/`)                                                                                       | → Drizzle schema tables (incl. `local_photos` — metadata-only, file stays in `expo-file-system`) |
+| `useCollection` hook (8 screens)                                                                                         | → `useLiveQuery`                                                                                 |
+| Write paths (7 files incl. `runDeltaSync.ts`, `api/projects.ts`)                                                         | → Drizzle inserts/updates                                                                        |
+| `schema.ts` + `migrations.ts` (v1–v4)                                                                                    | → versioned runtime DDL (`PRAGMA user_version`) — see implementation note under DECISION         |
+| `sync_queue` (`sync-queue.ts`)                                                                                           | **unchanged** (already expo-sqlite)                                                              |
+| §17.8 native setup (config plugin, `@nozbe/simdjson` pin, decorators babel plugin), CMake pnpm patch                     | **removed entirely**                                                                             |
+| Sync protocol (§17.2/§17.9), conflict rules (§17.3/§17.5), priority (§17.6), limits (§17.7), Detox e2e scenarios (§30.5) | **unchanged** — e2e suite doubles as the behavioral regression gate                              |
 
 ### Benchmark protocol (two gates, relative-only)
 
@@ -296,11 +296,11 @@ No absolute thresholds are set — no data exists to justify one. Both gates com
 > **G1 RESULT (2026-07-04 — iPhone 17 simulator, Release/Hermes, harness
 > `apps/mobile/e2e/benchmark.spec.ts` + `src/app/e2e/benchmark.tsx`):**
 >
-> | Engine | upsert-500 (3 runs, median) | query-500 (3 runs, median) |
-> | ------ | --------------------------- | -------------------------- |
-> | WatermelonDB (baseline) | [13.2, 10.2, 9.8] → **10.2 ms** | [0.5, 0.3, 0.3] → **0.3 ms** |
-> | Drizzle + expo-sqlite | [29.3, 26.7, 26.9] → **26.9 ms** | [9.5, 5.8, 5.7] → **5.8 ms** |
-> | Ratio DZ/WM | **2.63× slower** | **21.2× slower** |
+> | Engine                  | upsert-500 (3 runs, median)      | query-500 (3 runs, median)   |
+> | ----------------------- | -------------------------------- | ---------------------------- |
+> | WatermelonDB (baseline) | [13.2, 10.2, 9.8] → **10.2 ms**  | [0.5, 0.3, 0.3] → **0.3 ms** |
+> | Drizzle + expo-sqlite   | [29.3, 26.7, 26.9] → **26.9 ms** | [9.5, 5.8, 5.7] → **5.8 ms** |
+> | Ratio DZ/WM             | **2.63× slower**                 | **21.2× slower**             |
 >
 > **Fails relative parity → migration STOPPED at G1; escalated to product owner** (per this
 > protocol).
@@ -308,10 +308,10 @@ No absolute thresholds are set — no data exists to justify one. Both gates com
 > **Cold-read follow-up (same day, option C — seed → kill process → relaunch → query first):**
 > the 21.2× figure was confirmed to be cache-confounded. With both engines reading disk:
 >
-> | Measure | WatermelonDB | Drizzle + expo-sqlite | Ratio |
-> | ------- | ------------ | --------------------- | ----- |
-> | query-500 COLD (first op of new process) | 5.0 ms | 12.4 ms | **2.45×** |
-> | query-500 WARM (2nd/3rd read) | 0.5–1.6 ms | 6.1–6.5 ms | WM record-cache advantage is real for re-reads |
+> | Measure                                  | WatermelonDB | Drizzle + expo-sqlite | Ratio                                          |
+> | ---------------------------------------- | ------------ | --------------------- | ---------------------------------------------- |
+> | query-500 COLD (first op of new process) | 5.0 ms       | 12.4 ms               | **2.45×**                                      |
+> | query-500 WARM (2nd/3rd read)            | 0.5–1.6 ms   | 6.1–6.5 ms            | WM record-cache advantage is real for re-reads |
 >
 > Complete picture: Drizzle/expo-sqlite is consistently ~**2.5× slower relatively** (upsert 2.63×,
 > cold query 2.45×); absolute deltas at §17.7 ceilings are +16.7 ms per 500-record background sync
@@ -320,11 +320,11 @@ No absolute thresholds are set — no data exists to justify one. Both gates com
 > **10× headroom probe (same day, n=5000 — exceeds the §17.7 cap by 10×, Drizzle inserts chunked
 > at 2,000 rows/statement inside one transaction due to SQLite's 32,766 bind-param ceiling):**
 >
-> | Measure (n=5000) | WatermelonDB | Drizzle + expo-sqlite | Ratio | Scale vs n=500 |
-> | ---------------- | ------------ | --------------------- | ----- | -------------- |
-> | upsert-5000 | 98.9 ms | 280.0 ms | 2.83× | WM 9.7× / DZ 10.4× — both linear |
-> | query-5000 COLD | 28.4 ms | 70.6 ms | 2.49× | WM 5.7× / DZ 5.7× — both sublinear |
-> | query-5000 WARM | 2.5–3.5 ms | 58.6–59.7 ms | — | WM record-cache advantage persists |
+> | Measure (n=5000) | WatermelonDB | Drizzle + expo-sqlite | Ratio | Scale vs n=500                     |
+> | ---------------- | ------------ | --------------------- | ----- | ---------------------------------- |
+> | upsert-5000      | 98.9 ms      | 280.0 ms              | 2.83× | WM 9.7× / DZ 10.4× — both linear   |
+> | query-5000 COLD  | 28.4 ms      | 70.6 ms               | 2.49× | WM 5.7× / DZ 5.7× — both sublinear |
+> | query-5000 WARM  | 2.5–3.5 ms   | 58.6–59.7 ms          | —     | WM record-cache advantage persists |
 >
 > **Scaling verdict:** both engines scale linearly; the relative gap is stable (~2.5–2.8×) and does
 > NOT widen at 10× — no cliff on either side. Worst absolute Drizzle numbers at 10× the spec cap:
@@ -375,13 +375,13 @@ No absolute thresholds are set — no data exists to justify one. Both gates com
 
 ## References
 
-| ID             | Title                                                              | Source                                                                                        |
-| -------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| [IEEE 830]     | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                             |
-| [CRDT]         | Conflict-Free Replicated Data Types                                | Shapiro et al., INRIA Research Report RR-7687, 2011                                           |
-| [Drizzle]      | Drizzle ORM — Expo SQLite driver                                   | [drizzle: Expo SQLite](https://orm.drizzle.team/docs/connect-expo-sqlite)                     |
-| [IndexedDB]    | Indexed Database API 3.0                                           | W3C Recommendation — [w3.org/TR/IndexedDB](https://www.w3.org/TR/IndexedDB/)                  |
-| [Expo SQLite]  | Expo SQLite Documentation                                          | [docs.expo.dev/versions/latest/sdk/sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/) |
-| [JWT-RFC]      | JSON Web Token (JWT)                                               | RFC 7519                                                                                      |
+| ID            | Title                                                              | Source                                                                                        |
+| ------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| [IEEE 830]    | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                             |
+| [CRDT]        | Conflict-Free Replicated Data Types                                | Shapiro et al., INRIA Research Report RR-7687, 2011                                           |
+| [Drizzle]     | Drizzle ORM — Expo SQLite driver                                   | [drizzle: Expo SQLite](https://orm.drizzle.team/docs/connect-expo-sqlite)                     |
+| [IndexedDB]   | Indexed Database API 3.0                                           | W3C Recommendation — [w3.org/TR/IndexedDB](https://www.w3.org/TR/IndexedDB/)                  |
+| [Expo SQLite] | Expo SQLite Documentation                                          | [docs.expo.dev/versions/latest/sdk/sqlite](https://docs.expo.dev/versions/latest/sdk/sqlite/) |
+| [JWT-RFC]     | JSON Web Token (JWT)                                               | RFC 7519                                                                                      |
 
 > 📎 See also: [04-tech-stack](04-tech-stack.md) · [11-database-schema](11-database-schema.md) · [19-notification-architecture](19-notification-architecture.md)

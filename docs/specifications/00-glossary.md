@@ -33,36 +33,36 @@ within each group.
 
 ## Construction Domain Terms
 
-| Term | Thai | Definition |
-| --- | --- | --- |
-| **BOQ** | ใบรายการวัสดุและปริมาณงาน | A document listing all materials, labour, and tasks required for a construction project, with estimated quantities and unit costs. The BOQ is the basis for procurement planning and budget tracking. See `11-database-schema` BOQ entity. |
-| **BIM** | แบบจำลองข้อมูลอาคาร | Digital 3D model containing geometry and metadata for a building throughout its lifecycle. Full BIM integration is post-MVP. |
-| **Contractor** | ผู้รับเหมา | A company contracted to execute construction work. The primary user persona of this platform. |
-| **Developer** | ผู้พัฒนาอสังหาริมทรัพย์ | A company that acquires land and commissions construction projects for sale or lease. |
-| **Drawing Approval** | การอนุมัติแบบ | Formal sign-off on a construction drawing before work begins. Recorded as a Permit with `permit_type: drawing_approval`. |
-| **Earned Value** | มูลค่างานที่ทำได้จริง | The budgeted cost of work actually performed. Used to calculate cost and schedule variance. |
-| **Equipment** | เครื่องจักร/อุปกรณ์ก่อสร้าง | Heavy machinery or tools used on site (e.g., crane, excavator, scaffolding). Tracked as an Equipment entity in the schema. |
-| **Facility Management** | การบริหารอาคาร | Post-completion operations and maintenance of a building or property asset. Part of the Asset Lifecycle domain. |
-| **Handover** | การส่งมอบ | Formal transfer of a completed unit or building from the contractor to the client or end customer. Triggers AssetHandedOver event. |
-| **Inspection** | การตรวจสอบ | On-site quality check against a defined checklist. Results are pass / fail / conditional. See `11-database-schema` Inspections entity. |
-| **IoT** | อุปกรณ์เชื่อมต่ออินเทอร์เน็ต | Sensors and connected devices deployed on construction sites or in completed buildings. Post-MVP capability — Phase 24 (Digital Twin & IoT Layer); see `13-product-architecture` Layer 4 §13.5 and `33-digital-twin-iot`. |
-| **MEP** | งานระบบอาคาร | Mechanical, Electrical, and Plumbing systems in a building. A key inspection category. |
-| **Permit** | ใบอนุญาต | An authorization document for a specific activity (work permit, safety permit, drawing approval, entry permit). See `11-database-schema` Permit entity. |
-| **Progress Update** | รายงานความคืบหน้า | A record of work completed against a task, expressed as `progress_percent` (0–100). |
-| **Procurement** | การจัดซื้อจัดจ้าง | The end-to-end process of sourcing and purchasing materials or services: PR → RFQ → Quotation → PO → Delivery → Vendor Invoice. |
-| **QC** | การควบคุมคุณภาพ | Systematic inspection and testing to ensure construction work meets specifications. |
-| **Rework** | การแก้ไขงาน | Corrective work required due to quality defects. A key cost driver the platform aims to reduce. |
-| **RFI** | การขอข้อมูล | A formal question raised by the site team about drawing specifications or design intent. Recorded as a Task with `work_type: rfi`. |
-| **RFQ** | การขอใบเสนอราคา | A formal request sent to vendors to submit price quotations for specified materials or services. |
-| **Site Engineer** | วิศวกรสนาม | The primary field-level role responsible for executing and reporting daily construction work. |
-| **Site Report** | รายงานประจำวันหน้างาน | A daily record capturing weather, manpower count, work completed, and blockers. See `11-database-schema` Site Reports entity. |
-| **Subcontractor** | ผู้รับเหมาช่วง | A specialist contractor hired by the main contractor to perform a specific scope of work. |
-| **Timesheet** | ใบบันทึกชั่วโมงทำงาน | Record of hours worked by an employee on a project. Captured via the Workforce (Site Attendance) entity. |
-| **Unit** | ยูนิต/ห้องชุด | An individual sellable property within a building (e.g., condominium unit, townhouse). Tracked in the Unit entity. |
-| **VO** | ใบสั่งเปลี่ยนแปลงงาน | A formal change to the original contract scope, price, or timeline. Requires approval per the workflow in `15-event-driven-workflow` section 15.5. |
-| **Vendor** | ผู้ขาย/ซัพพลายเออร์ | A company supplying materials or subcontract services to the contractor. See `11-database-schema` Vendor entity. |
-| **Warranty** | การรับประกัน | Post-handover guarantee period during which the developer/contractor is responsible for defect repairs. |
-| **Workforce** | แรงงาน | Personnel working on a construction site. Includes FTE employees, daily labour, and subcontractor workers. Tracked via the Workforce (Site Attendance) entity. |
+| Term                    | Thai                         | Definition                                                                                                                                                                                                                                 |
+| ----------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **BOQ**                 | ใบรายการวัสดุและปริมาณงาน    | A document listing all materials, labour, and tasks required for a construction project, with estimated quantities and unit costs. The BOQ is the basis for procurement planning and budget tracking. See `11-database-schema` BOQ entity. |
+| **BIM**                 | แบบจำลองข้อมูลอาคาร          | Digital 3D model containing geometry and metadata for a building throughout its lifecycle. Full BIM integration is post-MVP.                                                                                                               |
+| **Contractor**          | ผู้รับเหมา                   | A company contracted to execute construction work. The primary user persona of this platform.                                                                                                                                              |
+| **Developer**           | ผู้พัฒนาอสังหาริมทรัพย์      | A company that acquires land and commissions construction projects for sale or lease.                                                                                                                                                      |
+| **Drawing Approval**    | การอนุมัติแบบ                | Formal sign-off on a construction drawing before work begins. Recorded as a Permit with `permit_type: drawing_approval`.                                                                                                                   |
+| **Earned Value**        | มูลค่างานที่ทำได้จริง        | The budgeted cost of work actually performed. Used to calculate cost and schedule variance.                                                                                                                                                |
+| **Equipment**           | เครื่องจักร/อุปกรณ์ก่อสร้าง  | Heavy machinery or tools used on site (e.g., crane, excavator, scaffolding). Tracked as an Equipment entity in the schema.                                                                                                                 |
+| **Facility Management** | การบริหารอาคาร               | Post-completion operations and maintenance of a building or property asset. Part of the Asset Lifecycle domain.                                                                                                                            |
+| **Handover**            | การส่งมอบ                    | Formal transfer of a completed unit or building from the contractor to the client or end customer. Triggers AssetHandedOver event.                                                                                                         |
+| **Inspection**          | การตรวจสอบ                   | On-site quality check against a defined checklist. Results are pass / fail / conditional. See `11-database-schema` Inspections entity.                                                                                                     |
+| **IoT**                 | อุปกรณ์เชื่อมต่ออินเทอร์เน็ต | Sensors and connected devices deployed on construction sites or in completed buildings. Post-MVP capability — Phase 24 (Digital Twin & IoT Layer); see `13-product-architecture` Layer 4 §13.5 and `33-digital-twin-iot`.                  |
+| **MEP**                 | งานระบบอาคาร                 | Mechanical, Electrical, and Plumbing systems in a building. A key inspection category.                                                                                                                                                     |
+| **Permit**              | ใบอนุญาต                     | An authorization document for a specific activity (work permit, safety permit, drawing approval, entry permit). See `11-database-schema` Permit entity.                                                                                    |
+| **Progress Update**     | รายงานความคืบหน้า            | A record of work completed against a task, expressed as `progress_percent` (0–100).                                                                                                                                                        |
+| **Procurement**         | การจัดซื้อจัดจ้าง            | The end-to-end process of sourcing and purchasing materials or services: PR → RFQ → Quotation → PO → Delivery → Vendor Invoice.                                                                                                            |
+| **QC**                  | การควบคุมคุณภาพ              | Systematic inspection and testing to ensure construction work meets specifications.                                                                                                                                                        |
+| **Rework**              | การแก้ไขงาน                  | Corrective work required due to quality defects. A key cost driver the platform aims to reduce.                                                                                                                                            |
+| **RFI**                 | การขอข้อมูล                  | A formal question raised by the site team about drawing specifications or design intent. Recorded as a Task with `work_type: rfi`.                                                                                                         |
+| **RFQ**                 | การขอใบเสนอราคา              | A formal request sent to vendors to submit price quotations for specified materials or services.                                                                                                                                           |
+| **Site Engineer**       | วิศวกรสนาม                   | The primary field-level role responsible for executing and reporting daily construction work.                                                                                                                                              |
+| **Site Report**         | รายงานประจำวันหน้างาน        | A daily record capturing weather, manpower count, work completed, and blockers. See `11-database-schema` Site Reports entity.                                                                                                              |
+| **Subcontractor**       | ผู้รับเหมาช่วง               | A specialist contractor hired by the main contractor to perform a specific scope of work.                                                                                                                                                  |
+| **Timesheet**           | ใบบันทึกชั่วโมงทำงาน         | Record of hours worked by an employee on a project. Captured via the Workforce (Site Attendance) entity.                                                                                                                                   |
+| **Unit**                | ยูนิต/ห้องชุด                | An individual sellable property within a building (e.g., condominium unit, townhouse). Tracked in the Unit entity.                                                                                                                         |
+| **VO**                  | ใบสั่งเปลี่ยนแปลงงาน         | A formal change to the original contract scope, price, or timeline. Requires approval per the workflow in `15-event-driven-workflow` section 15.5.                                                                                         |
+| **Vendor**              | ผู้ขาย/ซัพพลายเออร์          | A company supplying materials or subcontract services to the contractor. See `11-database-schema` Vendor entity.                                                                                                                           |
+| **Warranty**            | การรับประกัน                 | Post-handover guarantee period during which the developer/contractor is responsible for defect repairs.                                                                                                                                    |
+| **Workforce**           | แรงงาน                       | Personnel working on a construction site. Includes FTE employees, daily labour, and subcontractor workers. Tracked via the Workforce (Site Attendance) entity.                                                                             |
 
 > **BOQ** (Bill of Quantities) · **BIM** (Building Information Modeling) · **IoT** (Internet of Things)
 > · **QC** (Quality Control) · **RFI** (Request for Information) · **RFQ** (Request for Quotation)
@@ -72,17 +72,17 @@ within each group.
 
 ## Financial Terms
 
-| Term                         | Thai                | Definition                                                                                                                              |
-| ---------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **AP** (Accounts Payable)    | เจ้าหนี้การค้า          | Money the contractor owes to vendors for delivered goods or services. Recorded as `Procurement — Vendor Invoice` in the schema.         |
-| **AR** (Accounts Receivable) | ลูกหนี้การค้า           | Money owed to the contractor by clients for completed work. Recorded as `Financials — Billing` in the schema.                           |
-| **AR Receipt**               | ใบรับเงินลูกหนี้         | Record of an actual client payment received against a Billing invoice.                                                                  |
-| **Budget Line**              | บรรทัดงบประมาณ       | A line-item in the project budget, optionally linked to a BOQ item.                                                                     |
+| Term                         | Thai                  | Definition                                                                                                                              |
+| ---------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **AP** (Accounts Payable)    | เจ้าหนี้การค้า        | Money the contractor owes to vendors for delivered goods or services. Recorded as `Procurement — Vendor Invoice` in the schema.         |
+| **AR** (Accounts Receivable) | ลูกหนี้การค้า         | Money owed to the contractor by clients for completed work. Recorded as `Financials — Billing` in the schema.                           |
+| **AR Receipt**               | ใบรับเงินลูกหนี้      | Record of an actual client payment received against a Billing invoice.                                                                  |
+| **Budget Line**              | บรรทัดงบประมาณ        | A line-item in the project budget, optionally linked to a BOQ item.                                                                     |
 | **Cash Flow Forecast**       | การพยากรณ์กระแสเงินสด | Projected inflows and outflows over time, used to predict liquidity risk.                                                               |
-| **Cost Center**              | ศูนย์ต้นทุน             | An accounting unit that tracks costs for a specific project, department, or period.                                                     |
+| **Cost Center**              | ศูนย์ต้นทุน           | An accounting unit that tracks costs for a specific project, department, or period.                                                     |
 | **Cost Transaction**         | รายการต้นทุน          | An individual cost entry linked to its source (PO, Vendor Invoice, Attendance record, etc.).                                            |
 | **Retention**                | เงินประกันผลงาน       | A percentage of contract value withheld from payments until project completion or warranty expiry. See `Financials — Retention` entity. |
-| **WIP** (Work in Progress)   | งานระหว่างก่อสร้าง     | The value of partially completed work not yet billed. An accounting concept for revenue recognition.                                    |
+| **WIP** (Work in Progress)   | งานระหว่างก่อสร้าง    | The value of partially completed work not yet billed. An accounting concept for revenue recognition.                                    |
 
 ---
 
@@ -133,8 +133,8 @@ within each group.
 | **Temporal.io**                                     | Durable workflow orchestration engine. Used for approval workflows and post-MVP AI orchestration. See `04-tech-stack` section 4.4.                                                                          |
 | **TimescaleDB**                                     | PostgreSQL extension for time-series data. Used for telemetry and IoT sensor data. See `04-tech-stack` section 4.3.                                                                                         |
 | **WAL** (Write-Ahead Log)                           | PostgreSQL's durability mechanism. Debezium reads the WAL to detect data changes without impacting application writes.                                                                                      |
-| **Drizzle ORM (mobile offline DB)**                 | TypeScript ORM on expo-sqlite — offline database for the React Native mobile app (spec 17 §17.10). See `04-tech-stack` section 4.1.                                                                                                                |
-| **Evidently AI**                                    | Open-source, self-hosted MLOps tool for model/output evaluation and data/concept drift monitoring. Paired with MLflow (experiment tracking + registry). See `04-tech-stack` section 4.6.                                  |
+| **Drizzle ORM (mobile offline DB)**                 | TypeScript ORM on expo-sqlite — offline database for the React Native mobile app (spec 17 §17.10). See `04-tech-stack` section 4.1.                                                                         |
+| **Evidently AI**                                    | Open-source, self-hosted MLOps tool for model/output evaluation and data/concept drift monitoring. Paired with MLflow (experiment tracking + registry). See `04-tech-stack` section 4.6.                    |
 
 ---
 

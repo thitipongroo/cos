@@ -64,9 +64,9 @@ Stage 2 go-live (QM-18; `docs/architecture/tenant-scale-limits.md`).
   standard migration (logical replication / dump-restore of hypertables). Defining the
   trigger now means the split is a planned, data-driven action rather than an emergency.
 - **Alternatives rejected:**
-  - *Dedicated instance from day one* — rejected: cost/ops overhead without evidence of
+  - _Dedicated instance from day one_ — rejected: cost/ops overhead without evidence of
     need; contradicts spec's "extension" classification and master's "same instance".
-  - *Never split* — rejected: at high IoT scale (Phase 21+) telemetry ingestion can
+  - _Never split_ — rejected: at high IoT scale (Phase 21+) telemetry ingestion can
     contend with OLTP; the trigger guards the OLTP latency SLO.
 
 ## Consequences

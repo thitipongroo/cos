@@ -16,7 +16,7 @@ Two related problems were found while bringing the multi-tenant request pipeline
    from the validated JWT (`req.user`). But NestJS executes **middleware before guards**
    ([request lifecycle](https://docs.nestjs.com/faq/request-lifecycle)), and the Passport
    `JwtAuthGuard` is what assigns the strategy's `validate()` return to `req.user`. So the
-   middleware always ran *before* `req.user` existed → every authenticated request failed
+   middleware always ran _before_ `req.user` existed → every authenticated request failed
    with "Missing tenant context". Under the Fastify adapter the middleware additionally
    received the raw Node request (`req.path` undefined), compounding the breakage.
 
@@ -24,7 +24,7 @@ Two related problems were found while bringing the multi-tenant request pipeline
    but the application connected as `cos` — a **superuser and table owner**, which **bypasses
    RLS** (owner/superuser are exempt even under `FORCE ROW LEVEL SECURITY`). Tenant isolation
    therefore relied solely on application-layer `WHERE tenant_id` filters; the RLS layer
-   specified as the *primary* isolation mechanism (§7.7) was inert. The `app_user` role also
+   specified as the _primary_ isolation mechanism (§7.7) was inert. The `app_user` role also
    had no `LOGIN`/password and was granted on only 9 of 15 domain schemas.
 
 External research (AWS SaaS Factory, NestJS docs, Prisma RLS extension, Citus, PlanetScale,
@@ -39,11 +39,11 @@ auth** and **connect as a non-owner role so RLS applies**.
      `AuthenticatedUser` (→ `req.user`).
    - A global `TenantContextInterceptor` projects `req.user.*` onto
      `req.{tenantId, userId, userRole, tenantCode, dedicatedDbUrl}` before the handler.
-     *(Unreliable under the Fastify adapter — see Update 2026-06-26.)*
+     _(Unreliable under the Fastify adapter — see Update 2026-06-26.)_
    - `TenantPrismaService` (request-scoped) reads the context **lazily in `run()`** (request-
      scoped providers are constructed before guards run, so it cannot read it in the
      constructor) and wraps each call in a transaction with `SET LOCAL app.current_tenant_id`.
-     *(Now a singleton reading CLS — see Update 2026-06-26.)*
+     _(Now a singleton reading CLS — see Update 2026-06-26.)_
    - `TenantMiddleware` is no longer registered (kept only for the `TenantRequest` type + its
      unit tests).
 
@@ -56,7 +56,7 @@ auth** and **connect as a non-owner role so RLS applies**.
    `rls_tenant_isolation` (migration `20260623000002` consolidates three legacy conventions —
    `tenant_isolation` AS RESTRICTIVE, `rls_tenant_isolation` AS PERMISSIVE, and
    `<table>_tenant_isolation` AS PERMISSIVE — into this single form). Rationale: PostgreSQL
-   combines PERMISSIVE policies with OR and RESTRICTIVE with AND, but a *lone* RESTRICTIVE policy
+   combines PERMISSIVE policies with OR and RESTRICTIVE with AND, but a _lone_ RESTRICTIVE policy
    grants no access (RESTRICTIVE narrows, never grants) — so the spec's original `AS RESTRICTIVE`
    single-policy template would have denied every row; it only worked because a redundant
    PERMISSIVE duplicate happened to grant access. With one policy per table the OR/AND distinction
@@ -95,7 +95,7 @@ auth** and **connect as a non-owner role so RLS applies**.
 ### Neutral
 
 - Behaviour/outcomes of §7.7 (active-tenant check, `dedicatedDbUrl ?? shared`, RLS,
-  `platform.*` on shared DB) are preserved; only the *mechanism* (where resolution runs and
+  `platform.*` on shared DB) are preserved; only the _mechanism_ (where resolution runs and
   which role connects) changed.
 - RLS policies read the tenant GUC as `NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid`
   so a missing/empty GUC yields zero rows instead of an `invalid input syntax for uuid` error
@@ -132,7 +132,7 @@ request-scoped providers. Every authenticated tenant-scoped call still failed wi
 
 What did **not** change: the `app_user` / `cos` split (Decision §2), the single PERMISSIVE
 `rls_tenant_isolation` policy (Decision §3), and the `SET LOCAL app.current_tenant_id` mechanism — only
-*how* the resolved context travels from the guard to `TenantPrismaService` (CLS instead of the cloned
+_how_ the resolved context travels from the guard to `TenantPrismaService` (CLS instead of the cloned
 request). Coverage: `tenant-prisma.service`, `jwt-auth.guard`, `cls-context`, and the touched
 controllers are at 100% line/branch.
 

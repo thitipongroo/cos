@@ -11,11 +11,11 @@
 
 COS runs on Kubernetes in three contexts. Two are specified; one is **UNSPECIFIED**:
 
-| Context | K8s provisioning | Source |
-| --- | --- | --- |
-| Cloud (Shared SaaS / Dedicated Tenant) | **AWS EKS** (managed control plane) | `04-tech-stack` §4.7; `08-enterprise-deployment` §8.1–8.3 |
-| Dev | **k3s** (single-node; k3d on macOS/Windows) | `context/00_master_construction_os.md` (dev deploy) |
-| **Production on-premise / Fully On-prem** | **UNSPECIFIED** — spec requires "Kubernetes worker nodes, 3-node HA cluster" + Helm + ArgoCD, but **does not name a distribution or installer** | `08-enterprise-deployment` §8.4–8.6 |
+| Context                                   | K8s provisioning                                                                                                                                | Source                                                    |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Cloud (Shared SaaS / Dedicated Tenant)    | **AWS EKS** (managed control plane)                                                                                                             | `04-tech-stack` §4.7; `08-enterprise-deployment` §8.1–8.3 |
+| Dev                                       | **k3s** (single-node; k3d on macOS/Windows)                                                                                                     | `context/00_master_construction_os.md` (dev deploy)       |
+| **Production on-premise / Fully On-prem** | **UNSPECIFIED** — spec requires "Kubernetes worker nodes, 3-node HA cluster" + Helm + ArgoCD, but **does not name a distribution or installer** | `08-enterprise-deployment` §8.4–8.6                       |
 
 For Fully On-premise / sovereign deployments there is no managed control plane (no EKS). Someone must
 provision and operate the control plane (API server, etcd, scheduler, controller-manager) themselves.
@@ -64,14 +64,14 @@ POC'd at all**. Therefore:
 
 ### Candidates (all CNCF-conformant; license noted)
 
-| Distro / installer | License / cost | Notes |
-| --- | --- | --- |
-| **RKE2** (SUSE/Rancher) | Apache-2.0 (free); optional paid SUSE support | CIS-hardened + FIPS by default, strong air-gap tooling, embedded-etcd HA — common in gov/regulated on-prem |
-| **k3s** | Apache-2.0 (free); optional paid SUSE support | Lightweight, embedded-etcd HA, air-gap support; **already used in COS dev** (in-house familiarity) |
-| **kubeadm** (upstream) | free (vanilla) | Max flexibility, official; most manual ops (you wire HA/etcd/upgrades yourself) |
-| **Talos Linux** | free (MPL-2.0); optional paid support | Immutable, API-managed OS; very secure; steeper learning curve (no SSH) |
-| **kubespray** | free (Apache-2.0) | Ansible-based vanilla K8s; flexible; ops via Ansible playbooks |
-| **OpenShift** (Red Hat) | **commercial (paid subscription)** | Enterprise support + opinionated platform; conflicts with the OSS-preference baseline but valid if a customer mandates Red Hat support |
+| Distro / installer      | License / cost                                | Notes                                                                                                                                  |
+| ----------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| **RKE2** (SUSE/Rancher) | Apache-2.0 (free); optional paid SUSE support | CIS-hardened + FIPS by default, strong air-gap tooling, embedded-etcd HA — common in gov/regulated on-prem                             |
+| **k3s**                 | Apache-2.0 (free); optional paid SUSE support | Lightweight, embedded-etcd HA, air-gap support; **already used in COS dev** (in-house familiarity)                                     |
+| **kubeadm** (upstream)  | free (vanilla)                                | Max flexibility, official; most manual ops (you wire HA/etcd/upgrades yourself)                                                        |
+| **Talos Linux**         | free (MPL-2.0); optional paid support         | Immutable, API-managed OS; very secure; steeper learning curve (no SSH)                                                                |
+| **kubespray**           | free (Apache-2.0)                             | Ansible-based vanilla K8s; flexible; ops via Ansible playbooks                                                                         |
+| **OpenShift** (Red Hat) | **commercial (paid subscription)**            | Enterprise support + opinionated platform; conflicts with the OSS-preference baseline but valid if a customer mandates Red Hat support |
 
 ### Evaluation rubric (apply before committing — rank each candidate)
 

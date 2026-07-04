@@ -243,12 +243,12 @@ THB 21.5M. Vietnam PDPA effective July 2026. Opt-out or mandatory models carry r
 **Decision:** Platform stewardship with contributor attribution.
 **Resolved:** 2026-06-10
 
-| Scope                   | Ownership                                                         |
-| ----------------------- | ----------------------------------------------------------------- |
-| Individual project data | Tenant owns; platform is data processor under signed DPA          |
-| Anonymised aggregate    | Platform stewards; contributors retain attribution credit         |
-| Derived benchmarks      | Platform owns; available to all opted-in contributors as benefit  |
-| Raw tenant data         | Never shared; only anonymised aggregates cross tenant boundaries  |
+| Scope                   | Ownership                                                        |
+| ----------------------- | ---------------------------------------------------------------- |
+| Individual project data | Tenant owns; platform is data processor under signed DPA         |
+| Anonymised aggregate    | Platform stewards; contributors retain attribution credit        |
+| Derived benchmarks      | Platform owns; available to all opted-in contributors as benefit |
+| Raw tenant data         | Never shared; only anonymised aggregates cross tenant boundaries |
 
 **Data Processing Agreement (DPA):** Required before tenant data enters the benchmark pool.
 DPA specifies: legal basis, anonymisation method, retention period, and withdrawal rights
@@ -261,14 +261,14 @@ per PDPA §37.
 **Decision:** Multi-source with confidence-weighted scoring.
 **Resolved:** 2026-06-10
 
-| Source                                    | Type         | Weight |
-| ----------------------------------------- | ------------ | ------ |
-| Dodge Analytics                           | External API | 0.90   |
-| RS Means (Gordian)                        | External API | 0.90   |
-| Bank of Thailand (BoT) price indices      | External API | 0.85   |
-| Building & Construction Authority (BCA)   | External API | 0.85   |
-| DOST / national statistics (VN, SEA)      | External API | 0.80   |
-| Platform tenant data (opt-in)             | Internal     | 1.00   |
+| Source                                  | Type         | Weight |
+| --------------------------------------- | ------------ | ------ |
+| Dodge Analytics                         | External API | 0.90   |
+| RS Means (Gordian)                      | External API | 0.90   |
+| Bank of Thailand (BoT) price indices    | External API | 0.85   |
+| Building & Construction Authority (BCA) | External API | 0.85   |
+| DOST / national statistics (VN, SEA)    | External API | 0.80   |
+| Platform tenant data (opt-in)           | Internal     | 1.00   |
 
 Composite confidence: `weighted_avg(source_weight × recency_decay)`. Data older than 90 days
 reduces source weight by 15% per additional 30-day period.
@@ -338,8 +338,8 @@ backend/prisma/rollbacks/<migration-timestamp-and-name>.rollback.sql
 
 Naming convention — mirror the migration directory name exactly:
 
-| Migration file path | Rollback file path |
-| --- | --- |
+| Migration file path                           | Rollback file path                          |
+| --------------------------------------------- | ------------------------------------------- |
 | `migrations/<timestamp>_<name>/migration.sql` | `rollbacks/<timestamp>_<name>.rollback.sql` |
 
 `<name>` **must** be `<action>_<subject>` describing the change (e.g. `add_phone_number_to_users`,
@@ -364,17 +364,17 @@ CI gate.
 Migrations must never break the currently-deployed version of the application while running.
 The following table defines allowed and prohibited operations:
 
-| Operation | Rule |
-| --- | --- |
-| Add column | ✅ Allowed — add as `NULL` first; backfill; add `NOT NULL` constraint in a later migration |
-| Rename column | ❌ Prohibited in a single migration — add new + copy data + drop old (3 separate migrations) |
-| Change column type | ❌ Prohibited directly — create new column, migrate data, drop old in 3 separate migrations |
-| Drop column | ❌ Prohibited while any deployed code references the column; requires deprecation period |
-| Add index | ✅ Allowed — use `CREATE INDEX CONCURRENTLY` to avoid table lock |
-| Drop index | ✅ Allowed — use `DROP INDEX CONCURRENTLY` |
-| Add foreign key | ✅ Allowed — add as `NOT VALID` first; validate in a subsequent migration |
-| Truncate table | ❌ Prohibited on any table with live data |
-| Rename table | ❌ Prohibited — requires view + rename + view drop across 3 migrations |
+| Operation          | Rule                                                                                         |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| Add column         | ✅ Allowed — add as `NULL` first; backfill; add `NOT NULL` constraint in a later migration   |
+| Rename column      | ❌ Prohibited in a single migration — add new + copy data + drop old (3 separate migrations) |
+| Change column type | ❌ Prohibited directly — create new column, migrate data, drop old in 3 separate migrations  |
+| Drop column        | ❌ Prohibited while any deployed code references the column; requires deprecation period     |
+| Add index          | ✅ Allowed — use `CREATE INDEX CONCURRENTLY` to avoid table lock                             |
+| Drop index         | ✅ Allowed — use `DROP INDEX CONCURRENTLY`                                                   |
+| Add foreign key    | ✅ Allowed — add as `NOT VALID` first; validate in a subsequent migration                    |
+| Truncate table     | ❌ Prohibited on any table with live data                                                    |
+| Rename table       | ❌ Prohibited — requires view + rename + view drop across 3 migrations                       |
 
 ### 9.7.3 RLS Migration Rules
 

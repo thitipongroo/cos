@@ -5,8 +5,10 @@
 import { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { database } from '../db/database';
-import Photo, { PhotoEntityType } from '../db/models/Photo';
+import { db, newLocalId } from '../db/database';
+import type { PhotoEntityType } from '../db/database';
+import { localPhotos } from '../db/schema';
+import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
 
 interface PhotoCaptureProps {

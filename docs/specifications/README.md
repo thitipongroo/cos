@@ -22,13 +22,13 @@ related_docs:
 ## What Is This?
 
 This is the master architecture specification suite for the **Construction Operating System (Construction OS)** — an
- AI-native, multi-tenant SaaS platform for the construction and real estate industry, built first for the Thai and
- Southeast Asian market.
+AI-native, multi-tenant SaaS platform for the construction and real estate industry, built first for the Thai and
+Southeast Asian market.
 
 These 35 documents cover everything from business architecture and data models to API contracts, security, AI layers,
- and go-to-market strategy. New team members should start with the [Reading Order](#reading-and-development-order) for
- their role. Developers building the MVP should read [03-system-design](03-system-design.md) and
- [21-mvp-scope](21-mvp-scope.md) first.
+and go-to-market strategy. New team members should start with the [Reading Order](#reading-and-development-order) for
+their role. Developers building the MVP should read [03-system-design](03-system-design.md) and
+[21-mvp-scope](21-mvp-scope.md) first.
 
 ---
 
@@ -115,8 +115,8 @@ in files 14–19.
 **Phase 1 — Foundation** (00–08) : system topology, infrastructure decisions, security, permissions
 
 [00](00-executive-overview.md) → [01](01-business-architecture.md) → [02](02-system-wide-integration.md) →
- [03](03-system-design.md) → [04](04-tech-stack.md) → [05](05-security-compliance.md) → [06](06-rbac-permission-matrix.md)
- → [07](07-multi-tenant-architecture.md) → [08](08-enterprise-deployment.md)
+[03](03-system-design.md) → [04](04-tech-stack.md) → [05](05-security-compliance.md) → [06](06-rbac-permission-matrix.md)
+→ [07](07-multi-tenant-architecture.md) → [08](08-enterprise-deployment.md)
 
 **Phase 2 — Data & Domain Model** (09–12) : what data exists, how it's stored, how it relates
 
@@ -125,7 +125,7 @@ in files 14–19.
 **Phase 3 — Platform Capabilities** (13–19) : APIs, events, offline, scaling, notifications
 
 [13](13-product-architecture.md) → [14](14-api-architecture.md) → [15](15-event-driven-workflow.md)
- → [16](16-enterprise-event-flow.md) → [17](17-offline-mobile-sync.md) → [18](18-enterprise-saas-scaling.md) → [19](19-notification-architecture.md)
+→ [16](16-enterprise-event-flow.md) → [17](17-offline-mobile-sync.md) → [18](18-enterprise-saas-scaling.md) → [19](19-notification-architecture.md)
 
 **Phase 4 — UX & Product Scope** (20–21) : who uses it, what ships in MVP
 
@@ -144,22 +144,22 @@ in files 14–19.
 ## Reading Order by Role
 
 **First-Time Readers:** [00](00-executive-overview.md) → [01](01-business-architecture.md) → [02](02-system-wide-integration.md)
- → [03](03-system-design.md) → [20](20-ux-flow.md)
+→ [03](03-system-design.md) → [20](20-ux-flow.md)
 
 > Vision and business context → full end-to-end lifecycle → system topology → who uses it.
 
 **Engineering:** [03](03-system-design.md) → [21](21-mvp-scope.md) → [04](04-tech-stack.md) → [09](09-data-architecture.md)
- → [10](10-construction-ontology.md) → [11](11-database-schema.md) → [12](12-construction-knowledge-graph.md) → [07](07-multi-tenant-architecture.md)
- → [14](14-api-architecture.md) → [08](08-enterprise-deployment.md) → [05](05-security-compliance.md) → [06](06-rbac-permission-matrix.md)
- → [15](15-event-driven-workflow.md) → [16](16-enterprise-event-flow.md) → [17](17-offline-mobile-sync.md) → [19](19-notification-architecture.md)
- → [18](18-enterprise-saas-scaling.md)
+→ [10](10-construction-ontology.md) → [11](11-database-schema.md) → [12](12-construction-knowledge-graph.md) → [07](07-multi-tenant-architecture.md)
+→ [14](14-api-architecture.md) → [08](08-enterprise-deployment.md) → [05](05-security-compliance.md) → [06](06-rbac-permission-matrix.md)
+→ [15](15-event-driven-workflow.md) → [16](16-enterprise-event-flow.md) → [17](17-offline-mobile-sync.md) → [19](19-notification-architecture.md)
+→ [18](18-enterprise-saas-scaling.md)
 
 **AI/ML:** [09](09-data-architecture.md) → [10](10-construction-ontology.md) → [22](22-ai-architecture.md) → [23](23-ai-native-operating-model.md)
- → [24](24-ai-training-pipeline.md) → [12](12-construction-knowledge-graph.md)
+→ [24](24-ai-training-pipeline.md) → [12](12-construction-knowledge-graph.md)
 
 **Product/Strategy:** [01](01-business-architecture.md) → [13](13-product-architecture.md) → [20](20-ux-flow.md) → [21](21-mvp-scope.md)
- → [25](25-go-to-market.md) → [26](26-pricing-model.md) → [08](08-enterprise-deployment.md) → [27](27-long-term-moat.md)
- → [28](28-ecosystem-expansion.md) → [29](29-final-strategic-positioning.md)
+→ [25](25-go-to-market.md) → [26](26-pricing-model.md) → [08](08-enterprise-deployment.md) → [27](27-long-term-moat.md)
+→ [28](28-ecosystem-expansion.md) → [29](29-final-strategic-positioning.md)
 
 ---
 
@@ -180,7 +180,7 @@ in files 14–19.
 | **Total**                          | **35** | **35** | **0** |
 
 Status Legend: **Active** = approved for implementation reference · **Review** = complete, pending
- team sign-off · **Draft** = in progress, not final
+team sign-off · **Draft** = in progress, not final
 
 ---
 

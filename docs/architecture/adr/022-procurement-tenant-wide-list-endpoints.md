@@ -76,7 +76,7 @@ convention and §14's resource hierarchy:
 
 - All RFQ / PO / quotation / lifecycle routes re-prefixed to `/api/v1/procurement/*`.
 - Create + delivery + invoice flattened to tenant-level per §14 (`POST /procurement/
-  purchase-requests|rfqs|purchase-orders`, `POST /procurement/deliveries`,
+purchase-requests|rfqs|purchase-orders`, `POST /procurement/deliveries`,
   `POST /procurement/vendor-invoices`), with `po_id`/`project_id` carried in the body.
 - Project-scoped list routes (`/api/v1/projects/:projectId/...`) were **removed**;
   per-project views use the tenant-wide lists with `?project_id=`.

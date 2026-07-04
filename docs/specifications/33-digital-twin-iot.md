@@ -72,7 +72,7 @@ capability per the SaaS Maturity Model in 32-implementation-specifications secti
 
 - Hardware manufacturing or device firmware (platform integrates with third-party IoT devices)
 - BIM authoring tools (platform consumes BIM data via IFC.js parser, IFC format ISO 16739-1:2018;
- see `13-product-architecture` §13.4)
+  see `13-product-architecture` §13.4)
 - Autonomous construction control (humans remain in the loop for all physical actions)
 
 > ⚠️ **Stage gate:** Phase 24 may not begin until Phase 4 (Financial Infrastructure,
@@ -237,14 +237,14 @@ Aggregated daily summaries retained indefinitely (ClickHouse).
 **Carbon factor library:** Maintained as a configurable reference table per tenant.
 
 - Emission factors follow **EN 15804:2012+A2:2019** (Europe) / **ISO 21930:2017** (international) — life cycle module
- **A1–A3** (raw material supply + transport to manufacturer + manufacturing). These modules define embodied carbon for
+  **A1–A3** (raw material supply + transport to manufacturer + manufacturing). These modules define embodied carbon for
   construction materials.
 - Carbon factor unit: **kgCO₂e per declared unit** (e.g., per kg, per m³, per piece — matching the EPD's declared unit
- for that material).
+  for that material).
 - Source of factors: EPD programme operators (e.g., EPD International, IBU, BRE) or national inventory data compliant
- with **ISO 14064-1:2018**.
+  with **ISO 14064-1:2018**.
 - Factors are configurable per tenant and per material. The platform does not ship a pre-loaded factor database — tenants
- load factors from their chosen EPD source.
+  load factors from their chosen EPD source.
 - `carbon_factor_source` MUST be recorded for every factor used to enable audit trail.
 
 **Carbon Reporting Framework — GHG Protocol:**
@@ -357,7 +357,7 @@ queries TimescaleDB directly.
 **Implementation rule:**
 
 - BIM Integration — spec defined (IFC.js parser, IFC format, see `13-product-architecture` §13.4). **Must be implemented**
- before Phase 24 begins.
+  before Phase 24 begins.
 - IoT Device Integration — must be provisioned as a stub (safe defaults) from Phase 21 onward.
   The Digital Twin Service must compile and start with this stub returning safe defaults before
   the integration is live. See `32-implementation-specifications` §32.9 for stub pattern.
@@ -436,7 +436,7 @@ The Phase 24 planning gate is triggered when both conditions are met:
 **Owner:** thitipongroo
 
 28-ecosystem-expansion §28.4 defines metrics for Phases 1–4 only. No Phase 5 (Smart Infrastructure) metrics are specified
- in this document.
+in this document.
 
 Metrics MUST be defined before Phase 24 begins, covering at minimum:
 
@@ -467,7 +467,8 @@ Metrics MUST be defined before Phase 24 begins, covering at minimum:
 "Information Management". Platform ontology aligns with this shift. Final publication ~2027.
 
 **CORENET-X:** Full mandate for ALL Singapore projects from October 1, 2026 (previously
->30,000 m² only). BIM Integration module must emit CORENET-X-compatible IFC output.
+
+> 30,000 m² only). BIM Integration module must emit CORENET-X-compatible IFC output.
 
 ---
 

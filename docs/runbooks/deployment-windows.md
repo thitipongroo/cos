@@ -14,21 +14,21 @@ All times are in **ICT (UTC+7)** — Thailand timezone, the primary operational 
 
 ### Regular windows (weekly)
 
-| Day | Window (ICT) | Window (UTC) | Notes |
-|-----|-------------|-------------|-------|
-| Tuesday | 22:00 – 00:00 | 15:00 – 17:00 UTC | Low site-ops traffic (evening after field hours) |
+| Day      | Window (ICT)  | Window (UTC)      | Notes                                            |
+| -------- | ------------- | ----------------- | ------------------------------------------------ |
+| Tuesday  | 22:00 – 00:00 | 15:00 – 17:00 UTC | Low site-ops traffic (evening after field hours) |
 | Thursday | 22:00 – 00:00 | 15:00 – 17:00 UTC | Low site-ops traffic (evening after field hours) |
-| Saturday | 10:00 – 14:00 | 03:00 – 07:00 UTC | Weekend — lowest usage; extended window |
+| Saturday | 10:00 – 14:00 | 03:00 – 07:00 UTC | Weekend — lowest usage; extended window          |
 
 ### Blackout periods (no deployments)
 
-| Period | Reason |
-|--------|--------|
-| Thai public holidays | High field crew activity; no deployment support available |
-| Monday 06:00–18:00 ICT | Peak weekly construction planning meetings |
-| Last business day of month | Finance close; high finance module usage |
-| During active P0 / P1 incident | Freeze all non-incident deployments until resolved |
-| During DR drill | Per QM-12 DR drill procedure |
+| Period                         | Reason                                                    |
+| ------------------------------ | --------------------------------------------------------- |
+| Thai public holidays           | High field crew activity; no deployment support available |
+| Monday 06:00–18:00 ICT         | Peak weekly construction planning meetings                |
+| Last business day of month     | Finance close; high finance module usage                  |
+| During active P0 / P1 incident | Freeze all non-incident deployments until resolved        |
+| During DR drill                | Per QM-12 DR drill procedure                              |
 
 ### Pre-major release window
 
@@ -66,28 +66,28 @@ within 24 hours of the deployment.
 
 ## Deployment runbooks by release type
 
-| Release type | Runbook location | Window required |
-|-------------|-----------------|----------------|
-| Standard rolling update | `docs/runbooks/deployment.md` | Tue / Thu / Sat window |
-| Major version (blue-green) | `docs/runbooks/releases/` | Saturday window only |
-| Database migration | `docs/runbooks/deployment.md` §database | Tue / Thu / Sat window |
-| Emergency hotfix | `docs/runbooks/incident-response.md` §hotfix | Any time — product owner approval required |
-| Stage transition | `docs/runbooks/production-readiness.md` | Product owner scheduled — Saturday window |
+| Release type               | Runbook location                             | Window required                            |
+| -------------------------- | -------------------------------------------- | ------------------------------------------ |
+| Standard rolling update    | `docs/runbooks/deployment.md`                | Tue / Thu / Sat window                     |
+| Major version (blue-green) | `docs/runbooks/releases/`                    | Saturday window only                       |
+| Database migration         | `docs/runbooks/deployment.md` §database      | Tue / Thu / Sat window                     |
+| Emergency hotfix           | `docs/runbooks/incident-response.md` §hotfix | Any time — product owner approval required |
+| Stage transition           | `docs/runbooks/production-readiness.md`      | Product owner scheduled — Saturday window  |
 
 ---
 
 ## History
 
-| Date (ICT) | Release | Type | Outcome | Notes |
-|------------|---------|------|---------|-------|
-| _(no production deployments yet — Stage 1 BUILD)_ | | | | |
+| Date (ICT)                                        | Release | Type | Outcome | Notes |
+| ------------------------------------------------- | ------- | ---- | ------- | ----- |
+| _(no production deployments yet — Stage 1 BUILD)_ |         |      |         |       |
 
 ---
 
 ## Review schedule
 
-| Trigger | Action |
-|---------|--------|
-| Thai public holidays update (annually, October) | Update blackout period list for the following year |
-| Stage 1 → Stage 2 | Confirm tenant count supports longer notification lead times |
-| After any deployment incident | Review whether window or process contributed; update if needed |
+| Trigger                                         | Action                                                         |
+| ----------------------------------------------- | -------------------------------------------------------------- |
+| Thai public holidays update (annually, October) | Update blackout period list for the following year             |
+| Stage 1 → Stage 2                               | Confirm tenant count supports longer notification lead times   |
+| After any deployment incident                   | Review whether window or process contributed; update if needed |

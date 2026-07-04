@@ -110,12 +110,12 @@ and human-in-the-loop escalation (COORD-001).
 Maps the oversight committee decided in `22 §22.7` (product owner + 2 construction domain experts +
 1 AI safety lead; experts rotate annually) to ISO/IEC 42001 roles:
 
-| Role | Who (per `22 §22.7`) | ISO 42001 mapping | Responsibility |
-| ---- | -------------------- | ----------------- | -------------- |
-| **Responsible AI Officer** | AI safety lead (permanent) | AIMS manager | Accountable to product owner; approves higher-autonomy features before ship; owns the AIMS |
-| **Oversight committee** | the full committee (`22 §22.7`) | Top management | Sets AI policy; runs the quarterly AI behavior audit; reviews new AI capabilities; resolves escalations |
-| **Domain focal points** | the rotating construction domain experts, per domain | Risk owners | First-line AI risk assessment; escalate to the committee |
-| **Internal audit** | — | Internal auditors | Periodic AIMS conformance + control audit |
+| Role                       | Who (per `22 §22.7`)                                 | ISO 42001 mapping | Responsibility                                                                                          |
+| -------------------------- | ---------------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------- |
+| **Responsible AI Officer** | AI safety lead (permanent)                           | AIMS manager      | Accountable to product owner; approves higher-autonomy features before ship; owns the AIMS              |
+| **Oversight committee**    | the full committee (`22 §22.7`)                      | Top management    | Sets AI policy; runs the quarterly AI behavior audit; reviews new AI capabilities; resolves escalations |
+| **Domain focal points**    | the rotating construction domain experts, per domain | Risk owners       | First-line AI risk assessment; escalate to the committee                                                |
+| **Internal audit**         | —                                                    | Internal auditors | Periodic AIMS conformance + control audit                                                               |
 
 ### Tiered human oversight (EU AI Act Art 14 / NIST AI RMF GOVERN 3.2)
 

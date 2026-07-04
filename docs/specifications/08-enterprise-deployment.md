@@ -321,16 +321,16 @@ Dockerfile that meets all of the following:
 - **Non-root user** — final stage runs as `cosuser` (UID 1001, GID 1001)
 - **HEALTHCHECK** — every Dockerfile must include a `HEALTHCHECK` instruction
 
-| Service             | Dockerfile path                           | Build pattern                                               |
-| ------------------- | ----------------------------------------- | ----------------------------------------------------------- |
-| Main Application    | `backend/Dockerfile`                      | Node.js: `base → deps → builder → runner`                   |
-| File Service        | `services/file-service/Dockerfile`        | Node.js: `builder → runner`                                 |
-| AI Gateway          | `services/ai-gateway/Dockerfile`          | Python: builder installs venv; runner copies venv only      |
-| AI Embedding Worker | `services/ai-embedding-worker/Dockerfile` | Python: builder installs venv; runner copies venv only      |
-| AI OCR Pipeline     | `services/ai-ocr-pipeline/Dockerfile`     | Python: builder installs venv; runner copies venv only      |
-| Analytics Worker    | `services/analytics-worker/Dockerfile`    | Go: builder compiles binary; alpine runner                  |
-| KG Ingestion Worker | `services/kg-ingestion-worker/Dockerfile` | Go: builder compiles binary; alpine runner                  |
-| Web App             | `apps/web/Dockerfile`                     | Next.js: `deps → builder → runner` (see note below)         |
+| Service             | Dockerfile path                           | Build pattern                                          |
+| ------------------- | ----------------------------------------- | ------------------------------------------------------ |
+| Main Application    | `backend/Dockerfile`                      | Node.js: `base → deps → builder → runner`              |
+| File Service        | `services/file-service/Dockerfile`        | Node.js: `builder → runner`                            |
+| AI Gateway          | `services/ai-gateway/Dockerfile`          | Python: builder installs venv; runner copies venv only |
+| AI Embedding Worker | `services/ai-embedding-worker/Dockerfile` | Python: builder installs venv; runner copies venv only |
+| AI OCR Pipeline     | `services/ai-ocr-pipeline/Dockerfile`     | Python: builder installs venv; runner copies venv only |
+| Analytics Worker    | `services/analytics-worker/Dockerfile`    | Go: builder compiles binary; alpine runner             |
+| KG Ingestion Worker | `services/kg-ingestion-worker/Dockerfile` | Go: builder compiles binary; alpine runner             |
+| Web App             | `apps/web/Dockerfile`                     | Next.js: `deps → builder → runner` (see note below)    |
 
 Mobile (`apps/mobile/`) uses **Expo EAS Build** — no Dockerfile is required or permitted.
 

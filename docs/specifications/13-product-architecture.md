@@ -181,7 +181,7 @@ WHT is calculated as a hook inside the Avalara AvaTax flow. WHT certificate refe
 ### ERP Integration — Strategy Pattern
 
 **Decision:** Strategy pattern with a common `ERPIntegration` interface and one concrete adapter per ERP system.
- Each ERP system has its own STUB pending a real customer onboarding with that system.
+Each ERP system has its own STUB pending a real customer onboarding with that system.
 
 **Common interface (all adapters implement this):**
 
@@ -213,7 +213,7 @@ For stub implementation behaviour (Type A — fail-fast), see `32-implementation
 ### CRM Integration — Strategy Pattern
 
 **Decision:** Generic webhook receiver + per-CRM field mapper (Strategy pattern). Each CRM system has its own STUB pending
- a real tenant that uses that CRM.
+a real tenant that uses that CRM.
 
 **Data flow (one direction only — CRM → COS):**
 
@@ -284,7 +284,7 @@ interface BIMQuantities {
 
 1. IFC.js (open-source parser — `@thatopen/engine` or `web-ifc`) — platform-agnostic, handles all BIM software
 2. Autodesk Forge API / Trimble Connect API — optional vendor-specific connectors (add only if a tenant requires
- cloud-based BIM platform sync)
+   cloud-based BIM platform sync)
 
 Both integration points ship as stubs until a tenant requests IFC import.
 For stub implementation behaviour (Type A — fail-fast), see `32-implementation-specifications` §32.9.
@@ -308,7 +308,7 @@ Quota tracked via Kong usage plans plugin; metering data fed to ClickHouse for b
 **Per-API-key quota (marketplace integrations):**
 
 Each OAuth2 client credentials API key is subject to an additional per-key monthly cap, independent of the tenant total.
- No single key may consume more than 20% of the tenant's monthly quota.
+No single key may consume more than 20% of the tenant's monthly quota.
 
 | Tier       | Per-API-key monthly limit                    | Overage action                    |
 | ---------- | -------------------------------------------- | --------------------------------- |
@@ -357,7 +357,7 @@ type BiometricMethod = 'FINGERPRINT' | 'FACE_ID' | 'IRIS';
 ```
 
 Vendor SDK is injected via DI at deployment time. No vendor is selected at the platform level — each site configures their
- vendor adapter. Credentials and SDK config stored per-site in AWS Secrets Manager / Vault.
+vendor adapter. Credentials and SDK config stored per-site in AWS Secrets Manager / Vault.
 
 ---
 

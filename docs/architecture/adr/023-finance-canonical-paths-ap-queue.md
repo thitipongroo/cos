@@ -16,7 +16,8 @@ tenant-wide views, but the Phase 7 Finance implementation was **project-scoped**
 `/api/v1/finance/*`. Several §20.7.4 needs had no backend endpoint: a tenant-wide
 payments (AP) queue and a tenant-wide vendor-invoice list. §14's Financial table was
 itself inconsistent — missing the implemented variance report and listing AR `billing`
-+ `cashflow-forecast` that were never built.
+
+- `cashflow-forecast` that were never built.
 
 A research review of procure-to-pay / 3-way-match practice (Tradogram, NetSuite, GEP,
 Tipalti) confirmed: the **vendor invoice belongs to the procurement→AP boundary**

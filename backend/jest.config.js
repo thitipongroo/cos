@@ -89,5 +89,7 @@ module.exports = {
     '^@cos/validation/(.*)$': '<rootDir>/../packages/@cos/validation/src/$1',
     '^@cos/database$': '<rootDir>/../packages/@cos/database/src/index.ts',
     '^@cos/database/(.*)$': '<rootDir>/../packages/@cos/database/src/$1',
+    '^@cos/test-utils$': '<rootDir>/../packages/@cos/test-utils/src/index.ts',
+    '^@cos/test-utils/(.*)$': '<rootDir>/../packages/@cos/test-utils/src/$1',
   },
 };
