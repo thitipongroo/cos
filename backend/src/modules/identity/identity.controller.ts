@@ -10,6 +10,7 @@ import type { Request } from 'express';
 import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
 import { MfaService } from './mfa/mfa.service';
+import { FeatureFlag } from '../../shared/feature-flags/feature-flag.decorator';
 import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { JwtPayload } from './jwt.payload';
@@ -29,6 +30,7 @@ export class IdentityController {
 
   @Post('otp/request')
   @HttpCode(HttpStatus.OK)
+  @FeatureFlag('s1.identity.sms-otp-login') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Request SMS OTP for field worker login (Path A)' })
   @ApiResponse({ status: 200, description: 'OTP sent to phone number' })
   @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
@@ -38,6 +40,7 @@ export class IdentityController {
 
   @Post('otp/verify')
   @HttpCode(HttpStatus.OK)
+  @FeatureFlag('s1.identity.sms-otp-login') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Verify OTP and receive JWT tokens (Path A)' })
   @ApiResponse({ status: 200, description: 'Returns access_token and refresh_token' })
   @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })

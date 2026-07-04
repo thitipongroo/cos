@@ -13,6 +13,19 @@ jest.mock('@cos/shared', () => ({
   KafkaProducer: jest.fn(),
 }));
 
+jest.mock('@cos/logger', () => {
+  const info = jest.fn();
+  const warn = jest.fn();
+  const error = jest.fn();
+  const names: string[] = [];
+  const createLogger = jest.fn((module: string) => {
+    names.push(module);
+    return { info, warn, error, debug: jest.fn(), child: jest.fn() };
+  });
+  return { createLogger, __loggerMock: { info, warn, error, names } };
+});
+const { __loggerMock: loggerMock } = jest.requireMock('@cos/logger');
+
 import { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
 import { updatePoStatus, notifyApprover, compensateCancelledPo } from '../po.activities';
@@ -59,6 +72,12 @@ beforeEach(() => {
   }));
 });
 
+describe('module wiring', () => {
+  it('creates the module logger with the exact name', () => {
+    expect(loggerMock.names).toContain('po-activities');
+  });
+});
+
 describe('updatePoStatus', () => {
   it('executes DB update and publishes event', async () => {
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
@@ -71,11 +90,62 @@ describe('updatePoStatus', () => {
     expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
   });
 
-  it('disconnects kafka even when publish throws', async () => {
+  it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
+    await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
+    expect(mockExecuteRawUnsafe).toHaveBeenCalledWith(
+      "SET LOCAL app.current_tenant_id = 'tenant-uuid-001'",
+    );
+  });
+
+  it('runs the exact UPDATE statement with status/po/tenant bindings', async () => {
+    await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
+    const [template, ...values] = mockExecuteRaw.mock.calls[0]!;
+    const sql = template.join('¶');
+    expect(sql).toContain('UPDATE procurement.purchase_orders SET status =');
+    expect(sql).toContain('WHERE po_id =');
+    expect(sql).toContain('AND tenant_id =');
+    expect(values).toEqual(['PENDING_APPROVAL', 'po-uuid-001', 'tenant-uuid-001']);
+  });
+
+  it('publishes the exact status_changed event envelope and logs the transition', async () => {
+    await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.po.status_changed.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'system',
+      occurred_at: expect.any(String),
+      correlation_id: 'corr-uuid-001',
+      payload: {
+        po_id: 'po-uuid-001',
+        from_status: 'DRAFT',
+        to_status: 'PENDING_APPROVAL',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      {
+        po_id: 'po-uuid-001',
+        from_status: 'DRAFT',
+        to_status: 'PENDING_APPROVAL',
+        correlation_id: 'corr-uuid-001',
+      },
+      'po.status.changed',
+    );
+  });
+
+  it('disconnects kafka even when publish throws and logs the exact failure event', async () => {
     mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
     expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      {
+        event_type: 'procurement.po.status_changed.v1',
+        err: expect.any(Error),
+        correlation_id: 'corr-uuid-001',
+      },
+      'kafka.publish.failed',
+    );
   });
 
   it('propagates DB error from withTenantTx', async () => {
@@ -96,6 +166,37 @@ describe('notifyApprover', () => {
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
   });
 
+  it('publishes the exact approval_requested envelope and logs the request', async () => {
+    await notifyApprover(baseParams, 'approver-uuid-001', 'L1', 'PO-2025-001', '50000', 'THB');
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.po.approval_requested.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'system',
+      occurred_at: expect.any(String),
+      correlation_id: 'corr-uuid-001',
+      payload: {
+        po_id: 'po-uuid-001',
+        project_id: 'proj-uuid-001',
+        approver_id: 'approver-uuid-001',
+        tier: 'L1',
+        po_number: 'PO-2025-001',
+        total_amount: '50000',
+        currency_code: 'THB',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      {
+        po_id: 'po-uuid-001',
+        approver_id: 'approver-uuid-001',
+        tier: 'L1',
+        po_number: 'PO-2025-001',
+        correlation_id: 'corr-uuid-001',
+      },
+      'po.approval.requested',
+    );
+  });
+
   it('disconnects kafka even when publish throws', async () => {
     mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
     await notifyApprover(baseParams, 'approver-uuid-001', 'L1', 'PO-2025-001', '50000', 'THB');
@@ -110,6 +211,27 @@ describe('compensateCancelledPo', () => {
     expect(mockKafkaConnect).toHaveBeenCalledTimes(1);
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('publishes the exact compensation envelope (PENDING_APPROVAL → DRAFT) and logs it', async () => {
+    await compensateCancelledPo(baseParams);
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.po.status_changed.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'system',
+      occurred_at: expect.any(String),
+      correlation_id: 'corr-uuid-001',
+      payload: {
+        po_id: 'po-uuid-001',
+        from_status: 'PENDING_APPROVAL',
+        to_status: 'DRAFT',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', correlation_id: 'corr-uuid-001' },
+      'po.cancelled.compensation',
+    );
   });
 
   it('disconnects kafka even when publish throws', async () => {

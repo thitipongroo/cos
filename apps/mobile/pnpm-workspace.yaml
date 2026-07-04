@@ -10,11 +10,13 @@
 packages: []
 nodeLinker: hoisted
 
-# detox + dtrace-provider compile native code during install (needed for the iOS Detox runner).
+# detox + dtrace-provider compile native code during install (needed for the iOS Detox runner —
+# macOS only; on this platform their postinstall builds are skipped, matching prior behavior where
+# pnpm ignored them by default).
 allowBuilds:
-  detox: set this to true or false
-  dtrace-provider: set this to true or false
-  unrs-resolver: set this to true or false
+  detox: false
+  dtrace-provider: false
+  unrs-resolver: false
 
 minimumReleaseAgeExclude:
   - '@expo/cli@56.1.17'

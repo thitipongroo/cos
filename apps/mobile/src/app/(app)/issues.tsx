@@ -8,12 +8,14 @@ import Issue from '../../db/models/Issue';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 export default function IssuesScreen() {
   const issues = useCollection<Issue>('local_issues');
   const [projectId, setProjectId] = useState('');
   const [title, setTitle] = useState('');
+  const t = useT();
 
   const onCreate = async (): Promise<void> => {
     await database.write(async () => {
@@ -31,13 +33,13 @@ export default function IssuesScreen() {
 
   return (
     <View testID="issues-screen" style={styles.container}>
-      <Text style={styles.heading}>Issues</Text>
+      <Text style={styles.heading}>{t('site.issues.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="issue-title-input"
         style={styles.input}
-        placeholder="Describe the issue"
+        placeholder={t('site.issues.titlePlaceholder')}
         placeholderTextColor={colors.textSecondary}
         value={title}
         onChangeText={setTitle}
@@ -48,7 +50,7 @@ export default function IssuesScreen() {
         onPress={onCreate}
         disabled={!projectId.trim() || !title.trim()}
       >
-        <Text style={styles.buttonText}>Report issue</Text>
+        <Text style={styles.buttonText}>{t('site.issues.submit')}</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -56,7 +58,7 @@ export default function IssuesScreen() {
         style={styles.list}
         data={issues}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No issues yet</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('site.issues.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="issue-item" style={styles.item}>
             <Text style={styles.itemTitle}>{item.title}</Text>

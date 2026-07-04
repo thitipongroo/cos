@@ -7,6 +7,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { database } from '../db/database';
 import Photo, { PhotoEntityType } from '../db/models/Photo';
+import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
 
 interface PhotoCaptureProps {
@@ -19,6 +20,7 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [count, setCount] = useState(0);
+  const t = useT();
 
   if (!permission) {
     return null; // permissions still loading
@@ -33,7 +35,7 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
           void requestPermission();
         }}
       >
-        <Text style={styles.buttonText}>Enable camera</Text>
+        <Text style={styles.buttonText}>{t('photos.capture.enable')}</Text>
       </TouchableOpacity>
     );
   }
@@ -60,11 +62,11 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
     <View testID="photo-capture" style={styles.container}>
       <CameraView ref={cameraRef} style={styles.preview} facing="back" />
       <TouchableOpacity testID="capture-photo-button" style={styles.button} onPress={onCapture}>
-        <Text style={styles.buttonText}>Capture photo</Text>
+        <Text style={styles.buttonText}>{t('photos.capture.capture')}</Text>
       </TouchableOpacity>
       {count > 0 ? (
         <Text testID="photo-count" style={styles.count}>
-          {count} photo(s) queued
+          {t('photos.capture.queued', { count })}
         </Text>
       ) : null}
     </View>

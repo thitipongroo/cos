@@ -7,7 +7,10 @@
     "offline": "Offline",
     "synced": "Synced",
     "syncing": "Syncing...",
-    "readOnly": "Read-only mode — this account can view but not modify"
+    "readOnly": "Read-only mode — this account can view but not modify",
+    "featureFlag": {
+      "disabled": "This feature is temporarily disabled"
+    }
   },
   "shell": {
     "notifications": "Notifications",

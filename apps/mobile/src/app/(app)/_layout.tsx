@@ -21,44 +21,62 @@ import { CosRole } from '@cos/types';
 import { runDeltaSync } from '../../sync/runDeltaSync';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { SyncStatusBar } from '../../components/SyncStatusBar';
+import { useT } from '../../i18n';
 import { setLastAppPath } from '../../lib/e2e/lastRoute';
 
 type TabConfig = {
   name: string;
-  title: string;
+  titleKey: string;
   roles: CosRole[];
 };
 
 const ALL_TABS: TabConfig[] = [
-  { name: 'home', title: 'Home', roles: Object.values(CosRole) },
-  { name: 'tasks', title: 'Tasks', roles: [CosRole.SITE_WORKER] },
-  { name: 'report', title: 'Report', roles: [CosRole.SITE_WORKER] },
-  { name: 'reports', title: 'Reports', roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE] },
-  { name: 'issues', title: 'Issues', roles: [CosRole.SITE_WORKER, CosRole.SITE_ENGINEER] },
-  { name: 'inspections', title: 'Inspections', roles: [CosRole.SITE_ENGINEER] },
-  { name: 'projects', title: 'Projects', roles: [CosRole.PROJECT_MANAGER] },
-  { name: 'procurement', title: 'Procurement', roles: [CosRole.PROJECT_MANAGER] },
-  { name: 'dashboard', title: 'Dashboard', roles: [CosRole.PROJECT_MANAGER] },
-  { name: 'portfolio', title: 'Portfolio', roles: [CosRole.EXECUTIVE] },
-  { name: 'alerts', title: 'Alerts', roles: [CosRole.EXECUTIVE] },
-  { name: 'payments', title: 'Payments', roles: [CosRole.FINANCE] },
-  { name: 'budget', title: 'Budget', roles: [CosRole.FINANCE] },
-  { name: 'invoices', title: 'Invoices', roles: [CosRole.FINANCE] },
-  { name: 'rfqs', title: 'RFQs', roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER] },
-  { name: 'orders', title: 'Orders', roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER] },
+  { name: 'home', titleKey: 'nav.tabs.home', roles: Object.values(CosRole) },
+  { name: 'tasks', titleKey: 'nav.tabs.tasks', roles: [CosRole.SITE_WORKER] },
+  { name: 'report', titleKey: 'nav.tabs.report', roles: [CosRole.SITE_WORKER] },
   {
-    name: 'deliveries',
-    title: 'Deliveries',
+    name: 'reports',
+    titleKey: 'nav.tabs.reports',
+    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE],
+  },
+  {
+    name: 'issues',
+    titleKey: 'nav.tabs.issues',
+    roles: [CosRole.SITE_WORKER, CosRole.SITE_ENGINEER],
+  },
+  { name: 'inspections', titleKey: 'nav.tabs.inspections', roles: [CosRole.SITE_ENGINEER] },
+  { name: 'projects', titleKey: 'nav.tabs.projects', roles: [CosRole.PROJECT_MANAGER] },
+  { name: 'procurement', titleKey: 'nav.tabs.procurement', roles: [CosRole.PROJECT_MANAGER] },
+  { name: 'dashboard', titleKey: 'nav.tabs.dashboard', roles: [CosRole.PROJECT_MANAGER] },
+  { name: 'portfolio', titleKey: 'nav.tabs.portfolio', roles: [CosRole.EXECUTIVE] },
+  { name: 'alerts', titleKey: 'nav.tabs.alerts', roles: [CosRole.EXECUTIVE] },
+  { name: 'payments', titleKey: 'nav.tabs.payments', roles: [CosRole.FINANCE] },
+  { name: 'budget', titleKey: 'nav.tabs.budget', roles: [CosRole.FINANCE] },
+  { name: 'invoices', titleKey: 'nav.tabs.invoices', roles: [CosRole.FINANCE] },
+  {
+    name: 'rfqs',
+    titleKey: 'nav.tabs.rfqs',
     roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
   },
-  { name: 'incidents', title: 'Incidents', roles: [CosRole.SAFETY_OFFICER] },
-  { name: 'profile', title: 'Profile', roles: Object.values(CosRole) },
+  {
+    name: 'orders',
+    titleKey: 'nav.tabs.orders',
+    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
+  },
+  {
+    name: 'deliveries',
+    titleKey: 'nav.tabs.deliveries',
+    roles: [CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER],
+  },
+  { name: 'incidents', titleKey: 'nav.tabs.incidents', roles: [CosRole.SAFETY_OFFICER] },
+  { name: 'profile', titleKey: 'nav.tabs.profile', roles: Object.values(CosRole) },
 ];
 
 export default function AppLayout() {
   const role = useAuthStore((s) => s.role) as CosRole | null;
   const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const t = useT();
 
   // Remember the current in-app route so the E2E network-toggle deep link can return here (see
   // lib/e2e/lastRoute). No-op effect in production beyond bookkeeping.
@@ -88,7 +106,7 @@ export default function AppLayout() {
                 key={tab.name}
                 name={tab.name}
                 options={{
-                  title: tab.title,
+                  title: t(tab.titleKey),
                   // href: null hides the tab from the tab bar while keeping the route mountable
                   href: visible ? undefined : null,
                   // E2E navigation hook. The inspection suite taps by.id('inspection-tab').

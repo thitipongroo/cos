@@ -3,6 +3,7 @@
 
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { useConflicts } from '../hooks/useConflicts';
+import { useT } from '../i18n';
 import { colors, fontFamily } from '../theme/tokens';
 
 interface ConflictBadgeProps {
@@ -12,13 +13,14 @@ interface ConflictBadgeProps {
 export function ConflictBadge({ onPress }: ConflictBadgeProps) {
   const conflicts = useConflicts();
   const count = conflicts.length;
+  const t = useT();
 
   if (count === 0) return null;
 
   return (
     <TouchableOpacity
       onPress={onPress}
-      accessibilityLabel={`${count} conflict${count === 1 ? '' : 's'} — tap to review`}
+      accessibilityLabel={t('sync.conflictBadge.label', { count })}
     >
       <View style={styles.badge}>
         <Text style={styles.text}>{count > 99 ? '99+' : count}</Text>

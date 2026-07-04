@@ -1,4 +1,8 @@
 fastapi==0.138.2
+# Pin starlette explicitly: fastapi's open range resolves to starlette>=1.3, whose TestClient
+# deprecation warning breaks pytest collection (filterwarnings=error). 1.0.1 also clears
+# PYSEC-2026-161 (was <1.0.1), so the pip-audit --ignore-vuln for it is removed from CI.
+starlette==1.0.1
 uvicorn[standard]==0.49.0
 pydantic==2.13.4
 pydantic-settings==2.14.2

@@ -13,6 +13,19 @@ jest.mock('@cos/shared', () => ({
   KafkaProducer: jest.fn(),
 }));
 
+jest.mock('@cos/logger', () => {
+  const info = jest.fn();
+  const warn = jest.fn();
+  const error = jest.fn();
+  const names: string[] = [];
+  const createLogger = jest.fn((module: string) => {
+    names.push(module);
+    return { info, warn, error, debug: jest.fn(), child: jest.fn() };
+  });
+  return { createLogger, __loggerMock: { info, warn, error, names } };
+});
+const { __loggerMock: loggerMock } = jest.requireMock('@cos/logger');
+
 import { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
 import { updateRfqStatus, markQuotationsEvaluated } from '../rfq.activities';
@@ -70,11 +83,62 @@ describe('updateRfqStatus', () => {
     expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
   });
 
-  it('disconnects kafka even when publish throws', async () => {
+  it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
+    await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
+    expect(mockExecuteRawUnsafe).toHaveBeenCalledWith(
+      "SET LOCAL app.current_tenant_id = 'tenant-uuid-001'",
+    );
+  });
+
+  it('runs the exact UPDATE statement with status/rfq/tenant bindings', async () => {
+    await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
+    const [template, ...values] = mockExecuteRaw.mock.calls[0]!;
+    const sql = template.join('¶');
+    expect(sql).toContain('UPDATE procurement.rfqs SET status =');
+    expect(sql).toContain('WHERE rfq_id =');
+    expect(sql).toContain('AND tenant_id =');
+    expect(values).toEqual(['PUBLISHED', 'rfq-uuid-001', 'tenant-uuid-001']);
+  });
+
+  it('publishes the exact status_changed envelope and logs the transition', async () => {
+    await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.rfq.status_changed.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'system',
+      occurred_at: expect.any(String),
+      correlation_id: 'corr-uuid-001',
+      payload: {
+        rfq_id: 'rfq-uuid-001',
+        from_status: 'DRAFT',
+        to_status: 'PUBLISHED',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      {
+        rfq_id: 'rfq-uuid-001',
+        from_status: 'DRAFT',
+        to_status: 'PUBLISHED',
+        correlation_id: 'corr-uuid-001',
+      },
+      'rfq.status.changed',
+    );
+  });
+
+  it('disconnects kafka even when publish throws and logs the exact failure event', async () => {
     mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
     await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
     expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      {
+        event_type: 'procurement.rfq.status_changed.v1',
+        err: expect.any(Error),
+        correlation_id: 'corr-uuid-001',
+      },
+      'kafka.publish.failed',
+    );
   });
 
   it('propagates DB error from withTenantTx', async () => {
@@ -86,6 +150,12 @@ describe('updateRfqStatus', () => {
   });
 });
 
+describe('module wiring', () => {
+  it('creates the module logger with the exact name', () => {
+    expect(loggerMock.names).toContain('rfq-activities');
+  });
+});
+
 describe('markQuotationsEvaluated', () => {
   it('executes DB update and publishes event', async () => {
     await markQuotationsEvaluated(baseParams);
@@ -94,6 +164,33 @@ describe('markQuotationsEvaluated', () => {
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
     expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('runs the exact EVALUATED UPDATE and publishes the exact CLOSED→EVALUATED envelope', async () => {
+    await markQuotationsEvaluated(baseParams);
+    const [template, ...values] = mockExecuteRaw.mock.calls[0]!;
+    const sql = template.join('¶');
+    expect(sql).toContain("UPDATE procurement.rfqs SET status = 'EVALUATED'");
+    expect(sql).toContain('WHERE rfq_id =');
+    expect(sql).toContain('AND tenant_id =');
+    expect(values).toEqual(['rfq-uuid-001', 'tenant-uuid-001']);
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.rfq.status_changed.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'system',
+      occurred_at: expect.any(String),
+      correlation_id: 'corr-uuid-001',
+      payload: {
+        rfq_id: 'rfq-uuid-001',
+        from_status: 'CLOSED',
+        to_status: 'EVALUATED',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', correlation_id: 'corr-uuid-001' },
+      'rfq.evaluated',
+    );
   });
 
   it('disconnects kafka even when publish throws', async () => {

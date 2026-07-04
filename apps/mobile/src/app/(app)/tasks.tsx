@@ -11,10 +11,12 @@ import Task from '../../db/models/Task';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { mutate } from '../../api/client';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 export default function TasksScreen() {
   const tasks = useCollection<Task>('local_tasks');
+  const t = useT();
   const [selected, setSelected] = useState<Task | null>(null);
   const [progress, setProgress] = useState('');
   const [savedValue, setSavedValue] = useState<number | null>(null);
@@ -43,7 +45,7 @@ export default function TasksScreen() {
     return (
       <View testID="task-detail-screen" style={styles.container}>
         <Text style={styles.heading}>{selected.taskName}</Text>
-        <Text style={styles.label}>Progress %</Text>
+        <Text style={styles.label}>{t('tasks.detail.progressLabel')}</Text>
         <TextInput
           testID="progress-input"
           style={styles.input}
@@ -53,7 +55,7 @@ export default function TasksScreen() {
           onChangeText={setProgress}
         />
         <TouchableOpacity testID="save-progress-button" style={styles.button} onPress={onSave}>
-          <Text style={styles.buttonText}>Save progress</Text>
+          <Text style={styles.buttonText}>{t('tasks.detail.save')}</Text>
         </TouchableOpacity>
         {savedValue !== null ? (
           <Text testID="progress-display" style={styles.saved}>
@@ -61,7 +63,7 @@ export default function TasksScreen() {
           </Text>
         ) : null}
         <TouchableOpacity testID="task-back-button" onPress={() => setSelected(null)}>
-          <Text style={styles.back}>← Back to tasks</Text>
+          <Text style={styles.back}>{t('tasks.detail.back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -69,12 +71,12 @@ export default function TasksScreen() {
 
   return (
     <View testID="tasks-screen" style={styles.container}>
-      <Text style={styles.heading}>Tasks</Text>
+      <Text style={styles.heading}>{t('tasks.list.title')}</Text>
       <FlatList
         testID="task-list"
         data={tasks}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No tasks synced yet</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('tasks.list.empty')}</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity
             testID={item.taskId ? `task-${item.taskId}` : 'task-item'}

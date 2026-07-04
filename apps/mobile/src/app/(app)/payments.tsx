@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { get, mutate } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface PaymentRow {
@@ -18,6 +19,7 @@ interface PaymentRow {
 export default function PaymentsScreen() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const t = useT();
 
   const load = async (): Promise<void> => {
     setLoading(true);
@@ -42,13 +44,13 @@ export default function PaymentsScreen() {
 
   return (
     <View testID="payments-screen" style={styles.container}>
-      <Text style={styles.heading}>Payments</Text>
+      <Text style={styles.heading}>{t('finance.payments.title')}</Text>
       <FlatList
         testID="payments-list"
         data={payments}
         keyExtractor={(p, i) => p.payment_id || String(i)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>No payments</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('finance.payments.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="payment-item" style={styles.item}>
             <View style={styles.row}>
@@ -64,7 +66,7 @@ export default function PaymentsScreen() {
                 style={styles.approve}
                 onPress={() => approve(item.payment_id)}
               >
-                <Text style={styles.approveText}>Approve</Text>
+                <Text style={styles.approveText}>{t('finance.payments.approve')}</Text>
               </TouchableOpacity>
             ) : null}
           </View>

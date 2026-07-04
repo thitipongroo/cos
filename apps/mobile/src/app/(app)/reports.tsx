@@ -22,6 +22,7 @@ import { get } from '../../api/client';
 import { enqueue } from '../../db/sync-queue';
 import { StatusChip } from '../../components/StatusChip';
 import { ConflictBadge } from '../../components/ConflictBadge';
+import { useI18n } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface ReportRow {
@@ -40,6 +41,7 @@ export default function ReportsScreen() {
   const [qty, setQty] = useState('');
   const [unit, setUnit] = useState('');
   const [savedFor, setSavedFor] = useState<string | null>(null);
+  const { t, formatDate } = useI18n();
 
   const load = async (): Promise<void> => {
     setLoading(true);
@@ -76,7 +78,7 @@ export default function ReportsScreen() {
   return (
     <View testID="reports-screen" style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>Site Reports</Text>
+        <Text style={styles.heading}>{t('site.reports.title')}</Text>
         <ConflictBadge onPress={() => router.push('/conflict-review')} />
       </View>
       <FlatList
@@ -84,7 +86,7 @@ export default function ReportsScreen() {
         data={reports}
         keyExtractor={(r) => r.report_id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>No reports</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('site.reports.empty')}</Text>}
         renderItem={({ item }) => {
           const open = selectedReportId === item.report_id;
           return (
@@ -93,17 +95,17 @@ export default function ReportsScreen() {
               style={styles.item}
               onPress={() => setSelectedReportId(open ? null : item.report_id)}
             >
-              <Text style={styles.itemTitle}>{item.report_date}</Text>
+              <Text style={styles.itemTitle}>{formatDate(item.report_date)}</Text>
               {item.summary ? <Text style={styles.sub}>{item.summary}</Text> : null}
               <StatusChip label={item.status} />
 
               {open ? (
                 <View testID="material-form" style={styles.matForm}>
-                  <Text style={styles.matHeading}>Record material used</Text>
+                  <Text style={styles.matHeading}>{t('site.reports.materialTitle')}</Text>
                   <TextInput
                     testID="material-name-input"
                     style={styles.input}
-                    placeholder="Material (e.g. Portland Cement 50kg)"
+                    placeholder={t('site.reports.materialPlaceholder')}
                     placeholderTextColor={colors.textSecondary}
                     value={matName}
                     onChangeText={setMatName}
@@ -112,7 +114,7 @@ export default function ReportsScreen() {
                     <TextInput
                       testID="material-qty-input"
                       style={[styles.input, styles.qtyInput]}
-                      placeholder="Qty (e.g. 12.5)"
+                      placeholder={t('site.reports.qtyPlaceholder')}
                       placeholderTextColor={colors.textSecondary}
                       keyboardType="decimal-pad"
                       value={qty}
@@ -121,7 +123,7 @@ export default function ReportsScreen() {
                     <TextInput
                       testID="material-unit-input"
                       style={[styles.input, styles.qtyInput]}
-                      placeholder="Unit (e.g. bag)"
+                      placeholder={t('site.reports.unitPlaceholder')}
                       placeholderTextColor={colors.textSecondary}
                       value={unit}
                       onChangeText={setUnit}
@@ -133,11 +135,11 @@ export default function ReportsScreen() {
                     onPress={() => recordMaterial(item.report_id)}
                     disabled={!canRecord}
                   >
-                    <Text style={styles.buttonText}>Record material</Text>
+                    <Text style={styles.buttonText}>{t('site.reports.record')}</Text>
                   </TouchableOpacity>
                   {savedFor === item.report_id ? (
                     <Text testID="material-saved" style={styles.saved}>
-                      Recorded — will sync when online
+                      {t('site.reports.recorded')}
                     </Text>
                   ) : null}
                 </View>

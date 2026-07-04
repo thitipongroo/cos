@@ -1,35 +1,42 @@
 #!/usr/bin/env bash
 # [AUTO] Phase 19 — i18n completeness check
-# Verifies: no untranslated keys in th.json vs en.json (QM-3)
+# Verifies: no untranslated keys in th.json vs en.json (QM-3) for web AND mobile
 # Usage: ./scripts/readiness/check-i18n-completeness.sh
 # Exit: 0 = complete, 1 = missing translations
 
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo .)"
-EN_FILE="$ROOT/apps/web/src/i18n/en.json"
-TH_FILE="$ROOT/apps/web/src/i18n/th.json"
+APPS=("web" "mobile")
 PASS=0
 FAIL=0
 
 echo "==> i18n completeness check (QM-3)"
-
-if [[ ! -f "$EN_FILE" ]]; then
-  echo "  ✗ en.json not found at $EN_FILE"
-  exit 1
-fi
-
-if [[ ! -f "$TH_FILE" ]]; then
-  echo "  ✗ th.json not found at $TH_FILE"
-  exit 1
-fi
 
 if ! command -v python3 &>/dev/null; then
   echo "  - python3 not available — cannot compare JSON keys; skipping"
   exit 0
 fi
 
-result=$(python3 - "$EN_FILE" "$TH_FILE" <<'PYEOF'
+for APP in "${APPS[@]}"; do
+  EN_FILE="$ROOT/apps/$APP/src/i18n/en.json"
+  TH_FILE="$ROOT/apps/$APP/src/i18n/th.json"
+
+  echo ""
+  echo "  [$APP]"
+
+  if [[ ! -f "$EN_FILE" ]]; then
+    echo "  ✗ en.json not found at $EN_FILE"
+    exit 1
+  fi
+
+  if [[ ! -f "$TH_FILE" ]]; then
+    echo "  ✗ th.json not found at $TH_FILE"
+    exit 1
+  fi
+
+  exit_code=0
+  result=$(python3 - "$EN_FILE" "$TH_FILE" <<'PYEOF'
 import sys, json
 
 def flatten(obj, prefix=''):
@@ -42,9 +49,10 @@ def flatten(obj, prefix=''):
             keys.append(full_key)
     return keys
 
-with open(sys.argv[1]) as f:
+# encoding='utf-8' is required: th.json contains Thai text and Windows defaults to cp1252
+with open(sys.argv[1], encoding='utf-8') as f:
     en = json.load(f)
-with open(sys.argv[2]) as f:
+with open(sys.argv[2], encoding='utf-8') as f:
     th = json.load(f)
 
 en_keys = set(flatten(en))
@@ -72,20 +80,21 @@ if extra:
 
 sys.exit(1 if missing else 0)
 PYEOF
-)
+  ) || exit_code=$?
 
-exit_code=$?
-echo "$result" | while IFS= read -r line; do echo "  $line"; done
+  echo "$result" | while IFS= read -r line; do echo "  $line"; done
+
+  if [[ $exit_code -eq 0 ]]; then
+    echo "  ✓ $APP th.json is complete — all en.json keys have Thai translations"
+    PASS=$((PASS + 1))
+  else
+    echo "  ✗ $APP th.json is missing translations (see above)"
+    FAIL=$((FAIL + 1))
+  fi
+done
 
 echo ""
-if [[ $exit_code -eq 0 ]]; then
-  echo "  ✓ th.json is complete — all en.json keys have Thai translations"
-  ((PASS++))
-  echo ""
-  echo "==> Result: 1 passed, 0 failed"
-else
-  echo "  ✗ th.json is missing translations (see above)"
-  echo ""
-  echo "==> Result: 0 passed, 1 failed"
+echo "==> Result: $PASS passed, $FAIL failed"
+if [[ $FAIL -gt 0 ]]; then
   exit 1
 fi

@@ -12,6 +12,7 @@ import { enqueue } from '../../db/sync-queue';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
@@ -22,6 +23,7 @@ export default function IncidentsScreen() {
   const [projectId, setProjectId] = useState('');
   const [incidentType, setIncidentType] = useState('');
   const [severity, setSeverity] = useState<Severity>('MEDIUM');
+  const t = useT();
 
   const canSubmit = projectId.trim() !== '' && incidentType.trim() !== '';
 
@@ -48,13 +50,13 @@ export default function IncidentsScreen() {
 
   return (
     <View testID="incidents-screen" style={styles.container}>
-      <Text style={styles.heading}>Incidents</Text>
+      <Text style={styles.heading}>{t('safety.incidents.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="incident-type-input"
         style={styles.input}
-        placeholder="Incident type (e.g. fall, electrical)"
+        placeholder={t('safety.incidents.typePlaceholder')}
         placeholderTextColor={colors.textSecondary}
         value={incidentType}
         onChangeText={setIncidentType}
@@ -68,7 +70,7 @@ export default function IncidentsScreen() {
             onPress={() => setSeverity(s)}
           >
             <Text style={[styles.severityText, severity === s && styles.severityTextActive]}>
-              {s}
+              {t(`status.${s}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -79,7 +81,7 @@ export default function IncidentsScreen() {
         onPress={onCreate}
         disabled={!canSubmit}
       >
-        <Text style={styles.buttonText}>Report incident</Text>
+        <Text style={styles.buttonText}>{t('safety.incidents.submit')}</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -87,7 +89,7 @@ export default function IncidentsScreen() {
         style={styles.list}
         data={incidents}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No incidents yet</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('safety.incidents.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="incident-item" style={styles.item}>
             <Text style={styles.itemTitle}>{item.incidentType}</Text>

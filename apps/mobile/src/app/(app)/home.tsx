@@ -13,11 +13,13 @@ import { useCollection } from '../../hooks/useCollection';
 import { usePendingCount } from '../../hooks/usePendingCount';
 import { getMyWorker, recordCheckIn } from '../../api/workforce';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 export default function HomeScreen() {
   const issues = useCollection<Issue>('local_issues');
   const pending = usePendingCount();
+  const t = useT();
   const openIssues = issues.filter((i) => i.status === 'OPEN' || i.status === 'IN_PROGRESS').length;
 
   const [projectId, setProjectId] = useState('');
@@ -42,9 +44,9 @@ export default function HomeScreen() {
           r.offlineSyncStatus = 'PENDING';
         });
       });
-      setMessage('Checked in — will sync when online');
+      setMessage(t('home.main.checkedIn'));
     } catch {
-      setMessage('Check-in unavailable: no worker profile linked to your account.');
+      setMessage(t('home.main.checkInError'));
     } finally {
       setBusy(false);
     }
@@ -52,16 +54,16 @@ export default function HomeScreen() {
 
   return (
     <View testID="home-screen" style={styles.container}>
-      <Text style={styles.heading}>Home</Text>
+      <Text style={styles.heading}>{t('home.main.title')}</Text>
 
       <View style={styles.kpiRow}>
         <View testID="kpi-open-issues" style={styles.kpi}>
           <Text style={styles.kpiValue}>{openIssues}</Text>
-          <Text style={styles.kpiLabel}>Open issues</Text>
+          <Text style={styles.kpiLabel}>{t('home.main.openIssues')}</Text>
         </View>
         <View testID="pending-sync-count" style={styles.kpi}>
           <Text style={styles.kpiValue}>{pending}</Text>
-          <Text style={styles.kpiLabel}>Pending sync</Text>
+          <Text style={styles.kpiLabel}>{t('home.main.pendingSync')}</Text>
         </View>
       </View>
 
@@ -72,7 +74,7 @@ export default function HomeScreen() {
         onPress={onCheckIn}
         disabled={busy || !projectId.trim()}
       >
-        <Text style={styles.checkInText}>Check in</Text>
+        <Text style={styles.checkInText}>{t('home.main.checkIn')}</Text>
       </TouchableOpacity>
 
       {message ? (

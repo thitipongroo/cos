@@ -16,28 +16,66 @@ import type {
   DeliveryRow,
   DeliveryItemRow,
 } from '../procurement.repository';
+import {
+  publishRfqSignal,
+  closeRfqSignal,
+  awardRfqSignal,
+  cancelRfqSignal,
+} from '../workflows/rfq.workflow';
+import {
+  submitPoSignal,
+  approvePoSignal,
+  rejectPoSignal,
+  acknowledgePoSignal,
+  recordDeliverySignal,
+  receiveInvoiceSignal,
+  markPaidSignal,
+  disputeInvoiceSignal,
+} from '../workflows/po.workflow';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
+jest.mock('@cos/logger', () => {
+  const info = jest.fn();
+  const warn = jest.fn();
+  const error = jest.fn();
+  const names: string[] = [];
+  const createLogger = jest.fn((module: string) => {
+    names.push(module);
+    return { info, warn, error, debug: jest.fn(), child: jest.fn() };
+  });
+  return { createLogger, __loggerMock: { info, warn, error, names } };
+});
+const { __loggerMock: loggerMock } = jest.requireMock('@cos/logger');
+
+const mockKafkaConnect = jest.fn().mockResolvedValue(undefined);
+const mockKafkaPublish = jest.fn().mockResolvedValue(undefined);
+const mockKafkaDisconnect = jest.fn().mockResolvedValue(undefined);
+
 jest.mock('@cos/shared', () => ({
   KafkaProducer: jest.fn().mockImplementation(() => ({
-    connect: jest.fn().mockResolvedValue(undefined),
-    publish: jest.fn().mockResolvedValue(undefined),
-    disconnect: jest.fn().mockResolvedValue(undefined),
+    connect: mockKafkaConnect,
+    publish: mockKafkaPublish,
+    disconnect: mockKafkaDisconnect,
   })),
 }));
 
+const mockWorkflowStart = jest.fn().mockResolvedValue({ firstExecutionRunId: 'run-1' });
+const mockWorkflowSignal = jest.fn().mockResolvedValue(undefined);
+const mockGetHandle = jest.fn(() => ({
+  signal: mockWorkflowSignal,
+  query: jest.fn().mockResolvedValue('DRAFT'),
+}));
+const mockConnectionConnect = jest.fn().mockResolvedValue({});
+
 jest.mock('@temporalio/client', () => ({
   Connection: {
-    connect: jest.fn().mockResolvedValue({}),
+    connect: (...args: unknown[]) => mockConnectionConnect(...args),
   },
   Client: jest.fn().mockImplementation(() => ({
     workflow: {
-      start: jest.fn().mockResolvedValue({ firstExecutionRunId: 'run-1' }),
-      getHandle: jest.fn().mockReturnValue({
-        signal: jest.fn().mockResolvedValue(undefined),
-        query: jest.fn().mockResolvedValue('DRAFT'),
-      }),
+      start: mockWorkflowStart,
+      getHandle: mockGetHandle,
     },
   })),
 }));
@@ -79,6 +117,7 @@ const mockRepo = {
 const mockRequest = {
   tenantId: 'tenant-uuid-001',
   tenantCode: 'acme_corp',
+  userId: 'user-uuid-001',
   user: { user_id: 'user-uuid-001', role: 'PROCUREMENT_OFFICER' },
 };
 
@@ -178,6 +217,17 @@ let service: ProcurementService;
 
 beforeEach(async () => {
   Object.values(mockRepo).forEach((fn) => (fn as jest.Mock).mockReset());
+
+  mockKafkaConnect.mockClear().mockResolvedValue(undefined);
+  mockKafkaPublish.mockClear().mockResolvedValue(undefined);
+  mockKafkaDisconnect.mockClear().mockResolvedValue(undefined);
+  mockWorkflowStart.mockClear().mockResolvedValue({ firstExecutionRunId: 'run-1' });
+  mockWorkflowSignal.mockClear().mockResolvedValue(undefined);
+  mockGetHandle.mockClear();
+  mockConnectionConnect.mockClear().mockResolvedValue({});
+  loggerMock.info.mockClear();
+  loggerMock.warn.mockClear();
+  loggerMock.error.mockClear();
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [
@@ -943,5 +993,880 @@ describe('Tenant-wide list methods', () => {
     mockRepo.findDeliveriesByPo.mockResolvedValue(['DEL']);
     expect(await service.listDeliveriesByPo('po-1')).toEqual(['DEL']);
     expect(mockRepo.findDeliveriesByPo).toHaveBeenCalledWith('po-1');
+  });
+});
+
+// ── Mutation hardening — exact contracts (QM-1 mutation score ≥ 70%) ────────
+// Kills surviving mutants by pinning exact strings, payloads, and call args.
+
+describe('module wiring', () => {
+  it('creates the module logger with the exact name', () => {
+    expect(loggerMock.names).toContain('procurement-service');
+  });
+});
+
+describe('exact contracts — vendors and purchase requests', () => {
+  it('listVendors passes active_only=true by default', async () => {
+    mockRepo.listVendors.mockResolvedValue([]);
+    await service.listVendors();
+    expect(mockRepo.listVendors).toHaveBeenCalledWith(true);
+  });
+
+  it('getVendor — exact not-found message', async () => {
+    mockRepo.findVendorById.mockResolvedValue(null);
+    await expect(service.getVendor('nonexistent')).rejects.toThrow('Vendor nonexistent not found');
+  });
+
+  it('deactivateVendor — logs exact event', async () => {
+    mockRepo.findVendorById.mockResolvedValue(vendorFixture);
+    mockRepo.deactivateVendor.mockResolvedValue(undefined);
+    await service.deactivateVendor('vendor-uuid-001');
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { vendor_id: 'vendor-uuid-001', tenant_id: 'tenant-uuid-001' },
+      'vendor.deactivated',
+    );
+  });
+
+  it('createPurchaseRequest — exact repo payload and log', async () => {
+    const pr = {
+      pr_id: 'pr-001',
+      project_id: 'p-001',
+      tenant_id: 'tenant-uuid-001',
+      pr_number: 'PR-001',
+      status: 'DRAFT' as const,
+      requested_by: 'user-uuid-001',
+      required_date: null,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    mockRepo.createPurchaseRequest.mockResolvedValue(pr);
+    await service.createPurchaseRequest({ project_id: 'p-001', pr_number: 'PR-001' });
+    expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith({
+      project_id: 'p-001',
+      pr_number: 'PR-001',
+      requested_by: 'user-uuid-001',
+      required_date: undefined,
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { pr_id: 'pr-001', tenant_id: 'tenant-uuid-001' },
+      'pr.created',
+    );
+  });
+});
+
+describe('exact contracts — createRfq', () => {
+  const isoDeadline = new Date(Date.now() + 7 * 86400 * 1000).toISOString();
+
+  it('passes exact repo payload, workflow start args, Kafka event, and log', async () => {
+    mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture });
+    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+
+    await service.createRfq({
+      project_id: 'project-uuid-001',
+      rfq_number: 'RFQ-001',
+      deadline: isoDeadline,
+    });
+
+    expect(mockRepo.createRfq).toHaveBeenCalledWith({
+      pr_id: undefined,
+      project_id: 'project-uuid-001',
+      rfq_number: 'RFQ-001',
+      deadline: isoDeadline,
+      created_by: 'user-uuid-001',
+    });
+    expect(mockWorkflowStart).toHaveBeenCalledWith('rfqWorkflow', {
+      taskQueue: 'procurement',
+      workflowId: 'rfq-rfq-uuid-001',
+      args: [
+        {
+          rfq_id: 'rfq-uuid-001',
+          tenant_id: 'tenant-uuid-001',
+          correlation_id: expect.any(String),
+          deadline_ms: new Date(isoDeadline).getTime(),
+        },
+      ],
+    });
+    expect(mockRepo.setRfqWorkflowId).toHaveBeenCalledWith('rfq-uuid-001', 'rfq-rfq-uuid-001');
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.rfq.created.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-uuid-001',
+      occurred_at: expect.any(String),
+      correlation_id: expect.any(String),
+      payload: {
+        rfq_id: 'rfq-uuid-001',
+        pr_id: null,
+        project_id: 'project-uuid-001',
+        rfq_number: 'RFQ-001',
+        deadline: rfqDraftFixture.deadline.toISOString(),
+        created_by: 'user-uuid-001',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      {
+        rfq_id: 'rfq-uuid-001',
+        workflow_id: 'rfq-rfq-uuid-001',
+        tenant_id: 'tenant-uuid-001',
+      },
+      'rfq.created',
+    );
+  });
+
+  it('publishes the RFQ pr_id when the RFQ was created from a PR', async () => {
+    mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture, pr_id: 'pr-uuid-777' });
+    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+    await service.createRfq({
+      pr_id: 'pr-uuid-777',
+      project_id: 'project-uuid-001',
+      rfq_number: 'RFQ-002',
+      deadline: isoDeadline,
+    });
+    expect(mockKafkaPublish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ pr_id: 'pr-uuid-777' }),
+      }),
+    );
+  });
+
+  it('kafka publish failure logs exact error event and does not throw', async () => {
+    mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture });
+    mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+    mockKafkaPublish.mockRejectedValueOnce(new Error('Kafka down'));
+    await expect(
+      service.createRfq({
+        project_id: 'project-uuid-001',
+        rfq_number: 'RFQ-001',
+        deadline: isoDeadline,
+      }),
+    ).resolves.toBeDefined();
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      {
+        event_type: 'procurement.rfq.created.v1',
+        err: expect.any(Error),
+        correlation_id: expect.any(String),
+      },
+      'kafka.publish.failed',
+    );
+  });
+});
+
+describe('exact contracts — Temporal client connection', () => {
+  it('connects to the default address when TEMPORAL_ADDRESS is unset', async () => {
+    const original = process.env['TEMPORAL_ADDRESS'];
+    delete process.env['TEMPORAL_ADDRESS'];
+    try {
+      mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture });
+      mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+      await service.createRfq({
+        project_id: 'project-uuid-001',
+        rfq_number: 'RFQ-001',
+        deadline: new Date(Date.now() + 86400 * 1000).toISOString(),
+      });
+      expect(mockConnectionConnect).toHaveBeenCalledWith({ address: 'localhost:7233' });
+      const { Client } = jest.requireMock('@temporalio/client');
+      expect(Client).toHaveBeenCalledWith({ connection: expect.anything() });
+    } finally {
+      if (original === undefined) delete process.env['TEMPORAL_ADDRESS'];
+      else process.env['TEMPORAL_ADDRESS'] = original;
+    }
+  });
+
+  it('connects to TEMPORAL_ADDRESS when set', async () => {
+    const original = process.env['TEMPORAL_ADDRESS'];
+    process.env['TEMPORAL_ADDRESS'] = 'temporal.internal:7233';
+    try {
+      mockRepo.createRfq.mockResolvedValue({ ...rfqDraftFixture });
+      mockRepo.setRfqWorkflowId.mockResolvedValue(undefined);
+      await service.createRfq({
+        project_id: 'project-uuid-001',
+        rfq_number: 'RFQ-001',
+        deadline: new Date(Date.now() + 86400 * 1000).toISOString(),
+      });
+      expect(mockConnectionConnect).toHaveBeenCalledWith({
+        address: 'temporal.internal:7233',
+      });
+    } finally {
+      if (original === undefined) delete process.env['TEMPORAL_ADDRESS'];
+      else process.env['TEMPORAL_ADDRESS'] = original;
+    }
+  });
+});
+
+describe('exact contracts — RFQ lifecycle signals and errors', () => {
+  it('publishRfq — exact signal payload, handle id, and log', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
+    await service.publishRfq('rfq-uuid-001');
+    expect(mockGetHandle).toHaveBeenCalledWith('rfq-rfq-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(publishRfqSignal, {
+      actor_id: 'user-uuid-001',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', actor_id: 'user-uuid-001' },
+      'rfq.published',
+    );
+  });
+
+  it('publishRfq — exact wrong-status message', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    await expect(service.publishRfq('rfq-uuid-001')).rejects.toThrow(
+      'RFQ rfq-uuid-001 must be DRAFT (current: PUBLISHED)',
+    );
+  });
+
+  it('publishRfq — exact not-found message', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    await expect(service.publishRfq('missing')).rejects.toThrow('RFQ missing not found');
+  });
+
+  it('publishRfq — exact no-workflow message', async () => {
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, temporal_workflow_id: null });
+    await expect(service.publishRfq('rfq-uuid-001')).rejects.toThrow(
+      'RFQ rfq-uuid-001 has no Temporal workflow',
+    );
+  });
+
+  it('closeRfq — exact signal payload and log', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    await service.closeRfq('rfq-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(closeRfqSignal, {
+      actor_id: 'user-uuid-001',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', actor_id: 'user-uuid-001' },
+      'rfq.closed',
+    );
+  });
+
+  it('cancelRfq — exact signal payload and log', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
+    await service.cancelRfq('rfq-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(cancelRfqSignal, {
+      actor_id: 'user-uuid-001',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', actor_id: 'user-uuid-001' },
+      'rfq.cancelled',
+    );
+  });
+
+  it('cancelRfq — exact not-found and terminal-state messages', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    await expect(service.cancelRfq('missing')).rejects.toThrow('RFQ missing not found');
+
+    mockRepo.findRfqById.mockResolvedValue({ ...rfqDraftFixture, status: 'AWARDED' });
+    await expect(service.cancelRfq('rfq-uuid-001')).rejects.toThrow(
+      'RFQ rfq-uuid-001 is already in terminal state: AWARDED',
+    );
+  });
+
+  it('awardRfq — exact signal payload, selection call, and log', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
+    // Single quotation that IS the target: a negated find-predicate returns undefined here.
+    mockRepo.findQuotationsByRfq.mockResolvedValue([quotationFixtures[1]!]);
+    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+    await service.awardRfq('rfq-uuid-001', 'quot-uuid-001');
+    expect(mockRepo.markQuotationSelected).toHaveBeenCalledWith('quot-uuid-001', 'rfq-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(awardRfqSignal, {
+      actor_id: 'user-uuid-001',
+      quotation_id: 'quot-uuid-001',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', quotation_id: 'quot-uuid-001', actor_id: 'user-uuid-001' },
+      'rfq.awarded',
+    );
+  });
+
+  it('awardRfq — throws exact message when target quotation absent from a non-empty list', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqEvaluatedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue([quotationFixtures[0]!]);
+    await expect(service.awardRfq('rfq-uuid-001', 'quot-uuid-999')).rejects.toThrow(
+      'Quotation quot-uuid-999 not found in RFQ rfq-uuid-001',
+    );
+  });
+});
+
+describe('exact contracts — quotations', () => {
+  it('submitQuotation — exact repo payload and log', async () => {
+    const submittedAt = new Date().toISOString();
+    mockRepo.findRfqById.mockResolvedValue(rfqPublishedFixture);
+    mockRepo.createQuotation.mockResolvedValue({ ...quotationFixtures[0]! });
+    await service.submitQuotation('rfq-uuid-001', {
+      vendor_id: 'vendor-uuid-002',
+      total_amount: '150000.0000',
+      currency_code: 'THB',
+      validity_days: 30,
+      submitted_at: submittedAt,
+    });
+    expect(mockRepo.createQuotation).toHaveBeenCalledWith({
+      rfq_id: 'rfq-uuid-001',
+      vendor_id: 'vendor-uuid-002',
+      total_amount: '150000.0000',
+      currency_code: 'THB',
+      validity_days: 30,
+      submitted_at: submittedAt,
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      {
+        quotation_id: 'quot-uuid-002',
+        rfq_id: 'rfq-uuid-001',
+        vendor_id: 'vendor-uuid-002',
+      },
+      'quotation.submitted',
+    );
+  });
+
+  it('submitQuotation — exact not-found and not-published messages', async () => {
+    mockRepo.findRfqById.mockResolvedValue(null);
+    await expect(
+      service.submitQuotation('missing', {
+        vendor_id: 'v-001',
+        total_amount: '1.0000',
+        currency_code: 'THB',
+        validity_days: 30,
+        submitted_at: new Date().toISOString(),
+      }),
+    ).rejects.toThrow('RFQ missing not found');
+
+    mockRepo.findRfqById.mockResolvedValue(rfqDraftFixture);
+    await expect(
+      service.submitQuotation('rfq-uuid-001', {
+        vendor_id: 'v-001',
+        total_amount: '1.0000',
+        currency_code: 'THB',
+        validity_days: 30,
+        submitted_at: new Date().toISOString(),
+      }),
+    ).rejects.toThrow('RFQ rfq-uuid-001 is not PUBLISHED — cannot submit quotation');
+  });
+
+  it('compareQuotations — exact no-quotations message and evaluation log', async () => {
+    mockRepo.findRfqById.mockResolvedValue(rfqClosedFixture);
+    mockRepo.findQuotationsByRfq.mockResolvedValue([]);
+    await expect(service.compareQuotations('rfq-uuid-001')).rejects.toThrow(
+      'RFQ rfq-uuid-001 has no quotations — cannot evaluate',
+    );
+
+    mockRepo.findQuotationsByRfq.mockResolvedValue(quotationFixtures);
+    mockRepo.markQuotationSelected.mockResolvedValue(undefined);
+    await service.compareQuotations('rfq-uuid-001');
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { rfq_id: 'rfq-uuid-001', winner: 'quot-uuid-001', total: '120000.0000' },
+      'quotations.evaluated',
+    );
+  });
+});
+
+describe('exact contracts — createPurchaseOrder', () => {
+  const poDto = {
+    vendor_id: 'vendor-uuid-001',
+    project_id: 'project-uuid-001',
+    po_number: 'PO-001',
+    total_amount: '60000.0000',
+    currency_code: 'THB',
+    delivery_date: '2026-09-01',
+    line_items: [
+      { description: 'Concrete mix M35', quantity: '10.0000', unit: 'm3', unit_price: '6000.0000' },
+    ],
+  };
+
+  beforeEach(() => {
+    mockRepo.createPurchaseOrder.mockResolvedValue(poFixture);
+    mockRepo.createLineItems.mockResolvedValue(lineItemFixtures);
+    mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
+  });
+
+  it('rejects with exact mismatch message', async () => {
+    await expect(
+      service.createPurchaseOrder({ ...poDto, total_amount: '99999.9999' }),
+    ).rejects.toThrow('PO total_amount 99999.9999 does not match sum of line_items (60000.0000)');
+  });
+
+  it('passes exact repo payload and line items', async () => {
+    await service.createPurchaseOrder(poDto);
+    expect(mockRepo.createPurchaseOrder).toHaveBeenCalledWith({
+      rfq_id: undefined,
+      vendor_id: 'vendor-uuid-001',
+      project_id: 'project-uuid-001',
+      po_number: 'PO-001',
+      total_amount: '60000.0000',
+      currency_code: 'THB',
+      delivery_date: '2026-09-01',
+      created_by: 'user-uuid-001',
+    });
+    expect(mockRepo.createLineItems).toHaveBeenCalledWith('po-uuid-001', [
+      {
+        boq_item_id: undefined,
+        description: 'Concrete mix M35',
+        quantity: '10.0000',
+        unit: 'm3',
+        unit_price: '6000.0000',
+        line_total: '60000.0000',
+      },
+    ]);
+    expect(mockRepo.setPoWorkflowId).toHaveBeenCalledWith('po-uuid-001', 'po-po-uuid-001');
+  });
+
+  it('starts poWorkflow with exact params, thresholds, and default approvers', async () => {
+    const originals = {
+      pm: process.env['DEFAULT_PM_APPROVER_ID'],
+      fin: process.env['DEFAULT_FINANCE_APPROVER_ID'],
+      exec: process.env['DEFAULT_EXECUTIVE_APPROVER_ID'],
+      admin: process.env['DEFAULT_TENANT_ADMIN_ID'],
+    };
+    delete process.env['DEFAULT_PM_APPROVER_ID'];
+    delete process.env['DEFAULT_FINANCE_APPROVER_ID'];
+    delete process.env['DEFAULT_EXECUTIVE_APPROVER_ID'];
+    delete process.env['DEFAULT_TENANT_ADMIN_ID'];
+    try {
+      await service.createPurchaseOrder(poDto);
+      expect(mockWorkflowStart).toHaveBeenCalledWith('poWorkflow', {
+        taskQueue: 'procurement',
+        workflowId: 'po-po-uuid-001',
+        args: [
+          {
+            po_id: 'po-uuid-001',
+            project_id: 'project-uuid-001',
+            vendor_id: 'vendor-uuid-001',
+            tenant_id: 'tenant-uuid-001',
+            correlation_id: expect.any(String),
+            total_amount_thb: '60000.0000',
+            po_number: 'PO-001',
+            total_amount: '60000.0000',
+            currency_code: 'THB',
+            approval_thresholds: { pm_only_max: 50000, pm_finance_max: 500000 },
+            approvers: {
+              pm_id: '00000000-0000-0000-0000-000000000001',
+              finance_id: '00000000-0000-0000-0000-000000000002',
+              executive_id: '00000000-0000-0000-0000-000000000003',
+              tenant_admin_id: '00000000-0000-0000-0000-000000000004',
+            },
+          },
+        ],
+      });
+    } finally {
+      if (originals.pm !== undefined) process.env['DEFAULT_PM_APPROVER_ID'] = originals.pm;
+      if (originals.fin !== undefined) process.env['DEFAULT_FINANCE_APPROVER_ID'] = originals.fin;
+      if (originals.exec !== undefined)
+        process.env['DEFAULT_EXECUTIVE_APPROVER_ID'] = originals.exec;
+      if (originals.admin !== undefined) process.env['DEFAULT_TENANT_ADMIN_ID'] = originals.admin;
+    }
+  });
+
+  it('uses env-configured approver ids when set', async () => {
+    const originals = {
+      pm: process.env['DEFAULT_PM_APPROVER_ID'],
+      fin: process.env['DEFAULT_FINANCE_APPROVER_ID'],
+      exec: process.env['DEFAULT_EXECUTIVE_APPROVER_ID'],
+      admin: process.env['DEFAULT_TENANT_ADMIN_ID'],
+    };
+    process.env['DEFAULT_PM_APPROVER_ID'] = 'env-pm-id';
+    process.env['DEFAULT_FINANCE_APPROVER_ID'] = 'env-finance-id';
+    process.env['DEFAULT_EXECUTIVE_APPROVER_ID'] = 'env-executive-id';
+    process.env['DEFAULT_TENANT_ADMIN_ID'] = 'env-admin-id';
+    try {
+      await service.createPurchaseOrder(poDto);
+      const params = mockWorkflowStart.mock.calls.at(-1)![1].args[0];
+      expect(params.approvers).toEqual({
+        pm_id: 'env-pm-id',
+        finance_id: 'env-finance-id',
+        executive_id: 'env-executive-id',
+        tenant_admin_id: 'env-admin-id',
+      });
+    } finally {
+      for (const [key, value] of [
+        ['DEFAULT_PM_APPROVER_ID', originals.pm],
+        ['DEFAULT_FINANCE_APPROVER_ID', originals.fin],
+        ['DEFAULT_EXECUTIVE_APPROVER_ID', originals.exec],
+        ['DEFAULT_TENANT_ADMIN_ID', originals.admin],
+      ] as const) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
+    }
+  });
+
+  it('publishes exact po.created event and log', async () => {
+    await service.createPurchaseOrder(poDto);
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.po.created.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-uuid-001',
+      occurred_at: expect.any(String),
+      correlation_id: expect.any(String),
+      payload: {
+        po_id: 'po-uuid-001',
+        project_id: 'project-uuid-001',
+        vendor_id: 'vendor-uuid-001',
+        po_number: 'PO-001',
+        total_amount: { amount: '60000.0000', currency_code: 'THB' },
+        delivery_date: '2026-09-01',
+        line_items: [
+          {
+            item_id: 'line-uuid-001',
+            quantity: '10.0000',
+            unit: 'm3',
+            unit_price: '6000.0000',
+          },
+        ],
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', workflow_id: 'po-po-uuid-001', tenant_id: 'tenant-uuid-001' },
+      'po.created',
+    );
+  });
+});
+
+describe('exact contracts — PO lifecycle signals and errors', () => {
+  it('submitPoForApproval — exact signal, log, and error messages', async () => {
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    await service.submitPoForApproval('po-uuid-001');
+    expect(mockGetHandle).toHaveBeenCalledWith('po-po-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(submitPoSignal, {
+      actor_id: 'user-uuid-001',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', actor_id: 'user-uuid-001' },
+      'po.submitted',
+    );
+
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'PENDING_APPROVAL' });
+    await expect(service.submitPoForApproval('po-uuid-001')).rejects.toThrow(
+      'PO po-uuid-001 must be DRAFT (current: PENDING_APPROVAL)',
+    );
+
+    mockRepo.findPoById.mockResolvedValue(null);
+    await expect(service.submitPoForApproval('missing')).rejects.toThrow(
+      'Purchase order missing not found',
+    );
+
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, temporal_workflow_id: null });
+    await expect(service.submitPoForApproval('po-uuid-001')).rejects.toThrow(
+      'PO po-uuid-001 has no Temporal workflow',
+    );
+  });
+
+  it('approvePo — exact signal payload and log', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'PENDING_APPROVAL' });
+    await service.approvePo('po-uuid-001', 'FINANCE');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(approvePoSignal, {
+      approver_id: 'user-uuid-001',
+      tier: 'FINANCE',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', tier: 'FINANCE', approver_id: 'user-uuid-001' },
+      'po.approved',
+    );
+  });
+
+  it('rejectPo — exact signal payload and log', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'PENDING_APPROVAL' });
+    await service.rejectPo('po-uuid-001', 'Price too high');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(rejectPoSignal, {
+      approver_id: 'user-uuid-001',
+      reason: 'Price too high',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', actor_id: 'user-uuid-001' },
+      'po.rejected',
+    );
+  });
+
+  it('acknowledgePo — exact signal payload and log', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'SENT' });
+    await service.acknowledgePo('po-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(acknowledgePoSignal, {
+      actor_id: 'user-uuid-001',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', actor_id: 'user-uuid-001' },
+      'po.acknowledged',
+    );
+  });
+
+  it('markInvoicePaid / disputeInvoice — exact signals and logs', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'INVOICED' });
+    await service.markInvoicePaid('po-uuid-001');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(markPaidSignal, {
+      actor_id: 'user-uuid-001',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', actor_id: 'user-uuid-001' },
+      'invoice.paid',
+    );
+
+    await service.disputeInvoice('po-uuid-001', 'Wrong amount');
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(disputeInvoiceSignal, {
+      actor_id: 'user-uuid-001',
+      reason: 'Wrong amount',
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { po_id: 'po-uuid-001', actor_id: 'user-uuid-001' },
+      'invoice.disputed',
+    );
+  });
+
+  it('getPurchaseOrder — exact not-found message', async () => {
+    mockRepo.findPoById.mockResolvedValue(null);
+    await expect(service.getPurchaseOrder('missing')).rejects.toThrow(
+      'Purchase order missing not found',
+    );
+  });
+});
+
+describe('exact contracts — recordDelivery', () => {
+  const deliveredAt = '2026-09-02T08:00:00.000Z';
+  const deliveryRow = {
+    delivery_id: 'delivery-uuid-001',
+    po_id: 'po-uuid-001',
+    tenant_id: 'tenant-uuid-001',
+    delivery_note: null,
+    delivered_at: new Date(deliveredAt),
+    received_by: 'user-uuid-001',
+    notes: null,
+  } as DeliveryRow;
+  const deliveryItems = [
+    {
+      delivery_item_id: 'di-uuid-001',
+      delivery_id: 'delivery-uuid-001',
+      line_id: 'line-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      quantity_received: '5.0000',
+    } as DeliveryItemRow,
+  ];
+
+  it('exact not-found and wrong-status messages', async () => {
+    mockRepo.findPoById.mockResolvedValue(null);
+    await expect(
+      service.recordDelivery({
+        po_id: 'missing-po',
+        delivered_at: deliveredAt,
+        items: [{ line_id: 'l-001', quantity_received: '5.0000' }],
+      }),
+    ).rejects.toThrow('Purchase order missing-po not found');
+
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'DRAFT' });
+    await expect(
+      service.recordDelivery({
+        po_id: 'po-uuid-001',
+        delivered_at: deliveredAt,
+        items: [{ line_id: 'l-001', quantity_received: '5.0000' }],
+      }),
+    ).rejects.toThrow(
+      'PO po-uuid-001 must be ACKNOWLEDGED or PARTIALLY_DELIVERED to record delivery (current: DRAFT)',
+    );
+  });
+
+  it('accepts a PO in PARTIALLY_DELIVERED status', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'PARTIALLY_DELIVERED' });
+    mockRepo.createDelivery.mockResolvedValue({ delivery: deliveryRow, items: deliveryItems });
+    mockRepo.findLineItemsByPo.mockResolvedValue(lineItemFixtures);
+    mockRepo.sumDeliveredQuantity.mockResolvedValue('10.0000');
+    const result = await service.recordDelivery({
+      po_id: 'po-uuid-001',
+      delivered_at: deliveredAt,
+      items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
+    });
+    expect(result.is_partial).toBe(false);
+  });
+
+  it('exact repo payload, signal, Kafka event, and log for a mixed partial delivery', async () => {
+    // Two line items: one fully delivered, one not — is_partial must be true.
+    // (Kills every→some mutation: some(Boolean) would be true here.)
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'ACKNOWLEDGED' });
+    mockRepo.createDelivery.mockResolvedValue({ delivery: deliveryRow, items: deliveryItems });
+    mockRepo.findLineItemsByPo.mockResolvedValue([
+      lineItemFixtures[0]!,
+      { ...lineItemFixtures[0]!, line_id: 'line-uuid-002', quantity: '4.0000' },
+    ]);
+    mockRepo.sumDeliveredQuantity.mockImplementation(async (lineId: string) =>
+      lineId === 'line-uuid-001' ? '10.0000' : '1.0000',
+    );
+
+    const result = await service.recordDelivery({
+      po_id: 'po-uuid-001',
+      delivered_at: deliveredAt,
+      items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
+    });
+
+    expect(result.is_partial).toBe(true);
+    expect(mockRepo.createDelivery).toHaveBeenCalledWith({
+      po_id: 'po-uuid-001',
+      delivery_note: undefined,
+      delivered_at: deliveredAt,
+      received_by: 'user-uuid-001',
+      notes: undefined,
+      items: [{ line_id: 'line-uuid-001', quantity_received: '5.0000' }],
+    });
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(recordDeliverySignal, {
+      delivery_id: 'delivery-uuid-001',
+      is_partial: true,
+    });
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.delivery.received.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-uuid-001',
+      occurred_at: expect.any(String),
+      correlation_id: expect.any(String),
+      payload: {
+        delivery_id: 'delivery-uuid-001',
+        po_id: 'po-uuid-001',
+        project_id: 'project-uuid-001',
+        vendor_id: 'vendor-uuid-001',
+        received_by: 'user-uuid-001',
+        received_at: deliveredAt,
+        items_received: [{ item_id: 'line-uuid-001', quantity_received: '5.0000' }],
+        partial: true,
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      {
+        delivery_id: 'delivery-uuid-001',
+        po_id: 'po-uuid-001',
+        is_partial: true,
+        tenant_id: 'tenant-uuid-001',
+      },
+      'delivery.recorded',
+    );
+  });
+});
+
+describe('exact contracts — invoices', () => {
+  const invoiceRow = {
+    invoice_id: 'inv-uuid-001',
+    po_id: 'po-uuid-001',
+    vendor_id: 'vendor-uuid-001',
+    tenant_id: 'tenant-uuid-001',
+    invoice_number: 'INV-001',
+    amount: '60000.0000',
+    currency_code: 'THB',
+    invoice_date: new Date('2026-09-05'),
+    due_date: new Date('2026-09-20T00:00:00.000Z'),
+    status: 'RECEIVED' as const,
+    file_id: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  it('receiveInvoice — exact repo payload, signal, Kafka event, and log', async () => {
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'FULLY_DELIVERED' });
+    mockRepo.createInvoice.mockResolvedValue(invoiceRow);
+    await service.receiveInvoice({
+      po_id: 'po-uuid-001',
+      invoice_number: 'INV-001',
+      amount: '60000.0000',
+      currency_code: 'THB',
+      invoice_date: '2026-09-05',
+      due_date: '2026-09-20',
+    });
+    expect(mockRepo.createInvoice).toHaveBeenCalledWith({
+      po_id: 'po-uuid-001',
+      vendor_id: 'vendor-uuid-001',
+      invoice_number: 'INV-001',
+      amount: '60000.0000',
+      currency_code: 'THB',
+      invoice_date: '2026-09-05',
+      due_date: '2026-09-20',
+      file_id: undefined,
+    });
+    expect(mockWorkflowSignal).toHaveBeenCalledWith(receiveInvoiceSignal, {
+      invoice_id: 'inv-uuid-001',
+    });
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.invoice.received.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-uuid-001',
+      occurred_at: expect.any(String),
+      correlation_id: expect.any(String),
+      payload: {
+        invoice_id: 'inv-uuid-001',
+        po_id: 'po-uuid-001',
+        project_id: 'project-uuid-001',
+        vendor_id: 'vendor-uuid-001',
+        amount: { amount: '60000.0000', currency_code: 'THB' },
+        invoice_date: '2026-09-05',
+        due_date: '2026-09-20',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { invoice_id: 'inv-uuid-001', po_id: 'po-uuid-001', tenant_id: 'tenant-uuid-001' },
+      'invoice.received',
+    );
+
+    mockRepo.findPoById.mockResolvedValue({ ...poFixture, status: 'INVOICED' });
+    await expect(
+      service.receiveInvoice({
+        po_id: 'po-uuid-001',
+        invoice_number: 'INV-001',
+        amount: '60000.0000',
+        currency_code: 'THB',
+        invoice_date: '2026-09-05',
+        due_date: '2026-09-20',
+      }),
+    ).rejects.toThrow('PO po-uuid-001 must be FULLY_DELIVERED (current: INVOICED)');
+  });
+
+  it('approveInvoice — exact status update, Kafka event (date-only payment_due), and log', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(invoiceRow);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    await service.approveInvoice('inv-uuid-001');
+    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith('inv-uuid-001', 'APPROVED');
+    expect(mockKafkaPublish).toHaveBeenCalledWith({
+      event_type: 'procurement.vendor_invoice.approved.v1',
+      event_version: '1.0',
+      tenant_id: 'tenant-uuid-001',
+      actor_id: 'user-uuid-001',
+      occurred_at: expect.any(String),
+      correlation_id: expect.any(String),
+      payload: {
+        invoice_id: 'inv-uuid-001',
+        po_id: 'po-uuid-001',
+        project_id: 'project-uuid-001',
+        vendor_id: 'vendor-uuid-001',
+        amount: { amount: '60000.0000', currency_code: 'THB' },
+        approved_by: 'user-uuid-001',
+        approved_at: expect.any(String),
+        payment_due: '2026-09-20',
+      },
+    });
+    expect(loggerMock.info).toHaveBeenCalledWith(
+      { invoice_id: 'inv-uuid-001', po_id: 'po-uuid-001', actor_id: 'user-uuid-001' },
+      'invoice.approved',
+    );
+  });
+
+  it('approveInvoice — accepts a VERIFIED invoice', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue({ ...invoiceRow, status: 'VERIFIED' });
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.findPoById.mockResolvedValue(poFixture);
+    const result = await service.approveInvoice('inv-uuid-001');
+    expect(result.status).toBe('APPROVED');
+  });
+
+  it('approveInvoice — publishes empty project_id when PO lookup fails', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(invoiceRow);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    mockRepo.findPoById.mockResolvedValue(null);
+    await service.approveInvoice('inv-uuid-001');
+    expect(mockKafkaPublish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ project_id: '' }),
+      }),
+    );
+  });
+
+  it('approveInvoice — exact not-found and wrong-status messages', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(null);
+    await expect(service.approveInvoice('missing')).rejects.toThrow('Invoice missing not found');
+
+    mockRepo.findInvoiceById.mockResolvedValue({ ...invoiceRow, status: 'APPROVED' });
+    await expect(service.approveInvoice('inv-uuid-001')).rejects.toThrow(
+      'Invoice inv-uuid-001 must be RECEIVED or VERIFIED to approve (current: APPROVED)',
+    );
   });
 });

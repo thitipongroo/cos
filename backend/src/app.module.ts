@@ -25,6 +25,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
 import { SyncModule } from './modules/sync/sync.module';
+import { FeatureFlagsModule } from './shared/feature-flags/feature-flags.module';
+import { FeatureFlagGuard } from './shared/feature-flags/feature-flag.guard';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
 import { HttpMetricsInterceptor } from './shared/interceptors/http-metrics.interceptor';
 import { RequestIdInterceptor } from './shared/interceptors/request-id.interceptor';
@@ -55,6 +57,7 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
       }),
     }),
     TerminusModule,
+    FeatureFlagsModule, // QM-15 / ADR-049 — Unleash-backed flags + GET /api/v1/flags
     IdentityModule,
     TenantModule,
     ProjectModule,
@@ -84,6 +87,8 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
   providers: [
     // Global rate limiting guard — ThrottlerModule handles limits; Redis storage shared across replicas
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Feature-flag kill switch — only gates routes carrying @FeatureFlag metadata (QM-15; ADR-049)
+    { provide: APP_GUARD, useClass: FeatureFlagGuard },
     // RequestIdInterceptor must be first — sets request.requestId before AuditInterceptor runs
     { provide: APP_INTERCEPTOR, useClass: RequestIdInterceptor },
     // Projects req.user (set by JwtAuthGuard) onto req.tenantId/tenantCode/userId/userRole

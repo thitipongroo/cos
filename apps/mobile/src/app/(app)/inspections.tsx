@@ -10,6 +10,7 @@ import SafetyChecklist from '../../db/models/SafetyChecklist';
 import { useCollection } from '../../hooks/useCollection';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface InspectionRow {
@@ -30,6 +31,7 @@ export default function InspectionsScreen() {
   const [active, setActive] = useState<SafetyChecklist | null>(null);
   const [passed, setPassed] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
+  const t = useT();
 
   const load = async (): Promise<void> => {
     try {
@@ -92,18 +94,24 @@ export default function InspectionsScreen() {
     return (
       <View testID="inspection-checklist" style={styles.container}>
         <Text style={styles.heading}>{active.checklistName}</Text>
-        {items.length === 0 ? <Text style={styles.empty}>Checklist has no items</Text> : null}
+        {items.length === 0 ? (
+          <Text style={styles.empty}>{t('site.inspections.noItems')}</Text>
+        ) : null}
         {items.map((it, idx) => {
           const key = it.id ?? String(idx);
           return (
             <View key={key} testID="checklist-item" style={styles.checkRow}>
-              <Text style={styles.itemTitle}>{it.label ?? `Item ${idx + 1}`}</Text>
+              <Text style={styles.itemTitle}>
+                {it.label ?? t('site.inspections.itemFallback', { index: idx + 1 })}
+              </Text>
               <TouchableOpacity
                 testID="checklist-pass-button"
                 style={[styles.pass, passed[key] && styles.passOn]}
                 onPress={() => setPassed((p) => ({ ...p, [key]: true }))}
               >
-                <Text style={styles.passText}>{passed[key] ? 'Passed' : 'Pass'}</Text>
+                <Text style={styles.passText}>
+                  {passed[key] ? t('site.inspections.passed') : t('site.inspections.pass')}
+                </Text>
               </TouchableOpacity>
             </View>
           );
@@ -112,15 +120,15 @@ export default function InspectionsScreen() {
         <PhotoCapture entityType="inspection" entityId={active.checklistId} />
 
         <TouchableOpacity testID="submit-inspection-button" style={styles.submit} onPress={submit}>
-          <Text style={styles.submitText}>Submit inspection</Text>
+          <Text style={styles.submitText}>{t('site.inspections.submit')}</Text>
         </TouchableOpacity>
         {submitted ? (
           <Text testID="inspection-saved" style={styles.saved}>
-            Saved offline — will sync when online
+            {t('site.inspections.saved')}
           </Text>
         ) : null}
         <TouchableOpacity onPress={() => setActive(null)}>
-          <Text style={styles.back}>← Back</Text>
+          <Text style={styles.back}>{t('common.back')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -128,19 +136,19 @@ export default function InspectionsScreen() {
 
   return (
     <View testID="inspection-list" style={styles.container}>
-      <Text style={styles.heading}>Inspections</Text>
+      <Text style={styles.heading}>{t('site.inspections.title')}</Text>
       <TouchableOpacity
         testID="new-inspection-button"
         style={[styles.submit, checklists.length === 0 && styles.disabled]}
         onPress={openChecklist}
         disabled={checklists.length === 0}
       >
-        <Text style={styles.submitText}>Fill checklist</Text>
+        <Text style={styles.submitText}>{t('site.inspections.fill')}</Text>
       </TouchableOpacity>
       <FlatList
         data={inspections}
         keyExtractor={(i) => i.inspection_id}
-        ListEmptyComponent={<Text style={styles.empty}>No inspections</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('site.inspections.empty')}</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity
             testID="inspection-item"

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { useI18n } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface PmDashboardRow {
@@ -16,16 +17,17 @@ interface PmDashboardRow {
 }
 
 const KPI_LABELS: Array<[keyof Omit<PmDashboardRow, 'eventDate'>, string]> = [
-  ['manpowerTotal', 'Manpower'],
-  ['issueOpenCount', 'Open issues'],
-  ['inspectionFailCount', 'Failed inspections'],
-  ['reportCount', 'Reports'],
+  ['manpowerTotal', 'pm.dashboard.manpower'],
+  ['issueOpenCount', 'pm.dashboard.openIssues'],
+  ['inspectionFailCount', 'pm.dashboard.failedInspections'],
+  ['reportCount', 'pm.dashboard.reports'],
 ];
 
 export default function DashboardScreen() {
   const [projectId, setProjectId] = useState('');
   const [rows, setRows] = useState<PmDashboardRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t, formatDate } = useI18n();
 
   const onSelect = async (id: string): Promise<void> => {
     setProjectId(id);
@@ -33,7 +35,7 @@ export default function DashboardScreen() {
     try {
       setRows(await get<PmDashboardRow[]>(`/analytics/pm/${id}`));
     } catch {
-      setError('Could not load analytics (offline?)');
+      setError(t('pm.dashboard.loadError'));
       setRows(null);
     }
   };
@@ -44,7 +46,7 @@ export default function DashboardScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.heading}>Dashboard</Text>
+      <Text style={styles.heading}>{t('pm.dashboard.title')}</Text>
       <ProjectPicker selectedId={projectId} onSelect={onSelect} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -53,10 +55,10 @@ export default function DashboardScreen() {
         <View testID="kpi-list" style={styles.kpis}>
           {rows.map((row) => (
             <View key={row.eventDate} testID="kpi-day" style={styles.dayCard}>
-              <Text style={styles.dayDate}>{row.eventDate}</Text>
-              {KPI_LABELS.map(([key, label]) => (
+              <Text style={styles.dayDate}>{formatDate(row.eventDate)}</Text>
+              {KPI_LABELS.map(([key, labelKey]) => (
                 <View key={key} style={styles.kpiRow}>
-                  <Text style={styles.kpiKey}>{label}</Text>
+                  <Text style={styles.kpiKey}>{t(labelKey)}</Text>
                   <Text style={styles.kpiValue}>{String(row[key])}</Text>
                 </View>
               ))}
@@ -65,7 +67,7 @@ export default function DashboardScreen() {
         </View>
       ) : (
         <Text style={styles.empty}>
-          {rows ? 'No analytics for this project yet' : 'Select a project to view KPIs'}
+          {rows ? t('pm.dashboard.emptyForProject') : t('pm.dashboard.selectPrompt')}
         </Text>
       )}
     </ScrollView>

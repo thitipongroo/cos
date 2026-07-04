@@ -6,24 +6,26 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { usePendingCount } from '../hooks/usePendingCount';
 import { useSyncStore } from '../store/syncStore';
+import { useI18n } from '../i18n';
 import { colors, fontFamily } from '../theme/tokens';
 
 export function SyncStatusBar() {
   const status = useSyncStatus();
   const pendingCount = usePendingCount();
   const lastSyncAt = useSyncStore((s) => s.lastSyncAt);
+  const { t, formatTime } = useI18n();
 
   const label =
     status === 'syncing'
-      ? 'Syncing…'
+      ? t('sync.statusBar.syncing')
       : status === 'error'
-        ? 'Sync error'
+        ? t('sync.statusBar.error')
         : pendingCount > 0
-          ? `${pendingCount} change${pendingCount === 1 ? '' : 's'} pending`
-          : 'Up to date';
+          ? t('sync.statusBar.pending', { count: pendingCount })
+          : t('sync.statusBar.upToDate');
 
   const lastSyncLabel = lastSyncAt
-    ? `Last synced ${new Date(lastSyncAt).toLocaleTimeString()}`
+    ? t('sync.statusBar.lastSynced', { time: formatTime(lastSyncAt) })
     : null;
 
   const tone =

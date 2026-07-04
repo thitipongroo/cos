@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { get, mutate } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface ConflictRecord {
@@ -16,6 +17,7 @@ interface ConflictRecord {
 
 export default function ConflictReviewScreen() {
   const [records, setRecords] = useState<ConflictRecord[]>([]);
+  const t = useT();
 
   const load = async (): Promise<void> => {
     try {
@@ -45,11 +47,11 @@ export default function ConflictReviewScreen() {
 
   return (
     <View testID="conflict-review-screen" style={styles.container}>
-      <Text style={styles.heading}>Conflicts to review</Text>
+      <Text style={styles.heading}>{t('sync.conflictReview.title')}</Text>
       <FlatList
         data={records}
         keyExtractor={(r) => r.conflict_id}
-        ListEmptyComponent={<Text style={styles.empty}>No conflicts 🎉</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('sync.conflictReview.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="conflict-record-item" style={styles.item}>
             <Text style={styles.itemTitle}>{item.entity_type}</Text>
@@ -59,7 +61,7 @@ export default function ConflictReviewScreen() {
               style={styles.resolve}
               onPress={() => resolve(item.conflict_id)}
             >
-              <Text style={styles.resolveText}>Mark resolved</Text>
+              <Text style={styles.resolveText}>{t('sync.conflictReview.resolve')}</Text>
             </TouchableOpacity>
           </View>
         )}

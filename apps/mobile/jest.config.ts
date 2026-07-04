@@ -16,6 +16,7 @@ const config: Config = {
     '^expo-background-fetch$': '<rootDir>/src/__mocks__/expo-background-fetch.ts',
     '^expo-task-manager$': '<rootDir>/src/__mocks__/expo-task-manager.ts',
     '^expo-battery$': '<rootDir>/src/__mocks__/expo-battery.ts',
+    '^react-native$': '<rootDir>/src/__mocks__/react-native.ts',
     '^@react-native-community/netinfo$': '<rootDir>/src/__mocks__/netinfo.ts',
     '^@nozbe/watermelondb$': '<rootDir>/src/__mocks__/watermelondb.ts',
     '^@nozbe/watermelondb/(.*)$': '<rootDir>/src/__mocks__/watermelondb.ts',
@@ -26,7 +27,8 @@ const config: Config = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   // Scope the 100% gate to unit-testable business logic. Excluded by omission: UI screens
-  // (src/app/**), RN components (src/components/**), the axios instance + interceptors
+  // (src/app/**), RN components (src/components/**), the i18n React provider (src/i18n/index.tsx —
+  // its logic lives in the fully covered src/i18n/*.ts modules), the axios instance + interceptors
   // (src/api/client.ts), WatermelonDB runtime wiring (src/db/database|schema|migrations + models),
   // and React data hooks that require a render host (useNetworkStatus, useCollection). These are
   // covered by the Detox E2E suite / integration, not unit tests.
@@ -34,6 +36,7 @@ const config: Config = {
     'src/sync/**/*.ts',
     'src/store/*.ts',
     'src/lib/**/*.ts',
+    'src/i18n/**/*.ts',
     'src/api/auth.ts',
     'src/hooks/useSyncStatus.ts',
     'src/hooks/usePendingCount.ts',

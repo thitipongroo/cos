@@ -2,6 +2,7 @@
 // Covers task/issue/report/sync statuses; unknown labels fall back to a neutral chip.
 
 import { View, Text, StyleSheet } from 'react-native';
+import { useI18n } from '../i18n';
 import { colors, fontFamily, typography } from '../theme/tokens';
 
 const STATUS_COLOR: Record<string, string> = {
@@ -29,10 +30,11 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function StatusChip({ label, testID }: { label: string; testID?: string }) {
+  const { statusLabel } = useI18n();
   const bg = STATUS_COLOR[label] ?? colors.textSecondary;
   return (
     <View testID={testID} style={[styles.chip, { backgroundColor: bg }]}>
-      <Text style={styles.text}>{label}</Text>
+      <Text style={styles.text}>{statusLabel(label)}</Text>
     </View>
   );
 }

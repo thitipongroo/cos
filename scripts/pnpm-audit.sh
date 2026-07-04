@@ -38,6 +38,7 @@ SUPPRESSED_GHSA = {
     # Fix: upgrade testcontainers to a release that ships undici@6+ (deferred — Phase 31)
     "GHSA-vrm6-8vpv-qv8q",  # CVE-2026-1526  undici unbounded WebSocket memory
     "GHSA-v9p9-hfj2-hcw8",  # CVE-2026-2229  undici unhandled WebSocket exception
+    "GHSA-vxpw-j846-p89q",  # no CVE        undici WebSocket DoS via fragment count bypass (<6.27.0)
     # ── next-pwa@5 → workbox@6 → serialize-javascript@4 (build-only) ──
     # Fix: upgrade next-pwa to a release with workbox@7+ (deferred — Phase 31)
     "GHSA-5c6j-r48x-rmvq",  # no CVE        serialize-javascript RCE via RegExp.flags
