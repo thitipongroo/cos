@@ -158,7 +158,7 @@ carries the resolution + spec pointer. Do not treat a RESOLVED item as an `AWAIT
 | Backend             | NestJS Modular Monolith (NOT microservices)                                                     |
 | Multi-tenant        | Shared DB + tenant_id + PostgreSQL RLS, `SET LOCAL app.current_tenant_id`                       |
 | Event bus           | Apache Kafka 4.x + Confluent Schema Registry (BACKWARD compat, Avro)                            |
-| Mobile storage      | WatermelonDB 0.28.x + ExpoSQLiteAdapter (main entities); expo-sqlite directly (sync_queue only) |
+| Mobile storage      | Drizzle ORM on expo-sqlite (main entities — spec 17 §17.10 / ADR-048); sync_queue on its own expo-sqlite handle |
 | Web offline (PWA)   | Serwist (@serwist/turbopack) + IndexedDB via `idb` — unified in apps/web/                       |
 | API versioning      | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                        |
 | Financial precision | `DECIMAL(19,4)` in DB; `decimal.js` in Node.js; Python `decimal` module                         |

@@ -6,9 +6,9 @@
 
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { database } from '../../db/database';
-import Issue from '../../db/models/Issue';
-import Attendance from '../../db/models/Attendance';
+import { db, newLocalId } from '../../db/database';
+import type { Issue } from '../../db/database';
+import { localAttendance } from '../../db/schema';
 import { useCollection } from '../../hooks/useCollection';
 import { usePendingCount } from '../../hooks/usePendingCount';
 import { getMyWorker, recordCheckIn } from '../../api/workforce';
@@ -33,16 +33,15 @@ export default function HomeScreen() {
       const worker = await getMyWorker(); // 404 if no worker linked to this user
       const now = new Date().toISOString();
       await recordCheckIn(worker.worker_id, projectId.trim(), now); // offline-queued via mutate()
-      await database.write(async () => {
-        await database.get<Attendance>('local_attendance').create((r) => {
-          r.logId = '';
-          r.workerId = worker.worker_id;
-          r.projectId = projectId.trim();
-          r.checkInAt = now;
-          r.checkOutAt = null;
-          r.hoursWorked = null;
-          r.offlineSyncStatus = 'PENDING';
-        });
+      await db.insert(localAttendance).values({
+        id: newLocalId(),
+        logId: '',
+        workerId: worker.worker_id,
+        projectId: projectId.trim(),
+        checkInAt: now,
+        checkOutAt: null,
+        hoursWorked: null,
+        offlineSyncStatus: 'PENDING',
       });
       setMessage(t('home.main.checkedIn'));
     } catch {

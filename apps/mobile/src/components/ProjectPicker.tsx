@@ -4,7 +4,7 @@
 
 import { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import Project from '../db/models/Project';
+import type { Project } from '../db/database';
 import { useCollection } from '../hooks/useCollection';
 import { refreshProjectsCache } from '../api/projects';
 import { useT } from '../i18n';

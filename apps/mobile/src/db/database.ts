@@ -1,45 +1,142 @@
-// WatermelonDB database singleton — Priority 0 Section F
-// Uses SQLiteAdapter (backed by expo-sqlite ~15.x, WAL mode via JSI)
-// Import this single instance wherever WatermelonDB access is needed.
+// Local offline DB — Drizzle ORM on expo-sqlite (spec §17.10, approved 2026-07-04).
+// Replaces the WatermelonDB Database singleton. `enableChangeListener` powers useLiveQuery
+// (reactive reads). Schema is created with versioned runtime DDL (PRAGMA user_version),
+// following the sync_queue precedent — no drizzle-kit build tooling (§17.10 implementation note).
+//
+// Fresh DB file (cos_offline_v2.db): read caches repopulate from delta sync / GET /projects on
+// first entry; queued mutations live in sync_queue (cos_sync_queue.db) and are unaffected.
 
-import { Database } from '@nozbe/watermelondb';
-import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
-import { schema } from './schema';
-import { migrations } from './migrations';
-import SiteReport from './models/SiteReport';
-import Issue from './models/Issue';
-import Photo from './models/Photo';
-import Task from './models/Task';
-import Attendance from './models/Attendance';
-import SafetyChecklist from './models/SafetyChecklist';
-import Project from './models/Project';
-import Incident from './models/Incident';
-import MaterialConsumption from './models/MaterialConsumption';
+import { openDatabaseSync } from 'expo-sqlite';
+import { drizzle } from 'drizzle-orm/expo-sqlite';
+import { eq } from 'drizzle-orm';
+import {
+  localSiteReports,
+  localIssues,
+  localPhotos,
+  localTasks,
+  localAttendance,
+  localSafetyChecklists,
+  localProjects,
+  localIncidents,
+  localMaterialConsumptions,
+} from './schema';
 
-const adapter = new SQLiteAdapter({
-  schema,
-  migrations,
-  dbName: 'cos_offline',
-  jsi: true, // JSI enables WAL mode + synchronous reads
-  onSetUpError: (error) => {
-    // Database setup failed — DB may be corrupted; handled by caller
-    console.error('[database] setup error', error);
-  },
-});
+export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
+sqlite.execSync('PRAGMA journal_mode = WAL');
 
-export const database = new Database({
-  adapter,
-  modelClasses: [
-    SiteReport,
-    Issue,
-    Photo,
-    Task,
-    Attendance,
-    SafetyChecklist,
-    Project,
-    Incident,
-    MaterialConsumption,
-  ],
-});
+const DDL_VERSION = 1;
 
-export { SiteReport, Issue, Photo, Task, Attendance, SafetyChecklist, Project };
+function ddl(): void {
+  const row = sqlite.getFirstSync<{ user_version: number }>('PRAGMA user_version');
+  if ((row?.user_version ?? 0) >= DDL_VERSION) return;
+  sqlite.execSync(`
+    CREATE TABLE IF NOT EXISTS local_site_reports (
+      id TEXT PRIMARY KEY NOT NULL, report_id TEXT NOT NULL, project_id TEXT NOT NULL,
+      report_date TEXT NOT NULL, summary TEXT, status TEXT NOT NULL, sync_status TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS local_issues (
+      id TEXT PRIMARY KEY NOT NULL, issue_id TEXT NOT NULL, project_id TEXT NOT NULL,
+      report_id TEXT, title TEXT NOT NULL, description TEXT, severity TEXT NOT NULL,
+      status TEXT NOT NULL, sync_status TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS local_photos (
+      id TEXT PRIMARY KEY NOT NULL, photo_id TEXT NOT NULL, entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL, local_path TEXT NOT NULL, upload_status TEXT NOT NULL,
+      server_file_id TEXT);
+    CREATE TABLE IF NOT EXISTS local_tasks (
+      id TEXT PRIMARY KEY NOT NULL, task_id TEXT NOT NULL, project_id TEXT NOT NULL,
+      task_name TEXT NOT NULL, status TEXT NOT NULL, progress_percent REAL NOT NULL,
+      assigned_to TEXT, sync_status TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS local_attendance (
+      id TEXT PRIMARY KEY NOT NULL, log_id TEXT NOT NULL, worker_id TEXT NOT NULL,
+      project_id TEXT NOT NULL, check_in_at TEXT, check_out_at TEXT, hours_worked REAL,
+      sync_status TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS local_safety_checklists (
+      id TEXT PRIMARY KEY NOT NULL, checklist_id TEXT NOT NULL, project_id TEXT NOT NULL,
+      checklist_name TEXT NOT NULL, version INTEGER NOT NULL, items TEXT NOT NULL,
+      responses TEXT, sync_status TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS local_projects (
+      id TEXT PRIMARY KEY NOT NULL, project_id TEXT NOT NULL, project_code TEXT NOT NULL,
+      project_name TEXT NOT NULL, status TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS local_incidents (
+      id TEXT PRIMARY KEY NOT NULL, incident_id TEXT NOT NULL, project_id TEXT NOT NULL,
+      incident_type TEXT NOT NULL, severity TEXT NOT NULL, status TEXT NOT NULL,
+      created_at TEXT, sync_status TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS local_material_consumptions (
+      id TEXT PRIMARY KEY NOT NULL, consumption_id TEXT NOT NULL, project_id TEXT NOT NULL,
+      material_name TEXT NOT NULL, quantity REAL NOT NULL, unit TEXT NOT NULL,
+      consumed_at TEXT, sync_status TEXT NOT NULL);
+    PRAGMA user_version = ${DDL_VERSION};
+  `);
+}
+ddl();
+
+export const db = drizzle(sqlite);
+
+// Table registry — useCollection('local_issues') etc. resolve through this map.
+export const TABLES = {
+  local_site_reports: localSiteReports,
+  local_issues: localIssues,
+  local_photos: localPhotos,
+  local_tasks: localTasks,
+  local_attendance: localAttendance,
+  local_safety_checklists: localSafetyChecklists,
+  local_projects: localProjects,
+  local_incidents: localIncidents,
+  local_material_consumptions: localMaterialConsumptions,
+} as const;
+export type TableName = keyof typeof TABLES;
+
+// Local row ids (the old WatermelonDB autogenerated id role). Uniqueness within one device is
+// sufficient — server UUIDs arrive via sync.
+let idCounter = 0;
+export function newLocalId(): string {
+  idCounter += 1;
+  return `${Date.now().toString(36)}-${idCounter.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// ── Delta-sync seams (used by runDeltaSync; mocked by its unit tests) ────────────────────────
+// Upsert by a server-key column: update the first matching row or insert a new one.
+export async function upsertByKey(
+  table: TableName,
+  keyColumn: string,
+  keyValue: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const t = TABLES[table];
+  const col = t[keyColumn as keyof typeof t] as never;
+  const existing = await db.select().from(t).where(eq(col, keyValue));
+  if (existing.length > 0) {
+    await db
+      .update(t)
+      .set(values as never)
+      .where(eq(col, keyValue));
+  } else {
+    await db.insert(t).values({ id: newLocalId(), ...values } as never);
+  }
+}
+
+// Delete rows matching a server id in a given table's key column (delta tombstones).
+export async function deleteByKey(
+  table: TableName,
+  keyColumn: string,
+  keyValue: string,
+): Promise<void> {
+  const t = TABLES[table];
+  const col = t[keyColumn as keyof typeof t] as never;
+  await db.delete(t).where(eq(col, keyValue));
+}
+
+// Re-export row types so existing `import { Issue } from '../db/database'` call sites compile.
+export type {
+  SiteReport,
+  Issue,
+  Photo,
+  Task,
+  Attendance,
+  SafetyChecklist,
+  Project,
+  Incident,
+  MaterialConsumption,
+  SyncStatus,
+  UploadStatus,
+  PhotoEntityType,
+} from './schema';

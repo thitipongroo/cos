@@ -6,8 +6,9 @@
 
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { database } from '../../db/database';
-import Incident from '../../db/models/Incident';
+import { db, newLocalId } from '../../db/database';
+import type { Incident } from '../../db/database';
+import { localIncidents } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
@@ -33,16 +34,15 @@ export default function IncidentsScreen() {
       incident_type: incidentType.trim(),
       severity,
     };
-    await database.write(async () => {
-      await database.get<Incident>('local_incidents').create((r) => {
-        r.incidentId = '';
-        r.projectId = payload.project_id;
-        r.incidentType = payload.incident_type;
-        r.severity = payload.severity;
-        r.status = 'OPEN';
-        r.createdAt = new Date().toISOString();
-        r.offlineSyncStatus = 'PENDING';
-      });
+    await db.insert(localIncidents).values({
+      id: newLocalId(),
+      incidentId: '',
+      projectId: payload.project_id,
+      incidentType: payload.incident_type,
+      severity: payload.severity,
+      status: 'OPEN',
+      createdAt: new Date().toISOString(),
+      offlineSyncStatus: 'PENDING',
     });
     enqueue('safety', payload.project_id, 'CREATE', payload); // SyncManager → /sync/push (entity_type 'safety')
     setIncidentType('');

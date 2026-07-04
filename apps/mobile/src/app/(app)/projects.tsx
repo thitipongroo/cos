@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import Project from '../../db/models/Project';
+import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { refreshProjectsCache } from '../../api/projects';
 import { StatusChip } from '../../components/StatusChip';

@@ -1,7 +1,8 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { AnalyticsService } from './analytics.service';
+import { resolveDateRange, resolveTenantId, TenantRequest } from './analytics.request';
 
 @ApiTags('analytics')
 @ApiBearerAuth()
@@ -16,8 +17,12 @@ export class AnalyticsExecutiveController {
     summary: 'Executive dashboard — budget utilization, at-risk projects, overdue invoices',
   })
   @ApiQuery({ name: 'projectIds', type: [String], isArray: true })
-  @ApiQuery({ name: 'dateRange', type: String, description: 'YYYY-MM-DD,YYYY-MM-DD' })
-  @ApiQuery({ name: 'tenantId', type: String })
+  @ApiQuery({
+    name: 'dateRange',
+    type: String,
+    required: false,
+    description: 'YYYY-MM-DD,YYYY-MM-DD',
+  })
   @ApiQuery({
     name: 'riskThresholdPct',
     type: Number,
@@ -25,13 +30,19 @@ export class AnalyticsExecutiveController {
     description: 'Variance % to flag as at-risk (default 10)',
   })
   getExecutiveDashboard(
-    @Query('tenantId') tenantId: string,
+    @Req() req: TenantRequest,
     @Query('projectIds') projectIds: string | string[],
-    @Query('dateRange') dateRange: string,
+    @Query('dateRange') dateRange?: string,
     @Query('riskThresholdPct') riskThresholdPct?: string,
+    @Query('tenantId') tenantId?: string,
   ) {
-    const ids = Array.isArray(projectIds) ? projectIds : [projectIds];
+    const ids = Array.isArray(projectIds) ? projectIds : projectIds ? [projectIds] : [];
     const threshold = riskThresholdPct !== undefined ? parseFloat(riskThresholdPct) : 10;
-    return this.svc.getExecutiveDashboard(tenantId, ids, dateRange, threshold);
+    return this.svc.getExecutiveDashboard(
+      resolveTenantId(req, tenantId),
+      ids,
+      resolveDateRange(dateRange),
+      threshold,
+    );
   }
 }
