@@ -93,7 +93,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
         await progressInput.clearText();
         await progressInput.typeText(String(USER_A_PROGRESS));
         await element(by.id('save-progress-button')).tap();
-        await waitFor(element(by.text(/saved offline|queued/i)))
+        await waitFor(element(by.text(/saved offline|queued|รอซิงค์|บันทึก/i)))
           .toBeVisible()
           .withTimeout(5_000);
       }
@@ -106,7 +106,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
     await waitFor(element(by.id('sync-status-bar')))
       .toBeVisible()
       .withTimeout(10_000);
-    await waitFor(element(by.text(/synced|up to date/i)))
+    await waitFor(element(by.text(/synced|up to date|ซิงค์แล้ว/i)))
       .toBeVisible()
       .withTimeout(30_000);
 

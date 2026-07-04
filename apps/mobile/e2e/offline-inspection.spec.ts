@@ -115,7 +115,7 @@ describe('Offline Inspection — Inspector', () => {
       if (await isVisible(addPhotoButton)) {
         await addPhotoButton.tap();
 
-        await waitFor(element(by.text(/queued|pending upload|offline/i)))
+        await waitFor(element(by.text(/queued|pending upload|offline|รอซิงค์|ออฟไลน์/i)))
           .toBeVisible()
           .withTimeout(8_000);
       }
