@@ -245,7 +245,7 @@ Tests for the React Native offline sync engine (see `17-offline-mobile-sync`).
 
 ### Tooling
 
-- Jest + mock WatermelonDB adapter for unit-level sync logic
+- Jest + mocked db seams (`upsertByKey`/`deleteByKey`, Drizzle/expo-sqlite) for unit-level sync logic
 - Detox for device-level sync integration tests (real device / emulator)
 
 ### Detox conventions (offline simulation + visibility)

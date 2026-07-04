@@ -91,7 +91,8 @@
 1. **Always read `00_master_construction_os.md` first** — it defines all authoritative decisions.
 2. **Identify the current lifecycle stage** of the project.
 3. **Load the corresponding stage file** (01–11) for execution commands.
-4. **If the stage file has AWAITING_DECISION items**, generate stubs with `AWAITING_DECISION` tags and ask the product owner before implementing.
+4. **If the stage file has AWAITING_DECISION items**, generate stubs with `AWAITING_DECISION` tags and ask the product
+   owner before implementing.
 5. **Never contradict `00_master_construction_os.md`** — if a stage file conflicts with the master, the master wins.
 
 ### For a Human Developer
@@ -153,20 +154,20 @@ carries the resolution + spec pointer. Do not treat a RESOLVED item as an `AWAIT
 
 > These are **final decisions** from `00_master_construction_os.md`. Do NOT deviate.
 
-| Area                | Decision                                                                                        |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
-| Backend             | NestJS Modular Monolith (NOT microservices)                                                     |
-| Multi-tenant        | Shared DB + tenant_id + PostgreSQL RLS, `SET LOCAL app.current_tenant_id`                       |
-| Event bus           | Apache Kafka 4.x + Confluent Schema Registry (BACKWARD compat, Avro)                            |
-| Mobile storage      | WatermelonDB 0.28.x + ExpoSQLiteAdapter (main entities); expo-sqlite directly (sync_queue only) |
-| Web offline (PWA)   | Serwist (@serwist/turbopack) + IndexedDB via `idb` — unified in apps/web/                       |
-| API versioning      | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                        |
-| Financial precision | `DECIMAL(19,4)` in DB; `decimal.js` in Node.js; Python `decimal` module                         |
-| Workflow engine     | Temporal (TypeScript SDK)                                                                       |
-| AI services         | FastAPI Python (LLM Gateway, Embedding Worker, OCR Pipeline)                                    |
-| LLM                 | OpenAI GPT-4o via `LLMProvider` interface                                                       |
-| Vector store        | pgvector + OpenSearch                                                                           |
-| RBAC roles          | 9 spec roles (§6.2) + §6.8 sub-roles: PROC_MANAGER, SITE_WORKER, VIEWER                         |
-| Platform by device  | React Native = smartphone (online+offline); Web/PWA = tablet/laptop (online+offline)            |
+| Area                | Decision                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Backend             | NestJS Modular Monolith (NOT microservices)                                                                     |
+| Multi-tenant        | Shared DB + tenant_id + PostgreSQL RLS, `SET LOCAL app.current_tenant_id`                                       |
+| Event bus           | Apache Kafka 4.x + Confluent Schema Registry (BACKWARD compat, Avro)                                            |
+| Mobile storage      | Drizzle ORM on expo-sqlite (main entities — spec 17 §17.10 / ADR-048); sync_queue on its own expo-sqlite handle |
+| Web offline (PWA)   | Serwist (@serwist/turbopack) + IndexedDB via `idb` — unified in apps/web/                                       |
+| API versioning      | `/api/v1/` prefix — `setGlobalPrefix('api/v1')` in `backend/src/main.ts`                                        |
+| Financial precision | `DECIMAL(19,4)` in DB; `decimal.js` in Node.js; Python `decimal` module                                         |
+| Workflow engine     | Temporal (TypeScript SDK)                                                                                       |
+| AI services         | FastAPI Python (LLM Gateway, Embedding Worker, OCR Pipeline)                                                    |
+| LLM                 | OpenAI GPT-4o via `LLMProvider` interface                                                                       |
+| Vector store        | pgvector + OpenSearch                                                                                           |
+| RBAC roles          | 9 spec roles (§6.2) + §6.8 sub-roles: PROC_MANAGER, SITE_WORKER, VIEWER                                         |
+| Platform by device  | React Native = smartphone (online+offline); Web/PWA = tablet/laptop (online+offline)                            |
 
 ---

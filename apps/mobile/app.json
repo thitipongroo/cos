@@ -42,7 +42,6 @@
           "ios": {}
         }
       ],
-      "@morrowdigital/watermelondb-expo-plugin",
       [
         "expo-camera",
         {
@@ -64,8 +63,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#0B1020"
         }
-      ],
-      "./plugins/withWatermelonAndroidJSIFix"
+      ]
     ],
     "experiments": {
       "typedRoutes": false

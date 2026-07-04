@@ -7,7 +7,10 @@
 
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import Task from '../../db/models/Task';
+import { db } from '../../db/database';
+import type { Task } from '../../db/database';
+import { localTasks } from '../../db/schema';
+import { eq } from 'drizzle-orm';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { mutate } from '../../api/client';
@@ -30,7 +33,11 @@ export default function TasksScreen() {
   const onSave = async (): Promise<void> => {
     if (!selected) return;
     const value = Math.max(0, Math.min(100, parseInt(progress, 10) || 0));
-    await selected.setProgress(value); // local optimistic write (PENDING)
+    // local optimistic write (PENDING) — server Max-wins resolves on sync (§17.5)
+    await db
+      .update(localTasks)
+      .set({ progressPercent: value, offlineSyncStatus: 'PENDING' })
+      .where(eq(localTasks.id, selected.id));
     await mutate(
       'PATCH',
       `/tasks/${selected.taskId}`,

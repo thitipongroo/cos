@@ -1,153 +1,129 @@
-// WatermelonDB schema — Priority 0 Section F (Phase 10 authoritative spec)
-// Tables: local_site_reports, local_issues, local_photos,
-//         local_tasks, local_attendance, local_safety_checklists
-// sync_queue is managed by expo-sqlite directly — NOT WatermelonDB (see sync-queue.ts)
+// Local offline schema — Drizzle ORM on expo-sqlite (spec §17.10, approved 2026-07-04).
+// Replaces the WatermelonDB appSchema. Tables: local_site_reports, local_issues, local_photos,
+// local_tasks, local_attendance, local_safety_checklists, local_projects, local_incidents,
+// local_material_consumptions. sync_queue stays on its own expo-sqlite handle (sync-queue.ts).
 //
-// v2 (Phase 10 feature-UI, product-owner ruling): added local_tasks, local_attendance,
-// local_safety_checklists to back the SITE_WORKER screens. See migrations.ts for the v1→v2 step.
+// Column TS names intentionally match the old WatermelonDB model properties (projectId,
+// offlineSyncStatus, …) so row objects are drop-in for the screens that render them.
+// DDL lives in database.ts (versioned runtime DDL via PRAGMA user_version — §17.10).
 
-import { appSchema, tableSchema } from '@nozbe/watermelondb';
+import { sqliteTable, text, real, integer } from 'drizzle-orm/sqlite-core';
 
-export const DB_VERSION = 4;
+export type SyncStatus = 'PENDING' | 'SYNCED' | 'CONFLICT';
+export type UploadStatus = 'PENDING' | 'UPLOADING' | 'UPLOADED' | 'FAILED';
+export type PhotoEntityType = 'site_report' | 'issue' | 'inspection';
 
-export const schema = appSchema({
-  version: DB_VERSION,
-  tables: [
-    // ── local_site_reports ──────────────────────────────────────────────────
-    // Mirrors server site_ops.site_reports — subset needed offline.
-    tableSchema({
-      name: 'local_site_reports',
-      columns: [
-        { name: 'report_id', type: 'string' }, // server UUID (empty until synced)
-        { name: 'project_id', type: 'string' },
-        { name: 'report_date', type: 'string' }, // ISO date yyyy-MM-dd
-        { name: 'summary', type: 'string', isOptional: true },
-        { name: 'status', type: 'string' }, // DRAFT | SUBMITTED | APPROVED
-        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
-      ],
-    }),
-
-    // ── local_issues ────────────────────────────────────────────────────────
-    // Mirrors server site_ops.issues — subset needed offline.
-    tableSchema({
-      name: 'local_issues',
-      columns: [
-        { name: 'issue_id', type: 'string' }, // server UUID (empty until synced)
-        { name: 'project_id', type: 'string' },
-        { name: 'report_id', type: 'string', isOptional: true },
-        { name: 'title', type: 'string' },
-        { name: 'description', type: 'string', isOptional: true },
-        { name: 'severity', type: 'string' }, // LOW | MEDIUM | HIGH | CRITICAL
-        { name: 'status', type: 'string' }, // OPEN | IN_PROGRESS | RESOLVED | CLOSED
-        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
-      ],
-    }),
-
-    // ── local_photos ────────────────────────────────────────────────────────
-    // Tracks offline photo captures before upload.
-    tableSchema({
-      name: 'local_photos',
-      columns: [
-        { name: 'photo_id', type: 'string' }, // local UUID
-        { name: 'entity_type', type: 'string' }, // site_report | issue | inspection
-        { name: 'entity_id', type: 'string' }, // local WatermelonDB id
-        { name: 'local_path', type: 'string' }, // expo-file-system URI
-        { name: 'upload_status', type: 'string' }, // PENDING | UPLOADING | UPLOADED | FAILED
-        { name: 'server_file_id', type: 'string', isOptional: true }, // populated after upload
-      ],
-    }),
-
-    // ── local_tasks ───────────────────────────────────────────────────────────
-    // Mirrors server tasks (phase6_tasks_permits) — subset needed offline.
-    // Conflict: progress_percent uses Max-wins (§17.5) — resolved server-side on sync.
-    tableSchema({
-      name: 'local_tasks',
-      columns: [
-        { name: 'task_id', type: 'string' }, // server UUID (empty until synced)
-        { name: 'project_id', type: 'string' },
-        { name: 'task_name', type: 'string' },
-        { name: 'status', type: 'string' }, // NOT_STARTED | IN_PROGRESS | DONE | BLOCKED
-        { name: 'progress_percent', type: 'number' }, // 0–100, monotonic (Max-wins)
-        { name: 'assigned_to', type: 'string', isOptional: true },
-        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
-      ],
-    }),
-
-    // ── local_attendance ──────────────────────────────────────────────────────
-    // Mirrors server workforce attendance logs — check-in/out.
-    // Conflict: server-wins on check_in (§17.5) — prevents time manipulation.
-    tableSchema({
-      name: 'local_attendance',
-      columns: [
-        { name: 'log_id', type: 'string' }, // server UUID (empty until synced)
-        { name: 'worker_id', type: 'string' },
-        { name: 'project_id', type: 'string' },
-        { name: 'check_in_at', type: 'string', isOptional: true }, // ISO 8601
-        { name: 'check_out_at', type: 'string', isOptional: true }, // ISO 8601
-        { name: 'hours_worked', type: 'number', isOptional: true },
-        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
-      ],
-    }),
-
-    // ── local_safety_checklists ────────────────────────────────────────────────
-    // Mirrors server safety_checklists template (checklist_name, version, items JSON) for
-    // offline reference; `responses` holds the worker's answers (JSON) pending submission.
-    tableSchema({
-      name: 'local_safety_checklists',
-      columns: [
-        { name: 'checklist_id', type: 'string' }, // server UUID
-        { name: 'project_id', type: 'string' },
-        { name: 'checklist_name', type: 'string' },
-        { name: 'version', type: 'number' },
-        { name: 'items', type: 'string' }, // JSON array of checklist item definitions
-        { name: 'responses', type: 'string', isOptional: true }, // JSON of worker answers
-        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
-      ],
-    }),
-
-    // ── local_projects ──────────────────────────────────────────────────────
-    // Read-only offline cache of projects (§17.4 stale-while-revalidate) — used by the project
-    // pickers on Report/Issues/Home. Refreshed from GET /projects when online.
-    tableSchema({
-      name: 'local_projects',
-      columns: [
-        { name: 'project_id', type: 'string' }, // server UUID
-        { name: 'project_code', type: 'string' },
-        { name: 'project_name', type: 'string' },
-        { name: 'status', type: 'string' },
-      ],
-    }),
-
-    // ── local_incidents ───────────────────────────────────────────────────────
-    // Read cache of safety incidents (site_ops.incidents), populated by delta-sync (entity
-    // type `safety`) so EXEC/engineer screens can read incidents offline. v3 → v4.
-    tableSchema({
-      name: 'local_incidents',
-      columns: [
-        { name: 'incident_id', type: 'string' }, // server UUID
-        { name: 'project_id', type: 'string' },
-        { name: 'incident_type', type: 'string' },
-        { name: 'severity', type: 'string' }, // LOW | MEDIUM | HIGH | CRITICAL
-        { name: 'status', type: 'string' },
-        { name: 'created_at', type: 'string', isOptional: true }, // ISO timestamp
-        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
-      ],
-    }),
-
-    // ── local_material_consumptions ───────────────────────────────────────────
-    // Read cache of material consumption records (site_ops.material_consumptions), populated by
-    // delta-sync (entity type `material`, append-only). v3 → v4.
-    tableSchema({
-      name: 'local_material_consumptions',
-      columns: [
-        { name: 'consumption_id', type: 'string' }, // server UUID
-        { name: 'project_id', type: 'string' },
-        { name: 'material_name', type: 'string' },
-        { name: 'quantity', type: 'number' },
-        { name: 'unit', type: 'string' },
-        { name: 'consumed_at', type: 'string', isOptional: true }, // ISO timestamp
-        { name: 'sync_status', type: 'string' }, // PENDING | SYNCED | CONFLICT
-      ],
-    }),
-  ],
+// ── local_site_reports — mirrors server site_ops.site_reports (offline subset) ──
+export const localSiteReports = sqliteTable('local_site_reports', {
+  id: text('id').primaryKey(),
+  reportId: text('report_id').notNull(), // server UUID (empty until synced)
+  projectId: text('project_id').notNull(),
+  reportDate: text('report_date').notNull(), // ISO date yyyy-MM-dd
+  summary: text('summary'),
+  status: text('status').notNull(), // DRAFT | SUBMITTED | APPROVED
+  offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
 });
+
+// ── local_issues — mirrors server site_ops.issues (offline subset) ──
+export const localIssues = sqliteTable('local_issues', {
+  id: text('id').primaryKey(),
+  issueId: text('issue_id').notNull(), // server UUID (empty until synced)
+  projectId: text('project_id').notNull(),
+  reportId: text('report_id'),
+  title: text('title').notNull(),
+  description: text('description'),
+  severity: text('severity').notNull(), // LOW | MEDIUM | HIGH | CRITICAL
+  status: text('status').notNull(), // OPEN | IN_PROGRESS | RESOLVED | CLOSED
+  offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
+});
+
+// ── local_photos — offline photo captures pending upload (file stays in expo-file-system) ──
+export const localPhotos = sqliteTable('local_photos', {
+  id: text('id').primaryKey(),
+  photoId: text('photo_id').notNull(), // local UUID
+  entityType: text('entity_type').notNull().$type<PhotoEntityType>(),
+  entityId: text('entity_id').notNull(), // local row id of the owning entity
+  localPath: text('local_path').notNull(), // expo-file-system URI
+  uploadStatus: text('upload_status').notNull().$type<UploadStatus>(),
+  serverFileId: text('server_file_id'), // populated after upload
+});
+
+// ── local_tasks — offline subset; progress_percent is Max-wins (§17.5) ──
+export const localTasks = sqliteTable('local_tasks', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id').notNull(), // server UUID (empty until synced)
+  projectId: text('project_id').notNull(),
+  taskName: text('task_name').notNull(),
+  status: text('status').notNull(), // NOT_STARTED | IN_PROGRESS | DONE | BLOCKED
+  progressPercent: real('progress_percent').notNull(), // 0–100, monotonic (Max-wins)
+  assignedTo: text('assigned_to'),
+  offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
+});
+
+// ── local_attendance — check-in/out; server-wins on check_in (§17.5) ──
+export const localAttendance = sqliteTable('local_attendance', {
+  id: text('id').primaryKey(),
+  logId: text('log_id').notNull(), // server UUID (empty until synced)
+  workerId: text('worker_id').notNull(),
+  projectId: text('project_id').notNull(),
+  checkInAt: text('check_in_at'), // ISO 8601
+  checkOutAt: text('check_out_at'), // ISO 8601
+  hoursWorked: real('hours_worked'),
+  offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
+});
+
+// ── local_safety_checklists — template (items JSON) + worker responses (JSON) ──
+export const localSafetyChecklists = sqliteTable('local_safety_checklists', {
+  id: text('id').primaryKey(),
+  checklistId: text('checklist_id').notNull(), // server UUID
+  projectId: text('project_id').notNull(),
+  checklistName: text('checklist_name').notNull(),
+  version: integer('version').notNull(),
+  itemsJson: text('items').notNull(), // JSON array of checklist item definitions
+  responsesJson: text('responses'), // JSON of worker answers
+  offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
+});
+
+// ── local_projects — read-only project cache (§17.4 stale-while-revalidate) ──
+export const localProjects = sqliteTable('local_projects', {
+  id: text('id').primaryKey(),
+  projectId: text('project_id').notNull(), // server UUID
+  projectCode: text('project_code').notNull(),
+  projectName: text('project_name').notNull(),
+  status: text('status').notNull(),
+});
+
+// ── local_incidents — read cache of site_ops.incidents (delta entity `safety`) ──
+export const localIncidents = sqliteTable('local_incidents', {
+  id: text('id').primaryKey(),
+  incidentId: text('incident_id').notNull(), // server UUID (empty until synced)
+  projectId: text('project_id').notNull(),
+  incidentType: text('incident_type').notNull(),
+  severity: text('severity').notNull(), // LOW | MEDIUM | HIGH | CRITICAL
+  status: text('status').notNull(),
+  createdAt: text('created_at'), // ISO timestamp
+  offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
+});
+
+// ── local_material_consumptions — read cache (delta entity `material`, append-only) ──
+export const localMaterialConsumptions = sqliteTable('local_material_consumptions', {
+  id: text('id').primaryKey(),
+  consumptionId: text('consumption_id').notNull(), // server UUID
+  projectId: text('project_id').notNull(),
+  materialName: text('material_name').notNull(),
+  quantity: real('quantity').notNull(),
+  unit: text('unit').notNull(),
+  consumedAt: text('consumed_at'), // ISO timestamp
+  offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
+});
+
+// Row types — named after the old WatermelonDB models so existing type imports keep working.
+export type SiteReport = typeof localSiteReports.$inferSelect;
+export type Issue = typeof localIssues.$inferSelect;
+export type Photo = typeof localPhotos.$inferSelect;
+export type Task = typeof localTasks.$inferSelect;
+export type Attendance = typeof localAttendance.$inferSelect;
+export type SafetyChecklist = typeof localSafetyChecklists.$inferSelect;
+export type Project = typeof localProjects.$inferSelect;
+export type Incident = typeof localIncidents.$inferSelect;
+export type MaterialConsumption = typeof localMaterialConsumptions.$inferSelect;

@@ -2248,11 +2248,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - simdjson (3.9.4)
   - UMAppLoader (56.0.1)
-  - WatermelonDB (0.28.0):
-    - React
-    - simdjson
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2364,9 +2360,7 @@ DEPENDENCIES:
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
-  - "simdjson (from `/Users/thitipongroo/workspace/github-profile/cos/apps/mobile/node_modules/.pnpm/@nozbe+simdjson@3.9.4/node_modules/@nozbe/simdjson`)"
   - UMAppLoader (from `../node_modules/unimodules-app-loader/ios`)
-  - "WatermelonDB (from `../node_modules/.pnpm/@nozbe+watermelondb@0.28.0/node_modules/@nozbe/watermelondb`)"
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 EXTERNAL SOURCES:
@@ -2585,12 +2579,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-screens"
   RNWorklets:
     :path: "../node_modules/react-native-worklets"
-  simdjson:
-    :path: "/Users/thitipongroo/workspace/github-profile/cos/apps/mobile/node_modules/.pnpm/@nozbe+simdjson@3.9.4/node_modules/@nozbe/simdjson"
   UMAppLoader:
     :path: "../node_modules/unimodules-app-loader/ios"
-  WatermelonDB:
-    :path: "../node_modules/.pnpm/@nozbe+watermelondb@0.28.0/node_modules/@nozbe/watermelondb"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
@@ -2702,11 +2692,9 @@ SPEC CHECKSUMS:
   RNReanimated: a9bf68fb5f19ce1c363b7d1413dcf8ee323185b8
   RNScreens: f94000b3cb1eb14cbb8d08dd6074fdd6ccf0e6b0
   RNWorklets: ae7f2b95d75b903387e6359583f2fd67bc9a93ff
-  simdjson: 7bb9e33d87737cec966e7b427773c67baa4458fe
   UMAppLoader: b7d22886a244871c20b5a8f2fcea13c18534e677
-  WatermelonDB: 75e467adbaf2cb2809780fb3eda7ce4964e11778
   Yoga: 77dfa8673de2874e1855002ae59c68b8be9b007b
 
-PODFILE CHECKSUM: fb579a2b33111411e8b54b180b124973c171c4ed
+PODFILE CHECKSUM: 43f3c5fec463e75f5ae8a296148a9392d513ffb8
 
 COCOAPODS: 1.16.2

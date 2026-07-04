@@ -133,7 +133,7 @@ within each group.
 | **Temporal.io**                                     | Durable workflow orchestration engine. Used for approval workflows and post-MVP AI orchestration. See `04-tech-stack` section 4.4.                                                                          |
 | **TimescaleDB**                                     | PostgreSQL extension for time-series data. Used for telemetry and IoT sensor data. See `04-tech-stack` section 4.3.                                                                                         |
 | **WAL** (Write-Ahead Log)                           | PostgreSQL's durability mechanism. Debezium reads the WAL to detect data changes without impacting application writes.                                                                                      |
-| **WatermelonDB**                                    | SQLite-backed offline database for React Native mobile app. See `04-tech-stack` section 4.1.                                                                                                                |
+| **Drizzle ORM (mobile offline DB)**                 | TypeScript ORM on expo-sqlite — offline database for the React Native mobile app (spec 17 §17.10). See `04-tech-stack` section 4.1.                                                                                                                |
 | **Evidently AI**                                    | Open-source, self-hosted MLOps tool for model/output evaluation and data/concept drift monitoring. Paired with MLflow (experiment tracking + registry). See `04-tech-stack` section 4.6.                                  |
 
 ---

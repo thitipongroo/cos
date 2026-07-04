@@ -7,7 +7,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { database } from '../db/database';
 import Photo, { PhotoEntityType } from '../db/models/Photo';
-import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
 
 interface PhotoCaptureProps {
@@ -43,15 +42,14 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
   const onCapture = async (): Promise<void> => {
     const picture = await cameraRef.current?.takePictureAsync();
     if (!picture?.uri) return;
-    await database.write(async () => {
-      await database.get<Photo>('local_photos').create((r) => {
-        r.photoId = '';
-        r.entityType = entityType;
-        r.entityId = entityId;
-        r.localPath = picture.uri;
-        r.uploadStatus = 'PENDING';
-        r.serverFileId = null;
-      });
+    await db.insert(localPhotos).values({
+      id: newLocalId(),
+      photoId: '',
+      entityType,
+      entityId,
+      localPath: picture.uri,
+      uploadStatus: 'PENDING',
+      serverFileId: null,
     });
     const next = count + 1;
     setCount(next);

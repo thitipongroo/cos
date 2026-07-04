@@ -1,60 +1,111 @@
-// runDeltaSync — pulls server changes since the last sync cursor and applies them to local
-// WatermelonDB, then advances the cursor (syncStore.lastSyncAt). Wires the previously-unused
-// delta endpoint (GET /sync/delta) into the app; triggered from (app)/_layout on entry.
+// runDeltaSync — pulls server changes since the last sync cursor and applies them to the local
+// Drizzle/expo-sqlite tables, then advances the cursor (syncStore.lastSyncAt). Triggered from
+// (app)/_layout on entry.
 //
 // All six server entity types are applied: task/site_report/issue/attendance/safety/material, each
 // to its local table. The server tags each updated row with `entity_type`; `deleted` is a flat id
-// list (matched across tables).
+// list (matched across tables via each table's server-key column). Writes go through the
+// upsertByKey/deleteByKey seams in db/database.ts (also the unit-test mock point).
 
-import { Q } from '@nozbe/watermelondb';
-import { database } from '../db/database';
+import { upsertByKey, deleteByKey, TableName } from '../db/database';
 import { fetchDelta } from '../api/client';
 import { useSyncStore } from '../store/syncStore';
 
 const EPOCH = '1970-01-01T00:00:00.000Z';
 
 interface ApplySpec {
-  table: string;
-  idColumn: string;
-  columns: string[];
+  table: TableName;
+  idColumn: string; // server-key column (snake_case, as sent by the server)
+  // server payload key (snake_case) → Drizzle column TS name
+  fields: Record<string, string>;
 }
 
 const APPLY: Record<string, ApplySpec> = {
   task: {
     table: 'local_tasks',
     idColumn: 'task_id',
-    columns: ['task_id', 'project_id', 'task_name', 'status', 'progress_percent', 'assigned_to'],
+    fields: {
+      task_id: 'taskId',
+      project_id: 'projectId',
+      task_name: 'taskName',
+      status: 'status',
+      progress_percent: 'progressPercent',
+      assigned_to: 'assignedTo',
+    },
   },
   site_report: {
     table: 'local_site_reports',
     idColumn: 'report_id',
-    columns: ['report_id', 'project_id', 'report_date', 'summary', 'status'],
+    fields: {
+      report_id: 'reportId',
+      project_id: 'projectId',
+      report_date: 'reportDate',
+      summary: 'summary',
+      status: 'status',
+    },
   },
   issue: {
     table: 'local_issues',
     idColumn: 'issue_id',
-    columns: ['issue_id', 'project_id', 'report_id', 'title', 'description', 'severity', 'status'],
+    fields: {
+      issue_id: 'issueId',
+      project_id: 'projectId',
+      report_id: 'reportId',
+      title: 'title',
+      description: 'description',
+      severity: 'severity',
+      status: 'status',
+    },
   },
   attendance: {
     table: 'local_attendance',
     idColumn: 'log_id',
-    columns: ['log_id', 'worker_id', 'project_id', 'check_in_at', 'check_out_at', 'hours_worked'],
+    fields: {
+      log_id: 'logId',
+      worker_id: 'workerId',
+      project_id: 'projectId',
+      check_in_at: 'checkInAt',
+      check_out_at: 'checkOutAt',
+      hours_worked: 'hoursWorked',
+    },
   },
   safety: {
     table: 'local_incidents',
     idColumn: 'incident_id',
-    columns: ['incident_id', 'project_id', 'incident_type', 'severity', 'status', 'created_at'],
+    fields: {
+      incident_id: 'incidentId',
+      project_id: 'projectId',
+      incident_type: 'incidentType',
+      severity: 'severity',
+      status: 'status',
+      created_at: 'createdAt',
+    },
   },
   material: {
     table: 'local_material_consumptions',
     idColumn: 'consumption_id',
-    columns: ['consumption_id', 'project_id', 'material_name', 'quantity', 'unit', 'consumed_at'],
+    fields: {
+      consumption_id: 'consumptionId',
+      project_id: 'projectId',
+      material_name: 'materialName',
+      quantity: 'quantity',
+      unit: 'unit',
+      consumed_at: 'consumedAt',
+    },
   },
 };
 
 const DELTA_TYPES = Object.keys(APPLY);
 
-type RawSetter = { _setRaw: (column: string, value: unknown) => void };
+// Drizzle column TS name of each table's server-key column (for upsert/delete matching).
+const KEY_TS: Record<string, string> = {
+  task_id: 'taskId',
+  report_id: 'reportId',
+  issue_id: 'issueId',
+  log_id: 'logId',
+  incident_id: 'incidentId',
+  consumption_id: 'consumptionId',
+};
 
 export async function runDeltaSync(): Promise<void> {
   const since = useSyncStore.getState().lastSyncAt ?? EPOCH;
@@ -63,42 +114,24 @@ export async function runDeltaSync(): Promise<void> {
     since,
   );
 
-  await database.write(async () => {
-    for (const row of updated) {
-      const spec = APPLY[String(row['entity_type'])];
-      if (!spec) continue;
-      const id = String(row[spec.idColumn] ?? '');
-      if (!id) continue;
+  for (const row of updated) {
+    const spec = APPLY[String(row['entity_type'])];
+    if (!spec) continue;
+    const id = String(row[spec.idColumn] ?? '');
+    if (!id) continue;
 
-      const collection = database.get(spec.table);
-      const existing = await collection.query(Q.where(spec.idColumn, id)).fetch();
-      const applyFields = (record: RawSetter): void => {
-        for (const column of spec.columns) record._setRaw(column, row[column] ?? null);
-        record._setRaw('sync_status', 'SYNCED');
-      };
-
-      if (existing.length > 0) {
-        await (
-          existing[0] as unknown as { update: (fn: (r: RawSetter) => void) => Promise<void> }
-        ).update(applyFields);
-      } else {
-        await (
-          collection as unknown as { create: (fn: (r: RawSetter) => void) => Promise<void> }
-        ).create(applyFields);
-      }
+    const values: Record<string, unknown> = { offlineSyncStatus: 'SYNCED' };
+    for (const [serverKey, tsName] of Object.entries(spec.fields)) {
+      values[tsName] = row[serverKey] ?? null;
     }
+    await upsertByKey(spec.table, KEY_TS[spec.idColumn]!, id, values);
+  }
 
-    for (const id of deleted) {
-      for (const spec of Object.values(APPLY)) {
-        const found = await database.get(spec.table).query(Q.where(spec.idColumn, id)).fetch();
-        for (const record of found) {
-          await (
-            record as unknown as { destroyPermanently: () => Promise<void> }
-          ).destroyPermanently();
-        }
-      }
+  for (const id of deleted) {
+    for (const spec of Object.values(APPLY)) {
+      await deleteByKey(spec.table, KEY_TS[spec.idColumn]!, id);
     }
-  });
+  }
 
   useSyncStore.getState().setLastSyncAt(server_timestamp);
 }

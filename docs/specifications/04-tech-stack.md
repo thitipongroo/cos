@@ -43,7 +43,7 @@ Mobile :
 
 - React Native
 - Expo
-- WatermelonDB (SQLite-backed, offline-first)
+- Drizzle ORM on expo-sqlite (SQLite-backed, offline-first — spec 17 §17.10)
 
 ---
 

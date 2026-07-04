@@ -254,7 +254,7 @@ Scoring: Likelihood {Low, Med, High} × Impact {Low, Med, High, Critical}. Owner
 
 | ID | Risk | L × I | Owner | Mitigation | Early-warning metric |
 | -- | ---- | ----- | ----- | ---------- | -------------------- |
-| **R-01** | **3rd-party mobile-lib fragility** — WatermelonDB 0.28 + @morrowdigital plugin + RN 0.85 required a 7-layer native integration fix (JDK, prebuild, kotlin, CMake pnpm-path, JSIModulePackage, babel). Community plugins lag the SDK. | High × High | Mobile Lead | Durable fixes committed (pnpm patch `patches/@nozbe__watermelondb`, config plugin `plugins/withWatermelonAndroidJSIFix.js`); spike op-sqlite / Drizzle / Expo SQLite as an exit; pin+verify deps (R-07). | Mobile CI red on `expo prebuild` / native build; upstream plugin unmaintained > 2 SDKs |
+| **R-01** | **3rd-party mobile-lib fragility** — WatermelonDB 0.28 + @morrowdigital plugin + RN 0.85 required a 7-layer native integration fix (JDK, prebuild, kotlin, CMake pnpm-path, JSIModulePackage, babel). Community plugins lag the SDK. | High × High | Mobile Lead | **Mitigated at source (2026-07-05):** WatermelonDB replaced by Drizzle + expo-sqlite (first-party) — spec `17 §17.10` / ADR-048; CMake patch, config plugins, simdjson pin and decorators/loose babel removed; G1/G2 measured within absolute envelope. Residual: `patches/react-native` (#54732) until upstream fix; pin+verify deps (R-07). | Mobile CI red on `expo prebuild` / native build; upstream plugin unmaintained > 2 SDKs |
 | **R-02** | **Cross-tenant data leak** — RLS misconfiguration exposes one tenant's data to another. Catastrophic + PDPA-fineable. | Low × Critical | Security Lead | RLS mandatory on every domain table (`07 §7.7`); `app.current_tenant_id` set before every query; isolation tests in CI; STRIDE on every new surface (`05 §5.9`). | Any query without tenant filter in review; isolation-test failure |
 | **R-03** | **PDPA non-compliance** — Thai PDPA actively enforced (8 fines / THB 21.5M since Aug 2025); missing DPO / 72h breach flow / erasure. | Med × High | DPO / Legal | PDPA hard requirements (`05 §5.3`): 72h breach workflow, DPO, subject-rights portal, RoPA, data residency `ap-southeast-7`; annual PDPA audit. | Breach-response drill > 72h; RoPA stale; residency exception logged |
 | **R-04** | **Offline sync conflict / data loss** — the sync engine (SyncManager, ConflictHandler, delta pull/push, PhotoUploadQueue) is the highest-value + most bug-prone logic. | Med × High | Mobile Lead | 3 conflict-resolution strategies (Phase 10); sync success > 98% SLO; unit + Detox e2e for conflict cases; idempotent delta cursor (`17`). | Sync success < 98%; rising unresolved-conflict count |
@@ -316,7 +316,7 @@ Ph10 native-mobile complexity observed directly). Scale (per `context/04`): S �
 | 7 Finance Service | **L** | billing / AR / payments + financial precision |
 | 8 Event-driven Infrastructure | **L** | Kafka + outbox + DLQ + schema registry; foundational (blocks Ph3–7) |
 | 9 File + Document System | **M** | tenant-scoped storage + signed URLs + antivirus + OCR intake |
-| 10 Mobile Offline Engine | **XL** | offline-first + WatermelonDB sync + 3 conflict strategies + Detox + native builds — hardest (R-01/R-04, observed) |
+| 10 Mobile Offline Engine | **XL** | offline-first + Drizzle/expo-sqlite sync (§17.10) + 3 conflict strategies + Detox + native builds — hardest (R-01/R-04, observed) |
 | 11 AI Foundation | **L** | RAG + LLM Gateway + pgvector + hybrid search + reranking — novel |
 | 12 AI Report Assistant | **M** | builds on Ph11 gateway; report generation + guardrail |
 | 13 Knowledge Graph | **M** | KG ingestion + normalization |
@@ -2952,10 +2952,9 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Users:         ALL roles
     Device:        iOS/Android smartphone — ไม่รองรับ tablet browser
     Connectivity:  offline-first, sync เมื่อ online
-    Local Storage: WatermelonDB 0.28.x with custom ExpoSQLiteAdapter
-                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
-                   NOT plain expo-sqlite — WatermelonDB provides observable queries,
-                   lazy loading, and batch writes required for offline construction data
+    Local Storage: Drizzle ORM on expo-sqlite (~56.0.5, WAL mode, enableChangeListener)
+                   — observable reads via useLiveQuery; versioned runtime DDL
+                   (spec 17 §17.10 / ADR-048; replaced WatermelonDB 2026-07-04)
 
   Target B: Web App (Next.js + Serwist) — tablet/laptop browser, online + offline
     Users:         ALL roles
@@ -3033,16 +3032,14 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Framework:      React Native + Expo (managed workflow)
     Navigation:     Expo Router (file-based, role-aware routing)
     State:          Zustand + React Query
-    Local DB:       WatermelonDB 0.28.x with custom ExpoSQLiteAdapter
-                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
-                   sync_queue infrastructure uses expo-sqlite directly (no WatermelonDB)
+    Local DB:       Drizzle ORM on expo-sqlite (~56.0.5, WAL, enableChangeListener for
+                   useLiveQuery) — spec 17 §17.10 / ADR-048
+                   sync_queue infrastructure uses its own expo-sqlite handle (unchanged)
     Media cache:    expo-file-system for offline photo queue
     Background sync: expo-background-fetch + expo-task-manager
     Network detect: @react-native-community/netinfo
-    Native build:   WatermelonDB JSI ⇒ custom dev-client REQUIRED (Expo Go cannot load it).
-                   @morrowdigital/watermelondb-expo-plugin@^2.3.3 (SDK 56; @skam22 fork abandoned at SDK 51) + expo-build-properties
-                   (Android kotlin 1.8.10 / compileSdk 33; iOS simdjson pod) + babel
-                   @babel/plugin-proposal-decorators(legacy) for @field models; add @nozbe/simdjson@3.9.4
+    Native build:   no DB-related native wiring (expo-sqlite is first-party); dev client via
+                   expo run:ios/android
                    as a direct dep so pnpm exposes node_modules/@nozbe/simdjson for the pod path.
                    app.json main = expo-router/entry; build via expo run:ios/android (or EAS).
     E2E offline:    Detox has NO connectivity API (setStatusBar is cosmetic; NetInfo jest mock is unit-only).
@@ -3068,7 +3065,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - DeltaSyncClient (Axios-based, handles auth token injection)
       [IMPLEMENTED: the wired delta-pull caller is `runDeltaSync()` (src/sync/runDeltaSync.ts),
       triggered from (app)/_layout on entry; it pulls GET /sync/delta for all six entity types
-      (task/site_report/issue/attendance/safety/material), upserts into local WatermelonDB, and
+      (task/site_report/issue/attendance/safety/material), upserts into the local Drizzle tables, and
       advances the syncStore.lastSyncAt cursor. See spec §17.9. The DeltaSyncClient class is superseded.]
     - BackgroundSyncTask (expo-task-manager registration)
     - PhotoUploadQueue with chunked upload support
@@ -3079,7 +3076,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - Feature screens (role-based, FULL functional + offline + testIDs — per the Role-based
       navigation spec above). ADDED per product-owner ruling: the role screens were specified in
       the navigation section but were absent from this Generate list; the mobile feature UI is owned
-      by Phase 10. Wire each screen to the existing stores/hooks/WatermelonDB models/API:
+      by Phase 10. Wire each screen to the existing stores/hooks/Drizzle schema/API:
         * Auth: login (Path A phone + OTP) wired to authStore + role-based post-login routing
         * SITE_WORKER: home (KPI) · tasks (list + detail + progress input, offline) · report
           (daily report form) · issues (quick issue + list) · profile

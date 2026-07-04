@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { get, mutate } from '../../api/client';
-import SafetyChecklist from '../../db/models/SafetyChecklist';
+import type { SafetyChecklist } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';

@@ -1,21 +1,12 @@
-// useCollection — reactive read of a local WatermelonDB table.
-// Returns the current rows and re-renders on any local change (offline-first source of truth).
+// useCollection — reactive read of a local table (offline-first source of truth).
+// Drizzle useLiveQuery re-runs the SELECT whenever expo-sqlite reports a change
+// (enableChangeListener on the shared handle in db/database.ts). Signature unchanged from the
+// WatermelonDB version, so screens keep calling useCollection<Issue>('local_issues').
 
-import { useEffect, useState } from 'react';
-import { Model } from '@nozbe/watermelondb';
-import { database } from '../db/database';
+import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
+import { db, TABLES, TableName } from '../db/database';
 
-export function useCollection<T extends Model>(table: string): T[] {
-  const [rows, setRows] = useState<T[]>([]);
-
-  useEffect(() => {
-    const subscription = database
-      .get<T>(table)
-      .query()
-      .observe()
-      .subscribe((next) => setRows(next));
-    return () => subscription.unsubscribe();
-  }, [table]);
-
-  return rows;
+export function useCollection<T>(table: TableName): T[] {
+  const { data } = useLiveQuery(db.select().from(TABLES[table]));
+  return (data ?? []) as T[];
 }

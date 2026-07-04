@@ -3,8 +3,9 @@
 
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { database } from '../../db/database';
-import Issue from '../../db/models/Issue';
+import { db, newLocalId } from '../../db/database';
+import type { Issue } from '../../db/database';
+import { localIssues } from '../../db/schema';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { ProjectPicker } from '../../components/ProjectPicker';
@@ -18,15 +19,14 @@ export default function IssuesScreen() {
   const t = useT();
 
   const onCreate = async (): Promise<void> => {
-    await database.write(async () => {
-      await database.get<Issue>('local_issues').create((r) => {
-        r.issueId = '';
-        r.projectId = projectId.trim();
-        r.title = title.trim();
-        r.severity = 'MEDIUM';
-        r.status = 'OPEN';
-        r.offlineSyncStatus = 'PENDING';
-      });
+    await db.insert(localIssues).values({
+      id: newLocalId(),
+      issueId: '',
+      projectId: projectId.trim(),
+      title: title.trim(),
+      severity: 'MEDIUM',
+      status: 'OPEN',
+      offlineSyncStatus: 'PENDING',
     });
     setTitle('');
   };

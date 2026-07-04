@@ -43,4 +43,9 @@ minimumReleaseAgeExclude:
   - expo-task-manager@56.0.20
 
 patchedDependencies:
-  '@nozbe/watermelondb@0.28.0': patches/@nozbe__watermelondb@0.28.0.patch
+  # Upstream bug facebook/react-native#54732: the DOM Event phase constants (NONE/CAPTURING_PHASE/
+  # AT_TARGET/BUBBLING_PHASE) are defined without configurable/writable, so they are read-only. Under
+  # Hermes this makes event-target-shim (used by abort-controller -> fetch) throw "Cannot assign to
+  # read-only property 'NONE'", breaking ALL network requests. The patch adds configurable+writable to
+  # the 8 Object.defineProperty calls (the fix recommended in the issue). Drop when RN ships a fix.
+  react-native@0.85.3: patches/react-native@0.85.3.patch

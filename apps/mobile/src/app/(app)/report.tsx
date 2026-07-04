@@ -5,8 +5,8 @@
 
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { database } from '../../db/database';
-import SiteReport from '../../db/models/SiteReport';
+import { db, newLocalId } from '../../db/database';
+import { localSiteReports } from '../../db/schema';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
@@ -23,15 +23,14 @@ export default function ReportScreen() {
   const t = useT();
 
   const onSave = async (): Promise<void> => {
-    await database.write(async () => {
-      await database.get<SiteReport>('local_site_reports').create((r) => {
-        r.reportId = '';
-        r.projectId = projectId.trim();
-        r.reportDate = todayIso();
-        r.summary = summary.trim();
-        r.status = 'DRAFT';
-        r.offlineSyncStatus = 'PENDING';
-      });
+    await db.insert(localSiteReports).values({
+      id: newLocalId(),
+      reportId: '',
+      projectId: projectId.trim(),
+      reportDate: todayIso(),
+      summary: summary.trim(),
+      status: 'DRAFT',
+      offlineSyncStatus: 'PENDING',
     });
     setSaved(true);
   };
