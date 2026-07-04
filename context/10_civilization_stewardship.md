@@ -8,7 +8,7 @@ previous: 09_civilization_scale.md
 next: 11_background_civilization.md
 authority: context-only
 master: 00_master_construction_os.md
-awaiting_decisions: STEW-001, STEW-002, STEW-003, STEW-004, STEW-005
+resolved_decisions: STEW-001..STEW-005 all RESOLVED 2026-06-10 (authoritative in docs/specifications/)
 ---
 
 # Construction OS — Civilization Stewardship Infrastructure Context Commands
@@ -35,15 +35,11 @@ awaiting_decisions: STEW-001, STEW-002, STEW-003, STEW-004, STEW-005
 
 - [Required Decisions (STEW-001–005)](#required-decisions)
 - [Master Civilization Stewardship Command](#master-civilization-stewardship-command)
-- [Planetary Resilience Infrastructure](#planetary-resilience-infrastructure-command)
-- [Civilization Coordination Intelligence](#civilization-coordination-intelligence-command)
-- [Planet-scale Simulation & Forecasting](#planet-scale-simulation--forecasting-command)
-- [Autonomous Infrastructure Stewardship](#autonomous-infrastructure-stewardship-command)
-- [Global Resource Intelligence](#global-resource-intelligence-command)
-- [Human-AI Civilization Governance](#human-ai-civilization-governance-command)
-- [Multi-civilization Interoperability](#multi-civilization-interoperability-command)
-- [Civilization Knowledge Preservation](#civilization-knowledge-preservation-command)
-- [Long-term Civilization Stability Optimization](#long-term-civilization-stability-optimization-command)
+- [Phase 1 — Planetary Resilience & Coordination](#execution-phase-1--planetary-resilience--coordination)
+- [Phase 2 — Simulation & Autonomous Stewardship](#execution-phase-2--simulation--autonomous-stewardship)
+- [Phase 3 — Resource Intelligence & Governance](#execution-phase-3--resource-intelligence--governance)
+- [Phase 4 — Interoperability & Knowledge Preservation](#execution-phase-4--interoperability--knowledge-preservation)
+- [Phase 5 — Long-term Stability](#execution-phase-5--long-term-stability)
 - [Execution Order + Critical Rules](#civilization-stewardship-execution-order)
 
 ---
@@ -54,33 +50,40 @@ awaiting_decisions: STEW-001, STEW-002, STEW-003, STEW-004, STEW-005
 > จากนั้นถาม product owner คำถามด้านล่างนี้ ไม่ต้องรอคำตอบก่อน implement stub
 
 ```text
-AWAITING_DECISION — product owner ต้องตอบก่อน implement จริง:
+RESOLVED — all 5 decided; authoritative in docs/specifications/
+(per-item "Target: Resolve before" notes below are superseded):
 
-[ ] STEW-001: Human-AI governance structure
+  STEW-001 → Rotating oversight committee + quarterly AI behavior audits (decision: 22-ai-architecture §22.7); operating structure (ISO 42001 roles, tiered HITL/HOTL, safeguards) in 23-ai-native-operating-model §23.5
+  STEW-002 → Apache Iceberg v3 with temporal versioning (09-data-architecture)
+  STEW-003 → 10-year strategic + rolling 2-year optimization (22-ai-architecture)
+  STEW-004 → Climate-resilient infrastructure — IPCC AR7 scenarios (08-enterprise-deployment)
+  STEW-005 → Open standards first — IFC, CityGML, OGC API Features; W3C DID (33-digital-twin-iot)
+
+[x] STEW-001: Human-AI governance structure — RESOLVED 2026-06-10 (decision 22 §22.7; structure 23 §23.5)
     Civilization-scale AI governance ใช้ structure แบบไหน?
     (multi-stakeholder council / democratic override / UN-aligned framework)
     ส่งผลต่อ: human-AI civilization governance implementation
     Target: Resolve before: Stage 9 (CIVILIZATION STEWARDSHIP) implementation begins
 
-[ ] STEW-002: Knowledge preservation format
+[x] STEW-002: Knowledge preservation format
     Civilization knowledge preservation ใช้ archival format อะไร?
     (distributed ledger / IPFS / centralized archive / hybrid)
     ส่งผลต่อ: civilization knowledge continuity system design
     Target: Resolve before: Stage 9 (CIVILIZATION STEWARDSHIP) implementation begins
 
-[ ] STEW-003: Long-term optimization horizon
+[x] STEW-003: Long-term optimization horizon
     Infrastructure longevity optimization ใช้ time horizon กี่ปี?
     (25 / 50 / 100 / 200 ปี)
     ส่งผลต่อ: long-term simulation and forecasting parameters
     Target: Resolve before: Stage 9 (CIVILIZATION STEWARDSHIP) implementation begins
 
-[ ] STEW-004: Planetary resilience scope
+[x] STEW-004: Planetary resilience scope
     Planetary resilience ครอบคลุม risk categories ไหนบ้าง?
     (climate / pandemic / geopolitical / asteroid / AI risk)
     ส่งผลต่อ: resilience orchestration system scope
     Target: Resolve before: Stage 9 (CIVILIZATION STEWARDSHIP) implementation begins
 
-[ ] STEW-005: Multi-civilization interoperability spec
+[x] STEW-005: Multi-civilization interoperability spec
     Off-world / interplanetary infrastructure spec — เริ่มเตรียมหรือยัง?
     (prepare now / defer / not applicable)
     ส่งผลต่อ: multi-civilization interoperability layer scope
@@ -166,6 +169,14 @@ Optimize for:
 
 ---
 
+## EXECUTION PHASE 1 — PLANETARY RESILIENCE & COORDINATION
+
+### Objective
+
+Build planetary-resilience infrastructure and coordinate civilization-scale intelligence.
+
+---
+
 ## PLANETARY RESILIENCE INFRASTRUCTURE COMMAND
 
 ```text
@@ -235,6 +246,14 @@ Constraints:
 - avoid opaque civilization-scale optimization systems
 
 ```
+
+---
+
+## EXECUTION PHASE 2 — SIMULATION & AUTONOMOUS STEWARDSHIP
+
+### Objective
+
+Simulate and forecast at planet scale and steward infrastructure autonomously.
 
 ---
 
@@ -318,6 +337,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 3 — RESOURCE INTELLIGENCE & GOVERNANCE
+
+### Objective
+
+Provide global resource intelligence and govern human-AI at civilization scale.
+
+---
+
 ## GLOBAL RESOURCE INTELLIGENCE COMMAND
 
 ```text
@@ -388,6 +415,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 4 — INTEROPERABILITY & KNOWLEDGE PRESERVATION
+
+### Objective
+
+Enable multi-civilization interoperability and preserve civilization knowledge.
+
+---
+
 ## MULTI-CIVILIZATION INTEROPERABILITY COMMAND
 
 ```text
@@ -453,6 +488,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 5 — LONG-TERM STABILITY
+
+### Objective
+
+Optimize long-term civilization stability (capstone).
+
+---
+
 ## LONG-TERM CIVILIZATION STABILITY OPTIMIZATION COMMAND
 
 ```text
@@ -493,15 +536,11 @@ Constraints:
 ```text
 Execution Order:
 
-1. Planetary Resilience Infrastructure
-2. Civilization Coordination Intelligence
-3. Planet-scale Simulation & Forecasting
-4. Autonomous Infrastructure Stewardship
-5. Global Resource Intelligence
-6. Human-AI Civilization Governance
-7. Multi-civilization Interoperability
-8. Civilization Knowledge Preservation
-9. Long-term Civilization Stability Optimization
+1. Planetary Resilience & Coordination
+2. Simulation & Autonomous Stewardship
+3. Resource Intelligence & Governance
+4. Interoperability & Knowledge Preservation
+5. Long-term Stability
 
 ```
 
@@ -531,6 +570,28 @@ ALWAYS:
 8. Optimize for long-term ecosystem continuity.
 
 ```
+
+---
+
+## PHASE GOVERNANCE & ACCEPTANCE
+
+> **Horizon: VISION (not committed).** Per `00_master_construction_os.md` § Roadmap Governance, this
+> file is a directional vision — entered only **after product-market fit** and after its § REQUIRED
+> DECISIONS are resolved. It is not a committed phase and deliberately carries **no fabricated metric
+> targets**.
+
+- **Precondition gate** — § REQUIRED DECISIONS (STEW-001..005) are all **RESOLVED (2026-06-10)** and
+  authoritative in `docs/specifications/` (STEW-001 → decision `22 §22.7`, structure `23 §23.5`); this
+  precondition is **met**. The remaining gate to enter this horizon is PMF + explicit product-owner
+  go-ahead (§ Roadmap Governance).
+- **Authoring bar at promotion** — when a COMMAND here is promoted to a committed phase it MUST be
+  rewritten to the § Phase Template (Objective · Requirements · Generate · **falsifiable Acceptance
+  criteria** · Metric gate · Dependencies · Risks · Exit) in `00_master_construction_os.md`.
+- **Inherited non-functional gates** (apply on promotion, same as committed phases): SLO
+  (`31 §31.6`), security/STRIDE (`05 §5.9`), supply-chain (`05 §5.10`), DR/game-day (`08 §8.2`,
+  `31 §31.11`), AI security (`22 §22.8`), accessibility (`20 §20.8`), FinOps + sustainability
+  (`08 §8.10`, `§8.11`), DORA (`31 §31.12`).
+- **Metric targets** are set at promotion time from the referenced specs — **not guessed now**.
 
 ---
 

@@ -8,7 +8,7 @@ previous: 05_industry_scale_transition.md
 next: 07_industry_coordination.md
 authority: context-only
 master: 00_master_construction_os.md
-awaiting_decisions: ECO-001, ECO-002, ECO-003, ECO-004, ECO-005
+resolved_decisions: ECO-001..ECO-005 all RESOLVED 2026-06-10 (authoritative in docs/specifications/)
 ---
 
 # Construction OS — Ecosystem Dominance & Industry Infrastructure Master Context
@@ -50,31 +50,38 @@ awaiting_decisions: ECO-001, ECO-002, ECO-003, ECO-004, ECO-005
 > จากนั้นถาม product owner คำถามด้านล่างนี้ ไม่ต้องรอคำตอบก่อน implement stub
 
 ```text
-AWAITING_DECISION — product owner ต้องตอบก่อน implement จริง:
+RESOLVED — all 5 decided 2026-06-10; authoritative in docs/specifications/
+(per-item "Target: Resolve before" notes below are superseded):
 
-[ ] ECO-001: Event schema format
+  ECO-001 → Apache Avro + Confluent Schema Registry; AsyncAPI 3.1 (15-event-driven-workflow)
+  ECO-002 → Commission + SaaS hybrid; transparent published take rate (28-ecosystem-expansion)
+  ECO-003 → Platform stewardship with contributor attribution (09-data-architecture)
+  ECO-004 → Graph-based trust with behavioral analytics (22-ai-architecture)
+  ECO-005 → 3 verified projects + quality score ≥ 70 + 90-day probation (28-ecosystem-expansion)
+
+[x] ECO-001: Event schema format
     Ecosystem-wide event contracts ใช้ JSON Schema / Protobuf / Avro?
     ส่งผลต่อ: Schema Registry config, event contract library
     Target: Resolve before: Stage 5 (ECOSYSTEM DOMINANCE) implementation begins
 
-[ ] ECO-002: Marketplace transaction model
+[x] ECO-002: Marketplace transaction model
     Procurement marketplace มี financial transaction หรือแค่ coordination?
     ถ้ามี transaction: ใช้ escrow / direct payment / invoice-based?
     ส่งผลต่อ: ERPIntegration สำหรับ Stage 1–3 (SAP/Oracle/Dynamics adapters); Stage 5 marketplace อาจต้องการ ERP integration scope ที่ใหญ่กว่า (คำถามนี้)
     Target: Resolve before: Stage 5 (ECOSYSTEM DOMINANCE) implementation begins
 
-[ ] ECO-003: Benchmark data ownership
+[x] ECO-003: Benchmark data ownership
     Cross-tenant benchmark data เป็นของ platform / tenant / shared commons?
     ส่งผลต่อ: data governance, privacy policy, pricing model
     Target: Resolve before: Stage 5 (ECOSYSTEM DOMINANCE) implementation begins
 
-[ ] ECO-004: Ecosystem trust scoring algorithm
+[x] ECO-004: Ecosystem trust scoring algorithm
     Vendor/contractor reputation scoring ใช้ algorithm แบบไหน?
     (weighted average / Bayesian / ML-based)
     ส่งผลต่อ: trust scoring engine implementation
     Target: Resolve before: Stage 5 (ECOSYSTEM DOMINANCE) implementation begins
 
-[ ] ECO-005: Vendor minimum threshold
+[x] ECO-005: Vendor minimum threshold
     เปิด marketplace เมื่อมี verified vendors กี่ราย?
     (ปัจจุบัน file 04 กำหนด 200 ราย — ยืนยันหรือต้องการเปลี่ยน?)
     ส่งผลต่อ: marketplace launch gate configuration
@@ -846,6 +853,26 @@ Constraints:
 10. Long-term ecosystem trust before short-term growth.
 
 ```
+
+---
+
+## PHASE GOVERNANCE & ACCEPTANCE
+
+> **Horizon: LATER (directional).** Per `00_master_construction_os.md` § Roadmap Governance, this file
+> is entered only **after product-market fit** and after its § REQUIRED DECISIONS are resolved. It is
+> not a committed phase and deliberately carries **no fabricated metric targets**.
+
+- **Precondition gate** — § REQUIRED DECISIONS (ECO-001..005) are all **RESOLVED (2026-06-10)** and
+  authoritative in `docs/specifications/`; this precondition is **met**. The remaining gate to enter
+  this horizon is PMF + explicit product-owner go-ahead (§ Roadmap Governance).
+- **Authoring bar at promotion** — when a COMMAND here is promoted to a committed phase it MUST be
+  rewritten to the § Phase Template (Objective · Requirements · Generate · **falsifiable Acceptance
+  criteria** · Metric gate · Dependencies · Risks · Exit) in `00_master_construction_os.md`.
+- **Inherited non-functional gates** (apply on promotion, same as committed phases): SLO
+  (`31 §31.6`), security/STRIDE (`05 §5.9`), supply-chain (`05 §5.10`), DR/game-day (`08 §8.2`,
+  `31 §31.11`), AI security (`22 §22.8`), accessibility (`20 §20.8`), FinOps + sustainability
+  (`08 §8.10`, `§8.11`), DORA (`31 §31.12`).
+- **Metric targets** are set at promotion time from the referenced specs — **not guessed now**.
 
 ---
 

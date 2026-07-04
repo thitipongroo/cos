@@ -103,47 +103,49 @@
 
 ---
 
-## AWAITING_DECISION Tracker
+## Decision Tracker (reconciled)
 
-The following decisions are open across stage files. They must be resolved before implementing the corresponding stage.
+**Reconciled 2026-07-04 against `docs/specifications/`.** All **35** stage-file decisions were
+**RESOLVED on 2026-06-10** and are authoritative in the specs. Each stage file's § REQUIRED DECISIONS
+carries the resolution + spec pointer. Do not treat a RESOLVED item as an `AWAITING_DECISION` blocker.
 
-| ID        | File | Question                                    | Impact                         |
-| --------- | ---- | ------------------------------------------- | ------------------------------ |
-| INT-001   | 05   | Ecosystem interoperability protocol         | Platform integration layer     |
-| INT-002   | 05   | Industry data sharing model                 | Data governance scope          |
-| INT-003   | 05   | Procurement intelligence algorithm          | Supplier intelligence design   |
-| INT-004   | 05   | Industry standardization alignment          | Standards body relationships   |
-| INT-005   | 05   | Financial infrastructure provider           | Payment rail integration       |
-| ECO-001   | 06   | Event schema format                         | Marketplace event architecture |
-| ECO-002   | 06   | Marketplace transaction model               | Revenue model                  |
-| ECO-003   | 06   | Benchmark data ownership                    | Data licensing                 |
-| ECO-004   | 06   | Ecosystem trust scoring algorithm           | Vendor reputation system       |
-| ECO-005   | 06   | Vendor minimum threshold                    | Marketplace launch gate        |
-| COORD-001 | 07   | Autonomous coordination governance          | Coordination AI oversight      |
-| COORD-002 | 07   | Multi-industry expansion priority           | Expansion roadmap              |
-| COORD-003 | 07   | Regulatory integration regions              | Compliance scope               |
-| COORD-004 | 07   | Market intelligence data sources            | Intelligence pipeline          |
-| COORD-005 | 07   | Payment orchestration model                 | Financial infrastructure       |
-| GLOB-001  | 08   | Global deployment regions                   | Infrastructure geography       |
-| GLOB-002  | 08   | Cross-region data aggregation model         | Data architecture              |
-| GLOB-003  | 08   | Global data governance framework            | Regulatory compliance          |
-| GLOB-004  | 08   | Cross-industry intelligence scope           | Intelligence breadth           |
-| GLOB-005  | 08   | Geopolitical risk handling                  | Resilience design              |
-| CIV-001   | 09   | Planet-scale simulation platform            | Simulation infrastructure      |
-| CIV-002   | 09   | Constitutional AI framework                 | AI governance                  |
-| CIV-003   | 09   | Multi-domain expansion                      | Scope definition               |
-| CIV-004   | 09   | Infrastructure intelligence economy model   | Economic model                 |
-| CIV-005   | 09   | Global standards governance body            | Standards authority            |
-| STEW-001  | 10   | Human-AI governance structure               | Governance implementation      |
-| STEW-002  | 10   | Knowledge preservation format               | Archive design                 |
-| STEW-003  | 10   | Long-term optimization horizon              | Simulation parameters          |
-| STEW-004  | 10   | Planetary resilience scope                  | Resilience system scope        |
-| STEW-005  | 10   | Multi-civilization interoperability spec    | Off-world layer scope          |
-| BG-001    | 11   | Decentralized governance protocol           | Governance implementation      |
-| BG-002    | 11   | Post-software transition definition         | Transition layer design        |
-| BG-003    | 11   | Meta-governance evolution mechanism         | Self-update mechanism          |
-| BG-004    | 11   | Intergenerational knowledge transfer format | Knowledge continuity           |
-| BG-005    | 11   | Human value alignment update mechanism      | Alignment architecture         |
+| ID        | File | Question                                    | Status                                         |
+| --------- | ---- | ------------------------------------------- | ---------------------------------------------- |
+| INT-001   | 05   | Ecosystem interoperability protocol         | RESOLVED 2026-06-10 (14-api-architecture)      |
+| INT-002   | 05   | Industry data sharing model                 | RESOLVED 2026-06-10 (09-data-architecture)     |
+| INT-003   | 05   | Procurement intelligence algorithm          | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| INT-004   | 05   | Industry standardization alignment          | RESOLVED 2026-06-10 (33-digital-twin-iot)      |
+| INT-005   | 05   | Financial infrastructure provider           | RESOLVED 2026-06-10 (13-product-architecture)  |
+| ECO-001   | 06   | Event schema format                         | RESOLVED 2026-06-10 (15-event-driven-workflow) |
+| ECO-002   | 06   | Marketplace transaction model               | RESOLVED 2026-06-10 (28-ecosystem-expansion)   |
+| ECO-003   | 06   | Benchmark data ownership                    | RESOLVED 2026-06-10 (09-data-architecture)     |
+| ECO-004   | 06   | Ecosystem trust scoring algorithm           | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| ECO-005   | 06   | Vendor minimum threshold                    | RESOLVED 2026-06-10 (28-ecosystem-expansion)   |
+| COORD-001 | 07   | Autonomous coordination governance          | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| COORD-002 | 07   | Multi-industry expansion priority           | RESOLVED 2026-06-10 (28-ecosystem-expansion)   |
+| COORD-003 | 07   | Regulatory integration regions              | RESOLVED 2026-06-10 (05-security-compliance)   |
+| COORD-004 | 07   | Market intelligence data sources            | RESOLVED 2026-06-10 (09-data-architecture)     |
+| COORD-005 | 07   | Payment orchestration model                 | RESOLVED 2026-06-10 (28-ecosystem-expansion)   |
+| GLOB-001  | 08   | Global deployment regions                   | RESOLVED 2026-06-10 (08-enterprise-deployment) |
+| GLOB-002  | 08   | Cross-region data aggregation model         | RESOLVED 2026-06-10 (09-data-architecture)     |
+| GLOB-003  | 08   | Global data governance framework            | RESOLVED 2026-06-10 (05-security-compliance)   |
+| GLOB-004  | 08   | Cross-industry intelligence scope           | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| GLOB-005  | 08   | Geopolitical risk handling                  | RESOLVED 2026-06-10 (08-enterprise-deployment) |
+| CIV-001   | 09   | Planet-scale simulation platform            | RESOLVED 2026-06-10 (33-digital-twin-iot)      |
+| CIV-002   | 09   | Constitutional AI framework                 | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| CIV-003   | 09   | Multi-domain expansion                      | RESOLVED 2026-06-10 (28-ecosystem-expansion)   |
+| CIV-004   | 09   | Infrastructure intelligence economy model   | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| CIV-005   | 09   | Global standards governance body            | RESOLVED 2026-06-10 (02-system-wide)           |
+| STEW-001  | 10   | Human-AI governance structure               | RESOLVED 2026-06-10 (22-ai-architecture §22.7) |
+| STEW-002  | 10   | Knowledge preservation format               | RESOLVED 2026-06-10 (09-data-architecture)     |
+| STEW-003  | 10   | Long-term optimization horizon              | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| STEW-004  | 10   | Planetary resilience scope                  | RESOLVED 2026-06-10 (08-enterprise-deployment) |
+| STEW-005  | 10   | Multi-civilization interoperability spec    | RESOLVED 2026-06-10 (33-digital-twin-iot)      |
+| BG-001    | 11   | Decentralized governance protocol           | RESOLVED 2026-06-10 (05-security-compliance)   |
+| BG-002    | 11   | Post-software transition definition         | RESOLVED 2026-06-10 (13-product-architecture)  |
+| BG-003    | 11   | Meta-governance evolution mechanism         | RESOLVED 2026-06-10 (22-ai-architecture)       |
+| BG-004    | 11   | Intergenerational knowledge transfer format | RESOLVED 2026-06-10 (09-data-architecture)     |
+| BG-005    | 11   | Human value alignment update mechanism      | RESOLVED 2026-06-10 (22-ai-architecture)       |
 
 ---
 

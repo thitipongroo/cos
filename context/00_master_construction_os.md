@@ -37,6 +37,7 @@ covers_stages: 01–11
 | -------------------------------------------------------------------------------------- |
 | [AGENT ROLE](#agent-role)                                                              |
 | [PHASE DEPENDENCY GRAPH](#phase-dependency-graph)                                      |
+| [ENGINEERING GOVERNANCE](#engineering-governance)                                      |
 | [GLOBAL TECHNOLOGY DECISION MAP](#global-technology-decision-map)                      |
 | [GLOBAL SYSTEM CONTEXT COMMAND](#global-system-context-command)                        |
 | [CROSS-SERVICE EVENT CONTRACT SPEC](#cross-service-event-contract-spec)                |
@@ -192,6 +193,271 @@ SAAS MATURITY MODEL — Phase to Stage mapping (source §32.1):
   Example: "Add multi-region support" → Stage 4 = Phase 17 (MultiRegionDeploy), not earlier.
   Example: "Add AI risk scoring"      → Stage 3–5 = Phase 11–14 + Phase 23, not Phase 1–7.
 ```
+
+---
+
+## ENGINEERING GOVERNANCE
+
+> Governs **how the roadmap files `context/01–11` are authored, risk-managed, and sequenced**. Deep
+> non-functional standards are authoritative in `docs/specifications/` and are only referenced here —
+> never restated divergently. Three parts: Phase Template · Risk Register · Roadmap Governance.
+
+### Phase Template & Traceability Standard
+
+**Phase-block taxonomy (all equivalent; each file uses one consistently):** `## EXECUTION PHASE …`
+(`context/02`, `03`, `05`–`11`; each groups the related `## … COMMAND` blocks under it) ·
+`## PRIORITY …` (`context/01`, MVP priorities) · `## PHASE …` (this file's Phase 1–25, and
+`context/04`). Every phase-block carries a one-sentence Objective — inline `### Objective`
+(`02`/`03`/`05`–`11`) or in the file's § OBJECTIVES register (`01`/`04`).
+
+Every phase-block in `context/01–11` (any taxonomy above) MUST contain, in order:
+
+```text
+Objective            — one sentence: the outcome, not the activity
+Scope (In / Out)     — explicit in-scope + explicit out-of-scope (defer targets)
+Spec references      — authoritative docs/specifications/ §sections (bi-directional traceability)
+Requirements         — capabilities to build
+Generate             — concrete artifacts (MUST-HAVE vs NICE-TO-HAVE)
+Acceptance criteria  — checkbox list, each verifiable by ls/grep/test/dashboard (Rule 36 evidence)
+Metrics / SLO gate   — measurable target numbers the phase must hit (inherit from the specs, below)
+Dependencies         — upstream phases + external decisions (AWAITING_DECISION ids)
+Risks                — top 1–3 risks for this phase (link § Risk Register ids)
+Effort               — T-shirt size + rough engineer-weeks
+Exit criteria        — phase is DONE only when every acceptance box has filesystem/metric evidence
+```
+
+REQUIRED (block the phase if missing): Objective, Spec references, Acceptance criteria, Metrics/SLO
+gate, Dependencies, Risks, Exit criteria. RECOMMENDED: Scope In/Out, Effort.
+
+**Traceability rule:** every phase cites the authoritative `docs/specifications/` §section for its
+domain; on conflict **spec wins** (per `context.md`) and the conflict is reported. Non-functional
+targets (availability, latency, RTO/RPO, security, cost) are **inherited** from the specs — SLO
+`31 §31.6`, DR `08 §8.2`, security `05 §5.9`, supply-chain `05 §5.10`, AI security `22 §22.8`,
+accessibility `20 §20.8`, FinOps/sustainability `08 §8.10`/`§8.11`, DORA `31 §31.12`, capacity
+`18 §18.4` — phases reference them, never restate the numbers.
+
+**Acceptance-criteria quality bar** — each box MUST be falsifiable by evidence:
+
+- ✅ "Offline sync success > 98% on the pilot cohort (from the `sync_status` dashboard)"
+- ✅ "`turbo run build` green on every service in CI; 0 manual deploy paths"
+- ❌ "improve reliability" · ❌ "build observability" · ❌ "achieve enterprise-grade …"
+
+Vague verbs (build / improve / achieve / establish) without a number or an artifact path are a
+template violation. Benchmark: arc42 (§1/§9/§10/§11), Google SRE (SLO/error budget), AWS
+Well-Architected (Operational Excellence).
+
+### Risk Register
+
+Reviewed at every stage gate and monthly. Each phase references the risk ids relevant to it.
+Scoring: Likelihood {Low, Med, High} × Impact {Low, Med, High, Critical}. Owner = accountable role.
+
+| ID | Risk | L × I | Owner | Mitigation | Early-warning metric |
+| -- | ---- | ----- | ----- | ---------- | -------------------- |
+| **R-01** | **3rd-party mobile-lib fragility** — WatermelonDB 0.28 + @morrowdigital plugin + RN 0.85 required a 7-layer native integration fix (JDK, prebuild, kotlin, CMake pnpm-path, JSIModulePackage, babel). Community plugins lag the SDK. | High × High | Mobile Lead | Durable fixes committed (pnpm patch `patches/@nozbe__watermelondb`, config plugin `plugins/withWatermelonAndroidJSIFix.js`); spike op-sqlite / Drizzle / Expo SQLite as an exit; pin+verify deps (R-07). | Mobile CI red on `expo prebuild` / native build; upstream plugin unmaintained > 2 SDKs |
+| **R-02** | **Cross-tenant data leak** — RLS misconfiguration exposes one tenant's data to another. Catastrophic + PDPA-fineable. | Low × Critical | Security Lead | RLS mandatory on every domain table (`07 §7.7`); `app.current_tenant_id` set before every query; isolation tests in CI; STRIDE on every new surface (`05 §5.9`). | Any query without tenant filter in review; isolation-test failure |
+| **R-03** | **PDPA non-compliance** — Thai PDPA actively enforced (8 fines / THB 21.5M since Aug 2025); missing DPO / 72h breach flow / erasure. | Med × High | DPO / Legal | PDPA hard requirements (`05 §5.3`): 72h breach workflow, DPO, subject-rights portal, RoPA, data residency `ap-southeast-7`; annual PDPA audit. | Breach-response drill > 72h; RoPA stale; residency exception logged |
+| **R-04** | **Offline sync conflict / data loss** — the sync engine (SyncManager, ConflictHandler, delta pull/push, PhotoUploadQueue) is the highest-value + most bug-prone logic. | Med × High | Mobile Lead | 3 conflict-resolution strategies (Phase 10); sync success > 98% SLO; unit + Detox e2e for conflict cases; idempotent delta cursor (`17`). | Sync success < 98%; rising unresolved-conflict count |
+| **R-05** | **Adoption failure** — field workers don't submit reports; platform becomes shelfware. | Med × High | Product Owner | Measurable adoption gates (`context/01`: report < 2 min, > 70% submission, > 5 sessions/wk); change-management (`context/03`). | Daily submission rate < 70% at 30/60/90 days |
+| **R-06** | **Premature scaling / over-engineering** — building marketplace/ML/"industry infrastructure" before product-market fit. | Med × Med | Eng Lead | Monolith-first + "extract with evidence" (`context/01`); roadmap governance splits committed (01–04) from vision (05–11) (below); no hyperscale optimization before 10k DAU (`18 §18.4`). | Service split without ownership+scaling evidence; effort spent on 05–11 pre-PMF |
+| **R-07** | **SDK / dependency churn & EOL** — Expo/RN upgrade treadmill; transitive CVEs. | High × Med | Eng Lead | Pin to stable SDK; scheduled upgrade cadence; SBOM (CycloneDX) + `pnpm audit` gate in CI; supply-chain per OWASP 2025 A03 (`05 §5.10`). | New high/critical CVE in SBOM; SDK N-2 unsupported |
+| **R-08** | **Ecosystem interop execution** — the interop standard is **decided** (INT-004: **IFC 4.3 (ISO 16739-1:2023) + buildingSMART Digital Framework**, `33 §Industry Standardization Alignment`, resolved 2026-06-10); residual risk is emitting standards-compliant output + tracking IFC 5 / ISO 19650 finalization (~2027). | Low × Med | Architecture | Conform ecosystem output to IFC 4.3 + CORENET-X (Singapore); monitor IFC 5 alpha / ISO 19650 DIS. | IFC export fails buildingSMART conformance; standard finalization missed |
+| **R-09** | **Event-delivery / data-consistency loss** — Kafka backpressure or consumer lag drops operational events. | Med × High | Platform Lead | Event delivery > 99.9% SLO; consumer-lag SLO + alerts (`31 §31.6`); DLQ + replay; outbox pattern. | Consumer lag > 5,000 / 2 min; DLQ growth |
+
+Review cadence: per stage gate (re-score all; `High × Critical` blocks the gate); monthly (early-warning
+metrics alongside the SLO/DORA review); on any new dependency / external surface (add or re-score before shipping).
+
+### Roadmap Governance & Horizon Classification
+
+The roadmap files escalate from an executable MVP to "civilization-scale" intent. A world-class roadmap
+must not blur **what is committed** with **what is aspirational**. Horizon classification (authoritative):
+
+| Horizon | Files | Status | Planning rigor |
+| ------- | ----- | ------ | -------------- |
+| **NOW** (0–6 mo) | `context/01` (Priority 0–5) + `context/04 Phase 0` | **Committed** | Full phase template + metrics + effort |
+| **NEXT** (6–18 mo) | `context/02` · `context/03` · `context/04 Phase 1–6` | **Committed** | Full phase template + inherited gates |
+| **LATER** (18 mo+) | `context/04 Phase 7–11` · `context/05` · `context/06` | **Planned — not committed** | Objective + dependencies + AWAITING_DECISION; metrics on entry |
+| **VISION** (multi-year) | `context/07`–`context/11` | **Directional vision — NOT a commitment** | Intent + open decisions only; no effort/date commitments |
+
+**Rule:** nothing in LATER/VISION may pull engineering effort from NOW/NEXT without an explicit
+product-owner decision. Terms like "civilization-scale / planetary / background civilization" describe
+long-term intent, not a planned deliverable. Review discipline: NOW/NEXT at every stage gate against the
+template + gates + risk register; LATER quarterly (promoted to NEXT only with metrics + effort); VISION
+annually (may be rewritten or dropped; excluded from capacity planning).
+
+> **Where each standard now lives** (deep content is in the specs; this section is the execution index):
+> phase-authoring → § Phase Template · risk → § Risk Register · reliability/SLO → `31 §31.6` · chaos+DORA
+> → `31 §31.11`/`§31.12` · DR → `08 §8.2` · FinOps/sustainability → `08 §8.10`/`§8.11` · security/STRIDE
+> → `05 §5.9`/`§5.10` · AI security → `22 §22.8`/`§22.9` · accessibility → `20 §20.8` · C4 → `03 §3.4` ·
+> capacity → `18 §18.4` · data governance → `09 §9.8`.
+
+### Phase Register (Objective · Dependencies · Risks · Exit · Effort)
+
+Retrofits Phase 1–25 to the § Phase Template. **Acceptance** for every phase = its `Generate:` list
+(each artifact falsifiable by `ls`/`grep`) + the applicable **QUALITY MANDATES** gates; the **Metric**
+gate is the phase's QM/SLO reference (coverage 100/100 per QM-1; SLO per `31 §31.6`). Dependencies are
+from § PHASE DEPENDENCY GRAPH (authoritative: `32 §32.1`); Risks link § Risk Register.
+
+**Effort — engineering estimate from scope (to be ratified by the product owner; not a commitment).**
+Basis: deliverable scope (Generate-item count), integration surface, and known build difficulty (e.g.
+Ph10 native-mobile complexity observed directly). Scale (per `context/04`): S ≈ 1–2 wk · M ≈ 2–4 wk /
+2–3 eng · L ≈ 4–8 wk / 3–5 eng · XL ≈ 8–20 wk / 4–6 eng.
+
+| Phase | Est | Basis for estimate |
+| ----- | --- | ------------------ |
+| 1 Foundation Repository | **L** | monorepo + CI + 9 packages + Docker Compose + 100/100 coverage config — broad but standard scaffolding |
+| 2 Auth + Tenant System | **XL** | Keycloak OIDC + RLS + RBAC/ABAC + 2 auth paths + tenant isolation — largest, security-critical foundation |
+| 3 Project Service | **M** | core domain CRUD + events + RLS |
+| 4 BOQ Service | **M** | BOQ engine + financial-precision calculations |
+| 5 Procurement Service | **L** | PR → RFQ → PO state machine + events + vendor flows (large scope) |
+| 6 Site Operations | **L** | site reporting + checklists + photo intake (large scope) |
+| 7 Finance Service | **L** | billing / AR / payments + financial precision |
+| 8 Event-driven Infrastructure | **L** | Kafka + outbox + DLQ + schema registry; foundational (blocks Ph3–7) |
+| 9 File + Document System | **M** | tenant-scoped storage + signed URLs + antivirus + OCR intake |
+| 10 Mobile Offline Engine | **XL** | offline-first + WatermelonDB sync + 3 conflict strategies + Detox + native builds — hardest (R-01/R-04, observed) |
+| 11 AI Foundation | **L** | RAG + LLM Gateway + pgvector + hybrid search + reranking — novel |
+| 12 AI Report Assistant | **M** | builds on Ph11 gateway; report generation + guardrail |
+| 13 Knowledge Graph | **M** | KG ingestion + normalization |
+| 14 Analytics + Dashboard | **M** | ClickHouse dashboards + queries |
+| 15 Observability | **L** | full OTel + Prometheus + Grafana + Loki + Jaeger + SLO across all services |
+| 16 Security | **L** | STRIDE + SBOM + WAF + pentest + hardening |
+| 17 DevOps + Deployment | **L** | CI/CD + multi-region + GitOps (ArgoCD) + Helm |
+| 18 Testing | **L** | full suite + mutation ≥70% + load + e2e across all services |
+| 19 Final Production Readiness | **M** | 39-check gate — verification/gating, little net-new build |
+| 20 Notification Service | **M** | service + SSE + channels + escalation |
+| 21 Equipment Service | **M** | domain CRUD + RLS |
+| 22 Workforce Service | **M** | domain CRUD + RLS |
+| 23 MLOps Pipeline | **L** | MLflow + Feast + Evidently — several new infra components |
+| 24 Digital Twin | **L** | IoT (EMQX) ingestion + twin — novel domain |
+| 25 Enterprise Provisioning | **L** | dedicated-DB per tenant + SSO/SAML + Temporal provisioning workflow (large scope) |
+
+Distribution: **XL** ×2 (Ph2, Ph10) · **L** ×13 · **M** ×10. No phase estimated **S** — every phase
+carries real integration surface.
+
+**Phase 1 — Foundation Repository** · deps: — · risk `R-07`
+
+- Objective: stand up the monorepo, toolchain, and CI foundation.
+- Exit: `turbo run build` green on every service; jest 100/100 coverage config + Docker Compose + CI pipeline present.
+
+**Phase 2 — Auth + Tenant System** · deps `Ph1` · risk `R-02, R-03`
+
+- Objective: multi-tenant authentication + tenant isolation foundation.
+- Exit: RLS on tenant tables; isolation test proves no cross-tenant read; JWT/Keycloak auth verified.
+
+**Phase 3 — Project Service** · deps `Ph2, Ph8` · risk `R-02`
+
+- Objective: project domain service.
+- Exit: project APIs pass the isolation-test suite; RLS enforced.
+
+**Phase 4 — BOQ Service** · deps `Ph3, Ph8` · risk `R-02`
+
+- Objective: Bill-of-Quantities engine.
+- Exit: BOQ calculations + financial-precision tests green; RLS enforced.
+
+**Phase 5 — Procurement Service** · deps `Ph3, Ph4, Ph8` · risk `R-02, R-09`
+
+- Objective: procurement (PR → RFQ → PO) domain.
+- Exit: procurement state machine emits verified typed events; RLS enforced.
+
+**Phase 6 — Site Operations** · deps `Ph3, Ph8` · risk `R-02`
+
+- Objective: site operations + daily reporting domain.
+- Exit: site-report APIs pass the isolation-test suite.
+
+**Phase 7 — Finance Service** · deps `Ph4, Ph5, Ph8` · risk `R-02`
+
+- Objective: finance domain (billing, AR, payments).
+- Exit: finance calculations + precision tests green; RLS enforced.
+
+**Phase 8 — Event-driven Infrastructure** · deps `Ph2` (blocks Ph3–7) · risk `R-09`
+
+- Objective: Kafka event backbone + outbox + DLQ (shared event SDK).
+- Exit: `allowAutoTopicCreation:false`; DLQ + replay present; event delivery > 99.9% verified.
+
+**Phase 9 — File + Document System** · deps `Ph2` · risk `R-02`
+
+- Objective: file/document storage + OCR intake.
+- Exit: tenant-scoped object keys + signed URLs; ClamAV scan + quarantine on threat.
+
+**Phase 10 — Mobile Offline Engine** · deps `Ph3–7, Ph9, Ph20–22` · risk `R-01, R-04`
+
+- Objective: offline-first mobile app + sync engine.
+- Exit: Detox e2e green; offline sync success > 98%; 3 conflict-resolution strategies.
+
+**Phase 11 — AI Foundation** · deps `Ph8, Ph9` · risk `R-03, R-09`
+
+- Objective: RAG + LLM Gateway foundation.
+- Exit: RAG pipeline + HallucinationGuard live; OWASP LLM row per AI surface (`22 §22.8`).
+
+**Phase 12 — AI Report Assistant** · deps `Ph11` · risk `R-03`
+
+- Objective: AI-assisted report generation.
+- Exit: AI report p95 < 5 s (`31 §31.6`); output advisory + audited.
+
+**Phase 13 — Knowledge Graph** · deps `Ph3–7, Ph11` · risk `R-09`
+
+- Objective: construction knowledge graph.
+- Exit: KG ingestion idempotent; entities normalized.
+
+**Phase 14 — Analytics + Dashboard** · deps `Ph3–7, Ph8, Ph13` · risk `R-09`
+
+- Objective: analytics + dashboards.
+- Exit: dashboard/analytics p95 < 1 s (ClickHouse, `31 §31.6`).
+
+**Phase 15 — Observability** · deps `Ph1–14, Ph20–25` · risk `R-09`
+
+- Objective: observability stack (metrics, logs, traces, SLO).
+- Exit: SLO dashboards + alerts + tracing live (`31`); synthetic probes committed.
+
+**Phase 16 — Security** · deps `Ph2, Ph15` · risk `R-02, R-03`
+
+- Objective: security hardening + compliance.
+- Exit: STRIDE per external surface (`05 §5.9`); SBOM per release (`05 §5.10`); pentest passed.
+
+**Phase 17 — DevOps + Deployment** · deps `Ph1, Ph15, Ph16` · risk `R-06`
+
+- Objective: CI/CD + multi-region deployment.
+- Exit: no manual deploy paths; DORA targets green (`31 §31.12`); DR game-day passed (`31 §31.11`).
+
+**Phase 18 — Testing** · deps `Ph1–17, Ph20–25` · risk `R-06`
+
+- Objective: full test suite + quality gates.
+- Exit: coverage 100/100 (QM-1); mutation score ≥ 70%; load test passes at target concurrency.
+
+**Phase 19 — Final Production Readiness** · deps `Ph1–18` · risk `R-05, R-06`
+
+- Objective: production-readiness gate.
+- Exit: all Phase 19 readiness checks (39 items) green.
+
+**Phase 20 — Notification Service** · deps `Ph2, Ph3` · risk `R-09`
+
+- Objective: notification/SSE service.
+- Exit: notification delivery + safety-alert path verified; excluded from maintenance windows.
+
+**Phase 21 — Equipment Service** · deps `Ph2, Ph3` · risk `R-02`
+
+- Objective: equipment domain.
+- Exit: equipment APIs pass the isolation-test suite.
+
+**Phase 22 — Workforce Service** · deps `Ph2, Ph3` · risk `R-02`
+
+- Objective: workforce domain.
+- Exit: workforce APIs pass the isolation-test suite.
+
+**Phase 23 — MLOps Pipeline** · deps `Ph11, Ph14` · risk `R-03`
+
+- Objective: MLOps (MLflow registry, Feast, Evidently drift).
+- Exit: model registry + drift monitoring + model cards live (`22 §22.9`).
+
+**Phase 24 — Digital Twin** · deps `Ph14, Ph23` · risk `R-03, R-09`
+
+- Objective: digital twin + IoT ingestion (EMQX).
+- Deps note: Ph24 is not in the explicit dependency graph; sequenced from Stage 5 (`32 §32.1` / `33`).
+- Exit: IoT ingestion + twin per `33-digital-twin-iot`; per-device auth + schema validation.
+
+**Phase 25 — Enterprise Provisioning** · deps `Ph2, Ph3, Ph20` · risk `R-02, R-08`
+
+- Objective: enterprise tenant provisioning.
+- Exit: dedicated-DB provisioning + SSO/SAML (Keycloak); INT-004 interop conformance for ecosystem.
 
 ---
 

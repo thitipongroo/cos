@@ -1020,6 +1020,71 @@ Constraints:
 
 ---
 
+## PHASE ACCEPTANCE CRITERIA & METRIC GATES
+
+> Falsifiable acceptance bar per EXECUTION PHASE — a phase is DONE only when every box has
+> filesystem / metric / test evidence (Rule 36). Metric targets are **authoritative in the referenced
+> `docs/specifications/` sections** and are never restated divergently here. Risk IDs resolve to
+> `00_master_construction_os.md` § Risk Register.
+
+**PHASE 1 — Foundation Stabilization** · spec `03,32` · risk `R-06`
+
+- Accept: [ ] `turbo run build` + type-check green on every service in CI; 0 manual deploy paths ·
+  [ ] service template (observability pre-wired) adopted by all services
+- Metric: DORA change lead-time < 1 day (`31-monitoring §31.12`) · Exit: `context/04 PHASE 0` exit criteria green
+
+**PHASE 2 — Core Domain Implementation** · spec `01,10,11` · risk `R-02`
+
+- Accept: [ ] every domain entity references master data (free-text in a normalized field = 0,
+  `09 §9.8`) · [ ] RLS on every domain table; isolation test proves no cross-tenant read (`05 §5.9.1`)
+- Metric: duplicate-entity rate < 1% (`09 §9.8`) · Exit: domain APIs pass the isolation-test suite
+
+**PHASE 3 — Workflow & Event Infrastructure** · spec `15,16` · risk `R-09`
+
+- Accept: [ ] every workflow state transition emits a typed event via `@cos/shared` ·
+  [ ] `allowAutoTopicCreation:false`; DLQ + replay present
+- Metric: event delivery > 99.9%, consumer lag < 1,000/partition (`31 §31.6`) ·
+  Exit: RFQ/PO state machines emit verified events
+
+**PHASE 4 — Data Platform & Ontology** · spec `09,10,12` · risk `R-09`
+
+- Accept: [ ] ontology entities normalized; KG ingestion idempotent; lineage recorded (`09 §9.8`)
+- Metric: dashboard/analytics p95 < 1 s (ClickHouse, `31 §31.6`) ·
+  Exit: analytics queries meet the latency SLO under representative volume
+
+**PHASE 5 — AI & Intelligence Layer** · spec `22,23,24` · risk `R-03`
+
+- Accept: [ ] AI outputs pass the HallucinationGuard; [ ] an OWASP LLM row exists per AI surface
+  (`22 §22.8`); [ ] model/prompt governance logged (`22 §22.9`)
+- Metric: AI report p95 < 5 s (`31 §31.6`) · Exit: AI-assist ships only behind guardrails + audit
+
+**PHASE 6 — Mobile & Offline Systems** · spec `17` · risk `R-01, R-04`
+
+- Accept: [ ] offline path exists for every user action; [ ] 3 conflict-resolution strategies;
+  [ ] WCAG 2.2 AA (`20 §20.8`)
+- Metric: offline sync success > 98% (`31 §31.6`) · Exit: Detox e2e green + sync SLO met
+
+**PHASE 7 — Enterprise Hardening** · spec `05,08,31` · risk `R-02, R-03`
+
+- Accept: [ ] RLS + RBAC/ABAC + immutable audit + secret rotation; [ ] STRIDE done for every external
+  surface (`05 §5.9`); [ ] SBOM per release (`05 §5.10`)
+- Metric: availability per tier 99.5/99.9/99.95% (`31 §31.6`); RTO/RPO validated by quarterly game-day
+  (`08 §8.2`, `31 §31.11`) · Exit: security controls + SLO gates green
+
+**PHASE 8 — Ecosystem & Marketplace** · spec `28` · risk `R-08`
+
+- Accept: [ ] ecosystem APIs versioned (`/api/vN`); [ ] webhooks HMAC-signed (`05 §5.9.3`)
+- Metric: interop contract tests pass ·
+  Exit: ecosystem output conforms to **INT-004 (IFC 4.3 + buildingSMART, resolved `33 §`)** before ecosystem GA
+
+**PHASE 9 — Production Adoption & Scaling** · spec `18` · risk `R-06`
+
+- Accept: [ ] no hyperscale optimization before 10k DAU (`18 §18.4`); [ ] horizontal scale tested
+- Metric: latency + availability SLO hold under load test (`18 §18.4`, `31 §31.6`) ·
+  Exit: load test meets SLO at target concurrency
+
+---
+
 ## IMPLEMENTATION ORDER
 
 ```text

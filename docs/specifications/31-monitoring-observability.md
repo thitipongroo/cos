@@ -1,8 +1,8 @@
 ---
 title: 'Monitoring & Observability'
-version: '1.7.0'
+version: '1.9.0'
 status: Active
-last_updated: '2026-05-28'
+last_updated: '2026-07-04'
 authors:
   - thitipongroo
 related_docs:
@@ -27,6 +27,8 @@ related_docs:
 - [31.8 Dashboards](#318-dashboards)
 - [31.9 On-call & Incident Response](#319-on-call--incident-response)
 - [31.10 Synthetic Monitoring](#3110-synthetic-monitoring)
+- [31.11 Resilience Validation (Chaos & Game-day)](#3111-resilience-validation-chaos--game-day)
+- [31.12 Delivery Metrics (DORA)](#3112-delivery-metrics-dora)
 
 ---
 
@@ -237,12 +239,32 @@ Errors: HTTP 5xx responses.
 - Alert threshold: lag > 5,000 messages for > 2 minutes
 - Critical: lag > 50,000 messages (potential data processing outage)
 
+### Frontend Web Vitals SLO
+
+The API SLOs above cover the backend; user-perceived web performance is governed by **Google Core Web
+Vitals**, measured from real users (RUM) at the **p75** percentile (Google's standard).
+
+| Metric | Target (p75, "good") |
+| ------ | -------------------- |
+| **LCP** — Largest Contentful Paint | ≤ 2.5 s |
+| **INP** — Interaction to Next Paint | ≤ 200 ms |
+| **CLS** — Cumulative Layout Shift | ≤ 0.1 |
+
+- **RUM collection:** the `web-vitals` library reports LCP/INP/CLS to the telemetry pipeline (OTel →
+  the metrics store); tracked per route and per device class.
+- **Field-worker reality:** report CWV segmented by a low-end-device + slow-network cohort — the field
+  UX (`20 §20.1`) runs on mid/low-end phones over poor connectivity, so the p75 must hold there, not
+  only on fast devices.
+- **Mobile app** (React Native): track cold-start time + interaction responsiveness analogously.
+- **Regression gate:** lab CWV + bundle-size budget are enforced pre-merge (`30 §30.9`).
+
 ### SLO Monthly Review
 
 A monthly review of SLO compliance is required for all tiers. The review covers:
 
 - API availability vs. target for the month (error budget consumed vs. remaining)
 - Latency SLO compliance per endpoint category
+- **Web Vitals (LCP/INP/CLS) p75 vs. target**, including the low-end-device/slow-network cohort
 - Kafka consumer lag incidents and duration
 - Any SLO burn-rate alerts that fired during the month
 
@@ -411,10 +433,46 @@ in the same PR that introduces the endpoint.
 
 ---
 
+## 31.11 Resilience Validation (Chaos & Game-day)
+
+SLOs (§31.6) and DR targets ([08-enterprise-deployment §8.2](08-enterprise-deployment.md)) are only
+credible if failure is exercised, not just documented.
+
+- **Quarterly DR game-day** — execute a real failover + restore using the `docs/runbooks/disaster-recovery/`
+  runbook; **measure actual RTO/RPO against the 08 §8.2 targets** for the highest tier served; file
+  findings in `docs/runbooks/gameday-<date>.md`.
+- **Monthly dependency-failure injection** — kill or latency-inject one critical dependency
+  (PostgreSQL, Redis, Kafka, EMQX, a third-party mobile lib) in staging; assert graceful degradation
+  and no data loss.
+- **Steady-state hypothesis** — before each experiment, define the metric that proves "normal", the
+  blast-radius limit, and the rollback (Principles of Chaos Engineering).
+- **Gate** — a tier cannot be marked production-ready until it has passed ≥ 1 game-day at its
+  RTO/RPO.
+
+## 31.12 Delivery Metrics (DORA)
+
+Delivery health is measured from CI/CD and reviewed monthly alongside SLOs (§31.6.4). Target band =
+DORA "High → Elite" (State of DevOps 2024, which adds a 5th key, rework/failure-recovery rate).
+
+| DORA key | Target |
+| -------- | ------ |
+| Deployment frequency | On-demand (≥ daily for shared services) |
+| Change lead time | < 1 day (commit → prod) |
+| Change failure rate | < 15% (aim ~5%) |
+| Failed-deployment recovery | < 1 hour (aligns with P0/P1 response, §31.9) |
+| Rework rate (2024 5th key) | Trending down QoQ |
+
+No manual deploy paths; feature flags are the default mechanism for risky rollouts. DORA metrics
+are emitted to the SLO Burn Rate dashboard family (§31.8).
+
+---
+
 ## References
 
 | ID              | Title                                                              | Source                                                                        |
 | --------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| [DORA]          | DORA State of DevOps / Four Keys                                   | [dora.dev](https://dora.dev/)                                                 |
+| [Chaos]         | Principles of Chaos Engineering                                    | [principlesofchaos.org](https://principlesofchaos.org/)                       |
 | [IEEE 830]      | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                             |
 | [OpenTelemetry] | OpenTelemetry Specification                                        | [opentelemetry.io/docs/specs/otel](https://opentelemetry.io/docs/specs/otel/) |
 | [Prometheus]    | Prometheus Monitoring Documentation                                | [prometheus.io/docs](https://prometheus.io/docs/introduction/overview/)       |

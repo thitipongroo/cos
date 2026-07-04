@@ -2,7 +2,7 @@
 title: 'Digital Twin and IoT Layer'
 version: '1.4.0'
 status: Active
-last_updated: '2026-05-28'
+last_updated: '2026-06-10'
 authors:
   - thitipongroo
 related_docs:

@@ -2,7 +2,7 @@
 title: 'Product Architecture'
 version: '1.1.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-06-10'
 authors:
   - thitipongroo
 related_docs:

@@ -1,8 +1,8 @@
 ---
 title: 'System-wide Integration View (End-to-End)'
-version: '1.2.0'
+version: '1.3.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-07-04'
 authors:
   - thitipongroo
 related_docs:
@@ -29,6 +29,17 @@ related_docs:
 ---
 
 ## 2.1 End-to-End Operational Lifecycle
+
+```mermaid
+flowchart LR
+    A["A · Pre-construction\nCRM → BOQ → budget"] --> B["B · Procurement\nRFQ → PO → delivery"]
+    B --> C["C · Construction Execution\ntasks → inspections → progress"]
+    C --> D["D · Financial Sync\nearned value → billing → cash-flow"]
+    D --> F["F · Asset Lifecycle\nhandover → warranty → maintenance"]
+    C -. operational data .-> E["E · AI Intelligence Loop\nevents → analytics → risk → recommendation"]
+    D -. operational data .-> E
+    E -. automation + recommendations .-> C
+```
 
 ### Phase A — Pre-construction
 

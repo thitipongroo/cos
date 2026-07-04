@@ -1,8 +1,8 @@
 ---
 title: 'UX Flow'
-version: '1.4.0'
+version: '1.5.0'
 status: Active
-last_updated: '2026-06-20'
+last_updated: '2026-07-03'
 authors:
   - thitipongroo
 related_docs:
@@ -29,6 +29,7 @@ related_docs:
 - [20.5 Internationalisation and Localisation](#205-internationalisation-and-localisation)
 - [20.6 Web Application — Authentication and Session](#206-web-application--authentication-and-session)
 - [20.7 Web Application — Page Inventory per Role](#207-web-application--page-inventory-per-role)
+- [20.8 Accessibility (WCAG 2.2 AA)](#208-accessibility-wcag-22-aa)
 
 ---
 
@@ -511,6 +512,47 @@ matching SAP Ariba Network / Coupa Supplier Portal / Procore (external portal is
 | `/vendor/quotations`      | Quotations   | Submitted-quotation history                             | Tier 2           |
 | `/vendor/purchase-orders` | PO status    | Track status of POs on linked trading relationships     | Tier 2           |
 | `/vendor/invoices`        | Invoices     | Submit and track the vendor's own invoices              | Tier 2           |
+
+---
+
+## 20.8 Accessibility (WCAG 2.2 AA)
+
+**Conformance target: WCAG 2.2 Level AA** for every user-facing screen (web + React Native mobile).
+For Construction OS this is an operational-usability requirement, not only compliance: primary users
+are field workers on a phone one-handed, in direct sunlight, wearing gloves, often with situational
+or permanent motor/vision limitations.
+
+Native mobile maps WCAG intent to OS a11y APIs: iOS **VoiceOver** / Dynamic Type, Android
+**TalkBack** / font scale. React Native uses `accessibilityLabel`, `accessibilityRole`,
+`accessibilityState`, `accessible` on every interactive element.
+
+### Required success criteria (the ones that bite for a field app)
+
+| WCAG 2.2 SC | Requirement (as applied) |
+| ----------- | ------------------------ |
+| 1.4.3 Contrast (Minimum) | Text contrast ≥ **4.5:1** (≥ 3:1 large text). Verify the §32.7 design tokens against a sunlight-readable floor. |
+| 1.4.11 Non-text Contrast | UI components / state indicators (input borders, focus, chips) ≥ **3:1**. |
+| 1.4.4 Resize Text | Layout must not break at **200% font scale**. |
+| 2.5.8 Target Size (Minimum) | Interactive targets ≥ **24×24 px** — already exceeded: buttons min 44px (see `32-implementation-specifications §32.7` / master §TOUCH TARGET STANDARDS). Keep this. |
+| 2.5.7 Dragging Movements | Any drag (reorder, swipe-to-sync) has a single-pointer tap alternative. |
+| 2.4.7 / 2.4.11 Focus Visible + Appearance | Visible, non-obscured keyboard/switch focus (web); logical focus order (RN). |
+| 3.3.7 Redundant Entry | Don't re-ask data already provided in the same flow. |
+| 3.3.8 Accessible Authentication | OTP login requires no cognitive test / no inaccessible CAPTCHA. |
+| 4.1.2 Name/Role/Value | Every control exposes an accessible name + role + state. |
+
+Non-negotiable for safety flows (incident / safety report): **color is never the only signal**
+(WCAG 1.4.1) — pair with icon + text; safety alerts must be announced by the screen reader.
+
+### Acceptance criteria / gate
+
+- [ ] Automated a11y lint in CI: `eslint-plugin-jsx-a11y` (web) + RN a11y checks — 0 errors on merge
+- [ ] Contrast audit of §32.7 tokens passes 4.5:1 / 3:1 (`docs/a11y/contrast-report.md`)
+- [ ] Every interactive RN component has `accessibilityLabel` + `accessibilityRole` (CI grep gate)
+- [ ] Manual screen-reader pass (VoiceOver + TalkBack) on the 5 critical flows (login, daily report,
+      issue, safety incident, sync-status) — `docs/a11y/screenreader-checklist.md`
+- [ ] Layout verified at 200% font scale on the smallest supported device (375pt)
+- **Gate:** a screen cannot ship if it fails automated a11y lint or lacks the screen-reader pass for
+  a critical flow.
 
 ---
 

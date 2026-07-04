@@ -1,8 +1,8 @@
 ---
 title: 'Data Architecture'
-version: '1.1.0'
+version: '1.2.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-07-03'
 authors:
   - thitipongroo
 related_docs:
@@ -23,6 +23,7 @@ related_docs:
 - [9.5 Reporting and Analytics Architecture](#95-reporting-and-analytics-architecture)
 - [9.6 Ecosystem Intelligence Decisions](#96-ecosystem-intelligence-decisions)
 - [9.7 Database Migration Safety Rules](#97-database-migration-safety-rules)
+- [9.8 Data Governance (MDM, Lineage, Catalog)](#98-data-governance-mdm-lineage-catalog)
 
 ---
 
@@ -383,6 +384,38 @@ Row-Level Security migrations have additional requirements:
 - Every new domain table added after Phase 2 must include RLS enablement in its creation migration
 - The application role (`app_user`) must never be granted `BYPASSRLS`
 - Rollback scripts for RLS migrations must `DISABLE ROW LEVEL SECURITY` and `DROP POLICY` for every policy created
+
+---
+
+## 9.8 Data Governance (MDM, Lineage, Catalog)
+
+The platform's value is being "the canonical operational dataset" (§9.1). That claim requires the
+master-data domains in §9.2 to be governed, not just stored.
+
+### Master Data Management (MDM)
+
+- **Single source of truth** — every transactional/event record references a master-data entity
+  (§9.2) by key; free-text in a field that has a master-data domain is a defect (enforced in domain
+  acceptance criteria, `context/02`).
+- **Golden record** — for entities that arrive from multiple sources (e.g. Vendor via manual entry +
+  CRM webhook), define match/merge + survivorship rules producing one golden record; duplicates are
+  merged, not forked (duplicate-entity rate < 1% target).
+- **Stewardship** — each master-data domain has a data-owner role accountable for its quality.
+
+### Data Lineage
+
+- Every derived/analytics dataset (§9.5) records its upstream source and transformation so a figure
+  in a report can be traced to the operational rows that produced it.
+- Lineage is captured across the CDC → Kafka → analytics path (§9.4) — not reconstructed manually.
+
+### Data Catalog
+
+- A catalog lists each dataset: owner, domain, classification (§9.6 / PDPA), freshness, and lineage
+  link, so consumers can discover data without reading schemas.
+
+Acceptance: [ ] match/merge + survivorship rules defined for multi-source master entities ·
+[ ] lineage recorded for every analytics dataset · [ ] catalog entry exists per dataset with owner +
+classification.
 
 ---
 

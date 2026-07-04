@@ -8,7 +8,7 @@ previous: 07_industry_coordination.md
 next: 09_civilization_scale.md
 authority: context-only
 master: 00_master_construction_os.md
-awaiting_decisions: GLOB-001, GLOB-002, GLOB-003, GLOB-004, GLOB-005
+resolved_decisions: GLOB-001..GLOB-005 all RESOLVED 2026-06-10 (authoritative in docs/specifications/)
 ---
 
 # Construction OS — Global Operational Intelligence & Civilization-scale Coordination Master Context
@@ -50,31 +50,38 @@ awaiting_decisions: GLOB-001, GLOB-002, GLOB-003, GLOB-004, GLOB-005
 > จากนั้นถาม product owner คำถามด้านล่างนี้ ไม่ต้องรอคำตอบก่อน implement stub
 
 ```text
-AWAITING_DECISION — product owner ต้องตอบก่อน implement จริง:
+RESOLVED — all 5 decided 2026-06-10; authoritative in docs/specifications/
+(per-item "Target: Resolve before" notes below are superseded):
 
-[ ] GLOB-001: Global deployment regions
+  GLOB-001 → AWS ap-southeast-7 (Bangkok) primary; ap-southeast-1 secondary (08-enterprise-deployment)
+  GLOB-002 → Federated aggregation with differential privacy (09-data-architecture)
+  GLOB-003 → Data sovereignty first — store locally, aggregate globally (05-security-compliance)
+  GLOB-004 → Modular intelligence layers with domain-specific fine-tuning (22-ai-architecture)
+  GLOB-005 → Active-passive multi-region with data egress controls (08-enterprise-deployment)
+
+[x] GLOB-001: Global deployment regions
     ขยาย multi-region ไปที่ไหนก่อนหลัง ap-southeast-1?
     (ap-northeast-1 / eu-west-1 / us-east-1 / อื่นๆ)
     ส่งผลต่อ: MultiRegionDeploy — active-passive, ap-southeast-1 primary, Terraform multi-region module (Stage 4); Stage 7 global expansion ต้องการตอบว่าขยายไป region ไหนเพิ่ม (คำถามนี้)
     Target: Resolve before: Stage 7 (GLOBAL INTELLIGENCE) implementation begins
 
-[ ] GLOB-002: Cross-region data aggregation model
+[x] GLOB-002: Cross-region data aggregation model
     Global intelligence aggregation เป็น centralized / federated / hybrid?
     ส่งผลต่อ: global analytics pipeline architecture, data residency rules
     Target: Resolve before: Stage 7 (GLOBAL INTELLIGENCE) implementation begins
 
-[ ] GLOB-003: Global data governance framework
+[x] GLOB-003: Global data governance framework
     ข้ามประเทศใช้ framework อะไร? GDPR / PDPA / custom?
     ส่งผลต่อ: regional data residency, sovereignty-aware routing
     Target: Resolve before: Stage 7 (GLOBAL INTELLIGENCE) implementation begins
 
-[ ] GLOB-004: Cross-industry intelligence scope
+[x] GLOB-004: Cross-industry intelligence scope
     Global intelligence ครอบคลุม industries ไหนบ้าง?
     (construction only / + logistics / + energy / + infrastructure)
     ส่งผลต่อ: cross-domain intelligence pipeline scope
     Target: Resolve before: Stage 7 (GLOBAL INTELLIGENCE) implementation begins
 
-[ ] GLOB-005: Geopolitical risk handling
+[x] GLOB-005: Geopolitical risk handling
     Regions ที่มี geopolitical risk สูง — include / exclude / flag?
     ส่งผลต่อ: regional intelligence aggregation logic
     Target: Resolve before: Stage 7 (GLOBAL INTELLIGENCE) implementation begins
@@ -723,6 +730,27 @@ Constraints:
 10. Civilization resilience before economic optimization.
 
 ```
+
+---
+
+## PHASE GOVERNANCE & ACCEPTANCE
+
+> **Horizon: VISION (not committed).** Per `00_master_construction_os.md` § Roadmap Governance, this
+> file is a directional vision — entered only **after product-market fit** and after its § REQUIRED
+> DECISIONS are resolved. It is not a committed phase and deliberately carries **no fabricated metric
+> targets**.
+
+- **Precondition gate** — § REQUIRED DECISIONS (GLOB-001..005) are all **RESOLVED (2026-06-10)** and
+  authoritative in `docs/specifications/`; this precondition is **met**. The remaining gate to enter
+  this horizon is PMF + explicit product-owner go-ahead (§ Roadmap Governance).
+- **Authoring bar at promotion** — when a COMMAND here is promoted to a committed phase it MUST be
+  rewritten to the § Phase Template (Objective · Requirements · Generate · **falsifiable Acceptance
+  criteria** · Metric gate · Dependencies · Risks · Exit) in `00_master_construction_os.md`.
+- **Inherited non-functional gates** (apply on promotion, same as committed phases): SLO
+  (`31 §31.6`), security/STRIDE (`05 §5.9`), supply-chain (`05 §5.10`), DR/game-day (`08 §8.2`,
+  `31 §31.11`), AI security (`22 §22.8`), accessibility (`20 §20.8`), FinOps + sustainability
+  (`08 §8.10`, `§8.11`), DORA (`31 §31.12`).
+- **Metric targets** are set at promotion time from the referenced specs — **not guessed now**.
 
 ---
 

@@ -1,8 +1,8 @@
 ---
 title: 'Enterprise Deployment Strategy'
-version: '1.2.0'
+version: '1.3.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-07-03'
 authors:
   - thitipongroo
 related_docs:
@@ -25,6 +25,8 @@ related_docs:
 - [8.7 WAF Requirements by Deployment Type](#87-waf-requirements-by-deployment-type)
 - [8.8 Cloud Deployment and Resilience Decisions](#88-cloud-deployment-and-resilience-decisions)
 - [8.9 Container Build Specification](#89-container-build-specification)
+- [8.10 FinOps & Cost Management](#810-finops--cost-management)
+- [8.11 Compute Sustainability](#811-compute-sustainability)
 
 ---
 
@@ -394,6 +396,46 @@ matrix:
 - **GitOps image tag update** (step 7) must commit the new image tag to the Helm
   `values-prod.yaml` (or equivalent) for each service and push to the GitOps repository
   to trigger ArgoCD sync; an `echo` statement is not sufficient.
+
+---
+
+## 8.10 FinOps & Cost Management
+
+Cost is a first-class operating constraint for a multi-tenant SaaS. Governed alongside SLOs
+([31-monitoring §31.6](31-monitoring-observability.md)).
+
+- **Cost-per-tenant** tracked per tier (via tenant-tagged infra + AI token attribution from
+  [22-ai-architecture](22-ai-architecture.md)); a tenant that breaches its tier cost envelope
+  triggers a right-sizing review before the next billing cycle.
+- **Gross-margin floor** per tier defined with Finance; a margin-eroding feature requires
+  product-owner sign-off (ties to pricing, [26-pricing-model](26-pricing-model.md)).
+- **Unit-economics review** quarterly — infra + AI cost vs. revenue per active tenant.
+- **Budget alarms** — per-environment spend alerts; non-production spend is capped.
+
+Acceptance: [ ] cost-per-tenant dashboard exists · [ ] quarterly unit-economics review scheduled ·
+[ ] budget alarms configured per environment.
+
+## 8.11 Compute Sustainability
+
+Well-Architected Sustainability pillar — minimizing the environmental impact of **running
+Construction OS itself**. Distinct from the product's ESG/GHG carbon-reporting **feature**
+(§8.8 CarbonRecord / [33-digital-twin-iot §33.4](33-digital-twin-iot.md)), which measures the
+customer's construction footprint.
+
+- **Maximize utilization** — right-size workloads to real load; **scale-to-zero** idle async
+  workers (Go analytics/KG workers, AI embedding/OCR, background-sync) via HPA/KEDA; auto-suspend
+  non-production outside working hours.
+- **Carbon-/cost-aware scheduling** — run deferrable batch + AI training/embedding jobs in
+  low-carbon-intensity windows and cheaper regions where data residency
+  ([05-security-compliance §5.6](05-security-compliance.md)) allows.
+- **Data efficiency** — TimescaleDB chunk compression + S3 cold archive; ClickHouse tiering;
+  delta-only mobile sync (less network/battery than full sync).
+- **Measure** — cluster CPU/memory utilization + a proxy `gCO2e/1k requests` per environment.
+- **Targets** — non-production idle compute → near-zero off-hours; production average utilization
+  ≥ 50%; every new always-on service justifies why it cannot scale-to-zero.
+
+Acceptance: [ ] scale-to-zero configured for all async workers · [ ] non-production auto-suspend
+live · [ ] utilization + carbon-proxy dashboard exists · [ ] right-sizing review in quarterly FinOps.
 
 ---
 

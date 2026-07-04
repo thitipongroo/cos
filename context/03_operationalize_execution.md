@@ -837,6 +837,68 @@ Constraints:
 
 ---
 
+## PHASE ACCEPTANCE CRITERIA & METRIC GATES
+
+> Falsifiable acceptance bar per EXECUTION PHASE — a phase is DONE only when every box has
+> filesystem / metric / test evidence (Rule 36). Metric targets are **authoritative in the referenced
+> `docs/specifications/` sections** and are never restated divergently here. Risk IDs resolve to
+> `00_master_construction_os.md` § Risk Register.
+
+**PHASE 1 — Pilot Deployment & Validation** · risk `R-05`
+
+- Accept: [ ] pilot cohort live; [ ] real workflows (site report, procurement) validated end-to-end
+- Metric: daily submission > 70% at 30 days · Exit: pilot success criteria met
+
+**PHASE 2 — Operational Adoption** · risk `R-05`
+
+- Accept: [ ] change-management + field-ops optimization delivered
+- Metric: > 5 sessions/worker/week, report-submission median < 2 min ·
+  Exit: adoption gate (`context/01` metrics) at 60/90 days
+
+**PHASE 3 — Reliability & Production Maturity** · spec `31,08` · risk `R-09`
+
+- Accept: [ ] incident runbooks + escalation (`31 §31.9`); [ ] DR executed, not just documented
+- Metric: SLO green + **actual RTO/RPO measured vs `08 §8.2` targets** via game-day (`31 §31.11`) ·
+  Exit: ≥ 1 game-day passed at tier RTO/RPO
+
+**PHASE 4 — Data Governance & Operational Intelligence** · spec `05,09` · risk `R-03`
+
+- Accept: [ ] data classification + retention policy; [ ] PDPA RoPA + data-flow map maintained;
+  [ ] MDM/lineage governed (`09 §9.8`)
+- Metric: annual PDPA audit passed · Exit: PDPA hard-requirements (`05 §5.3`: 72h breach, DPO, erasure) green
+
+**PHASE 5 — AI Expansion & Governance** · spec `22,23` · risk `R-03`
+
+- Accept: [ ] guardrails on every new AI workflow; [ ] model governance maintained (`22 §22.9`)
+- Metric: AI SLO held (`31 §31.6`) · Exit: AI governance review signed off
+
+**PHASE 6 — Enterprise Operations** · spec `08,34` · risk `R-03`
+
+- Accept: [ ] enterprise customer ops; [ ] SSO/SAML (Keycloak)
+- Metric: Dedicated tier availability 99.95%, RTO/RPO 1 h (`31 §31.6`, `08 §8.2`) ·
+  Exit: enterprise SLA demonstrably met
+
+**PHASE 7 — Ecosystem Dependency** · spec `28` · risk `R-08`
+
+- Accept: [ ] supplier + contractor ecosystem integrations
+- Metric: interop contract tests pass · Exit: ecosystem contracts live (per INT-004: IFC 4.3 + buildingSMART, `33 §`)
+
+**PHASE 8 — Platformization** · spec `28,14` · risk `R-08`
+
+- Accept: [ ] platform API + marketplace scaffolding; versioned + rate-limited (Kong)
+- Metric: platform API SLO (`31 §31.6`) · Exit: platform GA gates met
+
+**PHASE 9 — Operational Scale & Intelligence Compounding** · spec `18` · risk `R-06`
+
+- Accept: [ ] network-effect features gated by evidence (not pre-PMF)
+- Metric: SLO under scale (`18 §18.4`, `31 §31.6`) · Exit: scale validated with data
+
+**PHASE 10 — Infrastructure Positioning** — LATER boundary (`00_master §Roadmap Governance`): entered
+only after PMF + relevant `AWAITING_DECISION` items resolved; held to lighter rigor until promoted to
+a committed phase.
+
+---
+
 ## EXECUTION ORDER
 
 ```text

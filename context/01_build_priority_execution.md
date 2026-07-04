@@ -1324,6 +1324,40 @@ Business outcomes (measured at 90 days):
 
 ---
 
+## PRIORITY OBJECTIVES
+
+> Per § Phase Template: one-sentence outcome per PRIORITY block (the block's `Generate:` list is its
+> Acceptance; EXIT CRITERIA and metrics are in-block / § MEASURABLE SUCCESS METRICS).
+
+- **P0 — Foundation Infrastructure:** stand up the core platform infrastructure the MVP is built on.
+- **P1 — Site Reporting:** enable field workers to submit daily site reports (the primary adoption wedge).
+- **P2 — Procurement Visibility:** make procurement status (PR/RFQ/PO, deliveries) visible end-to-end.
+- **P3 — Cost Tracking:** track project cost vs budget with variance visibility.
+- **P4 — Mobile-first UX System:** deliver a mobile-first, offline-capable field UX.
+- **P5 — AI Compatibility Layer:** structure data + interfaces so AI can consume operational data.
+
+---
+
+## NON-FUNCTIONAL GATES & GOVERNANCE (all Priorities inherit)
+
+> The per-Priority EXIT CRITERIA above are the functional bar. In addition, every Priority inherits
+> these cross-cutting gates — authoritative in `docs/specifications/`, never restated divergently.
+> A Priority is not "done" until the gates that apply to it are green (Rule 36).
+
+- **Reliability / SLO** — availability + latency + error-budget per tier (`31-monitoring §31.6`);
+  the numbers in § MEASURABLE SUCCESS METRICS are the product-adoption view of the same bar.
+- **Security** — STRIDE per external surface (`05 §5.9`); supply-chain SBOM/pinning (`05 §5.10`).
+- **Accessibility** — WCAG 2.2 AA for every field-facing screen (`20 §20.8`) — an operational
+  requirement for one-handed, gloved, sunlight use, not only compliance.
+- **AI security** — OWASP LLM row + HallucinationGuard for the AI Compatibility Layer (Priority 5)
+  (`22 §22.8`).
+- **Delivery** — DORA targets from CI (`31 §31.12`); no manual deploy paths.
+- **Disaster recovery** — RTO/RPO per tier validated by game-day (`08 §8.2`, `31 §31.11`).
+- **Risk & phase authoring** — active risks and the phase-authoring template are in
+  `00_master_construction_os.md` § Risk Register / § Phase Template.
+
+---
+
 ## FINAL STRATEGIC PRINCIPLE
 
 ```text

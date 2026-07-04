@@ -1,8 +1,8 @@
 ---
 title: 'AI Architecture'
-version: '1.7.0'
+version: '1.9.0'
 status: Active
-last_updated: '2026-06-17'
+last_updated: '2026-07-04'
 authors:
   - thitipongroo
 related_docs:
@@ -24,6 +24,9 @@ related_docs:
 - [22.5 LLM Provider Strategy](#225-llm-provider-strategy)
 - [22.6 LAYER-C-001 Evaluation Rubric](#226-layer-c-001-evaluation-rubric)
 - [22.7 AI Integration Decisions](#227-ai-integration-decisions)
+- [22.8 AI Security (OWASP LLM Top 10)](#228-ai-security-owasp-llm-top-10)
+- [22.9 Model Governance](#229-model-governance)
+- [22.10 AI Engineering Enhancements](#2210-ai-engineering-enhancements)
 
 ---
 
@@ -243,6 +246,23 @@ RAG Architecture :
 - Query-time: hybrid search — keyword BM25 (OpenSearch) + semantic vector (pgvector), fused via Reciprocal
   Rank Fusion (RRF), then cross-encoder reranking (see §22.7 RAG-001)
 - Retrieved chunks injected into LLM prompt as context
+
+```mermaid
+flowchart LR
+    Q["User query\n(tenant-scoped)"] --> BM25["BM25 keyword\n(OpenSearch)"]
+    Q --> VEC["Vector search\n(pgvector, RLS)"]
+    BM25 --> RRF["RRF fusion\n(§22.7 RAG-001)"]
+    VEC --> RRF
+    RRF --> RR["Cross-encoder\nreranking"]
+    RR --> CTX["Assemble context\n(injected chunks)"]
+    CTX --> LLM["LLM Gateway\n(GPT-4o, §22.7)"]
+    LLM --> GUARD["HallucinationGuard\n(§22.3 · LLM09)"]
+    GUARD --> PERSIST["Persist + audit"]
+    PERSIST --> RET["Return advisory output\n(never auto-post, §22.4)"]
+```
+
+The 6-step pipeline (§22.3): **retrieve → context → LLM → guard → persist → return** — retrieval is the
+hybrid BM25 + vector → RRF → rerank path above; AI-security controls per §22.8.
 
 Thai Language :
 
@@ -664,6 +684,10 @@ Base SaaS subscription revenue is not shared. Revenue distributed quarterly via 
 - **Audit output:** Published in `docs/ai-governance/quarterly-report-{YYYY}-Q{N}.md`
 - **Certification path:** ISO/IEC 42001:2026 (AI Management System — EN version published 2026)
 - **Escalation:** Any AI behavior anomaly triggers committee review within 48 hours
+- **Operating structure:** the operating-model detail — ISO 42001 role mapping, tiered HITL/HOTL human
+  oversight, and capability-scaled safeguards — is defined in
+  [23-ai-native-operating-model §23.5](23-ai-native-operating-model.md). (Governance structure belongs
+  in the operating-model spec; this block is the decision record in the §22.7 registry.)
 
 ---
 
@@ -711,10 +735,112 @@ Base SaaS subscription revenue is not shared. Revenue distributed quarterly via 
 
 ---
 
+## 22.8 AI Security (OWASP LLM Top 10)
+
+Construction OS is AI-native (RAG over pgvector, LLM report generation, extraction). Every AI
+surface is assessed against **OWASP Top 10 for LLM Applications 2025** (revised Nov 2025). Controls
+below reference mechanisms elsewhere in this spec unless marked **[GAP]** (to build) / **[verify]**.
+
+| # (OWASP LLM 2025) | Risk for Construction OS | Control |
+| ------------------ | ------------------------ | ------- |
+| **LLM01 Prompt Injection** (direct + **indirect via RAG-retrieved site data**) | A malicious site note / document in the RAG corpus overrides instructions | Retrieved content wrapped in a data-only delimiter, never as instructions; system-prompt instruction hierarchy; input screening on user + retrieved text **[GAP]**; Constitutional 4-tier hierarchy at inference (§22.7) |
+| **LLM02 Sensitive Information Disclosure** | Cross-tenant / PII leakage through the model | Tenant-scoped RAG retrieval (RLS on `content_hash` store); PII minimization in prompts; output filter before return **[verify]**; PDPA controls ([05-security-compliance §5.3](05-security-compliance.md)) |
+| **LLM03 Supply Chain** | Compromised model / SDK | Pinned LLM provider + model version (§22.5); dependency controls ([05 §5.10](05-security-compliance.md)) |
+| **LLM04 Data & Model Poisoning** | Poisoned RAG corpus / fine-tune data | Ingestion validation + `content_hash` dedup guard (§22.3); training-data governance ([24-ai-training-pipeline](24-ai-training-pipeline.md)) |
+| **LLM05 Improper Output Handling** | AI output auto-acted downstream | Outputs **advisory only, never auto-post** (§22.4 guardrail); downstream sanitization before render **[verify]** |
+| **LLM06 Excessive Agency** | AI takes unauthorized action | Human sign-off for safety / structural / financial (§22.7 4-tier); tool scope least-privilege **[GAP if agentic tools added]** |
+| **LLM07 System Prompt Leakage** | Prompt / config exposed | Prompt templates server-side only; **no secrets in prompts**; assert-no-leak test **[GAP]** |
+| **LLM08 Vector & Embedding Weaknesses** | Embedding store abused / cross-tenant vector read | pgvector store tenant-scoped via RLS; embedding-write authz **[verify]**; `content_hash` dedup (§22.3) |
+| **LLM09 Misinformation** | Hallucinated construction facts | HallucinationGuard `guard` step in the 6-step pipeline (§22.3); evaluation rubric (§22.6); alignment monitoring (§22.7) |
+| **LLM10 Unbounded Consumption** | Token/cost DoS or bill spike | Per-tenant/model token + cost cap (**§22.10 COST-001**); token usage per tenant/model monitored ([31-monitoring-observability](31-monitoring-observability.md)) |
+
+### Acceptance criteria / gate
+
+- [ ] Every AI surface has an OWASP LLM row before it ships
+- [ ] Prompt-injection screening (LLM01) + per-tenant token/cost cap (LLM10) implemented before AI GA
+- [ ] All **[GAP]** / **[verify]** items resolved before enterprise AI GA (owner: AI Lead)
+- [ ] Indirect-injection test: a crafted RAG document cannot alter model instructions
+
+## 22.9 Model Governance
+
+- **Model cards** — every deployed model (LLM provider model, SafetyVisionModel, RiskClassifier)
+  has a card recording purpose, training/eval data, known limits, owner: `docs/ai-governance/model-cards/`
+- **Evaluation suite** — LAYER-C-001 rubric (§22.6) run as a gate before each model/prompt change;
+  regression eval on a fixed construction-domain test set
+- **AI red-teaming** — adversarial test of prompt injection + jailbreak + safety-bypass before each
+  major model upgrade (RSP v3.0 capability evaluation, §22.7)
+- **Provenance** — provider + model version pinned and logged per inference; model/prompt changes
+  are audited (ties to §22.4 advisory guardrail)
+- **Alignment audit** — annual, per §22.7 (`docs/ai-governance/alignment-audit-{YYYY}.md`)
+
+Acceptance: [ ] model card exists for every deployed model · [ ] eval gate blocks unreviewed
+model/prompt changes · [ ] red-team performed before each major upgrade.
+
+---
+
+## 22.10 AI Engineering Enhancements
+
+Refinements that bring the AI stack to best-practice parity beyond the core architecture.
+
+### RAG Quality Evaluation (RAG-EVAL-001)
+
+Beyond output-level HallucinationGuard (§22.3) and drift monitoring (Evidently AI, §22.7), RAG quality
+is measured with **retrieval + generation metrics** on a fixed Thai construction eval set:
+
+- **Faithfulness** — is the answer grounded in the retrieved context (no unsupported claims)?
+- **Answer relevance** — does the answer address the query?
+- **Context precision / recall** — are the retrieved chunks relevant, and is all needed context retrieved?
+- **Citations** — report-generation output cites the source chunk (`source_type` + `source_id`) so a
+  human can trace every claim.
+
+Run as an offline gate before any change to chunking, embedding model, retrieval, or reranking; track
+the same metrics online via Evidently AI. Tooling: RAGAS-style metric suite (or equivalent).
+Acceptance: [ ] RAG eval set exists; [ ] the four metrics gate retrieval-pipeline changes in CI.
+
+### Prompt Registry & Versioning (PROMPT-001)
+
+Jinja2 prompt templates (§22.3) are managed as **versioned artifacts**, not inline strings:
+
+- Each template has a semantic version + owner; changes are code-reviewed and git-tracked in
+  `services/ai-gateway/templates/`.
+- A prompt change is gated by the evaluation suite (§22.9) exactly like a model change — a prompt is a
+  model input that changes behavior.
+- The active template version is logged per inference (provenance, §22.9) so an output can be tied to
+  the exact prompt that produced it.
+
+Acceptance: [ ] every prompt template is versioned + owner-tagged; [ ] prompt changes pass the eval gate.
+
+### Per-Tenant Token & Cost Cap (COST-001)
+
+Closes the **LLM10 Unbounded Consumption** gap flagged in §22.8. Enforced at the LLM Gateway (GW-001):
+
+- Per-tenant (and per-model) **token + cost budget** per billing period, tracked from the existing
+  token metering; **soft alert** at 80%, **hard cap** at 100% (requests rejected with a clear error, or
+  downgraded to `gpt-4o-mini`, per tier policy).
+- Per-request output-token ceiling to bound worst-case cost.
+- Cost attribution feeds the FinOps cost-per-tenant review (`08 §8.10`) and the AI SLO dashboard
+  (`31 §31.6`).
+
+Acceptance: [ ] per-tenant token/cost budget enforced at the gateway; [ ] 80% alert + 100% hard cap tested.
+
+### Semantic Response Cache (CACHE-001)
+
+Extends the existing Redis exact-match cache (§22.3) with a **semantic cache**:
+
+- On a query, if a prior query's embedding is within a cosine-similarity threshold (tenant-scoped), the
+  cached response may be reused — cutting cost + latency for near-duplicate questions.
+- **Tenant-scoped only** — a cache hit must never cross `tenant_id` (same isolation rule as §22.3).
+- Bypassed for time-sensitive or data-changing queries; TTL + invalidation on source-document update.
+
+Acceptance: [ ] semantic cache is tenant-scoped (no cross-tenant hit); [ ] cache hit-rate + savings tracked.
+
+---
+
 ## References
 
 | ID          | Title                                                              | Source                                                                                    |
 | ----------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| [OWASP-LLM] | OWASP Top 10 for LLM Applications 2025                             | [genai.owasp.org/llm-top-10](https://genai.owasp.org/llm-top-10/)                         |
 | [IEEE 830]  | IEEE Recommended Practice for Software Requirements Specifications | IEEE Std 830-1998                                                                         |
 | [RAG]       | Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks   | Lewis et al., NeurIPS 2020                                                                |
 | [pgvector]  | pgvector: Open-source vector similarity search for Postgres        | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector)                      |

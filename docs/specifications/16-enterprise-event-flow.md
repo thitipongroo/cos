@@ -1,8 +1,8 @@
 ---
 title: 'Enterprise Event Flow'
-version: '1.3.0'
+version: '1.4.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-07-04'
 authors:
   - thitipongroo
 related_docs:
@@ -30,6 +30,36 @@ The entire system is designed as :
 
 Every action in the organization is converted to an event
 so that all modules synchronize in real-time.
+
+```mermaid
+flowchart LR
+    subgraph P["Domains emit events (§16.2)"]
+        OP[Operational]
+        PR[Procurement]
+        FI[Financial]
+        SA[Safety]
+        AS[Asset]
+        CRM[CRM]
+    end
+    BUS[["Kafka event bus\n{domain}.{entity}.{action}.vN"]]
+    subgraph C["All modules synchronize"]
+        DASH[Dashboards / Analytics]
+        WF[Workflow engine]
+        NOTIF[Notifications]
+        AIL[AI / Forecasting]
+    end
+    OP --> BUS
+    PR --> BUS
+    FI --> BUS
+    SA --> BUS
+    AS --> BUS
+    CRM --> BUS
+    BUS --> DASH
+    BUS --> WF
+    BUS --> NOTIF
+    BUS --> AIL
+    AIL -->|derived AI events| BUS
+```
 
 ---
 
@@ -123,6 +153,16 @@ Procurement delay
 → mitigation workflow triggered
 → vendor escalation triggered
 
+```
+
+```mermaid
+flowchart TB
+    A["Procurement delay\n(delivery.delayed)"] --> B[Schedule recalculated]
+    B --> C[Finance forecast updated]
+    C --> D[Executive dashboard updated]
+    D --> E["AI predicts completion risk\n(post-MVP — Layer B Analytical AI)"]
+    E --> F[Mitigation workflow triggered]
+    F --> G[Vendor escalation triggered]
 ```
 
 This creates :

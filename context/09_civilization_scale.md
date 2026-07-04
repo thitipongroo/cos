@@ -8,7 +8,7 @@ previous: 08_global_intelligence.md
 next: 10_civilization_stewardship.md
 authority: context-only
 master: 00_master_construction_os.md
-awaiting_decisions: CIV-001, CIV-002, CIV-003, CIV-004, CIV-005
+resolved_decisions: CIV-001..CIV-005 all RESOLVED 2026-06-10 (authoritative in docs/specifications/)
 ---
 
 # Construction OS — Civilization-scale Infrastructure Intelligence Context Commands
@@ -35,15 +35,11 @@ awaiting_decisions: CIV-001, CIV-002, CIV-003, CIV-004, CIV-005
 
 - [Required Decisions (CIV-001–005)](#required-decisions)
 - [Master Civilization-scale Infrastructure Command](#master-civilization-scale-infrastructure-command)
-- [Built-world Intelligence Network](#built-world-intelligence-network-command)
-- [Autonomous Built-world Coordination](#autonomous-built-world-coordination-command)
-- [Infrastructure Intelligence Economy](#infrastructure-intelligence-economy-command)
-- [Planet-scale Operational Simulation](#planet-scale-operational-simulation-command)
-- [Global Standards Infrastructure](#global-standards-infrastructure-command)
-- [Autonomous AI Infrastructure Governance](#autonomous-ai-infrastructure-governance-command)
-- [Multi-domain Infrastructure Expansion](#multi-domain-infrastructure-expansion-command)
-- [Civilization-scale Data Network Effects](#civilization-scale-data-network-effects-command)
-- [Systemic Risk Management](#systemic-risk-management-command)
+- [Phase 1 — Built-world Intelligence & Coordination](#execution-phase-1--built-world-intelligence--coordination)
+- [Phase 2 — Intelligence Economy & Simulation](#execution-phase-2--intelligence-economy--simulation)
+- [Phase 3 — Standards & AI Governance](#execution-phase-3--standards--ai-governance)
+- [Phase 4 — Multi-domain Expansion & Data Effects](#execution-phase-4--multi-domain-expansion--data-effects)
+- [Phase 5 — Systemic Risk Management](#execution-phase-5--systemic-risk-management)
 - [Execution Order + Critical Rules](#civilization-scale-execution-order)
 
 ---
@@ -54,33 +50,40 @@ awaiting_decisions: CIV-001, CIV-002, CIV-003, CIV-004, CIV-005
 > จากนั้นถาม product owner คำถามด้านล่างนี้ ไม่ต้องรอคำตอบก่อน implement stub
 
 ```text
-AWAITING_DECISION — product owner ต้องตอบก่อน implement จริง:
+RESOLVED — all 5 decided 2026-06-10; authoritative in docs/specifications/
+(per-item "Target: Resolve before" notes below are superseded):
 
-[ ] CIV-001: Planet-scale simulation platform
+  CIV-001 → Hybrid — physics-based FEA + ML surrogate + real-time sensor fusion (33-digital-twin-iot)
+  CIV-002 → Anthropic Constitutional AI aligned; 4-tier safety hierarchy (22-ai-architecture)
+  CIV-003 → Vertical expansion first (depth), then horizontal (breadth) (28-ecosystem-expansion)
+  CIV-004 → Transparent revenue sharing — platform + data contributors + ecosystem (22-ai-architecture)
+  CIV-005 → Observe-and-align — participate in existing standards bodies (02-system-wide-integration)
+
+[x] CIV-001: Planet-scale simulation platform
     Operational simulation ใช้ platform อะไร?
     (custom engine / Unity DOTS / NVIDIA Omniverse / open-source)
     ส่งผลต่อ: DigitalTwin simulation layer
     Target: Resolve before: Stage 8 (CIVILIZATION SCALE) implementation begins
 
-[ ] CIV-002: Constitutional AI framework
+[x] CIV-002: Constitutional AI framework
     AI governance ใช้ constitutional constraints แบบไหน?
     (Anthropic Constitutional AI / custom rules / hybrid)
     ส่งผลต่อ: autonomous AI infrastructure governance implementation
     Target: Resolve before: Stage 8 (CIVILIZATION SCALE) implementation begins
 
-[ ] CIV-003: Multi-domain expansion beyond construction
+[x] CIV-003: Multi-domain expansion beyond construction
     ขยาย built-world intelligence ไปครอบคลุม domains ไหน?
     (energy / transportation / utilities / smart cities)
     ส่งผลต่อ: domain abstraction layer, interoperability extension scope
     Target: Resolve before: Stage 8 (CIVILIZATION SCALE) implementation begins
 
-[ ] CIV-004: Infrastructure intelligence economy model
+[x] CIV-004: Infrastructure intelligence economy model
     Predictive financing ใช้ risk model แบบไหน?
     (actuarial / ML-based / hybrid)
     ส่งผลต่อ: infrastructure risk engine algorithm choice
     Target: Resolve before: Stage 8 (CIVILIZATION SCALE) implementation begins
 
-[ ] CIV-005: Global standards governance body
+[x] CIV-005: Global standards governance body
     Global built-world standards — governed by COS / industry consortium / ISO?
     ส่งผลต่อ: global standards infrastructure ownership model
     Target: Resolve before: Stage 8 (CIVILIZATION SCALE) implementation begins
@@ -162,6 +165,14 @@ Optimize for:
 - long-term civilization-scale reliability
 
 ```
+
+---
+
+## EXECUTION PHASE 1 — BUILT-WORLD INTELLIGENCE & COORDINATION
+
+### Objective
+
+Build the built-world intelligence network and coordinate the built world autonomously.
 
 ---
 
@@ -248,6 +259,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 2 — INTELLIGENCE ECONOMY & SIMULATION
+
+### Objective
+
+Enable an infrastructure-intelligence economy and run planet-scale operational simulation.
+
+---
+
 ## INFRASTRUCTURE INTELLIGENCE ECONOMY COMMAND
 
 ```text
@@ -317,6 +336,14 @@ Constraints:
 - avoid purely theoretical optimization systems
 
 ```
+
+---
+
+## EXECUTION PHASE 3 — STANDARDS & AI GOVERNANCE
+
+### Objective
+
+Provide global standards infrastructure and govern autonomous AI infrastructure.
 
 ---
 
@@ -391,6 +418,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 4 — MULTI-DOMAIN EXPANSION & DATA EFFECTS
+
+### Objective
+
+Expand across infrastructure domains and compound civilization-scale data network effects.
+
+---
+
 ## MULTI-DOMAIN INFRASTRUCTURE EXPANSION COMMAND
 
 ```text
@@ -461,6 +496,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 5 — SYSTEMIC RISK MANAGEMENT
+
+### Objective
+
+Manage systemic risk at civilization scale (capstone).
+
+---
+
 ## SYSTEMIC RISK MANAGEMENT COMMAND
 
 ```text
@@ -502,15 +545,11 @@ Constraints:
 ```text
 Execution Order:
 
-1. Built-world Intelligence Network
-2. Autonomous Built-world Coordination
-3. Infrastructure Intelligence Economy
-4. Planet-scale Operational Simulation
-5. Global Standards Infrastructure
-6. Autonomous AI Infrastructure Governance
-7. Multi-domain Infrastructure Expansion
-8. Civilization-scale Data Network Effects
-9. Systemic Risk Management
+1. Built-world Intelligence & Coordination
+2. Intelligence Economy & Simulation
+3. Standards & AI Governance
+4. Multi-domain Expansion & Data Effects
+5. Systemic Risk Management
 
 ```
 
@@ -540,6 +579,27 @@ ALWAYS:
 8. Optimize for long-term infrastructure sustainability.
 
 ```
+
+---
+
+## PHASE GOVERNANCE & ACCEPTANCE
+
+> **Horizon: VISION (not committed).** Per `00_master_construction_os.md` § Roadmap Governance, this
+> file is a directional vision — entered only **after product-market fit** and after its § REQUIRED
+> DECISIONS are resolved. It is not a committed phase and deliberately carries **no fabricated metric
+> targets**.
+
+- **Precondition gate** — § REQUIRED DECISIONS (CIV-001..005) are all **RESOLVED (2026-06-10)** and
+  authoritative in `docs/specifications/`; this precondition is **met**. The remaining gate to enter
+  this horizon is PMF + explicit product-owner go-ahead (§ Roadmap Governance).
+- **Authoring bar at promotion** — when a COMMAND here is promoted to a committed phase it MUST be
+  rewritten to the § Phase Template (Objective · Requirements · Generate · **falsifiable Acceptance
+  criteria** · Metric gate · Dependencies · Risks · Exit) in `00_master_construction_os.md`.
+- **Inherited non-functional gates** (apply on promotion, same as committed phases): SLO
+  (`31 §31.6`), security/STRIDE (`05 §5.9`), supply-chain (`05 §5.10`), DR/game-day (`08 §8.2`,
+  `31 §31.11`), AI security (`22 §22.8`), accessibility (`20 §20.8`), FinOps + sustainability
+  (`08 §8.10`, `§8.11`), DORA (`31 §31.12`).
+- **Metric targets** are set at promotion time from the referenced specs — **not guessed now**.
 
 ---
 

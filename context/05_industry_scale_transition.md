@@ -8,7 +8,7 @@ previous: 04_post_launch_enterprise_evolution.md
 next: 06_ecosystem_dominance.md
 authority: context-only
 master: 00_master_construction_os.md
-awaiting_decisions: INT-001, INT-002, INT-003, INT-004, INT-005
+resolved_decisions: INT-001..INT-005 all RESOLVED 2026-06-10 (authoritative in docs/specifications/)
 ---
 
 # Construction OS — Infrastructure Scale Transition Context Commands
@@ -35,15 +35,11 @@ awaiting_decisions: INT-001, INT-002, INT-003, INT-004, INT-005
 
 - [Required Decisions (INT-001–005)](#required-decisions)
 - [Master Infrastructure Scale Transition Command](#master-infrastructure-scale-transition-command)
-- [Construction Intelligence Network](#construction-intelligence-network-command)
-- [Ecosystem Lock-in Expansion](#ecosystem-lock-in-expansion-command)
-- [Construction Data Network Effects](#construction-data-network-effects-command)
-- [Advanced AI Operational Intelligence](#advanced-ai-operational-intelligence-command)
-- [Industry Standardization Layer](#industry-standardization-layer-command)
-- [Financial Infrastructure Expansion](#financial-infrastructure-expansion-command)
-- [Smart Infrastructure & Digital Twin](#smart-infrastructure--digital-twin-command)
-- [Regional & Global Expansion](#regional--global-expansion-command)
-- [Construction OS Dominance](#construction-operating-system-dominance-command)
+- [Phase 1 — Intelligence Network & Ecosystem Lock-in](#execution-phase-1--intelligence-network--ecosystem-lock-in)
+- [Phase 2 — Data Network Effects & Operational AI](#execution-phase-2--data-network-effects--operational-ai)
+- [Phase 3 — Standards & Financial Infrastructure](#execution-phase-3--standards--financial-infrastructure)
+- [Phase 4 — Smart Infrastructure & Global Reach](#execution-phase-4--smart-infrastructure--global-reach)
+- [Phase 5 — Operating-System Dominance](#execution-phase-5--operating-system-dominance)
 - [Execution Order](#infrastructure-scale-transition-execution-order)
 - [Critical Rules + Final Principle](#critical-infrastructure-scale-rules)
 
@@ -51,38 +47,32 @@ awaiting_decisions: INT-001, INT-002, INT-003, INT-004, INT-005
 
 ## REQUIRED DECISIONS
 
-> Agent: เมื่อโหลดไฟล์นี้แล้ว ให้ generate stubs สำหรับทุก Generate item ด้วย tag AWAITING_DECISION
-> จากนั้นถาม product owner คำถามด้านล่างนี้ ไม่ต้องรอคำตอบก่อน implement stub
+> **STATUS: ALL RESOLVED (2026-06-10).** These decisions are answered and authoritative in
+> `docs/specifications/` (specs win). No longer a blocker — implement per the resolved decision;
+> the original questions are retained for context.
 
 ```text
-AWAITING_DECISION — product owner ต้องตอบก่อน implement จริง:
+RESOLVED — decided 2026-06-10; authoritative section in docs/specifications/ noted per item:
 
-[ ] INT-001: Ecosystem interoperability protocol
-    ใช้ REST / GraphQL / gRPC / AsyncAPI event-based หรือ hybrid?
-    ส่งผลต่อ: interoperability framework, supplier/contractor APIs ทั้งหมด
-    Target: Resolve before: Stage 4 (INDUSTRY SCALE) implementation begins
+[x] INT-001: Ecosystem interoperability protocol
+    → RESOLVED: Layered hybrid — REST + AsyncAPI 3.1; GraphQL excluded (14-api-architecture)
+    Original Q: REST / GraphQL / gRPC / AsyncAPI event-based หรือ hybrid?
 
-[ ] INT-002: Industry data sharing model
-    Intelligence data sharing เป็นแบบ opt-in / opt-out / mandatory?
-    ส่งผลต่อ: cross-project analytics pipelines, benchmarking engines
-    Target: Resolve before: Stage 4 (INDUSTRY SCALE) implementation begins
+[x] INT-002: Industry data sharing model
+    → RESOLVED: Opt-in with tiered incentive structure (09-data-architecture)
+    Original Q: opt-in / opt-out / mandatory?
 
-[ ] INT-003: Procurement intelligence algorithm
-    Supplier scoring ใช้ rule-based / ML model / hybrid?
-    ถ้า ML: ใช้ framework อะไร (scikit-learn / XGBoost / custom)?
-    ส่งผลต่อ: VendorScoring สำหรับ Stage 1–3 (rule-based: 3 criteria, TENANT_ADMIN-configurable weights); Stage 4 อาจต้องการ ML upgrade (คำถามนี้)
-    Target: Resolve before: Stage 4 (INDUSTRY SCALE) implementation begins
+[x] INT-003: Procurement intelligence algorithm
+    → RESOLVED: Hybrid ML — gradient boosting for structured features + collaborative filtering (22-ai-architecture §22.7)
+    Original Q: rule-based / ML / hybrid? (Stage 1–3 rule-based VendorScoring stays; ML upgrade = this decision)
 
-[ ] INT-004: Industry standardization alignment
-    จะ align กับ standards body ไหน? OpenBIM / ISO 19650 / custom COS standard?
-    ส่งผลต่อ: schema governance, interoperability specs
-    Target: Resolve before: Stage 4 (INDUSTRY SCALE) implementation begins
+[x] INT-004: Industry standardization alignment
+    → RESOLVED: IFC 4.3 (ISO 16739-1:2023) + buildingSMART Digital Framework; IFC 5 alpha on watch (33-digital-twin-iot)
+    Original Q: OpenBIM / ISO 19650 / custom COS standard?
 
-[ ] INT-005: Financial infrastructure provider
-    Construction financing / invoice factoring ใช้ provider ไหน?
-    (Funding Societies / Validus / bank API / อื่นๆ)
-    ส่งผลต่อ: ConstructionFinancing implementation
-    Target: Resolve before: Stage 4 (INDUSTRY SCALE) implementation begins
+[x] INT-005: Financial infrastructure provider
+    → RESOLVED: Embedded fintech via BaaS — licensed regional banking APIs (13-product-architecture)
+    Original Q: which financing / invoice-factoring provider?
 ```
 
 ---
@@ -163,6 +153,14 @@ Optimize for:
 
 ---
 
+## EXECUTION PHASE 1 — INTELLIGENCE NETWORK & ECOSYSTEM LOCK-IN
+
+### Objective
+
+Build the cross-project construction intelligence network and deepen ecosystem lock-in.
+
+---
+
 ## CONSTRUCTION INTELLIGENCE NETWORK COMMAND
 
 ```text
@@ -235,6 +233,14 @@ Constraints:
 - avoid isolated proprietary workflows without interoperability
 
 ```
+
+---
+
+## EXECUTION PHASE 2 — DATA NETWORK EFFECTS & OPERATIONAL AI
+
+### Objective
+
+Create industry-wide data network effects and advance AI-driven operational intelligence.
 
 ---
 
@@ -312,6 +318,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 3 — STANDARDS & FINANCIAL INFRASTRUCTURE
+
+### Objective
+
+Establish the industry standardization layer and expand construction financial infrastructure.
+
+---
+
 ## INDUSTRY STANDARDIZATION LAYER COMMAND
 
 ```text
@@ -385,6 +399,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 4 — SMART INFRASTRUCTURE & GLOBAL REACH
+
+### Objective
+
+Extend to smart infrastructure + digital twin and expand regionally and globally.
+
+---
+
 ## SMART INFRASTRUCTURE & DIGITAL TWIN COMMAND
 
 ```text
@@ -455,6 +477,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 5 — OPERATING-SYSTEM DOMINANCE
+
+### Objective
+
+Position Construction OS as the industry operating-system standard (capstone).
+
+---
+
 ## CONSTRUCTION OPERATING SYSTEM DOMINANCE COMMAND
 
 ```text
@@ -495,15 +525,11 @@ Constraints:
 ```text
 Execution Order:
 
-1. Construction Intelligence Network
-2. Ecosystem Lock-in Expansion
-3. Construction Data Network Effects
-4. Advanced AI Operational Intelligence
-5. Industry Standardization Layer
-6. Financial Infrastructure Expansion
-7. Smart Infrastructure & Digital Twin
-8. Regional & Global Expansion
-9. Construction Operating System Dominance
+1. Intelligence Network & Ecosystem Lock-in
+2. Data Network Effects & Operational AI
+3. Standards & Financial Infrastructure
+4. Smart Infrastructure & Global Reach
+5. Operating-System Dominance
 
 ```
 
@@ -533,6 +559,26 @@ ALWAYS:
 8. Optimize for long-term industry positioning.
 
 ```
+
+---
+
+## PHASE GOVERNANCE & ACCEPTANCE
+
+> **Horizon: LATER (directional).** Per `00_master_construction_os.md` § Roadmap Governance, this file
+> is entered only **after product-market fit** and after its § REQUIRED DECISIONS are resolved. It is
+> not a committed phase and deliberately carries **no fabricated metric targets**.
+
+- **Precondition gate** — § REQUIRED DECISIONS (INT-001..005) are all **RESOLVED (2026-06-10)** and
+  authoritative in `docs/specifications/`; this precondition is **met**. The remaining gate to enter
+  this horizon is PMF + explicit product-owner go-ahead (§ Roadmap Governance).
+- **Authoring bar at promotion** — when a COMMAND here is promoted to a committed phase it MUST be
+  rewritten to the § Phase Template (Objective · Requirements · Generate · **falsifiable Acceptance
+  criteria** · Metric gate · Dependencies · Risks · Exit) in `00_master_construction_os.md`.
+- **Inherited non-functional gates** (apply on promotion, same as committed phases): SLO
+  (`31 §31.6`), security/STRIDE (`05 §5.9`), supply-chain (`05 §5.10`), DR/game-day (`08 §8.2`,
+  `31 §31.11`), AI security (`22 §22.8`), accessibility (`20 §20.8`), FinOps + sustainability
+  (`08 §8.10`, `§8.11`), DORA (`31 §31.12`).
+- **Metric targets** are set at promotion time from the referenced specs — **not guessed now**.
 
 ---
 

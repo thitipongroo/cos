@@ -1,8 +1,8 @@
 ---
 title: 'Testing Strategy'
-version: '1.4.0'
+version: '1.5.0'
 status: Active
-last_updated: '2026-05-28'
+last_updated: '2026-07-04'
 authors:
   - thitipongroo
 related_docs:
@@ -297,6 +297,19 @@ using **Pact.io** (consumer-driven contract testing).
 
 - Load tests run weekly on staging, not per-PR
 - Regression alert: if p95 latency increases > 20% vs. previous week → alert Engineering Lead
+
+### Frontend Performance (Lighthouse CI)
+
+The k6 tests above cover the backend; the web app's user-perceived performance is gated separately.
+
+- **Lighthouse CI** runs on every `apps/web` PR under a **throttled mobile profile** (mid/low-end
+  device + slow network) — matching the field-worker reality.
+- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **LCP ≤ 2.5 s**,
+  **CLS ≤ 0.1**, and **TBT** (Total Blocking Time, Lighthouse's lab proxy for INP) within budget —
+  or the JS **bundle-size budget** exceeded. Budgets live in the CI config (`.lighthouserc` +
+  bundle-analyzer budget).
+- **Complements RUM:** Lighthouse catches regressions pre-merge (lab); production Core Web Vitals are
+  measured from real users at p75 (`31 §31.6 Frontend Web Vitals SLO`).
 
 ---
 

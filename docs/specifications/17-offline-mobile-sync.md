@@ -1,8 +1,8 @@
 ---
 title: 'Offline-first Mobile Sync'
-version: '1.1.0'
+version: '1.2.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-07-04'
 authors:
   - thitipongroo
 related_docs:
@@ -38,6 +38,28 @@ Offline capability is mandatory.
 ---
 
 ## 17.2 Offline Architecture
+
+```mermaid
+sequenceDiagram
+    actor U as Field user
+    participant M as Mobile<br/>(WatermelonDB + sync_queue)
+    participant S as SyncManager
+    participant API as Server /sync
+    Note over U,M: Offline — no connectivity
+    U->>M: Create / edit (site report, incident, ...)
+    M->>M: Local write (sync_status = PENDING)<br/>+ enqueue sync_queue
+    Note over M,API: On reconnect / background fetch (>= 15 min)
+    S->>M: Drain queue (FIFO, <= 20 per run)
+    S->>API: POST /sync/push (queued mutation)
+    API-->>S: Applied (server resolves conflict, §17.3)
+    S->>M: Mark SYNCED
+    Note over S,API: On failure — exponential backoff, max 5 retries
+    S--xM: After 5 retries -> review queue / discard (per entity, §17.2 table)
+    Note over M,API: Delta pull (server -> device, §17.9)
+    M->>API: GET /sync/delta (entity types + lastSyncAt cursor)
+    API-->>M: updated[] (upsert) + deleted[] (tombstones)
+    M->>M: Apply in one write, mark SYNCED, advance cursor
+```
 
 Mobile Local DB :
 

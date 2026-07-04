@@ -9,7 +9,7 @@ next: null
 is_final_stage: true
 authority: context-only
 master: 00_master_construction_os.md
-awaiting_decisions: BG-001, BG-002, BG-003, BG-004, BG-005
+resolved_decisions: BG-001..BG-005 all RESOLVED 2026-06-10 (authoritative in docs/specifications/)
 ---
 
 # Construction OS — Background Civilization Infrastructure Context Commands
@@ -36,14 +36,10 @@ awaiting_decisions: BG-001, BG-002, BG-003, BG-004, BG-005
 
 - [Required Decisions (BG-001–005)](#required-decisions)
 - [Master Background Civilization Infrastructure Command](#master-background-civilization-infrastructure-command)
-- [Continuous Civilization Adaptation](#continuous-civilization-adaptation-command)
-- [Long-term Existential Risk Management](#long-term-existential-risk-management-command)
-- [Human Value Alignment Preservation](#human-value-alignment-preservation-command)
-- [Decentralized Civilization Governance](#decentralized-civilization-governance-command)
-- [Civilization Knowledge Continuity](#civilization-knowledge-continuity-command)
-- [Intergenerational Infrastructure Stewardship](#intergenerational-infrastructure-stewardship-command)
-- [Meta-governance Evolution](#meta-governance-evolution-command)
-- [Post-software Transition](#post-software-transition-command)
+- [Phase 1 — Adaptation & Existential Risk](#execution-phase-1--adaptation--existential-risk)
+- [Phase 2 — Value Alignment & Governance](#execution-phase-2--value-alignment--governance)
+- [Phase 3 — Knowledge Continuity & Stewardship](#execution-phase-3--knowledge-continuity--stewardship)
+- [Phase 4 — Meta-governance & Post-software](#execution-phase-4--meta-governance--post-software)
 - [Execution Order + Critical Rules](#background-civilization-infrastructure-execution-order)
 
 ---
@@ -54,33 +50,40 @@ awaiting_decisions: BG-001, BG-002, BG-003, BG-004, BG-005
 > จากนั้นถาม product owner คำถามด้านล่างนี้ ไม่ต้องรอคำตอบก่อน implement stub
 
 ```text
-AWAITING_DECISION — product owner ต้องตอบก่อน implement จริง:
+RESOLVED — all 5 decided 2026-06-10; authoritative in docs/specifications/
+(per-item "Target: Resolve before" notes below are superseded):
 
-[ ] BG-001: Decentralized governance protocol
+  BG-001 → W3C DID v1.1 decentralised identity; Verifiable Credentials (05-security-compliance)
+  BG-002 → Platform-as-infrastructure model — API-first, AI-native (13-product-architecture)
+  BG-003 → Adaptive governance — AI proposes, humans decide; policy versioning (22-ai-architecture)
+  BG-004 → Distributed knowledge graphs with semantic versioning (09-data-architecture)
+  BG-005 → RLHF + Constitutional AI; alignment monitored with anomaly detection (22-ai-architecture)
+
+[x] BG-001: Decentralized governance protocol
     Federated civilization governance ใช้ protocol อะไร?
     (blockchain-based / federated identity / custom distributed protocol)
     ส่งผลต่อ: decentralized civilization governance implementation
     Target: Resolve before: Stage 10 (BACKGROUND CIVILIZATION) implementation begins
 
-[ ] BG-002: Post-software transition definition
+[x] BG-002: Post-software transition definition
     "Invisible background infrastructure" หมายถึงอะไรในเชิง technical?
     (embedded OS / API-less / ambient computing / อื่นๆ)
     ส่งผลต่อ: post-software transition layer design
     Target: Resolve before: Stage 10 (BACKGROUND CIVILIZATION) implementation begins
 
-[ ] BG-003: Meta-governance evolution mechanism
+[x] BG-003: Meta-governance evolution mechanism
     Governance systems update ตัวเองด้วย mechanism อะไร?
     (democratic vote / AI proposal + human ratification / hybrid)
     ส่งผลต่อ: meta-governance evolution implementation
     Target: Resolve before: Stage 10 (BACKGROUND CIVILIZATION) implementation begins
 
-[ ] BG-004: Intergenerational knowledge transfer format
+[x] BG-004: Intergenerational knowledge transfer format
     ถ่ายทอดความรู้ข้ามรุ่น (100+ ปี) ด้วย format อะไร?
     (open standards only / platform-specific / universal binary)
     ส่งผลต่อ: civilization knowledge continuity design
     Target: Resolve before: Stage 10 (BACKGROUND CIVILIZATION) implementation begins
 
-[ ] BG-005: Human value alignment update mechanism
+[x] BG-005: Human value alignment update mechanism
     ค่านิยมมนุษย์เปลี่ยนไปตามกาลเวลา — alignment system update อย่างไร?
     (periodic re-evaluation / continuous learning / constitutional lock)
     ส่งผลต่อ: human value alignment preservation architecture
@@ -175,6 +178,14 @@ Optimize for:
 
 ---
 
+## EXECUTION PHASE 1 — ADAPTATION & EXISTENTIAL RISK
+
+### Objective
+
+Continuously adapt the civilization-infrastructure layer and manage long-term existential risk.
+
+---
+
 ## CONTINUOUS CIVILIZATION ADAPTATION COMMAND
 
 ```text
@@ -244,6 +255,14 @@ Constraints:
 - avoid fragile centralized dependencies
 
 ```
+
+---
+
+## EXECUTION PHASE 2 — VALUE ALIGNMENT & GOVERNANCE
+
+### Objective
+
+Preserve human-value alignment and enable decentralized civilization governance.
 
 ---
 
@@ -317,6 +336,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 3 — KNOWLEDGE CONTINUITY & STEWARDSHIP
+
+### Objective
+
+Ensure knowledge continuity across generations and steward infrastructure intergenerationally.
+
+---
+
 ## CIVILIZATION KNOWLEDGE CONTINUITY COMMAND
 
 ```text
@@ -384,6 +411,14 @@ Constraints:
 - prioritize long-term resilience continuity
 
 ```
+
+---
+
+## EXECUTION PHASE 4 — META-GOVERNANCE & POST-SOFTWARE
+
+### Objective
+
+Evolve meta-governance mechanisms and define the post-software transition.
 
 ---
 
@@ -462,14 +497,10 @@ Constraints:
 ```text
 Execution Order:
 
-1. Continuous Civilization Adaptation
-2. Long-term Existential Risk Management
-3. Human Value Alignment Preservation
-4. Decentralized Civilization Governance
-5. Civilization Knowledge Continuity
-6. Intergenerational Infrastructure Stewardship
-7. Meta-governance Evolution
-8. Post-software Transition
+1. Adaptation & Existential Risk
+2. Value Alignment & Governance
+3. Knowledge Continuity & Stewardship
+4. Meta-governance & Post-software
 
 ```
 
@@ -499,6 +530,27 @@ ALWAYS:
 8. Optimize for transparent stewardship.
 
 ```
+
+---
+
+## PHASE GOVERNANCE & ACCEPTANCE
+
+> **Horizon: VISION (not committed).** Per `00_master_construction_os.md` § Roadmap Governance, this
+> file is a directional vision — entered only **after product-market fit** and after its § REQUIRED
+> DECISIONS are resolved. It is not a committed phase and deliberately carries **no fabricated metric
+> targets**.
+
+- **Precondition gate** — § REQUIRED DECISIONS (BG-001..005) are all **RESOLVED (2026-06-10)** and
+  authoritative in `docs/specifications/`; this precondition is **met**. The remaining gate to enter
+  this horizon is PMF + explicit product-owner go-ahead (§ Roadmap Governance).
+- **Authoring bar at promotion** — when a COMMAND here is promoted to a committed phase it MUST be
+  rewritten to the § Phase Template (Objective · Requirements · Generate · **falsifiable Acceptance
+  criteria** · Metric gate · Dependencies · Risks · Exit) in `00_master_construction_os.md`.
+- **Inherited non-functional gates** (apply on promotion, same as committed phases): SLO
+  (`31 §31.6`), security/STRIDE (`05 §5.9`), supply-chain (`05 §5.10`), DR/game-day (`08 §8.2`,
+  `31 §31.11`), AI security (`22 §22.8`), accessibility (`20 §20.8`), FinOps + sustainability
+  (`08 §8.10`, `§8.11`), DORA (`31 §31.12`).
+- **Metric targets** are set at promotion time from the referenced specs — **not guessed now**.
 
 ---
 

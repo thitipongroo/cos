@@ -8,7 +8,7 @@ previous: 06_ecosystem_dominance.md
 next: 08_global_intelligence.md
 authority: context-only
 master: 00_master_construction_os.md
-awaiting_decisions: COORD-001, COORD-002, COORD-003, COORD-004, COORD-005
+resolved_decisions: COORD-001..COORD-005 all RESOLVED 2026-06-10 (authoritative in docs/specifications/)
 ---
 
 # Construction OS — Industry Coordination & Economic Infrastructure Context Commands
@@ -35,15 +35,11 @@ awaiting_decisions: COORD-001, COORD-002, COORD-003, COORD-004, COORD-005
 
 - [Required Decisions (COORD-001–005)](#required-decisions)
 - [Master Industry Coordination Infrastructure Command](#master-industry-coordination-infrastructure-command)
-- [Industry Coordination Infrastructure](#industry-coordination-infrastructure-command)
-- [Construction Market Intelligence Infrastructure](#construction-market-intelligence-infrastructure-command)
-- [Operational Standards Authority](#operational-standards-authority-command)
-- [Autonomous Operational Coordination](#autonomous-operational-coordination-command)
-- [Construction Economic Infrastructure](#construction-economic-infrastructure-command)
-- [Industry-wide Network Effects](#industry-wide-network-effects-command)
-- [Multi-industry Expansion](#multi-industry-expansion-command)
-- [Policy & Regulatory Integration](#policy--regulatory-infrastructure-integration-command)
-- [Global Operational Intelligence Layer](#global-operational-intelligence-layer-command)
+- [Phase 1 — Coordination & Market Intelligence](#execution-phase-1--coordination--market-intelligence)
+- [Phase 2 — Standards Authority & Autonomous Coordination](#execution-phase-2--standards-authority--autonomous-coordination)
+- [Phase 3 — Economic Infrastructure & Network Effects](#execution-phase-3--economic-infrastructure--network-effects)
+- [Phase 4 — Multi-industry Expansion & Regulatory](#execution-phase-4--multi-industry-expansion--regulatory)
+- [Phase 5 — Global Intelligence & Reliability](#execution-phase-5--global-intelligence--reliability)
 - [Infrastructure-grade Reliability & Governance](#infrastructure-grade-reliability--governance-command)
 - [Execution Order + Critical Rules](#industry-coordination-infrastructure-execution-order)
 
@@ -55,33 +51,40 @@ awaiting_decisions: COORD-001, COORD-002, COORD-003, COORD-004, COORD-005
 > จากนั้นถาม product owner คำถามด้านล่างนี้ ไม่ต้องรอคำตอบก่อน implement stub
 
 ```text
-AWAITING_DECISION — product owner ต้องตอบก่อน implement จริง:
+RESOLVED — all 5 decided 2026-06-10; authoritative in docs/specifications/
+(per-item "Target: Resolve before" notes below are superseded):
 
-[ ] COORD-001: Autonomous coordination governance framework
+  COORD-001 → Human-in-the-loop with financial escalation thresholds (22-ai-architecture)
+  COORD-002 → Construction → Infrastructure → Real Estate; 18-month maturity gates (28-ecosystem-expansion)
+  COORD-003 → Tier 1 TH/VN/SG full compliance modules; Tier 2 MY/... (05-security-compliance)
+  COORD-004 → Multi-source with confidence-weighted scoring (09-data-architecture)
+  COORD-005 → Single orchestration API with regional PSPs + automatic failover (28-ecosystem-expansion)
+
+[x] COORD-001: Autonomous coordination governance framework
     Autonomous operational coordination ใช้ governance model แบบไหน?
     (rules-based / human-in-the-loop / AI constitutional constraints)
     ส่งผลต่อ: AutonomousWorkflowExecutor governance spec
     Target: Resolve before: Stage 6 (INDUSTRY COORDINATION) implementation begins
 
-[ ] COORD-002: Multi-industry expansion priority
+[x] COORD-002: Multi-industry expansion priority
     ขยายไปอุตสาหกรรมไหนก่อน?
     (logistics / manufacturing / facilities management / infrastructure)
     ส่งผลต่อ: domain abstraction layer design
     Target: Resolve before: Stage 6 (INDUSTRY COORDINATION) implementation begins
 
-[ ] COORD-003: Regulatory integration regions
+[x] COORD-003: Regulatory integration regions
     เริ่ม integrate กับ regulatory framework ของประเทศไหนก่อน?
     (Thailand / Southeast Asia / global)
     ส่งผลต่อ: compliance workflow scope
     Target: Resolve before: Stage 6 (INDUSTRY COORDINATION) implementation begins
 
-[ ] COORD-004: Market intelligence data sources
+[x] COORD-004: Market intelligence data sources
     Regional market intelligence data ได้จากไหน?
     (self-collected / third-party data provider / government open data)
     ส่งผลต่อ: market intelligence pipeline architecture
     Target: Resolve before: Stage 6 (INDUSTRY COORDINATION) implementation begins
 
-[ ] COORD-005: Payment orchestration model
+[x] COORD-005: Payment orchestration model
     Construction economic infrastructure ใช้ payment rails อะไร?
     (PromptPay / SWIFT / crypto / bank API)
     ส่งผลต่อ: payment orchestration architecture
@@ -165,6 +168,14 @@ Optimize for:
 
 ---
 
+## EXECUTION PHASE 1 — COORDINATION & MARKET INTELLIGENCE
+
+### Objective
+
+Coordinate operations across the industry and provide industry-wide market intelligence.
+
+---
+
 ## INDUSTRY COORDINATION INFRASTRUCTURE COMMAND
 
 ```text
@@ -236,6 +247,14 @@ Constraints:
 - avoid weak statistical confidence models
 
 ```
+
+---
+
+## EXECUTION PHASE 2 — STANDARDS AUTHORITY & AUTONOMOUS COORDINATION
+
+### Objective
+
+Act as an operational-standards authority and enable autonomous cross-organization coordination.
 
 ---
 
@@ -319,6 +338,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 3 — ECONOMIC INFRASTRUCTURE & NETWORK EFFECTS
+
+### Objective
+
+Provide construction economic infrastructure and compound industry-wide network effects.
+
+---
+
 ## CONSTRUCTION ECONOMIC INFRASTRUCTURE COMMAND
 
 ```text
@@ -392,6 +419,14 @@ Constraints:
 
 ---
 
+## EXECUTION PHASE 4 — MULTI-INDUSTRY EXPANSION & REGULATORY
+
+### Objective
+
+Expand into adjacent industries and integrate with policy and regulatory infrastructure.
+
+---
+
 ## MULTI-INDUSTRY EXPANSION COMMAND
 
 ```text
@@ -456,6 +491,14 @@ Constraints:
 - maintain governance consistency across regions
 
 ```
+
+---
+
+## EXECUTION PHASE 5 — GLOBAL INTELLIGENCE & RELIABILITY
+
+### Objective
+
+Deliver a global operational-intelligence layer at infrastructure-grade reliability and governance.
 
 ---
 
@@ -534,16 +577,11 @@ Constraints:
 ```text
 Execution Order:
 
-1. Industry Coordination Infrastructure
-2. Construction Market Intelligence Infrastructure
-3. Operational Standards Authority
-4. Autonomous Operational Coordination
-5. Construction Economic Infrastructure
-6. Industry-wide Network Effects
-7. Multi-industry Expansion
-8. Policy & Regulatory Infrastructure Integration
-9. Global Operational Intelligence Layer
-10. Infrastructure-grade Reliability & Governance
+1. Coordination & Market Intelligence
+2. Standards Authority & Autonomous Coordination
+3. Economic Infrastructure & Network Effects
+4. Multi-industry Expansion & Regulatory
+5. Global Intelligence & Reliability
 
 ```
 
@@ -573,6 +611,27 @@ ALWAYS:
 8. Optimize for long-term industry infrastructure positioning.
 
 ```
+
+---
+
+## PHASE GOVERNANCE & ACCEPTANCE
+
+> **Horizon: VISION (not committed).** Per `00_master_construction_os.md` § Roadmap Governance, this
+> file is a directional vision — entered only **after product-market fit** and after its § REQUIRED
+> DECISIONS are resolved. It is not a committed phase and deliberately carries **no fabricated metric
+> targets**.
+
+- **Precondition gate** — § REQUIRED DECISIONS (COORD-001..005) are all **RESOLVED (2026-06-10)** and
+  authoritative in `docs/specifications/`; this precondition is **met**. The remaining gate to enter
+  this horizon is PMF + explicit product-owner go-ahead (§ Roadmap Governance).
+- **Authoring bar at promotion** — when a COMMAND here is promoted to a committed phase it MUST be
+  rewritten to the § Phase Template (Objective · Requirements · Generate · **falsifiable Acceptance
+  criteria** · Metric gate · Dependencies · Risks · Exit) in `00_master_construction_os.md`.
+- **Inherited non-functional gates** (apply on promotion, same as committed phases): SLO
+  (`31 §31.6`), security/STRIDE (`05 §5.9`), supply-chain (`05 §5.10`), DR/game-day (`08 §8.2`,
+  `31 §31.11`), AI security (`22 §22.8`), accessibility (`20 §20.8`), FinOps + sustainability
+  (`08 §8.10`, `§8.11`), DORA (`31 §31.12`).
+- **Metric targets** are set at promotion time from the referenced specs — **not guessed now**.
 
 ---
 

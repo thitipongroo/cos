@@ -1,8 +1,8 @@
 ---
 title: 'Security & Compliance'
-version: '1.8.0'
+version: '1.9.0'
 status: Active
-last_updated: '2026-06-20'
+last_updated: '2026-07-03'
 authors:
   - thitipongroo
 related_docs:
@@ -24,6 +24,8 @@ related_docs:
 - [5.6 Data Residency](#56-data-residency)
 - [5.7 Content Security Policy (CSP)](#57-content-security-policy-csp)
 - [5.8 CORS Policy](#58-cors-policy)
+- [5.9 Threat Model (STRIDE)](#59-threat-model-stride)
+- [5.10 Software Supply-Chain Security](#510-software-supply-chain-security)
 
 ---
 
@@ -534,6 +536,120 @@ Constraints:
   onboarding any new web client or partner origin
 - Preflight response cache (`Access-Control-Max-Age`) must not exceed 86400 seconds (24 hours)
 - CORS headers are set by the application's secure-headers middleware
+
+---
+
+## 5.9 Threat Model (STRIDE)
+
+Every externally-reachable surface MUST be threat-modeled with STRIDE (Spoofing, Tampering,
+Repudiation, Information disclosure, Denial of service, Elevation of privilege) before it ships.
+Mitigations below reference controls that already exist elsewhere in this spec unless marked
+**[GAP]** (control to build) or **[verify]** (control to confirm). AI/LLM-specific threats are
+modeled separately in [22-ai-architecture §22 AI Security](22-ai-architecture.md).
+
+### Surfaces in scope
+
+Public REST API (`/api/v1`) · Authentication (SMS OTP + JWT / Keycloak OIDC) · CRM webhook ·
+File upload (file-service) · Mobile offline sync (`/sync/delta`, `/sync/push`) · IoT ingestion
+(EMQX MQTT → Kafka) · Vendor/contractor portals (magic-link).
+
+### 5.9.1 Public API `/api/v1`
+
+| STRIDE | Threat | Mitigation |
+| ------ | ------ | ---------- |
+| S | Forged identity | JWT (Keycloak OIDC) required; `TenantContextInterceptor` sets tenant from token claim (§5.4.1) |
+| T | Request tampering | TLS in transit; DTO validation (class-validator); no mass-assignment |
+| R | Deny an action | Immutable audit logs on state-changing endpoints (§5.1) |
+| I | **Cross-tenant read** (top risk) | RLS on every domain table + `app.current_tenant_id` set before every query; `WHERE tenant_id` as defense-in-depth (see [07-multi-tenant-architecture](07-multi-tenant-architecture.md)) |
+| D | Request flooding | Cloudflare WAF + Kong / ThrottlerModule rate limiting at the edge before compute (§5.5) |
+| E | Privilege escalation | RBAC/ABAC guards (JWT claims) + PolicyGuard ([06-rbac-permission-matrix](06-rbac-permission-matrix.md)) |
+
+### 5.9.2 Authentication — SMS OTP + JWT
+
+| STRIDE | Threat | Mitigation |
+| ------ | ------ | ---------- |
+| S | OTP interception / brute force | OTP send-rate cap + attempt lockout **[GAP: define thresholds]**; short OTP TTL |
+| R | Repudiate login | Auth events audited |
+| I | Token leakage | Short-lived access token + secure refresh; `expo-secure-store` on device |
+| E | Token replay / forged claims | Signed JWT, audience/issuer checks (§5.4.2), key rotation (180d) |
+
+### 5.9.3 CRM webhook (`/platform/webhooks/*`)
+
+| STRIDE | Threat | Mitigation |
+| ------ | ------ | ---------- |
+| S | Forged webhook | HMAC-SHA256 signature (`X-Webhook-Signature`) verified (see [34-enterprise-tenant-provisioning](34-enterprise-tenant-provisioning.md)) |
+| T/R | Replay | Idempotency key + timestamp window; event recorded |
+| D | Webhook flood | Rate limit + async enqueue (never process inline) |
+
+### 5.9.4 File upload (file-service)
+
+| STRIDE | Threat | Mitigation |
+| ------ | ------ | ---------- |
+| T | Malicious file | ClamAV antivirus scan + quarantine on threat (§5.2 File Upload Security); content-type + size validation |
+| I | Access another tenant's file | Tenant-scoped object keys + signed URLs, short expiry |
+| D | Large-file DoS | Size limit + streaming multipart; per-tenant storage quota **[verify]** |
+| E | Path traversal / SSRF | No user-supplied fetch URLs |
+
+### 5.9.5 Mobile offline sync (`/sync/delta`, `/sync/push`)
+
+| STRIDE | Threat | Mitigation |
+| ------ | ------ | ---------- |
+| T | Replayed / out-of-order mutations | Idempotent delta cursor + server-side conflict resolution; server is source of truth ([17-offline-mobile-sync](17-offline-mobile-sync.md)) |
+| R | Dispute a synced change | Per-mutation audit + `sync_status` trail |
+| I | Over-fetch across tenant | Delta query is tenant + role scoped (RLS) |
+| D | Sync storm on reconnect | Server backpressure + client backoff |
+
+### 5.9.6 IoT ingestion (EMQX MQTT → Kafka)
+
+| STRIDE | Threat | Mitigation |
+| ------ | ------ | ---------- |
+| S | Rogue device | Per-device credential/cert on EMQX **[verify]**; bridge validates before Kafka ([33-digital-twin-iot](33-digital-twin-iot.md)) |
+| T | Forged telemetry | Device auth + Avro schema validation at ingestion |
+| I | Cross-tenant topic read | Per-tenant topic prefix + `tenant_id` header validated by consumers; `allowAutoTopicCreation: false` |
+| D | Telemetry flood | Consumer-lag SLO + DLQ + rate control |
+
+### 5.9.7 Vendor/contractor portals (magic-link)
+
+| STRIDE | Threat | Mitigation |
+| ------ | ------ | ---------- |
+| S | Guess/replay link | Single-use, time-boxed magic link (HMAC-signed); scoped to one vendor (§5.4.3) |
+| I | Enumerate other vendors' RFQs | Link scoped to `rfq_vendor`; RLS on read |
+
+### Cross-cutting controls
+
+Zero-trust + mTLS (Istio) for cross-boundary calls · secrets in Vault / AWS Secrets Manager
+(never in code) · SBOM + dependency pinning (§5.10) · NIST CSF 2.0 function mapping
+(Govern / Identify / Protect / Detect / Respond / Recover) tracked in `docs/compliance/*-controls.md`.
+
+### Acceptance criteria / gate
+
+- [ ] A STRIDE row exists for every external surface before it ships
+- [ ] All **[GAP]** / **[verify]** items resolved before enterprise GA (owner: Security Lead)
+- [ ] Isolation tests prove no cross-tenant read on API + sync + file + IoT paths
+- [ ] Annual penetration test covers all 7 surfaces
+
+---
+
+## 5.10 Software Supply-Chain Security
+
+Aligns with OWASP Top 10:2025 **A03 — Software Supply-Chain Failures**. Community mobile plugins
+(e.g. WatermelonDB Expo plugins) are a specific, tracked exposure.
+
+Requirements:
+
+- **SBOM** (CycloneDX) generated per release for every deployable artifact
+- **Dependency pinning + verification** — lockfiles committed; no floating ranges on production
+  dependencies; third-party plugins pinned to a reviewed version
+- **SLSA provenance + artifact signing** (cosign) on CI-built images
+- **Dependency scanning** in CI (SCA) — build fails on a known critical CVE without an approved,
+  time-boxed exception
+- **Secret scanning** pre-commit (`gitleaks` / `git-secrets`) — see `context.md §QM-4`
+
+Acceptance:
+
+- [ ] SBOM published with every release artifact
+- [ ] CI blocks unpinned or critically-vulnerable production dependencies
+- [ ] Container images signed + provenance attached
 
 ---
 

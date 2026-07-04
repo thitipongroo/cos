@@ -1,8 +1,8 @@
 ---
 title: 'Enterprise SaaS Scaling Model'
-version: '1.2.0'
+version: '1.3.0'
 status: Active
-last_updated: '2026-05-25'
+last_updated: '2026-07-03'
 authors:
   - thitipongroo
 related_docs:
@@ -18,6 +18,7 @@ related_docs:
 - [18.1 Scaling Philosophy](#181-scaling-philosophy)
 - [18.2 Scaling Layers](#182-scaling-layers)
 - [18.3 Enterprise SaaS Maturity Model](#183-enterprise-saas-maturity-model)
+- [18.4 Capacity Planning](#184-capacity-planning)
 
 ---
 
@@ -86,6 +87,29 @@ Stage 4 with Phase 4 (Financial Infrastructure), Stage 5 with Phase 5 (Smart Inf
 Layer). Both documents describe the same platform evolution from different viewpoints:
 this file from a technical scaling lens; 28-ecosystem-expansion from a product and
 business ecosystem lens.
+
+---
+
+## 18.4 Capacity Planning
+
+Autoscaling (§18.2 Layer 1) absorbs short-term bursts; **capacity planning** governs the medium-term
+trend so headroom exists before demand arrives. Reviewed in the quarterly FinOps review
+([08-enterprise-deployment §8.10](08-enterprise-deployment.md)).
+
+- **Demand model** — track leading indicators per tier: DAU, active projects, API req/s, Kafka
+  events/s, AI tokens/day, storage GB/tenant; project the 3–6-month trend from actuals.
+- **Headroom target** — provision so that steady-state peak stays ≤ 70% of capacity per layer, leaving
+  autoscaling room before saturation; the SLO (latency/availability, [31-monitoring §31.6](31-monitoring-observability.md))
+  is the pass/fail signal.
+- **Scaling triggers** — each §18.2 layer has an explicit trigger metric (e.g. Kafka consumer lag
+  > SLO → add partitions/consumers; DB CPU sustained > 70% → read replica / shard).
+- **Load testing** — a representative load test must pass at target concurrency before promoting to
+  the next Maturity Stage (§18.3); results recorded per stage.
+- **Constraint (avoid premature scaling)** — no hyperscale optimization before **10k DAU**; capacity
+  work is evidence-driven, not speculative.
+
+Acceptance: [ ] demand dashboard with leading indicators exists · [ ] per-layer scaling triggers
+documented · [ ] load test passes at target concurrency before each Stage promotion.
 
 ---
 

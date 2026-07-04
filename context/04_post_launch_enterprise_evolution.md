@@ -974,6 +974,51 @@ Exit criteria (Phase 11 is complete when):
 
 ---
 
+## PHASE OBJECTIVES
+
+> Per § Phase Template: one-sentence outcome per PHASE block (the block's `Generate:` list is its
+> Acceptance; Exit criteria are in-block).
+
+- **P0 — Engineering Foundation:** harden the engineering foundation (CI/CD, service template, feature flags, observability).
+- **P1 — Operational Foundation:** establish operational foundations for running the platform in production.
+- **P2 — Workflow Expansion:** expand workflow/approval coverage across domains.
+- **P3 — Data Platform Evolution:** evolve the data platform (analytics, knowledge graph, ontology).
+- **P4 — AI Expansion:** expand AI capabilities beyond MVP assist.
+- **P5 — Platformization:** expose platform APIs + marketplace scaffolding.
+- **P6 — Enterprise Readiness:** meet enterprise requirements (security, SLA, provisioning).
+- **P7 — Ecosystem Expansion:** open supplier/contractor ecosystem integrations.
+- **P8 — Unified Governance:** unify data / AI / compliance governance across the platform.
+- **P9 — Enterprise Customer Operations:** operate enterprise customers (SSO, dedicated tiers).
+- **P10 — Portfolio Intelligence:** deliver cross-project portfolio intelligence.
+- **P11 — Economic Moat Expansion:** expand the data + network-effect moat.
+
+---
+
+## NON-FUNCTIONAL GATES & GOVERNANCE (all Phases inherit)
+
+> The per-Phase Exit criteria above are the functional bar. In addition, every Phase inherits these
+> cross-cutting gates — authoritative in `docs/specifications/`, never restated divergently. A Phase
+> is not "done" until the gates that apply to it are green (Rule 36).
+
+- **Reliability / SLO** — availability + latency + error-budget per tier (`31-monitoring §31.6`);
+  error-budget freeze policy applies to feature rollout.
+- **Delivery** — DORA targets from CI (`31 §31.12`); feature-flag cleanup is a Stage-gate prerequisite
+  (Phase 0 exit).
+- **Disaster recovery** — RTO/RPO per tier validated by quarterly game-day (`08 §8.2`, `31 §31.11`);
+  a tier is not production-ready until it passes ≥ 1 game-day at its RTO/RPO.
+- **Security** — STRIDE per external surface (`05 §5.9`); SBOM + SLSA per release (`05 §5.10`);
+  PDPA hard-requirements (`05 §5.3`).
+- **AI security & governance** — OWASP LLM Top 10 (`22 §22.8`) + model governance (`22 §22.9`) for
+  the AI-expansion phases.
+- **Cost & sustainability** — FinOps cost-per-tenant + unit economics (`08 §8.10`); compute
+  sustainability / scale-to-zero (`08 §8.11`).
+- **Accessibility** — WCAG 2.2 AA (`20 §20.8`). **Capacity** — capacity planning + load test before
+  each Maturity-Stage promotion (`18 §18.4`).
+- **Risk & phase authoring** — active risks and the phase-authoring template are in
+  `00_master_construction_os.md` § Risk Register / § Phase Template.
+
+---
+
 ## REVISED EXECUTION ORDER
 
 ```text

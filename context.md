@@ -263,7 +263,7 @@ Before starting any implementation task:
 ### QM-6 — Performance Budgets
 
 These are enforced targets. If an implementation does not meet them, do not ship — optimize or escalate.
-Source: spec §31.6 (targets corrected to match spec SLO definitions)
+Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals per §31.6 Frontend Web Vitals SLO + §30.9 Lighthouse CI gate)
 
 | Metric                                       | Target                                         | Measurement                                                                             |
 | -------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------- |
@@ -273,6 +273,9 @@ Source: spec §31.6 (targets corrected to match spec SLO definitions)
 | API p99 latency (write endpoints — POST/PUT) | < 1s                                           | Grafana / k6 load test                                                                  |
 | Dashboard / analytics (ClickHouse)           | p95 < 1s                                       | Grafana / k6 load test                                                                  |
 | AI report generation                         | p95 < 5s                                       | Grafana / k6 load test                                                                  |
+| Web LCP — Largest Contentful Paint (p75)     | ≤ 2.5s                                         | web-vitals RUM (spec §31.6); Lighthouse CI lab gate (§30.9)                             |
+| Web INP — Interaction to Next Paint (p75)    | ≤ 200ms                                        | web-vitals RUM (§31.6); TBT lab proxy in Lighthouse CI (§30.9)                          |
+| Web CLS — Cumulative Layout Shift (p75)      | ≤ 0.1                                          | web-vitals RUM (§31.6); Lighthouse CI lab gate (§30.9)                                  |
 | Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                                                                   |
 | Offline sync completion (3G, 5MB data)       | < 30s                                          | Manual test on throttled network                                                        |
 | Background job (Temporal workflow)           | SLA defined per workflow type in workflow spec | Temporal dashboard                                                                      |
@@ -896,7 +899,7 @@ All paths are relative to the repository root.
 
 ```text
 # Context & Specification
-context/00_master_construction_os.md                — MASTER: all decisions, all phases, all EPs
+context/00_master_construction_os.md                — MASTER: all decisions, all phases, all EPs; § ENGINEERING GOVERNANCE = Phase Template · Risk Register (R-01..R-09) · Roadmap horizons (NOW/NEXT/LATER/VISION)
 context/01_build_priority_execution.md              — BUILD stage context
 context/02_build_deep_systems.md                    — BUILD stage deep detail (use with 01)
 context/03_operationalize_execution.md              — OPERATIONALIZE stage context
@@ -908,7 +911,17 @@ context/08_global_intelligence.md                   — GLOBAL INTELLIGENCE stag
 context/09_civilization_scale.md                    — CIVILIZATION SCALE stage context
 context/10_civilization_stewardship.md              — STEWARDSHIP stage context
 context/11_background_civilization.md               — BACKGROUND CIVILIZATION stage context
-docs/specifications/                                — Architecture diagrams and system design reference
+docs/specifications/                                — SOURCE OF TRUTH for all architecture decisions (00–34); master is the compiled execution view
+
+# Engineering Governance & Non-functional Standards (authoritative spec sections)
+docs/specifications/03-system-design.md §3.4        — C4 architecture views (Context / Container / Component)
+docs/specifications/05-security-compliance.md §5.9  — Threat Model (STRIDE) per external surface; §5.10 supply-chain (SBOM/SLSA)
+docs/specifications/08-enterprise-deployment.md §8.2 — RTO/RPO per tier; §8.10 FinOps; §8.11 compute sustainability
+docs/specifications/09-data-architecture.md §9.8     — Data governance (MDM, lineage, catalog)
+docs/specifications/18-enterprise-saas-scaling.md §18.4 — Capacity planning + load-test gate
+docs/specifications/20-ux-flow.md §20.8              — Accessibility (WCAG 2.2 AA)
+docs/specifications/22-ai-architecture.md §22.8      — AI security (OWASP LLM Top 10); §22.9 model governance; §22.10 RAG-eval/prompt-registry/token-cap/semantic-cache
+docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget; §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
 # Readiness & Verification
 scripts/readiness/verify-production-readiness.sh    — Auto-verify 30 [AUTO] checks (Phase 19)
