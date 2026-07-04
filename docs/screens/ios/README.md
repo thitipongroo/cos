@@ -1,9 +1,11 @@
 ---
-title: Construction OS — Mobile Screen Capture
+title: Construction OS — iOS Screen Capture
 last_updated: 2026-07-04
 ---
 
-# Construction OS — Mobile App Screens
+# Construction OS — iOS App Screens
+
+> Part of [`docs/screens/`](../README.md) · platform: **iOS** (iPhone 17 simulator). Android and Web live in sibling folders.
 
 Full-flow screenshots of the Construction OS mobile app (Expo / React Native, iOS),
 captured against the **local backend running with seeded demo data**. Every screen was

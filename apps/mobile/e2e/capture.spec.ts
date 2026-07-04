@@ -1,13 +1,13 @@
 // Screenshot-capture E2E: logs in once (Path A phone+OTP against the local backend with
 // E2E_AUTH_BYPASS=true, fixed OTP 123456), then deep-links each app route and captures the
-// booted-simulator screen straight to docs/mobile-screens/. Not a functional test — a documentation
+// booted-simulator screen straight to docs/screens/ios/. Not a functional test — a documentation
 // generator. Run explicitly: `detox test -c ios.sim.release e2e/capture.spec.ts`.
 import { by, device, element } from 'detox';
 import { execSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const OUT = resolve(__dirname, '../../../docs/mobile-screens');
+const OUT = resolve(__dirname, '../../../docs/screens/ios');
 const PHONE = '+66800000002'; // PROJECT_MANAGER (set via Keycloak) — sees the widest data set
 const OTP = '123456';
 // Seeded project in the PM user's tenant; project-scoped screens use a picker (no auto-select),
