@@ -4198,7 +4198,7 @@ Generate:
 - Shared testcontainers setup utility (@cos/test-utils package)
 - packages/@cos/test-utils/README.md (required per QM-11 — purpose, public API, dependencies, configuration, usage example; same README standard as all packages/@cos/* per Rule 31; per spec §30.13)
 - k6 load test scripts for all 4 scenarios above
-- Playwright E2E tests (web — location: tests/e2e/; runs on merge to `main`; source: spec §30.5 + Phase 18 Generate):
+- Playwright E2E tests (web — location: tests/e2e/; runs on merge to `staging` (ADR-048); source: spec §30.5 + Phase 18 Generate):
     1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
     2. project create — PM creates project; status transitions DRAFT → ACTIVE
     3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
@@ -4209,7 +4209,7 @@ Generate:
     8. Safety incident — Safety Officer reports incident → PM receives push notification → acknowledged within 30 min SLA
     9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
     10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
-- Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `main`; source: spec §30.5, §30.7):
+- Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `staging` (ADR-048); source: spec §30.5, §30.7):
     1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
     2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
     3. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)

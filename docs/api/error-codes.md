@@ -30,3 +30,11 @@ All API error responses follow the structure:
 | COS-FILE-007 | 500  | File upload failed                      | MinIO write error                     |
 | COS-FILE-008 | 500  | Failed to generate signed URL           | MinIO presign error                   |
 | COS-FILE-009 | 500  | Antivirus scan failed                   | ClamAV unreachable or scan error      |
+
+---
+
+## COS-FLAG — Feature Flags (QM-15; ADR-049)
+
+| Code         | HTTP | Message                                  | Trigger                                                             |
+| ------------ | ---- | ---------------------------------------- | ------------------------------------------------------------------- |
+| COS-FLAG-001 | 503  | Feature '{flag}' is temporarily disabled | @FeatureFlag-gated endpoint hit while the flag is OFF (kill switch) |
