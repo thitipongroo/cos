@@ -332,6 +332,18 @@ describe('syncSiteReports', () => {
 
     expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
+    // Emits site.conflict.flagged.v1 for notification routing (ConflictRecord persistence AND notification)
+    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    expect(producer.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'site.conflict.flagged.v1',
+        payload: expect.objectContaining({
+          entity_type: 'site_reports',
+          conflict_type: 'FIELD_CONFLICT',
+        }),
+      }),
+    );
   });
 });
 
@@ -395,6 +407,18 @@ describe('updateIssue', () => {
     });
 
     expect(mockRepo.createConflictRecord).toHaveBeenCalledTimes(1);
+    // Emits site.conflict.flagged.v1 for notification routing
+    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    expect(producer.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'site.conflict.flagged.v1',
+        payload: expect.objectContaining({
+          entity_type: 'issues',
+          conflict_type: 'STATUS_CONFLICT',
+        }),
+      }),
+    );
   });
 
   it('emits site.issue.status_changed.v1 when status actually changes', async () => {

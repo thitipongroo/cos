@@ -2538,6 +2538,12 @@ Generate:
     inspection.failed     (see Event Contract spec)
     issue.created         (see Event Contract spec)
     issue.status_changed  { issue_id, project_id, from_status, to_status }
+    site.conflict.flagged { conflict_id, entity_type, entity_id, conflict_type }
+                          — emitted whenever a CONFLICT_FLAGGED ConflictRecord is persisted
+                            (site_reports LAST_WRITE_WINS + issues FIELD_LEVEL_MERGE paths);
+                            fulfils the "ConflictRecord persistence AND notification" Generate
+                            item — NotificationConsumer routes it to SITE_ENGINEER,
+                            PROJECT_MANAGER, TENANT_ADMIN for manual review
 
 Decision in Phase 6 (documented in spec):
 

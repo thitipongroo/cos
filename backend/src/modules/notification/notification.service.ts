@@ -21,6 +21,7 @@ type Channel = (typeof CHANNELS)[number];
 const EVENT_ROLE_MAP: Record<string, string[] | 'actor'> = {
   'site.inspection.failed.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.created.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
+  'site.conflict.flagged.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER', 'TENANT_ADMIN'],
   'procurement.purchase_order.status_changed.v1': 'actor',
   'finance.variance.alert.v1': ['FINANCE', 'TENANT_ADMIN'],
   'site.report.created.v1': ['PROJECT_MANAGER'],

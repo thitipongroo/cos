@@ -164,6 +164,26 @@ describe('handleEvent — routing', () => {
     });
     expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', ['SYSTEM_ADMIN']);
   });
+
+  it('routes site.conflict.flagged to SITE_ENGINEER, PROJECT_MANAGER and TENANT_ADMIN', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([]);
+    await svc.handleEvent({
+      event_type: 'site.conflict.flagged.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'actor-001',
+      payload: {
+        conflict_id: 'conf-1',
+        entity_type: 'issues',
+        entity_id: 'issue-1',
+        conflict_type: 'STATUS_CONFLICT',
+      },
+    });
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', [
+      'SITE_ENGINEER',
+      'PROJECT_MANAGER',
+      'TENANT_ADMIN',
+    ]);
+  });
 });
 
 // ── preference filtering ───────────────────────────────────────────────────

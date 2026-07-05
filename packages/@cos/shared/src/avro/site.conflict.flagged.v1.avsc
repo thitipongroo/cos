@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "ConflictFlaggedEvent",
+  "namespace": "com.constructionos.events.site",
+  "doc": "site.conflict.flagged.v1 — Phase 6 Site Operations offline-sync conflict",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "ConflictFlaggedPayload",
+      "fields": [
+        { "name": "conflict_id",   "type": "string" },
+        { "name": "entity_type",   "type": "string" },
+        { "name": "entity_id",     "type": "string" },
+        { "name": "conflict_type", "type": { "type": "enum", "name": "ConflictType",
+            "symbols": ["FIELD_CONFLICT", "STATUS_CONFLICT", "REJECTED"] } }
+      ]
+    }}
+  ]
+}

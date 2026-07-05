@@ -1,6 +1,6 @@
 // NotificationConsumer — Phase 20
 // Kafka consumer group: notification-consumer-group
-// Subscribes to 6 event topics and routes to NotificationService.
+// Subscribes to 8 event topics and routes to NotificationService.
 
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { KafkaConsumer } from '@cos/shared';
@@ -15,6 +15,7 @@ const logger = createLogger('notification-consumer');
 const SUBSCRIBED_EVENT_TYPES = [
   'site.inspection.failed.v1',
   'site.issue.created.v1',
+  'site.conflict.flagged.v1',
   'procurement.po.status_changed.v1',
   'finance.variance.alert.v1',
   'site.report.created.v1',

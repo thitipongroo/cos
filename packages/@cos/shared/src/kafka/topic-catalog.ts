@@ -48,6 +48,7 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'site.issue.created.v1': 'site.issue.created.v1.avsc',
   'site.issue.status_changed.v1': 'site.issue.status_changed.v1.avsc',
   'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
+  'site.conflict.flagged.v1': 'site.conflict.flagged.v1.avsc',
   // Finance
   'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
   'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',

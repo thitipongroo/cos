@@ -10,31 +10,31 @@ Manages daily field operations: site reports, issue tracking, safety inspections
 
 | Method | Path                             | Roles                                                     |
 | ------ | -------------------------------- | --------------------------------------------------------- |
-| `POST` | `/api/v1/site-reports`           | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
-| `GET`  | `/api/v1/site-reports`           | All field + management roles                              |
-| `GET`  | `/api/v1/site-reports/:reportId` | All field + management roles                              |
-| `POST` | `/api/v1/site-reports/sync`      | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
+| `POST` | `/api/v1/site/reports`           | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
+| `GET`  | `/api/v1/site/reports`           | All field + management roles                              |
+| `GET`  | `/api/v1/site/reports/:reportId` | All field + management roles                              |
+| `POST` | `/api/v1/site/reports/sync`      | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
 
 ### Issues
 
-| Method  | Path                      | Roles                                                                     |
-| ------- | ------------------------- | ------------------------------------------------------------------------- |
-| `POST`  | `/api/v1/issues`          | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN                 |
-| `PATCH` | `/api/v1/issues/:issueId` | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, SAFETY_OFFICER, TENANT_ADMIN |
-| `GET`   | `/api/v1/issues`          | All roles                                                                 |
+| Method  | Path                           | Roles                                                                     |
+| ------- | ------------------------------ | ------------------------------------------------------------------------- |
+| `POST`  | `/api/v1/site/issues`          | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN                 |
+| `PATCH` | `/api/v1/site/issues/:issueId` | SITE_WORKER, SITE_ENGINEER, PROJECT_MANAGER, SAFETY_OFFICER, TENANT_ADMIN |
+| `GET`   | `/api/v1/site/issues`          | All roles                                                                 |
 
 ### Inspections
 
-| Method | Path                  | Roles                                       |
-| ------ | --------------------- | ------------------------------------------- |
-| `POST` | `/api/v1/inspections` | SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN |
+| Method | Path                       | Roles                                       |
+| ------ | -------------------------- | ------------------------------------------- |
+| `POST` | `/api/v1/site/inspections` | SITE_ENGINEER, SAFETY_OFFICER, TENANT_ADMIN |
 
 ### Conflict Records
 
-| Method  | Path                                           | Roles                                        |
-| ------- | ---------------------------------------------- | -------------------------------------------- |
-| `GET`   | `/api/v1/conflict-records`                     | SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
-| `PATCH` | `/api/v1/conflict-records/:conflictId/resolve` | SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
+| Method  | Path                                                | Roles                                        |
+| ------- | --------------------------------------------------- | -------------------------------------------- |
+| `GET`   | `/api/v1/site/conflict-records`                     | SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
+| `PATCH` | `/api/v1/site/conflict-records/:conflictId/resolve` | SITE_ENGINEER, PROJECT_MANAGER, TENANT_ADMIN |
 
 ## Offline Sync Conflict Strategies (QM-9)
 
@@ -64,6 +64,8 @@ conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }
 | `site.issue.status_changed.v1` | Issue status transitions                |
 | `site.inspection.passed.v1`    | Inspection submitted with PASSED status |
 | `site.inspection.failed.v1`    | Inspection submitted with FAILED status |
+| `site.material.consumed.v1`    | Material consumption logged             |
+| `site.conflict.flagged.v1`     | Offline-sync CONFLICT_FLAGGED persisted |
 
 ## Dependencies
 

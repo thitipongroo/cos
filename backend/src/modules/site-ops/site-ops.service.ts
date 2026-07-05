@@ -174,12 +174,19 @@ export class SiteOpsService {
       );
 
       if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
+        const conflictId = randomUUID();
         await this.repo.createConflictRecord({
-          conflict_id: randomUUID(),
+          conflict_id: conflictId,
           entity_type: 'site_reports',
           entity_id: existing.report_id,
           client_payload: clientPayload,
           server_payload: serverRow,
+          conflict_type: 'FIELD_CONFLICT',
+        });
+        await this.emitEvent('site.conflict.flagged.v1', {
+          conflict_id: conflictId,
+          entity_type: 'site_reports',
+          entity_id: existing.report_id,
           conflict_type: 'FIELD_CONFLICT',
         });
       }
@@ -256,12 +263,19 @@ export class SiteOpsService {
     });
 
     if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
+      const conflictId = randomUUID();
       await this.repo.createConflictRecord({
-        conflict_id: randomUUID(),
+        conflict_id: conflictId,
         entity_type: 'issues',
         entity_id: issueId,
         client_payload: clientPayload,
         server_payload: serverRow,
+        conflict_type: 'STATUS_CONFLICT',
+      });
+      await this.emitEvent('site.conflict.flagged.v1', {
+        conflict_id: conflictId,
+        entity_type: 'issues',
+        entity_id: issueId,
         conflict_type: 'STATUS_CONFLICT',
       });
     }
