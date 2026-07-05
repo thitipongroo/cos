@@ -1856,9 +1856,10 @@ Entities (PostgreSQL — schema: projects):
     building_id     UUID PK DEFAULT gen_random_uuid()
     project_id      UUID FK NOT NULL
     tenant_id       UUID NOT NULL
-    name            VARCHAR(255) NOT NULL
-    type            VARCHAR(100)
+    building_name   VARCHAR(255) NOT NULL   — naming per §11.2 (resolved 2026-07-05)
+    building_type   VARCHAR(100)            — naming per §11.2
     total_floors    INTEGER
+    location        VARCHAR(255)            — per §10.2 (resolved 2026-07-05)
     status          VARCHAR(50)
     INDEX: (tenant_id, project_id)
   floors:
@@ -1880,12 +1881,21 @@ Entities (PostgreSQL — schema: projects):
     tenant_id       UUID NOT NULL
     structure_type  ENUM('column','beam','slab','wall') NOT NULL
     material_type   VARCHAR(100)
+  units:                                    — §11.2 (added 2026-07-05); created under a building,
+    unit_id         UUID PK DEFAULT gen_random_uuid()  project_id derived from the parent building
+    tenant_id       UUID NOT NULL
+    building_id     UUID FK NOT NULL
+    project_id      UUID FK NOT NULL
+    unit_number     VARCHAR(50) NOT NULL
+    unit_type       VARCHAR(100)
+    status          VARCHAR(50)
 
   — Asset / handover domain (source: spec 11 §11.2; one of the 9 business domains, `01`):
   assets:
     asset_id           UUID PK DEFAULT gen_random_uuid()
     project_id         UUID FK NOT NULL
     tenant_id          UUID NOT NULL
+    asset_type         VARCHAR(100)         — per §11.2 (added 2026-07-05)
     handover_date      DATE
     warranty_expiry    DATE
     maintenance_status VARCHAR(50)
@@ -1902,6 +1912,16 @@ APIs:
   DELETE /api/v1/projects/:id/members/:userId — remove member
   GET    /api/v1/projects/:id/members       — list members
   GET    /api/v1/projects/:id/documents     — list documents
+
+  Spatial hierarchy + asset/unit CRUD (added 2026-07-05; full CRUD, nested create/list under the
+  parent, flat get/update/delete by own id; RBAC: read = any tenant user, write = PROJECT_MANAGER /
+  TENANT_ADMIN; no Kafka events — backing/reference data):
+  POST|GET /api/v1/projects/:projectId/buildings   · GET|PATCH|DELETE /api/v1/buildings/:id
+  POST|GET /api/v1/buildings/:buildingId/floors     · GET|PATCH|DELETE /api/v1/floors/:id
+  POST|GET /api/v1/floors/:floorId/rooms            · GET|PATCH|DELETE /api/v1/rooms/:id
+  POST|GET /api/v1/buildings/:buildingId/structures · GET|PATCH|DELETE /api/v1/structures/:id
+  POST|GET /api/v1/buildings/:buildingId/units      · GET|PATCH|DELETE /api/v1/units/:id
+  POST|GET /api/v1/projects/:projectId/assets       · GET|PATCH|DELETE /api/v1/assets/:id
 
 Generate:
 

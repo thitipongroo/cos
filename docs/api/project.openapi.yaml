@@ -301,6 +301,176 @@ components:
               type: string
               format: date-time
 
+    # ── Spatial hierarchy + asset/unit entities (Phase 3, 2026-07-05; §10.2 / §11.2) ──
+    Cursor:
+      type: object
+      properties:
+        nextCursor:
+          type: string
+          nullable: true
+
+    Building:
+      type: object
+      properties:
+        building_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        building_name: { type: string, maxLength: 255 }
+        building_type: { type: string, maxLength: 100, nullable: true }
+        total_floors: { type: integer, nullable: true }
+        location: { type: string, maxLength: 255, nullable: true }
+        status: { type: string, maxLength: 50, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CreateBuildingRequest:
+      type: object
+      required: [building_name]
+      properties:
+        building_name: { type: string, maxLength: 255 }
+        building_type: { type: string, maxLength: 100 }
+        total_floors: { type: integer, minimum: 0 }
+        location: { type: string, maxLength: 255 }
+        status: { type: string, maxLength: 50 }
+    UpdateBuildingRequest:
+      type: object
+      properties:
+        building_name: { type: string, maxLength: 255 }
+        building_type: { type: string, maxLength: 100 }
+        total_floors: { type: integer, minimum: 0 }
+        location: { type: string, maxLength: 255 }
+        status: { type: string, maxLength: 50 }
+
+    Floor:
+      type: object
+      properties:
+        floor_id: { type: string, format: uuid }
+        building_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        floor_number: { type: integer }
+        gross_area_sqm: { type: string, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CreateFloorRequest:
+      type: object
+      required: [floor_number]
+      properties:
+        floor_number: { type: integer }
+        gross_area_sqm: { type: string, description: 'DECIMAL(12,2) as string' }
+    UpdateFloorRequest:
+      type: object
+      properties:
+        floor_number: { type: integer }
+        gross_area_sqm: { type: string }
+
+    Room:
+      type: object
+      properties:
+        room_id: { type: string, format: uuid }
+        floor_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        room_number: { type: string, maxLength: 50 }
+        room_type: { type: string, maxLength: 100, nullable: true }
+        area_sqm: { type: string, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CreateRoomRequest:
+      type: object
+      required: [room_number]
+      properties:
+        room_number: { type: string, maxLength: 50 }
+        room_type: { type: string, maxLength: 100 }
+        area_sqm: { type: string }
+    UpdateRoomRequest:
+      type: object
+      properties:
+        room_number: { type: string, maxLength: 50 }
+        room_type: { type: string, maxLength: 100 }
+        area_sqm: { type: string }
+
+    StructureType:
+      type: string
+      enum: [column, beam, slab, wall]
+    Structure:
+      type: object
+      properties:
+        structure_id: { type: string, format: uuid }
+        building_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        structure_type: { $ref: '#/components/schemas/StructureType' }
+        material_type: { type: string, maxLength: 100, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CreateStructureRequest:
+      type: object
+      required: [structure_type]
+      properties:
+        structure_type: { $ref: '#/components/schemas/StructureType' }
+        material_type: { type: string, maxLength: 100 }
+    UpdateStructureRequest:
+      type: object
+      properties:
+        structure_type: { $ref: '#/components/schemas/StructureType' }
+        material_type: { type: string, maxLength: 100 }
+
+    Unit:
+      type: object
+      properties:
+        unit_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        building_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        unit_number: { type: string, maxLength: 50 }
+        unit_type: { type: string, maxLength: 100, nullable: true }
+        status: { type: string, maxLength: 50, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CreateUnitRequest:
+      type: object
+      required: [unit_number]
+      properties:
+        unit_number: { type: string, maxLength: 50 }
+        unit_type: { type: string, maxLength: 100 }
+        status: { type: string, maxLength: 50 }
+    UpdateUnitRequest:
+      type: object
+      properties:
+        unit_number: { type: string, maxLength: 50 }
+        unit_type: { type: string, maxLength: 100 }
+        status: { type: string, maxLength: 50 }
+
+    Asset:
+      type: object
+      properties:
+        asset_id: { type: string, format: uuid }
+        tenant_id: { type: string, format: uuid }
+        project_id: { type: string, format: uuid }
+        asset_type: { type: string, maxLength: 100, nullable: true }
+        handover_date: { type: string, format: date, nullable: true }
+        warranty_expiry: { type: string, format: date, nullable: true }
+        maintenance_status: { type: string, maxLength: 50, nullable: true }
+        created_by: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CreateAssetRequest:
+      type: object
+      properties:
+        asset_type: { type: string, maxLength: 100 }
+        handover_date: { type: string, format: date }
+        warranty_expiry: { type: string, format: date }
+        maintenance_status: { type: string, maxLength: 50 }
+    UpdateAssetRequest:
+      type: object
+      properties:
+        asset_type: { type: string, maxLength: 100 }
+        handover_date: { type: string, format: date }
+        warranty_expiry: { type: string, format: date }
+        maintenance_status: { type: string, maxLength: 50 }
+
 paths:
   /projects:
     post:
@@ -695,3 +865,438 @@ paths:
           description: Task updated
         '422':
           description: Completion blocked by hard-block gates (COS-TASK-001)
+
+  # ── Spatial hierarchy + asset/unit CRUD (Phase 3, 2026-07-05) ──
+  # RBAC: read = any authenticated tenant user; write = PROJECT_MANAGER / TENANT_ADMIN. No Kafka events.
+  /projects/{projectId}/buildings:
+    parameters:
+      - { in: path, name: projectId, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Create a building under a project
+      operationId: createBuilding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateBuildingRequest' }
+      responses:
+        '201':
+          description: Building created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Building' }
+        '404':
+          description: Parent project not found (COS-BLDG-002)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CosError' }
+    get:
+      summary: List buildings in a project (paginated)
+      operationId: listBuildings
+      parameters:
+        - { in: query, name: cursor, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer } }
+      responses:
+        '200':
+          description: Paginated building list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Cursor'
+                  - type: object
+                    properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Building' } }
+  /buildings/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Get building by ID
+      operationId: getBuilding
+      responses:
+        '200':
+          description: Building detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Building' }
+        '404':
+          description: Not found (COS-BLDG-001)
+    patch:
+      summary: Update building metadata
+      operationId: updateBuilding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateBuildingRequest' }
+      responses:
+        '200':
+          description: Updated building
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Building' }
+        '404':
+          description: Not found (COS-BLDG-001)
+    delete:
+      summary: Delete a building
+      operationId: deleteBuilding
+      responses:
+        '204':
+          description: Building deleted
+        '404':
+          description: Not found (COS-BLDG-001)
+
+  /buildings/{buildingId}/floors:
+    parameters:
+      - { in: path, name: buildingId, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Create a floor under a building
+      operationId: createFloor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFloorRequest' }
+      responses:
+        '201':
+          description: Floor created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Floor' }
+        '404':
+          description: Parent building not found (COS-FLOR-002)
+    get:
+      summary: List floors in a building (paginated)
+      operationId: listFloors
+      parameters:
+        - { in: query, name: cursor, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer } }
+      responses:
+        '200':
+          description: Paginated floor list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Cursor'
+                  - type: object
+                    properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Floor' } }
+  /floors/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Get floor by ID
+      operationId: getFloor
+      responses:
+        '200':
+          description: Floor detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Floor' }
+        '404': { description: Not found (COS-FLOR-001) }
+    patch:
+      summary: Update floor metadata
+      operationId: updateFloor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateFloorRequest' }
+      responses:
+        '200':
+          description: Updated floor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Floor' }
+        '404': { description: Not found (COS-FLOR-001) }
+    delete:
+      summary: Delete a floor
+      operationId: deleteFloor
+      responses:
+        '204': { description: Floor deleted }
+        '404': { description: Not found (COS-FLOR-001) }
+
+  /floors/{floorId}/rooms:
+    parameters:
+      - { in: path, name: floorId, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Create a room under a floor
+      operationId: createRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRoomRequest' }
+      responses:
+        '201':
+          description: Room created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Room' }
+        '404':
+          description: Parent floor not found (COS-ROOM-002)
+    get:
+      summary: List rooms on a floor (paginated)
+      operationId: listRooms
+      parameters:
+        - { in: query, name: cursor, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer } }
+      responses:
+        '200':
+          description: Paginated room list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Cursor'
+                  - type: object
+                    properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Room' } }
+  /rooms/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Get room by ID
+      operationId: getRoom
+      responses:
+        '200':
+          description: Room detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Room' }
+        '404': { description: Not found (COS-ROOM-001) }
+    patch:
+      summary: Update room metadata
+      operationId: updateRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateRoomRequest' }
+      responses:
+        '200':
+          description: Updated room
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Room' }
+        '404': { description: Not found (COS-ROOM-001) }
+    delete:
+      summary: Delete a room
+      operationId: deleteRoom
+      responses:
+        '204': { description: Room deleted }
+        '404': { description: Not found (COS-ROOM-001) }
+
+  /buildings/{buildingId}/structures:
+    parameters:
+      - { in: path, name: buildingId, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Create a structure under a building
+      operationId: createStructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateStructureRequest' }
+      responses:
+        '201':
+          description: Structure created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Structure' }
+        '404':
+          description: Parent building not found (COS-STRC-002)
+    get:
+      summary: List structures in a building (paginated)
+      operationId: listStructures
+      parameters:
+        - { in: query, name: cursor, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer } }
+      responses:
+        '200':
+          description: Paginated structure list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Cursor'
+                  - type: object
+                    properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Structure' } }
+  /structures/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Get structure by ID
+      operationId: getStructure
+      responses:
+        '200':
+          description: Structure detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Structure' }
+        '404': { description: Not found (COS-STRC-001) }
+    patch:
+      summary: Update structure metadata
+      operationId: updateStructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateStructureRequest' }
+      responses:
+        '200':
+          description: Updated structure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Structure' }
+        '404': { description: Not found (COS-STRC-001) }
+    delete:
+      summary: Delete a structure
+      operationId: deleteStructure
+      responses:
+        '204': { description: Structure deleted }
+        '404': { description: Not found (COS-STRC-001) }
+
+  /buildings/{buildingId}/units:
+    parameters:
+      - { in: path, name: buildingId, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Create a unit under a building
+      operationId: createUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUnitRequest' }
+      responses:
+        '201':
+          description: Unit created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Unit' }
+        '404':
+          description: Parent building not found (COS-UNIT-002)
+    get:
+      summary: List units in a building (paginated)
+      operationId: listUnits
+      parameters:
+        - { in: query, name: cursor, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer } }
+      responses:
+        '200':
+          description: Paginated unit list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Cursor'
+                  - type: object
+                    properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Unit' } }
+  /units/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Get unit by ID
+      operationId: getUnit
+      responses:
+        '200':
+          description: Unit detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Unit' }
+        '404': { description: Not found (COS-UNIT-001) }
+    patch:
+      summary: Update unit metadata
+      operationId: updateUnit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUnitRequest' }
+      responses:
+        '200':
+          description: Updated unit
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Unit' }
+        '404': { description: Not found (COS-UNIT-001) }
+    delete:
+      summary: Delete a unit
+      operationId: deleteUnit
+      responses:
+        '204': { description: Unit deleted }
+        '404': { description: Not found (COS-UNIT-001) }
+
+  /projects/{projectId}/assets:
+    parameters:
+      - { in: path, name: projectId, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Create an asset under a project
+      operationId: createAsset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateAssetRequest' }
+      responses:
+        '201':
+          description: Asset created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Asset' }
+        '404':
+          description: Parent project not found (COS-ASST-002)
+    get:
+      summary: List assets in a project (paginated)
+      operationId: listAssets
+      parameters:
+        - { in: query, name: cursor, schema: { type: string } }
+        - { in: query, name: limit, schema: { type: integer } }
+      responses:
+        '200':
+          description: Paginated asset list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Cursor'
+                  - type: object
+                    properties:
+                      items: { type: array, items: { $ref: '#/components/schemas/Asset' } }
+  /assets/{id}:
+    parameters:
+      - { in: path, name: id, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Get asset by ID
+      operationId: getAsset
+      responses:
+        '200':
+          description: Asset detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Asset' }
+        '404': { description: Not found (COS-ASST-001) }
+    patch:
+      summary: Update asset metadata
+      operationId: updateAsset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateAssetRequest' }
+      responses:
+        '200':
+          description: Updated asset
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Asset' }
+        '404': { description: Not found (COS-ASST-001) }
+    delete:
+      summary: Delete an asset
+      operationId: deleteAsset
+      responses:
+        '204': { description: Asset deleted }
+        '404': { description: Not found (COS-ASST-001) }

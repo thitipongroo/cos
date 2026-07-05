@@ -38,3 +38,25 @@ All API error responses follow the structure:
 | Code         | HTTP | Message                                  | Trigger                                                             |
 | ------------ | ---- | ---------------------------------------- | ------------------------------------------------------------------- |
 | COS-FLAG-001 | 503  | Feature '{flag}' is temporarily disabled | @FeatureFlag-gated endpoint hit while the flag is OFF (kill switch) |
+
+---
+
+## COS-BLDG / FLOR / ROOM / STRC / UNIT / ASST — Project spatial hierarchy + assets (Phase 3, 2026-07-05)
+
+Full-CRUD backing entities under the project domain (§10.2 / §11.2). `-001` = entity not found;
+`-002` = parent not found on create (nested-resource parent check).
+
+| Code         | HTTP | Message                   | Trigger                                       |
+| ------------ | ---- | ------------------------- | --------------------------------------------- |
+| COS-BLDG-001 | 404  | Building not found        | buildingId not found for tenant               |
+| COS-BLDG-002 | 404  | Parent project not found  | create under a project absent for the tenant  |
+| COS-FLOR-001 | 404  | Floor not found           | floorId not found for tenant                  |
+| COS-FLOR-002 | 404  | Parent building not found | create under a building absent for the tenant |
+| COS-ROOM-001 | 404  | Room not found            | roomId not found for tenant                   |
+| COS-ROOM-002 | 404  | Parent floor not found    | create under a floor absent for the tenant    |
+| COS-STRC-001 | 404  | Structure not found       | structureId not found for tenant              |
+| COS-STRC-002 | 404  | Parent building not found | create under a building absent for the tenant |
+| COS-UNIT-001 | 404  | Unit not found            | unitId not found for tenant                   |
+| COS-UNIT-002 | 404  | Parent building not found | create under a building absent for the tenant |
+| COS-ASST-001 | 404  | Asset not found           | assetId not found for tenant                  |
+| COS-ASST-002 | 404  | Parent project not found  | create under a project absent for the tenant  |
