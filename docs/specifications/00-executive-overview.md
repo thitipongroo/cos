@@ -50,7 +50,7 @@ related_docs:
 - เป้าหมายคือกลุ่ม mid-market contractors ใน SEA ที่ยังใช้ Excel หรือ basic accounting tools (ประมาณ 90–95% ของตลาด)
 
 รายละเอียด AI Strategy : [AI Architecture](22-ai-architecture.md)
- · Competitive landscape และ Market opportunity : [Final Strategic Positioning](29-final-strategic-positioning.md)
+· Competitive landscape และ Market opportunity : [Final Strategic Positioning](29-final-strategic-positioning.md)
 
 > 📎 See also :
 > · [Business Architecture](01-business-architecture.md)

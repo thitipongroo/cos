@@ -13,6 +13,8 @@ import {
 } from '@expo-google-fonts/inter-tight';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
+import { useLocaleStore } from '../store/localeStore';
+import { I18nProvider } from '../i18n';
 import { initSyncQueue } from '../db/sync-queue';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
 
@@ -52,10 +54,10 @@ export default function RootLayout() {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
     initSyncQueue();
-    void useAuthStore
-      .getState()
-      .hydrate()
-      .finally(() => setHydrated(true));
+    void Promise.all([
+      useAuthStore.getState().hydrate(),
+      useLocaleStore.getState().hydrate(),
+    ]).finally(() => setHydrated(true));
   }, []);
 
   // E2E-only: let Detox toggle simulated connectivity via `cos://e2e/network?online=0|1`.
@@ -93,8 +95,10 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AuthGate />
-      <Slot />
+      <I18nProvider>
+        <AuthGate />
+        <Slot />
+      </I18nProvider>
     </SafeAreaProvider>
   );
 }

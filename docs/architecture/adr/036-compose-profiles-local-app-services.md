@@ -35,7 +35,7 @@ the existing default (essential infra) and `full` (heavy infra) tiers:
 - **Default** (`docker compose up`, `make docker-up`): essential infra only.
 - **`full` profile** (`make docker-up-full`): all infra (OpenSearch, Neo4j, ClickHouse, ClamAV,
   Keycloak, Vault, Temporal, UIs).
-- **`apps` profile** (`make up-apps`): the seven app services. App services depend on heavy infra in
+- **`apps` profile** (`make docker-apps-up-full`): the seven app services. App services depend on heavy infra in
   the `full` profile, so the apps tier enables **both** profiles together:
   `docker compose --profile full --profile apps up`.
 
@@ -80,13 +80,13 @@ literally.
 
 ### Positive
 
-- "All services start with Docker Compose" is now literally true via `make up-apps`.
+- "All services start with Docker Compose" is now literally true via `make docker-apps-up-full`.
 - Full-stack-in-Docker parity available for debugging cross-service issues without host toolchains.
 - No change to the fast `make dev` workflow; default infra-only bring-up is unchanged.
 
 ### Negative
 
-- App service images must build on dev machines for `make up-apps` (CI already builds them, so low
+- App service images must build on dev machines for `make docker-apps-up-full` (CI already builds them, so low
   risk, but first bring-up is slow — Python/Go/Node multi-stage builds).
 - `develop.watch` uses `action: rebuild` (full image rebuild on change), not instant sync — slower
   than native `make dev` hot-reload. Acceptable because `make dev` remains the primary loop.

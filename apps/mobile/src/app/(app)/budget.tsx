@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface ProjectBudget {
@@ -25,6 +26,7 @@ export default function BudgetScreen() {
   const [projectId, setProjectId] = useState('');
   const [data, setData] = useState<BudgetResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const t = useT();
 
   const onSelect = async (id: string): Promise<void> => {
     setProjectId(id);
@@ -32,18 +34,21 @@ export default function BudgetScreen() {
     try {
       setData(await get<BudgetResponse>(`/finance/budget/${id}`));
     } catch {
-      setError('Could not load budget (offline?)');
+      setError(t('finance.budget.loadError'));
       setData(null);
     }
   };
 
   const figures = data
     ? ([
-        ['Total budget', `${data.budget.total_budget_amount} ${data.budget.total_budget_currency}`],
-        ['Allocated', data.budget.allocated_amount],
-        ['Committed', data.budget.committed_amount],
-        ['Actual', data.budget.actual_amount],
-        ['Variance', `${data.variance_percentage}%`],
+        [
+          t('finance.budget.totalBudget'),
+          `${data.budget.total_budget_amount} ${data.budget.total_budget_currency}`,
+        ],
+        [t('finance.budget.allocated'), data.budget.allocated_amount],
+        [t('finance.budget.committed'), data.budget.committed_amount],
+        [t('finance.budget.actual'), data.budget.actual_amount],
+        [t('finance.budget.variance'), `${data.variance_percentage}%`],
       ] as Array<[string, string]>)
     : [];
 
@@ -53,7 +58,7 @@ export default function BudgetScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.heading}>Budget</Text>
+      <Text style={styles.heading}>{t('finance.budget.title')}</Text>
       <ProjectPicker selectedId={projectId} onSelect={onSelect} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {data ? (
@@ -68,7 +73,7 @@ export default function BudgetScreen() {
           </View>
           {data.lines.length > 0 ? (
             <View testID="budget-lines" style={styles.lines}>
-              <Text style={styles.linesHeading}>Budget lines</Text>
+              <Text style={styles.linesHeading}>{t('finance.budget.lines')}</Text>
               {data.lines.map((line) => (
                 <View key={line.line_id} style={styles.row}>
                   <Text style={styles.key}>{line.line_name}</Text>
@@ -79,7 +84,7 @@ export default function BudgetScreen() {
           ) : null}
         </>
       ) : (
-        <Text style={styles.empty}>Select a project to view its budget</Text>
+        <Text style={styles.empty}>{t('finance.budget.selectPrompt')}</Text>
       )}
     </ScrollView>
   );

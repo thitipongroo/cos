@@ -55,7 +55,10 @@ Core Services :
 - Workflow Service (implemented using Temporal.io — see 04-tech-stack section 4.4)
 - Notification Service
 - File Service (blob storage and S3 integration)
-- Document Service (implements the "Document engine" capability defined in 13-product-architecture Layer 1; sits above File Service). MVP delivers OCR (Phase 11 AI OCR Pipeline) + file storage (Phase 9 File Service); version management, format conversion, and drawing viewer are post-MVP (not in §21.2 / the Phase plan) — see 13-product-architecture §13.1
+- Document Service (implements the "Document engine" capability defined in 13-product-architecture Layer 1;
+  sits above File Service). MVP delivers OCR (Phase 11 AI OCR Pipeline) + file storage (Phase 9 File Service);
+  version management, format conversion, and drawing viewer are post-MVP (not in §21.2 / the Phase plan) — see
+  13-product-architecture §13.1
 
 Domain Services :
 
@@ -127,7 +130,7 @@ flowchart TB
 ```mermaid
 flowchart TB
     Web["Web app\n(Next.js)"]
-    Mob["Mobile app\n(Expo / React Native + WatermelonDB)"]
+    Mob["Mobile app\n(Expo / React Native + Drizzle/expo-sqlite)"]
     GW["API Gateway\n(Kong)"]
     API["Modular Monolith\n(NestJS)"]
     FS["File Service\n(Fastify)"]
@@ -183,4 +186,5 @@ architecture note).
 | [Kafka]        | Apache Kafka Documentation                                         | [kafka.apache.org/documentation](https://kafka.apache.org/documentation/)            |
 | [Keycloak]     | Keycloak Server Documentation                                      | [keycloak.org/documentation](https://www.keycloak.org/documentation)                 |
 
-> 📎 See also: [02-system-wide-integration](02-system-wide-integration.md) · [04-tech-stack](04-tech-stack.md) · [13-product-architecture](13-product-architecture.md) · [14-api-architecture](14-api-architecture.md)
+> 📎 See also: [02-system-wide-integration](02-system-wide-integration.md) · [04-tech-stack](04-tech-stack.md)
+> · [13-product-architecture](13-product-architecture.md) · [14-api-architecture](14-api-architecture.md)

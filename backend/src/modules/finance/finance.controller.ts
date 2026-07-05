@@ -17,6 +17,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { FeatureFlag } from '../../shared/feature-flags/feature-flag.decorator';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
@@ -125,6 +126,7 @@ export class FinanceController {
   // POST /api/v1/finance/payments  (record payment against a vendor invoice; project_id in body)
   @Post('finance/payments')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
+  @FeatureFlag('s1.finance.payment-mutations') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Record a payment against a vendor invoice' })
   recordPayment(@Body() dto: RecordPaymentDto) {
     return this.svc.recordPayment(dto);
@@ -151,6 +153,7 @@ export class FinanceController {
 
   @Patch('finance/payments/:paymentId/approve')
   @Roles(...PAYMENT_APPROVE_ROLES)
+  @FeatureFlag('s1.finance.payment-mutations') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Approve a pending payment (FINANCE) → PROCESSED' })
   @ApiParam({ name: 'paymentId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
@@ -209,6 +212,7 @@ export class FinanceController {
   // POST /api/v1/finance/billing  (create AR billing — DRAFT)
   @Post('finance/billing')
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
+  @FeatureFlag('s1.finance.payment-mutations') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Create a client billing (AR) invoice in DRAFT' })
   createBilling(@Body() dto: CreateBillingDto) {
     return this.svc.createBilling(dto);
@@ -248,6 +252,7 @@ export class FinanceController {
   // PATCH /api/v1/finance/billing/:billingId/approve  (DRAFT → ISSUED, §15)
   @Patch('finance/billing/:billingId/approve')
   @Roles(...BILLING_APPROVE_ROLES)
+  @FeatureFlag('s1.finance.payment-mutations') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Approve a client billing (PM up to limit; Executive above)' })
   @ApiParam({ name: 'billingId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)

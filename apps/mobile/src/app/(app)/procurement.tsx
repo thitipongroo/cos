@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface PoRow {
@@ -16,6 +17,7 @@ interface PoRow {
 export default function ProcurementScreen() {
   const [orders, setOrders] = useState<PoRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const t = useT();
 
   const load = async (): Promise<void> => {
     setLoading(true);
@@ -35,13 +37,13 @@ export default function ProcurementScreen() {
 
   return (
     <View testID="procurement-screen" style={styles.container}>
-      <Text style={styles.heading}>Procurement</Text>
+      <Text style={styles.heading}>{t('pm.procurement.title')}</Text>
       <FlatList
         testID="po-list"
         data={orders}
         keyExtractor={(p) => p.po_id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>No purchase orders</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('pm.procurement.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="po-item" style={styles.item}>
             <Text style={styles.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>

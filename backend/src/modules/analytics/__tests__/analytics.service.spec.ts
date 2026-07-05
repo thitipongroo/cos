@@ -63,6 +63,19 @@ describe('AnalyticsService — cache key & hit behaviour', () => {
     expect(result).toEqual(rows);
   });
 
+  it('falls back to ClickHouse when the cache store is unavailable (get rejects)', async () => {
+    const rows = [{ eventDate: '2026-01-01', committed: '500', actual: '450' }];
+    const cache = makeCacheManager(null);
+    cache.get.mockRejectedValue(new Error('redis down'));
+    const ch = makeClickHouseClient(rows);
+    const svc = await buildService(ch, cache);
+
+    const result = await svc.getCostTrend(TENANT, PROJECT, DATE_RANGE);
+
+    expect(result).toEqual(rows);
+    expect(ch.query).toHaveBeenCalledTimes(1);
+  });
+
   it('cache key includes all discriminating fields for cost-trend', async () => {
     const cache = makeCacheManager(null);
     const ch = makeClickHouseClient([]);

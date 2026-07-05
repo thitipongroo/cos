@@ -11,17 +11,17 @@
 
 ## Incident Summary
 
-| Field                  | Value                 |
-| ---------------------- | --------------------- |
-| **Incident ID**        | INC-YYYY-MM-DD-NNN    |
-| **Severity**           | P0 / P1               |
-| **Date declared**      | YYYY-MM-DD HH:MM ICT  |
-| **Date resolved**      | YYYY-MM-DD HH:MM ICT  |
-| **Duration**           | **_ hours _** minutes |
-| **Incident Commander** |                       |
-| **Scribe**             |                       |
-| **Affected tenants**   |                       |
-| **User impact**        |                       |
+| Field                  | Value                  |
+| ---------------------- | ---------------------- |
+| **Incident ID**        | INC-YYYY-MM-DD-NNN     |
+| **Severity**           | P0 / P1                |
+| **Date declared**      | YYYY-MM-DD HH:MM ICT   |
+| **Date resolved**      | YYYY-MM-DD HH:MM ICT   |
+| **Duration**           | **\_ hours _** minutes |
+| **Incident Commander** |                        |
+| **Scribe**             |                        |
+| **Affected tenants**   |                        |
+| **User impact**        |                        |
 
 ---
 

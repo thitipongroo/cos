@@ -1,4 +1,10 @@
 fastapi==0.138.2
+# Pin starlette to 1.3.1 — clears CVE-2026-48817, CVE-2026-48818 (fix 1.1.0) and PYSEC-2026-248
+# (fix 1.3.0), PYSEC-2026-249 (fix 1.3.1). 1.3.1 is the lowest version that resolves ALL FOUR, so
+# pip-audit passes with no --ignore-vuln. (Prior 1.0.1 pin avoided a starlette>=1.3 TestClient
+# deprecation warning that broke pytest collection under filterwarnings=error; the warning filter in
+# pytest.ini now ignores it — see services/ai-gateway/pytest.ini.)
+starlette==1.3.1
 uvicorn[standard]==0.49.0
 pydantic==2.13.4
 pydantic-settings==2.14.2

@@ -3,14 +3,16 @@
 
 import { useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import Project from '../../db/models/Project';
+import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { refreshProjectsCache } from '../../api/projects';
 import { StatusChip } from '../../components/StatusChip';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 export default function PortfolioScreen() {
   const projects = useCollection<Project>('local_projects');
+  const t = useT();
 
   useEffect(() => {
     refreshProjectsCache().catch(() => {
@@ -20,12 +22,12 @@ export default function PortfolioScreen() {
 
   return (
     <View testID="portfolio-screen" style={styles.container}>
-      <Text style={styles.heading}>Portfolio</Text>
+      <Text style={styles.heading}>{t('exec.portfolio.title')}</Text>
       <FlatList
         testID="portfolio-list"
         data={projects}
         keyExtractor={(p) => p.id}
-        ListEmptyComponent={<Text style={styles.empty}>No projects cached</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('exec.portfolio.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="portfolio-item" style={styles.item}>
             <Text style={styles.itemTitle}>{item.projectName}</Text>

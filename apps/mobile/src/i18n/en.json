@@ -1,0 +1,245 @@
+{
+  "common": {
+    "appName": "Construction OS",
+    "back": "← Back",
+    "featureFlag": {
+      "disabled": "This feature is temporarily disabled"
+    },
+    "list": {
+      "empty": "Nothing to show"
+    },
+    "project": {
+      "label": "Project",
+      "empty": "No projects cached — connect once to load"
+    }
+  },
+  "nav": {
+    "tabs": {
+      "home": "Home",
+      "tasks": "Tasks",
+      "report": "Report",
+      "reports": "Reports",
+      "issues": "Issues",
+      "inspections": "Inspections",
+      "projects": "Projects",
+      "procurement": "Procurement",
+      "dashboard": "Dashboard",
+      "portfolio": "Portfolio",
+      "alerts": "Alerts",
+      "payments": "Payments",
+      "budget": "Budget",
+      "invoices": "Invoices",
+      "rfqs": "RFQs",
+      "orders": "Orders",
+      "deliveries": "Deliveries",
+      "incidents": "Incidents",
+      "profile": "Profile"
+    }
+  },
+  "auth": {
+    "login": {
+      "phonePlaceholder": "+66812345678",
+      "otpPlaceholder": "6-digit code",
+      "sendOtp": "Send OTP",
+      "verify": "Verify",
+      "otpSendError": "Could not send OTP. Check the phone number and try again.",
+      "otpVerifyError": "Invalid or expired OTP. Please try again."
+    }
+  },
+  "home": {
+    "main": {
+      "title": "Home",
+      "openIssues": "Open issues",
+      "pendingSync": "Pending sync",
+      "checkIn": "Check in",
+      "checkedIn": "Checked in — will sync when online",
+      "checkInError": "Check-in unavailable: no worker profile linked to your account."
+    }
+  },
+  "tasks": {
+    "list": {
+      "title": "Tasks",
+      "empty": "No tasks synced yet"
+    },
+    "detail": {
+      "progressLabel": "Progress %",
+      "save": "Save progress",
+      "back": "← Back to tasks"
+    }
+  },
+  "site": {
+    "report": {
+      "title": "Daily Report",
+      "summaryPlaceholder": "Summary — manpower, progress, blockers",
+      "save": "Save report",
+      "saved": "Saved offline — will sync when online"
+    },
+    "reports": {
+      "title": "Site Reports",
+      "empty": "No reports",
+      "materialTitle": "Record material used",
+      "materialPlaceholder": "Material (e.g. Portland Cement 50kg)",
+      "qtyPlaceholder": "Qty (e.g. 12.5)",
+      "unitPlaceholder": "Unit (e.g. bag)",
+      "record": "Record material",
+      "recorded": "Recorded — will sync when online"
+    },
+    "issues": {
+      "title": "Issues",
+      "titlePlaceholder": "Describe the issue",
+      "submit": "Report issue",
+      "empty": "No issues yet"
+    },
+    "inspections": {
+      "title": "Inspections",
+      "fill": "Fill checklist",
+      "empty": "No inspections",
+      "noItems": "Checklist has no items",
+      "itemFallback": "Item {index}",
+      "pass": "Pass",
+      "passed": "Passed",
+      "submit": "Submit inspection",
+      "saved": "Saved offline — will sync when online"
+    }
+  },
+  "safety": {
+    "incidents": {
+      "title": "Incidents",
+      "typePlaceholder": "Incident type (e.g. fall, electrical)",
+      "submit": "Report incident",
+      "empty": "No incidents yet"
+    }
+  },
+  "sync": {
+    "offlineBanner": {
+      "message": "Offline — changes will sync when reconnected"
+    },
+    "statusBar": {
+      "syncing": "Syncing…",
+      "error": "Sync error",
+      "pending": "{count, plural, one {# change pending} other {# changes pending}}",
+      "upToDate": "Up to date",
+      "lastSynced": "Last synced {time}"
+    },
+    "conflictBadge": {
+      "label": "{count, plural, one {# conflict} other {# conflicts}} — tap to review"
+    },
+    "conflictReview": {
+      "title": "Conflicts to review",
+      "empty": "No conflicts 🎉",
+      "resolve": "Mark resolved"
+    }
+  },
+  "photos": {
+    "capture": {
+      "enable": "Enable camera",
+      "capture": "Capture photo",
+      "queued": "{count, plural, one {# photo queued} other {# photos queued}}"
+    }
+  },
+  "pm": {
+    "projects": {
+      "title": "Projects",
+      "empty": "No projects cached"
+    },
+    "procurement": {
+      "title": "Procurement",
+      "empty": "No purchase orders"
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "manpower": "Manpower",
+      "openIssues": "Open issues",
+      "failedInspections": "Failed inspections",
+      "reports": "Reports",
+      "loadError": "Could not load analytics (offline?)",
+      "emptyForProject": "No analytics for this project yet",
+      "selectPrompt": "Select a project to view KPIs"
+    }
+  },
+  "exec": {
+    "portfolio": {
+      "title": "Portfolio",
+      "empty": "No projects cached"
+    },
+    "alerts": {
+      "title": "Alerts",
+      "empty": "No alerts",
+      "atRisk": "AT RISK",
+      "ok": "OK",
+      "utilization": "Utilization: {value}%",
+      "budgetLine": "Budget {budget} · Committed {committed} · Actual {actual}",
+      "overdueInvoices": "Overdue invoices: {count}"
+    }
+  },
+  "finance": {
+    "payments": {
+      "title": "Payments",
+      "empty": "No payments",
+      "approve": "Approve"
+    },
+    "budget": {
+      "title": "Budget",
+      "totalBudget": "Total budget",
+      "allocated": "Allocated",
+      "committed": "Committed",
+      "actual": "Actual",
+      "variance": "Variance",
+      "lines": "Budget lines",
+      "loadError": "Could not load budget (offline?)",
+      "selectPrompt": "Select a project to view its budget"
+    },
+    "invoices": {
+      "title": "Invoices",
+      "empty": "No invoices"
+    }
+  },
+  "procurement": {
+    "rfqs": {
+      "title": "RFQs",
+      "empty": "No RFQs"
+    },
+    "orders": {
+      "title": "Purchase Orders",
+      "empty": "No purchase orders"
+    },
+    "deliveries": {
+      "title": "Deliveries",
+      "poPlaceholder": "PO ID",
+      "notePlaceholder": "Delivery note (optional)",
+      "record": "Record delivery",
+      "recorded": "Recorded — will sync when online",
+      "empty": "No deliveries"
+    }
+  },
+  "profile": {
+    "main": {
+      "title": "Profile",
+      "userId": "User ID",
+      "role": "Role",
+      "language": "Language",
+      "thai": "ไทย",
+      "english": "English",
+      "logout": "Log out"
+    }
+  },
+  "status": {
+    "DONE": "Done",
+    "RESOLVED": "Resolved",
+    "CLOSED": "Closed",
+    "APPROVED": "Approved",
+    "SYNCED": "Synced",
+    "IN_PROGRESS": "In progress",
+    "SUBMITTED": "Submitted",
+    "PENDING": "Pending",
+    "OPEN": "Open",
+    "BLOCKED": "Blocked",
+    "CRITICAL": "Critical",
+    "CONFLICT": "Conflict",
+    "HIGH": "High",
+    "NOT_STARTED": "Not started",
+    "DRAFT": "Draft",
+    "LOW": "Low",
+    "MEDIUM": "Medium"
+  }
+}

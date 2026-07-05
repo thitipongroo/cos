@@ -195,7 +195,8 @@ Production on-premise clusters are **self-managed** (no EKS control plane). Dist
 
 On-premise and Dedicated Tenant deployments are packaged as Helm charts :
 
-- One Helm chart per deployable unit (see 32-implementation-specifications section 32.2 for the full list of deployable units)
+- One Helm chart per deployable unit (see 32-implementation-specifications section 32.2 for the full list of
+  deployable units)
 - Umbrella Helm chart for full-stack deployment
 - `values.yaml` configures: deployment tier, resource limits, external service endpoints,
   tenant isolation model
@@ -320,16 +321,16 @@ Dockerfile that meets all of the following:
 - **Non-root user** — final stage runs as `cosuser` (UID 1001, GID 1001)
 - **HEALTHCHECK** — every Dockerfile must include a `HEALTHCHECK` instruction
 
-| Service             | Dockerfile path                           | Build pattern                                               |
-| ------------------- | ----------------------------------------- | ----------------------------------------------------------- |
-| Main Application    | `backend/Dockerfile`                      | Node.js: `base → deps → builder → runner`                   |
-| File Service        | `services/file-service/Dockerfile`        | Node.js: `builder → runner`                                 |
-| AI Gateway          | `services/ai-gateway/Dockerfile`          | Python: builder installs venv; runner copies venv only      |
-| AI Embedding Worker | `services/ai-embedding-worker/Dockerfile` | Python: builder installs venv; runner copies venv only      |
-| AI OCR Pipeline     | `services/ai-ocr-pipeline/Dockerfile`     | Python: builder installs venv; runner copies venv only      |
-| Analytics Worker    | `services/analytics-worker/Dockerfile`    | Go: builder compiles binary; alpine runner                  |
-| KG Ingestion Worker | `services/kg-ingestion-worker/Dockerfile` | Go: builder compiles binary; alpine runner                  |
-| Web App             | `apps/web/Dockerfile`                     | Next.js: `deps → builder → runner` (see note below)         |
+| Service             | Dockerfile path                           | Build pattern                                          |
+| ------------------- | ----------------------------------------- | ------------------------------------------------------ |
+| Main Application    | `backend/Dockerfile`                      | Node.js: `base → deps → builder → runner`              |
+| File Service        | `services/file-service/Dockerfile`        | Node.js: `builder → runner`                            |
+| AI Gateway          | `services/ai-gateway/Dockerfile`          | Python: builder installs venv; runner copies venv only |
+| AI Embedding Worker | `services/ai-embedding-worker/Dockerfile` | Python: builder installs venv; runner copies venv only |
+| AI OCR Pipeline     | `services/ai-ocr-pipeline/Dockerfile`     | Python: builder installs venv; runner copies venv only |
+| Analytics Worker    | `services/analytics-worker/Dockerfile`    | Go: builder compiles binary; alpine runner             |
+| KG Ingestion Worker | `services/kg-ingestion-worker/Dockerfile` | Go: builder compiles binary; alpine runner             |
+| Web App             | `apps/web/Dockerfile`                     | Next.js: `deps → builder → runner` (see note below)    |
 
 Mobile (`apps/mobile/`) uses **Expo EAS Build** — no Dockerfile is required or permitted.
 
@@ -452,4 +453,5 @@ live · [ ] utilization + carbon-proxy dashboard exists · [ ] right-sizing revi
 | [SOC2]       | SOC 2 Type II Trust Service Criteria                | AICPA TSC 2017                                                                                               |
 | [ISO27001]   | Information Security Management Systems             | ISO/IEC 27001:2022                                                                                           |
 
-> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md) · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [18-enterprise-saas-scaling](18-enterprise-saas-scaling.md)
+> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md)
+> · [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [18-enterprise-saas-scaling](18-enterprise-saas-scaling.md)

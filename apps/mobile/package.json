@@ -16,17 +16,14 @@
     "build:e2e:android": "detox build --configuration android.emu.release"
   },
   "dependencies": {
-    "@babel/plugin-proposal-decorators": "^8.0.2",
     "@cos/types": "file:../../packages/@cos/types",
     "@expo-google-fonts/inter-tight": "^0.4.2",
     "@expo/config-plugins": "~8.0.11",
-    "@morrowdigital/watermelondb-expo-plugin": "^2.3.3",
-    "@nozbe/simdjson": "3.9.4",
-    "@nozbe/watermelondb": "^0.28.0",
     "@react-native-community/netinfo": "12.0.1",
     "@tanstack/react-query": "^5.35.0",
     "axios": "^1.7.0",
     "babel-preset-expo": "~56.0.16",
+    "drizzle-orm": "^0.45.2",
     "expo": "~56.0.13",
     "expo-asset": "~56.0.18",
     "expo-background-fetch": "~56.0.20",
@@ -45,6 +42,7 @@
     "expo-status-bar": "~56.0.4",
     "expo-system-ui": "~56.0.5",
     "expo-task-manager": "~56.0.20",
+    "intl-messageformat": "^10.7.0",
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-safe-area-context": "~5.7.0",
@@ -63,11 +61,6 @@
     "typescript": "^6.0.3"
   },
   "expo": {
-    "autolinking": {
-      "exclude": [
-        "@nozbe/simdjson"
-      ]
-    },
     "install": {
       "exclude": [
         "jest",
@@ -77,9 +70,6 @@
     },
     "doctor": {
       "reactNativeDirectoryCheck": {
-        "exclude": [
-          "@nozbe/watermelondb"
-        ],
         "listUnknownPackages": false
       }
     }

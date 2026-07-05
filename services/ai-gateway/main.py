@@ -9,6 +9,7 @@ import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+import flags
 from otel import configure_telemetry
 from providers.llm_provider import Message, StubLLMProvider
 from reports.pipeline import generate_report
@@ -117,6 +118,12 @@ class ReportResponse(BaseModel):
 
 async def _run_report(report_type: str, project_id: str, tenant_id: str,
                       generated_by: str, extra_vars: dict) -> ReportResponse:
+    # QM-15 retrofit kill-switch (ADR-049) — single gate for all four report endpoints
+    if not await flags.is_enabled(flags.FLAG_AI_REPORTS):
+        raise HTTPException(
+            status_code=503,
+            detail="COS-FLAG-001: AI report generation is temporarily disabled",
+        )
     try:
         result = await generate_report(
             report_type=report_type,

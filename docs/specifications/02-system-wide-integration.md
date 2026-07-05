@@ -175,4 +175,5 @@ The final state becomes:
 **ISO 19650 update (2026):** DIS published March 10, 2026. Terminology shifting from "BIM" to
 "Information Management". Final publication expected 2027 — monitor and align platform ontology.
 
-> 📎 See also: [00-executive-overview](00-executive-overview.md) · [03-system-design](03-system-design.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md)
+> 📎 See also: [00-executive-overview](00-executive-overview.md) · [03-system-design](03-system-design.md)
+> · [15-event-driven-workflow](15-event-driven-workflow.md) · [16-enterprise-event-flow](16-enterprise-event-flow.md)

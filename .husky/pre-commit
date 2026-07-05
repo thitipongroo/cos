@@ -1,1 +1,11 @@
 pnpm exec lint-staged
+
+# QM-4: pre-commit hook must block secret patterns (gitleaks) — see .gitleaks.toml
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --pre-commit --staged --config .gitleaks.toml --redact
+else
+  echo "ERROR: gitleaks is not installed — QM-4 requires secret scanning on every commit."
+  echo "Install: winget install Gitleaks.Gitleaks (Windows) / brew install gitleaks (macOS)"
+  echo "         or see https://github.com/gitleaks/gitleaks#installing"
+  exit 1
+fi

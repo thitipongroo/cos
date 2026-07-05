@@ -124,4 +124,5 @@ documented · [ ] load test passes at target concurrency before each Stage promo
 | [AWS-EKS]    | Amazon Elastic Kubernetes Service Documentation                    | [docs.aws.amazon.com/eks](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html) |
 | [SRE-Book]   | Site Reliability Engineering: How Google Runs Production Systems   | Beyer et al., O'Reilly 2016                                                                  |
 
-> 📎 See also: [07-multi-tenant-architecture](07-multi-tenant-architecture.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [28-ecosystem-expansion](28-ecosystem-expansion.md)
+> 📎 See also: [07-multi-tenant-architecture](07-multi-tenant-architecture.md)
+> · [08-enterprise-deployment](08-enterprise-deployment.md) · [28-ecosystem-expansion](28-ecosystem-expansion.md)

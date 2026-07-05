@@ -43,7 +43,7 @@ Composite uniqueness constraints are supported on **Neo4j Community 5.x** (verif
   enterprise tiers.
 - It preserves the key guarantee that matters for ingestion idempotency: **uniqueness of
   `(entity_id, tenant_id)`** plus the backing index used for `MERGE`/lookup.
-- `NODE KEY` additionally guarantees the keyed properties *exist* (non-null). The ingestion worker
+- `NODE KEY` additionally guarantees the keyed properties _exist_ (non-null). The ingestion worker
   always sets `entity_id` and `tenant_id` on every node it writes, so that guarantee is enforced at
   the application layer instead.
 - **Alternative considered — run Neo4j Enterprise:** rejected for dev + SMB because it adds a

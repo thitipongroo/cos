@@ -27,13 +27,13 @@ export RKE2_VERSION="vX.Y.Z+rke2r1"  # pick from https://github.com/rancher/rke2
 
 ## Run order
 
-| Step | Script | Where | Validates (ADR-039 / rubric) |
-| --- | --- | --- | --- |
-| 1 | `01-k3s-ha-install.sh` **or** `01-rke2-ha-install.sh` | node1 then node2/3 | HA control plane (rubric 2) |
-| 2 | `02-cos-conformance.sh` | control node | CNCF conformance + COS Helm charts (rubric 1) |
-| 3 | `03-etcd-snapshot-restore.sh <k3s\|rke2>` | node1 | etcd backup/restore — QM-12 (rubric 5) |
-| 4 | `04-cis-scan.sh <k3s\|rke2>` | any node | CIS hardening (rubric 4) |
-| — | air-gap | see `## Air-gap` below | offline install (rubric 3) |
+| Step | Script                                                | Where                  | Validates (ADR-039 / rubric)                  |
+| ---- | ----------------------------------------------------- | ---------------------- | --------------------------------------------- |
+| 1    | `01-k3s-ha-install.sh` **or** `01-rke2-ha-install.sh` | node1 then node2/3     | HA control plane (rubric 2)                   |
+| 2    | `02-cos-conformance.sh`                               | control node           | CNCF conformance + COS Helm charts (rubric 1) |
+| 3    | `03-etcd-snapshot-restore.sh <k3s\|rke2>`             | node1                  | etcd backup/restore — QM-12 (rubric 5)        |
+| 4    | `04-cis-scan.sh <k3s\|rke2>`                          | any node               | CIS hardening (rubric 4)                      |
+| —    | air-gap                                               | see `## Air-gap` below | offline install (rubric 3)                    |
 
 Run the whole sequence once per distro (k3s, then RKE2) on a clean set of nodes, record both in
 `results-template.md`, then supersede ADR-039 conditions / confirm RKE2 for regulated tenants.

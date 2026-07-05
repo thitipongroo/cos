@@ -8,25 +8,25 @@
 
 ## Data classification
 
-| Class | Definition | Examples |
-|-------|------------|---------|
-| `PUBLIC` | No harm if disclosed | Project name, BOQ category names |
-| `INTERNAL` | Internal use only; not for external disclosure | Aggregate cost data, workflow state |
-| `CONFIDENTIAL` | Business-sensitive; restricted internal | Vendor pricing, contract values |
-| `RESTRICTED` (PII) | Personal data — PDPA/GDPR subject | Name, phone, national ID, location |
+| Class              | Definition                                     | Examples                            |
+| ------------------ | ---------------------------------------------- | ----------------------------------- |
+| `PUBLIC`           | No harm if disclosed                           | Project name, BOQ category names    |
+| `INTERNAL`         | Internal use only; not for external disclosure | Aggregate cost data, workflow state |
+| `CONFIDENTIAL`     | Business-sensitive; restricted internal        | Vendor pricing, contract values     |
+| `RESTRICTED` (PII) | Personal data — PDPA/GDPR subject              | Name, phone, national ID, location  |
 
 ---
 
 ## PII data categories (PDPA §6)
 
-| PDPA Category | Description | @pdpa tag | Retention |
-|---------------|-------------|-----------|-----------|
-| `identity` | Full name (ชื่อ-นามสกุล), date of birth | `@pdpa(category: "identity")` | See data-retention-policy.md |
-| `contact` | Phone number, email address | `@pdpa(category: "contact")` | See data-retention-policy.md |
-| `national_id` | Thai national ID (เลขบัตรประชาชน) | `@pdpa(category: "national_id")` | See data-retention-policy.md |
-| `location` | GPS coordinates (check-in/check-out) | `@pdpa(category: "location")` | 90 days |
-| `biometric` | Face scan (future — not in Stage 1) | `@pdpa(category: "biometric")` | N/A Stage 1 |
-| `financial` | Salary rate, bank account (workforce pay) | `@pdpa(category: "financial")` | 7 years (accounting law) |
+| PDPA Category | Description                               | @pdpa tag                        | Retention                    |
+| ------------- | ----------------------------------------- | -------------------------------- | ---------------------------- |
+| `identity`    | Full name (ชื่อ-นามสกุล), date of birth   | `@pdpa(category: "identity")`    | See data-retention-policy.md |
+| `contact`     | Phone number, email address               | `@pdpa(category: "contact")`     | See data-retention-policy.md |
+| `national_id` | Thai national ID (เลขบัตรประชาชน)         | `@pdpa(category: "national_id")` | See data-retention-policy.md |
+| `location`    | GPS coordinates (check-in/check-out)      | `@pdpa(category: "location")`    | 90 days                      |
+| `biometric`   | Face scan (future — not in Stage 1)       | `@pdpa(category: "biometric")`   | N/A Stage 1                  |
+| `financial`   | Salary rate, bank account (workforce pay) | `@pdpa(category: "financial")`   | 7 years (accounting law)     |
 
 ---
 
@@ -127,25 +127,25 @@ Construction knowledge graph
 
 ## Third-party processors
 
-| Processor | Service | Data Shared | DPA Status | Region |
-|-----------|---------|-------------|------------|--------|
-| AWS | RDS, S3, SNS, Secrets Manager, EKS | All data | AWS DPA (standard) — SIGNED | ap-southeast-1 |
-| Keycloak | Identity (self-hosted on EKS) | email, phone, name | N/A (self-hosted) | ap-southeast-1 |
-| OpenAI | GPT-4o report generation | Sanitized project text (no PII) | OPEN — must sign before Stage 2 |  USA |
-| Cloudflare | WAF, CDN | IP address, HTTP headers | Cloudflare DPA — OPEN | Global edge |
-| Temporal | Workflow state (self-hosted) | Workflow payloads (no raw PII) | N/A (self-hosted) | ap-southeast-1 |
+| Processor  | Service                            | Data Shared                     | DPA Status                      | Region         |
+| ---------- | ---------------------------------- | ------------------------------- | ------------------------------- | -------------- |
+| AWS        | RDS, S3, SNS, Secrets Manager, EKS | All data                        | AWS DPA (standard) — SIGNED     | ap-southeast-1 |
+| Keycloak   | Identity (self-hosted on EKS)      | email, phone, name              | N/A (self-hosted)               | ap-southeast-1 |
+| OpenAI     | GPT-4o report generation           | Sanitized project text (no PII) | OPEN — must sign before Stage 2 | USA            |
+| Cloudflare | WAF, CDN                           | IP address, HTTP headers        | Cloudflare DPA — OPEN           | Global edge    |
+| Temporal   | Workflow state (self-hosted)       | Workflow payloads (no raw PII)  | N/A (self-hosted)               | ap-southeast-1 |
 
 ---
 
 ## Data subject rights implementation
 
-| Right | PDPA Article | Implementation | Status |
-|-------|-------------|----------------|--------|
-| Right to access | §30 | `GET /api/v1/identity/me/data-export` | OPEN |
-| Right to erasure | §33 | `DELETE /api/v1/identity/me` → anonymization | OPEN |
-| Right to portability | §31 | `GET /api/v1/identity/me/data-export` → JSON | OPEN |
-| Right to object | §32 | Marketing opt-out (not applicable Stage 1) | N/A |
-| Right to restrict processing | §34 | Account suspension (ADMIN action) | OPEN |
+| Right                        | PDPA Article | Implementation                               | Status |
+| ---------------------------- | ------------ | -------------------------------------------- | ------ |
+| Right to access              | §30          | `GET /api/v1/identity/me/data-export`        | OPEN   |
+| Right to erasure             | §33          | `DELETE /api/v1/identity/me` → anonymization | OPEN   |
+| Right to portability         | §31          | `GET /api/v1/identity/me/data-export` → JSON | OPEN   |
+| Right to object              | §32          | Marketing opt-out (not applicable Stage 1)   | N/A    |
+| Right to restrict processing | §34          | Account suspension (ADMIN action)            | OPEN   |
 
 All subject rights requests must be fulfilled within **30 days** per PDPA §32.
 
@@ -153,9 +153,9 @@ All subject rights requests must be fulfilled within **30 days** per PDPA §32.
 
 ## Review schedule
 
-| Event | Reviewer | Action |
-|-------|----------|--------|
-| Stage 1 → Stage 2 gate | Product owner + legal | Review all OPEN DPA items; sign OpenAI + Cloudflare DPA |
-| Stage 2 → Stage 3 gate | External DPO | Full data flow audit against PDPA requirements |
-| Annually | Product owner | Review new processors; update map |
-| Any new third-party integration | Engineering lead | Add processor row before integration goes to production |
+| Event                           | Reviewer              | Action                                                  |
+| ------------------------------- | --------------------- | ------------------------------------------------------- |
+| Stage 1 → Stage 2 gate          | Product owner + legal | Review all OPEN DPA items; sign OpenAI + Cloudflare DPA |
+| Stage 2 → Stage 3 gate          | External DPO          | Full data flow audit against PDPA requirements          |
+| Annually                        | Product owner         | Review new processors; update map                       |
+| Any new third-party integration | Engineering lead      | Add processor row before integration goes to production |

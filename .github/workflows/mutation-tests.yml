@@ -1,0 +1,58 @@
+name: Mutation Tests
+
+# QM-1: mutation testing required for financial calculation logic, procurement approval flows,
+# and permission checks — Stryker, mutation score ≥ 70% (thresholds.break in each stryker.config).
+# Cadence (product-owner decision 2026-07-04): PR-gated when a PR touches the mutated paths,
+# plus a full weekly scheduled run.
+on:
+  pull_request:
+    paths:
+      - 'packages/@cos/financial/**'
+      - 'packages/@cos/rbac/**'
+      - 'backend/src/modules/procurement/**'
+      - 'backend/src/shared/guards/**'
+      - '.github/workflows/mutation-tests.yml'
+  schedule:
+    - cron: '0 5 * * 1' # every Monday 05:00 UTC (after load tests 03:00 and DAST 04:00)
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '24'
+  # Prisma 7 (ADR-041): prisma.config.ts requires this even for generate (no DB connection made)
+  DIRECT_DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
+jobs:
+  mutation:
+    name: Stryker — ${{ matrix.target.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { name: '@cos/financial', filter: '@cos/financial', prisma: false }
+          - { name: '@cos/rbac', filter: '@cos/rbac', prisma: false }
+          - { name: 'backend (procurement + guards)', filter: '@cos/backend', prisma: true }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        if: matrix.target.prisma
+        working-directory: backend
+        run: pnpm exec prisma generate
+      - name: Run Stryker (break < 70%)
+        run: pnpm --filter ${{ matrix.target.filter }} test:mutation
+      - name: Upload mutation report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report-${{ strategy.job-index }}-${{ github.run_id }}
+          path: |
+            packages/@cos/financial/reports/mutation/
+            packages/@cos/rbac/reports/mutation/
+            backend/reports/mutation/
+          if-no-files-found: ignore

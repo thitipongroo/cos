@@ -36,11 +36,11 @@ in-country region without approval). The on-prem SMS provider is **UNSPECIFIED**
 **2. On-premise adapter — concrete provider chosen per deployment** (country/customer-specific; NOT
 pinned at platform level). Supported integration shapes for the `onprem` adapter:
 
-| Shape | When |
-| --- | --- |
-| In-country SMS aggregator over **HTTP REST API** | customer has internet egress to a local provider |
-| **SMPP** gateway (direct telco / carrier) | telco integration / higher volume |
-| **Customer-provided SMS gateway** | customer already operates one (incl. air-gapped LAN gateway) |
+| Shape                                            | When                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| In-country SMS aggregator over **HTTP REST API** | customer has internet egress to a local provider             |
+| **SMPP** gateway (direct telco / carrier)        | telco integration / higher volume                            |
+| **Customer-provided SMS gateway**                | customer already operates one (incl. air-gapped LAN gateway) |
 
 The specific vendor is selected per on-prem engagement against the criteria below — it is inherently
 per-country/customer and must not be guessed at platform level.

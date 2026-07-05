@@ -20,7 +20,7 @@ Migrate the PWA from `next-pwa` to **Serwist** (`@serwist/turbopack` + `serwist`
 supports Turbopack, and switch the web build back to Turbopack (`next build`):
 
 - **Service worker source** `src/app/sw.ts` — a `Serwist` instance with `precacheEntries:
-  self.__SW_MANIFEST` and `runtimeCaching: defaultCache` (from `@serwist/turbopack/worker`; the
+self.__SW_MANIFEST` and `runtimeCaching: defaultCache` (from `@serwist/turbopack/worker`; the
   Next-optimized equivalent of the old next-pwa NetworkFirst/CacheFirst/StaleWhileRevalidate rules).
 - **Route handler** `src/app/serwist/[path]/route.ts` — `createSerwistRoute({ swSrc })`. Because
   Turbopack does not support build plugins, Serwist bundles the SW with esbuild and serves it (and

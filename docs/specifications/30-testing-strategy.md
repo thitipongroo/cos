@@ -181,7 +181,10 @@ Scenarios:
 ### Environment
 
 - Dedicated test environment on AWS EKS (staging) with seed data reset per release
-- E2E tests run on merge to `main` (not on every PR — too slow for PR gates)
+- E2E tests run on merge to `staging` (not on every PR — too slow for PR gates); the `staging` branch deploys to the
+  staging environment via update-gitops → ArgoCD auto-sync
+- Branch flow : `develop` (integration) → `staging` (staging-env deploy + E2E gate) → `main` (production; manual
+  ArgoCD promotion gate)
 
 ---
 
@@ -242,7 +245,7 @@ Tests for the React Native offline sync engine (see `17-offline-mobile-sync`).
 
 ### Tooling
 
-- Jest + mock WatermelonDB adapter for unit-level sync logic
+- Jest + mocked db seams (`upsertByKey`/`deleteByKey`, Drizzle/expo-sqlite) for unit-level sync logic
 - Detox for device-level sync integration tests (real device / emulator)
 
 ### Detox conventions (offline simulation + visibility)
@@ -302,14 +305,14 @@ using **Pact.io** (consumer-driven contract testing).
 
 The k6 tests above cover the backend; the web app's user-perceived performance is gated separately.
 
-- **Lighthouse CI** runs on every `apps/web` PR under a **throttled mobile profile** (mid/low-end
-  device + slow network) — matching the field-worker reality.
-- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **LCP ≤ 2.5 s**,
-  **CLS ≤ 0.1**, and **TBT** (Total Blocking Time, Lighthouse's lab proxy for INP) within budget —
-  or the JS **bundle-size budget** exceeded. Budgets live in the CI config (`.lighthouserc` +
-  bundle-analyzer budget).
-- **Complements RUM:** Lighthouse catches regressions pre-merge (lab); production Core Web Vitals are
-  measured from real users at p75 (`31 §31.6 Frontend Web Vitals SLO`).
+- **Lighthouse CI** runs on every `apps/web` PR under a **throttled mobile profile** (mid/low-end device + slow network)
+  — matching the field-worker reality.
+- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **LCP ≤ 2.5 s**, **CLS ≤ 0.1**, and
+  **TBT ≤ 200 ms** (Total Blocking Time, Lighthouse's lab proxy for INP; matches the INP ≤ 200 ms RUM SLO) — or the JS
+  **bundle-size budget ≤ 250 KB** (script transfer size per audited route) exceeded. Budgets live in the CI config
+  (`apps/web/.lighthouserc.json`; workflow `.github/workflows/lighthouse.yml`).
+- **Complements RUM:** Lighthouse catches regressions pre-merge (lab); production Core Web Vitals are measured from
+  real users at p75 (`31 §31.6 Frontend Web Vitals SLO`).
 
 ---
 
@@ -419,7 +422,7 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | YAML lint (yamllint)                      | Every PR              | PR merge                              |
 | SQL lint (sqlfluff, PostgreSQL)           | Every PR              | PR merge                              |
 | Markdown lint (markdownlint, changed .md) | Every PR              | PR merge                              |
-| Build (`turbo run build`)                 | Every PR              | PR merge — see ADR-033                |
+| Build (`turbo run build`)                 | Every PR              | PR merge                              |
 | Unit tests                                | Every PR              | PR merge                              |
 | Unit coverage 100% lines + 100% branches  | Every PR              | PR merge                              |
 | Integration tests                         | Every PR              | PR merge                              |
@@ -429,8 +432,8 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)              |
 | Security SAST (SonarQube)                 | Every PR              | PR merge (High severity) — ⏸ DEFERRED |
 | Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2                     |
-| E2E tests (Playwright)                    | Merge to `main`       | Staging deploy                        |
-| E2E tests (Detox — React Native mobile)   | Merge to `main`       | Staging deploy                        |
+| E2E tests (Playwright)                    | Merge to `staging`    | Production promotion                  |
+| E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion                  |
 | Load tests (k6)                           | Weekly scheduled      | Alert only (not blocking)             |
 | DAST (OWASP ZAP)                          | Weekly scheduled      | Alert only (not blocking)             |
 

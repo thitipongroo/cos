@@ -54,7 +54,7 @@ Upgrade to Prisma **7.8.0** using the **`@prisma/adapter-pg`** driver adapter, a
   `prisma/config` `defineConfig`/`env` API), not from documentation alone.
 - Keeping `@prisma/client` + `prisma-client-js` (rather than the new `prisma-client` generator)
   minimises blast radius: import paths and generated-client usage are unchanged, so only client
-  *construction* is touched.
+  _construction_ is touched.
 - `@prisma/adapter-pg` uses `node-postgres`, whose default unnamed-prepared-statement protocol is
   compatible with PgBouncer transaction mode; the QM-18 PgBouncer-vs-direct split is preserved by
   routing runtime through `DATABASE_URL` and migrations through `DIRECT_DATABASE_URL`.

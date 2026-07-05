@@ -215,8 +215,10 @@ Before starting any implementation task:
       for shared-realm tenants)
 - All inputs validated at the API layer — never trust client-supplied data; use **class-validator** (TypeScript/NestJS DTOs) or **Pydantic** (Python/FastAPI) for schema validation — never hand-written `if` checks alone (source: master API gateway + spec §30.3; `@cos/validation` uses class-validator)
 - SQL queries via Prisma ORM only — never raw string interpolation in SQL
+- **Schema-qualified SQL names MANDATORY** — all SQL (raw queries, migrations, multi-schema Prisma `@@schema` models) must reference tables by schema-qualified name (`procurement.vendors`, `finance.project_budgets`) — **never unqualified**; prevents `search_path` ambiguity across the multi-schema tenant model and keeps RLS/tenant isolation deterministic (spec §11.0 rule 2; pairs with the RLS mandate under "Skip RLS on domain tables")
 - File uploads: validate MIME type server-side, scan with ClamAV (Phase 9+)
 - OWASP Top 10 — every endpoint must be hardened against: injection, broken auth, IDOR, SSRF, XSS, security misconfiguration
+- **Immutable audit logging (spec §5.1/§5.2 principle, §5.9 STRIDE)** — every state-changing endpoint (create / update / delete / state-transition) must emit an **immutable** (append-only — never updated or deleted) audit-log entry capturing actor identity, action, target entity_type/entity_id, `tenant_id`, and timestamp. **All SYSTEM_ADMIN / platform-admin actions** are additionally written to `platform.audit_logs` with the operator's user identity (spec §20.4 admin panel; spec §06 audit-access matrix — SYSTEM_ADMIN = FULL, tenant roles read-only). Audit-log retention per `docs/compliance/data-retention-policy.md`
 - **Security headers** — every HTTP response must include:
   - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
   - `X-Content-Type-Options: nosniff`
@@ -234,7 +236,7 @@ Before starting any implementation task:
     - **Origin protection MANDATORY**: AWS ALB SG must allow port 443 from Cloudflare IPs only → `infrastructure/terraform/cloudflare/`
     - **App integration MANDATORY**: use `CF-Connecting-IP` as real IP; validate `CF-Ray` present; log `CF-Ray` → `backend/src/shared/middleware/cloudflare-waf.middleware.ts`
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
-- **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets: SSE-KMS with customer-managed key (CMK); all RDS/Aurora: storage encryption enabled at creation; all ElastiCache nodes: encryption-at-rest enabled; CMK definitions in `infrastructure/terraform/aws/kms.tf`
+- **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets + RDS/Aurora: SSE-KMS with **customer-managed key (CMK)**; all ElastiCache nodes: AWS-managed key (`at_rest_encryption_enabled`); one CMK per storage-type per env with alias `cos/{env}/rds|s3|elasticache`; **annual KMS rotation**; key policy grants use to the app service role + SYSTEM_ADMIN only; CMK definitions in `infrastructure/terraform/aws/kms.tf` (source: spec §5.2.1). On-prem = Vault Transit envelope encryption.
 - **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
 - SAST and code quality scan must pass in CI via **SonarQube** before merge — spec §30.10 and §30.12 mandate SonarQube; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, 100% line coverage, 100% branch coverage, 0% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
   **⏸ DEFERRED:** SonarQube CI gate deferred pending EKS server setup. Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim. Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
@@ -345,6 +347,7 @@ Every new service, module, or background job must include:
 - Every new service must have corresponding **Alertmanager** alert rules defined (Prometheus ecosystem — source: spec §31.7 + master Phase 15; M-11 — CloudWatch alarms removed; Alertmanager is the authoritative alerting system); alert YAML in `infrastructure/monitoring/`
 - Minimum alerts: error rate > 1% for > 5 min, p99 latency > 3s for > 5 min, job failure rate > 5%
 - **Synthetic monitoring** — health-check probes run every 60 seconds from ≥ 2 AWS regions against all public endpoints; implemented via OpenTelemetry Collector + Grafana Synthetic Monitoring (source: spec §31.10 + master Phase 15; probe definitions in `infrastructure/synthetics/`)
+- **Notification escalation timeouts (spec §19.3)** — distinct from the §15.5 48h _approval_ escalation: safety incident unacknowledged 30 min → escalate to PM; budget alert unacknowledged 2 h → escalate to Executive; AI risk prediction unacknowledged 24 h → escalate to PM. **Critical safety notifications cannot be disabled or quieted** (override quiet hours / preferences — spec §19.6). Digest + quiet-hours delivery config: 00_master §Phase 20 (spec §19.3/§19.6)
 
 ### QM-9 — Backward Compatibility
 
@@ -367,6 +370,9 @@ Every new service, module, or background job must include:
   - **Financial entities** (BOQ line items, payment approvals, budget entries, invoice records): **no auto-resolution** — offline write operations on financial entities are held in the sync queue; before applying, server checks for concurrent server-side modification; if conflict detected → status `CONFLICT_FLAGGED`, push notification to `FINANCE` or `PROJECT_MANAGER` for manual resolution; never auto-merge, auto-overwrite, or silently discard financial data
   - Sync wire protocol (server-side endpoint): `POST /api/v1/sync/resolve` accepts `{ entity_type, entity_id, client_version, payload, client_submitted_at }`; returns `{ resolved_payload, conflict_status, server_version }` where `conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }`
   - `ConflictHandler` class (generated in Phase 10) must implement all three strategies; unit-tested per QM-1 (Phase 18 mandatory coverage list)
+  - **Offline write scope (spec §17.4)** — agents must NOT allow offline writes outside this list: offline read/write = tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage; **online-required (read-cache only)** = POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles; read-only stale-while-revalidate cache = project master, BOQ lines, room/floor reference, drawings, vendor directory
+  - **Sync priority order on reconnect (spec §17.6)** — flush in this exact order: 1 safety incidents → 2 attendance → 3 inspections → 4 task progress → 5 site reports → 6 material → 7 equipment usage → 8 photo/media (deferred last)
+  - **Data size limits (spec §17.7)** — enforce: local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU eviction) · photo queue ≤ 100 (warn user at 80) · sync batch ≤ 500 records/cycle; server-side `platform.sync_tombstones` backs `GET /sync/delta` `deleted[]` (schema in 00_master §Phase 10, spec §11.1)
 
 ### QM-10 — Error Taxonomy
 
@@ -481,7 +487,15 @@ Source: spec §31.6
 
 All user-facing features and high-risk changes must ship behind a feature flag.
 
-- Feature flag system: AWS AppConfig (Stage 1–3); migrate to LaunchDarkly at Stage 4 if tenant count exceeds 50
+- Feature flag system: **Unleash (open-source, self-hosted)** — single provider for cloud AND on-premise
+  (product-owner decision 2026-07-04; ADR-049; replaces AWS AppConfig / LaunchDarkly plan)
+- Delivery: **server-evaluated** — backend `FeatureFlagService` (`unleash-client`, 15s poll) evaluates per
+  user/tenant; clients read `GET /api/v1/flags` and never hold flag-provider credentials (ADR-049)
+- Local dev / degraded mode: `UNLEASH_URL` unset → fallback to registry defaults in
+  `backend/src/shared/feature-flags/feature-flag.service.ts` (retrofit kill-switches fail-open);
+  no Unleash server required for local dev
+- Retrofit scope (product-owner decision 2026-07-04): critical surfaces only — AI/LLM endpoints, auth flows,
+  financial mutations; other existing features are NOT retrofitted; flag registry in `docs/feature-flags/registry.md`
 - Flag naming convention: `{stage}.{domain}.{feature}` (e.g., `s1.procurement.bulk-upload`)
 - **Mandatory flag scenarios:**
   - Any new UI screen or workflow step
@@ -814,13 +828,13 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - **Skip RLS on domain tables** — PostgreSQL Row Level Security is MANDATORY on every domain table from MVP (primary isolation mechanism, spec §7.7); `app.current_tenant_id` must be set at request start before any query; application-layer `WHERE tenant_id = $1` is secondary defense-in-depth, not a replacement for RLS
 - **Define design tokens without wiring the Tailwind pipeline** — the §32.7 tokens only take effect if `apps/web` has `postcss.config.js` + `tailwind.config.js` (content globs + `theme.extend` mapping tokens) + `src/app/globals.css` (`@tailwind …` + `:root{--cos-*/--web-*}`) imported in the root `layout.tsx` (with `@fontsource/inter-tight`). Without the full wiring the page renders unstyled even though tokens are "defined" (spec §32.7 → Web Implementation; verify the build emits non-empty utility CSS)
 - **Define design tokens without wiring the React Native app (mobile)** — same pitfall, different mechanism: RN has no CSS vars, so the §32.7 `--mobile-*` tokens must be a typed module (`apps/mobile/src/theme/tokens.ts`), the brand font loaded via `expo-font` + `@expo-google-fonts/inter-tight` (`useFonts` in `app/_layout.tsx`), and components must reference the theme (never hardcode hex/`fontWeight`). The app also needs an Expo config (`app.json` with `expo-router` + `expo-font` plugins, `main: 'expo-router/entry'`) or it never boots (spec §32.7 → Mobile Implementation)
-- **Expect WatermelonDB to run in Expo Go** — it ships native JSI, so it needs a **custom dev-client** (`expo run:ios/android` or EAS), the SDK-version-matched config plugin (`@morrowdigital/watermelondb-expo-plugin@^2.3.3` for SDK 56 — the abandoned `@skam22` fork stopped at SDK 51), `expo-build-properties` (Android kotlin 1.8.10/compileSdk 33; iOS `simdjson` pod), the legacy decorators babel plugin (`@field` models), and `@nozbe/simdjson@3.9.4` as a **direct dep** so pnpm exposes `node_modules/@nozbe/simdjson` for the pod path (spec §17.8)
+- **Reintroduce WatermelonDB or its native wiring** — the offline DB is **Drizzle ORM on expo-sqlite** (first-party; no config plugins, no simdjson pod, no decorators/loose babel, no CMake patch). Decision record spec `17 §17.10` / ADR-048 (2026-07-04); measured envelope G1/G2 recorded there
 - **Simulate offline in Detox via `device.setStatusBar`/NetInfo jest mock** — neither works: Detox has no connectivity API (setStatusBar is cosmetic) and the NetInfo jest mock is unit-only (Detox runs the real binary). Use an app-level hook gated by `EXPO_PUBLIC_E2E=1` (deep link `cos://e2e/network` → `useNetworkStatus`); and there is **no boolean `element().isVisible()`** — use `await waitFor(el).toBeVisible().withTimeout()` (spec §30.7)
 - **Call `useSearchParams()` / `usePathname()` / `useRouter()` (or any CSR-bailout hook) without a `<Suspense>` boundary in a Next.js App Router page** — these hooks opt the subtree into client-side rendering, and `next build` fails the static export of the route with `missing-suspense-with-csr-bailout` ("Error occurred prerendering page"). `tsc --noEmit` (the `type-check` gate) does NOT catch this — only the `build` gate does (ADR-033). Isolate the hook in a child component and wrap it: `export default function Page(){ return <Suspense fallback={…}><Inner/></Suspense> }`. Example fix: `apps/web/src/app/login/page.tsx` (spec §32.7 → Web Implementation)
 - Implement BigQuery or Snowflake — analytics uses ClickHouse only
 - Implement LangGraph in Phase 11–12 — Phase 12 uses plain Python sequential pipeline; LangGraph
   deferred to LAYER-C-001 decision for Layer C autonomous AI (source: spec §22-ai-architecture §22.3)
-- Use IndexedDB in React Native — smartphone uses **WatermelonDB 0.28.x + ExpoSQLiteAdapter** for all main business entities (site_reports, issues, local_photos, etc.); `expo-sqlite` directly is allowed **only** for the `sync_queue` infrastructure table; plain `expo-sqlite` for any other entity is prohibited (Phase 10 authoritative)
+- Use IndexedDB in React Native — smartphone uses **Drizzle ORM on expo-sqlite** (`cos_offline_v2.db`, useLiveQuery reactive reads) for all main business entities (site_reports, issues, local_photos, etc.); `sync_queue` keeps its own expo-sqlite handle (`cos_sync_queue.db`). Raw expo-sqlite for other entities is prohibited — go through the Drizzle schema (spec 17 §17.10 / ADR-048)
 - Skip hallucination guard on AI report endpoints
 - Invent workflow states or transitions beyond those defined in master §WORKFLOW ENGINE SPEC — implement exactly what is specified, nothing more (master §9; spec §32.6)
 - Implement AUTONOMOUS execution without governance review
@@ -961,7 +975,7 @@ docs/architecture/adr/008-shared-db-tenant-id-rls.md               — Shared DB
 docs/architecture/adr/015-database-retry-helpers.md               — Database retry helper pattern for Prisma transient errors (Phase 1)
 docs/architecture/adr/032-timescaledb-colocated-then-split.md     — TimescaleDB co-located on primary PostgreSQL; split to dedicated instance on volume trigger (Phase 1 decision)
 docs/architecture/adr/033-ci-build-gate.md                        — CI `build` (turbo run build) gate runs on every PR; tsc --noEmit is not a build (Phase 1 decision)
-docs/architecture/adr/036-compose-profiles-local-app-services.md  — Docker Compose `apps` profile to run app services in containers locally (Phase 1 enhancement; `make up-apps`)
+docs/architecture/adr/036-compose-profiles-local-app-services.md  — Docker Compose `apps` profile to run app services in containers locally (Phase 1 enhancement; `make docker-apps-up-full`)
 
 # SLO & Reliability
 docs/slo/dashboard-registry.md                      — Grafana dashboard IDs per SLO (Phase 15)

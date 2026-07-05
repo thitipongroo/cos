@@ -63,51 +63,51 @@ Risk legend: 🟢 in-range/same-major · 🟡 same-major minor/patch · 🔴 ≥
 
 ### Python (services)
 
-| Package | Pinned | Latest | Risk |
-| --- | --- | --- | --- |
-| pytesseract / pdf2image / Pillow | 0.3.13 / 1.17.0 / 12.2.0 | same | ✅ current |
-| python-dotenv (ai-gateway) | 1.2.2 | 1.2.2 | ✅ current |
-| fastapi | 0.111–0.121 | 0.138.2 | 🟡 |
-| uvicorn | 0.29.0 | 0.49.0 | 🟡 |
-| pydantic | 2.7.1 | 2.13.4 | 🟡 |
-| pydantic-settings | 2.2.1 | 2.14.2 | 🟡 |
-| opentelemetry-sdk | 1.24.0 | 1.43.0 | 🟡 (coordinate w/ Wave D OTel) |
-| httpx | 0.27.0 | 0.28.1 | 🟡 |
-| python-dotenv (embedding/ocr) | 1.0.0 | 1.2.2 | 🟡 |
-| asyncpg (>=0.29) | floor | 0.31.0 | 🟡 |
-| redis-py (>=5.0) | floor | 8.0.1 | 🟡 (resolves across a major — read changelog) |
-| aiokafka (>=0.11) | floor | 0.14.0 | 🟡 |
-| jinja2 (>=3.1) | floor | 3.1.6 | 🟡 |
+| Package                          | Pinned                   | Latest  | Risk                                          |
+| -------------------------------- | ------------------------ | ------- | --------------------------------------------- |
+| pytesseract / pdf2image / Pillow | 0.3.13 / 1.17.0 / 12.2.0 | same    | ✅ current                                    |
+| python-dotenv (ai-gateway)       | 1.2.2                    | 1.2.2   | ✅ current                                    |
+| fastapi                          | 0.111–0.121              | 0.138.2 | 🟡                                            |
+| uvicorn                          | 0.29.0                   | 0.49.0  | 🟡                                            |
+| pydantic                         | 2.7.1                    | 2.13.4  | 🟡                                            |
+| pydantic-settings                | 2.2.1                    | 2.14.2  | 🟡                                            |
+| opentelemetry-sdk                | 1.24.0                   | 1.43.0  | 🟡 (coordinate w/ Wave D OTel)                |
+| httpx                            | 0.27.0                   | 0.28.1  | 🟡                                            |
+| python-dotenv (embedding/ocr)    | 1.0.0                    | 1.2.2   | 🟡                                            |
+| asyncpg (>=0.29)                 | floor                    | 0.31.0  | 🟡                                            |
+| redis-py (>=5.0)                 | floor                    | 8.0.1   | 🟡 (resolves across a major — read changelog) |
+| aiokafka (>=0.11)                | floor                    | 0.14.0  | 🟡                                            |
+| jinja2 (>=3.1)                   | floor                    | 3.1.6   | 🟡                                            |
 
 ### Go (services)
 
-| Module | Pinned | Latest | Risk |
-| --- | --- | --- | --- |
-| github.com/stretchr/testify | 1.11.1 | 1.11.1 | ✅ current |
-| github.com/IBM/sarama | 1.43.3 (kg) / 1.50.2 (analytics) | 1.50.3 | 🟡 (align both) |
-| go.opentelemetry.io/otel | 1.43.0 | 1.44.0 | 🟡 |
-| github.com/neo4j/neo4j-go-driver/v5 | 5.24.0 | 5.28.4 | 🟡 |
-| go toolchain (go.mod directive) | 1.25.11 | 1.26.4 | 🔴 (needs Go 1.26 toolchain) |
+| Module                              | Pinned                           | Latest | Risk                         |
+| ----------------------------------- | -------------------------------- | ------ | ---------------------------- |
+| github.com/stretchr/testify         | 1.11.1                           | 1.11.1 | ✅ current                   |
+| github.com/IBM/sarama               | 1.43.3 (kg) / 1.50.2 (analytics) | 1.50.3 | 🟡 (align both)              |
+| go.opentelemetry.io/otel            | 1.43.0                           | 1.44.0 | 🟡                           |
+| github.com/neo4j/neo4j-go-driver/v5 | 5.24.0                           | 5.28.4 | 🟡                           |
+| go toolchain (go.mod directive)     | 1.25.11                          | 1.26.4 | 🔴 (needs Go 1.26 toolchain) |
 
 ### Docker images
 
-| Image | Pinned | Latest stable | Same-major option | Risk |
-| --- | --- | --- | --- | --- |
-| hashicorp/vault | 1.16 | 1.21 | — | 🟡 |
-| temporalio/auto-setup | 1.24.0 | 1.29.7 (image tag — note: server release 1.31.1 ≠ auto-setup image tag) | — | 🟡 |
-| temporalio/ui | 2.26.2 | 2.51.1 | — | 🟡 |
-| redis | 7-alpine | 8.8.0 | 7.4.9 | 🔴 |
-| timescale/timescaledb (PostgreSQL) | latest-pg16 | PG 18 (TSDB 2.28.2 supports pg16–pg18) | stay pg16 | 🔴 |
-| confluentinc/cp-kafka | 7.6.0 | 8.3.0 (= Kafka 4, KRaft) | 7.9.8 | 🔴 |
-| confluentinc/cp-schema-registry | 7.6.0 | 8.3.0 | 7.9.8 | 🔴 |
-| opensearchproject/opensearch | 2.13.0 | 3.7.0 | 2.19.5 | 🔴 |
-| neo4j | 5.19-community | 2026.05.0-community | 5.26.27-community | 🔴 |
-| clickhouse/clickhouse-server | 24.3-alpine | 26.5.4 (LTS 26.3) | — | 🔴 |
-| quay.io/keycloak/keycloak | 24.0.4 | 26.6.4 | — | 🔴 |
-| minio/minio | latest (mutable) | pin explicit | — | ⚠ reproducibility |
-| edoburu/pgbouncer | latest (mutable) | pin explicit | — | ⚠ reproducibility |
-| clamav/clamav | stable (mutable) | pin explicit | — | ⚠ reproducibility |
-| provectuslabs/kafka-ui | latest (mutable) | pin explicit | — | ⚠ reproducibility |
+| Image                              | Pinned           | Latest stable                                                           | Same-major option | Risk              |
+| ---------------------------------- | ---------------- | ----------------------------------------------------------------------- | ----------------- | ----------------- |
+| hashicorp/vault                    | 1.16             | 1.21                                                                    | —                 | 🟡                |
+| temporalio/auto-setup              | 1.24.0           | 1.29.7 (image tag — note: server release 1.31.1 ≠ auto-setup image tag) | —                 | 🟡                |
+| temporalio/ui                      | 2.26.2           | 2.51.1                                                                  | —                 | 🟡                |
+| redis                              | 7-alpine         | 8.8.0                                                                   | 7.4.9             | 🔴                |
+| timescale/timescaledb (PostgreSQL) | latest-pg16      | PG 18 (TSDB 2.28.2 supports pg16–pg18)                                  | stay pg16         | 🔴                |
+| confluentinc/cp-kafka              | 7.6.0            | 8.3.0 (= Kafka 4, KRaft)                                                | 7.9.8             | 🔴                |
+| confluentinc/cp-schema-registry    | 7.6.0            | 8.3.0                                                                   | 7.9.8             | 🔴                |
+| opensearchproject/opensearch       | 2.13.0           | 3.7.0                                                                   | 2.19.5            | 🔴                |
+| neo4j                              | 5.19-community   | 2026.05.0-community                                                     | 5.26.27-community | 🔴                |
+| clickhouse/clickhouse-server       | 24.3-alpine      | 26.5.4 (LTS 26.3)                                                       | —                 | 🔴                |
+| quay.io/keycloak/keycloak          | 24.0.4           | 26.6.4                                                                  | —                 | 🔴                |
+| minio/minio                        | latest (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
+| edoburu/pgbouncer                  | latest (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
+| clamav/clamav                      | stable (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
+| provectuslabs/kafka-ui             | latest (mutable) | pin explicit                                                            | —                 | ⚠ reproducibility |
 
 ---
 
@@ -115,8 +115,8 @@ Risk legend: 🟢 in-range/same-major · 🟡 same-major minor/patch · 🔴 ≥
 
 semver-compatible / same-major; refresh lockfile; run existing test suites.
 
-- npm minors: turbo, eslint, prettier, lint-staged, @playwright/test, @typescript-eslint/*,
-  @temporalio/*, ioredis, decimal.js, @tanstack/react-query, kafkajs
+- npm minors: turbo, eslint, prettier, lint-staged, @playwright/test, @typescript-eslint/_,
+  @temporalio/_, ioredis, decimal.js, @tanstack/react-query, kafkajs
 - npm watch-list (pre-1.0 minor — read changelog before bump): class-validator
 - Python minors: fastapi, uvicorn, pydantic, pydantic-settings, opentelemetry-sdk, httpx,
   python-dotenv (embedding/ocr); floor bumps: asyncpg, aiokafka, jinja2
@@ -169,15 +169,15 @@ Spec pins Expo SDK 51 + `@skam22/watermelondb-expo-plugin@^51`. Update the spec 
 Each is its own isolated, staged rollout: backup + verified rollback + DR drill in staging
 (QM-12), blue-green/canary (QM-16), backward-compatible (QM-9). Ordered by blast radius:
 
-| Step | Upgrade | Primary risk factor |
-| --- | --- | --- |
-| F1 | Keycloak 24→26 | auth-critical (QM-4); realm migration + Quarkus distro |
-| F2 | OpenSearch 2→3 | reindex; JDK 21+ baseline |
-| F3 | ClickHouse 24.3→26 | analytics store; prefer LTS 26.3 path first |
-| F4 | Neo4j 5.19→ | interim to 5.26.27 (5.x line) first; CalVer 2026.x as a later round |
-| F5 | Redis 7→8 | cache/throttler/session; verify license terms |
-| F6 | Confluent 7→8 (Kafka 4 KRaft, ZooKeeper removed) | event backbone; do cp-kafka + schema-registry together |
-| F7 | PostgreSQL 16→18 | primary datastore; pg_upgrade/dump-restore + RLS + TimescaleDB pg18; do last |
+| Step | Upgrade                                          | Primary risk factor                                                          |
+| ---- | ------------------------------------------------ | ---------------------------------------------------------------------------- |
+| F1   | Keycloak 24→26                                   | auth-critical (QM-4); realm migration + Quarkus distro                       |
+| F2   | OpenSearch 2→3                                   | reindex; JDK 21+ baseline                                                    |
+| F3   | ClickHouse 24.3→26                               | analytics store; prefer LTS 26.3 path first                                  |
+| F4   | Neo4j 5.19→                                      | interim to 5.26.27 (5.x line) first; CalVer 2026.x as a later round          |
+| F5   | Redis 7→8                                        | cache/throttler/session; verify license terms                                |
+| F6   | Confluent 7→8 (Kafka 4 KRaft, ZooKeeper removed) | event backbone; do cp-kafka + schema-registry together                       |
+| F7   | PostgreSQL 16→18                                 | primary datastore; pg_upgrade/dump-restore + RLS + TimescaleDB pg18; do last |
 
 Lower-risk interim for any stateful store not yet ready to cross a major: bump within the
 current major line first (Redis 7.4.9, OpenSearch 2.19.5, Neo4j 5.26.27, Confluent 7.9.8).

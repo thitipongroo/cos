@@ -5,9 +5,10 @@
 
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import { database } from '../../db/database';
-import SiteReport from '../../db/models/SiteReport';
+import { db, newLocalId } from '../../db/database';
+import { localSiteReports } from '../../db/schema';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 function todayIso(): string {
@@ -19,30 +20,30 @@ export default function ReportScreen() {
   const [projectId, setProjectId] = useState('');
   const [summary, setSummary] = useState('');
   const [saved, setSaved] = useState(false);
+  const t = useT();
 
   const onSave = async (): Promise<void> => {
-    await database.write(async () => {
-      await database.get<SiteReport>('local_site_reports').create((r) => {
-        r.reportId = '';
-        r.projectId = projectId.trim();
-        r.reportDate = todayIso();
-        r.summary = summary.trim();
-        r.status = 'DRAFT';
-        r.offlineSyncStatus = 'PENDING';
-      });
+    await db.insert(localSiteReports).values({
+      id: newLocalId(),
+      reportId: '',
+      projectId: projectId.trim(),
+      reportDate: todayIso(),
+      summary: summary.trim(),
+      status: 'DRAFT',
+      offlineSyncStatus: 'PENDING',
     });
     setSaved(true);
   };
 
   return (
     <View testID="report-screen" style={styles.container}>
-      <Text style={styles.heading}>Daily Report</Text>
+      <Text style={styles.heading}>{t('site.report.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="report-summary-input"
         style={[styles.input, styles.multiline]}
-        placeholder="Summary — manpower, progress, blockers"
+        placeholder={t('site.report.summaryPlaceholder')}
         placeholderTextColor={colors.textSecondary}
         multiline
         value={summary}
@@ -55,12 +56,12 @@ export default function ReportScreen() {
         onPress={onSave}
         disabled={!projectId.trim() || !summary.trim()}
       >
-        <Text style={styles.buttonText}>Save report</Text>
+        <Text style={styles.buttonText}>{t('site.report.save')}</Text>
       </TouchableOpacity>
 
       {saved ? (
         <Text testID="report-saved" style={styles.saved}>
-          Saved offline — will sync when online
+          {t('site.report.saved')}
         </Text>
       ) : null}
     </View>

@@ -17,11 +17,11 @@ should be blocked at the edge.
 
 Three candidates were evaluated:
 
-| Candidate | Notes |
-| --- | --- |
-| Kong Gateway (open-source) | Kubernetes-native, rich plugin ecosystem, self-hosted |
-| AWS API Gateway | Managed, but vendor lock-in; limited plugin model |
-| NGINX Ingress alone | No rate limiting or tenant-aware routing without custom Lua |
+| Candidate                  | Notes                                                       |
+| -------------------------- | ----------------------------------------------------------- |
+| Kong Gateway (open-source) | Kubernetes-native, rich plugin ecosystem, self-hosted       |
+| AWS API Gateway            | Managed, but vendor lock-in; limited plugin model           |
+| NGINX Ingress alone        | No rate limiting or tenant-aware routing without custom Lua |
 
 ## Decision
 

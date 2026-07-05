@@ -8,6 +8,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'r
 import { get, mutate } from '../../api/client';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 interface DeliveryRow {
@@ -20,6 +21,7 @@ export default function DeliveriesScreen() {
   const [poId, setPoId] = useState('');
   const [note, setNote] = useState('');
   const [saved, setSaved] = useState(false);
+  const t = useT();
 
   const load = async (): Promise<void> => {
     try {
@@ -53,12 +55,12 @@ export default function DeliveriesScreen() {
 
   return (
     <View testID="deliveries-screen" style={styles.container}>
-      <Text style={styles.heading}>Deliveries</Text>
+      <Text style={styles.heading}>{t('procurement.deliveries.title')}</Text>
 
       <TextInput
         testID="delivery-po-input"
         style={styles.input}
-        placeholder="PO ID"
+        placeholder={t('procurement.deliveries.poPlaceholder')}
         placeholderTextColor={colors.textSecondary}
         value={poId}
         onChangeText={setPoId}
@@ -66,7 +68,7 @@ export default function DeliveriesScreen() {
       <TextInput
         testID="delivery-note-input"
         style={styles.input}
-        placeholder="Delivery note (optional)"
+        placeholder={t('procurement.deliveries.notePlaceholder')}
         placeholderTextColor={colors.textSecondary}
         value={note}
         onChangeText={setNote}
@@ -78,11 +80,11 @@ export default function DeliveriesScreen() {
         onPress={record}
         disabled={!poId.trim()}
       >
-        <Text style={styles.buttonText}>Record delivery</Text>
+        <Text style={styles.buttonText}>{t('procurement.deliveries.record')}</Text>
       </TouchableOpacity>
       {saved ? (
         <Text testID="delivery-saved" style={styles.saved}>
-          Recorded — will sync when online
+          {t('procurement.deliveries.recorded')}
         </Text>
       ) : null}
 
@@ -90,7 +92,7 @@ export default function DeliveriesScreen() {
         testID="delivery-list"
         data={rows}
         keyExtractor={(r, i) => r.delivery_id || String(i)}
-        ListEmptyComponent={<Text style={styles.empty}>No deliveries</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('procurement.deliveries.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="delivery-item" style={styles.item}>
             <Text style={styles.itemTitle}>{item.delivery_id.slice(0, 8)}</Text>

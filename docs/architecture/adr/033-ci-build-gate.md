@@ -16,7 +16,7 @@ Phase 1 verification found a gap in the CI pipeline (`.github/workflows/ci.yml`)
   artifacts and does not exercise the real build toolchain (`nest build`, `next build`,
   `tsc --project tsconfig.build.json`, declaration emit, the `copy:avro` step in
   `@cos/shared`).
-- The `build-docker` job *does* compile via each service's Dockerfile, but it is gated
+- The `build-docker` job _does_ compile via each service's Dockerfile, but it is gated
   `if: github.ref == 'refs/heads/main' || 'refs/heads/staging'` — so it **never runs on a
   pull request**.
 - `unit-tests` runs `turbo run test:cov`; the `test` task only `dependsOn: ["^build"]`
@@ -61,11 +61,11 @@ type-only gate; `build` verifies the emit/bundle toolchain.
 - **Matches existing tooling:** `build` task, per-package `build` scripts, and `outputs`
   (`dist/**`, `.next/**`) already exist in `turbo.json` — only the CI job was missing.
 - **Alternatives rejected:**
-  - *Rely on `build-docker` for build validation* — rejected: gated to `main`/`staging`,
+  - _Rely on `build-docker` for build validation_ — rejected: gated to `main`/`staging`,
     so it does not protect PRs.
-  - *Run `build-docker` on PRs instead* — rejected: building all service images on every PR
+  - _Run `build-docker` on PRs instead_ — rejected: building all service images on every PR
     is far slower and heavier than `turbo run build`; image build belongs at merge time.
-  - *Treat `type-check` as sufficient* — rejected: `tsc --noEmit` is not a build (see Context).
+  - _Treat `type-check` as sufficient_ — rejected: `tsc --noEmit` is not a build (see Context).
 
 ## Consequences
 

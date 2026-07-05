@@ -16,6 +16,9 @@ ignore: |
   infrastructure/helm/**/templates/
   # Generated OpenAPI specs (QM-2) — format owned by the generator, not hand-edited
   docs/api/
+  # Figma-to-React export — design reference/prototype, excluded from all lint/format gates
+  # (cf. eslint.config.mjs ignores + .prettierignore)
+  figma/
 
 rules:
   line-length: disable # Prettier governs width (printWidth 100); repo does not enforce 80

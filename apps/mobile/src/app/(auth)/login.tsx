@@ -13,6 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import logoDark from '../../../assets/logo-dark.png';
 
@@ -21,6 +22,7 @@ type Step = 'phone' | 'otp';
 export default function LoginScreen() {
   const requestOtp = useAuthStore((s) => s.requestOtp);
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
+  const t = useT();
 
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
@@ -35,7 +37,7 @@ export default function LoginScreen() {
       await requestOtp(phone.trim());
       setStep('otp');
     } catch {
-      setError('Could not send OTP. Check the phone number and try again.');
+      setError(t('auth.login.otpSendError'));
     } finally {
       setBusy(false);
     }
@@ -48,7 +50,7 @@ export default function LoginScreen() {
       await verifyOtp(phone.trim(), otp.trim());
       // AuthGate (root _layout) redirects to /(app)/home once isAuthenticated flips.
     } catch {
-      setError('Invalid or expired OTP. Please try again.');
+      setError(t('auth.login.otpVerifyError'));
     } finally {
       setBusy(false);
     }
@@ -61,7 +63,7 @@ export default function LoginScreen() {
         source={logoDark}
         style={styles.logo}
         resizeMode="contain"
-        accessibilityLabel="Construction OS"
+        accessibilityLabel={t('common.appName')}
       />
 
       {step === 'phone' ? (
@@ -69,7 +71,7 @@ export default function LoginScreen() {
           <TextInput
             testID="phone-input"
             style={styles.input}
-            placeholder="+66812345678"
+            placeholder={t('auth.login.phonePlaceholder')}
             placeholderTextColor={colors.textSecondary}
             keyboardType="phone-pad"
             autoCapitalize="none"
@@ -86,7 +88,7 @@ export default function LoginScreen() {
             {busy ? (
               <ActivityIndicator color={colors.bg} />
             ) : (
-              <Text style={styles.buttonText}>Send OTP</Text>
+              <Text style={styles.buttonText}>{t('auth.login.sendOtp')}</Text>
             )}
           </TouchableOpacity>
         </>
@@ -95,7 +97,7 @@ export default function LoginScreen() {
           <TextInput
             testID="otp-input"
             style={styles.input}
-            placeholder="6-digit code"
+            placeholder={t('auth.login.otpPlaceholder')}
             placeholderTextColor={colors.textSecondary}
             keyboardType="number-pad"
             maxLength={6}
@@ -112,7 +114,7 @@ export default function LoginScreen() {
             {busy ? (
               <ActivityIndicator color={colors.bg} />
             ) : (
-              <Text style={styles.buttonText}>Verify</Text>
+              <Text style={styles.buttonText}>{t('auth.login.verify')}</Text>
             )}
           </TouchableOpacity>
         </>

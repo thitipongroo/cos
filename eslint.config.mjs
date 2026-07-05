@@ -24,6 +24,11 @@ export default [
       '**/.turbo/**',
       '**/coverage/**',
       '**/build/**',
+      // Figma-to-React export — design reference/prototype for building apps/web + apps/mobile,
+      // not a workspace member (never built/tested/shipped, not in turbo/CI lint). Generated code
+      // carries `any` + unused imports by nature; excluded from the code-quality gate like other
+      // reference material (cf. docs/specifications excluded from markdownlint).
+      'figma/**',
     ],
   },
 ];

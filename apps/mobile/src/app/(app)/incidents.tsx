@@ -6,12 +6,14 @@
 
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { database } from '../../db/database';
-import Incident from '../../db/models/Incident';
+import { db, newLocalId } from '../../db/database';
+import type { Incident } from '../../db/database';
+import { localIncidents } from '../../db/schema';
 import { enqueue } from '../../db/sync-queue';
 import { useCollection } from '../../hooks/useCollection';
 import { StatusChip } from '../../components/StatusChip';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
 const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
@@ -22,6 +24,7 @@ export default function IncidentsScreen() {
   const [projectId, setProjectId] = useState('');
   const [incidentType, setIncidentType] = useState('');
   const [severity, setSeverity] = useState<Severity>('MEDIUM');
+  const t = useT();
 
   const canSubmit = projectId.trim() !== '' && incidentType.trim() !== '';
 
@@ -31,16 +34,15 @@ export default function IncidentsScreen() {
       incident_type: incidentType.trim(),
       severity,
     };
-    await database.write(async () => {
-      await database.get<Incident>('local_incidents').create((r) => {
-        r.incidentId = '';
-        r.projectId = payload.project_id;
-        r.incidentType = payload.incident_type;
-        r.severity = payload.severity;
-        r.status = 'OPEN';
-        r.createdAt = new Date().toISOString();
-        r.offlineSyncStatus = 'PENDING';
-      });
+    await db.insert(localIncidents).values({
+      id: newLocalId(),
+      incidentId: '',
+      projectId: payload.project_id,
+      incidentType: payload.incident_type,
+      severity: payload.severity,
+      status: 'OPEN',
+      createdAt: new Date().toISOString(),
+      offlineSyncStatus: 'PENDING',
     });
     enqueue('safety', payload.project_id, 'CREATE', payload); // SyncManager → /sync/push (entity_type 'safety')
     setIncidentType('');
@@ -48,13 +50,13 @@ export default function IncidentsScreen() {
 
   return (
     <View testID="incidents-screen" style={styles.container}>
-      <Text style={styles.heading}>Incidents</Text>
+      <Text style={styles.heading}>{t('safety.incidents.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="incident-type-input"
         style={styles.input}
-        placeholder="Incident type (e.g. fall, electrical)"
+        placeholder={t('safety.incidents.typePlaceholder')}
         placeholderTextColor={colors.textSecondary}
         value={incidentType}
         onChangeText={setIncidentType}
@@ -68,7 +70,7 @@ export default function IncidentsScreen() {
             onPress={() => setSeverity(s)}
           >
             <Text style={[styles.severityText, severity === s && styles.severityTextActive]}>
-              {s}
+              {t(`status.${s}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -79,7 +81,7 @@ export default function IncidentsScreen() {
         onPress={onCreate}
         disabled={!canSubmit}
       >
-        <Text style={styles.buttonText}>Report incident</Text>
+        <Text style={styles.buttonText}>{t('safety.incidents.submit')}</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -87,7 +89,7 @@ export default function IncidentsScreen() {
         style={styles.list}
         data={incidents}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No incidents yet</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{t('safety.incidents.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="incident-item" style={styles.item}>
             <Text style={styles.itemTitle}>{item.incidentType}</Text>

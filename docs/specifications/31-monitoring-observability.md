@@ -82,21 +82,21 @@ coupling in application code.
 
 Every NestJS service must expose:
 
-| Metric                                    | Type      | Labels                                              |
-| ----------------------------------------- | --------- | --------------------------------------------------- |
-| `http_request_duration_seconds`           | Histogram | service, endpoint, method, status_code, tenant_tier |
-| `http_requests_total`                     | Counter   | service, endpoint, method, status_code, tenant_tier |
-| `db_query_duration_seconds`               | Histogram | service, query_type                                 |
-| `kafka_messages_produced_total`           | Counter   | service, topic                                      |
-| `kafka_messages_consumed_total`           | Counter   | service, topic, consumer_group                      |
-| `workflow_started_total`                  | Counter   | workflow_type                                       |
-| `workflow_completed_total`                | Counter   | workflow_type, outcome (success/failed/timeout)     |
-| `approval_pending_duration_seconds`       | Histogram | workflow_type                                       |
-| `notification_delivery_duration_seconds`  | Histogram | channel, notification_type                          |
-| `notification_pending_total`              | Gauge     | notification_type                                   |
-| `active_sessions_total`                   | Gauge     | tenant_id                                           |
-| `storage_used_bytes`                      | Gauge     | tenant_id, storage_type (postgresql \| s3)          |
-| `tenant_isolation_check_result`           | Gauge     | check_name                                          |
+| Metric                                   | Type      | Labels                                              |
+| ---------------------------------------- | --------- | --------------------------------------------------- |
+| `http_request_duration_seconds`          | Histogram | service, endpoint, method, status_code, tenant_tier |
+| `http_requests_total`                    | Counter   | service, endpoint, method, status_code, tenant_tier |
+| `db_query_duration_seconds`              | Histogram | service, query_type                                 |
+| `kafka_messages_produced_total`          | Counter   | service, topic                                      |
+| `kafka_messages_consumed_total`          | Counter   | service, topic, consumer_group                      |
+| `workflow_started_total`                 | Counter   | workflow_type                                       |
+| `workflow_completed_total`               | Counter   | workflow_type, outcome (success/failed/timeout)     |
+| `approval_pending_duration_seconds`      | Histogram | workflow_type                                       |
+| `notification_delivery_duration_seconds` | Histogram | channel, notification_type                          |
+| `notification_pending_total`             | Gauge     | notification_type                                   |
+| `active_sessions_total`                  | Gauge     | tenant_id                                           |
+| `storage_used_bytes`                     | Gauge     | tenant_id, storage_type (postgresql \| s3)          |
+| `tenant_isolation_check_result`          | Gauge     | check_name                                          |
 
 **Metric emitters:**
 
@@ -244,11 +244,11 @@ Errors: HTTP 5xx responses.
 The API SLOs above cover the backend; user-perceived web performance is governed by **Google Core Web
 Vitals**, measured from real users (RUM) at the **p75** percentile (Google's standard).
 
-| Metric | Target (p75, "good") |
-| ------ | -------------------- |
-| **LCP** — Largest Contentful Paint | ≤ 2.5 s |
-| **INP** — Interaction to Next Paint | ≤ 200 ms |
-| **CLS** — Cumulative Layout Shift | ≤ 0.1 |
+| Metric                              | Target (p75, "good") |
+| ----------------------------------- | -------------------- |
+| **LCP** — Largest Contentful Paint  | ≤ 2.5 s              |
+| **INP** — Interaction to Next Paint | ≤ 200 ms             |
+| **CLS** — Cumulative Layout Shift   | ≤ 0.1                |
 
 - **RUM collection:** the `web-vitals` library reports LCP/INP/CLS to the telemetry pipeline (OTel →
   the metrics store); tracked per route and per device class.
@@ -355,13 +355,13 @@ Dashboard IDs and their corresponding SLO targets are registered in `docs/slo/da
 These dashboards are organized by technology component. They complement the four
 audience-based dashboards above and are required deliverables of Phase 15.
 
-| Dashboard | Panels |
-| --------- | ------ |
-| Per-Service Overview | HTTP throughput (req/s), error rate (%), latency P50/P95/P99 |
-| Kafka | Consumer lag per group, DLQ depth, messages produced/consumed (per/s) |
-| Database | DB query duration P50/P95, slow query count (P95 > 1s), PgBouncer pool |
-| AI & LLM | Token usage per tenant/model, AI latency P50/P95, AI error rate |
-| Infrastructure (Kubernetes) | CPU/memory per pod, disk I/O per node, pod restarts (last 1h) |
+| Dashboard                   | Panels                                                                 |
+| --------------------------- | ---------------------------------------------------------------------- |
+| Per-Service Overview        | HTTP throughput (req/s), error rate (%), latency P50/P95/P99           |
+| Kafka                       | Consumer lag per group, DLQ depth, messages produced/consumed (per/s)  |
+| Database                    | DB query duration P50/P95, slow query count (P95 > 1s), PgBouncer pool |
+| AI & LLM                    | Token usage per tenant/model, AI latency P50/P95, AI error rate        |
+| Infrastructure (Kubernetes) | CPU/memory per pod, disk I/O per node, pod restarts (last 1h)          |
 
 All dashboards are version-controlled as Grafana JSON and provisioned automatically via the
 Grafana provisioning config (GitOps).
@@ -454,13 +454,13 @@ credible if failure is exercised, not just documented.
 Delivery health is measured from CI/CD and reviewed monthly alongside SLOs (§31.6.4). Target band =
 DORA "High → Elite" (State of DevOps 2024, which adds a 5th key, rework/failure-recovery rate).
 
-| DORA key | Target |
-| -------- | ------ |
-| Deployment frequency | On-demand (≥ daily for shared services) |
-| Change lead time | < 1 day (commit → prod) |
-| Change failure rate | < 15% (aim ~5%) |
+| DORA key                   | Target                                       |
+| -------------------------- | -------------------------------------------- |
+| Deployment frequency       | On-demand (≥ daily for shared services)      |
+| Change lead time           | < 1 day (commit → prod)                      |
+| Change failure rate        | < 15% (aim ~5%)                              |
 | Failed-deployment recovery | < 1 hour (aligns with P0/P1 response, §31.9) |
-| Rework rate (2024 5th key) | Trending down QoQ |
+| Rework rate (2024 5th key) | Trending down QoQ                            |
 
 No manual deploy paths; feature flags are the default mechanism for risky rollouts. DORA metrics
 are emitted to the SLO Burn Rate dashboard family (§31.8).
@@ -484,4 +484,6 @@ are emitted to the SLO Burn Rate dashboard family (§31.8).
 
 ---
 
-> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md) · [08-enterprise-deployment](08-enterprise-deployment.md) · [15-event-driven-workflow](15-event-driven-workflow.md) · [19-notification-architecture](19-notification-architecture.md) · [30-testing-strategy](30-testing-strategy.md)
+> 📎 See also: [04-tech-stack](04-tech-stack.md) · [05-security-compliance](05-security-compliance.md)
+> · [08-enterprise-deployment](08-enterprise-deployment.md) · [15-event-driven-workflow](15-event-driven-workflow.md)
+> · [19-notification-architecture](19-notification-architecture.md) · [30-testing-strategy](30-testing-strategy.md)

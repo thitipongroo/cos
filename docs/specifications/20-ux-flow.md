@@ -528,17 +528,17 @@ Native mobile maps WCAG intent to OS a11y APIs: iOS **VoiceOver** / Dynamic Type
 
 ### Required success criteria (the ones that bite for a field app)
 
-| WCAG 2.2 SC | Requirement (as applied) |
-| ----------- | ------------------------ |
-| 1.4.3 Contrast (Minimum) | Text contrast ≥ **4.5:1** (≥ 3:1 large text). Verify the §32.7 design tokens against a sunlight-readable floor. |
-| 1.4.11 Non-text Contrast | UI components / state indicators (input borders, focus, chips) ≥ **3:1**. |
-| 1.4.4 Resize Text | Layout must not break at **200% font scale**. |
-| 2.5.8 Target Size (Minimum) | Interactive targets ≥ **24×24 px** — already exceeded: buttons min 44px (see `32-implementation-specifications §32.7` / master §TOUCH TARGET STANDARDS). Keep this. |
-| 2.5.7 Dragging Movements | Any drag (reorder, swipe-to-sync) has a single-pointer tap alternative. |
-| 2.4.7 / 2.4.11 Focus Visible + Appearance | Visible, non-obscured keyboard/switch focus (web); logical focus order (RN). |
-| 3.3.7 Redundant Entry | Don't re-ask data already provided in the same flow. |
-| 3.3.8 Accessible Authentication | OTP login requires no cognitive test / no inaccessible CAPTCHA. |
-| 4.1.2 Name/Role/Value | Every control exposes an accessible name + role + state. |
+| WCAG 2.2 SC                               | Requirement (as applied)                                                                                                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.4.3 Contrast (Minimum)                  | Text contrast ≥ **4.5:1** (≥ 3:1 large text). Verify the §32.7 design tokens against a sunlight-readable floor.                                                     |
+| 1.4.11 Non-text Contrast                  | UI components / state indicators (input borders, focus, chips) ≥ **3:1**.                                                                                           |
+| 1.4.4 Resize Text                         | Layout must not break at **200% font scale**.                                                                                                                       |
+| 2.5.8 Target Size (Minimum)               | Interactive targets ≥ **24×24 px** — already exceeded: buttons min 44px (see `32-implementation-specifications §32.7` / master §TOUCH TARGET STANDARDS). Keep this. |
+| 2.5.7 Dragging Movements                  | Any drag (reorder, swipe-to-sync) has a single-pointer tap alternative.                                                                                             |
+| 2.4.7 / 2.4.11 Focus Visible + Appearance | Visible, non-obscured keyboard/switch focus (web); logical focus order (RN).                                                                                        |
+| 3.3.7 Redundant Entry                     | Don't re-ask data already provided in the same flow.                                                                                                                |
+| 3.3.8 Accessible Authentication           | OTP login requires no cognitive test / no inaccessible CAPTCHA.                                                                                                     |
+| 4.1.2 Name/Role/Value                     | Every control exposes an accessible name + role + state.                                                                                                            |
 
 Non-negotiable for safety flows (incident / safety report): **color is never the only signal**
 (WCAG 1.4.1) — pair with icon + text; safety alerts must be announced by the screen reader.

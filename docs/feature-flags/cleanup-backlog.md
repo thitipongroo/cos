@@ -11,6 +11,7 @@
 ## How to use this file
 
 When a flag reaches 100% rollout:
+
 1. Engineer adds the flag to the **Scheduled for removal** table with the 30-day deadline
 2. Creates a cleanup ticket linked to this entry
 3. After code removal, moves the flag to the **Removed** table
@@ -23,34 +24,34 @@ its deadline has passed.
 
 ## Active flags (currently in rollout)
 
-| Flag key | Domain | Description | Current rollout % | Rollout started | Owner |
-|----------|--------|-------------|------------------|----------------|-------|
-| `s1.procurement.rfq-workflow` | Procurement | Full PR→RFQ→PO Temporal workflow | 0% | — | Engineering lead |
-| `s1.ai.report-generation` | AI Gateway | GPT-4o report generation endpoint | 0% | — | Engineering lead |
-| `s1.mobile.offline-sync-v2` | Mobile | WatermelonDB delta sync engine | 0% | — | Engineering lead |
-| `s1.finance.budget-alerts` | Finance | Budget exceeded push notifications | 0% | — | Engineering lead |
-| `s1.analytics.clickhouse-exec-dashboard` | Analytics | Executive ClickHouse dashboard | 0% | — | Engineering lead |
-| `s1.notifications.expo-push` | Notification | Expo push notification channel | 0% | — | Engineering lead |
-| `s1.knowledge-graph.neo4j-sync` | Graph | Neo4j kg-ingestion-worker sync | 0% | — | Engineering lead |
-| `s1.equipment.telemetry-ingest` | Equipment | TimescaleDB telemetry pipeline | 0% | — | Engineering lead |
-| `s1.workforce.overtime-calc` | Workforce | Thai overtime calculation engine | 0% | — | Engineering lead |
-| `s1.platform.enterprise-provisioning` | Platform | Enterprise tenant provisioning workflow | 0% | — | Engineering lead |
+| Flag key                                 | Domain       | Description                             | Current rollout % | Rollout started | Owner            |
+| ---------------------------------------- | ------------ | --------------------------------------- | ----------------- | --------------- | ---------------- |
+| `s1.procurement.rfq-workflow`            | Procurement  | Full PR→RFQ→PO Temporal workflow        | 0%                | —               | Engineering lead |
+| `s1.ai.report-generation`                | AI Gateway   | GPT-4o report generation endpoint       | 0%                | —               | Engineering lead |
+| `s1.mobile.offline-sync-v2`              | Mobile       | WatermelonDB delta sync engine          | 0%                | —               | Engineering lead |
+| `s1.finance.budget-alerts`               | Finance      | Budget exceeded push notifications      | 0%                | —               | Engineering lead |
+| `s1.analytics.clickhouse-exec-dashboard` | Analytics    | Executive ClickHouse dashboard          | 0%                | —               | Engineering lead |
+| `s1.notifications.expo-push`             | Notification | Expo push notification channel          | 0%                | —               | Engineering lead |
+| `s1.knowledge-graph.neo4j-sync`          | Graph        | Neo4j kg-ingestion-worker sync          | 0%                | —               | Engineering lead |
+| `s1.equipment.telemetry-ingest`          | Equipment    | TimescaleDB telemetry pipeline          | 0%                | —               | Engineering lead |
+| `s1.workforce.overtime-calc`             | Workforce    | Thai overtime calculation engine        | 0%                | —               | Engineering lead |
+| `s1.platform.enterprise-provisioning`    | Platform     | Enterprise tenant provisioning workflow | 0%                | —               | Engineering lead |
 
 ---
 
 ## Scheduled for removal (100% rollout reached — remove by deadline)
 
-| Flag key | 100% reached | Removal deadline | Cleanup ticket | Status |
-|----------|-------------|-----------------|----------------|--------|
-| _(none yet)_ | — | — | — | — |
+| Flag key     | 100% reached | Removal deadline | Cleanup ticket | Status |
+| ------------ | ------------ | ---------------- | -------------- | ------ |
+| _(none yet)_ | —            | —                | —              | —      |
 
 ---
 
 ## Removed flags (archived)
 
-| Flag key | Domain | Removed date | Removed in PR/commit |
-|----------|--------|-------------|---------------------|
-| _(none yet)_ | — | — | — |
+| Flag key     | Domain | Removed date | Removed in PR/commit |
+| ------------ | ------ | ------------ | -------------------- |
+| _(none yet)_ | —      | —            | —                    |
 
 ---
 
@@ -82,9 +83,9 @@ Per QM-15, these change types **must** be flagged before production:
 
 ## Review schedule
 
-| Trigger | Action |
-|---------|--------|
-| Weekly (Monday) | Engineering lead reviews Scheduled table; creates cleanup PRs for overdue flags |
-| New feature → production | Add row to Active flags table |
-| Flag reaches 100% | Move to Scheduled table; create cleanup ticket |
-| Code removal merged | Move to Removed table |
+| Trigger                  | Action                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| Weekly (Monday)          | Engineering lead reviews Scheduled table; creates cleanup PRs for overdue flags |
+| New feature → production | Add row to Active flags table                                                   |
+| Flag reaches 100%        | Move to Scheduled table; create cleanup ticket                                  |
+| Code removal merged      | Move to Removed table                                                           |

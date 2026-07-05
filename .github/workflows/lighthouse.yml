@@ -1,0 +1,39 @@
+name: Lighthouse CI
+
+# Spec §30.9: Lighthouse CI runs on every apps/web PR under a throttled mobile profile.
+# Gate (blocks merge): LCP ≤ 2.5s · CLS ≤ 0.1 · TBT ≤ 200ms · JS bundle ≤ 250KB per route
+# (budget numbers ratified by product owner 2026-07-04; assertions in apps/web/.lighthouserc.json).
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/lighthouse.yml'
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  lighthouse:
+    name: Lighthouse (Core Web Vitals + bundle budget)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build web app
+        run: pnpm --filter @cos/web build
+      - name: Run Lighthouse CI
+        working-directory: apps/web
+        run: pnpm exec lhci autorun
+      - name: Upload Lighthouse reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report-${{ github.run_id }}
+          path: apps/web/.lighthouseci/

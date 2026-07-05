@@ -58,7 +58,11 @@ describe('secret-cipher', () => {
   it('throws on a tampered ciphertext (GCM auth tag mismatch)', () => {
     process.env['APP_SECRET_ENCRYPTION_KEY'] = KEY_HEX;
     const [iv, tag, data] = encryptSecret('SEED').split(':');
-    const tampered = `${iv}:${tag}:${data!.slice(0, -2)}00`;
+    // Flip the last hex digit so the ciphertext is GUARANTEED to differ — overwriting with a
+    // fixed '00' was a no-op whenever the random-IV ciphertext already ended in 00 (~1/256 runs).
+    const lastChar = data!.slice(-1);
+    const flipped = lastChar === '0' ? '1' : '0';
+    const tampered = `${iv}:${tag}:${data!.slice(0, -1)}${flipped}`;
     expect(() => decryptSecret(tampered)).toThrow();
   });
 });

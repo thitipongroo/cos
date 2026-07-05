@@ -3,8 +3,8 @@
 // { items, nextCursor }) refreshes local_projects when online; the pickers read local_projects.
 
 import { get } from './client';
-import { database } from '../db/database';
-import Project from '../db/models/Project';
+import { db, newLocalId } from '../db/database';
+import { localProjects } from '../db/schema';
 
 interface ProjectRow {
   project_id: string;
@@ -21,19 +21,16 @@ interface ListProjectsResponse {
 /** Best-effort refresh of the local project cache. Throws when offline — callers ignore. */
 export async function refreshProjectsCache(): Promise<void> {
   const res = await get<ListProjectsResponse>('/projects');
-  await database.write(async () => {
-    const collection = database.get<Project>('local_projects');
-    const existing = await collection.query().fetch();
-    await Promise.all(existing.map((p) => p.destroyPermanently()));
-    await Promise.all(
-      res.items.map((row) =>
-        collection.create((r) => {
-          r.projectId = row.project_id;
-          r.projectCode = row.project_code;
-          r.projectName = row.project_name;
-          r.status = row.status;
-        }),
-      ),
+  await db.delete(localProjects);
+  if (res.items.length > 0) {
+    await db.insert(localProjects).values(
+      res.items.map((row) => ({
+        id: newLocalId(),
+        projectId: row.project_id,
+        projectCode: row.project_code,
+        projectName: row.project_name,
+        status: row.status,
+      })),
     );
-  });
+  }
 }

@@ -738,7 +738,8 @@ Constraints:
 
 ## OFFLINE SYNC ENGINE COMMAND
 
-> 📎 **See also:** `00_master_construction_os.md §Phase 10 — MOBILE OFFLINE ENGINE` — authoritative WatermelonDB 0.28.x + ExpoSQLiteAdapter spec and conflict resolution strategies
+> 📎 **See also:** `00_master_construction_os.md §Phase 10 — MOBILE OFFLINE ENGINE` — authoritative offline-DB spec
+> (Drizzle + expo-sqlite, spec 17 §17.10 / ADR-048) and conflict resolution strategies
 
 ```text
 Build offline-first synchronization engine.
@@ -748,10 +749,10 @@ Platform decision (confirmed by product owner — see 00_master_construction_os.
   THREE PLATFORMS — each with its own offline storage:
 
   Target A: React Native (smartphone — iOS/Android)
-    Local storage: WatermelonDB 0.28.x with ExpoSQLiteAdapter
-                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
+    Local storage: Drizzle ORM on expo-sqlite (~56.0.5, WAL, enableChangeListener)
                    — primary ORM for ALL main business entities (reports, PRs, POs, etc.)
-                   expo-sqlite directly — used ONLY for sync_queue infrastructure table
+                   (spec 17 §17.10 / ADR-048; replaced WatermelonDB 2026-07-04)
+                   sync_queue keeps its own expo-sqlite handle (unchanged)
     NOT IndexedDB — IndexedDB is a browser API, unavailable in React Native
     Background sync: expo-background-fetch + expo-task-manager
     Users: ALL roles on smartphone
@@ -772,8 +773,8 @@ Requirements (apply to Target A and Target B):
 
 Generate:
 
-- React Native sync engine (WatermelonDB 0.28.x via ExpoSQLiteAdapter + SyncManager class;
-                            expo-sqlite directly for sync_queue table only)
+- React Native sync engine (Drizzle/expo-sqlite local tables + SyncManager class;
+                            sync_queue on its own expo-sqlite handle)
 - Web App sync engine (IndexedDB + Service Worker queue via Serwist/@serwist/turbopack)
 - shared sync API endpoints (same REST API, shared server-side)
 - merge strategies per entity type

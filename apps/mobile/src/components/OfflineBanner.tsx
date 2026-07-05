@@ -3,16 +3,18 @@
 
 import { View, Text, StyleSheet } from 'react-native';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useT } from '../i18n';
 import { colors, fontFamily } from '../theme/tokens';
 
 export function OfflineBanner() {
   const { isOnline } = useNetworkStatus();
+  const t = useT();
 
   if (isOnline) return null;
 
   return (
     <View style={styles.banner} testID="offline-banner">
-      <Text style={styles.text}>Offline — changes will sync when reconnected</Text>
+      <Text style={styles.text}>{t('sync.offlineBanner.message')}</Text>
     </View>
   );
 }

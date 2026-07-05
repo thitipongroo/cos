@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { get } from '../api/client';
 import { StatusChip } from './StatusChip';
+import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
 
 interface FetchListScreenProps<T> {
@@ -23,10 +24,11 @@ export function FetchListScreen<T>({
   testID,
   itemTestID,
   mapItem,
-  emptyText = 'Nothing to show',
+  emptyText,
 }: FetchListScreenProps<T>) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
+  const t = useT();
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -51,7 +53,7 @@ export function FetchListScreen<T>({
         data={rows}
         keyExtractor={(row, index) => mapItem(row).key || String(index)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>{emptyText}</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{emptyText ?? t('common.list.empty')}</Text>}
         renderItem={({ item }) => {
           const m = mapItem(item);
           return (

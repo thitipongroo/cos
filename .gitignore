@@ -86,3 +86,7 @@ pacts
 # cos-audit (content is git-ignored, directory committed)
 cos-audit/*
 !cos-audit/.gitkeep
+
+# Stryker mutation testing artifacts (QM-1)
+.stryker-tmp/
+reports/mutation/

@@ -25,6 +25,8 @@
       "@cos/validation/*": ["../packages/@cos/validation/src/*"],
       "@cos/database": ["../packages/@cos/database/src/index.ts"],
       "@cos/database/*": ["../packages/@cos/database/src/*"],
+      "@cos/test-utils": ["../packages/@cos/test-utils/src/index.ts"],
+      "@cos/test-utils/*": ["../packages/@cos/test-utils/src/*"],
       "@cos/extension-points": ["../packages/@cos/extension-points/src/index.ts"],
       "@cos/extension-points/*": ["../packages/@cos/extension-points/src/*"]
     }

@@ -4,9 +4,10 @@
 
 import { useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import Project from '../db/models/Project';
+import type { Project } from '../db/database';
 import { useCollection } from '../hooks/useCollection';
 import { refreshProjectsCache } from '../api/projects';
+import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
 
 interface ProjectPickerProps {
@@ -16,6 +17,7 @@ interface ProjectPickerProps {
 
 export function ProjectPicker({ selectedId, onSelect }: ProjectPickerProps) {
   const projects = useCollection<Project>('local_projects');
+  const t = useT();
 
   useEffect(() => {
     refreshProjectsCache().catch(() => {
@@ -25,10 +27,10 @@ export function ProjectPicker({ selectedId, onSelect }: ProjectPickerProps) {
 
   return (
     <View testID="project-picker" style={styles.container}>
-      <Text style={styles.label}>Project</Text>
+      <Text style={styles.label}>{t('common.project.label')}</Text>
       {projects.length === 0 ? (
         <Text testID="project-picker-empty" style={styles.empty}>
-          No projects cached — connect once to load
+          {t('common.project.empty')}
         </Text>
       ) : (
         <ScrollView

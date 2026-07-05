@@ -35,7 +35,7 @@ Upgrade apps/web to Next.js 16 + React 19, keeping NextAuth v4 (4.24.14 declares
 - **middleware.ts:** import then re-export the NextAuth middleware so the default is a resolvable
   function value (the `proxy` rename is deferred; it is a warning, not an error).
 - **Async request API:** migrate dynamic pages with the official `@next/codemod
-  next-async-request-api` (params/searchParams awaited).
+next-async-request-api` (params/searchParams awaited).
 - **recharts** 2->3 (React 19 compatible).
 - Allow the `sharp` build script (Next 16 image optimisation native dep).
 - Clear the now-unblocked next@14 CVE-ignores.

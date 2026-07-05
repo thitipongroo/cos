@@ -252,17 +252,17 @@ Well-Architected (Operational Excellence).
 Reviewed at every stage gate and monthly. Each phase references the risk ids relevant to it.
 Scoring: Likelihood {Low, Med, High} × Impact {Low, Med, High, Critical}. Owner = accountable role.
 
-| ID | Risk | L × I | Owner | Mitigation | Early-warning metric |
-| -- | ---- | ----- | ----- | ---------- | -------------------- |
-| **R-01** | **3rd-party mobile-lib fragility** — WatermelonDB 0.28 + @morrowdigital plugin + RN 0.85 required a 7-layer native integration fix (JDK, prebuild, kotlin, CMake pnpm-path, JSIModulePackage, babel). Community plugins lag the SDK. | High × High | Mobile Lead | Durable fixes committed (pnpm patch `patches/@nozbe__watermelondb`, config plugin `plugins/withWatermelonAndroidJSIFix.js`); spike op-sqlite / Drizzle / Expo SQLite as an exit; pin+verify deps (R-07). | Mobile CI red on `expo prebuild` / native build; upstream plugin unmaintained > 2 SDKs |
-| **R-02** | **Cross-tenant data leak** — RLS misconfiguration exposes one tenant's data to another. Catastrophic + PDPA-fineable. | Low × Critical | Security Lead | RLS mandatory on every domain table (`07 §7.7`); `app.current_tenant_id` set before every query; isolation tests in CI; STRIDE on every new surface (`05 §5.9`). | Any query without tenant filter in review; isolation-test failure |
-| **R-03** | **PDPA non-compliance** — Thai PDPA actively enforced (8 fines / THB 21.5M since Aug 2025); missing DPO / 72h breach flow / erasure. | Med × High | DPO / Legal | PDPA hard requirements (`05 §5.3`): 72h breach workflow, DPO, subject-rights portal, RoPA, data residency `ap-southeast-7`; annual PDPA audit. | Breach-response drill > 72h; RoPA stale; residency exception logged |
-| **R-04** | **Offline sync conflict / data loss** — the sync engine (SyncManager, ConflictHandler, delta pull/push, PhotoUploadQueue) is the highest-value + most bug-prone logic. | Med × High | Mobile Lead | 3 conflict-resolution strategies (Phase 10); sync success > 98% SLO; unit + Detox e2e for conflict cases; idempotent delta cursor (`17`). | Sync success < 98%; rising unresolved-conflict count |
-| **R-05** | **Adoption failure** — field workers don't submit reports; platform becomes shelfware. | Med × High | Product Owner | Measurable adoption gates (`context/01`: report < 2 min, > 70% submission, > 5 sessions/wk); change-management (`context/03`). | Daily submission rate < 70% at 30/60/90 days |
-| **R-06** | **Premature scaling / over-engineering** — building marketplace/ML/"industry infrastructure" before product-market fit. | Med × Med | Eng Lead | Monolith-first + "extract with evidence" (`context/01`); roadmap governance splits committed (01–04) from vision (05–11) (below); no hyperscale optimization before 10k DAU (`18 §18.4`). | Service split without ownership+scaling evidence; effort spent on 05–11 pre-PMF |
-| **R-07** | **SDK / dependency churn & EOL** — Expo/RN upgrade treadmill; transitive CVEs. | High × Med | Eng Lead | Pin to stable SDK; scheduled upgrade cadence; SBOM (CycloneDX) + `pnpm audit` gate in CI; supply-chain per OWASP 2025 A03 (`05 §5.10`). | New high/critical CVE in SBOM; SDK N-2 unsupported |
-| **R-08** | **Ecosystem interop execution** — the interop standard is **decided** (INT-004: **IFC 4.3 (ISO 16739-1:2023) + buildingSMART Digital Framework**, `33 §Industry Standardization Alignment`, resolved 2026-06-10); residual risk is emitting standards-compliant output + tracking IFC 5 / ISO 19650 finalization (~2027). | Low × Med | Architecture | Conform ecosystem output to IFC 4.3 + CORENET-X (Singapore); monitor IFC 5 alpha / ISO 19650 DIS. | IFC export fails buildingSMART conformance; standard finalization missed |
-| **R-09** | **Event-delivery / data-consistency loss** — Kafka backpressure or consumer lag drops operational events. | Med × High | Platform Lead | Event delivery > 99.9% SLO; consumer-lag SLO + alerts (`31 §31.6`); DLQ + replay; outbox pattern. | Consumer lag > 5,000 / 2 min; DLQ growth |
+| ID       | Risk                                                                                                                                                                                                                                                                                                                      | L × I          | Owner         | Mitigation                                                                                                                                                                                                                                                                                                                                    | Early-warning metric                                                                   |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **R-01** | **3rd-party mobile-lib fragility** — WatermelonDB 0.28 + @morrowdigital plugin + RN 0.85 required a 7-layer native integration fix (JDK, prebuild, kotlin, CMake pnpm-path, JSIModulePackage, babel). Community plugins lag the SDK.                                                                                      | High × High    | Mobile Lead   | **Mitigated at source (2026-07-05):** WatermelonDB replaced by Drizzle + expo-sqlite (first-party) — spec `17 §17.10` / ADR-048; CMake patch, config plugins, simdjson pin and decorators/loose babel removed; G1/G2 measured within absolute envelope. Residual: `patches/react-native` (#54732) until upstream fix; pin+verify deps (R-07). | Mobile CI red on `expo prebuild` / native build; upstream plugin unmaintained > 2 SDKs |
+| **R-02** | **Cross-tenant data leak** — RLS misconfiguration exposes one tenant's data to another. Catastrophic + PDPA-fineable.                                                                                                                                                                                                     | Low × Critical | Security Lead | RLS mandatory on every domain table (`07 §7.7`); `app.current_tenant_id` set before every query; isolation tests in CI; STRIDE on every new surface (`05 §5.9`).                                                                                                                                                                              | Any query without tenant filter in review; isolation-test failure                      |
+| **R-03** | **PDPA non-compliance** — Thai PDPA actively enforced (8 fines / THB 21.5M since Aug 2025); missing DPO / 72h breach flow / erasure.                                                                                                                                                                                      | Med × High     | DPO / Legal   | PDPA hard requirements (`05 §5.3`): 72h breach workflow, DPO, subject-rights portal, RoPA, data residency `ap-southeast-7`; annual PDPA audit.                                                                                                                                                                                                | Breach-response drill > 72h; RoPA stale; residency exception logged                    |
+| **R-04** | **Offline sync conflict / data loss** — the sync engine (SyncManager, ConflictHandler, delta pull/push, PhotoUploadQueue) is the highest-value + most bug-prone logic.                                                                                                                                                    | Med × High     | Mobile Lead   | 3 conflict-resolution strategies (Phase 10); sync success > 98% SLO; unit + Detox e2e for conflict cases; idempotent delta cursor (`17`).                                                                                                                                                                                                     | Sync success < 98%; rising unresolved-conflict count                                   |
+| **R-05** | **Adoption failure** — field workers don't submit reports; platform becomes shelfware.                                                                                                                                                                                                                                    | Med × High     | Product Owner | Measurable adoption gates (`context/01`: report < 2 min, > 70% submission, > 5 sessions/wk); change-management (`context/03`).                                                                                                                                                                                                                | Daily submission rate < 70% at 30/60/90 days                                           |
+| **R-06** | **Premature scaling / over-engineering** — building marketplace/ML/"industry infrastructure" before product-market fit.                                                                                                                                                                                                   | Med × Med      | Eng Lead      | Monolith-first + "extract with evidence" (`context/01`); roadmap governance splits committed (01–04) from vision (05–11) (below); no hyperscale optimization before 10k DAU (`18 §18.4`).                                                                                                                                                     | Service split without ownership+scaling evidence; effort spent on 05–11 pre-PMF        |
+| **R-07** | **SDK / dependency churn & EOL** — Expo/RN upgrade treadmill; transitive CVEs.                                                                                                                                                                                                                                            | High × Med     | Eng Lead      | Pin to stable SDK; scheduled upgrade cadence; SBOM (CycloneDX) + `pnpm audit` gate in CI; supply-chain per OWASP 2025 A03 (`05 §5.10`).                                                                                                                                                                                                       | New high/critical CVE in SBOM; SDK N-2 unsupported                                     |
+| **R-08** | **Ecosystem interop execution** — the interop standard is **decided** (INT-004: **IFC 4.3 (ISO 16739-1:2023) + buildingSMART Digital Framework**, `33 §Industry Standardization Alignment`, resolved 2026-06-10); residual risk is emitting standards-compliant output + tracking IFC 5 / ISO 19650 finalization (~2027). | Low × Med      | Architecture  | Conform ecosystem output to IFC 4.3 + CORENET-X (Singapore); monitor IFC 5 alpha / ISO 19650 DIS.                                                                                                                                                                                                                                             | IFC export fails buildingSMART conformance; standard finalization missed               |
+| **R-09** | **Event-delivery / data-consistency loss** — Kafka backpressure or consumer lag drops operational events.                                                                                                                                                                                                                 | Med × High     | Platform Lead | Event delivery > 99.9% SLO; consumer-lag SLO + alerts (`31 §31.6`); DLQ + replay; outbox pattern.                                                                                                                                                                                                                                             | Consumer lag > 5,000 / 2 min; DLQ growth                                               |
 
 Review cadence: per stage gate (re-score all; `High × Critical` blocks the gate); monthly (early-warning
 metrics alongside the SLO/DORA review); on any new dependency / external surface (add or re-score before shipping).
@@ -272,12 +272,12 @@ metrics alongside the SLO/DORA review); on any new dependency / external surface
 The roadmap files escalate from an executable MVP to "civilization-scale" intent. A world-class roadmap
 must not blur **what is committed** with **what is aspirational**. Horizon classification (authoritative):
 
-| Horizon | Files | Status | Planning rigor |
-| ------- | ----- | ------ | -------------- |
-| **NOW** (0–6 mo) | `context/01` (Priority 0–5) + `context/04 Phase 0` | **Committed** | Full phase template + metrics + effort |
-| **NEXT** (6–18 mo) | `context/02` · `context/03` · `context/04 Phase 1–6` | **Committed** | Full phase template + inherited gates |
-| **LATER** (18 mo+) | `context/04 Phase 7–11` · `context/05` · `context/06` | **Planned — not committed** | Objective + dependencies + AWAITING_DECISION; metrics on entry |
-| **VISION** (multi-year) | `context/07`–`context/11` | **Directional vision — NOT a commitment** | Intent + open decisions only; no effort/date commitments |
+| Horizon                 | Files                                                 | Status                                    | Planning rigor                                                 |
+| ----------------------- | ----------------------------------------------------- | ----------------------------------------- | -------------------------------------------------------------- |
+| **NOW** (0–6 mo)        | `context/01` (Priority 0–5) + `context/04 Phase 0`    | **Committed**                             | Full phase template + metrics + effort                         |
+| **NEXT** (6–18 mo)      | `context/02` · `context/03` · `context/04 Phase 1–6`  | **Committed**                             | Full phase template + inherited gates                          |
+| **LATER** (18 mo+)      | `context/04 Phase 7–11` · `context/05` · `context/06` | **Planned — not committed**               | Objective + dependencies + AWAITING_DECISION; metrics on entry |
+| **VISION** (multi-year) | `context/07`–`context/11`                             | **Directional vision — NOT a commitment** | Intent + open decisions only; no effort/date commitments       |
 
 **Rule:** nothing in LATER/VISION may pull engineering effort from NOW/NEXT without an explicit
 product-owner decision. Terms like "civilization-scale / planetary / background civilization" describe
@@ -305,33 +305,33 @@ Basis: deliverable scope (Generate-item count), integration surface, and known b
 Ph10 native-mobile complexity observed directly). Scale (per `context/04`): S ≈ 1–2 wk · M ≈ 2–4 wk /
 2–3 eng · L ≈ 4–8 wk / 3–5 eng · XL ≈ 8–20 wk / 4–6 eng.
 
-| Phase | Est | Basis for estimate |
-| ----- | --- | ------------------ |
-| 1 Foundation Repository | **L** | monorepo + CI + 9 packages + Docker Compose + 100/100 coverage config — broad but standard scaffolding |
-| 2 Auth + Tenant System | **XL** | Keycloak OIDC + RLS + RBAC/ABAC + 2 auth paths + tenant isolation — largest, security-critical foundation |
-| 3 Project Service | **M** | core domain CRUD + events + RLS |
-| 4 BOQ Service | **M** | BOQ engine + financial-precision calculations |
-| 5 Procurement Service | **L** | PR → RFQ → PO state machine + events + vendor flows (large scope) |
-| 6 Site Operations | **L** | site reporting + checklists + photo intake (large scope) |
-| 7 Finance Service | **L** | billing / AR / payments + financial precision |
-| 8 Event-driven Infrastructure | **L** | Kafka + outbox + DLQ + schema registry; foundational (blocks Ph3–7) |
-| 9 File + Document System | **M** | tenant-scoped storage + signed URLs + antivirus + OCR intake |
-| 10 Mobile Offline Engine | **XL** | offline-first + WatermelonDB sync + 3 conflict strategies + Detox + native builds — hardest (R-01/R-04, observed) |
-| 11 AI Foundation | **L** | RAG + LLM Gateway + pgvector + hybrid search + reranking — novel |
-| 12 AI Report Assistant | **M** | builds on Ph11 gateway; report generation + guardrail |
-| 13 Knowledge Graph | **M** | KG ingestion + normalization |
-| 14 Analytics + Dashboard | **M** | ClickHouse dashboards + queries |
-| 15 Observability | **L** | full OTel + Prometheus + Grafana + Loki + Jaeger + SLO across all services |
-| 16 Security | **L** | STRIDE + SBOM + WAF + pentest + hardening |
-| 17 DevOps + Deployment | **L** | CI/CD + multi-region + GitOps (ArgoCD) + Helm |
-| 18 Testing | **L** | full suite + mutation ≥70% + load + e2e across all services |
-| 19 Final Production Readiness | **M** | 39-check gate — verification/gating, little net-new build |
-| 20 Notification Service | **M** | service + SSE + channels + escalation |
-| 21 Equipment Service | **M** | domain CRUD + RLS |
-| 22 Workforce Service | **M** | domain CRUD + RLS |
-| 23 MLOps Pipeline | **L** | MLflow + Feast + Evidently — several new infra components |
-| 24 Digital Twin | **L** | IoT (EMQX) ingestion + twin — novel domain |
-| 25 Enterprise Provisioning | **L** | dedicated-DB per tenant + SSO/SAML + Temporal provisioning workflow (large scope) |
+| Phase                         | Est    | Basis for estimate                                                                                                                |
+| ----------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Foundation Repository       | **L**  | monorepo + CI + 9 packages + Docker Compose + 100/100 coverage config — broad but standard scaffolding                            |
+| 2 Auth + Tenant System        | **XL** | Keycloak OIDC + RLS + RBAC/ABAC + 2 auth paths + tenant isolation — largest, security-critical foundation                         |
+| 3 Project Service             | **M**  | core domain CRUD + events + RLS                                                                                                   |
+| 4 BOQ Service                 | **M**  | BOQ engine + financial-precision calculations                                                                                     |
+| 5 Procurement Service         | **L**  | PR → RFQ → PO state machine + events + vendor flows (large scope)                                                                 |
+| 6 Site Operations             | **L**  | site reporting + checklists + photo intake (large scope)                                                                          |
+| 7 Finance Service             | **L**  | billing / AR / payments + financial precision                                                                                     |
+| 8 Event-driven Infrastructure | **L**  | Kafka + outbox + DLQ + schema registry; foundational (blocks Ph3–7)                                                               |
+| 9 File + Document System      | **M**  | tenant-scoped storage + signed URLs + antivirus + OCR intake                                                                      |
+| 10 Mobile Offline Engine      | **XL** | offline-first + Drizzle/expo-sqlite sync (§17.10) + 3 conflict strategies + Detox + native builds — hardest (R-01/R-04, observed) |
+| 11 AI Foundation              | **L**  | RAG + LLM Gateway + pgvector + hybrid search + reranking — novel                                                                  |
+| 12 AI Report Assistant        | **M**  | builds on Ph11 gateway; report generation + guardrail                                                                             |
+| 13 Knowledge Graph            | **M**  | KG ingestion + normalization                                                                                                      |
+| 14 Analytics + Dashboard      | **M**  | ClickHouse dashboards + queries                                                                                                   |
+| 15 Observability              | **L**  | full OTel + Prometheus + Grafana + Loki + Jaeger + SLO across all services                                                        |
+| 16 Security                   | **L**  | STRIDE + SBOM + WAF + pentest + hardening                                                                                         |
+| 17 DevOps + Deployment        | **L**  | CI/CD + multi-region + GitOps (ArgoCD) + Helm                                                                                     |
+| 18 Testing                    | **L**  | full suite + mutation ≥70% + load + e2e across all services                                                                       |
+| 19 Final Production Readiness | **M**  | 39-check gate — verification/gating, little net-new build                                                                         |
+| 20 Notification Service       | **M**  | service + SSE + channels + escalation                                                                                             |
+| 21 Equipment Service          | **M**  | domain CRUD + RLS                                                                                                                 |
+| 22 Workforce Service          | **M**  | domain CRUD + RLS                                                                                                                 |
+| 23 MLOps Pipeline             | **L**  | MLflow + Feast + Evidently — several new infra components                                                                         |
+| 24 Digital Twin               | **L**  | IoT (EMQX) ingestion + twin — novel domain                                                                                        |
+| 25 Enterprise Provisioning    | **L**  | dedicated-DB per tenant + SSO/SAML + Temporal provisioning workflow (large scope)                                                 |
 
 Distribution: **XL** ×2 (Ph2, Ph10) · **L** ×13 · **M** ×10. No phase estimated **S** — every phase
 carries real integration surface.
@@ -1439,7 +1439,7 @@ Generate:
 
 - Docker Compose `apps` profile (ADR-036): optional tier running the app services (backend,
   file-service, ai-gateway/embedding/ocr, analytics/kg workers) in containers —
-  `docker compose --profile full --profile apps up` / `make up-apps`. Day-to-day dev still uses
+  `docker compose --profile full --profile apps up` / `make docker-apps-up-full`. Day-to-day dev still uses
   `make dev` (turbo on host); the infra-only default is unchanged.
 
 - Istio local dev: skip Istio for Docker Compose (use plain networking locally)
@@ -1693,6 +1693,9 @@ Generate:
                                      PATCH /api/v1/users/{userId}/role          — change role
                                      PATCH /api/v1/users/{userId}/deactivate    — deactivate user
                                      GET  /api/v1/admin/tenants                 — list all tenants (SYSTEM_ADMIN, §20.4.1)
+                                     POST /api/v1/admin/tenants                 — create tenant (SYSTEM_ADMIN, §20.4.2)
+                                     PATCH /api/v1/admin/tenants/{id}/dedicated-db — attach dedicated DB → EnterpriseProvisioningWorkflow (SYSTEM_ADMIN, §20.4.3)
+                                     PATCH /api/v1/admin/tenants/{id}/deactivate   — deactivate tenant (SYSTEM_ADMIN, §20.4.5)
                                      GET  /api/v1/tenant/settings               — get tenant settings (TENANT_ADMIN, ADR-028)
                                      PATCH /api/v1/tenant/settings              — update tenant settings (variance/retention/LINE/notif)
 - Refresh token rotation flow
@@ -1846,6 +1849,48 @@ Entities (PostgreSQL — schema: projects):
     document_type   VARCHAR(100)
     uploaded_by     UUID NOT NULL
     uploaded_at     TIMESTAMPTZ DEFAULT now()
+
+  — Physical / spatial hierarchy (source: spec 10 §10.2 / 11 §11.2; backs task room-assignment,
+    offline read-only cache per 17 §17.4; mirrored as KG nodes in the Neo4j graph, Phase 13):
+  buildings:
+    building_id     UUID PK DEFAULT gen_random_uuid()
+    project_id      UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    name            VARCHAR(255) NOT NULL
+    type            VARCHAR(100)
+    total_floors    INTEGER
+    status          VARCHAR(50)
+    INDEX: (tenant_id, project_id)
+  floors:
+    floor_id        UUID PK DEFAULT gen_random_uuid()
+    building_id     UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    floor_number    INTEGER NOT NULL
+    gross_area_sqm  DECIMAL(12,2)
+  rooms:
+    room_id         UUID PK DEFAULT gen_random_uuid()
+    floor_id        UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    room_number     VARCHAR(50) NOT NULL
+    room_type       VARCHAR(100)
+    area_sqm        DECIMAL(12,2)
+  structures:
+    structure_id    UUID PK DEFAULT gen_random_uuid()
+    building_id     UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    structure_type  ENUM('column','beam','slab','wall') NOT NULL
+    material_type   VARCHAR(100)
+
+  — Asset / handover domain (source: spec 11 §11.2; one of the 9 business domains, `01`):
+  assets:
+    asset_id           UUID PK DEFAULT gen_random_uuid()
+    project_id         UUID FK NOT NULL
+    tenant_id          UUID NOT NULL
+    handover_date      DATE
+    warranty_expiry    DATE
+    maintenance_status VARCHAR(50)
+    INDEX: (tenant_id, project_id)
+  (tasks reference floor_id / room_id nullable FKs for room-assignment — LOCATED_IN in the KG)
 
 APIs:
   POST   /api/v1/projects                    — create (DRAFT status)
@@ -2952,10 +2997,9 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Users:         ALL roles
     Device:        iOS/Android smartphone — ไม่รองรับ tablet browser
     Connectivity:  offline-first, sync เมื่อ online
-    Local Storage: WatermelonDB 0.28.x with custom ExpoSQLiteAdapter
-                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
-                   NOT plain expo-sqlite — WatermelonDB provides observable queries,
-                   lazy loading, and batch writes required for offline construction data
+    Local Storage: Drizzle ORM on expo-sqlite (~56.0.5, WAL mode, enableChangeListener)
+                   — observable reads via useLiveQuery; versioned runtime DDL
+                   (spec 17 §17.10 / ADR-048; replaced WatermelonDB 2026-07-04)
 
   Target B: Web App (Next.js + Serwist) — tablet/laptop browser, online + offline
     Users:         ALL roles
@@ -3033,16 +3077,14 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     Framework:      React Native + Expo (managed workflow)
     Navigation:     Expo Router (file-based, role-aware routing)
     State:          Zustand + React Query
-    Local DB:       WatermelonDB 0.28.x with custom ExpoSQLiteAdapter
-                   (expo-sqlite ~56.0.5 underneath, WAL mode enabled)
-                   sync_queue infrastructure uses expo-sqlite directly (no WatermelonDB)
+    Local DB:       Drizzle ORM on expo-sqlite (~56.0.5, WAL, enableChangeListener for
+                   useLiveQuery) — spec 17 §17.10 / ADR-048
+                   sync_queue infrastructure uses its own expo-sqlite handle (unchanged)
     Media cache:    expo-file-system for offline photo queue
     Background sync: expo-background-fetch + expo-task-manager
     Network detect: @react-native-community/netinfo
-    Native build:   WatermelonDB JSI ⇒ custom dev-client REQUIRED (Expo Go cannot load it).
-                   @morrowdigital/watermelondb-expo-plugin@^2.3.3 (SDK 56; @skam22 fork abandoned at SDK 51) + expo-build-properties
-                   (Android kotlin 1.8.10 / compileSdk 33; iOS simdjson pod) + babel
-                   @babel/plugin-proposal-decorators(legacy) for @field models; add @nozbe/simdjson@3.9.4
+    Native build:   no DB-related native wiring (expo-sqlite is first-party); dev client via
+                   expo run:ios/android
                    as a direct dep so pnpm exposes node_modules/@nozbe/simdjson for the pod path.
                    app.json main = expo-router/entry; build via expo run:ios/android (or EAS).
     E2E offline:    Detox has NO connectivity API (setStatusBar is cosmetic; NetInfo jest mock is unit-only).
@@ -3068,8 +3110,18 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - DeltaSyncClient (Axios-based, handles auth token injection)
       [IMPLEMENTED: the wired delta-pull caller is `runDeltaSync()` (src/sync/runDeltaSync.ts),
       triggered from (app)/_layout on entry; it pulls GET /sync/delta for all six entity types
-      (task/site_report/issue/attendance/safety/material), upserts into local WatermelonDB, and
+      (task/site_report/issue/attendance/safety/material), upserts into the local Drizzle tables, and
       advances the syncStore.lastSyncAt cursor. See spec §17.9. The DeltaSyncClient class is superseded.]
+    - Server-side `platform.sync_tombstones` table (backs `GET /sync/delta` `deleted[]`; source spec `11 §11.1`):
+      tombstone_id UUID PK, tenant_id UUID NOT NULL (RLS), entity_type VARCHAR(64), entity_id UUID,
+      deleted_at TIMESTAMPTZ DEFAULT now(); INDEX (tenant_id, entity_type, deleted_at). Per-entity
+      delete→tombstone wiring is deferred (contract complete; `deleted[]` stays empty until each entity records here).
+    - Entity offline scope (enforce per spec `17 §17.4` — do NOT allow offline writes outside this list):
+        * Offline read/write: tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage
+        * Online-required (read-cache only, no offline write): POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles
+        * Read-only SWR cache: project master, BOQ lines, room/floor reference, drawings (size-limited), vendor directory
+    - Sync priority order on reconnect (spec `17 §17.6`): 1 safety incidents → 2 attendance → 3 inspections → 4 task progress → 5 site reports → 6 material → 7 equipment usage → 8 photo/media (deferred last)
+    - Data size limits (spec `17 §17.7`): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU eviction) · photo queue ≤ 100 (warn user at 80) · sync batch ≤ 500 records/cycle
     - BackgroundSyncTask (expo-task-manager registration)
     - PhotoUploadQueue with chunked upload support
     - React hooks: useSyncStatus(), usePendingCount(), useConflicts()
@@ -3079,7 +3131,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - Feature screens (role-based, FULL functional + offline + testIDs — per the Role-based
       navigation spec above). ADDED per product-owner ruling: the role screens were specified in
       the navigation section but were absent from this Generate list; the mobile feature UI is owned
-      by Phase 10. Wire each screen to the existing stores/hooks/WatermelonDB models/API:
+      by Phase 10. Wire each screen to the existing stores/hooks/Drizzle schema/API:
         * Auth: login (Path A phone + OTP) wired to authStore + role-based post-login routing
         * SITE_WORKER: home (KPI) · tasks (list + detail + progress input, offline) · report
           (daily report form) · issues (quick issue + list) · profile
@@ -3312,6 +3364,17 @@ Token Tracking Schema (PostgreSQL — schema: ai):
     latency_ms      INTEGER
     created_at      TIMESTAMPTZ DEFAULT now()
     INDEX: (tenant_id, created_at)
+
+Tenant SaaS-subscription billing (spec §26.1) — the tenant-billing model; distinct from Finance
+Service AR **client** billing (project→customer). `ai_usage_logs` above is the AI-usage half;
+the subscription-fee half:
+  - SMB (Shared SaaS): per-active-project base fee + per-active-user seat fee (above an included
+    minimum) — the two charges apply independently + simultaneously
+  - Mid-market: annual subscription + per-active-user
+  - Enterprise: annual contract + platform fee + usage-based AI
+  - AI tokens metered per-tenant from `ai_usage_logs` (SMB 500K/mo · Mid 5M/mo · Enterprise custom;
+    overage per 1K tokens); OCR per-page, voice per-minute; usage visible in the Tenant-Admin dashboard
+  - Rate values set at commercial launch, configurable per market (spec §26.1)
 
 Prompt Template Management:
   Storage: ai/prompts/ directory, Jinja2 .j2 files, version-controlled
@@ -3584,6 +3647,29 @@ Neo4j Node Labels and Properties:
     occurred_at: DateTime
     Source: construction.delay.detected.v1 payload (see docs/specifications/32-implementation-specifications §32.4)
 
+  (:Building)                                — physical hierarchy (source: spec 10 §10.2 / 12 §12.2)
+    building_id:  String (UUID)
+    name:         String
+    type:         String
+    total_floors: Integer
+    status:       String
+  (:Floor)
+    floor_id:       String (UUID)
+    building_id:    String
+    floor_number:   Integer
+    gross_area_sqm: Float
+  (:Room)
+    room_id:     String (UUID)
+    floor_id:    String
+    room_number: String
+    room_type:   String
+    area_sqm:    Float
+  (:Structure)
+    structure_id:   String (UUID)
+    building_id:    String
+    structure_type: String (enum: column/beam/slab/wall)
+    material_type:  String
+
 Relationships:
   (:Project)-[:HAS_MATERIAL]->(:Material)
   (:Material)-[:SUPPLIED_BY]->(:Vendor)
@@ -3594,6 +3680,11 @@ Relationships:
   (:Project)-[:HAS_INSPECTION]->(:Inspection)
   (:Delay)-[:IMPACTS]->(:Project)           — source: delay.detected event (delay_days, cause, severity)
   (:Delay)-[:IMPACTS]->(:Task)              — task-level delay (nullable — may be project-level only)
+  (:Building)-[:HAS_FLOOR]->(:Floor)             — 1:N (source: spec 10 §10.3 / 12 §12.3)
+  (:Floor)-[:HAS_ROOM]->(:Room)                  — 1:N
+  (:Building)-[:CONTAINS_STRUCTURE]->(:Structure) — 1:N
+  (:Task)-[:LOCATED_IN]->(:Floor)                — N:1 (task room-assignment; offline-cached per 17 §17.4)
+  (:Task)-[:LOCATED_IN]->(:Room)                 — N:1
 
   Note: DEPENDS_ON and USES relationships for Tasks derive from BOQ item hierarchy
         (task_id = boq_item_id; BOQ parent-child = DEPENDS_ON)
@@ -3862,6 +3953,11 @@ Compliance Targets (source §13.3):
 Security Requirements:
   Encryption algorithm: AES-256 minimum for all at-rest data encryption — custom field-level
     or file encryption outside AWS infrastructure MUST use AES-256 or stronger (source: spec §5.2)
+  SSE-KMS with customer-managed key (CMK) for all cloud storage (source: spec §5.2.1):
+    - S3 buckets + RDS/Aurora → CMK (customer-managed); ElastiCache → AWS-managed key (at_rest_encryption_enabled)
+    - One CMK per storage-type per env; alias convention `cos/{env}/rds`, `cos/{env}/s3`, `cos/{env}/elasticache`
+    - Annual automatic KMS rotation; key policy grants use to the app service role + SYSTEM_ADMIN only
+    - CMK definitions as Terraform IaC (infrastructure/terraform/aws/kms.tf); on-prem = Vault Transit envelope encryption
   TLS: TLS 1.3 minimum on all ingress (Kubernetes Ingress + cert-manager)
   RBAC: enforced via Phase 2 Keycloak + @cos/rbac guards (all services)
   Audit logging: all write operations logged to audit_logs (Phase 2 schema)
@@ -4198,7 +4294,7 @@ Generate:
 - Shared testcontainers setup utility (@cos/test-utils package)
 - packages/@cos/test-utils/README.md (required per QM-11 — purpose, public API, dependencies, configuration, usage example; same README standard as all packages/@cos/* per Rule 31; per spec §30.13)
 - k6 load test scripts for all 4 scenarios above
-- Playwright E2E tests (web — location: tests/e2e/; runs on merge to `main`; source: spec §30.5 + Phase 18 Generate):
+- Playwright E2E tests (web — location: tests/e2e/; runs on merge to `staging` (ADR-048); source: spec §30.5 + Phase 18 Generate):
     1. login — user authentication via SMS OTP and email/password flows; JWT issued; protected route accessible
     2. project create — PM creates project; status transitions DRAFT → ACTIVE
     3. report submit — Site Engineer submits daily site report; Kafka event emitted; PM notified
@@ -4209,7 +4305,7 @@ Generate:
     8. Safety incident — Safety Officer reports incident → PM receives push notification → acknowledged within 30 min SLA
     9. QC inspection — Inspector fills checklist → result recorded as fail → issue_severity populated → photo uploaded
     10. Approval escalation — Approver does not respond in 48 hours → next approver is notified
-- Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `main`; source: spec §30.5, §30.7):
+- Detox E2E tests (React Native mobile — location: apps/mobile/e2e/; runs on merge to `staging` (ADR-048); source: spec §30.5, §30.7):
     1. Offline check-in — Worker checks in with no connectivity → record queued → sync on reconnect
     2. Offline inspection — Inspector fills checklist offline → photo attached → sync on reconnect
     3. Sync conflict resolution — Two users update same task progress_percent while offline → Max-wins applied on sync (higher value wins; progress is monotonic)
@@ -4474,7 +4570,19 @@ Entities (PostgreSQL — schema: notifications):
     event_type      VARCHAR(255) NOT NULL
     channel         ENUM('IN_APP','EMAIL','LINE','PUSH','SMS')  -- PUSH = Expo push (mobile); SMS enum value has no MVP adapter (spec §19.2)
     is_enabled      BOOLEAN DEFAULT true
+    quiet_hours_start TIME DEFAULT '22:00'  -- spec §19.6; per-user quiet window
+    quiet_hours_end   TIME DEFAULT '07:00'
     UNIQUE: (user_id, event_type, channel)
+
+  Delivery rules (spec §19.3 / §19.6):
+  - Quiet hours (§19.6): suppress non-critical delivery 22:00–07:00 (user local tz);
+    **critical safety notifications cannot be disabled or quieted** — always delivered.
+  - Digest (§19.3): batch non-urgent notifications into a daily digest at 18:00 and a
+    weekly digest Monday 08:00 (tenant timezone).
+  - Escalation timeouts (§19.3) — distinct from the §15.5 48h *approval* escalation:
+      * safety incident unacknowledged 30 min → escalate to PM
+      * budget alert unacknowledged 2 h → escalate to Executive
+      * AI risk prediction unacknowledged 24 h → escalate to PM
 
 APIs:
   GET  /api/v1/notifications                  — list my notifications (paginated)

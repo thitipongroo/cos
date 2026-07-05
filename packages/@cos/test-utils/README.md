@@ -29,15 +29,15 @@ getClickHouseUrl(c: StartedClickHouseContainer): string
 
 `TestContainersOptions` flags (all optional, default `false`):
 
-| Flag             | Container started                                      |
-| ---------------- | ------------------------------------------------------ |
-| `postgres`       | PostgreSQL 16                                          |
-| `redis`          | Redis 7                                                |
-| `kafka`          | Kafka 7.6 (KRaft mode)                                 |
+| Flag             | Container started                                       |
+| ---------------- | ------------------------------------------------------- |
+| `postgres`       | PostgreSQL 16                                           |
+| `redis`          | Redis 7                                                 |
+| `kafka`          | Kafka 7.6 (KRaft mode)                                  |
 | `schemaRegistry` | Confluent Schema Registry 7.6 + Kafka on shared network |
-| `neo4j`          | Neo4j 5 Community                                      |
-| `minio`          | MinIO (latest)                                         |
-| `clickhouse`     | ClickHouse 24.4                                        |
+| `neo4j`          | Neo4j 5 Community                                       |
+| `minio`          | MinIO (latest)                                          |
+| `clickhouse`     | ClickHouse 24.4                                         |
 
 ### db-reset.ts
 
@@ -78,16 +78,16 @@ All factories produce minimal required fields only. Pass overrides to customise 
 
 ## Dependencies
 
-| Package | Version | Purpose |
-| ------- | ------- | ------- |
-| `testcontainers` | ^10.9.0 | Base container runtime |
-| `@testcontainers/postgresql` | ^10.9.0 | PostgreSQL container |
-| `@testcontainers/redis` | ^10.9.0 | Redis container |
-| `@testcontainers/kafka` | ^10.9.0 | Kafka (KRaft) container |
-| `@testcontainers/neo4j` | ^10.9.0 | Neo4j container |
-| `@testcontainers/minio` | ^10.9.0 | MinIO container |
-| `@testcontainers/clickhouse` | ^10.9.0 | ClickHouse container |
-| `pg` | ^8.21.0 | PostgreSQL client for DB reset |
+| Package                      | Version | Purpose                        |
+| ---------------------------- | ------- | ------------------------------ |
+| `testcontainers`             | ^10.9.0 | Base container runtime         |
+| `@testcontainers/postgresql` | ^10.9.0 | PostgreSQL container           |
+| `@testcontainers/redis`      | ^10.9.0 | Redis container                |
+| `@testcontainers/kafka`      | ^10.9.0 | Kafka (KRaft) container        |
+| `@testcontainers/neo4j`      | ^10.9.0 | Neo4j container                |
+| `@testcontainers/minio`      | ^10.9.0 | MinIO container                |
+| `@testcontainers/clickhouse` | ^10.9.0 | ClickHouse container           |
+| `pg`                         | ^8.21.0 | PostgreSQL client for DB reset |
 
 ## Configuration
 

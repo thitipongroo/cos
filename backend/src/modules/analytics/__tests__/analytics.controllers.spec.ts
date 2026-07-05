@@ -19,7 +19,7 @@ describe('AnalyticsExecutiveController', () => {
     const svc = makeSvc();
     const ctrl = new AnalyticsExecutiveController(svc as never);
 
-    ctrl.getExecutiveDashboard('t1', 'p1', '2026-01-01,2026-06-30');
+    ctrl.getExecutiveDashboard({ tenantId: 't1' }, 'p1', '2026-01-01,2026-06-30');
     expect(svc.getExecutiveDashboard).toHaveBeenCalledWith(
       't1',
       ['p1'],
@@ -32,7 +32,7 @@ describe('AnalyticsExecutiveController', () => {
     const svc = makeSvc();
     const ctrl = new AnalyticsExecutiveController(svc as never);
 
-    ctrl.getExecutiveDashboard('t1', ['p1', 'p2'], '2026-01-01,2026-06-30');
+    ctrl.getExecutiveDashboard({ tenantId: 't1' }, ['p1', 'p2'], '2026-01-01,2026-06-30');
     expect(svc.getExecutiveDashboard).toHaveBeenCalledWith(
       't1',
       ['p1', 'p2'],
@@ -41,11 +41,23 @@ describe('AnalyticsExecutiveController', () => {
     );
   });
 
+  it('defaults to an empty projectIds array when the query param is omitted', () => {
+    const svc = makeSvc();
+    const ctrl = new AnalyticsExecutiveController(svc as never);
+
+    ctrl.getExecutiveDashboard(
+      { tenantId: 't1' },
+      undefined as unknown as string,
+      '2026-01-01,2026-06-30',
+    );
+    expect(svc.getExecutiveDashboard).toHaveBeenCalledWith('t1', [], '2026-01-01,2026-06-30', 10);
+  });
+
   it('parses riskThresholdPct string to number', () => {
     const svc = makeSvc();
     const ctrl = new AnalyticsExecutiveController(svc as never);
 
-    ctrl.getExecutiveDashboard('t1', 'p1', '2026-01-01,2026-06-30', '15');
+    ctrl.getExecutiveDashboard({ tenantId: 't1' }, 'p1', '2026-01-01,2026-06-30', '15');
     expect(svc.getExecutiveDashboard).toHaveBeenCalledWith(
       't1',
       ['p1'],
@@ -60,7 +72,7 @@ describe('AnalyticsPmController', () => {
     const svc = makeSvc();
     const ctrl = new AnalyticsPmController(svc as never);
 
-    ctrl.getPmDashboard('proj-1', 't1', '2026-01-01,2026-03-31');
+    ctrl.getPmDashboard({ tenantId: 't1' }, 'proj-1', '2026-01-01,2026-03-31');
     expect(svc.getPmDashboard).toHaveBeenCalledWith('t1', 'proj-1', '2026-01-01,2026-03-31');
   });
 });
@@ -70,7 +82,7 @@ describe('AnalyticsTrendsController', () => {
     const svc = makeSvc();
     const ctrl = new AnalyticsTrendsController(svc as never);
 
-    ctrl.getCostTrend('proj-1', 't1', '2026-01-01,2026-03-31');
+    ctrl.getCostTrend({ tenantId: 't1' }, 'proj-1', '2026-01-01,2026-03-31');
     expect(svc.getCostTrend).toHaveBeenCalledWith('t1', 'proj-1', '2026-01-01,2026-03-31');
   });
 
@@ -78,7 +90,7 @@ describe('AnalyticsTrendsController', () => {
     const svc = makeSvc();
     const ctrl = new AnalyticsTrendsController(svc as never);
 
-    ctrl.getProcurementTrend('proj-1', 't1', '2026-01-01,2026-03-31');
+    ctrl.getProcurementTrend({ tenantId: 't1' }, 'proj-1', '2026-01-01,2026-03-31');
     expect(svc.getProcurementTrend).toHaveBeenCalledWith('t1', 'proj-1', '2026-01-01,2026-03-31');
   });
 
@@ -86,7 +98,7 @@ describe('AnalyticsTrendsController', () => {
     const svc = makeSvc();
     const ctrl = new AnalyticsTrendsController(svc as never);
 
-    ctrl.getSiteTrend('proj-1', 't1', '2026-01-01,2026-03-31');
+    ctrl.getSiteTrend({ tenantId: 't1' }, 'proj-1', '2026-01-01,2026-03-31');
     expect(svc.getSiteTrend).toHaveBeenCalledWith('t1', 'proj-1', '2026-01-01,2026-03-31');
   });
 });

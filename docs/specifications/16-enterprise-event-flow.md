@@ -184,4 +184,5 @@ instead of siloed departments.
 | [ConfluentSR] | Confluent Schema Registry Documentation                            | [docs.confluent.io/platform/current/schema-registry](https://docs.confluent.io/platform/current/schema-registry/index.html) |
 | [Temporal]    | Temporal Workflow Documentation                                    | [docs.temporal.io](https://docs.temporal.io/)                                                                               |
 
-> 📎 See also: [15-event-driven-workflow](15-event-driven-workflow.md) · [19-notification-architecture](19-notification-architecture.md) · [09-data-architecture](09-data-architecture.md)
+> 📎 See also: [15-event-driven-workflow](15-event-driven-workflow.md)
+> · [19-notification-architecture](19-notification-architecture.md) · [09-data-architecture](09-data-architecture.md)

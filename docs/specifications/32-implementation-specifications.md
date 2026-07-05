@@ -417,28 +417,28 @@ compatibility) before first producer deployment.
 
 ### Event Payload Specifications
 
-| # | Event Type | Key Payload Fields |
-| --- | --- | --- |
-| 1 | `construction.project.created.v1` | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by` |
-| 2 | `construction.boq.version_created.v1` | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by` |
-| 3 | `procurement.po.created.v1` | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)} |
-| 4 | `procurement.invoice.received.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date` |
-| 5 | `site.report.created.v1` | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count` |
-| 6 | `site.inspection.failed.v1` | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at` |
-| 7 | `construction.task.completed.v1` | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days` |
-| 8 | `construction.delay.detected.v1` | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+) |
-| 9 | `workforce.checkin.created.v1` | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable) |
-| 10 | `site.material.consumed.v1` | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at` |
-| 11 | `procurement.delivery.received.v1` | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean |
-| 12 | `finance.budget.exceeded.v1` | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at` |
-| 13 | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due` |
-| 14 | `finance.cashflow_risk.detected.v1` | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE) |
-| 15 | `ai.risk_prediction.generated.v1` | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version` |
-| 16 | `finance.budget.variance_detected.v1` | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at` |
-| 17 | `file.document.uploaded.v1` | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type` |
-| 18 | `file.document.quarantined.v1` | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown) |
-| 19 | `construction.boq.created.v1` | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project |
-| 20 | `construction.boq.updated.v1` | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217) |
+| #   | Event Type                               | Key Payload Fields                                                                                                                                                                                                                                                                         |
+| --- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `construction.project.created.v1`        | `project_id`, `project_code`, `project_name`, `project_type` (enum: RESIDENTIAL/COMMERCIAL/INFRASTRUCTURE/INDUSTRIAL), `budget` {amount: DECIMAL(19,4), currency_code: ISO4217}, `start_date`, `end_date`, `created_by`                                                                    |
+| 2   | `construction.boq.version_created.v1`    | `boq_version_id`, `project_id`, `version_number`, `total_estimated` {amount, currency_code}, `created_by`                                                                                                                                                                                  |
+| 3   | `procurement.po.created.v1`              | `po_id`, `project_id`, `vendor_id`, `po_number`, `total_amount` {amount, currency_code}, `delivery_date`, `line_items[]` {item_id, quantity: DECIMAL(10,4), unit, unit_price: DECIMAL(19,4)}                                                                                               |
+| 4   | `procurement.invoice.received.v1`        | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `invoice_date`, `due_date`                                                                                                                                                                             |
+| 5   | `site.report.created.v1`                 | `report_id`, `project_id`, `report_date`, `submitted_by`, `summary` (max 2000 chars), `issue_count`, `photo_count`                                                                                                                                                                         |
+| 6   | `site.inspection.failed.v1`              | `inspection_id`, `project_id`, `checklist_id`, `failed_items[]` {item_id, description}, `inspected_by`, `inspected_at`                                                                                                                                                                     |
+| 7   | `construction.task.completed.v1`         | `task_id`, `project_id`, `boq_item_id`, `completed_by`, `completed_at`, `progress_percent` (100 at completion), `actual_duration_days`                                                                                                                                                     |
+| 8   | `construction.delay.detected.v1`         | `project_id`, `task_id` (nullable), `delay_days`, `cause` (enum: PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), `detected_by` (enum: AI_FORECAST/MANUAL_REPORT), `severity` (enum: LOW/MEDIUM/HIGH/CRITICAL — thresholds: LOW=1-2 days, MEDIUM=3-6, HIGH=7-13, CRITICAL=14+) |
+| 9   | `workforce.checkin.created.v1`           | `checkin_id`, `worker_id`, `project_id`, `checkin_at`, `method` (enum: QR_CODE/GPS/BIOMETRIC/MANUAL), `location` {lat, lng} (nullable)                                                                                                                                                     |
+| 10  | `site.material.consumed.v1`              | `consumption_id`, `project_id`, `task_id`, `material_id`, `quantity`: DECIMAL(10,4), `unit`, `consumed_by`, `consumed_at`                                                                                                                                                                  |
+| 11  | `procurement.delivery.received.v1`       | `delivery_id`, `po_id`, `project_id`, `vendor_id`, `received_by`, `received_at`, `items_received[]` {item_id, quantity_received: DECIMAL(10,4)}, `partial`: boolean                                                                                                                        |
+| 12  | `finance.budget.exceeded.v1`             | `project_id`, `cost_category`, `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `overage_percent`: DECIMAL(5,2), `detected_at`                                                                                                                            |
+| 13  | `procurement.vendor_invoice.approved.v1` | `invoice_id`, `po_id`, `project_id`, `vendor_id`, `amount` {amount, currency_code}, `approved_by`, `approved_at`, `payment_due`                                                                                                                                                            |
+| 14  | `finance.cashflow_risk.detected.v1`      | `project_id`, `risk_level` (enum: LOW/MEDIUM/HIGH/CRITICAL), `projected_shortfall` {amount, currency_code}, `projected_at`, `detected_by` (enum: AI_FORECAST/RULE_ENGINE)                                                                                                                  |
+| 15  | `ai.risk_prediction.generated.v1`        | `prediction_id`, `project_id`, `model_type` (enum: DELAY_FORECAST/COST_OVERRUN/SAFETY_VISION/RISK_CLASSIFIER), `prediction` (model-specific object), `confidence`: DECIMAL(5,4), `generated_at`, `model_version`                                                                           |
+| 16  | `finance.budget.variance_detected.v1`    | `project_id`, `variance_percentage`: DECIMAL(5,2), `threshold_exceeded`: DECIMAL(5,2) (the configured threshold that was crossed; default 10%), `budget_amount` {amount, currency_code}, `actual_amount` {amount, currency_code}, `detected_at`                                            |
+| 17  | `file.document.uploaded.v1`              | `file_id`, `tenant_id`, `entity_type` (nullable — e.g. "site_report", "purchase_order"), `entity_id` (nullable UUID), `mime_type`                                                                                                                                                          |
+| 18  | `file.document.quarantined.v1`           | `file_id`, `tenant_id`, `threat_type` (nullable string — ClamAV threat name, null if unknown)                                                                                                                                                                                              |
+| 19  | `construction.boq.created.v1`            | `project_id` (UUID), `version_id` (UUID), `version_number` (integer) — emitted once when the first BOQ version (version_number = 1) is created for a project                                                                                                                               |
+| 20  | `construction.boq.updated.v1`            | `version_id` (UUID), `project_id` (UUID), `changed_items_count` (integer), `new_total_estimated_amount` (DECIMAL string — never float), `new_total_estimated_currency` (ISO 4217)                                                                                                          |
 
 ### Schema Registry Rules
 
@@ -723,12 +723,12 @@ Defining the tokens above is **not** sufficient: the web app must wire the Tailw
 pipeline, or every page renders unstyled (utility classes resolve to no CSS). The following
 files MUST exist in `apps/web` — this is the implementation contract for the tokens:
 
-| File | Required content |
-| ---- | ---------------- |
-| `postcss.config.js` | `plugins: { tailwindcss: {}, autoprefixer: {} }` (Next.js auto-runs it) |
-| `tailwind.config.js` | `content: ['./src/**/*.{ts,tsx,js,jsx}']`, `darkMode: 'class'`, and `theme.extend` mapping the tokens — `colors.cos.*`, `borderRadius` `sm/md/lg/xl` → `--web-radius-*`, `fontSize` `display/h1/h2/h3/body/small/tiny` (named token utilities), `fontFamily.sans` = Inter Tight stack. Use `extend` so the default palette still works. |
-| `src/app/globals.css` | `@tailwind base/components/utilities` + `:root { --cos-*, --web-* }` declaring the token values + a `.dark { … }` block for the Dark Theme tokens |
-| `src/app/layout.tsx` (root) | `import '@fontsource/inter-tight/{400,500,600,700}.css'` then `import './globals.css'` — global CSS only loads when imported from a layout |
+| File                        | Required content                                                                                                                                                                                                                                                                                                                        |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `postcss.config.js`         | `plugins: { tailwindcss: {}, autoprefixer: {} }` (Next.js auto-runs it)                                                                                                                                                                                                                                                                 |
+| `tailwind.config.js`        | `content: ['./src/**/*.{ts,tsx,js,jsx}']`, `darkMode: 'class'`, and `theme.extend` mapping the tokens — `colors.cos.*`, `borderRadius` `sm/md/lg/xl` → `--web-radius-*`, `fontSize` `display/h1/h2/h3/body/small/tiny` (named token utilities), `fontFamily.sans` = Inter Tight stack. Use `extend` so the default palette still works. |
+| `src/app/globals.css`       | `@tailwind base/components/utilities` + `:root { --cos-*, --web-* }` declaring the token values + a `.dark { … }` block for the Dark Theme tokens                                                                                                                                                                                       |
+| `src/app/layout.tsx` (root) | `import '@fontsource/inter-tight/{400,500,600,700}.css'` then `import './globals.css'` — global CSS only loads when imported from a layout                                                                                                                                                                                              |
 
 Notes:
 
@@ -736,7 +736,7 @@ Notes:
   `--web-space-*` tokens (`p-4`=16px, `p-6`=24px, …).
 - **Radius:** `rounded`=4px (sm), `rounded-md`=8px, `rounded-lg`=12px, `rounded-xl`=16px (mapped to `--web-radius-*`).
 - **Font:** brand font is `@fontsource/inter-tight` (weights 400/500/600/700); fallback `Inter, -apple-system, system-ui,
-  sans-serif`.
+sans-serif`.
 - **Verification:** a build must emit non-empty utility CSS (compiling `globals.css` yields > 0 bytes) — an empty result
   means the pipeline is not wired.
 
@@ -801,12 +801,12 @@ modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
 As with web, defining the mobile tokens above is **not** sufficient — they take effect only when
 wired into the React Native app. The contract for `apps/mobile`:
 
-| Item | Required content |
-| ---- | ---------------- |
+| Item                  | Required content                                                                                                                                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/theme/tokens.ts` | Export the `--mobile-*` colours, typography (hero/title/body/caption/label), spacing (xs–xl), touch-target minimums, and `fontFamily` names as typed JS objects (RN has no CSS variables — tokens are a module, not `:root`). |
-| Brand font | Add `expo-font` + `@expo-google-fonts/inter-tight`; load `InterTight_400Regular/500Medium/600SemiBold/700Bold` via `useFonts` in the root `app/_layout.tsx` and hold render until `fontsLoaded`. |
-| Components | Use `colors.*` / `fontFamily.*` from the theme — never hardcode hex or `fontWeight`. With custom fonts, select weight by `fontFamily` (e.g. `fontFamily.semibold`), not `fontWeight`. |
-| Expo config | `app.json` (or `app.config.js`) MUST exist with `expo-router` + `expo-font` plugins and `main: 'expo-router/entry'`, or the app does not boot and fonts never load. |
+| Brand font            | Add `expo-font` + `@expo-google-fonts/inter-tight`; load `InterTight_400Regular/500Medium/600SemiBold/700Bold` via `useFonts` in the root `app/_layout.tsx` and hold render until `fontsLoaded`.                              |
+| Components            | Use `colors.*` / `fontFamily.*` from the theme — never hardcode hex or `fontWeight`. With custom fonts, select weight by `fontFamily` (e.g. `fontFamily.semibold`), not `fontWeight`.                                         |
+| Expo config           | `app.json` (or `app.config.js`) MUST exist with `expo-router` + `expo-font` plugins and `main: 'expo-router/entry'`, or the app does not boot and fonts never load.                                                           |
 
 Notes:
 
@@ -952,12 +952,12 @@ is dead code — it must be removed within 30 days.
 
 ### Lifecycle States
 
-| State        | Definition                                          | Required action                                                          |
-| ------------ | --------------------------------------------------- | ------------------------------------------------------------------------ |
-| ACTIVE       | Flag live; rollout < 100%                           | Monitor, iterate                                                         |
-| FULL_ROLLOUT | Flag at 100% rollout for < 30 days                  | Schedule cleanup PR in current sprint                                    |
-| STALE        | Flag at 100% rollout for > 30 days without cleanup  | Add to `docs/feature-flags/cleanup-backlog.md`; escalate in next sprint  |
-| REMOVED      | Flag check deleted from code and registry           | Strike through entry in backlog; must be in same PR as code deletion     |
+| State        | Definition                                         | Required action                                                         |
+| ------------ | -------------------------------------------------- | ----------------------------------------------------------------------- |
+| ACTIVE       | Flag live; rollout < 100%                          | Monitor, iterate                                                        |
+| FULL_ROLLOUT | Flag at 100% rollout for < 30 days                 | Schedule cleanup PR in current sprint                                   |
+| STALE        | Flag at 100% rollout for > 30 days without cleanup | Add to `docs/feature-flags/cleanup-backlog.md`; escalate in next sprint |
+| REMOVED      | Flag check deleted from code and registry          | Strike through entry in backlog; must be in same PR as code deletion    |
 
 ### Rules
 
@@ -997,9 +997,9 @@ product owner approval must be recorded here.
 **When to write:** Product owner must sign off in `cos-audit/audit-<timestamp>.log`
 at two mandatory gates:
 
-| Gate | Trigger |
-| ---- | ------- |
-| Phase completion sign-off | After product owner approves a Phase via Rule 38 |
+| Gate                      | Trigger                                                        |
+| ------------------------- | -------------------------------------------------------------- |
+| Phase completion sign-off | After product owner approves a Phase via Rule 38               |
 | Production readiness gate | After production-readiness verification passes and PO confirms |
 
 ---

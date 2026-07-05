@@ -70,7 +70,7 @@ describe('Offline Check-In — Worker', () => {
       .toBeVisible()
       .withTimeout(5_000);
 
-    await waitFor(element(by.text(/queued|offline|pending sync/i)))
+    await waitFor(element(by.text(/queued|offline|pending sync|ออฟไลน์|รอซิงค์|เช็คอินแล้ว/i)))
       .toBeVisible()
       .withTimeout(8_000);
 
