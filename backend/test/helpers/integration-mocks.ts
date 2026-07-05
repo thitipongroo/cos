@@ -4,6 +4,20 @@
 // OpenSearch, so stub those network clients here once for every integration spec. Real @cos/shared
 // exports (event types, topic catalog, etc.) are preserved via requireActual.
 
+// AppModule also boots graph.module (neo4j.driver) and analytics.module (ClickHouse createClient),
+// whose useFactory providers getOrThrow() these env vars at construction. startIntegrationInfra only
+// spins up PostgreSQL + Redis (not Neo4j/ClickHouse), and no integration spec queries the graph or
+// analytics endpoints, so the driver/client are constructed lazily but never actually connect.
+// Provide dummy values so getOrThrow doesn't throw and abort the entire AppModule boot. Assigned
+// here (runs before every integration spec's beforeAll → createTestingModule), never overriding a
+// real value if one is already present in the environment.
+process.env['NEO4J_URI'] ??= 'bolt://localhost:7687';
+process.env['NEO4J_USERNAME'] ??= 'neo4j';
+process.env['NEO4J_PASSWORD'] ??= 'test_neo4j_password';
+process.env['CLICKHOUSE_URL'] ??= 'http://localhost:8123';
+process.env['CLICKHOUSE_USER'] ??= 'test';
+process.env['CLICKHOUSE_PASSWORD'] ??= 'test_ch_password';
+
 jest.mock('@cos/shared', () => {
   const actual = jest.requireActual('@cos/shared');
   const noopKafka = {
