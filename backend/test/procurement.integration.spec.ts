@@ -169,4 +169,44 @@ describe('Procurement Integration (Phase 5)', () => {
       expect([200, 500]).toContain(res.status);
     });
   });
+
+  describe('GET /api/v1/procurement/vendors/:vendorId/quotations', () => {
+    const VENDOR_ID = 'ee000003-0005-4000-8000-000000000001';
+    const RFQ_ID = 'ee000003-0006-4000-8000-000000000001';
+
+    beforeAll(async () => {
+      await infra.prisma.$executeRaw`
+        INSERT INTO procurement.vendors (vendor_id, tenant_id, vendor_code, vendor_name)
+        VALUES (${VENDOR_ID}::uuid, ${TENANT_ID}::uuid, 'VND-HIST', 'History Vendor Co.')
+      `;
+      await infra.prisma.$executeRaw`
+        INSERT INTO procurement.rfqs (rfq_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
+        VALUES (${RFQ_ID}::uuid, gen_random_uuid(), ${TENANT_ID}::uuid, 'RFQ-HIST', 'PUBLISHED',
+                now() + interval '7 days', ${PROC_ID}::uuid)
+      `;
+      await infra.prisma.$executeRaw`
+        INSERT INTO procurement.quotations (rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at)
+        VALUES (${RFQ_ID}::uuid, ${VENDOR_ID}::uuid, ${TENANT_ID}::uuid, 12500.0000, 'THB', 30, now())
+      `;
+    });
+
+    it('returns 200 with the vendor quotation history', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/procurement/vendors/${VENDOR_ID}/quotations`)
+        .set('Authorization', PROC_TOKEN)
+        .expect(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].vendor_id).toBe(VENDOR_ID);
+      // total_amount comes back numerically-normalized (trailing zeros stripped) — compare by value.
+      expect(Number(res.body[0].total_amount)).toBe(12500);
+    });
+
+    it('returns 404 for an unknown vendor', async () => {
+      await request(app.getHttpServer())
+        .get('/api/v1/procurement/vendors/ee000003-9999-4000-8000-000000000999/quotations')
+        .set('Authorization', PROC_TOKEN)
+        .expect(404);
+    });
+  });
 });

@@ -121,6 +121,12 @@ export class ProcurementService {
     logger.info({ vendor_id, tenant_id: this.tenantId }, 'vendor.deactivated');
   }
 
+  // Vendor quotation history — all quotations the vendor has submitted (spec §14). Newest first.
+  async getVendorQuotations(vendor_id: string): Promise<QuotationRow[]> {
+    await this.getVendor(vendor_id); // 404 guard
+    return this.repo.findQuotationsByVendor(vendor_id);
+  }
+
   // ── Purchase Requests ──────────────────────────────────────────────────────
 
   async createPurchaseRequest(dto: CreatePurchaseRequestDto): Promise<PurchaseRequestRow> {

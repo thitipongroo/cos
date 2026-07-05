@@ -11,6 +11,7 @@ const mockSvc = {
   createVendor: jest.fn(),
   listVendors: jest.fn(),
   getVendor: jest.fn(),
+  getVendorQuotations: jest.fn(),
   deactivateVendor: jest.fn(),
   createPurchaseRequest: jest.fn(),
   createRfq: jest.fn(),
@@ -71,6 +72,11 @@ describe('ProcurementController', () => {
   it('getVendor delegates to svc.getVendor', () => {
     ctrl.getVendor('v-001');
     expect(mockSvc.getVendor).toHaveBeenCalledWith('v-001');
+  });
+
+  it('getVendorQuotations delegates to svc.getVendorQuotations', () => {
+    ctrl.getVendorQuotations('v-001');
+    expect(mockSvc.getVendorQuotations).toHaveBeenCalledWith('v-001');
   });
 
   it('deactivateVendor delegates to svc.deactivateVendor', () => {

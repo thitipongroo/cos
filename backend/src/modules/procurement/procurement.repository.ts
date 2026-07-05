@@ -320,6 +320,18 @@ export class ProcurementRepository {
     );
   }
 
+  // Vendor quotation history — all quotations this vendor has submitted (across RFQs),
+  // tenant-scoped, newest first (spec §14 vendor quotation history).
+  async findQuotationsByVendor(vendor_id: string): Promise<QuotationRow[]> {
+    return this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<QuotationRow[]>`
+        SELECT * FROM procurement.quotations
+        WHERE vendor_id = ${vendor_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+        ORDER BY submitted_at DESC`,
+    );
+  }
+
   async markQuotationSelected(quotation_id: string, rfq_id: string): Promise<void> {
     // Clear previous selection, then set new one — single transaction via db.run
     await this.db.run(async (prisma) => {

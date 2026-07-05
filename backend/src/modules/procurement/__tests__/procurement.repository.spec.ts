@@ -193,6 +193,24 @@ describe('ProcurementRepository', () => {
     expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
+  it('findQuotationsByVendor returns the vendor quotation history', async () => {
+    const quotationRow = {
+      quotation_id: 'q-001',
+      rfq_id: 'rfq-001',
+      vendor_id: 'vendor-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      total_amount: '1000.0000',
+      currency_code: 'THB',
+      validity_days: 30,
+      submitted_at: new Date(),
+      is_selected: false,
+    };
+    mockPrisma.$queryRaw.mockResolvedValue([quotationRow]);
+    const result = await repo.findQuotationsByVendor('vendor-uuid-001');
+    expect(result).toHaveLength(1);
+    expect(result[0]!.vendor_id).toBe('vendor-uuid-001');
+  });
+
   // ── Purchase Requests ──────────────────────────────────────────────────────
 
   it('createPurchaseRequest returns PR row', async () => {

@@ -82,6 +82,15 @@ export class ProcurementController {
     return this.svc.getVendor(vendorId);
   }
 
+  // GET /api/v1/procurement/vendors/:vendorId/quotations  (vendor quotation history)
+  @Get('procurement/vendors/:vendorId/quotations')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: "List a vendor's quotation history (all RFQs, newest first)" })
+  @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
+  getVendorQuotations(@Param('vendorId') vendorId: string) {
+    return this.svc.getVendorQuotations(vendorId);
+  }
+
   // DELETE /api/v1/procurement/vendors/:vendorId
   @Delete('procurement/vendors/:vendorId')
   @Roles(CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)

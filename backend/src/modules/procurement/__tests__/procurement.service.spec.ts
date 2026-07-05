@@ -94,6 +94,7 @@ const mockRepo = {
   setRfqWorkflowId: jest.fn(),
   createQuotation: jest.fn(),
   findQuotationsByRfq: jest.fn(),
+  findQuotationsByVendor: jest.fn(),
   markQuotationSelected: jest.fn(),
   createPurchaseOrder: jest.fn(),
   findPoById: jest.fn(),
@@ -260,6 +261,22 @@ describe('Vendor', () => {
   it('getVendor — throws NotFoundException for unknown vendor', async () => {
     mockRepo.findVendorById.mockResolvedValue(null);
     await expect(service.getVendor('nonexistent')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('getVendorQuotations — returns the vendor history after the 404 guard passes', async () => {
+    mockRepo.findVendorById.mockResolvedValue({ vendor_id: 'vendor-uuid-001' });
+    mockRepo.findQuotationsByVendor.mockResolvedValue([{ quotation_id: 'q-001' }]);
+    const result = await service.getVendorQuotations('vendor-uuid-001');
+    expect(result).toHaveLength(1);
+    expect(mockRepo.findQuotationsByVendor).toHaveBeenCalledWith('vendor-uuid-001');
+  });
+
+  it('getVendorQuotations — throws NotFoundException when the vendor does not exist', async () => {
+    mockRepo.findVendorById.mockResolvedValue(null);
+    await expect(service.getVendorQuotations('nonexistent')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+    expect(mockRepo.findQuotationsByVendor).not.toHaveBeenCalled();
   });
 });
 

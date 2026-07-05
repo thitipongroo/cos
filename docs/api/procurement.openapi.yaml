@@ -610,6 +610,30 @@ paths:
           description: Deactivated
         '404':
           description: Not found
+  /procurement/vendors/{vendorId}/quotations:
+    get:
+      tags:
+        - Vendors
+      summary: List a vendor's quotation history (all RFQs, newest first)
+      operationId: getVendorQuotations
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The vendor's quotations across all RFQs, ordered by submitted_at DESC
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuotationRow'
+        '404':
+          description: Vendor not found
   /procurement/rfqs:
     get:
       tags:
