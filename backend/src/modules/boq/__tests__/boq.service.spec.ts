@@ -515,16 +515,40 @@ describe('BoqService', () => {
     });
   });
 
-  // ── exportVersion ─────────────────────────────────────────────────────────
+  // ── exportVersion (JSON) / exportVersionCsv ─────────────────────────────────
   describe('exportVersion', () => {
-    it('delegates to getVersionDetail (G2 — exportVersion coverage)', async () => {
+    it('returns the version detail as JSON (keyed by version_id alone — no project check)', async () => {
       mockRepo.findVersionById.mockResolvedValue(draftVersion);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
 
-      const result = await service.exportVersion('project-uuid-001', 'version-uuid-001');
+      const result = await service.exportVersion('version-uuid-001');
       expect(result.version.version_id).toBe('version-uuid-001');
       expect(result.items).toHaveLength(1);
+    });
+
+    it('throws NotFoundException when the version does not exist', async () => {
+      mockRepo.findVersionById.mockResolvedValue(null);
+      await expect(service.exportVersion('missing')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('exportVersionCsv', () => {
+    it('returns a CSV string with a header row and one row per item', async () => {
+      mockRepo.findVersionById.mockResolvedValue(draftVersion);
+      mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
+      mockRepo.findItemsByVersion.mockResolvedValue([item]);
+
+      const csv = await service.exportVersionCsv('version-uuid-001');
+      const lines = csv.split('\r\n');
+      expect(lines[0]).toContain('version_number');
+      expect(lines[0]).toContain('carbon_total_kg_co2e');
+      expect(lines).toHaveLength(2); // header + 1 item
+    });
+
+    it('throws NotFoundException when the version does not exist', async () => {
+      mockRepo.findVersionById.mockResolvedValue(null);
+      await expect(service.exportVersionCsv('missing')).rejects.toThrow(NotFoundException);
     });
   });
 

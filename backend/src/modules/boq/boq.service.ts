@@ -16,6 +16,7 @@ import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { randomUUID } from 'crypto';
 import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
+import { toBoqCsv } from './boq-csv.util';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { BoqRepository } from './boq.repository';
@@ -256,11 +257,30 @@ export class BoqService {
 
   // ── Export ────────────────────────────────────────────────────────────────
 
-  async exportVersion(
-    project_id: string,
+  // Export is keyed by version_id alone (flat route /boq/versions/:versionId/export — no project in
+  // the path). Tenant isolation is enforced by RLS/the repo; the project_id cross-check that
+  // getVersionDetail applies for the nested project routes does not apply here.
+  private async fetchVersionForExport(
     version_id: string,
   ): Promise<{ version: BoqVersionRow; categories: BoqCategoryRow[]; items: BoqItemRow[] }> {
-    return this.getVersionDetail(project_id, version_id);
+    const version = await this.repo.findVersionById(version_id);
+    if (!version) {
+      throw new NotFoundException(`BOQ version ${version_id} not found`);
+    }
+    const categories = await this.repo.findCategoriesByVersion(version_id);
+    const items = await this.repo.findItemsByVersion(version_id);
+    return { version, categories, items };
+  }
+
+  async exportVersion(
+    version_id: string,
+  ): Promise<{ version: BoqVersionRow; categories: BoqCategoryRow[]; items: BoqItemRow[] }> {
+    return this.fetchVersionForExport(version_id);
+  }
+
+  async exportVersionCsv(version_id: string): Promise<string> {
+    const { version, categories, items } = await this.fetchVersionForExport(version_id);
+    return toBoqCsv(version, categories, items);
   }
 
   // ── Private Helpers ───────────────────────────────────────────────────────

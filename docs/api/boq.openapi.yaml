@@ -190,16 +190,32 @@ paths:
     get:
       tags: [boq-versions]
       operationId: exportBoqVersion
-      summary: Export BOQ version as structured JSON
+      summary: Export a BOQ version as structured JSON (default) or CSV (?format=csv)
       parameters:
         - $ref: '#/components/parameters/versionId'
+        - in: query
+          name: format
+          required: false
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+          description: Response format — `json` (default, structured) or `csv` (flat item rows).
       responses:
         '200':
-          description: Full BOQ export with categories and items
+          description: |
+            Full BOQ export. `application/json` = structured version + categories + items;
+            `text/csv` = one row per line item (12 columns incl. carbon), RFC 4180.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BoqVersionDetail'
+            text/csv:
+              schema:
+                type: string
+              example: |
+                version_number,category_code,category_name,item_code,description,unit,quantity,unit_cost,estimated_total,currency_code,carbon_factor_kg_co2e,carbon_total_kg_co2e
+                1,CAT-01,Concrete,ITM-01,Cement bag,bag,10.0000,150.0000,1500.0000,THB,,
 
 components:
   securitySchemes:

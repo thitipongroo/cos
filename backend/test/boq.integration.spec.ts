@@ -125,4 +125,55 @@ describe('BOQ Integration (Phase 4)', () => {
       expect([401, 403, 500]).toContain(res.status);
     });
   });
+
+  // GET /api/v1/boq/versions/:versionId/export — real end-to-end path (JSON + CSV).
+  // Regression guard: the endpoint previously passed an empty project_id into getVersionDetail,
+  // which always 404'd. This seeds real data and asserts both formats return 200.
+  describe('GET /api/v1/boq/versions/:versionId/export', () => {
+    const PROJECT_ID = 'dddddddd-0003-4000-8000-000000000001';
+    const VERSION_ID = 'dddddddd-0004-4000-8000-000000000001';
+    const CATEGORY_ID = 'dddddddd-0005-4000-8000-000000000001';
+
+    beforeAll(async () => {
+      await infra.prisma.$executeRaw`
+        INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, created_by)
+        VALUES (${PROJECT_ID}::uuid, ${TENANT_ID}::uuid, 'BOQ-EXP-1', 'BOQ Export Project',
+                'RESIDENTIAL'::"ProjectType", 'ACTIVE'::"ProjectStatus", ${USER_ID}::uuid)
+      `;
+      await infra.prisma.$executeRaw`
+        INSERT INTO boq.boq_versions (version_id, project_id, tenant_id, version_number, status, total_estimated_currency, created_by)
+        VALUES (${VERSION_ID}::uuid, ${PROJECT_ID}::uuid, ${TENANT_ID}::uuid, 1, 'DRAFT', 'THB', ${USER_ID}::uuid)
+      `;
+      await infra.prisma.$executeRaw`
+        INSERT INTO boq.boq_categories (category_id, version_id, tenant_id, category_code, category_name)
+        VALUES (${CATEGORY_ID}::uuid, ${VERSION_ID}::uuid, ${TENANT_ID}::uuid, 'CAT-01', 'Concrete')
+      `;
+      await infra.prisma.$executeRaw`
+        INSERT INTO boq.boq_items (category_id, version_id, tenant_id, description, unit, quantity, unit_cost, estimated_total, currency_code)
+        VALUES (${CATEGORY_ID}::uuid, ${VERSION_ID}::uuid, ${TENANT_ID}::uuid, 'Cement bag', 'bag',
+                10.0000, 150.0000, 1500.0000, 'THB')
+      `;
+    });
+
+    it('returns 200 JSON with the version, categories and items (default format)', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/boq/versions/${VERSION_ID}/export`)
+        .set('Authorization', PM_TOKEN)
+        .expect(200);
+      expect(res.body.version.version_id).toBe(VERSION_ID);
+      expect(res.body.items).toHaveLength(1);
+      expect(res.body.items[0].description).toBe('Cement bag');
+    });
+
+    it('returns 200 CSV with a text/csv content-type when format=csv', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/v1/boq/versions/${VERSION_ID}/export?format=csv`)
+        .set('Authorization', PM_TOKEN)
+        .expect(200);
+      expect(res.headers['content-type']).toContain('text/csv');
+      expect(res.text.split('\r\n')[0]).toContain('version_number');
+      expect(res.text).toContain('Cement bag');
+      expect(res.text).toContain('CAT-01');
+    });
+  });
 });

@@ -61,7 +61,10 @@ const mockService = {
   updateItem: jest.fn(),
   deleteItem: jest.fn(),
   exportVersion: jest.fn(),
+  exportVersionCsv: jest.fn(),
 };
+
+const makeRes = () => ({ header: jest.fn() });
 
 describe('BoqController', () => {
   let controller: BoqController;
@@ -148,11 +151,27 @@ describe('BoqController', () => {
     await expect(controller.deleteItem('i-001')).rejects.toThrow(ForbiddenException);
   });
 
-  it('exportVersion delegates to service', async () => {
+  it('exportVersion returns JSON by default (no format)', async () => {
     const detail = { version: mockVersion, categories: [], items: [] };
     mockService.exportVersion.mockResolvedValue(detail);
-    const result = await controller.exportVersion('v-001');
-    expect(result.version.version_id).toBe('v-001');
+    const res = makeRes();
+    const result = await controller.exportVersion('v-001', res as never);
+    expect(mockService.exportVersion).toHaveBeenCalledWith('v-001');
+    expect((result as typeof detail).version.version_id).toBe('v-001');
+    expect(res.header).not.toHaveBeenCalled();
+  });
+
+  it('exportVersion returns CSV with text/csv headers when format=csv', async () => {
+    mockService.exportVersionCsv.mockResolvedValue('version_number\r\n1');
+    const res = makeRes();
+    const result = await controller.exportVersion('v-001', res as never, 'csv');
+    expect(mockService.exportVersionCsv).toHaveBeenCalledWith('v-001');
+    expect(result).toBe('version_number\r\n1');
+    expect(res.header).toHaveBeenCalledWith('Content-Type', 'text/csv; charset=utf-8');
+    expect(res.header).toHaveBeenCalledWith(
+      'Content-Disposition',
+      'attachment; filename="boq-v-001.csv"',
+    );
   });
 
   it('getVersionDetail propagates NotFoundException from service', async () => {

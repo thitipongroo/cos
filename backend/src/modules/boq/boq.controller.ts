@@ -11,12 +11,15 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
+  Res,
   HttpCode,
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
@@ -133,10 +136,22 @@ export class BoqController {
     CosRole.PROCUREMENT_OFFICER,
     CosRole.TENANT_ADMIN,
   )
-  @ApiOperation({ summary: 'Export BOQ version as structured JSON' })
+  @ApiOperation({
+    summary: 'Export a BOQ version as structured JSON (default) or CSV (?format=csv)',
+  })
   @ApiParam({ name: 'versionId', type: 'string', format: 'uuid' })
-  exportVersion(@Param('versionId') versionId: string) {
-    // projectId derived from version — pass empty string, service resolves internally
-    return this.boqService.exportVersion('', versionId);
+  @ApiQuery({ name: 'format', required: false, enum: ['json', 'csv'], description: 'default json' })
+  async exportVersion(
+    @Param('versionId') versionId: string,
+    @Res({ passthrough: true }) res: Response,
+    @Query('format') format?: string,
+  ) {
+    if (format === 'csv') {
+      const csv = await this.boqService.exportVersionCsv(versionId);
+      res.header('Content-Type', 'text/csv; charset=utf-8');
+      res.header('Content-Disposition', `attachment; filename="boq-${versionId}.csv"`);
+      return csv;
+    }
+    return this.boqService.exportVersion(versionId);
   }
 }
