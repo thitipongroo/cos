@@ -347,7 +347,7 @@ Every new service, module, or background job must include:
 - Every new service must have corresponding **Alertmanager** alert rules defined (Prometheus ecosystem — source: spec §31.7 + master Phase 15; M-11 — CloudWatch alarms removed; Alertmanager is the authoritative alerting system); alert YAML in `infrastructure/monitoring/`
 - Minimum alerts: error rate > 1% for > 5 min, p99 latency > 3s for > 5 min, job failure rate > 5%
 - **Synthetic monitoring** — health-check probes run every 60 seconds from ≥ 2 AWS regions against all public endpoints; implemented via OpenTelemetry Collector + Grafana Synthetic Monitoring (source: spec §31.10 + master Phase 15; probe definitions in `infrastructure/synthetics/`)
-- **Notification escalation timeouts (spec §19.3)** — distinct from the §15.5 48h *approval* escalation: safety incident unacknowledged 30 min → escalate to PM; budget alert unacknowledged 2 h → escalate to Executive; AI risk prediction unacknowledged 24 h → escalate to PM. **Critical safety notifications cannot be disabled or quieted** (override quiet hours / preferences — spec §19.6). Digest + quiet-hours delivery config: 00_master §Phase 20 (spec §19.3/§19.6)
+- **Notification escalation timeouts (spec §19.3)** — distinct from the §15.5 48h _approval_ escalation: safety incident unacknowledged 30 min → escalate to PM; budget alert unacknowledged 2 h → escalate to Executive; AI risk prediction unacknowledged 24 h → escalate to PM. **Critical safety notifications cannot be disabled or quieted** (override quiet hours / preferences — spec §19.6). Digest + quiet-hours delivery config: 00_master §Phase 20 (spec §19.3/§19.6)
 
 ### QM-9 — Backward Compatibility
 
