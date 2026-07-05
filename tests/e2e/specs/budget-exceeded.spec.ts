@@ -2,7 +2,8 @@
 // Source: spec §Phase 18 item 7 — "Budget exceeded alert — Cost transaction pushes project over
 //   budget → Executive receives push notification"
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+import { loginViaKeycloak } from '../helpers/auth';
 
 const FINANCE_EMAIL = process.env['E2E_FINANCE_EMAIL'] || 'e2e-finance@construction-os.io';
 const FINANCE_PASSWORD = process.env['E2E_FINANCE_PASSWORD'] || 'E2eTestPass123!';
@@ -11,16 +12,8 @@ const EXEC_PASSWORD = process.env['E2E_EXEC_PASSWORD'] || 'E2eTestPass123!';
 
 const OVERBUDGET_AMOUNT = '9999999';
 
-async function loginAs(
-  page: Parameters<Parameters<typeof test>[1]>[0]['page'],
-  email: string,
-  password: string,
-) {
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/dashboard|home/);
+async function loginAs(page: Page, email: string, password: string) {
+  await loginViaKeycloak(page, { email, password });
 }
 
 test.describe('Budget Exceeded Alert', () => {
@@ -69,7 +62,8 @@ test.describe('Budget Exceeded Alert', () => {
 
     await loginAs(execPage, EXEC_EMAIL, EXEC_PASSWORD);
 
-    await execPage.goto('/dashboard');
+    // Executive landing (ROLE_LANDING[EXECUTIVE] = '/', spec §20.7.1 Portfolio home).
+    await execPage.goto('/');
     await execPage.waitForLoadState('networkidle');
 
     const notificationArea = execPage

@@ -3,6 +3,7 @@
 //   with manpower count and blockers"
 
 import { test, expect } from '@playwright/test';
+import { loginViaKeycloak } from '../helpers/auth';
 
 const SE_EMAIL = process.env['E2E_SE_EMAIL'] || 'e2e-engineer@construction-os.io';
 const SE_PASSWORD = process.env['E2E_SE_PASSWORD'] || 'E2eTestPass123!';
@@ -12,11 +13,7 @@ const MANPOWER_COUNT = '12';
 const BLOCKER_TEXT = 'E2E blocker: material delivery delayed — automated test';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill(SE_EMAIL);
-  await page.getByLabel(/password/i).fill(SE_PASSWORD);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/dashboard|home/);
+  await loginViaKeycloak(page, { email: SE_EMAIL, password: SE_PASSWORD });
 });
 
 test.describe('Daily Site Report', () => {
@@ -89,11 +86,7 @@ test.describe('Daily Site Report', () => {
     const pmEmail = process.env['E2E_PM_EMAIL'] || 'e2e-pm@construction-os.io';
     const pmPassword = process.env['E2E_PM_PASSWORD'] || 'E2eTestPass123!';
 
-    await pmPage.goto('/login');
-    await pmPage.getByLabel(/email/i).fill(pmEmail);
-    await pmPage.getByLabel(/password/i).fill(pmPassword);
-    await pmPage.getByRole('button', { name: /sign in|log in/i }).click();
-    await expect(pmPage).toHaveURL(/dashboard|home/);
+    await loginViaKeycloak(pmPage, { email: pmEmail, password: pmPassword });
 
     const notificationBell = pmPage
       .getByRole('button', { name: /notification|bell|แจ้งเตือน/i })

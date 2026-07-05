@@ -3,6 +3,7 @@
 //   as fail → issue_severity populated → photo uploaded"
 
 import { test, expect, Page } from '@playwright/test';
+import { loginViaKeycloak } from '../helpers/auth';
 
 const INSPECTOR_EMAIL = process.env['E2E_INSPECTOR_EMAIL'] || 'e2e-inspector@construction-os.io';
 const INSPECTOR_PASSWORD = process.env['E2E_INSPECTOR_PASSWORD'] || 'E2eTestPass123!';
@@ -16,11 +17,7 @@ const TEST_PHOTO = {
 };
 
 async function loginAs(page: Page, email: string, password: string) {
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/dashboard|home/);
+  await loginViaKeycloak(page, { email, password });
 }
 
 test.describe('QC Inspection', () => {

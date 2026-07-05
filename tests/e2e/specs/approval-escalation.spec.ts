@@ -3,6 +3,7 @@
 //   48 hours → next approver is notified"
 
 import { test, expect, Page } from '@playwright/test';
+import { loginViaKeycloak } from '../helpers/auth';
 
 const PM_EMAIL = process.env['E2E_PM_EMAIL'] || 'e2e-pm@construction-os.io';
 const PM_PASSWORD = process.env['E2E_PM_PASSWORD'] || 'E2eTestPass123!';
@@ -10,11 +11,7 @@ const ADMIN_EMAIL = process.env['E2E_ADMIN_EMAIL'] || 'e2e-admin@construction-os
 const ADMIN_PASSWORD = process.env['E2E_ADMIN_PASSWORD'] || 'E2eTestPass123!';
 
 async function loginAs(page: Page, email: string, password: string) {
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/dashboard|home/);
+  await loginViaKeycloak(page, { email, password });
 }
 
 test.describe('Approval Escalation', () => {
