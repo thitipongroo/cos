@@ -7,11 +7,53 @@ import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
 import { ProjectRepository } from './project.repository';
 import { TenantModule } from '../tenant/tenant.module';
+// Phase 3 spatial hierarchy + asset/unit entities (§10.2 / §11.2). Full CRUD, no Kafka events.
+import { BuildingsController } from './buildings/buildings.controller';
+import { BuildingsService } from './buildings/buildings.service';
+import { BuildingsRepository } from './buildings/buildings.repository';
+import { FloorsController } from './floors/floors.controller';
+import { FloorsService } from './floors/floors.service';
+import { FloorsRepository } from './floors/floors.repository';
+import { RoomsController } from './rooms/rooms.controller';
+import { RoomsService } from './rooms/rooms.service';
+import { RoomsRepository } from './rooms/rooms.repository';
+import { StructuresController } from './structures/structures.controller';
+import { StructuresService } from './structures/structures.service';
+import { StructuresRepository } from './structures/structures.repository';
+import { UnitsController } from './units/units.controller';
+import { UnitsService } from './units/units.service';
+import { UnitsRepository } from './units/units.repository';
+import { AssetsController } from './assets/assets.controller';
+import { AssetsService } from './assets/assets.service';
+import { AssetsRepository } from './assets/assets.repository';
 
 @Module({
   imports: [TenantModule],
-  controllers: [ProjectController],
-  providers: [ProjectService, ProjectRepository],
+  controllers: [
+    ProjectController,
+    BuildingsController,
+    FloorsController,
+    RoomsController,
+    StructuresController,
+    UnitsController,
+    AssetsController,
+  ],
+  providers: [
+    ProjectService,
+    ProjectRepository,
+    BuildingsService,
+    BuildingsRepository,
+    FloorsService,
+    FloorsRepository,
+    RoomsService,
+    RoomsRepository,
+    StructuresService,
+    StructuresRepository,
+    UnitsService,
+    UnitsRepository,
+    AssetsService,
+    AssetsRepository,
+  ],
   exports: [ProjectService],
 })
 export class ProjectModule {}
