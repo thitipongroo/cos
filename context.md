@@ -215,8 +215,10 @@ Before starting any implementation task:
       for shared-realm tenants)
 - All inputs validated at the API layer — never trust client-supplied data; use **class-validator** (TypeScript/NestJS DTOs) or **Pydantic** (Python/FastAPI) for schema validation — never hand-written `if` checks alone (source: master API gateway + spec §30.3; `@cos/validation` uses class-validator)
 - SQL queries via Prisma ORM only — never raw string interpolation in SQL
+- **Schema-qualified SQL names MANDATORY** — all SQL (raw queries, migrations, multi-schema Prisma `@@schema` models) must reference tables by schema-qualified name (`procurement.vendors`, `finance.project_budgets`) — **never unqualified**; prevents `search_path` ambiguity across the multi-schema tenant model and keeps RLS/tenant isolation deterministic (spec §11.0 rule 2; pairs with the RLS mandate under "Skip RLS on domain tables")
 - File uploads: validate MIME type server-side, scan with ClamAV (Phase 9+)
 - OWASP Top 10 — every endpoint must be hardened against: injection, broken auth, IDOR, SSRF, XSS, security misconfiguration
+- **Immutable audit logging (spec §5.1/§5.2 principle, §5.9 STRIDE)** — every state-changing endpoint (create / update / delete / state-transition) must emit an **immutable** (append-only — never updated or deleted) audit-log entry capturing actor identity, action, target entity_type/entity_id, `tenant_id`, and timestamp. **All SYSTEM_ADMIN / platform-admin actions** are additionally written to `platform.audit_logs` with the operator's user identity (spec §20.4 admin panel; spec §06 audit-access matrix — SYSTEM_ADMIN = FULL, tenant roles read-only). Audit-log retention per `docs/compliance/data-retention-policy.md`
 - **Security headers** — every HTTP response must include:
   - `Strict-Transport-Security: max-age=31536000; includeSubDomains`
   - `X-Content-Type-Options: nosniff`
@@ -234,7 +236,7 @@ Before starting any implementation task:
     - **Origin protection MANDATORY**: AWS ALB SG must allow port 443 from Cloudflare IPs only → `infrastructure/terraform/cloudflare/`
     - **App integration MANDATORY**: use `CF-Connecting-IP` as real IP; validate `CF-Ray` present; log `CF-Ray` → `backend/src/shared/middleware/cloudflare-waf.middleware.ts`
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
-- **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets: SSE-KMS with customer-managed key (CMK); all RDS/Aurora: storage encryption enabled at creation; all ElastiCache nodes: encryption-at-rest enabled; CMK definitions in `infrastructure/terraform/aws/kms.tf`
+- **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets + RDS/Aurora: SSE-KMS with **customer-managed key (CMK)**; all ElastiCache nodes: AWS-managed key (`at_rest_encryption_enabled`); one CMK per storage-type per env with alias `cos/{env}/rds|s3|elasticache`; **annual KMS rotation**; key policy grants use to the app service role + SYSTEM_ADMIN only; CMK definitions in `infrastructure/terraform/aws/kms.tf` (source: spec §5.2.1). On-prem = Vault Transit envelope encryption.
 - **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
 - SAST and code quality scan must pass in CI via **SonarQube** before merge — spec §30.10 and §30.12 mandate SonarQube; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, 100% line coverage, 100% branch coverage, 0% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
   **⏸ DEFERRED:** SonarQube CI gate deferred pending EKS server setup. Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim. Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
@@ -345,6 +347,7 @@ Every new service, module, or background job must include:
 - Every new service must have corresponding **Alertmanager** alert rules defined (Prometheus ecosystem — source: spec §31.7 + master Phase 15; M-11 — CloudWatch alarms removed; Alertmanager is the authoritative alerting system); alert YAML in `infrastructure/monitoring/`
 - Minimum alerts: error rate > 1% for > 5 min, p99 latency > 3s for > 5 min, job failure rate > 5%
 - **Synthetic monitoring** — health-check probes run every 60 seconds from ≥ 2 AWS regions against all public endpoints; implemented via OpenTelemetry Collector + Grafana Synthetic Monitoring (source: spec §31.10 + master Phase 15; probe definitions in `infrastructure/synthetics/`)
+- **Notification escalation timeouts (spec §19.3)** — distinct from the §15.5 48h *approval* escalation: safety incident unacknowledged 30 min → escalate to PM; budget alert unacknowledged 2 h → escalate to Executive; AI risk prediction unacknowledged 24 h → escalate to PM. **Critical safety notifications cannot be disabled or quieted** (override quiet hours / preferences — spec §19.6). Digest + quiet-hours delivery config: 00_master §Phase 20 (spec §19.3/§19.6)
 
 ### QM-9 — Backward Compatibility
 
@@ -367,6 +370,9 @@ Every new service, module, or background job must include:
   - **Financial entities** (BOQ line items, payment approvals, budget entries, invoice records): **no auto-resolution** — offline write operations on financial entities are held in the sync queue; before applying, server checks for concurrent server-side modification; if conflict detected → status `CONFLICT_FLAGGED`, push notification to `FINANCE` or `PROJECT_MANAGER` for manual resolution; never auto-merge, auto-overwrite, or silently discard financial data
   - Sync wire protocol (server-side endpoint): `POST /api/v1/sync/resolve` accepts `{ entity_type, entity_id, client_version, payload, client_submitted_at }`; returns `{ resolved_payload, conflict_status, server_version }` where `conflict_status ∈ { ACCEPTED | CONFLICT_FLAGGED | CONFLICT_REJECTED }`
   - `ConflictHandler` class (generated in Phase 10) must implement all three strategies; unit-tested per QM-1 (Phase 18 mandatory coverage list)
+  - **Offline write scope (spec §17.4)** — agents must NOT allow offline writes outside this list: offline read/write = tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage; **online-required (read-cache only)** = POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles; read-only stale-while-revalidate cache = project master, BOQ lines, room/floor reference, drawings, vendor directory
+  - **Sync priority order on reconnect (spec §17.6)** — flush in this exact order: 1 safety incidents → 2 attendance → 3 inspections → 4 task progress → 5 site reports → 6 material → 7 equipment usage → 8 photo/media (deferred last)
+  - **Data size limits (spec §17.7)** — enforce: local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU eviction) · photo queue ≤ 100 (warn user at 80) · sync batch ≤ 500 records/cycle; server-side `platform.sync_tombstones` backs `GET /sync/delta` `deleted[]` (schema in 00_master §Phase 10, spec §11.1)
 
 ### QM-10 — Error Taxonomy
 

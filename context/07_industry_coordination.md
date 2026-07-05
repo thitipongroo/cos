@@ -56,6 +56,9 @@ RESOLVED — all 5 decided 2026-06-10; authoritative in docs/specifications/
 
   COORD-001 → Human-in-the-loop with financial escalation thresholds (22-ai-architecture)
   COORD-002 → Construction → Infrastructure → Real Estate; 18-month maturity gates (28-ecosystem-expansion)
+             ↳ V2 Infrastructure framework (GIS/LRS, asset/inspection/work-order REST+schema, condition scoring, map-first UX) = spec 28 §28.8 [Stage 5+]
+             ↳ V3 Real Estate framework (lease engine, rent roll, property/unit/lease REST+schema, VN Decree-357 PropertyElectronicIdAssignedV1 event, presales CRM, portfolio UX) = spec 28 §28.9 [after V2 +18mo]
+             Full frameworks stay authoritative in spec 28 (far-future — not expanded into the execution view until each stage gate opens)
   COORD-003 → Tier 1 TH/VN/SG full compliance modules; Tier 2 MY/... (05-security-compliance)
   COORD-004 → Multi-source with confidence-weighted scoring (09-data-architecture)
   COORD-005 → Single orchestration API with regional PSPs + automatic failover (28-ecosystem-expansion)
