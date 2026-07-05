@@ -50,7 +50,7 @@ describe('runAntivirusScan', () => {
   it('marks file CLEAN and indexes in OpenSearch when scan is clean', async () => {
     const indexFile = jest.fn().mockResolvedValue(undefined);
     const app = makeApp({ indexFile });
-    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('safe'));
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1');
     expect(app.db.updateFileStatus as jest.Mock).toHaveBeenCalledWith('fid-1', 'CLEAN');
     expect(indexFile).toHaveBeenCalledWith(FILE_ROW);
   });
@@ -61,7 +61,7 @@ describe('runAntivirusScan', () => {
       findFileById: jest.fn().mockResolvedValue(null),
       indexFile,
     });
-    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('safe'));
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1');
     expect(indexFile).not.toHaveBeenCalled();
   });
 
@@ -75,7 +75,7 @@ describe('runAntivirusScan', () => {
       markFileQuarantined,
       publishFileQuarantined,
     });
-    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('virus'));
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1');
     expect(moveToQuarantine).toHaveBeenCalledWith('tid-1', 'key');
     expect(markFileQuarantined).toHaveBeenCalledWith('fid-1');
     expect(publishFileQuarantined).toHaveBeenCalledWith(
@@ -89,7 +89,7 @@ describe('runAntivirusScan', () => {
       scan: jest.fn().mockResolvedValue({ clean: false, threat: undefined }),
       publishFileQuarantined,
     });
-    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('virus'));
+    await runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1');
     expect(publishFileQuarantined).toHaveBeenCalledWith(
       expect.objectContaining({ payload: expect.objectContaining({ threat_type: null }) }),
     );
@@ -100,7 +100,7 @@ describe('runAntivirusScan', () => {
       scan: jest.fn().mockRejectedValue(new Error('clamav unreachable')),
     });
     await expect(
-      runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1', Buffer.from('data')),
+      runAntivirusScan(app, 'fid-1', 'key', 'tid-1', 'uid-1', 'trace-1'),
     ).resolves.toBeUndefined();
   });
 });

@@ -10,16 +10,12 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import { validateFile, readMultipartBuffer } from '../middleware/validation';
 import { buildError } from '../errors';
+import { runAntivirusScan } from '../services/scan-runner';
+import { buildStoredKey } from '../util/stored-key';
+import { isValidCategory } from '../util/category';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('file-service.routes');
-
-function buildStoredKey(fileId: string, filename: string): string {
-  const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-  return `${year}/${month}/${fileId}/${filename}`;
-}
 
 export async function filesRoutes(app: FastifyInstance): Promise<void> {
   // POST /api/v1/files/upload
@@ -59,6 +55,8 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(500).send(buildError('UPLOAD_FAILED', request.traceId));
     }
 
+    const isArchive = mimeType === 'application/zip';
+
     // Persist metadata (PENDING_SCAN)
     const row = await app.db.insertFile({
       fileId,
@@ -69,6 +67,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       mimeType,
       fileSizeBytes: size,
       uploadedBy: request.userId,
+      isArchive,
     });
 
     if (entityType && entityId) {
@@ -95,7 +94,8 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       },
     });
 
-    // Async antivirus scan — fire and forget (upload response is immediate)
+    // Async antivirus scan — fire and forget (upload response is immediate).
+    // scan(fileId) re-fetches the stored bytes from MinIO (spec §Phase 9 decoupled contract).
     setImmediate(() => {
       void runAntivirusScan(
         app,
@@ -104,9 +104,18 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
         request.tenantId,
         request.userId,
         request.traceId,
-        buffer,
       );
     });
+
+    // Bulk ZIP upload → start the async sandboxed extraction workflow (PO decision, spec §Phase 9).
+    if (isArchive) {
+      await app.extraction.startExtraction(fileId).catch((err) => {
+        logger.error(
+          { err, file_id: fileId, traceId: request.traceId },
+          'file.extraction.start_failed',
+        );
+      });
+    }
 
     logger.info(
       { file_id: fileId, tenant_id: request.tenantId, traceId: request.traceId },
@@ -235,43 +244,79 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
     );
     return reply.send({ file_id: fileId, file_status: 'CLEAN' });
   });
+
+  // ── Retention policies (TENANT_ADMIN) ──────────────────────────────────────
+  // GET /api/v1/files/retention-policies — list per-category retention policies
+  app.get('/retention-policies', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (request.userRole !== 'TENANT_ADMIN') {
+      return reply.status(403).send(buildError('FORBIDDEN', request.traceId));
+    }
+    const policies = await app.db.listRetentionPolicies(request.tenantId);
+    return reply.send({ data: policies });
+  });
+
+  // PUT /api/v1/files/retention-policies — upsert { category, retention_days }
+  app.put('/retention-policies', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (request.userRole !== 'TENANT_ADMIN') {
+      return reply.status(403).send(buildError('FORBIDDEN', request.traceId));
+    }
+    const body = (request.body ?? {}) as { category?: string; retention_days?: number };
+    if (
+      typeof body.category !== 'string' ||
+      !isValidCategory(body.category) ||
+      typeof body.retention_days !== 'number' ||
+      !Number.isInteger(body.retention_days) ||
+      body.retention_days <= 0
+    ) {
+      return reply.status(422).send(buildError('INVALID_RETENTION_POLICY', request.traceId));
+    }
+    const policy = await app.db.upsertRetentionPolicy(
+      request.tenantId,
+      body.category,
+      body.retention_days,
+    );
+    return reply.send(policy);
+  });
+
+  // ── Legal hold (WORM; TENANT_ADMIN) ────────────────────────────────────────
+  // POST /api/v1/files/:fileId/legal-hold — place a hold (blocks all deletion)
+  app.post('/:fileId/legal-hold', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (request.userRole !== 'TENANT_ADMIN') {
+      return reply.status(403).send(buildError('FORBIDDEN', request.traceId));
+    }
+    const { fileId } = request.params as { fileId: string };
+    const body = (request.body ?? {}) as { reason?: string };
+    const ok = await app.db.setLegalHold(
+      fileId,
+      request.tenantId,
+      body.reason ?? '',
+      request.userId,
+    );
+    if (!ok) {
+      return reply.status(404).send(buildError('FILE_NOT_FOUND', request.traceId));
+    }
+    return reply.send({ file_id: fileId, legal_hold: true });
+  });
+
+  // DELETE /api/v1/files/:fileId/legal-hold — release a hold
+  app.delete('/:fileId/legal-hold', async (request: FastifyRequest, reply: FastifyReply) => {
+    if (request.userRole !== 'TENANT_ADMIN') {
+      return reply.status(403).send(buildError('FORBIDDEN', request.traceId));
+    }
+    const { fileId } = request.params as { fileId: string };
+    const ok = await app.db.releaseLegalHold(fileId, request.tenantId);
+    if (!ok) {
+      return reply.status(404).send(buildError('FILE_NOT_FOUND', request.traceId));
+    }
+    return reply.send({ file_id: fileId, legal_hold: false });
+  });
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-export async function runAntivirusScan(
-  app: FastifyInstance,
-  fileId: string,
-  storedKey: string,
-  tenantId: string,
-  actorId: string,
-  traceId: string,
-  buffer: Buffer,
-): Promise<void> {
-  try {
-    const result = await app.antivirus.scan(buffer);
-    if (result.clean) {
-      await app.db.updateFileStatus(fileId, 'CLEAN');
-      const file = await app.db.findFileById(fileId, tenantId);
-      if (file) {
-        await app.opensearch.indexFile(file);
-      }
-      logger.info({ file_id: fileId, traceId }, 'file.scan.clean');
-    } else {
-      await app.minio.moveToQuarantine(tenantId, storedKey);
-      await app.db.markFileQuarantined(fileId);
-      await app.kafka.publishFileQuarantined({
-        tenantId,
-        actorId,
-        traceId,
-        payload: { file_id: fileId, tenant_id: tenantId, threat_type: result.threat ?? null },
-      });
-      logger.warn({ file_id: fileId, threat: result.threat, traceId }, 'file.scan.quarantined');
-    }
-  } catch (err) {
-    logger.error({ err, file_id: fileId, traceId }, 'file.scan.error');
-  }
-}
+// Re-exported so existing importers (and tests) keep the same path. Implementation lives in
+// scan-runner so the ZIP extraction worker can reuse it with its own service instances.
+export { runAntivirusScan };
 
 function toFileDto(file: import('../types').StoredFileRow) {
   return {

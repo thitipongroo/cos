@@ -6,6 +6,7 @@ import { MinioService } from './services/minio.service';
 import { AntivirusService } from './services/antivirus.service';
 import { OpenSearchService } from './services/opensearch.service';
 import { KafkaService } from './services/kafka.service';
+import { ExtractionClient } from './extraction/extraction-client';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -15,6 +16,7 @@ declare module 'fastify' {
     antivirus: AntivirusService;
     opensearch: OpenSearchService;
     kafka: KafkaService;
+    extraction: ExtractionClient;
   }
 
   interface FastifyRequest {
@@ -40,6 +42,30 @@ export interface StoredFileRow {
   uploaded_at: Date;
   deleted_at: Date | null;
   quarantined_at: Date | null;
+  is_archive: boolean;
+  extracted_at: Date | null;
+  parent_file_id: string | null;
+  category: string | null;
+  legal_hold: boolean;
+  legal_hold_reason: string | null;
+  legal_hold_by: string | null;
+  legal_hold_at: Date | null;
+}
+
+// One validated entry extracted from a ZIP archive, ready to be stored as a child file.
+export interface ExtractedEntry {
+  filename: string;
+  mimeType: string;
+  buffer: Buffer;
+}
+
+export interface RetentionPolicyRow {
+  policy_id: string;
+  tenant_id: string;
+  category: string;
+  retention_days: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export interface FileMetadataRow {

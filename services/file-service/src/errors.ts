@@ -37,6 +37,21 @@ export const FILE_ERRORS = {
     httpStatus: 422,
   },
   FORBIDDEN: { code: 'COS-FILE-011', message: 'Insufficient permissions', httpStatus: 403 },
+  ZIP_TOO_MANY_ENTRIES: {
+    code: 'COS-FILE-012',
+    message: 'Archive exceeds the maximum permitted entry count',
+    httpStatus: 422,
+  },
+  ZIP_BOMB_DETECTED: {
+    code: 'COS-FILE-013',
+    message: 'Archive rejected: decompression ratio or total size limit exceeded',
+    httpStatus: 422,
+  },
+  INVALID_RETENTION_POLICY: {
+    code: 'COS-FILE-014',
+    message: 'Invalid retention policy (category or retention_days)',
+    httpStatus: 422,
+  },
 } as const;
 
 export type FileErrorKey = keyof typeof FILE_ERRORS;

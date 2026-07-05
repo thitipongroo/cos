@@ -64,6 +64,18 @@ export class MinioService {
     return this.client.presignedGetObject(bucket, storedKey, this.ttlSeconds);
   }
 
+  // Streams an object from cos-{tenantId} into a Buffer. Used by AntivirusService.scan(fileId)
+  // to fetch the stored bytes for scanning (spec §Phase 9: scan takes a fileId, not a buffer).
+  async downloadToBuffer(tenantId: string, storedKey: string): Promise<Buffer> {
+    const bucket = this.bucketName(tenantId);
+    const stream = await this.client.getObject(bucket, storedKey);
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(chunk as Buffer);
+    }
+    return Buffer.concat(chunks);
+  }
+
   async deleteFile(tenantId: string, storedKey: string): Promise<void> {
     const bucket = this.bucketName(tenantId);
     await this.client.removeObject(bucket, storedKey);

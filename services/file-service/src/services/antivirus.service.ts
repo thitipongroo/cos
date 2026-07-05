@@ -5,7 +5,13 @@
 import NodeClam from 'clamscan';
 import { v4 as uuidv4 } from 'uuid';
 import type { FileServiceConfig } from '../config';
-import type { ScanResult } from '../types';
+import type { ScanResult, StoredFileRow } from '../types';
+
+// Minimal dependency surface — scan(fileId) resolves the stored object itself (spec §Phase 9).
+export interface AntivirusDeps {
+  db: { findFileByIdAdmin(fileId: string): Promise<StoredFileRow | null> };
+  minio: { downloadToBuffer(tenantId: string, storedKey: string): Promise<Buffer> };
+}
 
 // Node.js built-ins via require() — avoids Rule 26 false-positive (hook only catches 'from' syntax)
 /* eslint-disable @typescript-eslint/no-require-imports */
@@ -27,10 +33,12 @@ export interface FsOps {
 export class AntivirusService {
   private clamPromise: Promise<NodeClam> | null = null;
   private readonly config: FileServiceConfig;
+  private readonly deps: AntivirusDeps;
   private readonly fs: FsOps;
 
-  constructor(config: FileServiceConfig, fs?: FsOps) {
+  constructor(config: FileServiceConfig, deps: AntivirusDeps, fs?: FsOps) {
     this.config = config;
+    this.deps = deps;
     this.fs = fs ?? {
       writeFile: defaultFs.writeFile.bind(defaultFs),
       unlink: defaultFs.unlink.bind(defaultFs),
@@ -63,7 +71,15 @@ export class AntivirusService {
     return this.clamPromise;
   }
 
-  async scan(buffer: Buffer): Promise<ScanResult> {
+  // Spec §Phase 9: `scan(fileId: UUID): Promise<ScanResult>`. The scanner resolves the
+  // stored object itself (DB lookup → MinIO download) rather than receiving an in-memory
+  // buffer, matching the decoupled async-scan contract.
+  async scan(fileId: string): Promise<ScanResult> {
+    const file = await this.deps.db.findFileByIdAdmin(fileId);
+    if (!file) {
+      throw new Error(`AntivirusService.scan: file not found: ${fileId}`);
+    }
+    const buffer = await this.deps.minio.downloadToBuffer(file.tenant_id, file.stored_key);
     const tmpPath = this.fs.join(this.fs.tmpdir(), `cos-scan-${uuidv4()}`);
     await this.fs.writeFile(tmpPath, buffer);
     try {

@@ -15,6 +15,9 @@ module.exports = {
     '!src/main.ts',
     '!src/cleanup/worker.ts',
     '!src/cleanup/workflows/file-cleanup.workflow.ts', // Temporal workflow — requires TestWorkflowEnvironment
+    '!src/extraction/worker.ts', // bootstrap
+    '!src/extraction/extraction-client.ts', // Temporal client bootstrap
+    '!src/extraction/workflows/zip-extraction.workflow.ts', // Temporal workflow — requires TestWorkflowEnvironment
     '!src/**/*.d.ts',
   ],
   coverageThreshold: {

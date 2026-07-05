@@ -53,6 +53,12 @@ function buildMockServices() {
     listFilesByEntity: jest.fn().mockResolvedValue([FILE_ROW]),
     updateFileStatus: jest.fn().mockResolvedValue(undefined),
     markFileQuarantined: jest.fn().mockResolvedValue(undefined),
+    listRetentionPolicies: jest.fn().mockResolvedValue([{ category: 'image', retention_days: 90 }]),
+    upsertRetentionPolicy: jest
+      .fn()
+      .mockResolvedValue({ policy_id: 'p1', category: 'image', retention_days: 90 }),
+    setLegalHold: jest.fn().mockResolvedValue(true),
+    releaseLegalHold: jest.fn().mockResolvedValue(true),
   };
   const minio: Partial<MinioService> = {
     bucketName: jest.fn().mockReturnValue('cos-tid-test'),
@@ -72,14 +78,15 @@ function buildMockServices() {
     publishFileUploaded: jest.fn().mockResolvedValue(undefined),
     publishFileQuarantined: jest.fn().mockResolvedValue(undefined),
   };
+  const extraction = { startExtraction: jest.fn().mockResolvedValue(undefined) };
   const config = { signedUrlTtlSeconds: 3600 } as FileServiceConfig;
 
-  return { db, minio, antivirus, opensearch, kafka, config };
+  return { db, minio, antivirus, opensearch, kafka, extraction, config };
 }
 
 async function buildTestApp() {
   const app = Fastify({ ignoreTrailingSlash: true });
-  const { db, minio, antivirus, opensearch, kafka, config } = buildMockServices();
+  const { db, minio, antivirus, opensearch, kafka, extraction, config } = buildMockServices();
 
   await app.register(multipart, { limits: { fileSize: 1024 * 1024 * 1024 } });
   await app.register(tracePlugin);
@@ -91,10 +98,14 @@ async function buildTestApp() {
   app.decorate('antivirus', antivirus as AntivirusService);
   app.decorate('opensearch', opensearch as OpenSearchService);
   app.decorate('kafka', kafka as KafkaService);
+  app.decorate(
+    'extraction',
+    extraction as unknown as import('fastify').FastifyInstance['extraction'],
+  );
 
   // Route plugins must NOT be wrapped with fp() — fp() removes encapsulation
   await app.register(filesRoutes, { prefix: '/api/v1/files' });
-  return { app, mocks: { db, minio, antivirus, opensearch, kafka } };
+  return { app, mocks: { db, minio, antivirus, opensearch, kafka, extraction } };
 }
 
 const AUTH_HEADERS = { 'x-tenant-id': TENANT, 'x-user-id': USER };
@@ -122,6 +133,47 @@ describe('Files routes (integration)', () => {
       const body = JSON.parse(res.body);
       expect(body.mime_type).toBe('image/jpeg');
       expect(body.file_status).toBe('PENDING_SCAN');
+    });
+
+    it('201 — a ZIP upload starts the async extraction workflow (is_archive)', async () => {
+      const { app, mocks } = await buildTestApp();
+      const form = new FormData();
+      form.append('file', Buffer.from('PK-zip-bytes'), {
+        filename: 'bulk.zip',
+        contentType: 'application/zip',
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/upload',
+        headers: { ...AUTH_HEADERS, ...form.getHeaders() },
+        payload: form.getBuffer(),
+      });
+
+      expect(res.statusCode).toBe(201);
+      expect(mocks.db.insertFile).toHaveBeenCalledWith(
+        expect.objectContaining({ isArchive: true }),
+      );
+      expect(mocks.extraction.startExtraction).toHaveBeenCalledTimes(1);
+    });
+
+    it('201 — a ZIP upload still succeeds when starting extraction fails (logged)', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.extraction.startExtraction as jest.Mock).mockRejectedValue(new Error('temporal down'));
+      const form = new FormData();
+      form.append('file', Buffer.from('PK-zip-bytes'), {
+        filename: 'bulk.zip',
+        contentType: 'application/zip',
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/upload',
+        headers: { ...AUTH_HEADERS, ...form.getHeaders() },
+        payload: form.getBuffer(),
+      });
+
+      expect(res.statusCode).toBe(201);
     });
 
     it('422 — rejects blocked .exe extension', async () => {
@@ -446,6 +498,154 @@ describe('Files routes (integration)', () => {
       });
       expect(res.statusCode).toBe(422);
       expect(JSON.parse(res.body).error.code).toBe('COS-FILE-010');
+    });
+  });
+
+  describe('Retention policies', () => {
+    const ADMIN = { ...AUTH_HEADERS, 'x-user-role': 'TENANT_ADMIN' };
+
+    it('GET 200 — lists policies for a TENANT_ADMIN', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/files/retention-policies',
+        headers: ADMIN,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).data).toHaveLength(1);
+    });
+
+    it('GET 403 — non-admin is forbidden', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/files/retention-policies',
+        headers: AUTH_HEADERS,
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('PUT 200 — upserts a valid policy', async () => {
+      const { app, mocks } = await buildTestApp();
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/files/retention-policies',
+        headers: ADMIN,
+        payload: { category: 'image', retention_days: 90 },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(mocks.db.upsertRetentionPolicy).toHaveBeenCalledWith('tid-test', 'image', 90);
+    });
+
+    it('PUT 422 — rejects an invalid category or retention_days', async () => {
+      const { app } = await buildTestApp();
+      const bad = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/files/retention-policies',
+        headers: ADMIN,
+        payload: { category: 'nope', retention_days: 90 },
+      });
+      expect(bad.statusCode).toBe(422);
+      expect(JSON.parse(bad.body).error.code).toBe('COS-FILE-014');
+
+      const bad2 = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/files/retention-policies',
+        headers: ADMIN,
+        payload: { category: 'image', retention_days: 0 },
+      });
+      expect(bad2.statusCode).toBe(422);
+
+      // no body at all → request.body is undefined (?? {} branch) → invalid
+      const bad3 = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/files/retention-policies',
+        headers: ADMIN,
+      });
+      expect(bad3.statusCode).toBe(422);
+    });
+
+    it('PUT 403 — non-admin is forbidden', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/files/retention-policies',
+        headers: AUTH_HEADERS,
+        payload: { category: 'image', retention_days: 90 },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe('Legal hold', () => {
+    const ADMIN = { ...AUTH_HEADERS, 'x-user-role': 'TENANT_ADMIN' };
+
+    it('POST 200 — places a legal hold', async () => {
+      const { app, mocks } = await buildTestApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/fid-1/legal-hold',
+        headers: ADMIN,
+        payload: { reason: 'litigation' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).legal_hold).toBe(true);
+      expect(mocks.db.setLegalHold).toHaveBeenCalledWith('fid-1', 'tid-test', 'litigation', USER);
+    });
+
+    it('POST 404 — file not found (no body → empty reason default, ?? {} branch)', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.setLegalHold as jest.Mock).mockResolvedValue(false);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/missing/legal-hold',
+        headers: ADMIN,
+      });
+      expect(res.statusCode).toBe(404);
+      expect(mocks.db.setLegalHold).toHaveBeenCalledWith('missing', 'tid-test', '', USER);
+    });
+
+    it('POST 403 — non-admin is forbidden', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/fid-1/legal-hold',
+        headers: AUTH_HEADERS,
+        payload: { reason: 'x' },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('DELETE 200 — releases a legal hold', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/files/fid-1/legal-hold',
+        headers: ADMIN,
+      });
+      expect(res.statusCode).toBe(200);
+      expect(JSON.parse(res.body).legal_hold).toBe(false);
+    });
+
+    it('DELETE 404 — file not found', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.releaseLegalHold as jest.Mock).mockResolvedValue(false);
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/files/missing/legal-hold',
+        headers: ADMIN,
+      });
+      expect(res.statusCode).toBe(404);
+    });
+
+    it('DELETE 403 — non-admin is forbidden', async () => {
+      const { app } = await buildTestApp();
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/api/v1/files/fid-1/legal-hold',
+        headers: AUTH_HEADERS,
+      });
+      expect(res.statusCode).toBe(403);
     });
   });
 });

@@ -2898,10 +2898,21 @@ File Constraints (authoritative):
     Images:     image/jpeg, image/png, image/webp, image/gif
     Documents:  application/pdf
     CAD:        application/dxf, application/acad, image/vnd.dwg
-                (Note: DWG parsing/viewing — PO decision required; store only until decided)
+                (DWG/DXF parsing/viewing — DECIDED: open-source, free-licence hybrid
+                 (supersedes the earlier ODA SDK option — ODA is proprietary/paid):
+                   Phase A (now): DXF viewer via three-dxf / ezdxf (MIT), rendered client-side
+                     from the existing signed-URL download; DWG remains store-and-serve.
+                   Phase B (later): DWG → DXF conversion via LibreDWG `dwg2dxf` (GPLv3, invoked
+                     as an isolated subprocess so the copyleft does not propagate to our code),
+                     added once read-fidelity is validated on representative DWG files.
+                 No proprietary/paid SDK. Implementation tracked as a dedicated workstream.)
     Spreadsheets: application/vnd.ms-excel,
                   application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
-    Archives:   application/zip (for bulk upload — extraction logic requires PO decision)
+    Archives:   application/zip (for bulk upload — extraction DECIDED: async sandboxed
+                extraction in a Temporal worker; unzip → re-validate each entry (MIME/size/AV)
+                + zip-bomb guard (decompression-ratio + entry-count limits) + path-traversal
+                guard → create individual file records. Pattern used by Box/Dropbox/Drive.
+                Implementation tracked as a dedicated workstream.)
 
   NOT allowed: executable files (.exe, .sh, .bat, .js), BLOCKED at upload
 
@@ -2913,7 +2924,11 @@ File Constraints (authoritative):
     File status: PENDING_SCAN → CLEAN | QUARANTINED
 
   File retention:
-    Default: indefinite (tenant-configurable — retention policies require PO decision)
+    Default: indefinite (tenant-configurable — retention policies DECIDED: per-tenant +
+             per-file-category retention policies with legal hold (WORM / Object-Lock style),
+             driven by a retention_policies table + the existing Temporal cleanup workflow.
+             Mirrors S3 Object Lifecycle + Object Lock + legal hold (Box Governance, M365
+             Retention Labels) — compliance-grade. Implementation tracked as a dedicated workstream.)
     Soft delete: files are soft-deleted (deleted_at timestamp), not immediately removed
     Hard delete: 30 days after soft delete (deleted_at + 30 days) — automated cleanup job (Temporal scheduled workflow)
 

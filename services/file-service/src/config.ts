@@ -30,6 +30,12 @@ export interface FileServiceConfig {
     address: string;
   };
   signedUrlTtlSeconds: number;
+  // Bulk ZIP upload extraction guards (spec §Phase 9 — sandboxed extraction).
+  zipExtraction: {
+    maxRatio: number; // max uncompressed:compressed ratio per entry (zip-bomb guard)
+    maxEntries: number; // max number of entries in an archive
+    maxTotalBytes: number; // max total uncompressed size across all entries
+  };
 }
 
 export function loadConfig(): FileServiceConfig {
@@ -66,6 +72,11 @@ export function loadConfig(): FileServiceConfig {
       address: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',
     },
     signedUrlTtlSeconds: parseInt(process.env['SIGNED_URL_TTL_SECONDS'] ?? '3600', 10),
+    zipExtraction: {
+      maxRatio: parseInt(process.env['ZIP_MAX_RATIO'] ?? '100', 10),
+      maxEntries: parseInt(process.env['ZIP_MAX_ENTRIES'] ?? '1000', 10),
+      maxTotalBytes: parseInt(process.env['ZIP_MAX_TOTAL_BYTES'] ?? String(500 * 1024 * 1024), 10),
+    },
   };
 }
 

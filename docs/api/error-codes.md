@@ -30,6 +30,11 @@ All API error responses follow the structure:
 | COS-FILE-007 | 500  | File upload failed                      | MinIO write error                     |
 | COS-FILE-008 | 500  | Failed to generate signed URL           | MinIO presign error                   |
 | COS-FILE-009 | 500  | Antivirus scan failed                   | ClamAV unreachable or scan error      |
+| COS-FILE-010 | 422  | File is not in quarantine status        | Recover on non-quarantined file       |
+| COS-FILE-011 | 403  | Insufficient permissions                | Caller lacks the required role        |
+| COS-FILE-012 | 422  | Archive exceeds max entry count         | ZIP bulk upload — too many entries    |
+| COS-FILE-013 | 422  | Archive rejected (zip-bomb guard)       | Ratio/total-size limit exceeded       |
+| COS-FILE-014 | 422  | Invalid retention policy                | Bad category or retention_days        |
 
 ---
 

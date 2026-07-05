@@ -50,6 +50,125 @@ describe('DbService', () => {
       });
       expect(result.file_id).toBe('fid-1');
       expect(mockQuery).toHaveBeenCalledTimes(1);
+      // defaults: is_archive=false, parent_file_id=null
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.arrayContaining([false, null]),
+      );
+    });
+
+    it('inserts an archive child with is_archive and parent_file_id set', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      await db.insertFile({
+        fileId: 'child-1',
+        tenantId: 'tid-1',
+        originalFilename: 'a.jpg',
+        storedKey: '2026/07/child-1/a.jpg',
+        bucketName: 'cos-tid-1',
+        mimeType: 'image/jpeg',
+        fileSizeBytes: 10,
+        uploadedBy: 'uid-1',
+        isArchive: true,
+        parentFileId: 'archive-1',
+      });
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.arrayContaining([true, 'archive-1']),
+      );
+    });
+  });
+
+  describe('markArchiveExtracted', () => {
+    it('sets extracted_at for the archive', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      await db.markArchiveExtracted('archive-1');
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('extracted_at = now()'), [
+        'archive-1',
+      ]);
+    });
+  });
+
+  describe('insertFile derives category', () => {
+    it('stores the mime-derived category', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      await db.insertFile({
+        fileId: 'fid-1',
+        tenantId: 'tid-1',
+        originalFilename: 'plan.dwg',
+        storedKey: 'k',
+        bucketName: 'cos-tid-1',
+        mimeType: 'image/vnd.dwg',
+        fileSizeBytes: 1,
+        uploadedBy: 'uid-1',
+      });
+      expect(mockQuery).toHaveBeenCalledWith(expect.any(String), expect.arrayContaining(['cad']));
+    });
+  });
+
+  describe('retention + legal hold', () => {
+    it('findExpiredFiles excludes files under legal hold', async () => {
+      mockQuery.mockResolvedValue({ rows: [] });
+      await db.findExpiredFiles();
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('legal_hold = false'));
+    });
+
+    it('findExpiredQuarantinedFiles excludes files under legal hold', async () => {
+      mockQuery.mockResolvedValue({ rows: [] });
+      await db.findExpiredQuarantinedFiles();
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('legal_hold = false'));
+    });
+
+    it('findFilesPastRetention joins retention_policies by category', async () => {
+      mockQuery.mockResolvedValue({ rows: [FILE_ROW] });
+      const rows = await db.findFilesPastRetention();
+      expect(rows).toHaveLength(1);
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('retention_policies'));
+    });
+
+    it('softDeleteFileAdmin sets deleted_at without tenant scoping', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      await db.softDeleteFileAdmin('fid-1');
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('deleted_at = now()'), [
+        'fid-1',
+      ]);
+    });
+
+    it('setLegalHold returns true when a row is updated', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      expect(await db.setLegalHold('fid-1', 'tid-1', 'litigation', 'admin-1')).toBe(true);
+    });
+
+    it('setLegalHold returns false when no row matches (nullish rowCount)', async () => {
+      mockQuery.mockResolvedValue({});
+      expect(await db.setLegalHold('missing', 'tid-1', 'r', 'admin-1')).toBe(false);
+    });
+
+    it('releaseLegalHold returns true when a row is updated', async () => {
+      mockQuery.mockResolvedValue({ rowCount: 1 });
+      expect(await db.releaseLegalHold('fid-1', 'tid-1')).toBe(true);
+    });
+
+    it('releaseLegalHold returns false when no row matches (nullish rowCount)', async () => {
+      mockQuery.mockResolvedValue({});
+      expect(await db.releaseLegalHold('missing', 'tid-1')).toBe(false);
+    });
+
+    it('upsertRetentionPolicy returns the persisted policy', async () => {
+      const policy = { policy_id: 'p1', tenant_id: 'tid-1', category: 'image', retention_days: 90 };
+      mockQuery.mockResolvedValue({ rows: [policy] });
+      const result = await db.upsertRetentionPolicy('tid-1', 'image', 90);
+      expect(result).toEqual(policy);
+      expect(mockQuery).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT'), [
+        'tid-1',
+        'image',
+        90,
+      ]);
+    });
+
+    it('listRetentionPolicies returns the tenant policies', async () => {
+      mockQuery.mockResolvedValue({ rows: [{ category: 'image' }] });
+      const rows = await db.listRetentionPolicies('tid-1');
+      expect(rows).toHaveLength(1);
     });
   });
 

@@ -27,6 +27,14 @@ const FILE_ROW: StoredFileRow = {
   uploaded_at: new Date('2026-01-01'),
   deleted_at: null,
   quarantined_at: null,
+  is_archive: false,
+  extracted_at: null,
+  parent_file_id: null,
+  category: 'image',
+  legal_hold: false,
+  legal_hold_reason: null,
+  legal_hold_by: null,
+  legal_hold_at: null,
 };
 
 describe('OpenSearchService', () => {

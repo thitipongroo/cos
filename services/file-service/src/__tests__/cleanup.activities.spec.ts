@@ -31,6 +31,8 @@ function makeMocks() {
     findExpiredFiles: jest.fn(),
     hardDeleteFile: jest.fn().mockResolvedValue(undefined),
     findExpiredQuarantinedFiles: jest.fn(),
+    findFilesPastRetention: jest.fn().mockResolvedValue([]),
+    softDeleteFileAdmin: jest.fn().mockResolvedValue(undefined),
   } as unknown as DbService;
 
   const minio = {
@@ -46,6 +48,28 @@ function makeMocks() {
 }
 
 describe('createFileCleanupActivities', () => {
+  describe('autoSoftDeleteExpired', () => {
+    it('soft-deletes each file past its retention policy and returns the count', async () => {
+      const { db, minio, opensearch } = makeMocks();
+      (db.findFilesPastRetention as jest.Mock).mockResolvedValue([
+        EXPIRED_ROW,
+        { ...EXPIRED_ROW, file_id: 'fid-2' },
+      ]);
+      const activities = createFileCleanupActivities(db, minio, opensearch);
+      const count = await activities.autoSoftDeleteExpired();
+      expect(count).toBe(2);
+      expect(db.softDeleteFileAdmin as jest.Mock).toHaveBeenCalledWith('fid-1');
+      expect(db.softDeleteFileAdmin as jest.Mock).toHaveBeenCalledWith('fid-2');
+    });
+
+    it('returns 0 when nothing is past retention', async () => {
+      const { db, minio, opensearch } = makeMocks();
+      const activities = createFileCleanupActivities(db, minio, opensearch);
+      expect(await activities.autoSoftDeleteExpired()).toBe(0);
+      expect(db.softDeleteFileAdmin as jest.Mock).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findExpiredFiles', () => {
     it('returns array of file IDs', async () => {
       const { db, minio, opensearch } = makeMocks();

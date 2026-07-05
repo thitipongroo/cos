@@ -7,6 +7,7 @@ const mockPutObject = jest.fn();
 const mockPresignedGet = jest.fn();
 const mockRemoveObject = jest.fn();
 const mockCopyObject = jest.fn();
+const mockGetObject = jest.fn();
 
 jest.mock('minio', () => ({
   Client: jest.fn().mockImplementation(() => ({
@@ -16,6 +17,7 @@ jest.mock('minio', () => ({
     presignedGetObject: mockPresignedGet,
     removeObject: mockRemoveObject,
     copyObject: mockCopyObject,
+    getObject: mockGetObject,
   })),
   // minio 7.1.4's only typed copyObject overload requires a CopyConditions arg, so the service
   // constructs `new CopyConditions()`. Defined inline (constructable jest.fn) so the factory does
@@ -117,6 +119,19 @@ describe('MinioService', () => {
       mockRemoveObject.mockResolvedValue(undefined);
       await svc.deleteFile('tid-1', 'key');
       expect(mockRemoveObject).toHaveBeenCalledWith('cos-tid-1', 'key');
+    });
+  });
+
+  describe('downloadToBuffer', () => {
+    it('streams the object from cos-{tenantId} into a single Buffer', async () => {
+      async function* chunks() {
+        yield Buffer.from('hello ');
+        yield Buffer.from('world');
+      }
+      mockGetObject.mockResolvedValue(chunks());
+      const buf = await svc.downloadToBuffer('tid-1', '2026/07/fid-1/plan.pdf');
+      expect(mockGetObject).toHaveBeenCalledWith('cos-tid-1', '2026/07/fid-1/plan.pdf');
+      expect(buf.toString()).toBe('hello world');
     });
   });
 

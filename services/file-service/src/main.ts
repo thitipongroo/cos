@@ -22,6 +22,7 @@ import { MinioService } from './services/minio.service';
 import { AntivirusService } from './services/antivirus.service';
 import { OpenSearchService } from './services/opensearch.service';
 import { KafkaService } from './services/kafka.service';
+import { ExtractionClient } from './extraction/extraction-client';
 import { filesRoutes } from './routes/files.routes';
 
 const logger = createLogger('file-service');
@@ -43,9 +44,10 @@ export async function buildApp() {
   // ── Services (decorated onto app instance) ────────────────────────────
   const db = new DbService(config);
   const minio = new MinioService(config);
-  const antivirus = new AntivirusService(config);
+  const antivirus = new AntivirusService(config, { db, minio });
   const opensearch = new OpenSearchService(config);
   const kafka = new KafkaService();
+  const extraction = new ExtractionClient(config.temporal.address);
 
   app.decorate('config', config);
   app.decorate('db', db);
@@ -53,6 +55,7 @@ export async function buildApp() {
   app.decorate('antivirus', antivirus);
   app.decorate('opensearch', opensearch);
   app.decorate('kafka', kafka);
+  app.decorate('extraction', extraction);
 
   // ── Auth hook (after decorators, before routes) ───────────────────────
   await app.register(authPlugin);

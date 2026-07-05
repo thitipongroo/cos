@@ -10,6 +10,7 @@ import { createLogger } from '@cos/logger';
 const logger = createLogger('file-service.cleanup');
 
 export interface FileCleanupActivities {
+  autoSoftDeleteExpired(): Promise<number>;
   findExpiredFiles(): Promise<string[]>;
   hardDeleteFile(fileId: string): Promise<void>;
   findExpiredQuarantinedFiles(): Promise<string[]>;
@@ -22,6 +23,20 @@ export function createFileCleanupActivities(
   opensearch: OpenSearchService,
 ): FileCleanupActivities {
   return {
+    // Retention lifecycle: soft-delete files past their category's retention_days (legal hold
+    // excluded at the query level). The 30-day hard-delete grace then applies as usual.
+    async autoSoftDeleteExpired(): Promise<number> {
+      const rows = await db.findFilesPastRetention();
+      for (const f of rows) {
+        await db.softDeleteFileAdmin(f.file_id);
+        logger.info(
+          { file_id: f.file_id, category: f.category },
+          'file.retention.auto_soft_deleted',
+        );
+      }
+      return rows.length;
+    },
+
     async findExpiredFiles(): Promise<string[]> {
       const rows = await db.findExpiredFiles();
       return rows.map((r) => r.file_id);
