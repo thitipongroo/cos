@@ -8,11 +8,11 @@ last_updated: 2026-07-05
 Full-flow screenshots of the Construction OS apps, one folder per platform. Each platform folder
 has its own `README.md` index of the individual screens.
 
-| Platform | Folder | Status |
-| -------- | ------ | ------ |
-| iOS | [`ios/`](ios/README.md) | ✅ 21 screens — iPhone 17 simulator, live backend + seeded data |
-| Android | [`android/`](android/README.md) | ⏳ pending capture |
-| Web | [`web/`](web/README.md) | ⏳ pending capture |
+| Platform | Folder                          | Status                                                          |
+| -------- | ------------------------------- | --------------------------------------------------------------- |
+| iOS      | [`ios/`](ios/README.md)         | ✅ 21 screens — iPhone 17 simulator, live backend + seeded data |
+| Android  | [`android/`](android/README.md) | ⏳ pending capture                                              |
+| Web      | [`web/`](web/README.md)         | ⏳ pending capture                                              |
 
 ## Convention
 
