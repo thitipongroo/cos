@@ -272,7 +272,11 @@ jobs:
         run: pnpm exec prisma generate
       - name: Run tenant isolation tests
         working-directory: backend
-        run: pnpm exec jest --testPathPattern='tenant-isolation' --runInBand
+        # The isolation spec lives in test/ (Testcontainers integration spec) — the base jest.config
+        # ignores test/, so it MUST run via jest.integration.config.js (same config as test:integration,
+        # which re-includes test/). --testPathPatterns (Jest 30 renamed the old singular flag) filters
+        # to just the isolation spec. Testcontainers starts its own PostgreSQL on the runner's Docker.
+        run: pnpm exec jest --config jest.integration.config.js --testPathPatterns='tenant-isolation' --runInBand
 
   # ─── Step 4c: API Contract Tests (Pact) ─────────────────────────────────────
   # Source: spec §30.8 — consumer-driven contract tests; blocks PR merge
