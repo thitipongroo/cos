@@ -3,6 +3,7 @@
 //   ClickHouse queries complete within P95 < 3s SLA"
 
 import { test, expect } from '@playwright/test';
+import { loginViaKeycloak } from '../helpers/auth';
 
 const EXEC_EMAIL = process.env['E2E_EXEC_EMAIL'] || 'e2e-exec@construction-os.io';
 const EXEC_PASSWORD = process.env['E2E_EXEC_PASSWORD'] || 'E2eTestPass123!';
@@ -11,16 +12,12 @@ const ANALYTICS_P95_BUDGET_MS = 3_000;
 const ANALYTICS_SAMPLE_COUNT = 5;
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill(EXEC_EMAIL);
-  await page.getByLabel(/password/i).fill(EXEC_PASSWORD);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/dashboard|home/);
+  await loginViaKeycloak(page, { email: EXEC_EMAIL, password: EXEC_PASSWORD });
 });
 
 test.describe('Executive Analytics Dashboard', () => {
   test('executive dashboard loads and renders key metrics', async ({ page }) => {
-    await page.goto('/dashboard/analytics/executive');
+    await page.goto('/analytics/executive');
     await page.waitForLoadState('networkidle');
 
     await expect(page.getByRole('main')).toBeVisible();
@@ -35,7 +32,7 @@ test.describe('Executive Analytics Dashboard', () => {
     page,
   }) => {
     const start = Date.now();
-    await page.goto('/dashboard/analytics/executive');
+    await page.goto('/analytics/executive');
     await page.waitForLoadState('networkidle');
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(ANALYTICS_P95_BUDGET_MS);
@@ -48,7 +45,7 @@ test.describe('Executive Analytics Dashboard', () => {
 
     for (let i = 0; i < ANALYTICS_SAMPLE_COUNT; i++) {
       const start = Date.now();
-      await page.goto('/dashboard/analytics/executive');
+      await page.goto('/analytics/executive');
       await page.waitForLoadState('networkidle');
       durations.push(Date.now() - start);
       await page.waitForTimeout(200);
@@ -62,7 +59,7 @@ test.describe('Executive Analytics Dashboard', () => {
   });
 
   test('executive can see project-level cost summary', async ({ page }) => {
-    await page.goto('/dashboard/analytics/executive');
+    await page.goto('/analytics/executive');
     await page.waitForLoadState('networkidle');
 
     const hasCostData =
@@ -72,7 +69,7 @@ test.describe('Executive Analytics Dashboard', () => {
   });
 
   test('executive can filter dashboard by project', async ({ page }) => {
-    await page.goto('/dashboard/analytics/executive');
+    await page.goto('/analytics/executive');
     await page.waitForLoadState('networkidle');
 
     const projectFilter = page

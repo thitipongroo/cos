@@ -2,7 +2,8 @@
 // Source: spec §Phase 18 item 5 — "Procurement flow — Create PR → generate RFQ → receive
 //   quotation → approve PO → record delivery → approve vendor invoice"
 
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+import { loginViaKeycloak } from '../helpers/auth';
 
 const PM_EMAIL = process.env['E2E_PM_EMAIL'] || 'e2e-pm@construction-os.io';
 const PM_PASSWORD = process.env['E2E_PM_EMAIL_PASSWORD'] || 'E2eTestPass123!';
@@ -14,16 +15,8 @@ const FINANCE_PASSWORD = process.env['E2E_FINANCE_PASSWORD'] || 'E2eTestPass123!
 const PR_TITLE = `E2E PR ${Date.now()}`;
 const PO_AMOUNT = '50000';
 
-async function loginAs(
-  page: Parameters<Parameters<typeof test>[1]>[0]['page'],
-  email: string,
-  password: string,
-) {
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill(email);
-  await page.getByLabel(/password/i).fill(password);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/dashboard|home/);
+async function loginAs(page: Page, email: string, password: string) {
+  await loginViaKeycloak(page, { email, password });
 }
 
 test.describe('Procurement Flow — PR → RFQ → PO → Delivery → Invoice', () => {

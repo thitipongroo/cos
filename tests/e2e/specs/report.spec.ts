@@ -2,16 +2,13 @@
 // Source: spec §Phase 18 — "Playwright E2E test for: login, project create, report submit, dashboard view"
 
 import { test, expect } from '@playwright/test';
+import { loginViaKeycloak } from '../helpers/auth';
 
 const TEST_EMAIL = process.env['E2E_EMAIL'] || 'e2e-admin@construction-os.io';
 const TEST_PASSWORD = process.env['E2E_PASSWORD'] || 'E2eTestPass123!';
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/login');
-  await page.getByLabel(/email/i).fill(TEST_EMAIL);
-  await page.getByLabel(/password/i).fill(TEST_PASSWORD);
-  await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await expect(page).toHaveURL(/dashboard|home/);
+  await loginViaKeycloak(page, { email: TEST_EMAIL, password: TEST_PASSWORD });
 });
 
 test.describe('Report Submit', () => {
@@ -35,8 +32,9 @@ test.describe('Report Submit', () => {
 
 test.describe('Dashboard', () => {
   test('dashboard loads and shows key metrics', async ({ page }) => {
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/dashboard/);
+    // Authenticated home ('/' routes to the role landing per §20.6.1 / ROLE_LANDING).
+    await page.goto('/');
+    await expect(page.getByRole('navigation')).toBeVisible();
     await expect(page.getByRole('main')).toBeVisible();
 
     const widgets = page.getByTestId(/widget|metric|card/);
@@ -47,7 +45,7 @@ test.describe('Dashboard', () => {
 
   test('dashboard loads within 3 seconds', async ({ page }) => {
     const start = Date.now();
-    await page.goto('/dashboard');
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(3000);
