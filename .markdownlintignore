@@ -4,3 +4,6 @@ node_modules/
 docs/specifications/
 context/
 context.md
+# Figma-to-React export — design reference/prototype, excluded from all lint/format gates
+# (cf. eslint.config.mjs ignores + .prettierignore + .yamllint)
+figma/
