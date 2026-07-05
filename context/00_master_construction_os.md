@@ -1693,6 +1693,9 @@ Generate:
                                      PATCH /api/v1/users/{userId}/role          — change role
                                      PATCH /api/v1/users/{userId}/deactivate    — deactivate user
                                      GET  /api/v1/admin/tenants                 — list all tenants (SYSTEM_ADMIN, §20.4.1)
+                                     POST /api/v1/admin/tenants                 — create tenant (SYSTEM_ADMIN, §20.4.2)
+                                     PATCH /api/v1/admin/tenants/{id}/dedicated-db — attach dedicated DB → EnterpriseProvisioningWorkflow (SYSTEM_ADMIN, §20.4.3)
+                                     PATCH /api/v1/admin/tenants/{id}/deactivate   — deactivate tenant (SYSTEM_ADMIN, §20.4.5)
                                      GET  /api/v1/tenant/settings               — get tenant settings (TENANT_ADMIN, ADR-028)
                                      PATCH /api/v1/tenant/settings              — update tenant settings (variance/retention/LINE/notif)
 - Refresh token rotation flow
@@ -1846,6 +1849,48 @@ Entities (PostgreSQL — schema: projects):
     document_type   VARCHAR(100)
     uploaded_by     UUID NOT NULL
     uploaded_at     TIMESTAMPTZ DEFAULT now()
+
+  — Physical / spatial hierarchy (source: spec 10 §10.2 / 11 §11.2; backs task room-assignment,
+    offline read-only cache per 17 §17.4; mirrored as KG nodes in the Neo4j graph, Phase 13):
+  buildings:
+    building_id     UUID PK DEFAULT gen_random_uuid()
+    project_id      UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    name            VARCHAR(255) NOT NULL
+    type            VARCHAR(100)
+    total_floors    INTEGER
+    status          VARCHAR(50)
+    INDEX: (tenant_id, project_id)
+  floors:
+    floor_id        UUID PK DEFAULT gen_random_uuid()
+    building_id     UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    floor_number    INTEGER NOT NULL
+    gross_area_sqm  DECIMAL(12,2)
+  rooms:
+    room_id         UUID PK DEFAULT gen_random_uuid()
+    floor_id        UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    room_number     VARCHAR(50) NOT NULL
+    room_type       VARCHAR(100)
+    area_sqm        DECIMAL(12,2)
+  structures:
+    structure_id    UUID PK DEFAULT gen_random_uuid()
+    building_id     UUID FK NOT NULL
+    tenant_id       UUID NOT NULL
+    structure_type  ENUM('column','beam','slab','wall') NOT NULL
+    material_type   VARCHAR(100)
+
+  — Asset / handover domain (source: spec 11 §11.2; one of the 9 business domains, `01`):
+  assets:
+    asset_id           UUID PK DEFAULT gen_random_uuid()
+    project_id         UUID FK NOT NULL
+    tenant_id          UUID NOT NULL
+    handover_date      DATE
+    warranty_expiry    DATE
+    maintenance_status VARCHAR(50)
+    INDEX: (tenant_id, project_id)
+  (tasks reference floor_id / room_id nullable FKs for room-assignment — LOCATED_IN in the KG)
 
 APIs:
   POST   /api/v1/projects                    — create (DRAFT status)
@@ -3067,6 +3112,16 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       triggered from (app)/_layout on entry; it pulls GET /sync/delta for all six entity types
       (task/site_report/issue/attendance/safety/material), upserts into the local Drizzle tables, and
       advances the syncStore.lastSyncAt cursor. See spec §17.9. The DeltaSyncClient class is superseded.]
+    - Server-side `platform.sync_tombstones` table (backs `GET /sync/delta` `deleted[]`; source spec `11 §11.1`):
+      tombstone_id UUID PK, tenant_id UUID NOT NULL (RLS), entity_type VARCHAR(64), entity_id UUID,
+      deleted_at TIMESTAMPTZ DEFAULT now(); INDEX (tenant_id, entity_type, deleted_at). Per-entity
+      delete→tombstone wiring is deferred (contract complete; `deleted[]` stays empty until each entity records here).
+    - Entity offline scope (enforce per spec `17 §17.4` — do NOT allow offline writes outside this list):
+        * Offline read/write: tasks, site reports, inspections, workforce attendance, material consumption, safety checklists + incidents, equipment usage
+        * Online-required (read-cache only, no offline write): POs, vendor invoices / AR / receipts / payments, budget-line mutations, vendor master, permissions/roles
+        * Read-only SWR cache: project master, BOQ lines, room/floor reference, drawings (size-limited), vendor directory
+    - Sync priority order on reconnect (spec `17 §17.6`): 1 safety incidents → 2 attendance → 3 inspections → 4 task progress → 5 site reports → 6 material → 7 equipment usage → 8 photo/media (deferred last)
+    - Data size limits (spec `17 §17.7`): local DB ≤ 500 MB · drawing cache ≤ 200 MB (LRU eviction) · photo queue ≤ 100 (warn user at 80) · sync batch ≤ 500 records/cycle
     - BackgroundSyncTask (expo-task-manager registration)
     - PhotoUploadQueue with chunked upload support
     - React hooks: useSyncStatus(), usePendingCount(), useConflicts()
@@ -3309,6 +3364,17 @@ Token Tracking Schema (PostgreSQL — schema: ai):
     latency_ms      INTEGER
     created_at      TIMESTAMPTZ DEFAULT now()
     INDEX: (tenant_id, created_at)
+
+Tenant SaaS-subscription billing (spec §26.1) — the tenant-billing model; distinct from Finance
+Service AR **client** billing (project→customer). `ai_usage_logs` above is the AI-usage half;
+the subscription-fee half:
+  - SMB (Shared SaaS): per-active-project base fee + per-active-user seat fee (above an included
+    minimum) — the two charges apply independently + simultaneously
+  - Mid-market: annual subscription + per-active-user
+  - Enterprise: annual contract + platform fee + usage-based AI
+  - AI tokens metered per-tenant from `ai_usage_logs` (SMB 500K/mo · Mid 5M/mo · Enterprise custom;
+    overage per 1K tokens); OCR per-page, voice per-minute; usage visible in the Tenant-Admin dashboard
+  - Rate values set at commercial launch, configurable per market (spec §26.1)
 
 Prompt Template Management:
   Storage: ai/prompts/ directory, Jinja2 .j2 files, version-controlled
@@ -3581,6 +3647,29 @@ Neo4j Node Labels and Properties:
     occurred_at: DateTime
     Source: construction.delay.detected.v1 payload (see docs/specifications/32-implementation-specifications §32.4)
 
+  (:Building)                                — physical hierarchy (source: spec 10 §10.2 / 12 §12.2)
+    building_id:  String (UUID)
+    name:         String
+    type:         String
+    total_floors: Integer
+    status:       String
+  (:Floor)
+    floor_id:       String (UUID)
+    building_id:    String
+    floor_number:   Integer
+    gross_area_sqm: Float
+  (:Room)
+    room_id:     String (UUID)
+    floor_id:    String
+    room_number: String
+    room_type:   String
+    area_sqm:    Float
+  (:Structure)
+    structure_id:   String (UUID)
+    building_id:    String
+    structure_type: String (enum: column/beam/slab/wall)
+    material_type:  String
+
 Relationships:
   (:Project)-[:HAS_MATERIAL]->(:Material)
   (:Material)-[:SUPPLIED_BY]->(:Vendor)
@@ -3591,6 +3680,11 @@ Relationships:
   (:Project)-[:HAS_INSPECTION]->(:Inspection)
   (:Delay)-[:IMPACTS]->(:Project)           — source: delay.detected event (delay_days, cause, severity)
   (:Delay)-[:IMPACTS]->(:Task)              — task-level delay (nullable — may be project-level only)
+  (:Building)-[:HAS_FLOOR]->(:Floor)             — 1:N (source: spec 10 §10.3 / 12 §12.3)
+  (:Floor)-[:HAS_ROOM]->(:Room)                  — 1:N
+  (:Building)-[:CONTAINS_STRUCTURE]->(:Structure) — 1:N
+  (:Task)-[:LOCATED_IN]->(:Floor)                — N:1 (task room-assignment; offline-cached per 17 §17.4)
+  (:Task)-[:LOCATED_IN]->(:Room)                 — N:1
 
   Note: DEPENDS_ON and USES relationships for Tasks derive from BOQ item hierarchy
         (task_id = boq_item_id; BOQ parent-child = DEPENDS_ON)
@@ -3859,6 +3953,11 @@ Compliance Targets (source §13.3):
 Security Requirements:
   Encryption algorithm: AES-256 minimum for all at-rest data encryption — custom field-level
     or file encryption outside AWS infrastructure MUST use AES-256 or stronger (source: spec §5.2)
+  SSE-KMS with customer-managed key (CMK) for all cloud storage (source: spec §5.2.1):
+    - S3 buckets + RDS/Aurora → CMK (customer-managed); ElastiCache → AWS-managed key (at_rest_encryption_enabled)
+    - One CMK per storage-type per env; alias convention `cos/{env}/rds`, `cos/{env}/s3`, `cos/{env}/elasticache`
+    - Annual automatic KMS rotation; key policy grants use to the app service role + SYSTEM_ADMIN only
+    - CMK definitions as Terraform IaC (infrastructure/terraform/aws/kms.tf); on-prem = Vault Transit envelope encryption
   TLS: TLS 1.3 minimum on all ingress (Kubernetes Ingress + cert-manager)
   RBAC: enforced via Phase 2 Keycloak + @cos/rbac guards (all services)
   Audit logging: all write operations logged to audit_logs (Phase 2 schema)
@@ -4471,7 +4570,19 @@ Entities (PostgreSQL — schema: notifications):
     event_type      VARCHAR(255) NOT NULL
     channel         ENUM('IN_APP','EMAIL','LINE','PUSH','SMS')  -- PUSH = Expo push (mobile); SMS enum value has no MVP adapter (spec §19.2)
     is_enabled      BOOLEAN DEFAULT true
+    quiet_hours_start TIME DEFAULT '22:00'  -- spec §19.6; per-user quiet window
+    quiet_hours_end   TIME DEFAULT '07:00'
     UNIQUE: (user_id, event_type, channel)
+
+  Delivery rules (spec §19.3 / §19.6):
+  - Quiet hours (§19.6): suppress non-critical delivery 22:00–07:00 (user local tz);
+    **critical safety notifications cannot be disabled or quieted** — always delivered.
+  - Digest (§19.3): batch non-urgent notifications into a daily digest at 18:00 and a
+    weekly digest Monday 08:00 (tenant timezone).
+  - Escalation timeouts (§19.3) — distinct from the §15.5 48h *approval* escalation:
+      * safety incident unacknowledged 30 min → escalate to PM
+      * budget alert unacknowledged 2 h → escalate to Executive
+      * AI risk prediction unacknowledged 24 h → escalate to PM
 
 APIs:
   GET  /api/v1/notifications                  — list my notifications (paginated)
