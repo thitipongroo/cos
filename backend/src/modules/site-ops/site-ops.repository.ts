@@ -122,25 +122,30 @@ export class SiteOpsRepository {
     weather: string | null;
     manpower_count: number | null;
     client_submitted_at: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   }): Promise<SiteReportRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SiteReportRow[]>`
         INSERT INTO site_ops.site_reports
           (report_id, project_id, tenant_id, report_date, submitted_by,
-           summary, weather, manpower_count, client_submitted_at)
+           summary, weather, manpower_count, client_submitted_at, latitude, longitude)
         VALUES
           (${params.report_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid, ${params.report_date}::date,
            ${params.submitted_by}::uuid,
            ${params.summary}, ${params.weather}, ${params.manpower_count},
-           ${params.client_submitted_at}::timestamptz)
+           ${params.client_submitted_at}::timestamptz,
+           ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         ON CONFLICT (project_id, report_date, submitted_by)
           DO UPDATE SET
             summary             = EXCLUDED.summary,
             weather             = EXCLUDED.weather,
             manpower_count      = EXCLUDED.manpower_count,
             client_submitted_at = EXCLUDED.client_submitted_at,
+            latitude            = EXCLUDED.latitude,
+            longitude           = EXCLUDED.longitude,
             modified_at         = now()
         RETURNING *
       `,
@@ -222,20 +227,23 @@ export class SiteOpsRepository {
     severity: string;
     assigned_to: string | null;
     client_submitted_at: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   }): Promise<IssueRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IssueRow[]>`
         INSERT INTO site_ops.issues
           (issue_id, project_id, tenant_id, report_id, title, description,
-           severity, assigned_to, client_submitted_at)
+           severity, assigned_to, client_submitted_at, latitude, longitude)
         VALUES
           (${params.issue_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid,
            ${params.report_id}::uuid,
            ${params.title}, ${params.description},
            ${params.severity}, ${params.assigned_to}::uuid,
-           ${params.client_submitted_at}::timestamptz)
+           ${params.client_submitted_at}::timestamptz,
+           ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *
       `,
     );
@@ -333,18 +341,21 @@ export class SiteOpsRepository {
     inspected_by: string;
     inspected_at: string;
     notes: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   }): Promise<InspectionRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<InspectionRow[]>`
         INSERT INTO site_ops.inspections
           (inspection_id, project_id, tenant_id, checklist_id, status,
-           inspected_by, inspected_at, notes)
+           inspected_by, inspected_at, notes, latitude, longitude)
         VALUES
           (${params.inspection_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid, ${params.checklist_id}::uuid,
            ${params.status}, ${params.inspected_by}::uuid,
-           ${params.inspected_at}::timestamptz, ${params.notes})
+           ${params.inspected_at}::timestamptz, ${params.notes},
+           ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *
       `,
     );

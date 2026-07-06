@@ -2,14 +2,18 @@
 
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
-import { usePayments } from '../../../../lib/api/queries';
+import { usePayments, useApprovePayment } from '../../../../lib/api/queries';
 import type { PaymentRow } from '../../../../lib/api/types';
 import { formatDate, formatMoney } from '../../../../lib/format';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
-/** Tenant-wide AP payment queue (§20.7.4 → GET /finance/payments, AIP-132). */
+/** Tenant-wide AP payment queue (§20.7.4 → GET /finance/payments; approve via
+ *  PATCH /finance/payments/:id/approve). */
 export default function PaymentsPage() {
   const { t, locale } = useI18n();
   const query = usePayments('');
+  const approve = useApprovePayment();
+  const readOnly = useReadOnly();
 
   const columns: Column<PaymentRow>[] = [
     { headerKey: 'pm.colNumber', cell: (p) => p.invoice_id },
@@ -17,6 +21,22 @@ export default function PaymentsPage() {
     { headerKey: 'pm.colDate', cell: (p) => formatDate(locale, p.payment_date) },
     { headerKey: 'table.status', cell: (p) => p.status },
     { headerKey: 'finance.colReference', cell: (p) => p.payment_reference ?? '—' },
+    {
+      headerKey: 'table.actions',
+      cell: (p) =>
+        p.status === 'PENDING' && !readOnly ? (
+          <button
+            type="button"
+            disabled={approve.isPending}
+            onClick={() => approve.mutate(p.payment_id)}
+            className="rounded border border-green-600 px-2 py-0.5 text-xs text-green-700 hover:bg-green-50 disabled:opacity-50"
+          >
+            {t('finance.approve')}
+          </button>
+        ) : (
+          '—'
+        ),
+    },
   ];
 
   return (

@@ -62,6 +62,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <OfflineIndicator />
           <NotificationBell />
           <LanguageSwitcher />
+          <Link href="/settings/profile" className="text-sm text-gray-600 hover:text-gray-900">
+            {t('profile.link')}
+          </Link>
           <Link href="/logout" className="text-sm text-gray-600 hover:text-gray-900">
             {t('common.signOut')}
           </Link>

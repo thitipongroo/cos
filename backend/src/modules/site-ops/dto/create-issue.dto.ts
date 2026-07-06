@@ -4,6 +4,9 @@ import {
   IsEnum,
   IsUUID,
   IsDateString,
+  IsNumber,
+  Min,
+  Max,
   MaxLength,
   IsNotEmpty,
 } from 'class-validator';
@@ -50,4 +53,18 @@ export class CreateIssueDto {
   @IsOptional()
   @IsDateString()
   client_submitted_at?: string;
+
+  @ApiPropertyOptional({ minimum: -90, maximum: 90, description: 'GPS latitude (geo-tag)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  latitude?: number;
+
+  @ApiPropertyOptional({ minimum: -180, maximum: 180, description: 'GPS longitude (geo-tag)' })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  longitude?: number;
 }

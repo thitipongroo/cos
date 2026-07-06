@@ -15,6 +15,7 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { SafetyModule } from './modules/safety/safety.module';
+import { GeoModule } from './modules/geo/geo.module';
 import { CrmModule } from './modules/crm/crm.module';
 import { VendorPortalModule } from './modules/vendor-portal/vendor-portal.module';
 import { NotificationModule } from './modules/notification/notification.module';
@@ -67,6 +68,7 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     SiteOpsModule,
     TasksModule,
     SafetyModule,
+    GeoModule,
     CrmModule,
     VendorPortalModule,
     NotificationModule,

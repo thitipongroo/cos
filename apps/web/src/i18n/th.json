@@ -126,7 +126,30 @@
     "colValidity": "ยืนราคา (วัน)",
     "colDeliveryNote": "ใบส่งของ",
     "colPo": "PO",
-    "quotationsHint": "ดูได้เฉพาะ RFQ ที่สถานะ CLOSED; เลือกผู้ชนะได้เมื่อสถานะ EVALUATED"
+    "quotationsHint": "ดูได้เฉพาะ RFQ ที่สถานะ CLOSED; เลือกผู้ชนะได้เมื่อสถานะ EVALUATED",
+    "recordDelivery": "บันทึกการรับของ",
+    "recordDeliveryTitle": "บันทึกการรับของ",
+    "backToDeliveries": "กลับไปรายการรับของ",
+    "deliveryRecorded": "บันทึกการรับของแล้ว",
+    "selectPo": "เลือกใบสั่งซื้อ",
+    "deliveredAt": "รับเมื่อ",
+    "deliveryNote": "เลขที่ใบส่งของ",
+    "colDescription": "รายการ",
+    "colOrdered": "สั่ง",
+    "colReceived": "รับ",
+    "publish": "เผยแพร่",
+    "close": "ปิด",
+    "cancel": "ยกเลิก",
+    "submit": "ส่งอนุมัติ",
+    "approve": "อนุมัติ",
+    "reject": "ปฏิเสธ",
+    "rejectReason": "เหตุผลการปฏิเสธ",
+    "prNumber": "เลขที่ PR",
+    "requiredDate": "วันที่ต้องการ",
+    "createRequest": "สร้าง PR",
+    "rfqNumber": "เลขที่ RFQ",
+    "createRfq": "สร้าง RFQ",
+    "deadline": "กำหนดส่ง"
   },
   "finance": {
     "paymentsTitle": "การชำระเงิน (AP)",
@@ -355,5 +378,37 @@
     "dueDate": "วันครบกำหนด",
     "submitInvoice": "ส่งใบแจ้งหนี้",
     "noInvoices": "ยังไม่มีใบแจ้งหนี้"
+  },
+  "voice": {
+    "tapToSpeak": "แตะเพื่อพูด",
+    "stop": "หยุด",
+    "recording": "กำลังบันทึกเสียง…",
+    "transcribing": "กำลังถอดเสียง…",
+    "placeholder": "ข้อความถอดเสียงจะปรากฏที่นี่",
+    "notSupported": "เบราว์เซอร์นี้ไม่รองรับการป้อนด้วยเสียง",
+    "micDenied": "ไม่ได้รับอนุญาตให้ใช้ไมโครโฟน",
+    "error": "ถอดเสียงไม่สำเร็จ",
+    "unavailable": "บริการถอดเสียงยังไม่พร้อมใช้งาน",
+    "language": "ภาษา"
+  },
+  "location": {
+    "getLocation": "ระบุตำแหน่ง",
+    "locating": "กำลังระบุตำแหน่ง…",
+    "currentLocation": "ตำแหน่งปัจจุบัน",
+    "coordinates": "พิกัด",
+    "accuracy": "ความแม่นยำ",
+    "notSupported": "เบราว์เซอร์นี้ไม่รองรับบริการระบุตำแหน่ง",
+    "denied": "ไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง",
+    "timeout": "หมดเวลาการระบุตำแหน่ง",
+    "unavailable": "ไม่สามารถระบุตำแหน่งได้"
+  },
+  "profile": {
+    "title": "โปรไฟล์ของฉัน",
+    "link": "โปรไฟล์",
+    "name": "ชื่อ",
+    "email": "อีเมล",
+    "role": "บทบาท",
+    "tenant": "องค์กร",
+    "language": "ภาษา"
   }
 }

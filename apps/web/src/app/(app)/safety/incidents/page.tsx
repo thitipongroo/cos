@@ -11,6 +11,7 @@ import {
 } from '../../../../lib/api/queries';
 import type { IncidentRow, IncidentSeverity } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
 const SEVERITIES: IncidentSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
@@ -21,6 +22,7 @@ export default function SafetyIncidentsPage() {
   const query = useIncidents();
   const report = useReportIncident();
   const ack = useAcknowledgeIncident();
+  const readOnly = useReadOnly();
   const [projectId, setProjectId] = useState('');
   const [type, setType] = useState('');
   const [severity, setSeverity] = useState<IncidentSeverity>('MEDIUM');
@@ -39,7 +41,7 @@ export default function SafetyIncidentsPage() {
     {
       headerKey: 'table.actions',
       cell: (i) =>
-        i.status === 'OPEN' ? (
+        i.status === 'OPEN' && !readOnly ? (
           <button
             type="button"
             disabled={ack.isPending}

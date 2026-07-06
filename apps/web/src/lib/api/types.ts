@@ -119,6 +119,21 @@ export interface PurchaseRequestRow {
   required_date: string | null;
 }
 
+/** POST /procurement/purchase-requests (CreatePurchaseRequestDto). */
+export interface CreatePurchaseRequestInput {
+  project_id: string;
+  pr_number: string;
+  required_date?: string;
+}
+
+/** POST /procurement/rfqs (CreateRfqDto). */
+export interface CreateRfqInput {
+  project_id: string;
+  pr_id?: string;
+  rfq_number: string;
+  deadline: string;
+}
+
 export interface RfqRow {
   rfq_id: string;
   rfq_number: string;
@@ -165,6 +180,31 @@ export interface DeliveryRow {
   delivery_note: string | null;
   delivered_at: string;
   received_by: string;
+}
+
+export interface PoLineItemRow {
+  line_id: string;
+  po_id: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unit_price: string;
+  line_total: string;
+}
+
+/** GET /procurement/purchase-orders/:poId — PO detail with its line items. */
+export interface PurchaseOrderDetail {
+  po: PurchaseOrderRow;
+  line_items: PoLineItemRow[];
+}
+
+/** POST /procurement/deliveries (RecordDeliveryDto). */
+export interface RecordDeliveryInput {
+  po_id: string;
+  delivery_note?: string;
+  delivered_at: string;
+  notes?: string;
+  items: { line_id: string; quantity_received: string }[];
 }
 
 export interface QuotationRow {

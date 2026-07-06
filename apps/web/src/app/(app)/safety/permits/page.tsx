@@ -5,6 +5,7 @@ import { useI18n } from '../../../../i18n';
 import { usePermits, useApprovePermit, useRejectPermit } from '../../../../lib/api/queries';
 import type { PermitRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
+import { useReadOnly } from '../../../../lib/auth/useReadOnly';
 
 /** Work-permit approval (§20.7.7 → /safety/permits; §15.5 SE → Safety Officer → PM). */
 export default function SafetyPermitsPage() {
@@ -12,6 +13,7 @@ export default function SafetyPermitsPage() {
   const query = usePermits();
   const approve = useApprovePermit();
   const reject = useRejectPermit();
+  const readOnly = useReadOnly();
   const busy = approve.isPending || reject.isPending;
 
   const columns: Column<PermitRow>[] = [
@@ -25,7 +27,7 @@ export default function SafetyPermitsPage() {
     {
       headerKey: 'table.actions',
       cell: (p) =>
-        p.status === 'PENDING' ? (
+        p.status === 'PENDING' && !readOnly ? (
           <span className="flex gap-2">
             <button
               type="button"

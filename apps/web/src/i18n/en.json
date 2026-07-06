@@ -126,7 +126,30 @@
     "colValidity": "Validity (days)",
     "colDeliveryNote": "Delivery note",
     "colPo": "PO",
-    "quotationsHint": "Viewable only for CLOSED RFQs; award is available when status is EVALUATED"
+    "quotationsHint": "Viewable only for CLOSED RFQs; award is available when status is EVALUATED",
+    "recordDelivery": "Record delivery",
+    "recordDeliveryTitle": "Record delivery",
+    "backToDeliveries": "Back to deliveries",
+    "deliveryRecorded": "Delivery recorded",
+    "selectPo": "Select a purchase order",
+    "deliveredAt": "Delivered at",
+    "deliveryNote": "Delivery note",
+    "colDescription": "Description",
+    "colOrdered": "Ordered",
+    "colReceived": "Received",
+    "publish": "Publish",
+    "close": "Close",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectReason": "Reason for rejection",
+    "prNumber": "PR number",
+    "requiredDate": "Required date",
+    "createRequest": "Create PR",
+    "rfqNumber": "RFQ number",
+    "createRfq": "Create RFQ",
+    "deadline": "Deadline"
   },
   "finance": {
     "paymentsTitle": "Payments (AP)",
@@ -355,5 +378,37 @@
     "dueDate": "Due date",
     "submitInvoice": "Submit invoice",
     "noInvoices": "No invoices yet."
+  },
+  "voice": {
+    "tapToSpeak": "Tap to speak",
+    "stop": "Stop",
+    "recording": "Recording…",
+    "transcribing": "Transcribing…",
+    "placeholder": "Your transcript will appear here",
+    "notSupported": "Voice input is not supported in this browser",
+    "micDenied": "Microphone permission denied",
+    "error": "Transcription failed",
+    "unavailable": "Transcription service is not available yet",
+    "language": "Language"
+  },
+  "location": {
+    "getLocation": "Get location",
+    "locating": "Getting location…",
+    "currentLocation": "Current location",
+    "coordinates": "Coordinates",
+    "accuracy": "Accuracy",
+    "notSupported": "Location services are not available in this browser",
+    "denied": "Location permission denied",
+    "timeout": "Location request timed out",
+    "unavailable": "Location unavailable"
+  },
+  "profile": {
+    "title": "My profile",
+    "link": "Profile",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "tenant": "Organization",
+    "language": "Language"
   }
 }

@@ -113,6 +113,8 @@ export class WorkforceService {
       check_in_at: dto.check_in_at ?? null,
       check_out_at: dto.check_out_at ?? null,
       hours_worked: hoursWorked,
+      latitude: dto.latitude ?? null,
+      longitude: dto.longitude ?? null,
     });
 
     const eventType =

@@ -75,6 +75,7 @@ export default function PMDashboardPage(props: { searchParams: Promise<PageSearc
         </div>
       )}
       <PMDashboard
+        pmRows={state.site}
         costTrend={state.cost}
         procurementTrend={state.procurement}
         siteTrend={state.siteTrend}

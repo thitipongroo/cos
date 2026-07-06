@@ -73,6 +73,8 @@ export class SiteOpsService {
       weather: dto.weather ?? null,
       manpower_count: dto.manpower_count ?? null,
       client_submitted_at: dto.client_submitted_at ?? null,
+      latitude: dto.latitude ?? null,
+      longitude: dto.longitude ?? null,
     });
 
     await this.emitEvent('site.report.created.v1', {
@@ -144,6 +146,8 @@ export class SiteOpsService {
           weather: item.weather ?? null,
           manpower_count: item.manpower_count ?? null,
           client_submitted_at: item.client_submitted_at ?? null,
+          latitude: item.latitude ?? null,
+          longitude: item.longitude ?? null,
         });
 
         await this.emitEvent('site.report.submitted.v1', {
@@ -214,6 +218,8 @@ export class SiteOpsService {
       severity: dto.severity,
       assigned_to: dto.assigned_to ?? null,
       client_submitted_at: dto.client_submitted_at ?? null,
+      latitude: dto.latitude ?? null,
+      longitude: dto.longitude ?? null,
     });
 
     await this.emitEvent('site.issue.created.v1', {
@@ -329,6 +335,8 @@ export class SiteOpsService {
       inspected_by: this.userId,
       inspected_at: dto.inspected_at,
       notes: dto.notes ?? null,
+      latitude: dto.latitude ?? null,
+      longitude: dto.longitude ?? null,
     });
 
     if (dto.status === 'PASSED') {

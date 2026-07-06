@@ -66,15 +66,18 @@ export class SafetyRepository {
     severity: string;
     reported_by: string;
     task_id?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
   }): Promise<IncidentRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IncidentRow[]>`
         INSERT INTO site_ops.incidents
-          (tenant_id, project_id, task_id, incident_type, severity, reported_by)
+          (tenant_id, project_id, task_id, incident_type, severity, reported_by, latitude, longitude)
         VALUES
           (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.task_id ?? null}::uuid,
-           ${params.incident_type}, ${params.severity}, ${params.reported_by}::uuid)
+           ${params.incident_type}, ${params.severity}, ${params.reported_by}::uuid,
+           ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *
       `,
     );

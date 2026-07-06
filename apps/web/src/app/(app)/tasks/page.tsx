@@ -5,6 +5,7 @@ import { DataTable, type Column } from '../../../components/ui/DataTable';
 import { useI18n } from '../../../i18n';
 import { useProjects, useTasks, useUpdateTask } from '../../../lib/api/queries';
 import type { TaskRow } from '../../../lib/api/types';
+import { useReadOnly } from '../../../lib/auth/useReadOnly';
 
 /** Assigned tasks + progress update (§20.7.6 → /projects/:id/tasks, PATCH /tasks/:id). */
 export default function TasksPage() {
@@ -13,6 +14,7 @@ export default function TasksPage() {
   const [projectId, setProjectId] = useState('');
   const tasks = useTasks(projectId);
   const update = useUpdateTask();
+  const readOnly = useReadOnly();
 
   const columns: Column<TaskRow>[] = [
     { headerKey: 'site.colTaskName', cell: (tk) => tk.task_name },
@@ -20,33 +22,36 @@ export default function TasksPage() {
     { headerKey: 'site.colProgress', cell: (tk) => `${tk.progress_percent}%` },
     {
       headerKey: 'table.actions',
-      cell: (tk) => (
-        <span className="flex gap-2">
-          <button
-            type="button"
-            disabled={update.isPending || tk.progress_percent >= 100}
-            onClick={() =>
-              update.mutate({
-                id: tk.task_id,
-                input: { progress_percent: Math.min(100, tk.progress_percent + 25) },
-              })
-            }
-            className="rounded border border-gray-400 px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            +25%
-          </button>
-          {tk.status !== 'COMPLETED' && (
+      cell: (tk) =>
+        readOnly ? (
+          '—'
+        ) : (
+          <span className="flex gap-2">
             <button
               type="button"
-              disabled={update.isPending}
-              onClick={() => update.mutate({ id: tk.task_id, input: { status: 'COMPLETED' } })}
-              className="rounded border border-green-600 px-2 py-0.5 text-xs text-green-700 hover:bg-green-50 disabled:opacity-50"
+              disabled={update.isPending || tk.progress_percent >= 100}
+              onClick={() =>
+                update.mutate({
+                  id: tk.task_id,
+                  input: { progress_percent: Math.min(100, tk.progress_percent + 25) },
+                })
+              }
+              className="rounded border border-gray-400 px-2 py-0.5 text-xs text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
-              {t('site.complete')}
+              +25%
             </button>
-          )}
-        </span>
-      ),
+            {tk.status !== 'COMPLETED' && (
+              <button
+                type="button"
+                disabled={update.isPending}
+                onClick={() => update.mutate({ id: tk.task_id, input: { status: 'COMPLETED' } })}
+                className="rounded border border-green-600 px-2 py-0.5 text-xs text-green-700 hover:bg-green-50 disabled:opacity-50"
+              >
+                {t('site.complete')}
+              </button>
+            )}
+          </span>
+        ),
     },
   ];
 

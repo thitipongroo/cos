@@ -20,6 +20,7 @@ name: construction-os
 
 volumes:
   postgres_data:
+  nominatim_data:
   redis_data:
   kafka_data:
   opensearch_data:
@@ -565,6 +566,8 @@ services:
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://:${REDIS_PASSWORD:-cos_redis_password}@redis:6379
       OTEL_SERVICE_NAME: ai-gateway
+      # Internal transcription pipeline the gateway delegates /api/v1/ai/transcribe to.
+      TRANSCRIPTION_SERVICE_URL: http://ai-transcription-pipeline:8000
       # Prompt templates live at repo-root ai/prompts (not inside the service build context),
       # mounted read-only below. loader.py reads this env (falls back to an upward search on host).
       PROMPTS_DIR: /app/ai/prompts
@@ -660,6 +663,71 @@ services:
       watch:
         - path: ./services/ai-ocr-pipeline
           action: rebuild
+    networks:
+      - cos-network
+
+  # ─── AI Transcription Pipeline (FastAPI) — internal; ai-gateway is the client entry ───
+  ai-transcription-pipeline:
+    build:
+      context: ./services/ai-transcription-pipeline
+      dockerfile: Dockerfile
+    container_name: cos-ai-transcription-pipeline
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      FILE_SERVICE_URL: http://file-service:3002
+      OTEL_SERVICE_NAME: ai-transcription-pipeline
+      # STT_PROVIDER=faster_whisper enables the self-host model (weights baked into the deploy
+      # image); defaults to the stub provider (HTTP 503) until then.
+    ports:
+      - '${AI_TRANSCRIPTION_PORT:-8003}:8000'
+    depends_on:
+      file-service: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live')",
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    develop:
+      watch:
+        - path: ./services/ai-transcription-pipeline
+          action: rebuild
+    networks:
+      - cos-network
+
+  # ─── Nominatim (self-host reverse-geocode) — Geofabrik Thailand extract ───
+  # Heavy one-time OSM import (address-only style keeps it lighter); gated behind the 'full'
+  # profile so `apps` dev does not pay the import. The backend /api/v1/geo/reverse endpoint calls
+  # this internally; it degrades gracefully when the service is not running.
+  nominatim:
+    image: mediagis/nominatim:4.4
+    container_name: cos-nominatim
+    profiles: ['full']
+    environment:
+      PBF_URL: https://download.geofabrik.de/asia/thailand-latest.osm.pbf
+      REPLICATION_URL: https://download.geofabrik.de/asia/thailand-updates/
+      IMPORT_STYLE: address
+      NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:-cos_nominatim_password}
+    ports:
+      - '${NOMINATIM_PORT:-8081}:8080'
+    volumes:
+      - nominatim_data:/var/lib/postgresql
+    shm_size: 1gb
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8080/status || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     networks:
       - cos-network
 

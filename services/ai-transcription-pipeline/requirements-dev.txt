@@ -1,0 +1,6 @@
+# Test dependencies for `pytest` (Python 3.12 in CI / local dev; not shipped in the runtime image,
+# which uses requirements.txt only). Matches the repo standard (ai-embedding-worker); pytest-asyncio
+# is required because pytest.ini sets asyncio_mode = auto.
+-r requirements.txt
+pytest==9.1.1
+pytest-asyncio==1.3.0

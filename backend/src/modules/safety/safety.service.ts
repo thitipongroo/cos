@@ -40,6 +40,8 @@ export class SafetyService {
       severity: dto.severity,
       task_id: dto.task_id ?? null,
       reported_by: this.userId,
+      latitude: dto.latitude ?? null,
+      longitude: dto.longitude ?? null,
     });
     logger.info({ incident_id: incident.incident_id, severity: dto.severity }, 'incident.reported');
     return incident;

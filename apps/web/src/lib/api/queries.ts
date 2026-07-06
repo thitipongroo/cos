@@ -7,6 +7,10 @@ import type {
   BoqVersionRow,
   CreateProjectInput,
   DeliveryRow,
+  PurchaseOrderDetail,
+  RecordDeliveryInput,
+  CreatePurchaseRequestInput,
+  CreateRfqInput,
   ExecutiveDashboardRow,
   FinanceInvoiceRow,
   FinanceSummary,
@@ -222,6 +226,29 @@ export function useVendors() {
   });
 }
 
+export function useCreatePurchaseRequest() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreatePurchaseRequestInput) =>
+      api<PurchaseRequestRow>('/procurement/purchase-requests', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['purchase-requests'] }),
+  });
+}
+
+export function useCreateRfq() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateRfqInput) =>
+      api<RfqRow>('/procurement/rfqs', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rfqs'] }),
+  });
+}
+
 export function useAllPurchaseRequests(filter: ProcurementListFilter) {
   const api = useApi();
   return useQuery({
@@ -252,6 +279,45 @@ export function useAllPurchaseOrders(filter: ProcurementListFilter) {
   });
 }
 
+export type PoApprovalTier = 'PM' | 'FINANCE' | 'EXECUTIVE' | 'TENANT_ADMIN';
+
+/** PO lifecycle (§20.7.3): DRAFT→submit→PENDING_APPROVAL→approve({tier})/reject({reason}). */
+export function useSubmitPo() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (poId: string) =>
+      api<void>(`/procurement/purchase-orders/${poId}/submit`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['purchase-orders'] }),
+  });
+}
+
+export function useApprovePo() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { poId: string; tier: PoApprovalTier }) =>
+      api<void>(`/procurement/purchase-orders/${v.poId}/approve`, {
+        method: 'POST',
+        body: JSON.stringify({ tier: v.tier }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['purchase-orders'] }),
+  });
+}
+
+export function useRejectPo() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { poId: string; reason: string }) =>
+      api<void>(`/procurement/purchase-orders/${v.poId}/reject`, {
+        method: 'POST',
+        body: JSON.stringify({ reason: v.reason }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['purchase-orders'] }),
+  });
+}
+
 export function useAllDeliveries(poId: string) {
   const api = useApi();
   const qs = new URLSearchParams({ limit: '100' });
@@ -261,6 +327,30 @@ export function useAllDeliveries(poId: string) {
   return useQuery({
     queryKey: ['deliveries', poId],
     queryFn: () => api<PaginatedResponse<DeliveryRow>>(`/procurement/deliveries?${qs.toString()}`),
+  });
+}
+
+/** PO detail + line items, for recording a delivery (§20.7.3). */
+export function usePurchaseOrder(poId: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['purchaseOrder', poId],
+    enabled: poId !== '',
+    queryFn: () => api<PurchaseOrderDetail>(`/procurement/purchase-orders/${poId}`),
+  });
+}
+
+/** Record/receive a delivery against a PO (§20.7.3 → POST /procurement/deliveries). */
+export function useRecordDelivery() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RecordDeliveryInput) =>
+      api<DeliveryRow>('/procurement/deliveries', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['deliveries'] }),
   });
 }
 
@@ -285,6 +375,22 @@ export function useAwardRfq(rfqId: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['quotations', rfqId] }),
   });
 }
+
+/** RFQ lifecycle transitions (§20.7.3): publish (DRAFT→PUBLISHED), close/cancel (PUBLISHED→…).
+ *  All are POST with no body. */
+function useRfqTransition(action: 'publish' | 'close' | 'cancel') {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rfqId: string) =>
+      api<void>(`/procurement/rfqs/${rfqId}/${action}`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['rfqs'] }),
+  });
+}
+
+export const usePublishRfq = () => useRfqTransition('publish');
+export const useCloseRfq = () => useRfqTransition('close');
+export const useCancelRfq = () => useRfqTransition('cancel');
 
 // ── Finance (§20.7.4) ─────────────────────────────────────────────────────────
 
@@ -328,6 +434,17 @@ export function useRecordPayment() {
   return useMutation({
     mutationFn: (input: RecordPaymentInput) =>
       api<PaymentRow>('/finance/payments', { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['payments'] }),
+  });
+}
+
+/** Approve a pending AP payment (§20.7.4 → PATCH /finance/payments/:id/approve). */
+export function useApprovePayment() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (paymentId: string) =>
+      api<PaymentRow>(`/finance/payments/${paymentId}/approve`, { method: 'PATCH' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payments'] }),
   });
 }

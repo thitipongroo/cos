@@ -12,6 +12,6 @@ export default authMiddleware;
 
 export const config = {
   matcher: [
-    '/((?!login|api/auth|offline|manifest.json|sw.js|workbox-|icons/|_next/static|_next/image|favicon.ico).*)',
+    '/((?!login|dev/component-preview|api/auth|offline|manifest.json|sw.js|workbox-|icons/|_next/static|_next/image|favicon.ico).*)',
   ],
 };
