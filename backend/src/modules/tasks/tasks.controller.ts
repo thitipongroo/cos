@@ -2,7 +2,17 @@
 // Paths (spec §14): /api/v1/projects/{projectId}/tasks (list, create).
 // Progress / status updates: PATCH /api/v1/tasks/{taskId} (master Phase 6 completion gate).
 
-import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  ParseUUIDPipe,
+  Body,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
@@ -43,7 +53,7 @@ export class TasksController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   listTasks(
-    @Param('projectId') projectId: string,
+    @Param('projectId', ParseUUIDPipe) projectId: string,
     @Query('assigned_to') assigned_to?: string,
     @Query('status') status?: string,
     @Query('page') page = '1',
@@ -63,7 +73,7 @@ export class TasksController {
   @Roles(CosRole.PROJECT_MANAGER, CosRole.SITE_ENGINEER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Create a task' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  createTask(@Param('projectId') projectId: string, @Body() dto: CreateTaskDto) {
+  createTask(@Param('projectId', ParseUUIDPipe) projectId: string, @Body() dto: CreateTaskDto) {
     return this.svc.createTask(projectId, dto);
   }
 
@@ -72,7 +82,7 @@ export class TasksController {
   @Roles(...TASK_WRITE_ROLES)
   @ApiOperation({ summary: 'Update task progress / status (completion gate on COMPLETED)' })
   @ApiParam({ name: 'taskId', type: 'string', format: 'uuid' })
-  updateTask(@Param('taskId') taskId: string, @Body() dto: UpdateTaskDto) {
+  updateTask(@Param('taskId', ParseUUIDPipe) taskId: string, @Body() dto: UpdateTaskDto) {
     return this.svc.updateTask(taskId, dto);
   }
 }

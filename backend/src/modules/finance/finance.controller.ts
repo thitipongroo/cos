@@ -10,6 +10,7 @@ import {
   Post,
   Patch,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   HttpCode,
@@ -82,7 +83,7 @@ export class FinanceController {
   @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'Budget summary with lines (budget vs actual vs committed)' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  getBudget(@Param('projectId') projectId: string) {
+  getBudget(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.svc.getBudgetSummary(projectId);
   }
 
@@ -91,7 +92,10 @@ export class FinanceController {
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Create or update project budget' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  createOrUpdateBudget(@Param('projectId') projectId: string, @Body() dto: CreateBudgetDto) {
+  createOrUpdateBudget(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: CreateBudgetDto,
+  ) {
     return this.svc.createOrUpdateBudget(projectId, dto);
   }
 
@@ -100,7 +104,10 @@ export class FinanceController {
   @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Add a budget line to project budget' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  addBudgetLine(@Param('projectId') projectId: string, @Body() dto: AddBudgetLineDto) {
+  addBudgetLine(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: AddBudgetLineDto,
+  ) {
     return this.svc.addBudgetLine(projectId, dto);
   }
 
@@ -157,7 +164,7 @@ export class FinanceController {
   @ApiOperation({ summary: 'Approve a pending payment (FINANCE) → PROCESSED' })
   @ApiParam({ name: 'paymentId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  approvePayment(@Param('paymentId') paymentId: string) {
+  approvePayment(@Param('paymentId', ParseUUIDPipe) paymentId: string) {
     return this.svc.approvePayment(paymentId);
   }
 
@@ -245,7 +252,7 @@ export class FinanceController {
   @Roles(...BILLING_READ_ROLES)
   @ApiOperation({ summary: 'Get a single client billing' })
   @ApiParam({ name: 'billingId', type: 'string', format: 'uuid' })
-  getBilling(@Param('billingId') billingId: string) {
+  getBilling(@Param('billingId', ParseUUIDPipe) billingId: string) {
     return this.svc.getBilling(billingId);
   }
 
@@ -256,7 +263,10 @@ export class FinanceController {
   @ApiOperation({ summary: 'Approve a client billing (PM up to limit; Executive above)' })
   @ApiParam({ name: 'billingId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  approveBilling(@Param('billingId') billingId: string, @Body() dto: ApproveBillingDto) {
+  approveBilling(
+    @Param('billingId', ParseUUIDPipe) billingId: string,
+    @Body() dto: ApproveBillingDto,
+  ) {
     return this.svc.approveBilling(billingId, dto.tier);
   }
 
@@ -277,7 +287,7 @@ export class FinanceController {
   @Roles(...READ_ROLES)
   @ApiOperation({ summary: '13-week direct-method cash flow forecast for a project' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  getCashflowForecast(@Param('projectId') projectId: string) {
+  getCashflowForecast(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.svc.getCashflowForecast(projectId);
   }
 }

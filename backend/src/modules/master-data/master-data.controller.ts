@@ -10,6 +10,7 @@ import {
   Patch,
   Delete,
   Param,
+  ParseUUIDPipe,
   Body,
   HttpCode,
   HttpStatus,
@@ -69,7 +70,7 @@ export class MasterDataController {
   @Roles(CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Update a material (TENANT_ADMIN)' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  updateMaterial(@Param('id') id: string, @Body() dto: UpdateMaterialDto) {
+  updateMaterial(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateMaterialDto) {
     return this.svc.updateMaterial(id, dto);
   }
 
@@ -78,7 +79,7 @@ export class MasterDataController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft-delete a material (TENANT_ADMIN)' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  async deleteMaterial(@Param('id') id: string): Promise<void> {
+  async deleteMaterial(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.svc.deleteMaterial(id);
   }
 
@@ -102,7 +103,7 @@ export class MasterDataController {
   @Roles(CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Update a work category (TENANT_ADMIN)' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  updateWorkCategory(@Param('id') id: string, @Body() dto: UpdateWorkCategoryDto) {
+  updateWorkCategory(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateWorkCategoryDto) {
     return this.svc.updateWorkCategory(id, dto);
   }
 

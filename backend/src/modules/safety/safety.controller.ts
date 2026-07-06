@@ -7,6 +7,7 @@ import {
   Post,
   Patch,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   HttpCode,
@@ -94,7 +95,7 @@ export class SafetyController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Acknowledge an incident (OPEN → IN_PROGRESS)' })
   @ApiParam({ name: 'incidentId', type: 'string', format: 'uuid' })
-  acknowledgeIncident(@Param('incidentId') incidentId: string) {
+  acknowledgeIncident(@Param('incidentId', ParseUUIDPipe) incidentId: string) {
     return this.svc.acknowledgeIncident(incidentId);
   }
 
@@ -136,7 +137,7 @@ export class SafetyController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve a permit (PENDING → ACTIVE; SAFETY_PERMIT needs PM final)' })
   @ApiParam({ name: 'permitId', type: 'string', format: 'uuid' })
-  approvePermit(@Param('permitId') permitId: string, @Body() dto: ApprovePermitDto) {
+  approvePermit(@Param('permitId', ParseUUIDPipe) permitId: string, @Body() dto: ApprovePermitDto) {
     return this.svc.approvePermit(permitId, dto.tier);
   }
 
@@ -146,7 +147,7 @@ export class SafetyController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reject a permit (PENDING → REVOKED)' })
   @ApiParam({ name: 'permitId', type: 'string', format: 'uuid' })
-  rejectPermit(@Param('permitId') permitId: string) {
+  rejectPermit(@Param('permitId', ParseUUIDPipe) permitId: string) {
     return this.svc.rejectPermit(permitId);
   }
 

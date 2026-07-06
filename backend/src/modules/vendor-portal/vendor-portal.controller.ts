@@ -9,6 +9,7 @@ import {
   Get,
   Post,
   Param,
+  ParseUUIDPipe,
   Body,
   Req,
   UnauthorizedException,
@@ -42,7 +43,7 @@ export class VendorInvitationController {
   @Roles(...INVITE_ROLES)
   @ApiOperation({ summary: 'Issue an RFQ invitation to a vendor (returns the magic-link token)' })
   @ApiParam({ name: 'rfqId', format: 'uuid' })
-  issueInvitation(@Param('rfqId') rfqId: string, @Body() dto: IssueInvitationDto) {
+  issueInvitation(@Param('rfqId', ParseUUIDPipe) rfqId: string, @Body() dto: IssueInvitationDto) {
     return this.service.issueInvitation({
       rfqId,
       vendorId: dto.vendor_id,

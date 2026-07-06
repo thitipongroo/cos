@@ -11,6 +11,7 @@ import {
   Patch,
   Delete,
   Param,
+  ParseUUIDPipe,
   Query,
   Body,
   Res,
@@ -42,7 +43,10 @@ export class BoqController {
   @Roles(CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Create a new BOQ version for a project' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  createVersion(@Param('projectId') projectId: string, @Body() dto: CreateBoqVersionDto) {
+  createVersion(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() dto: CreateBoqVersionDto,
+  ) {
     return this.boqService.createVersion(projectId, dto);
   }
 
@@ -58,7 +62,7 @@ export class BoqController {
   )
   @ApiOperation({ summary: 'List all BOQ versions for a project' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
-  listVersions(@Param('projectId') projectId: string) {
+  listVersions(@Param('projectId', ParseUUIDPipe) projectId: string) {
     return this.boqService.listVersions(projectId);
   }
 
@@ -75,7 +79,10 @@ export class BoqController {
   @ApiOperation({ summary: 'Get BOQ version detail with categories and items' })
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
   @ApiParam({ name: 'versionId', type: 'string', format: 'uuid' })
-  getVersionDetail(@Param('projectId') projectId: string, @Param('versionId') versionId: string) {
+  getVersionDetail(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('versionId', ParseUUIDPipe) versionId: string,
+  ) {
     return this.boqService.getVersionDetail(projectId, versionId);
   }
 
@@ -86,7 +93,10 @@ export class BoqController {
   @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
   @ApiParam({ name: 'versionId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  approveVersion(@Param('projectId') projectId: string, @Param('versionId') versionId: string) {
+  approveVersion(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Param('versionId', ParseUUIDPipe) versionId: string,
+  ) {
     return this.boqService.approveVersion(projectId, versionId);
   }
 
@@ -95,7 +105,10 @@ export class BoqController {
   @Roles(CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Add a category to a DRAFT BOQ version' })
   @ApiParam({ name: 'versionId', type: 'string', format: 'uuid' })
-  addCategory(@Param('versionId') versionId: string, @Body() dto: AddBoqCategoryDto) {
+  addCategory(
+    @Param('versionId', ParseUUIDPipe) versionId: string,
+    @Body() dto: AddBoqCategoryDto,
+  ) {
     return this.boqService.addCategory(versionId, dto);
   }
 
@@ -104,7 +117,7 @@ export class BoqController {
   @Roles(CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Add a line item to a DRAFT BOQ version' })
   @ApiParam({ name: 'versionId', type: 'string', format: 'uuid' })
-  addItem(@Param('versionId') versionId: string, @Body() dto: AddBoqItemDto) {
+  addItem(@Param('versionId', ParseUUIDPipe) versionId: string, @Body() dto: AddBoqItemDto) {
     return this.boqService.addItem(versionId, dto);
   }
 
@@ -113,7 +126,7 @@ export class BoqController {
   @Roles(CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Update a BOQ line item (DRAFT version only)' })
   @ApiParam({ name: 'itemId', type: 'string', format: 'uuid' })
-  updateItem(@Param('itemId') itemId: string, @Body() dto: UpdateBoqItemDto) {
+  updateItem(@Param('itemId', ParseUUIDPipe) itemId: string, @Body() dto: UpdateBoqItemDto) {
     return this.boqService.updateItem(itemId, dto);
   }
 
@@ -123,7 +136,7 @@ export class BoqController {
   @ApiOperation({ summary: 'Delete a BOQ line item (DRAFT version only)' })
   @ApiParam({ name: 'itemId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.NO_CONTENT)
-  deleteItem(@Param('itemId') itemId: string) {
+  deleteItem(@Param('itemId', ParseUUIDPipe) itemId: string) {
     return this.boqService.deleteItem(itemId);
   }
 
@@ -142,7 +155,7 @@ export class BoqController {
   @ApiParam({ name: 'versionId', type: 'string', format: 'uuid' })
   @ApiQuery({ name: 'format', required: false, enum: ['json', 'csv'], description: 'default json' })
   async exportVersion(
-    @Param('versionId') versionId: string,
+    @Param('versionId', ParseUUIDPipe) versionId: string,
     @Res({ passthrough: true }) res: Response,
     @Query('format') format?: string,
   ) {

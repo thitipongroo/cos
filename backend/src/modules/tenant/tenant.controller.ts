@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Patch, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TenantService } from './tenant.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -37,7 +47,7 @@ export class TenantController {
   @Roles(CosRole.SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Assign dedicated DB URL to a tenant (SYSTEM_ADMIN only)' })
   async assignDedicatedDb(
-    @Param('tenantId') tenantId: string,
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
     @Body() dto: AssignDedicatedDbDto,
     @Req() req: TenantRequest,
   ) {
@@ -57,7 +67,7 @@ export class TenantController {
       'Mark Enterprise tenant as contracted — starts provisioning workflow (SYSTEM_ADMIN only)',
   })
   async markContracted(
-    @Param('tenantId') tenantId: string,
+    @Param('tenantId', ParseUUIDPipe) tenantId: string,
     @Body() dto: MarkContractedDto,
     @Req() req: TenantRequest,
   ) {
@@ -77,7 +87,7 @@ export class TenantController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(CosRole.SYSTEM_ADMIN)
   @ApiOperation({ summary: 'Deactivate a tenant (SYSTEM_ADMIN only)' })
-  async deactivate(@Param('tenantId') tenantId: string, @Req() req: TenantRequest) {
+  async deactivate(@Param('tenantId', ParseUUIDPipe) tenantId: string, @Req() req: TenantRequest) {
     await this.tenantService.deactivateTenant(tenantId, req.userId ?? 'system');
     return { message: 'Tenant deactivated' };
   }

@@ -60,13 +60,13 @@ describe('BOQ Integration (Phase 4)', () => {
   });
 
   describe('POST /api/v1/projects/:projectId/boq/versions', () => {
-    it('returns 201 with valid payload', async () => {
+    it('returns 400 for a malformed projectId (ParseUUIDPipe rejects before the DB)', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects/project-test-001/boq/versions')
         .set('Authorization', PM_TOKEN)
         .send({ currency_code: 'THB' });
-      // Without real DB this will return 500 — validates routing/validation layer
-      expect([201, 409, 500]).toContain(res.status);
+      // projectId 'project-test-001' is not a UUID → ParseUUIDPipe returns 400 (was a raw 22P02 → 500)
+      expect(res.status).toBe(400);
     });
 
     it('returns 400 when currency_code is invalid', async () => {
@@ -118,11 +118,12 @@ describe('BOQ Integration (Phase 4)', () => {
   });
 
   describe('POST /api/v1/projects/:projectId/boq/versions/:versionId/approve', () => {
-    it('requires authentication', async () => {
+    it('returns 400 for malformed projectId/versionId (ParseUUIDPipe)', async () => {
       const res = await request(app.getHttpServer()).post(
         '/api/v1/projects/p-001/boq/versions/v-001/approve',
       );
-      expect([401, 403, 500]).toContain(res.status);
+      // 'p-001'/'v-001' are not UUIDs → ParseUUIDPipe returns 400 (was a raw 22P02 → 500)
+      expect(res.status).toBe(400);
     });
   });
 

@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   Req,
@@ -63,7 +64,7 @@ export class NotificationController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Mark notification as read' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  markRead(@Req() req: AuthRequest, @Param('id') id: string) {
+  markRead(@Req() req: AuthRequest, @Param('id', ParseUUIDPipe) id: string) {
     return this.svc.markRead(req.tenantId!, id, req.user!.user_id!);
   }
 

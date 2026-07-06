@@ -7,6 +7,7 @@ import {
   Post,
   Patch,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   HttpCode,
@@ -79,7 +80,7 @@ export class CrmController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Convert a won opportunity to a Customer (finance.customers)' })
   @ApiParam({ name: 'opportunityId', type: 'string', format: 'uuid' })
-  convert(@Param('opportunityId') opportunityId: string) {
+  convert(@Param('opportunityId', ParseUUIDPipe) opportunityId: string) {
     return this.svc.convertOpportunity(opportunityId);
   }
 

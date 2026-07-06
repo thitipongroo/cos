@@ -14,6 +14,7 @@ import {
   Post,
   Patch,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   HttpCode,
@@ -116,7 +117,7 @@ export class SiteOpsController {
   )
   @ApiOperation({ summary: 'Get site report by ID' })
   @ApiParam({ name: 'reportId', type: 'string', format: 'uuid' })
-  getSiteReport(@Param('reportId') reportId: string) {
+  getSiteReport(@Param('reportId', ParseUUIDPipe) reportId: string) {
     return this.svc.getSiteReport(reportId);
   }
 
@@ -152,7 +153,7 @@ export class SiteOpsController {
   )
   @ApiOperation({ summary: 'Update issue — applies FIELD_LEVEL_MERGE conflict strategy' })
   @ApiParam({ name: 'issueId', type: 'string', format: 'uuid' })
-  updateIssue(@Param('issueId') issueId: string, @Body() dto: UpdateIssueDto) {
+  updateIssue(@Param('issueId', ParseUUIDPipe) issueId: string, @Body() dto: UpdateIssueDto) {
     return this.svc.updateIssue(issueId, dto);
   }
 
@@ -233,7 +234,7 @@ export class SiteOpsController {
   @Roles(...INSPECTION_READ_ROLES)
   @ApiOperation({ summary: 'Get a single inspection result' })
   @ApiParam({ name: 'inspectionId', type: 'string', format: 'uuid' })
-  getInspection(@Param('inspectionId') inspectionId: string) {
+  getInspection(@Param('inspectionId', ParseUUIDPipe) inspectionId: string) {
     return this.svc.getInspection(inspectionId);
   }
 
@@ -243,7 +244,10 @@ export class SiteOpsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Approve or request re-inspection (status transition, ADR-025)' })
   @ApiParam({ name: 'inspectionId', type: 'string', format: 'uuid' })
-  updateInspection(@Param('inspectionId') inspectionId: string, @Body() dto: UpdateInspectionDto) {
+  updateInspection(
+    @Param('inspectionId', ParseUUIDPipe) inspectionId: string,
+    @Body() dto: UpdateInspectionDto,
+  ) {
     return this.svc.updateInspectionStatus(inspectionId, dto);
   }
 
@@ -259,7 +263,7 @@ export class SiteOpsController {
   })
   @ApiParam({ name: 'reportId', type: 'string', format: 'uuid' })
   createMaterialConsumption(
-    @Param('reportId') reportId: string,
+    @Param('reportId', ParseUUIDPipe) reportId: string,
     @Body() dto: CreateMaterialConsumptionDto,
   ) {
     return this.svc.createMaterialConsumption(reportId, dto);
@@ -281,7 +285,10 @@ export class SiteOpsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Mark conflict record as manually resolved' })
   @ApiParam({ name: 'conflictId', type: 'string', format: 'uuid' })
-  resolveConflict(@Param('conflictId') conflictId: string, @Body() _dto: ResolveConflictDto) {
+  resolveConflict(
+    @Param('conflictId', ParseUUIDPipe) conflictId: string,
+    @Body() _dto: ResolveConflictDto,
+  ) {
     return this.svc.resolveConflict(conflictId);
   }
 }

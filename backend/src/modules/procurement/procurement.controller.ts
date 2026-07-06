@@ -10,6 +10,7 @@ import {
   Post,
   Delete,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   HttpCode,
@@ -78,7 +79,7 @@ export class ProcurementController {
   @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'Get vendor by ID' })
   @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
-  getVendor(@Param('vendorId') vendorId: string) {
+  getVendor(@Param('vendorId', ParseUUIDPipe) vendorId: string) {
     return this.svc.getVendor(vendorId);
   }
 
@@ -87,7 +88,7 @@ export class ProcurementController {
   @Roles(...READ_ROLES)
   @ApiOperation({ summary: "List a vendor's quotation history (all RFQs, newest first)" })
   @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
-  getVendorQuotations(@Param('vendorId') vendorId: string) {
+  getVendorQuotations(@Param('vendorId', ParseUUIDPipe) vendorId: string) {
     return this.svc.getVendorQuotations(vendorId);
   }
 
@@ -97,7 +98,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Deactivate vendor (soft delete)' })
   @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.NO_CONTENT)
-  deactivateVendor(@Param('vendorId') vendorId: string) {
+  deactivateVendor(@Param('vendorId', ParseUUIDPipe) vendorId: string) {
     return this.svc.deactivateVendor(vendorId);
   }
 
@@ -171,7 +172,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Publish RFQ (DRAFT → PUBLISHED)' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  publishRfq(@Param('rfqId') rfqId: string) {
+  publishRfq(@Param('rfqId', ParseUUIDPipe) rfqId: string) {
     return this.svc.publishRfq(rfqId);
   }
 
@@ -181,7 +182,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Manually close RFQ (PUBLISHED → CLOSED)' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  closeRfq(@Param('rfqId') rfqId: string) {
+  closeRfq(@Param('rfqId', ParseUUIDPipe) rfqId: string) {
     return this.svc.closeRfq(rfqId);
   }
 
@@ -191,7 +192,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Cancel RFQ' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  cancelRfq(@Param('rfqId') rfqId: string) {
+  cancelRfq(@Param('rfqId', ParseUUIDPipe) rfqId: string) {
     return this.svc.cancelRfq(rfqId);
   }
 
@@ -200,7 +201,7 @@ export class ProcurementController {
   @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'Compare quotations for an RFQ (sorted by price ASC)' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  compareQuotations(@Param('rfqId') rfqId: string) {
+  compareQuotations(@Param('rfqId', ParseUUIDPipe) rfqId: string) {
     return this.svc.compareQuotations(rfqId);
   }
 
@@ -209,7 +210,7 @@ export class ProcurementController {
   @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
   @ApiOperation({ summary: 'Submit a vendor quotation for an RFQ' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
-  submitQuotation(@Param('rfqId') rfqId: string, @Body() dto: SubmitQuotationDto) {
+  submitQuotation(@Param('rfqId', ParseUUIDPipe) rfqId: string, @Body() dto: SubmitQuotationDto) {
     return this.svc.submitQuotation(rfqId, dto);
   }
 
@@ -219,7 +220,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Award RFQ to selected quotation (EVALUATED → AWARDED)' })
   @ApiParam({ name: 'rfqId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  awardRfq(@Param('rfqId') rfqId: string, @Body() body: { quotation_id: string }) {
+  awardRfq(@Param('rfqId', ParseUUIDPipe) rfqId: string, @Body() body: { quotation_id: string }) {
     return this.svc.awardRfq(rfqId, body.quotation_id);
   }
 
@@ -260,7 +261,7 @@ export class ProcurementController {
   @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'Get purchase order detail with line items' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
-  getPurchaseOrder(@Param('poId') poId: string) {
+  getPurchaseOrder(@Param('poId', ParseUUIDPipe) poId: string) {
     return this.svc.getPurchaseOrder(poId);
   }
 
@@ -269,7 +270,7 @@ export class ProcurementController {
   @Roles(...READ_ROLES)
   @ApiOperation({ summary: 'List deliveries recorded against a purchase order' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
-  listDeliveriesByPo(@Param('poId') poId: string) {
+  listDeliveriesByPo(@Param('poId', ParseUUIDPipe) poId: string) {
     return this.svc.listDeliveriesByPo(poId);
   }
 
@@ -279,7 +280,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Submit PO for approval (DRAFT → PENDING_APPROVAL)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  submitPoForApproval(@Param('poId') poId: string) {
+  submitPoForApproval(@Param('poId', ParseUUIDPipe) poId: string) {
     return this.svc.submitPoForApproval(poId);
   }
 
@@ -292,7 +293,7 @@ export class ProcurementController {
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
   approvePo(
-    @Param('poId') poId: string,
+    @Param('poId', ParseUUIDPipe) poId: string,
     @Body() body: { tier: 'PM' | 'FINANCE' | 'EXECUTIVE' | 'TENANT_ADMIN' },
   ) {
     return this.svc.approvePo(poId, body.tier);
@@ -304,7 +305,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Reject PO — returns to DRAFT for revision' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  rejectPo(@Param('poId') poId: string, @Body() body: { reason: string }) {
+  rejectPo(@Param('poId', ParseUUIDPipe) poId: string, @Body() body: { reason: string }) {
     return this.svc.rejectPo(poId, body.reason);
   }
 
@@ -314,7 +315,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Record vendor acknowledgement (SENT → ACKNOWLEDGED)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  acknowledgePo(@Param('poId') poId: string) {
+  acknowledgePo(@Param('poId', ParseUUIDPipe) poId: string) {
     return this.svc.acknowledgePo(poId);
   }
 
@@ -324,7 +325,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Mark PO invoice as paid (INVOICED → PAID)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  markInvoicePaid(@Param('poId') poId: string) {
+  markInvoicePaid(@Param('poId', ParseUUIDPipe) poId: string) {
     return this.svc.markInvoicePaid(poId);
   }
 
@@ -334,7 +335,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Dispute invoice (INVOICED → DISPUTED)' })
   @ApiParam({ name: 'poId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  disputeInvoice(@Param('poId') poId: string, @Body() body: { reason: string }) {
+  disputeInvoice(@Param('poId', ParseUUIDPipe) poId: string, @Body() body: { reason: string }) {
     return this.svc.disputeInvoice(poId, body.reason);
   }
 
@@ -405,7 +406,7 @@ export class ProcurementController {
   @ApiOperation({ summary: 'Approve vendor invoice (RECEIVED/VERIFIED → APPROVED)' })
   @ApiParam({ name: 'invoiceId', type: 'string', format: 'uuid' })
   @HttpCode(HttpStatus.OK)
-  approveInvoice(@Param('invoiceId') invoiceId: string) {
+  approveInvoice(@Param('invoiceId', ParseUUIDPipe) invoiceId: string) {
     return this.svc.approveInvoice(invoiceId);
   }
 }
