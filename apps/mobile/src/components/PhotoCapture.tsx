@@ -5,9 +5,10 @@
 import { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { db, newLocalId } from '../db/database';
+import { db, newLocalId, pendingPhotoCount } from '../db/database';
 import type { PhotoEntityType } from '../db/database';
 import { localPhotos } from '../db/schema';
+import { photoQueueStatus } from '../sync/photoQueueLimit';
 import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
 
@@ -21,6 +22,7 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
   const [count, setCount] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
   const t = useT();
 
   if (!permission) {
@@ -42,6 +44,14 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
   }
 
   const onCapture = async (): Promise<void> => {
+    // §17.7: block new captures when the pending-upload queue is full (100); warn at 80.
+    const status = photoQueueStatus(pendingPhotoCount());
+    if (status === 'FULL') {
+      setNotice(t('photos.capture.queueFull'));
+      return;
+    }
+    setNotice(status === 'WARN' ? t('photos.capture.queueWarn') : null);
+
     const picture = await cameraRef.current?.takePictureAsync();
     if (!picture?.uri) return;
     await db.insert(localPhotos).values({
@@ -64,6 +74,11 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
       <TouchableOpacity testID="capture-photo-button" style={styles.button} onPress={onCapture}>
         <Text style={styles.buttonText}>{t('photos.capture.capture')}</Text>
       </TouchableOpacity>
+      {notice ? (
+        <Text testID="photo-queue-notice" style={styles.notice}>
+          {notice}
+        </Text>
+      ) : null}
       {count > 0 ? (
         <Text testID="photo-count" style={styles.count}>
           {t('photos.capture.queued', { count })}
@@ -90,6 +105,11 @@ const styles = StyleSheet.create({
   },
   count: {
     color: colors.success,
+    fontFamily: fontFamily.medium,
+    fontSize: typography.caption.fontSize,
+  },
+  notice: {
+    color: colors.warning,
     fontFamily: fontFamily.medium,
     fontSize: typography.caption.fontSize,
   },

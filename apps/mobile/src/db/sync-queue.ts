@@ -3,6 +3,7 @@
 // This module owns the DDL, insert, and query operations for the sync queue.
 
 import * as SQLite from 'expo-sqlite';
+import { syncPriorityCaseSql } from '../sync/syncPriority';
 
 export type SyncOperation = 'CREATE' | 'UPDATE';
 export type QueueStatus = 'PENDING' | 'SYNCING' | 'SYNCED' | 'FAILED';
@@ -70,11 +71,13 @@ export function enqueue(
   return result.lastInsertRowId;
 }
 
-// Fetch up to `limit` PENDING items (oldest first).
+// Fetch up to `limit` PENDING items in §17.6 priority order (safety → attendance → inspection →
+// task → site_report → material → equipment → others), oldest-first within each priority tier.
 export function fetchPending(limit = 20): SyncQueueItem[] {
   const db = getDb();
   return db.getAllSync<SyncQueueItem>(
-    `SELECT * FROM sync_queue WHERE status = 'PENDING' ORDER BY id ASC LIMIT ?`,
+    `SELECT * FROM sync_queue WHERE status = 'PENDING'
+     ORDER BY ${syncPriorityCaseSql()} ASC, id ASC LIMIT ?`,
     limit,
   );
 }

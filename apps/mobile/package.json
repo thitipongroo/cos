@@ -26,6 +26,7 @@
     "drizzle-orm": "^0.45.2",
     "expo": "~56.0.13",
     "expo-asset": "~56.0.18",
+    "expo-audio": "~56.0.12",
     "expo-background-fetch": "~56.0.20",
     "expo-battery": "~56.0.4",
     "expo-build-properties": "~56.0.20",

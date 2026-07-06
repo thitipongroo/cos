@@ -9,6 +9,7 @@
 import { openDatabaseSync } from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import { eq } from 'drizzle-orm';
+import { localDbStatus, type LocalDbStatus } from '../sync/localDbLimit';
 import {
   localSiteReports,
   localIssues,
@@ -91,6 +92,30 @@ let idCounter = 0;
 export function newLocalId(): string {
   idCounter += 1;
   return `${Date.now().toString(36)}-${idCounter.toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+// §17.7 photo queue limit — count photos still PENDING upload (policy in sync/photoQueueLimit.ts).
+export function pendingPhotoCount(): number {
+  const row = sqlite.getFirstSync<{ c: number }>(
+    "SELECT COUNT(*) AS c FROM local_photos WHERE upload_status = 'PENDING'",
+  );
+  return row?.c ?? 0;
+}
+
+// §17.7 local DB size — on-disk bytes of cos_offline_v2.db (page_count × page_size).
+export function localDbSizeBytes(): number {
+  const pc = sqlite.getFirstSync<{ page_count: number }>('PRAGMA page_count');
+  const ps = sqlite.getFirstSync<{ page_size: number }>('PRAGMA page_size');
+  return (pc?.page_count ?? 0) * (ps?.page_size ?? 0);
+}
+
+// Measure the local DB and classify it against the §17.7 500 MB ceiling; logs on WARN/FULL.
+export function checkLocalDbLimit(): LocalDbStatus {
+  const status = localDbStatus(localDbSizeBytes());
+  if (status !== 'OK') {
+    console.warn(`[db] local DB size ${status} (§17.7 ceiling 500 MB)`);
+  }
+  return status;
 }
 
 // ── Delta-sync seams (used by runDeltaSync; mocked by its unit tests) ────────────────────────

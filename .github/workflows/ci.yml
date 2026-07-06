@@ -311,6 +311,7 @@ jobs:
           - services/kg-ingestion-worker
           - services/ai-embedding-worker
           - services/ai-ocr-pipeline
+          - services/ai-transcription-pipeline
           - apps/web
     steps:
       - uses: actions/checkout@v4
@@ -403,6 +404,7 @@ jobs:
           - services/kg-ingestion-worker
           - services/ai-embedding-worker
           - services/ai-ocr-pipeline
+          - services/ai-transcription-pipeline
           - apps/web
     steps:
       - uses: actions/checkout@v4
@@ -453,6 +455,7 @@ jobs:
           - services/kg-ingestion-worker
           - services/ai-embedding-worker
           - services/ai-ocr-pipeline
+          - services/ai-transcription-pipeline
           - apps/web
     steps:
       - uses: actions/checkout@v4

@@ -63,6 +63,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#0B1020"
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Allow Construction OS to record audio for site voice notes."
+        }
       ]
     ],
     "experiments": {

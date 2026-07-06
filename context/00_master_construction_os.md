@@ -1172,10 +1172,13 @@ Core components (React Native — implement in apps/mobile/):
   <OptimisticList />    Instant UI update, rollback on failure, retry option
 
 Form components:
-  <MobileInput />       48px height minimum
-  <NumberPicker />      Scroll wheel (no text keyboard)
-  <IconPicker />        Visual category selection (Safety / Equipment / Materials)
   <LocationPicker />    Map + auto-detect GPS
+
+  NOTE (reconciliation): <MobileInput />, <NumberPicker />, and <IconPicker /> were removed —
+  §32.7 Mobile Core Component Library (docs/specifications/32) is the authoritative component
+  set and does not define them. Per world-class mobile practice, plain TextInput primitives cover
+  MobileInput, scroll-wheel NumberPickers are discouraged for construction quantity entry, and
+  IconPicker is not a core component. Category selection is handled inline per screen.
 
 DO NOT implement on mobile:
   ✗ Tables → use cards instead
@@ -3206,8 +3209,8 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
           queued offline) · budget (allocated/committed/actual/variance from GET /finance/budget/:id) · invoices · profile
         * PROCUREMENT_OFFICER/PROC_MANAGER: home · rfqs · orders · deliveries (record via
           POST /procurement/deliveries, photo + qty, offline) · profile
-    - Shared mobile components (§32.7 Mobile Core Component Library): PhotoCapture, VoiceNoteButton,
-      TaskCard, QuickActionCard, StatusChip, OptimisticList, MobileInput, NumberPicker, IconPicker
+    - Shared mobile components (§32.7 Mobile Core Component Library): MobileNav, PhotoCapture,
+      VoiceNoteButton, TaskCard, QuickActionCard, StatusChip, OptimisticList, OfflineBanner
     - Every screen exposes the testIDs consumed by the Detox E2E specs (apps/mobile/e2e/*)
 
   Generate (Web App — apps/web/):

@@ -83,7 +83,7 @@ Unstructured Data :
 - PDFs
 - Photos
 - Videos (max 1 GB per file; MIME types: video/mp4, video/quicktime, video/webm, video/x-msvideo, video/x-ms-wmv)
-- Voice notes
+- Voice notes (max 25 MB per file; MIME types: audio/mp4, audio/x-m4a, audio/mpeg, audio/aac, audio/wav)
 - Contracts
 - BIM files
 

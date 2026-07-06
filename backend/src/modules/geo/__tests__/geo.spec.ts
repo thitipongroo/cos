@@ -45,6 +45,16 @@ describe('GeoService', () => {
     });
   });
 
+  it('returns null address when a 200 response omits display_name', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    }) as unknown as typeof fetch;
+
+    const result = await service.reverseGeocode(13.7563, 100.5018);
+    expect(result.address).toBeNull();
+  });
+
   it('degrades to null address on non-200', async () => {
     global.fetch = jest
       .fn()

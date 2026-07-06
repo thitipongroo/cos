@@ -110,7 +110,15 @@
       "empty": "No incidents yet"
     }
   },
+  "voiceNote": {
+    "hold": "Hold to record",
+    "recording": "Recording…",
+    "transcribing": "Transcribing…",
+    "permissionDenied": "Microphone permission is required to record voice notes.",
+    "error": "Could not transcribe the voice note. Please try again."
+  },
   "sync": {
+    "retry": "Retry",
     "offlineBanner": {
       "message": "Offline — changes will sync when reconnected"
     },
@@ -134,7 +142,9 @@
     "capture": {
       "enable": "Enable camera",
       "capture": "Capture photo",
-      "queued": "{count, plural, one {# photo queued} other {# photos queued}}"
+      "queued": "{count, plural, one {# photo queued} other {# photos queued}}",
+      "queueWarn": "Photo queue is filling up — upload soon (80+ pending)",
+      "queueFull": "Photo queue is full (100). Connect to upload before capturing more."
     }
   },
   "pm": {

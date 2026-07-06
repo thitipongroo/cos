@@ -19,6 +19,7 @@ import { Tabs, usePathname } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { CosRole } from '@cos/types';
 import { runDeltaSync } from '../../sync/runDeltaSync';
+import { checkLocalDbLimit } from '../../db/database';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { SyncStatusBar } from '../../components/SyncStatusBar';
 import { useT } from '../../i18n';
@@ -84,11 +85,16 @@ export default function AppLayout() {
     setLastAppPath(pathname);
   }, [pathname]);
 
-  // Pull server-side delta into local WatermelonDB on entering the app (best-effort; offline ignored).
+  // Pull server-side delta into the local DB on entering the app (best-effort; offline ignored).
+  // After the pull grows the cache, check it against the §17.7 500 MB ceiling (warns on WARN/FULL).
   useEffect(() => {
-    runDeltaSync().catch(() => {
-      /* offline or transient — local cache stays as-is */
-    });
+    runDeltaSync()
+      .catch(() => {
+        /* offline or transient — local cache stays as-is */
+      })
+      .finally(() => {
+        checkLocalDbLimit();
+      });
   }, []);
 
   return (
