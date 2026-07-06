@@ -24,6 +24,9 @@ import type { BaseEventEnvelope } from '@cos/types';
 
 // Mock Schema Registry: bypass Avro encoding, use plain JSON buffers
 jest.mock('../../src/kafka/schema-registry.client', () => ({
+  // producer.connect() calls ensureCompatibilityMode() at startup — mock it so the
+  // real HTTP PUT to the Schema Registry /config endpoint is not attempted.
+  ensureCompatibilityMode: jest.fn().mockResolvedValue(undefined),
   registerSchema: jest.fn().mockResolvedValue(1),
   encodeAvro: jest
     .fn()
