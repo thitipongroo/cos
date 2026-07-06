@@ -2503,15 +2503,19 @@ APIs (mobile-first; canonical /api/v1/site/* and /api/v1/safety/* — ADR-025/02
 Safety APIs (authoritative: spec §14 Safety APIs; MVP scope: spec §21.2 = incident reports,
   safety checklists, work permits, safety permit-approval workflow). Enumerated here so the
   execution view matches §14 and the Procurement/Phase-5-style context-derivation drift is not
-  repeated. Backend NOT yet implemented — tracked as the deferred safety workstream (DECISION-2;
-  ADR-022 follow-up):
+  repeated. Backend IMPLEMENTED (safety module: controller/service/repository; ADR-027):
   POST  /api/v1/safety/incidents                         — report safety incident (Site Engineer, Safety Officer)
+  GET   /api/v1/safety/incidents                         — list incidents (project/status/severity)
   PATCH /api/v1/safety/incidents/:incidentId/acknowledge — acknowledge incident (Safety Officer)
+  POST  /api/v1/safety/permits                           — create a permit request (PENDING)
+  GET   /api/v1/safety/permits                           — list permits (project/status)
+  PATCH /api/v1/safety/permits/:permitId/approve         — approve permit (§15.5; → ACTIVE)
+  PATCH /api/v1/safety/permits/:permitId/reject          — reject permit (→ REVOKED)
   GET   /api/v1/safety/checklists                        — list safety checklists (any role)
   POST  /api/v1/safety/checklists                        — submit completed safety checklist (Site Engineer, Safety Officer)
-  Note: §21.2 also mandates WORK PERMITS + a safety permit-approval workflow, but §14's Safety
-  table does NOT yet enumerate their API paths — flagged as a spec-level gap (§14 incomplete vs
-  §21.2). Do not invent permit endpoint paths until §14 is updated.
+  GET   /api/v1/safety/compliance                        — compliance summary (open incidents + bad permits)
+  Note: WORK PERMITS + the safety permit-approval workflow (§21.2) are now enumerated in §14's
+  Safety table AND implemented — the earlier §14-vs-§21.2 gap is closed.
 
   material_consumptions:
     consumption_id  UUID PK

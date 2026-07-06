@@ -7,6 +7,11 @@
 // Data sources: boq_items.carbon_factor_kg_co2e (nullable) + site.material.consumed events.
 // Trigger: implement when tenant requests carbon reporting or regulation requires it.
 
+import { NotImplementedException } from '@nestjs/common';
+import { createLogger } from '@cos/logger';
+
+const logger = createLogger('carbon-calculation');
+
 export interface CarbonBreakdownByMaterial {
   material_id: string;
   material_name: string;
@@ -40,11 +45,11 @@ export class CarbonCalculationEngineStub implements CarbonCalculationEngine {
     projectId: string,
     tenantId: string,
   ): Promise<ProjectFootprintResult> {
-    throw new Error(
-      `CarbonCalculationEngine not yet implemented for project ${projectId} / tenant ${tenantId}. ` +
-        'Trigger: tenant requests carbon reporting or regulation requires it. ' +
-        'Standards: EN 15804:2012+A2:2019 (material EPD) + GHG Protocol (project scope). ' +
-        'Spec: §Phase 6 Decision + §33.4 + 09-data-architecture.md.',
+    logger.warn(
+      { projectId, tenantId, engine: 'CarbonCalculationEngine' },
+      'Carbon calculation not activated — implement when tenant requests carbon reporting ' +
+        '(EN 15804:2012+A2:2019 material EPD + GHG Protocol project scope; §Phase 6 Decision + §33.4)',
     );
+    throw new NotImplementedException('CarbonCalculationEngine not yet activated');
   }
 }

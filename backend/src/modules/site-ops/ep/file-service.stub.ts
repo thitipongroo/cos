@@ -4,6 +4,11 @@
 // NOT direct S3 upload from SiteOps module.
 // Implemented in Phase 9 when File Service is built.
 
+import { NotImplementedException } from '@nestjs/common';
+import { createLogger } from '@cos/logger';
+
+const logger = createLogger('site-ops-file-service');
+
 export interface PhotoUploadResult {
   file_id: string; // UUID assigned by File Service
   storage_url: string; // Presigned or CDN URL
@@ -35,16 +40,18 @@ export class FileServiceStub implements FileServiceClient {
     contentType: string;
     buffer: Buffer;
   }): Promise<PhotoUploadResult> {
-    throw new Error(
-      `FileService.uploadPhoto not implemented. ` +
-        `Implemented in Phase 9 (File Service — services/file-service/). ` +
-        `Entity: ${params.entityType}/${params.entityId}, tenant: ${params.tenantId}.`,
+    logger.warn(
+      { tenantId: params.tenantId, entityType: params.entityType, entityId: params.entityId },
+      'FileService.uploadPhoto not activated — implemented in Phase 9 (services/file-service/)',
     );
+    throw new NotImplementedException('FileService.uploadPhoto not yet activated');
   }
 
-  async deletePhoto(_fileId: string, _tenantId: string): Promise<void> {
-    throw new Error(
-      'FileService.deletePhoto not implemented. Implemented in Phase 9 (File Service).',
+  async deletePhoto(fileId: string, tenantId: string): Promise<void> {
+    logger.warn(
+      { fileId, tenantId },
+      'FileService.deletePhoto not activated — implemented in Phase 9 (services/file-service/)',
     );
+    throw new NotImplementedException('FileService.deletePhoto not yet activated');
   }
 }
