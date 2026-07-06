@@ -5,6 +5,11 @@
 // Trigger: implement when first tenant requests BIM-to-BOQ auto-population.
 // See also: BIMIntegration Phase 3 stub (project structure import — same IFC parser).
 
+import { NotImplementedException } from '@nestjs/common';
+import { createLogger } from '@cos/logger';
+
+const logger = createLogger('bim-boq-import');
+
 export interface BIMImportResult {
   items_imported: number;
   items_skipped: number;
@@ -25,12 +30,12 @@ export class BIMBoqImportStub implements BIMBoqImportAdapter {
   async importQuantities(
     _bimFileUrl: string,
     boqVersionId: string,
-    _tenantId: string,
+    tenantId: string,
   ): Promise<BIMImportResult> {
-    throw new Error(
-      `BIMBoqImport not yet implemented for version ${boqVersionId}. ` +
-        'Trigger: first tenant requests BIM-to-BOQ auto-population. ' +
-        'Implement using IFC.js parser (spec §13.4).',
+    logger.warn(
+      { boqVersionId, tenantId, adapter: 'BIMBoqImport' },
+      'BIM-to-BOQ integration not activated — implement when first tenant requests auto-population (IFC.js, spec §13.4)',
     );
+    throw new NotImplementedException('BIMBoqImport not yet activated');
   }
 }
