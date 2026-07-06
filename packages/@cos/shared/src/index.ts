@@ -66,6 +66,7 @@ export type * from './events/procurement.delivery.received.v1';
 export type * from './events/procurement.rfq.created.v1';
 export type * from './events/procurement.rfq.status_changed.v1';
 export type * from './events/procurement.purchase_order.status_changed.v1';
+export type * from './events/procurement.po.approval_requested.v1';
 export type * from './events/finance.budget.created.v1';
 export type * from './events/finance.payment.processed.v1';
 export type * from './events/finance.variance.alert.v1';

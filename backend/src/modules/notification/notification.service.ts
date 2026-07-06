@@ -16,16 +16,23 @@ const logger = createLogger('notification-service');
 const CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
 type Channel = (typeof CHANNELS)[number];
 
-// Maps event_type → roles to notify; 'actor' means the actor_id from the event envelope.
+// Maps event_type → recipients. Three routing modes:
+//   - string[]                 → notify all users holding any of these roles (findUsersByRole)
+//   - 'actor'                  → notify the actor_id from the event envelope
+//   - { payloadUserId: field } → notify the specific user id carried in payload[field]
+// Event-type keys MUST match the canonical types emitted by producers (see @cos/shared
+// EVENT_AVSC_MAP) and subscribed in notification.consumer — 'po'/'invoice', NOT
+// 'purchase_order'/'vendor_invoice' (regression: mismatched keys silently drop notifications).
 // For platform.* events, tenant_id='platform' and routing resolves all SYSTEM_ADMIN users globally.
-const EVENT_ROLE_MAP: Record<string, string[] | 'actor'> = {
+const EVENT_ROLE_MAP: Record<string, string[] | 'actor' | { payloadUserId: string }> = {
   'site.inspection.failed.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.created.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.conflict.flagged.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER', 'TENANT_ADMIN'],
-  'procurement.purchase_order.status_changed.v1': 'actor',
+  'procurement.po.status_changed.v1': 'actor',
+  'procurement.po.approval_requested.v1': { payloadUserId: 'approver_id' },
   'finance.variance.alert.v1': ['FINANCE', 'TENANT_ADMIN'],
   'site.report.created.v1': ['PROJECT_MANAGER'],
-  'procurement.vendor_invoice.received.v1': ['FINANCE'],
+  'procurement.invoice.received.v1': ['FINANCE'],
   // Phase 25 — platform-level events (tenant_id='platform', routed to all SYSTEM_ADMINs)
   'platform.enterprise.contract_signed.v1': ['SYSTEM_ADMIN'],
   'platform.enterprise.db_provisioned.v1': ['SYSTEM_ADMIN'],
@@ -60,8 +67,13 @@ export class NotificationService {
     let recipients: Array<{ user_id: string; email: string }>;
     if (routing === 'actor') {
       recipients = [{ user_id: event.actor_id, email: '' }];
-    } else {
+    } else if (Array.isArray(routing)) {
       recipients = await this.repo.findUsersByRole(event.tenant_id, routing);
+    } else {
+      // Payload-targeted: notify the specific user named in the payload (e.g. approver_id).
+      const targetId = event.payload[routing.payloadUserId];
+      recipients =
+        typeof targetId === 'string' && targetId ? [{ user_id: targetId, email: '' }] : [];
     }
 
     await Promise.allSettled(

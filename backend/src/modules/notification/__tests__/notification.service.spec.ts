@@ -99,12 +99,42 @@ describe('handleEvent — routing', () => {
   it('routes po.status_changed directly to actor (not role lookup)', async () => {
     mockRepo.isChannelEnabled.mockResolvedValue(false);
     await svc.handleEvent({
-      event_type: 'procurement.purchase_order.status_changed.v1',
+      event_type: 'procurement.po.status_changed.v1',
       tenant_id: 'tenant-001',
       actor_id: 'actor-001',
       payload: {},
     });
     expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
+  });
+
+  it('routes po.approval_requested to the approver_id carried in the payload', async () => {
+    mockRepo.isChannelEnabled.mockResolvedValue(false);
+    await svc.handleEvent({
+      event_type: 'procurement.po.approval_requested.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'system',
+      payload: { po_id: 'po-1', approver_id: 'approver-9', tier: 'PM' },
+    });
+    // Targeted at the payload user — no role lookup, and the approver's channels are checked.
+    expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
+    expect(mockRepo.isChannelEnabled).toHaveBeenCalledWith(
+      'tenant-001',
+      'approver-9',
+      'procurement.po.approval_requested.v1',
+      expect.any(String),
+    );
+  });
+
+  it('drops po.approval_requested when payload has no valid approver_id', async () => {
+    await svc.handleEvent({
+      event_type: 'procurement.po.approval_requested.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'system',
+      payload: { po_id: 'po-1' }, // no approver_id → empty recipients
+    });
+    expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
+    expect(mockRepo.isChannelEnabled).not.toHaveBeenCalled();
+    expect(mockRepo.createNotification).not.toHaveBeenCalled();
   });
 
   it('skips unknown event_type and logs warning', async () => {
@@ -146,7 +176,7 @@ describe('handleEvent — routing', () => {
   it('routes vendor_invoice.received to FINANCE', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([]);
     await svc.handleEvent({
-      event_type: 'procurement.vendor_invoice.received.v1',
+      event_type: 'procurement.invoice.received.v1',
       tenant_id: 'tenant-001',
       actor_id: 'actor-001',
       payload: {},

@@ -184,6 +184,7 @@ describe('EVENT_AVSC_MAP completeness — regression for Phase 5/6/7 shorthand e
     // Procurement shorthand (Phase 5) — previously missing
     'procurement.po.created.v1',
     'procurement.po.status_changed.v1',
+    'procurement.po.approval_requested.v1',
     'procurement.invoice.received.v1',
     'procurement.rfq.created.v1',
     'procurement.rfq.status_changed.v1',

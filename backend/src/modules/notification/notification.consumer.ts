@@ -17,6 +17,7 @@ const SUBSCRIBED_EVENT_TYPES = [
   'site.issue.created.v1',
   'site.conflict.flagged.v1',
   'procurement.po.status_changed.v1',
+  'procurement.po.approval_requested.v1',
   'finance.variance.alert.v1',
   'site.report.created.v1',
   'procurement.invoice.received.v1',

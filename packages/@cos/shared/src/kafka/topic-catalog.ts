@@ -35,6 +35,7 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   // Procurement
   'procurement.po.created.v1': 'procurement.po.created.v1.avsc',
   'procurement.po.status_changed.v1': 'procurement.po.status_changed.v1.avsc',
+  'procurement.po.approval_requested.v1': 'procurement.po.approval_requested.v1.avsc',
   'procurement.invoice.received.v1': 'procurement.invoice.received.v1.avsc',
   'procurement.rfq.created.v1': 'procurement.rfq.created.v1.avsc',
   'procurement.rfq.status_changed.v1': 'procurement.rfq.status_changed.v1.avsc',

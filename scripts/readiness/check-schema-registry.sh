@@ -5,7 +5,7 @@
 # Checks:
 #   1. Schema Registry is reachable
 #   2. Global compatibility mode is BACKWARD_TRANSITIVE (not just BACKWARD)
-#   3. All 22 critical v1 schema subjects are registered
+#   3. All 23 critical v1 schema subjects are registered
 #   4. All local .avsc files in @cos/shared/src/avro/ are valid JSON
 #
 # Usage:
@@ -62,31 +62,38 @@ fi
 echo ""
 echo "── Check 3: Critical v1 schema subjects registered ──"
 
-# Subject naming: event_type strips .v1 suffix → topic name → {topic}-value
-# Event avsc files (22 total — matches EVENT_AVSC_MAP in producer.ts; base-event-envelope excluded)
+# Subject naming (§32.4 RecordNameStrategy): the Schema Registry subject is the canonical
+# event_type verbatim — one schema per event, shared across tenants. This is exactly what
+# the producer registers (subjectForEvent(eventType) === eventType; see
+# @cos/shared/src/kafka/topic-catalog.ts). NOT the Confluent default {topic}-value
+# (TopicNameStrategy) — topics are per-tenant, subjects are not.
+# Critical subset of EVENT_AVSC_MAP (23) verified at this gate — later-phase events whose
+# producers may not yet be live in staging (twin.*, carbon.*, platform.enterprise.*, file.*)
+# are intentionally omitted.
 REQUIRED_SUBJECTS=(
-  "ai.risk_prediction.generated-value"
-  "construction.boq.version_created-value"
-  "construction.delay.detected-value"
-  "construction.project.archived-value"
-  "construction.project.created-value"
-  "construction.project.status_changed-value"
-  "construction.project.updated-value"
-  "construction.task.completed-value"
-  "finance.budget.exceeded-value"
-  "finance.cashflow_risk.detected-value"
-  "identity.tenant.created-value"
-  "identity.tenant.deactivated-value"
-  "identity.user.created-value"
-  "identity.user.role_changed-value"
-  "procurement.delivery.received-value"
-  "procurement.purchase_order.created-value"
-  "procurement.vendor_invoice.approved-value"
-  "procurement.vendor_invoice.received-value"
-  "site.inspection.failed-value"
-  "site.material.consumed-value"
-  "site.report.created-value"
-  "workforce.checkin.created-value"
+  "ai.risk_prediction.generated.v1"
+  "construction.boq.version_created.v1"
+  "construction.delay.detected.v1"
+  "construction.project.archived.v1"
+  "construction.project.created.v1"
+  "construction.project.status_changed.v1"
+  "construction.project.updated.v1"
+  "construction.task.completed.v1"
+  "finance.budget.exceeded.v1"
+  "finance.cashflow_risk.detected.v1"
+  "identity.tenant.created.v1"
+  "identity.tenant.deactivated.v1"
+  "identity.user.created.v1"
+  "identity.user.role_changed.v1"
+  "procurement.delivery.received.v1"
+  "procurement.po.created.v1"
+  "procurement.po.approval_requested.v1"
+  "procurement.vendor_invoice.approved.v1"
+  "procurement.invoice.received.v1"
+  "site.inspection.failed.v1"
+  "site.material.consumed.v1"
+  "site.report.created.v1"
+  "workforce.checkin.created.v1"
 )
 
 REGISTERED_SUBJECTS=$(curl -sf --max-time 5 "$REGISTRY_URL/subjects" 2>/dev/null || echo "[]")

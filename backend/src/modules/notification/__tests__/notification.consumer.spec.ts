@@ -33,6 +33,7 @@ const EXPECTED_EVENT_TYPES = [
   'site.issue.created.v1',
   'site.conflict.flagged.v1',
   'procurement.po.status_changed.v1',
+  'procurement.po.approval_requested.v1',
   'finance.variance.alert.v1',
   'site.report.created.v1',
   'procurement.invoice.received.v1',
@@ -49,16 +50,16 @@ beforeEach(() => {
 // ── onModuleInit ────────────────────────────────────────────────────────────
 
 describe('onModuleInit', () => {
-  it('registers a handler for each of the 8 subscribed topics', async () => {
+  it('registers a handler for each of the 9 subscribed topics', async () => {
     await consumer.onModuleInit();
-    expect(mockOn).toHaveBeenCalledTimes(8);
+    expect(mockOn).toHaveBeenCalledTimes(9);
     const registeredEventTypes = mockOn.mock.calls.map((c: unknown[]) => c[0]);
     for (const eventType of EXPECTED_EVENT_TYPES) {
       expect(registeredEventTypes).toContain(eventType);
     }
   });
 
-  it('connects with the shared group ID and all 8 event types', async () => {
+  it('connects with the shared group ID and all 9 event types', async () => {
     await consumer.onModuleInit();
     expect(mockConnect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -67,7 +68,7 @@ describe('onModuleInit', () => {
       }),
     );
     const callArgs = mockConnect.mock.calls[0][0] as { eventTypes: string[] };
-    expect(callArgs.eventTypes).toHaveLength(8);
+    expect(callArgs.eventTypes).toHaveLength(9);
   });
 
   it('connects with fromBeginning = false', async () => {
