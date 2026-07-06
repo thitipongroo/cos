@@ -906,6 +906,20 @@ Note: Legacy names shown first → canonical name in brackets. New events use ca
       new_total_estimated_currency:  string  (ISO 4217)
     }
 
+18. procurement.po.approval_requested.v1
+
+    payload: {
+      po_id:         UUID
+      project_id:    UUID
+      approver_id:   UUID
+      tier:          enum [PM, FINANCE, EXECUTIVE, TENANT_ADMIN]
+      po_number:     string
+      total_amount:  string  (decimal — never float)
+      currency_code: string  (ISO 4217)
+    }
+    // Emitted by the PO approval workflow (notifyApprover) when a PO enters an approval
+    // tier or is escalated on the 48h timeout; consumed by Notification Service → approver_id.
+
 - Use Confluent Schema Registry (open-source, self-hosted)
 - All schemas registered in Avro format
 - Compatibility mode: BACKWARD_TRANSITIVE (new schema must be readable by ALL previous versions, not just the immediately preceding one; source: spec §32.4)
