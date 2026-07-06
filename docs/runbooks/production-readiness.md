@@ -64,7 +64,7 @@ Legend: `[AUTO]` = verified by script | `[MANUAL]` = requires human verification
 | `[AUTO]` All apps deploy via ArgoCD (not kubectl/helm in CI)   | Script | `./scripts/readiness/check-cicd.sh` |
 | `[AUTO]` Staging auto-syncs on image tag update                | Script | `./scripts/readiness/check-cicd.sh` |
 | `[MANUAL]` Production requires manual sync gate in ArgoCD UI   | Test   | ArgoCD UI                           |
-| `[MANUAL]` Rollback procedure documented and tested in staging | Test   | `./scripts/rollback.sh`             |
+| `[MANUAL]` Rollback procedure documented and tested in staging | Test   | `./scripts/deploy/rollback.sh`      |
 
 ### AI Monitoring
 

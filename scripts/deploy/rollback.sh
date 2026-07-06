@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Construction OS — Helm rollback script
-# Usage: ./scripts/rollback.sh <service> [revision]
-# Example: ./scripts/rollback.sh cos-backend
-# Example: ./scripts/rollback.sh cos-backend 3
+# Usage: ./scripts/deploy/rollback.sh <service> [revision]
+# Example: ./scripts/deploy/rollback.sh cos-backend
+# Example: ./scripts/deploy/rollback.sh cos-backend 3
 #
 # Rolls back a Helm release to the previous revision (or a specific one).
 # Confirms success by checking that all pods in the release are Running.

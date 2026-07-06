@@ -1,6 +1,6 @@
 # ArgoCD PostSync hook — wave 1 smoke test
 # Spec §30.12: smoke tests (ArgoCD PostSync wave 1) → blocks E2E wave 2
-# Runs scripts/smoke-test.sh against staging after every ArgoCD sync
+# Mirrors scripts/deploy/smoke-test.sh; runs against staging after every ArgoCD sync
 ---
 apiVersion: batch/v1
 kind: Job
