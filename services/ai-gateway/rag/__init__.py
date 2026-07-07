@@ -13,6 +13,7 @@ from .retrieval import (
     load_rag_config,
     build_default_retriever,
 )
+from .backends import OpenSearchKeywordBackend, PgVectorBackend
 
 __all__ = [
     "HybridRetriever",
@@ -22,4 +23,6 @@ __all__ = [
     "reciprocal_rank_fusion",
     "load_rag_config",
     "build_default_retriever",
+    "OpenSearchKeywordBackend",
+    "PgVectorBackend",
 ]
