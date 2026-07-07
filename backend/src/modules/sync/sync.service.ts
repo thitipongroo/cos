@@ -23,6 +23,7 @@ import { SafetyService } from '../safety/safety.service';
 import { WorkforceService } from '../workforce/workforce.service';
 import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
 import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
+import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
 import type { SyncSiteReportsDto } from '../site-ops/dto/sync-site-reports.dto';
 import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
 import type { CreateIncidentDto } from '../safety/dto/safety.dto';
@@ -123,6 +124,15 @@ export class SyncService {
         const row = await this.siteOps.createMaterialConsumption(
           reportId,
           dto.payload as unknown as CreateMaterialConsumptionDto,
+        );
+        return { status: 'ACCEPTED', server_payload: row };
+      }
+
+      case 'inspection': {
+        // Offline inspection submission (§17.4 offline read/write; QM-1 mobile E2E #2). The payload
+        // carries the full SubmitInspectionDto (project_id, checklist_id, status, inspected_at).
+        const row = await this.siteOps.submitInspection(
+          dto.payload as unknown as SubmitInspectionDto,
         );
         return { status: 'ACCEPTED', server_payload: row };
       }

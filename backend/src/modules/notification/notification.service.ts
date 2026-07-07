@@ -27,6 +27,7 @@ type Channel = (typeof CHANNELS)[number];
 const EVENT_ROLE_MAP: Record<string, string[] | 'actor' | { payloadUserId: string }> = {
   'site.inspection.failed.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
   'site.issue.created.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER'],
+  'site.issue.escalated.v1': ['PROJECT_MANAGER'], // G-M12 — escalate raises the issue to the PM
   'site.conflict.flagged.v1': ['SITE_ENGINEER', 'PROJECT_MANAGER', 'TENANT_ADMIN'],
   'procurement.po.status_changed.v1': 'actor',
   'procurement.po.approval_requested.v1': { payloadUserId: 'approver_id' },

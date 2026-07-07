@@ -1,11 +1,10 @@
-// Reports screen — SITE_ENGINEER review of submitted site reports + record material consumption.
-// Review list: GET /site/reports (online; offline shows the last fetched list).
-// Material (PO ruling M1/M2 — embedded here, owned by SITE_ENGINEER): tap a report → record material
-// against that report_id. Material is a child of a site report (server: createMaterialConsumption(
-// reportId, dto)), so it attaches to an existing report. Create enqueues a 'material' sync_queue item
-// → SyncManager pushes to /sync/push → SiteOpsService.createMaterialConsumption; the recorded row
-// flows back into local_material_consumptions on the next delta pull (no local-write here, since the
-// delta cache keys on project_id while creation keys on report_id).
+// Reports screen — role-aware (G-M2).
+//   EXECUTIVE      : AI-generated executive summary per project (master 3099/3203; §20.7.1) —
+//                    POST /ai/reports/executive-summary via the ai-gateway (503 when the LLM is the
+//                    Phase 11 stub → surfaced as "unavailable"). Online-only (uses non-queuing post()).
+//   SITE_ENGINEER  : review submitted site reports + record material consumption (master 3197-3198).
+// The bottom-nav "reports" tab is shared by both roles (see (app)/_layout.tsx); this switch renders
+// the correct screen per JWT role.
 
 import { useEffect, useState } from 'react';
 import {
@@ -17,11 +16,16 @@ import {
   RefreshControl,
   StyleSheet,
 } from 'react-native';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
-import { get } from '../../api/client';
+import { CosRole } from '@cos/types';
+import { get, post } from '../../api/client';
 import { enqueue } from '../../db/sync-queue';
+import { decodeJwtPayload } from '../../lib/jwt';
+import { useAuthStore } from '../../store/authStore';
 import { StatusChip } from '../../components/StatusChip';
 import { ConflictBadge } from '../../components/ConflictBadge';
+import { ProjectPicker } from '../../components/ProjectPicker';
 import { useI18n } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
@@ -32,7 +36,8 @@ interface ReportRow {
   summary?: string | null;
 }
 
-export default function ReportsScreen() {
+// ── SITE_ENGINEER — review reports + record material consumption ──────────────
+function SiteEngineerReports() {
   const router = useRouter();
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -152,6 +157,89 @@ export default function ReportsScreen() {
   );
 }
 
+// ── EXECUTIVE — AI executive summary ──────────────────────────────────────────
+interface ExecReportResponse {
+  content: { executive_summary?: unknown };
+  low_confidence: boolean;
+}
+
+type ExecState = 'idle' | 'loading' | 'unavailable' | 'error';
+
+function ExecReports() {
+  const { t } = useI18n();
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const userId = useAuthStore((s) => s.userId);
+  const [projectId, setProjectId] = useState('');
+  const [summary, setSummary] = useState<string | null>(null);
+  const [lowConfidence, setLowConfidence] = useState(false);
+  const [state, setState] = useState<ExecState>('idle');
+
+  const generate = async (): Promise<void> => {
+    setState('loading');
+    setSummary(null);
+    setLowConfidence(false);
+    // tenant_id / generated_by come from the verified access-token claims (authStore has no tenantId).
+    const claims = decodeJwtPayload(accessToken ?? '');
+    const tenantId = typeof claims['tenant_id'] === 'string' ? (claims['tenant_id'] as string) : '';
+    try {
+      const res = await post<ExecReportResponse>('/ai/reports/executive-summary', {
+        project_id: projectId,
+        tenant_id: tenantId,
+        generated_by: userId ?? 'system',
+      });
+      setSummary(
+        typeof res.content?.executive_summary === 'string' ? res.content.executive_summary : null,
+      );
+      setLowConfidence(res.low_confidence);
+      setState('idle');
+    } catch (err) {
+      // 503 = LLM provider is the Phase 11 stub → honest "unavailable" (not an error dump).
+      setState(axios.isAxiosError(err) && err.response?.status === 503 ? 'unavailable' : 'error');
+    }
+  };
+
+  return (
+    <View testID="exec-reports-screen" style={styles.container}>
+      <Text style={styles.heading}>{t('exec.reports.title')}</Text>
+
+      <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
+      <TouchableOpacity
+        testID="generate-report-button"
+        style={[styles.button, (!projectId || state === 'loading') && styles.buttonDisabled]}
+        onPress={generate}
+        disabled={!projectId || state === 'loading'}
+      >
+        <Text style={styles.buttonText}>
+          {state === 'loading' ? t('exec.reports.generating') : t('exec.reports.generate')}
+        </Text>
+      </TouchableOpacity>
+
+      {state === 'unavailable' ? (
+        <Text testID="report-unavailable" style={styles.notice}>
+          {t('exec.reports.unavailable')}
+        </Text>
+      ) : null}
+      {state === 'error' ? <Text style={styles.error}>{t('exec.reports.error')}</Text> : null}
+
+      {summary ? (
+        <View testID="report-summary" style={styles.summaryCard}>
+          {lowConfidence ? (
+            <Text style={styles.lowConf}>{t('exec.reports.lowConfidence')}</Text>
+          ) : null}
+          <Text style={styles.summaryText}>{summary}</Text>
+        </View>
+      ) : state === 'idle' ? (
+        <Text style={styles.empty}>{t('exec.reports.empty')}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+export default function ReportsScreen() {
+  const role = useAuthStore((s) => s.role);
+  return role === CosRole.EXECUTIVE ? <ExecReports /> : <SiteEngineerReports />;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
@@ -211,6 +299,33 @@ const styles = StyleSheet.create({
     color: colors.success,
     fontFamily: fontFamily.medium,
     fontSize: typography.caption.fontSize,
+  },
+  notice: {
+    color: colors.textSecondary,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.caption.fontSize,
+  },
+  error: {
+    color: colors.danger,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.caption.fontSize,
+  },
+  summaryCard: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  lowConf: {
+    color: colors.danger,
+    fontFamily: fontFamily.medium,
+    fontSize: typography.caption.fontSize,
+  },
+  summaryText: {
+    color: colors.textPrimary,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.body.fontSize,
   },
   empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

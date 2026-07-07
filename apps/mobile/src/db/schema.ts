@@ -16,10 +16,12 @@ export type PhotoEntityType = 'site_report' | 'issue' | 'inspection';
 // ── local_site_reports — mirrors server site_ops.site_reports (offline subset) ──
 export const localSiteReports = sqliteTable('local_site_reports', {
   id: text('id').primaryKey(),
-  reportId: text('report_id').notNull(), // server UUID (empty until synced)
+  reportId: text('report_id').notNull(), // server UUID (client-generated UUID for offline creates, ADR-051)
   projectId: text('project_id').notNull(),
   reportDate: text('report_date').notNull(), // ISO date yyyy-MM-dd
   summary: text('summary'),
+  blockers: text('blockers'), // spec 11 §474 (G-M5b)
+  manpowerCount: integer('manpower_count'), // spec 11 §472 (G-M5a)
   status: text('status').notNull(), // DRAFT | SUBMITTED | APPROVED
   offlineSyncStatus: text('sync_status').notNull().$type<SyncStatus>(),
 });

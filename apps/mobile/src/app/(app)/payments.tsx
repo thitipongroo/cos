@@ -13,12 +13,16 @@ interface PaymentRow {
   payment_id: string;
   payment_reference?: string | null;
   amount?: string;
+  currency_code?: string;
+  invoice_id?: string;
+  payment_date?: string;
   status: string;
 }
 
 export default function PaymentsScreen() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const t = useT();
 
   const load = async (): Promise<void> => {
@@ -51,26 +55,54 @@ export default function PaymentsScreen() {
         keyExtractor={(p, i) => p.payment_id || String(i)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
         ListEmptyComponent={<Text style={styles.empty}>{t('finance.payments.empty')}</Text>}
-        renderItem={({ item }) => (
-          <View testID="payment-item" style={styles.item}>
-            <View style={styles.row}>
-              <Text style={styles.itemTitle}>
-                {item.payment_reference ?? item.payment_id.slice(0, 8)}
-              </Text>
-              <StatusChip label={item.status} />
-            </View>
-            {item.amount ? <Text style={styles.sub}>{item.amount}</Text> : null}
-            {item.status === 'PENDING' ? (
+        renderItem={({ item }) => {
+          const open = expandedId === item.payment_id;
+          return (
+            <View testID="payment-item" style={styles.item}>
               <TouchableOpacity
-                testID="approve-payment-button"
-                style={styles.approve}
-                onPress={() => approve(item.payment_id)}
+                style={styles.row}
+                onPress={() => setExpandedId(open ? null : item.payment_id)}
               >
-                <Text style={styles.approveText}>{t('finance.payments.approve')}</Text>
+                <Text style={styles.itemTitle}>
+                  {item.payment_reference ?? item.payment_id.slice(0, 8)}
+                </Text>
+                <StatusChip label={item.status} />
               </TouchableOpacity>
-            ) : null}
-          </View>
-        )}
+              {item.amount ? (
+                <Text style={styles.sub}>
+                  {item.amount} {item.currency_code ?? ''}
+                </Text>
+              ) : null}
+
+              {/* Tap-to-view detail (master 3109). Deep invoice detail (line items) needs a
+                  GET /vendor-invoices/:id endpoint that does not exist yet — flagged as a follow-up. */}
+              {open ? (
+                <View testID="payment-detail" style={styles.detail}>
+                  {item.invoice_id ? (
+                    <Text style={styles.sub}>
+                      {t('finance.payments.invoiceRef')}: {item.invoice_id}
+                    </Text>
+                  ) : null}
+                  {item.payment_date ? (
+                    <Text style={styles.sub}>
+                      {t('finance.payments.date')}: {item.payment_date.slice(0, 10)}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {item.status === 'PENDING' ? (
+                <TouchableOpacity
+                  testID="approve-payment-button"
+                  style={styles.approve}
+                  onPress={() => approve(item.payment_id)}
+                >
+                  <Text style={styles.approveText}>{t('finance.payments.approve')}</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          );
+        }}
       />
     </View>
   );
@@ -100,6 +132,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     color: colors.textSecondary,
   },
+  detail: { gap: spacing.xs, paddingVertical: spacing.xs },
   approve: {
     alignSelf: 'flex-start',
     backgroundColor: colors.success,

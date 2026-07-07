@@ -99,6 +99,18 @@ export class VendorPortalController {
     return this.service.listInvoices(this.vendorId(req));
   }
 
+  @Get('quotations')
+  @ApiOperation({ summary: "List the vendor's own submitted quotations (Tier-2)" })
+  listQuotations(@Req() req: VendorRequest) {
+    return this.service.listQuotations(this.vendorId(req));
+  }
+
+  @Get('rfqs')
+  @ApiOperation({ summary: 'List RFQs this vendor was invited to (Tier-2, G-W3)' })
+  listInvitedRfqs(@Req() req: VendorRequest) {
+    return this.service.listInvitedRfqs(this.vendorIdentityId(req));
+  }
+
   // VendorAuthMiddleware guarantees these are set; guard against misconfiguration.
   private invitationId(req: VendorRequest): string {
     if (!req.vendorInvitationId) {
@@ -112,5 +124,12 @@ export class VendorPortalController {
       throw new UnauthorizedException('Missing vendor session context');
     }
     return req.vendorId;
+  }
+
+  private vendorIdentityId(req: VendorRequest): string {
+    if (!req.vendorIdentityId) {
+      throw new UnauthorizedException('Missing vendor session context');
+    }
+    return req.vendorIdentityId;
   }
 }

@@ -513,4 +513,32 @@ describe('ProcurementRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([]).mockResolvedValueOnce([{ count: BigInt(0) }]);
     expect((await repo.listDeliveriesTenant({ page: 1, limit: 20 })).total).toBe(0);
   });
+
+  // ── G-M14 note + G-W5 vendor-scoring metric queries ──────────────────────
+  it('updateInvoiceNote executes the update', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    await repo.updateInvoiceNote('inv-1', 'check quantity');
+    expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+  });
+
+  it('vendorOtdStats maps rows and defaults to zero when empty', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ on_time: 8, total: 10 }]);
+    expect(await repo.vendorOtdStats('v1')).toEqual({ on_time: 8, total: 10 });
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.vendorOtdStats('v1')).toEqual({ on_time: 0, total: 0 });
+  });
+
+  it('vendorDisputeStats maps rows and defaults to zero when empty', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ disputed: 2, total: 10 }]);
+    expect(await repo.vendorDisputeStats('v1')).toEqual({ disputed: 2, total: 10 });
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.vendorDisputeStats('v1')).toEqual({ disputed: 0, total: 0 });
+  });
+
+  it('vendorPriceStats maps competitiveness and defaults to null when empty', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ price_pct: 95.5, cnt: 4 }]);
+    expect(await repo.vendorPriceStats('v1')).toEqual({ price_pct: 95.5, count: 4 });
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.vendorPriceStats('v1')).toEqual({ price_pct: null, count: 0 });
+  });
 });

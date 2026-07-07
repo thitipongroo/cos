@@ -4,7 +4,6 @@
 //   PDF documents:                 100 MB
 //   CAD/Drawing (DXF/DWG):        200 MB
 //   Video files:                   1024 MB
-//   Voice notes (M4A/AAC/MP3/WAV): 25 MB   (spec 09 — mobile §32.7 VoiceNoteButton transcription)
 //   Spreadsheets/Archives:         100 MB
 //   Blocked: .exe .sh .bat .js and any executable MIME type
 
@@ -28,13 +27,14 @@ export const ALLOWED_MIME_TYPES = new Set([
   'video/webm',
   'video/x-msvideo',
   'video/x-ms-wmv',
-  // Voice notes — expo-audio records .m4a (AAC); the OS may label it audio/mp4 or audio/x-m4a.
-  // audio/mpeg (.mp3), audio/aac and audio/wav are accepted for broader device coverage (spec 09).
+  // Audio — voice notes for AI transcription (spec 20 §20.3 Layer A; G-M7). expo-audio records
+  // .m4a (AAC in an MP4 container) on iOS/Android; the other formats cover web/alt encoders.
   'audio/mp4',
   'audio/x-m4a',
-  'audio/mpeg',
   'audio/aac',
+  'audio/mpeg',
   'audio/wav',
+  'audio/webm',
 ]);
 
 export const BLOCKED_EXTENSIONS = new Set(['.exe', '.sh', '.bat', '.js']);
@@ -53,11 +53,13 @@ const SIZE_LIMITS: Record<string, number> = {
   'video/webm': 1024 * 1024 * 1024,
   'video/x-msvideo': 1024 * 1024 * 1024,
   'video/x-ms-wmv': 1024 * 1024 * 1024,
+  // Audio voice notes are short (§20.3 field notes) — 25 MB is generous for a few minutes of AAC.
   'audio/mp4': 25 * 1024 * 1024,
   'audio/x-m4a': 25 * 1024 * 1024,
-  'audio/mpeg': 25 * 1024 * 1024,
   'audio/aac': 25 * 1024 * 1024,
+  'audio/mpeg': 25 * 1024 * 1024,
   'audio/wav': 25 * 1024 * 1024,
+  'audio/webm': 25 * 1024 * 1024,
 };
 const DEFAULT_SIZE_LIMIT = 100 * 1024 * 1024; // 100 MB for spreadsheets, archives
 

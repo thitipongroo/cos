@@ -194,11 +194,15 @@ describe('createSiteReport', () => {
       project_id: 'project-1',
       report_date: '2026-06-04',
       summary: 'daily report',
+      blockers: 'crane down; concrete delivery late', // spec 11 §474
       weather: 'sunny',
       manpower_count: 10,
     });
 
     expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
+    expect(mockRepo.createSiteReport).toHaveBeenCalledWith(
+      expect.objectContaining({ blockers: 'crane down; concrete delivery late' }),
+    );
     expect(result.report_id).toBe('report-1');
   });
 
@@ -267,6 +271,7 @@ describe('syncSiteReports', () => {
           weather: 'cloudy', // optional field provided
           manpower_count: 15, // optional field provided
           summary: 'full report', // optional field provided
+          blockers: 'access road blocked', // optional field provided (spec 11 §474)
         },
       ],
     });
@@ -364,6 +369,19 @@ describe('createIssue', () => {
       expect.objectContaining({ event_type: expect.stringContaining('site.issue.created.v1') }),
     );
   });
+
+  it('uses the client-provided id as issue_id when present (G-M11 offline linkage)', async () => {
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await service.createIssue({
+      project_id: 'project-1',
+      title: 'Offline issue',
+      severity: IssueSeverity.MEDIUM,
+      client_id: '11111111-1111-1111-1111-111111111111',
+    });
+    expect(mockRepo.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_id: '11111111-1111-1111-1111-111111111111' }),
+    );
+  });
 });
 
 // ── updateIssue — FIELD_LEVEL_MERGE ───────────────────────────────────────
@@ -437,6 +455,27 @@ describe('updateIssue', () => {
   });
 });
 
+// ── escalateIssue (G-M12) ──────────────────────────────────────────────────
+
+describe('escalateIssue', () => {
+  it('throws NotFoundException when issue not found', async () => {
+    mockRepo.findIssueById.mockResolvedValue(null);
+    await expect(service.escalateIssue('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('emits site.issue.escalated.v1 to notify the PM', async () => {
+    mockRepo.findIssueById.mockResolvedValue(makeIssue({ issue_id: 'i-esc' }));
+    const res = await service.escalateIssue('i-esc');
+    expect(res).toEqual({ issue_id: 'i-esc', status: 'ESCALATED' });
+
+    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+    expect(instance.publish).toHaveBeenCalledWith(
+      expect.objectContaining({ event_type: 'site.issue.escalated.v1' }),
+    );
+  });
+});
+
 // ── submitInspection ──────────────────────────────────────────────────────
 
 describe('submitInspection', () => {
@@ -497,7 +536,13 @@ describe('submitInspection', () => {
       checklist_id: 'checklist-1',
       status: InspectionStatus.FAILED,
       inspected_at: '2026-06-04T08:00:00Z',
+      issue_severity: IssueSeverity.HIGH,
     });
+
+    // spec 11 §517 — issue_severity is persisted on a FAILED inspection.
+    expect(mockRepo.createInspection).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_severity: 'HIGH' }),
+    );
 
     const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
     const instance = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };

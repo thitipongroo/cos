@@ -1,7 +1,9 @@
-// Inspections screen — SITE_ENGINEER: review inspections + fill a checklist offline.
-// List fetches GET /site/inspections (best-effort). Filling uses a cached safety checklist
-// (local_safety_checklists) → mark items → optional photo → submit via mutate() (offline-queued
-// to POST /site/inspections). testIDs match the Detox offline-inspection scenario.
+// Inspections screen — SITE_ENGINEER: review inspections + fill a checklist offline (G-M3a).
+// List fetches GET /site/inspections (best-effort). Filling marks each item PASS/FAIL → the overall
+// inspection status is FAILED if any item fails, else PASSED (spec §11 inspection result). Submit via
+// mutate() → online POST /site/inspections, offline enqueue 'inspection' → /sync/push
+// (SubmitInspectionDto: project_id, checklist_id, status, inspected_at). testIDs match the Detox
+// offline-inspection scenario.
 
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
@@ -25,11 +27,16 @@ interface ChecklistItem {
   label?: string;
 }
 
+type ItemResult = 'PASS' | 'FAIL';
+const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+type Severity = (typeof SEVERITIES)[number];
+
 export default function InspectionsScreen() {
   const checklists = useCollection<SafetyChecklist>('local_safety_checklists');
   const [inspections, setInspections] = useState<InspectionRow[]>([]);
   const [active, setActive] = useState<SafetyChecklist | null>(null);
-  const [passed, setPassed] = useState<Record<string, boolean>>({});
+  const [results, setResults] = useState<Record<string, ItemResult>>({});
+  const [severity, setSeverity] = useState<Severity>('MEDIUM');
   const [submitted, setSubmitted] = useState(false);
   const t = useT();
 
@@ -48,7 +55,7 @@ export default function InspectionsScreen() {
 
   const openChecklist = (): void => {
     setActive(checklists[0] ?? null);
-    setPassed({});
+    setResults({});
     setSubmitted(false);
   };
 
@@ -64,7 +71,7 @@ export default function InspectionsScreen() {
           itemsJson: '[]',
         } as unknown as SafetyChecklist),
     );
-    setPassed({});
+    setResults({});
     setSubmitted(false);
   };
 
@@ -79,10 +86,22 @@ export default function InspectionsScreen() {
 
   const submit = async (): Promise<void> => {
     if (!active) return;
+    const items = parseItems(active);
+    // Overall inspection status: FAILED if any item failed, else PASSED (spec §11 inspection result;
+    // QM-1 E2E #9 records a fail result). A checklist with no items submits as PASSED.
+    const failed = items.some((it, idx) => results[it.id ?? String(idx)] === 'FAIL');
+    const status = failed ? 'FAILED' : 'PASSED';
     await mutate(
       'POST',
       '/site/inspections',
-      { checklist_id: active.checklistId, project_id: active.projectId, responses: passed },
+      {
+        project_id: active.projectId,
+        checklist_id: active.checklistId,
+        status,
+        inspected_at: new Date().toISOString(),
+        // spec 11 §517 — issue_severity is populated only when the result is FAILED.
+        ...(failed ? { issue_severity: severity } : {}),
+      },
       'inspection',
       active.checklistId,
     );
@@ -91,6 +110,8 @@ export default function InspectionsScreen() {
 
   if (active) {
     const items = parseItems(active);
+    const allRated = items.every((it, idx) => results[it.id ?? String(idx)] !== undefined);
+    const willFail = items.some((it, idx) => results[it.id ?? String(idx)] === 'FAIL');
     return (
       <View testID="inspection-checklist" style={styles.container}>
         <Text style={styles.heading}>{active.checklistName}</Text>
@@ -99,27 +120,62 @@ export default function InspectionsScreen() {
         ) : null}
         {items.map((it, idx) => {
           const key = it.id ?? String(idx);
+          const result = results[key];
           return (
             <View key={key} testID="checklist-item" style={styles.checkRow}>
               <Text style={styles.itemTitle}>
                 {it.label ?? t('site.inspections.itemFallback', { index: idx + 1 })}
               </Text>
-              <TouchableOpacity
-                testID="checklist-pass-button"
-                style={[styles.pass, passed[key] && styles.passOn]}
-                onPress={() => setPassed((p) => ({ ...p, [key]: true }))}
-              >
-                <Text style={styles.passText}>
-                  {passed[key] ? t('site.inspections.passed') : t('site.inspections.pass')}
-                </Text>
-              </TouchableOpacity>
+              <View style={styles.resultButtons}>
+                <TouchableOpacity
+                  testID="checklist-pass-button"
+                  style={[styles.pass, result === 'PASS' && styles.passOn]}
+                  onPress={() => setResults((r) => ({ ...r, [key]: 'PASS' }))}
+                >
+                  <Text style={styles.passText}>
+                    {result === 'PASS' ? t('site.inspections.passed') : t('site.inspections.pass')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  testID="checklist-fail-button"
+                  style={[styles.fail, result === 'FAIL' && styles.failOn]}
+                  onPress={() => setResults((r) => ({ ...r, [key]: 'FAIL' }))}
+                >
+                  <Text style={styles.failText}>
+                    {result === 'FAIL' ? t('site.inspections.failed') : t('site.inspections.fail')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           );
         })}
 
+        {willFail ? (
+          <View testID="severity-picker" style={styles.severityRow}>
+            <Text style={styles.severityLabel}>{t('site.inspections.severityLabel')}</Text>
+            {SEVERITIES.map((s) => (
+              <TouchableOpacity
+                key={s}
+                testID={`severity-${s}`}
+                style={[styles.severityChip, severity === s && styles.severityChipOn]}
+                onPress={() => setSeverity(s)}
+              >
+                <Text style={[styles.severityText, severity === s && styles.severityTextOn]}>
+                  {t(`status.${s}`)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+
         <PhotoCapture entityType="inspection" entityId={active.checklistId} />
 
-        <TouchableOpacity testID="submit-inspection-button" style={styles.submit} onPress={submit}>
+        <TouchableOpacity
+          testID="submit-inspection-button"
+          style={[styles.submit, !allRated && styles.disabled]}
+          onPress={submit}
+          disabled={!allRated}
+        >
           <Text style={styles.submitText}>{t('site.inspections.submit')}</Text>
         </TouchableOpacity>
         {submitted ? (
@@ -187,7 +243,9 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.medium,
     color: colors.textPrimary,
+    flex: 1,
   },
+  resultButtons: { flexDirection: 'row', gap: spacing.xs },
   pass: {
     borderRadius: 8,
     borderWidth: 1,
@@ -201,6 +259,40 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     fontSize: typography.caption.fontSize,
   },
+  fail: {
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  failOn: { backgroundColor: colors.danger },
+  failText: {
+    color: colors.textPrimary,
+    fontFamily: fontFamily.medium,
+    fontSize: typography.caption.fontSize,
+  },
+  severityRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.xs },
+  severityLabel: {
+    width: '100%',
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.semibold,
+    color: colors.textSecondary,
+  },
+  severityChip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  severityChipOn: { backgroundColor: colors.danger, borderColor: colors.danger },
+  severityText: {
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.medium,
+    color: colors.textSecondary,
+  },
+  severityTextOn: { color: colors.bg },
   submit: {
     minHeight: 48,
     backgroundColor: colors.primary,

@@ -1,6 +1,7 @@
-// Conflict review — SITE_ENGINEER/PM manual resolution of sync conflicts (Phase 10).
-// Lists GET /site/conflict-records and resolves via PATCH /site/conflict-records/:id/resolve.
-// Reached from the ConflictBadge (not a bottom tab — registered href:null in (app)/_layout).
+// Conflict review — SITE_ENGINEER/PM manual resolution of sync conflicts (Phase 10; diff = G-M19).
+// Lists GET /site/conflict-records (returns client_payload + server_payload) and resolves via
+// PATCH /site/conflict-records/:id/resolve. Tap a record to see the client-vs-server field diff so the
+// reviewer can decide before resolving. Reached from ConflictBadge (href:null in (app)/_layout).
 
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
@@ -9,14 +10,41 @@ import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
+type Payload = Record<string, unknown> | null;
+
 interface ConflictRecord {
   conflict_id: string;
   entity_type: string;
   conflict_type: string;
+  client_payload?: Payload;
+  server_payload?: Payload;
+}
+
+interface DiffRow {
+  field: string;
+  client: string;
+  server: string;
+}
+
+function toText(v: unknown): string {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
+// Union of keys across both payloads → per-field client vs server values.
+function buildDiff(client: Payload, server: Payload): DiffRow[] {
+  const keys = Array.from(new Set([...Object.keys(client ?? {}), ...Object.keys(server ?? {})]));
+  return keys.map((field) => ({
+    field,
+    client: toText((client ?? {})[field]),
+    server: toText((server ?? {})[field]),
+  }));
 }
 
 export default function ConflictReviewScreen() {
   const [records, setRecords] = useState<ConflictRecord[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
   const t = useT();
 
   const load = async (): Promise<void> => {
@@ -52,19 +80,61 @@ export default function ConflictReviewScreen() {
         data={records}
         keyExtractor={(r) => r.conflict_id}
         ListEmptyComponent={<Text style={styles.empty}>{t('sync.conflictReview.empty')}</Text>}
-        renderItem={({ item }) => (
-          <View testID="conflict-record-item" style={styles.item}>
-            <Text style={styles.itemTitle}>{item.entity_type}</Text>
-            <StatusChip label={item.conflict_type} />
-            <TouchableOpacity
-              testID="resolve-conflict-button"
-              style={styles.resolve}
-              onPress={() => resolve(item.conflict_id)}
-            >
-              <Text style={styles.resolveText}>{t('sync.conflictReview.resolve')}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          const open = openId === item.conflict_id;
+          const diff = open
+            ? buildDiff(item.client_payload ?? null, item.server_payload ?? null)
+            : [];
+          return (
+            <View testID="conflict-record-item" style={styles.item}>
+              <TouchableOpacity
+                style={styles.itemHead}
+                onPress={() => setOpenId(open ? null : item.conflict_id)}
+              >
+                <Text style={styles.itemTitle}>{item.entity_type}</Text>
+                <StatusChip label={item.conflict_type} />
+              </TouchableOpacity>
+
+              {open ? (
+                <View testID="conflict-diff" style={styles.diff}>
+                  <View style={styles.diffRow}>
+                    <Text style={[styles.diffCell, styles.diffHeadCell]}>
+                      {t('sync.conflictReview.field')}
+                    </Text>
+                    <Text style={[styles.diffCell, styles.diffHeadCell]}>
+                      {t('sync.conflictReview.client')}
+                    </Text>
+                    <Text style={[styles.diffCell, styles.diffHeadCell]}>
+                      {t('sync.conflictReview.server')}
+                    </Text>
+                  </View>
+                  {diff.map((d) => {
+                    const differs = d.client !== d.server;
+                    return (
+                      <View key={d.field} style={styles.diffRow}>
+                        <Text style={styles.diffCell}>{d.field}</Text>
+                        <Text style={[styles.diffCell, differs && styles.diffChanged]}>
+                          {d.client}
+                        </Text>
+                        <Text style={[styles.diffCell, differs && styles.diffChanged]}>
+                          {d.server}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+
+              <TouchableOpacity
+                testID="resolve-conflict-button"
+                style={styles.resolve}
+                onPress={() => resolve(item.conflict_id)}
+              >
+                <Text style={styles.resolveText}>{t('sync.conflictReview.resolve')}</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
       />
     </View>
   );
@@ -83,11 +153,22 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.surface,
     gap: spacing.xs,
   },
+  itemHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   itemTitle: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.medium,
     color: colors.textPrimary,
   },
+  diff: { gap: 2, marginVertical: spacing.xs },
+  diffRow: { flexDirection: 'row', gap: spacing.xs },
+  diffCell: {
+    flex: 1,
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textPrimary,
+  },
+  diffHeadCell: { fontFamily: fontFamily.semibold, color: colors.textSecondary },
+  diffChanged: { color: colors.danger, fontFamily: fontFamily.medium },
   resolve: {
     alignSelf: 'flex-start',
     backgroundColor: colors.primary,

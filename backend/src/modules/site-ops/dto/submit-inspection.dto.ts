@@ -10,6 +10,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IssueSeverity } from './create-issue.dto';
 
 export enum InspectionStatus {
   PASSED = 'PASSED',
@@ -39,6 +40,12 @@ export class SubmitInspectionDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  // spec 11 §517: populated when the inspection result is FAILED (or conditional). Nullable/optional.
+  @ApiPropertyOptional({ enum: IssueSeverity })
+  @IsOptional()
+  @IsEnum(IssueSeverity)
+  issue_severity?: IssueSeverity;
 
   @ApiPropertyOptional({ minimum: -90, maximum: 90, description: 'GPS latitude (geo-tag)' })
   @IsOptional()

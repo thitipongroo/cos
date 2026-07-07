@@ -109,6 +109,10 @@ const mockRepo = {
   findInvoiceById: jest.fn(),
   findInvoices: jest.fn(),
   updateInvoiceStatus: jest.fn(),
+  updateInvoiceNote: jest.fn(),
+  vendorOtdStats: jest.fn(),
+  vendorDisputeStats: jest.fn(),
+  vendorPriceStats: jest.fn(),
   listPurchaseRequestsTenant: jest.fn(),
   listRfqsTenant: jest.fn(),
   listPurchaseOrdersTenant: jest.fn(),
@@ -876,6 +880,107 @@ describe('approveInvoice', () => {
     mockRepo.findPoById.mockResolvedValue(poFixture);
     const result = await service.approveInvoice('inv-uuid-001');
     expect(result.status).toBe('APPROVED');
+  });
+});
+
+describe('disputeVendorInvoice (G-W6)', () => {
+  const inv = {
+    invoice_id: 'inv-d-1',
+    po_id: 'po-1',
+    vendor_id: 'v-1',
+    tenant_id: 't-1',
+    invoice_number: 'INV-D-1',
+    amount: '100.0000',
+    currency_code: 'THB',
+    invoice_date: new Date(),
+    due_date: new Date(),
+    status: 'VERIFIED' as const,
+    file_id: null,
+    created_at: new Date(),
+    updated_at: new Date(),
+  };
+
+  it('sets a verified invoice to DISPUTED', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(inv);
+    mockRepo.updateInvoiceStatus.mockResolvedValue(undefined);
+    const result = await service.disputeVendorInvoice('inv-d-1');
+    expect(result.status).toBe('DISPUTED');
+    expect(mockRepo.updateInvoiceStatus).toHaveBeenCalledWith('inv-d-1', 'DISPUTED');
+  });
+
+  it('throws NotFoundException when invoice not found', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(null);
+    await expect(service.disputeVendorInvoice('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('throws UnprocessableEntityException when already PAID or DISPUTED', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue({ ...inv, status: 'PAID' });
+    await expect(service.disputeVendorInvoice('inv-d-1')).rejects.toBeInstanceOf(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('getVendorInvoice returns the invoice', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(inv);
+    expect(await service.getVendorInvoice('inv-d-1')).toBe(inv);
+  });
+
+  it('getVendorInvoice throws NotFoundException when missing', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(null);
+    await expect(service.getVendorInvoice('missing')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('setInvoiceNote sets the note and returns the updated invoice', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(inv);
+    mockRepo.updateInvoiceNote.mockResolvedValue(undefined);
+    const result = await service.setInvoiceNote('inv-d-1', 'check quantity');
+    expect(result.note).toBe('check quantity');
+    expect(mockRepo.updateInvoiceNote).toHaveBeenCalledWith('inv-d-1', 'check quantity');
+  });
+
+  it('setInvoiceNote throws NotFoundException when missing', async () => {
+    mockRepo.findInvoiceById.mockResolvedValue(null);
+    await expect(service.setInvoiceNote('missing', 'x')).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('computeVendorScore (G-W5)', () => {
+  it('grades A when all three criteria are perfect', async () => {
+    mockRepo.vendorOtdStats.mockResolvedValue({ on_time: 10, total: 10 });
+    mockRepo.vendorDisputeStats.mockResolvedValue({ disputed: 0, total: 5 });
+    mockRepo.vendorPriceStats.mockResolvedValue({ price_pct: 100, count: 4 });
+    const result = await service.computeVendorScore('v-1');
+    expect(result.grade).toBe('A');
+    expect(result.totalScore).toBeCloseTo(100);
+    expect(result.breakdown).toHaveLength(3);
+  });
+
+  it('re-normalises weights over available criteria (only OTD has data)', async () => {
+    mockRepo.vendorOtdStats.mockResolvedValue({ on_time: 6, total: 10 }); // 60
+    mockRepo.vendorDisputeStats.mockResolvedValue({ disputed: 0, total: 0 });
+    mockRepo.vendorPriceStats.mockResolvedValue({ price_pct: null, count: 0 });
+    const result = await service.computeVendorScore('v-2');
+    expect(result.breakdown).toHaveLength(1);
+    expect(result.totalScore).toBeCloseTo(60); // single criterion weight = 1
+    expect(result.grade).toBe('C');
+  });
+
+  it('returns null grade when the vendor has no data at all', async () => {
+    mockRepo.vendorOtdStats.mockResolvedValue({ on_time: 0, total: 0 });
+    mockRepo.vendorDisputeStats.mockResolvedValue({ disputed: 0, total: 0 });
+    mockRepo.vendorPriceStats.mockResolvedValue({ price_pct: null, count: 0 });
+    const result = await service.computeVendorScore('v-3');
+    expect(result.grade).toBeNull();
+    expect(result.totalScore).toBeNull();
+    expect(result.breakdown).toHaveLength(0);
+  });
+
+  it('quality reflects the invoice dispute rate', async () => {
+    mockRepo.vendorOtdStats.mockResolvedValue({ on_time: 0, total: 0 });
+    mockRepo.vendorDisputeStats.mockResolvedValue({ disputed: 2, total: 10 }); // quality = 80
+    mockRepo.vendorPriceStats.mockResolvedValue({ price_pct: null, count: 0 });
+    const result = await service.computeVendorScore('v-4');
+    expect(result.breakdown[0]?.value).toBeCloseTo(80);
   });
 });
 

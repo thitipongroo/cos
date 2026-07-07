@@ -9,6 +9,7 @@ function harness() {
     syncSiteReports: jest.fn(),
     createIssue: jest.fn(),
     createMaterialConsumption: jest.fn(),
+    submitInspection: jest.fn(),
   };
   const safety = { createIncident: jest.fn() };
   const workforce = { recordAttendance: jest.fn() };
@@ -120,6 +121,23 @@ describe('SyncService', () => {
         report_id: 'rep1',
         material_name: 'cement',
       });
+    });
+
+    it('inspection delegates to submitInspection (offline path, §17.4)', async () => {
+      const { svc, siteOps } = harness();
+      siteOps.submitInspection.mockResolvedValue({ inspection_id: 'insp1', status: 'FAILED' });
+      const payload = {
+        project_id: 'p1',
+        checklist_id: 'c1',
+        status: 'FAILED',
+        inspected_at: '2026-07-07T00:00:00Z',
+      };
+      const res = await svc.push(push({ entity_type: 'inspection', payload }));
+      expect(res).toEqual({
+        status: 'ACCEPTED',
+        server_payload: { inspection_id: 'insp1', status: 'FAILED' },
+      });
+      expect(siteOps.submitInspection).toHaveBeenCalledWith(payload);
     });
 
     it('rejects an unknown entity_type', async () => {

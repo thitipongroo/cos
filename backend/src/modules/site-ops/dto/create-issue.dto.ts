@@ -24,6 +24,17 @@ export class CreateIssueDto {
   @IsUUID()
   project_id!: string;
 
+  // G-M11 — client-generated issue id (offline create). When provided it becomes the server issue_id
+  // so offline-attached photos (entity_id = this UUID) link correctly on sync. Falls back to a
+  // server UUID when absent (mirrors site_report client_id → report_id).
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: 'Client-generated id for offline idempotency',
+  })
+  @IsOptional()
+  @IsUUID()
+  client_id?: string;
+
   @ApiPropertyOptional({ format: 'uuid', description: 'Link to a site report' })
   @IsOptional()
   @IsUUID()

@@ -3194,7 +3194,11 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       navigation spec above). ADDED per product-owner ruling: the role screens were specified in
       the navigation section but were absent from this Generate list; the mobile feature UI is owned
       by Phase 10. Wire each screen to the existing stores/hooks/Drizzle schema/API:
-        * Auth: login (Path A phone + OTP) wired to authStore + role-based post-login routing
+        * Auth: login — Path A (phone + OTP) AND Path B (email/password via Keycloak OIDC, ADR-050)
+          wired to authStore + role-based post-login routing. Path B serves office/management roles
+          (Executive, Finance, PM, Tenant Admin, Procurement, Safety) on their smartphone per §20.6.1
+          (product-owner decision 2026-07-07 — resolves the OTP-only gap; all roles use React Native on
+          smartphone, so mobile must render both auth paths, no new mechanism vs §5.4)
         * SITE_WORKER: home (KPI) · tasks (list + detail + progress input, offline) · report
           (daily report form) · issues (quick issue + list) · profile
         * SITE_ENGINEER: reports (review + record material consumption per report — enqueues 'material'

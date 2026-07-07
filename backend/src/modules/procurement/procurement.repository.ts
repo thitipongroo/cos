@@ -131,6 +131,7 @@ export interface InvoiceRow {
   due_date: Date;
   status: 'RECEIVED' | 'VERIFIED' | 'APPROVED' | 'PAID' | 'DISPUTED';
   file_id: string | null;
+  note?: string | null; // G-M14 (optional for back-compat with pre-migration rows)
 }
 
 // ── Repository ────────────────────────────────────────────────────────────
@@ -664,6 +665,66 @@ export class ProcurementRepository {
         UPDATE procurement.invoices SET status = ${status}
         WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
     );
+  }
+
+  // G-M14 — set the invoice's free-text note.
+  async updateInvoiceNote(invoice_id: string, note: string): Promise<void> {
+    await this.db.run(
+      (prisma) =>
+        prisma.$executeRaw`
+        UPDATE procurement.invoices SET note = ${note}
+        WHERE invoice_id = ${invoice_id}::uuid AND tenant_id = ${this.tenantId}::uuid`,
+    );
+  }
+
+  // ── Vendor scoring metrics (G-W5) — per-vendor inputs for the VendorScoring adapter ──────────────
+  // Formulas decided with the product owner (world-class scorecard patterns over verified data):
+  //   OTD    = deliveries received within delivery_date + 2-day grace / total deliveries.
+  //   quality= 1 − (disputed invoices / total invoices)  [proxy; spec §22.6 behavioral signal].
+  //   price  = avg over the vendor's quotations of (lowest quote on that RFQ / vendor's quote).
+
+  async vendorOtdStats(vendorId: string): Promise<{ on_time: number; total: number }> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ on_time: bigint; total: bigint }>>`
+        SELECT COUNT(*) FILTER (
+                 WHERE d.delivered_at::date <= po.delivery_date + INTERVAL '2 days'
+               ) AS on_time,
+               COUNT(*) AS total
+        FROM procurement.deliveries d
+        JOIN procurement.purchase_orders po ON po.po_id = d.po_id
+        WHERE po.vendor_id = ${vendorId}::uuid AND po.tenant_id = ${this.tenantId}::uuid`,
+    );
+    return { on_time: Number(rows[0]?.on_time ?? 0), total: Number(rows[0]?.total ?? 0) };
+  }
+
+  async vendorDisputeStats(vendorId: string): Promise<{ disputed: number; total: number }> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ disputed: bigint; total: bigint }>>`
+        SELECT COUNT(*) FILTER (WHERE status = 'DISPUTED') AS disputed, COUNT(*) AS total
+        FROM procurement.invoices
+        WHERE vendor_id = ${vendorId}::uuid AND tenant_id = ${this.tenantId}::uuid`,
+    );
+    return { disputed: Number(rows[0]?.disputed ?? 0), total: Number(rows[0]?.total ?? 0) };
+  }
+
+  async vendorPriceStats(vendorId: string): Promise<{ price_pct: number | null; count: number }> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ price_pct: number | null; cnt: bigint }>>`
+        SELECT AVG(m.min_amount / q.total_amount) * 100 AS price_pct, COUNT(*) AS cnt
+        FROM procurement.quotations q
+        JOIN (
+          SELECT rfq_id, MIN(total_amount) AS min_amount
+          FROM procurement.quotations GROUP BY rfq_id
+        ) m ON m.rfq_id = q.rfq_id
+        WHERE q.vendor_id = ${vendorId}::uuid AND q.tenant_id = ${this.tenantId}::uuid`,
+    );
+    return {
+      price_pct: rows[0]?.price_pct != null ? Number(rows[0].price_pct) : null,
+      count: Number(rows[0]?.cnt ?? 0),
+    };
   }
 
   // ── Total quantity delivered helper ───────────────────────────────────────

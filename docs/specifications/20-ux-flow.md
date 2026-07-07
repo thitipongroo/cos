@@ -335,6 +335,11 @@ TH-specific logic is not silently applied to non-TH tenants.
 > **Scope:** the web app is a **full operational client** for all roles — not a dashboard-only
 > surface. It renders the same authentication paths and RBAC model defined for the platform;
 > it introduces **no new auth mechanism**. Authoritative auth spec: §5.4
+>
+> the React Native app also renders
+> **both** paths — Path A (phone + OTP) for field roles AND Path B (email/password via Keycloak OIDC)
+> for office/management roles on their smartphone. Same §5.4 mechanism, no new auth. See
+> `context/00_master_construction_os.md` §Phase 10 Auth.
 
 ### 20.6.1 Login
 

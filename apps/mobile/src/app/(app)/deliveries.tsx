@@ -1,7 +1,9 @@
-// Deliveries screen — PROCUREMENT: list deliveries + record a delivery receipt offline.
-// List: GET /procurement/deliveries. Record: POST /procurement/deliveries (offline-queued via
-// mutate). RecordDeliveryDto = { po_id, delivered_at, delivery_note?, items[] }; item-level
-// quantities need PO line data not cached here, so items is sent empty and confirmed server-side.
+// Deliveries screen — PROCUREMENT: list deliveries + record a delivery receipt with per-line
+// quantities (G-M4). Pick a PO → GET /procurement/purchase-orders/:poId returns its line_items →
+// enter quantity received per line → POST /procurement/deliveries (offline-queued via mutate();
+// RecordDeliveryDto = { po_id, delivered_at, delivery_note?, items:[{ line_id, quantity_received }] }).
+// PO line data is not cached offline (§17.4 — POs are online read-cache), so lines load online; the
+// record submission itself still queues offline.
 
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
@@ -15,20 +17,45 @@ interface DeliveryRow {
   delivery_id: string;
   status: string;
 }
+interface PoRow {
+  po_id: string;
+  po_number?: string;
+  status: string;
+}
+interface PoLineItem {
+  line_id: string;
+  description: string;
+  quantity: string;
+  unit: string;
+}
+
+function asList<T>(res: { items?: T[] } | T[]): T[] {
+  return Array.isArray(res) ? res : (res.items ?? []);
+}
 
 export default function DeliveriesScreen() {
   const [rows, setRows] = useState<DeliveryRow[]>([]);
+  const [pos, setPos] = useState<PoRow[]>([]);
   const [poId, setPoId] = useState('');
+  const [lines, setLines] = useState<PoLineItem[]>([]);
+  const [received, setReceived] = useState<Record<string, string>>({});
   const [note, setNote] = useState('');
+  const [linesError, setLinesError] = useState(false);
   const [saved, setSaved] = useState(false);
   const t = useT();
 
   const load = async (): Promise<void> => {
     try {
       const res = await get<{ items?: DeliveryRow[] } | DeliveryRow[]>('/procurement/deliveries');
-      setRows(Array.isArray(res) ? res : (res.items ?? []));
+      setRows(asList(res));
     } catch {
       /* offline — keep cached */
+    }
+    try {
+      const res = await get<{ items?: PoRow[] } | PoRow[]>('/procurement/purchase-orders');
+      setPos(asList(res));
+    } catch {
+      /* offline — PO picker empty */
     }
   };
 
@@ -36,60 +63,112 @@ export default function DeliveriesScreen() {
     void load();
   }, []);
 
+  const selectPo = async (id: string): Promise<void> => {
+    setPoId(id);
+    setReceived({});
+    setLines([]);
+    setLinesError(false);
+    setSaved(false);
+    try {
+      const detail = await get<{ po: PoRow; line_items: PoLineItem[] }>(
+        `/procurement/purchase-orders/${id}`,
+      );
+      setLines(detail.line_items ?? []);
+    } catch {
+      setLinesError(true); // offline / error — lines unavailable; note-only record still possible
+    }
+  };
+
   const record = async (): Promise<void> => {
+    const items = lines
+      .map((l) => ({ line_id: l.line_id, quantity_received: (received[l.line_id] ?? '').trim() }))
+      .filter((it) => it.quantity_received !== '');
     await mutate(
       'POST',
       '/procurement/deliveries',
       {
-        po_id: poId.trim(),
+        po_id: poId,
         delivered_at: new Date().toISOString(),
-        delivery_note: note.trim(),
-        items: [],
+        delivery_note: note.trim() || undefined,
+        items,
       },
       'delivery',
-      poId.trim(),
+      poId,
     );
     setSaved(true);
     setNote('');
+    setReceived({});
   };
 
   return (
     <View testID="deliveries-screen" style={styles.container}>
       <Text style={styles.heading}>{t('procurement.deliveries.title')}</Text>
 
-      <TextInput
-        testID="delivery-po-input"
-        style={styles.input}
-        placeholder={t('procurement.deliveries.poPlaceholder')}
-        placeholderTextColor={colors.textSecondary}
-        value={poId}
-        onChangeText={setPoId}
-      />
-      <TextInput
-        testID="delivery-note-input"
-        style={styles.input}
-        placeholder={t('procurement.deliveries.notePlaceholder')}
-        placeholderTextColor={colors.textSecondary}
-        value={note}
-        onChangeText={setNote}
-      />
-      <PhotoCapture entityType="inspection" entityId={poId.trim() || 'delivery'} />
-      <TouchableOpacity
-        testID="record-delivery-button"
-        style={[styles.button, !poId.trim() && styles.disabled]}
-        onPress={record}
-        disabled={!poId.trim()}
-      >
-        <Text style={styles.buttonText}>{t('procurement.deliveries.record')}</Text>
-      </TouchableOpacity>
-      {saved ? (
-        <Text testID="delivery-saved" style={styles.saved}>
-          {t('procurement.deliveries.recorded')}
-        </Text>
+      {/* PO picker */}
+      <Text style={styles.label}>{t('procurement.deliveries.selectPo')}</Text>
+      <View testID="po-picker" style={styles.poRow}>
+        {pos.map((po) => (
+          <TouchableOpacity
+            key={po.po_id}
+            testID={`po-option-${po.po_id}`}
+            style={[styles.poChip, poId === po.po_id && styles.poChipOn]}
+            onPress={() => selectPo(po.po_id)}
+          >
+            <Text style={[styles.poChipText, poId === po.po_id && styles.poChipTextOn]}>
+              {po.po_number ?? po.po_id.slice(0, 8)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {poId ? (
+        <>
+          {linesError ? (
+            <Text style={styles.notice}>{t('procurement.deliveries.linesOffline')}</Text>
+          ) : null}
+          {lines.map((l) => (
+            <View key={l.line_id} testID={`delivery-line-${l.line_id}`} style={styles.lineRow}>
+              <View style={styles.lineInfo}>
+                <Text style={styles.lineDesc}>{l.description}</Text>
+                <Text style={styles.lineOrdered}>
+                  {t('procurement.deliveries.ordered', { qty: l.quantity, unit: l.unit })}
+                </Text>
+              </View>
+              <TextInput
+                testID={`delivery-qty-${l.line_id}`}
+                style={styles.qtyInput}
+                keyboardType="decimal-pad"
+                placeholder={l.quantity}
+                placeholderTextColor={colors.textSecondary}
+                value={received[l.line_id] ?? ''}
+                onChangeText={(v) => setReceived((r) => ({ ...r, [l.line_id]: v }))}
+              />
+            </View>
+          ))}
+
+          <TextInput
+            testID="delivery-note-input"
+            style={styles.input}
+            placeholder={t('procurement.deliveries.notePlaceholder')}
+            placeholderTextColor={colors.textSecondary}
+            value={note}
+            onChangeText={setNote}
+          />
+          <PhotoCapture entityType="inspection" entityId={poId} />
+          <TouchableOpacity testID="record-delivery-button" style={styles.button} onPress={record}>
+            <Text style={styles.buttonText}>{t('procurement.deliveries.record')}</Text>
+          </TouchableOpacity>
+          {saved ? (
+            <Text testID="delivery-saved" style={styles.saved}>
+              {t('procurement.deliveries.recorded')}
+            </Text>
+          ) : null}
+        </>
       ) : null}
 
       <FlatList
         testID="delivery-list"
+        style={styles.list}
         data={rows}
         keyExtractor={(r, i) => r.delivery_id || String(i)}
         ListEmptyComponent={<Text style={styles.empty}>{t('procurement.deliveries.empty')}</Text>}
@@ -111,6 +190,57 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     color: colors.textPrimary,
   },
+  label: {
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.semibold,
+    color: colors.textSecondary,
+  },
+  poRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  poChip: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  poChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  poChipText: {
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.medium,
+    color: colors.textSecondary,
+  },
+  poChipTextOn: { color: colors.bg },
+  lineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.surface,
+  },
+  lineInfo: { flex: 1, gap: 2 },
+  lineDesc: {
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.medium,
+    color: colors.textPrimary,
+  },
+  lineOrdered: {
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textSecondary,
+  },
+  qtyInput: {
+    width: 88,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    textAlign: 'right',
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textPrimary,
+  },
   input: {
     minHeight: 48,
     borderWidth: 1,
@@ -128,17 +258,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  disabled: { opacity: 0.5 },
   buttonText: {
     color: colors.bg,
     fontFamily: fontFamily.semibold,
     fontSize: typography.body.fontSize,
+  },
+  notice: {
+    color: colors.textSecondary,
+    fontFamily: fontFamily.regular,
+    fontSize: typography.caption.fontSize,
   },
   saved: {
     color: colors.success,
     fontFamily: fontFamily.medium,
     fontSize: typography.caption.fontSize,
   },
+  list: { marginTop: spacing.md },
   item: {
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,

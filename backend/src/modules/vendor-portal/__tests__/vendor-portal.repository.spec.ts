@@ -89,6 +89,18 @@ describe('VendorPortalRepository', () => {
     expect(await repo.listInvoicesByVendor('ven-1')).toBe(rows);
   });
 
+  it('listQuotationsByVendor returns rows', async () => {
+    const rows = [{ quotation_id: 'q-1' }];
+    queryRaw.mockResolvedValue(rows);
+    expect(await repo.listQuotationsByVendor('ven-1')).toBe(rows);
+  });
+
+  it('listRfqInvitationsByVendor returns rows', async () => {
+    const rows = [{ rfq_id: 'r-1' }];
+    queryRaw.mockResolvedValue(rows);
+    expect(await repo.listRfqInvitationsByVendor('vid-1')).toBe(rows);
+  });
+
   it('defaults tenantId to empty string when request has none', () => {
     const r = new VendorPortalRepository({ run: jest.fn() } as never, {});
     expect(r).toBeInstanceOf(VendorPortalRepository);

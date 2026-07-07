@@ -76,12 +76,11 @@ describe('validateFile', () => {
     expect(validateFile('plan.dwg', 'image/vnd.dwg', 100 * 1024 * 1024)).toBeNull();
   });
 
-  it('returns null for a voice note (.m4a) within the 25 MB limit', () => {
-    expect(validateFile('note.m4a', 'audio/mp4', 10 * 1024 * 1024)).toBeNull();
-    expect(validateFile('note.m4a', 'audio/x-m4a', 10 * 1024 * 1024)).toBeNull();
+  it('returns null for a valid voice-note audio within size limit (G-M7)', () => {
+    expect(validateFile('note.m4a', 'audio/mp4', 2 * 1024 * 1024)).toBeNull();
   });
 
-  it('returns FILE_TOO_LARGE for a voice note exceeding 25 MB', () => {
+  it('returns FILE_TOO_LARGE for audio exceeding 25 MB', () => {
     const result = validateFile('note.m4a', 'audio/mp4', 26 * 1024 * 1024);
     expect(result).toEqual(FILE_ERRORS.FILE_TOO_LARGE);
   });
@@ -91,7 +90,6 @@ describe('validateFile', () => {
     expect(ALLOWED_MIME_TYPES.has('application/pdf')).toBe(true);
     expect(ALLOWED_MIME_TYPES.has('video/mp4')).toBe(true);
     expect(ALLOWED_MIME_TYPES.has('audio/mp4')).toBe(true);
-    expect(ALLOWED_MIME_TYPES.has('audio/x-m4a')).toBe(true);
   });
 
   it('BLOCKED_EXTENSIONS contains all blocked types', () => {

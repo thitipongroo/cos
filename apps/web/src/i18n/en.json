@@ -149,7 +149,8 @@
     "createRequest": "Create PR",
     "rfqNumber": "RFQ number",
     "createRfq": "Create RFQ",
-    "deadline": "Deadline"
+    "deadline": "Deadline",
+    "colScore": "Score"
   },
   "finance": {
     "paymentsTitle": "Payments (AP)",
@@ -166,7 +167,8 @@
     "colVendor": "Vendor",
     "colPo": "PO",
     "colDueDate": "Due date",
-    "colReference": "Reference"
+    "colReference": "Reference",
+    "dispute": "Dispute"
   },
   "nav": {
     "exec": {
@@ -286,7 +288,9 @@
     "fieldDescription": "Description",
     "fieldPhoto": "Photo",
     "submit": "Submit",
-    "submitted": "Submitted"
+    "submitted": "Submitted",
+    "fieldBlockers": "Blockers (if any)",
+    "escalate": "Escalate"
   },
   "safety": {
     "incidentsTitle": "Safety incidents",
@@ -335,7 +339,10 @@
     "shared": "Shared",
     "assignDb": "Assign DB",
     "dbUrlOptional": "Dedicated DB URL (optional)",
-    "createTenant": "Create tenant"
+    "createTenant": "Create tenant",
+    "markContracted": "Mark as Contracted",
+    "markContractedConfirm": "Start dedicated DB provisioning — type the tenant code to confirm:",
+    "contractRef": "Contract reference (optional)"
   },
   "crm": {
     "leadsTitle": "Leads",
@@ -377,7 +384,12 @@
     "poId": "PO ID",
     "dueDate": "Due date",
     "submitInvoice": "Submit invoice",
-    "noInvoices": "No invoices yet."
+    "noInvoices": "No invoices yet.",
+    "quotations": "Quotations",
+    "submittedAt": "Submitted",
+    "noQuotations": "No quotations yet.",
+    "invitedRfqs": "Invited RFQs",
+    "noInvitedRfqs": "No invited RFQs yet."
   },
   "voice": {
     "tapToSpeak": "Tap to speak",

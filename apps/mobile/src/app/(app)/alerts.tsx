@@ -17,13 +17,29 @@ interface ExecutiveDashboardRow {
   overdueInvoiceCount: number;
 }
 
+// Severity derived from the available executive metrics (the analytics endpoint has no severity field):
+//   CRITICAL = budget overrun (utilization > 100%) · HIGH = flagged at-risk · MEDIUM = overdue invoices.
+// Sorting the feed by this rank satisfies master 3097-3098 (CRITICAL → HIGH → MEDIUM) without
+// fabricating data — it is a documented mapping over utilizationPct / atRisk / overdueInvoiceCount.
+type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+const SEV_RANK: Record<Severity, number> = { CRITICAL: 3, HIGH: 2, MEDIUM: 1, LOW: 0 };
+
+function severityOf(r: ExecutiveDashboardRow): Severity {
+  if (Number(r.utilizationPct) > 100) return 'CRITICAL';
+  if (r.atRisk) return 'HIGH';
+  if (r.overdueInvoiceCount > 0) return 'MEDIUM';
+  return 'LOW';
+}
+
 export default function AlertsScreen() {
   const [rows, setRows] = useState<ExecutiveDashboardRow[]>([]);
   const t = useT();
 
   useEffect(() => {
     get<ExecutiveDashboardRow[]>('/analytics/executive')
-      .then((data) => setRows([...data].sort((a, b) => Number(b.atRisk) - Number(a.atRisk))))
+      .then((data) =>
+        setRows([...data].sort((a, b) => SEV_RANK[severityOf(b)] - SEV_RANK[severityOf(a)])),
+      )
       .catch(() => {
         /* offline — keep last */
       });
@@ -41,8 +57,13 @@ export default function AlertsScreen() {
           <View testID="alert-item" style={[styles.card, item.atRisk && styles.cardRisk]}>
             <View style={styles.row}>
               <Text style={styles.project}>{item.projectId.slice(0, 8)}</Text>
-              <Text style={[styles.badge, item.atRisk ? styles.badgeRisk : styles.badgeOk]}>
-                {item.atRisk ? t('exec.alerts.atRisk') : t('exec.alerts.ok')}
+              <Text
+                style={[
+                  styles.badge,
+                  severityOf(item) === 'LOW' ? styles.badgeOk : styles.badgeRisk,
+                ]}
+              >
+                {t(`status.${severityOf(item)}`)}
               </Text>
             </View>
             <Text style={styles.metric}>

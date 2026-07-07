@@ -226,6 +226,22 @@ export function useVendors() {
   });
 }
 
+export interface VendorScoreResult {
+  vendorId: string;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F' | null;
+  totalScore: number | null;
+}
+
+/** Vendor scorecard grade (§20.7.3 "vendor scoring"; G-W5 → GET /vendors/:id/score). */
+export function useVendorScore(vendorId: string) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['vendor-score', vendorId],
+    enabled: vendorId !== '',
+    queryFn: () => api<VendorScoreResult>(`/procurement/vendors/${vendorId}/score`),
+  });
+}
+
 export function useCreatePurchaseRequest() {
   const api = useApi();
   const qc = useQueryClient();
@@ -459,6 +475,17 @@ export function useApproveInvoice() {
   });
 }
 
+/** Dispute a vendor invoice (§20.7.4; G-W6 → POST /procurement/vendor-invoices/:id/dispute). */
+export function useDisputeInvoice() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (invoiceId: string) =>
+      api<void>(`/procurement/vendor-invoices/${invoiceId}/dispute`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['finance', 'invoices'] }),
+  });
+}
+
 // ── Site Engineer (§20.7.5) ──────────────────────────────────────────────────
 
 export function useSiteReports() {
@@ -484,6 +511,17 @@ export function useInspections(status?: string) {
   return useQuery({
     queryKey: ['site', 'inspections', status ?? 'all'],
     queryFn: () => api<PaginatedResponse<InspectionRow>>(`/site/inspections?limit=100${qs}`),
+  });
+}
+
+/** Escalate an issue to the PM (§20.7.5; G-M12 → POST /site/issues/:id/escalate). */
+export function useEscalateIssue() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (issueId: string) =>
+      api<void>(`/site/issues/${issueId}/escalate`, { method: 'POST' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['site', 'issues'] }),
   });
 }
 
@@ -736,6 +774,20 @@ export function useAssignDedicatedDb() {
       api<void>(`/admin/tenants/${id}/dedicated-db`, {
         method: 'PATCH',
         body: JSON.stringify({ dedicatedDbUrl }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
+  });
+}
+
+// §20.4.4 — Mark an ENTERPRISE tenant as contracted → triggers EnterpriseProvisioningWorkflow.
+export function useMarkContracted() {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, contractReference }: { id: string; contractReference?: string }) =>
+      api<void>(`/admin/tenants/${id}/mark-contracted`, {
+        method: 'PATCH',
+        body: JSON.stringify(contractReference ? { contractReference } : {}),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tenants'] }),
   });

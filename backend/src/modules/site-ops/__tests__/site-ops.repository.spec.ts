@@ -133,6 +133,22 @@ describe('SiteOpsRepository', () => {
     expect(result.report_id).toBe('report-uuid-001');
   });
 
+  it('createSiteReport persists blockers when provided (spec 11 §474)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...reportRow, blockers: 'crane down' }]);
+    const result = await repo.createSiteReport({
+      report_id: 'report-uuid-002',
+      project_id: 'proj-uuid-001',
+      submitted_by: 'user-uuid-001',
+      report_date: '2026-06-04',
+      summary: null,
+      blockers: 'crane down',
+      weather: null,
+      manpower_count: null,
+      client_submitted_at: null,
+    });
+    expect(result.blockers).toBe('crane down');
+  });
+
   it('findReportById returns null when not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([]);
     expect(await repo.findReportById('missing')).toBeNull();
@@ -272,6 +288,21 @@ describe('SiteOpsRepository', () => {
       notes: null,
     });
     expect(result.inspection_id).toBe('insp-uuid-001');
+  });
+
+  it('createInspection persists issue_severity when provided (spec 11 §517)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...inspectionRow, issue_severity: 'HIGH' }]);
+    const result = await repo.createInspection({
+      inspection_id: 'insp-uuid-002',
+      project_id: 'proj-uuid-001',
+      checklist_id: 'cl-uuid-001',
+      status: 'FAILED',
+      inspected_by: 'user-uuid-001',
+      inspected_at: '2026-07-07T00:00:00Z',
+      notes: null,
+      issue_severity: 'HIGH',
+    });
+    expect(result.issue_severity).toBe('HIGH');
   });
 
   it('findChecklistById returns null when not found', async () => {

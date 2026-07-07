@@ -149,7 +149,8 @@
     "createRequest": "สร้าง PR",
     "rfqNumber": "เลขที่ RFQ",
     "createRfq": "สร้าง RFQ",
-    "deadline": "กำหนดส่ง"
+    "deadline": "กำหนดส่ง",
+    "colScore": "คะแนนผู้ขาย"
   },
   "finance": {
     "paymentsTitle": "การชำระเงิน (AP)",
@@ -166,7 +167,8 @@
     "colVendor": "ผู้ขาย",
     "colPo": "PO",
     "colDueDate": "ครบกำหนด",
-    "colReference": "อ้างอิง"
+    "colReference": "อ้างอิง",
+    "dispute": "โต้แย้ง"
   },
   "nav": {
     "exec": {
@@ -286,7 +288,9 @@
     "fieldDescription": "รายละเอียด",
     "fieldPhoto": "รูปภาพ",
     "submit": "ส่ง",
-    "submitted": "ส่งเรียบร้อย"
+    "submitted": "ส่งเรียบร้อย",
+    "fieldBlockers": "อุปสรรค/สิ่งกีดขวาง (ถ้ามี)",
+    "escalate": "ยกระดับ (แจ้ง PM)"
   },
   "safety": {
     "incidentsTitle": "อุบัติเหตุ/เหตุการณ์ความปลอดภัย",
@@ -335,7 +339,10 @@
     "shared": "แชร์",
     "assignDb": "กำหนด DB",
     "dbUrlOptional": "Dedicated DB URL (ไม่บังคับ)",
-    "createTenant": "สร้างองค์กร"
+    "createTenant": "สร้างองค์กร",
+    "markContracted": "ทำเครื่องหมายว่าทำสัญญาแล้ว",
+    "markContractedConfirm": "เริ่ม provisioning DB เฉพาะ — พิมพ์รหัส tenant เพื่อยืนยัน:",
+    "contractRef": "เลขอ้างอิงสัญญา (ถ้ามี)"
   },
   "crm": {
     "leadsTitle": "ลูกค้าเป้าหมาย (Leads)",
@@ -377,7 +384,12 @@
     "poId": "รหัสใบสั่งซื้อ",
     "dueDate": "วันครบกำหนด",
     "submitInvoice": "ส่งใบแจ้งหนี้",
-    "noInvoices": "ยังไม่มีใบแจ้งหนี้"
+    "noInvoices": "ยังไม่มีใบแจ้งหนี้",
+    "quotations": "ใบเสนอราคา",
+    "submittedAt": "ส่งเมื่อ",
+    "noQuotations": "ยังไม่มีใบเสนอราคา",
+    "invitedRfqs": "ใบขอราคาที่ได้รับเชิญ",
+    "noInvitedRfqs": "ยังไม่มีใบขอราคาที่ได้รับเชิญ"
   },
   "voice": {
     "tapToSpeak": "แตะเพื่อพูด",

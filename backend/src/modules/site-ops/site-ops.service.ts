@@ -70,6 +70,7 @@ export class SiteOpsService {
       submitted_by: this.userId,
       report_date: dto.report_date,
       summary: dto.summary ?? null,
+      blockers: dto.blockers ?? null,
       weather: dto.weather ?? null,
       manpower_count: dto.manpower_count ?? null,
       client_submitted_at: dto.client_submitted_at ?? null,
@@ -143,6 +144,7 @@ export class SiteOpsService {
           submitted_by: this.userId,
           report_date: item.report_date,
           summary: item.summary ?? null,
+          blockers: item.blockers ?? null,
           weather: item.weather ?? null,
           manpower_count: item.manpower_count ?? null,
           client_submitted_at: item.client_submitted_at ?? null,
@@ -208,7 +210,8 @@ export class SiteOpsService {
   // ── Issues ────────────────────────────────────────────────────────────────
 
   async createIssue(dto: CreateIssueDto) {
-    const issueId = randomUUID();
+    // Use the client-provided id when present (offline create → photo linkage, G-M11); else generate.
+    const issueId = dto.client_id ?? randomUUID();
     const issue = await this.repo.createIssue({
       issue_id: issueId,
       project_id: dto.project_id,
@@ -241,6 +244,30 @@ export class SiteOpsService {
 
     await this.indexIssue(issue);
     return issue;
+  }
+
+  // G-M12 — escalate an issue to the Project Manager. Non-destructive: no issue field changes; emits
+  // site.issue.escalated.v1 which the notification service routes to PROJECT_MANAGER (in-app).
+  async escalateIssue(issueId: string) {
+    const issue = await this.repo.findIssueById(issueId);
+    if (!issue) {
+      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+    }
+    await this.emitEvent('site.issue.escalated.v1', {
+      issue_id: issue.issue_id,
+      project_id: issue.project_id,
+      title: issue.title,
+      severity: issue.severity,
+      escalated_by: this.userId,
+    });
+    logger.info({
+      event: 'issue.escalated',
+      issue_id: issue.issue_id,
+      project_id: issue.project_id,
+      tenant_id: this.tenantId,
+      trace_id: this.correlationId,
+    });
+    return { issue_id: issue.issue_id, status: 'ESCALATED' as const };
   }
 
   async updateIssue(issueId: string, dto: UpdateIssueDto) {
@@ -335,6 +362,7 @@ export class SiteOpsService {
       inspected_by: this.userId,
       inspected_at: dto.inspected_at,
       notes: dto.notes ?? null,
+      issue_severity: dto.issue_severity ?? null, // spec 11 §517 — set on FAILED/conditional
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,
     });

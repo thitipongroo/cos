@@ -25,15 +25,30 @@ import {
 export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL');
 
-const DDL_VERSION = 1;
+const DDL_VERSION = 2;
 
 function ddl(): void {
   const row = sqlite.getFirstSync<{ user_version: number }>('PRAGMA user_version');
-  if ((row?.user_version ?? 0) >= DDL_VERSION) return;
+  const current = row?.user_version ?? 0;
+  if (current >= DDL_VERSION) return;
+
+  // v1→v2 (G-M5a/G-M5b): add site-report blockers + manpower_count columns to existing installs.
+  // Fresh installs (current < 1) get these columns from the CREATE TABLE below, so only ALTER when
+  // upgrading from exactly v1 (SQLite has no ADD COLUMN IF NOT EXISTS).
+  if (current === 1) {
+    sqlite.execSync(`
+      ALTER TABLE local_site_reports ADD COLUMN blockers TEXT;
+      ALTER TABLE local_site_reports ADD COLUMN manpower_count INTEGER;
+      PRAGMA user_version = ${DDL_VERSION};
+    `);
+    return;
+  }
+
   sqlite.execSync(`
     CREATE TABLE IF NOT EXISTS local_site_reports (
       id TEXT PRIMARY KEY NOT NULL, report_id TEXT NOT NULL, project_id TEXT NOT NULL,
-      report_date TEXT NOT NULL, summary TEXT, status TEXT NOT NULL, sync_status TEXT NOT NULL);
+      report_date TEXT NOT NULL, summary TEXT, blockers TEXT, manpower_count INTEGER,
+      status TEXT NOT NULL, sync_status TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS local_issues (
       id TEXT PRIMARY KEY NOT NULL, issue_id TEXT NOT NULL, project_id TEXT NOT NULL,
       report_id TEXT, title TEXT NOT NULL, description TEXT, severity TEXT NOT NULL,

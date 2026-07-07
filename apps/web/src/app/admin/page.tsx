@@ -10,6 +10,7 @@ import {
   useCreateTenant,
   useDeactivateTenant,
   useAssignDedicatedDb,
+  useMarkContracted,
 } from '../../lib/api/queries';
 import type { PlanType, TenantRow } from '../../lib/api/types';
 import { formatDate } from '../../lib/format';
@@ -24,6 +25,7 @@ export default function AdminPanelPage() {
   const create = useCreateTenant();
   const deactivate = useDeactivateTenant();
   const assignDb = useAssignDedicatedDb();
+  const markContracted = useMarkContracted();
 
   const [form, setForm] = useState({
     tenantCode: '',
@@ -87,6 +89,28 @@ export default function AdminPanelPage() {
                 className="rounded border border-blue-600 px-2 py-0.5 text-xs text-blue-600 hover:bg-blue-50 disabled:opacity-50"
               >
                 {t('admin.assignDb')}
+              </button>
+            )}
+            {/* §20.4.4 — enabled only for an ENTERPRISE tenant that is active with no dedicated DB yet. */}
+            {x.plan_type === 'ENTERPRISE' && !x.dedicated_db_url && (
+              <button
+                type="button"
+                disabled={markContracted.isPending}
+                onClick={() => {
+                  // Type-to-confirm safety (§20.4.4): operator retypes the tenant code.
+                  const confirmCode = window.prompt(
+                    `${t('admin.markContractedConfirm')} ${x.tenant_code}`,
+                  );
+                  if (confirmCode !== x.tenant_code) return;
+                  const ref = window.prompt(t('admin.contractRef')) ?? '';
+                  markContracted.mutate({
+                    id: x.tenant_id,
+                    contractReference: ref.trim() || undefined,
+                  });
+                }}
+                className="rounded border border-amber-600 px-2 py-0.5 text-xs text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+              >
+                {t('admin.markContracted')}
               </button>
             )}
           </span>

@@ -332,6 +332,7 @@ export interface CreateSiteReportInput {
   project_id: string;
   report_date: string;
   summary?: string;
+  blockers?: string;
   manpower_count?: number;
   weather?: string;
 }

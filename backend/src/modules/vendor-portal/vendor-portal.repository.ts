@@ -60,6 +60,14 @@ export interface InvoiceRow {
   status: string;
 }
 
+export interface InvitedRfqRow {
+  rfq_id: string;
+  rfq_number: string;
+  status: string; // RFQ status
+  deadline: Date;
+  invitation_status: string; // invitation status (PENDING / RESPONDED)
+}
+
 @Injectable({ scope: Scope.REQUEST })
 export class VendorPortalRepository {
   private get tenantId(): string {
@@ -195,6 +203,33 @@ export class VendorPortalRepository {
         tx.$queryRaw<InvoiceRow[]>`
         SELECT invoice_id, po_id, invoice_number, amount, currency_code, invoice_date, due_date, status
         FROM procurement.invoices WHERE vendor_id = ${vendorId}::uuid ORDER BY invoice_date DESC
+      `,
+    );
+  }
+
+  // ── Quotations (Tier-2: list own submitted quotations — G-W1, §20.7.12) ──────
+
+  async listQuotationsByVendor(vendorId: string): Promise<QuotationRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<QuotationRow[]>`
+        SELECT quotation_id, rfq_id, vendor_id, total_amount, currency_code, validity_days, submitted_at
+        FROM procurement.quotations WHERE vendor_id = ${vendorId}::uuid ORDER BY submitted_at DESC
+      `,
+    );
+  }
+
+  // ── Invited RFQs (Tier-2 overview — G-W3, §20.7.12) ──────────────────────────
+  // RFQs the vendor identity was invited to, joined with the RFQ for number/status/deadline.
+  async listRfqInvitationsByVendor(vendorIdentityId: string): Promise<InvitedRfqRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<InvitedRfqRow[]>`
+        SELECT r.rfq_id, r.rfq_number, r.status, r.deadline, i.status AS invitation_status
+        FROM procurement.rfq_invitations i
+        JOIN procurement.rfqs r ON r.rfq_id = i.rfq_id
+        WHERE i.vendor_identity_id = ${vendorIdentityId}::uuid
+        ORDER BY r.deadline DESC
       `,
     );
   }

@@ -157,6 +157,21 @@ export class SiteOpsController {
     return this.svc.updateIssue(issueId, dto);
   }
 
+  // POST /api/v1/site/issues/:issueId/escalate (G-M12) — raise the issue to the PM (notify only)
+  @Post('site/issues/:issueId/escalate')
+  @Roles(
+    CosRole.SITE_WORKER,
+    CosRole.SITE_ENGINEER,
+    CosRole.PROJECT_MANAGER,
+    CosRole.SAFETY_OFFICER,
+    CosRole.TENANT_ADMIN,
+  )
+  @ApiOperation({ summary: 'Escalate an issue to the Project Manager (in-app notification)' })
+  @ApiParam({ name: 'issueId', type: 'string', format: 'uuid' })
+  escalateIssue(@Param('issueId', ParseUUIDPipe) issueId: string) {
+    return this.svc.escalateIssue(issueId);
+  }
+
   // GET /api/v1/site/issues
   @Get('site/issues')
   @Roles(

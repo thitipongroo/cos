@@ -30,6 +30,7 @@ import { SubmitQuotationDto } from './dto/submit-quotation.dto';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 import { RecordDeliveryDto } from './dto/record-delivery.dto';
 import { ReceiveInvoiceDto } from './dto/receive-invoice.dto';
+import { SetInvoiceNoteDto } from './dto/set-invoice-note.dto';
 
 // Read access across procurement (spec §06): all office/management + procurement roles.
 const READ_ROLES = [
@@ -408,5 +409,46 @@ export class ProcurementController {
   @HttpCode(HttpStatus.OK)
   approveInvoice(@Param('invoiceId', ParseUUIDPipe) invoiceId: string) {
     return this.svc.approveInvoice(invoiceId);
+  }
+
+  // POST /api/v1/procurement/vendor-invoices/:invoiceId/dispute (G-W6)
+  @Post('procurement/vendor-invoices/:invoiceId/dispute')
+  @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Dispute vendor invoice (→ DISPUTED)' })
+  @ApiParam({ name: 'invoiceId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  disputeVendorInvoice(@Param('invoiceId', ParseUUIDPipe) invoiceId: string) {
+    return this.svc.disputeVendorInvoice(invoiceId);
+  }
+
+  // GET /api/v1/procurement/vendor-invoices/:invoiceId (invoice detail — G-M14)
+  @Get('procurement/vendor-invoices/:invoiceId')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'Get a vendor invoice by id' })
+  @ApiParam({ name: 'invoiceId', type: 'string', format: 'uuid' })
+  getVendorInvoice(@Param('invoiceId', ParseUUIDPipe) invoiceId: string) {
+    return this.svc.getVendorInvoice(invoiceId);
+  }
+
+  // POST /api/v1/procurement/vendor-invoices/:invoiceId/note (G-M14 — set free-text note)
+  @Post('procurement/vendor-invoices/:invoiceId/note')
+  @Roles(CosRole.FINANCE, CosRole.TENANT_ADMIN)
+  @ApiOperation({ summary: 'Set the free-text note on a vendor invoice' })
+  @ApiParam({ name: 'invoiceId', type: 'string', format: 'uuid' })
+  @HttpCode(HttpStatus.OK)
+  setInvoiceNote(
+    @Param('invoiceId', ParseUUIDPipe) invoiceId: string,
+    @Body() dto: SetInvoiceNoteDto,
+  ) {
+    return this.svc.setInvoiceNote(invoiceId, dto.note);
+  }
+
+  // GET /api/v1/procurement/vendors/:vendorId/score (G-W5 — weighted vendor scorecard)
+  @Get('procurement/vendors/:vendorId/score')
+  @Roles(...READ_ROLES)
+  @ApiOperation({ summary: 'Vendor scorecard (on-time delivery / quality / price → grade)' })
+  @ApiParam({ name: 'vendorId', type: 'string', format: 'uuid' })
+  getVendorScore(@Param('vendorId', ParseUUIDPipe) vendorId: string) {
+    return this.svc.computeVendorScore(vendorId);
   }
 }

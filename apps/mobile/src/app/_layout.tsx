@@ -12,6 +12,7 @@ import {
   InterTight_700Bold,
 } from '@expo-google-fonts/inter-tight';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../store/authStore';
 import { useLocaleStore } from '../store/localeStore';
 import { I18nProvider } from '../i18n';
@@ -94,11 +95,13 @@ export default function RootLayout() {
   if (!hydrated) return null;
 
   return (
-    <SafeAreaProvider>
-      <I18nProvider>
-        <AuthGate />
-        <Slot />
-      </I18nProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <I18nProvider>
+          <AuthGate />
+          <Slot />
+        </I18nProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

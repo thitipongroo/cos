@@ -20,6 +20,8 @@ import { Decimal, calculateLineTotal, sumDecimals } from '@cos/financial';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { ProcurementRepository } from './procurement.repository';
+import { VendorScoring } from './vendor-scoring';
+import type { ScoreCriteria, VendorGrade } from './vendor-scoring';
 import type {
   VendorRow,
   PurchaseRequestRow,
@@ -607,6 +609,91 @@ export class ProcurementService {
 
     logger.info({ invoice_id, po_id, actor_id: this.userId }, 'invoice.approved');
     return { ...invoice, status: 'APPROVED' };
+  }
+
+  // G-W6 — invoice-level dispute (§20.7.4 verify/approve/dispute). Sets the vendor invoice record to
+  // DISPUTED directly (mirrors approveInvoice); distinct from the PO-workflow disputeInvoice signal.
+  async disputeVendorInvoice(invoice_id: string): Promise<InvoiceRow> {
+    const invoice = await this.repo.findInvoiceById(invoice_id);
+    if (!invoice) {
+      throw new NotFoundException(`Invoice ${invoice_id} not found`);
+    }
+    if (invoice.status === 'PAID' || invoice.status === 'DISPUTED') {
+      throw new UnprocessableEntityException(
+        `Invoice ${invoice_id} cannot be disputed (current: ${invoice.status})`,
+      );
+    }
+    await this.repo.updateInvoiceStatus(invoice_id, 'DISPUTED');
+    logger.info({ invoice_id, actor_id: this.userId }, 'vendor-invoice.disputed');
+    return { ...invoice, status: 'DISPUTED' };
+  }
+
+  // Invoice detail by id (unblocks mobile invoice detail — G-M14). No line items on invoices; returns
+  // the invoice record. add-note remains a follow-up (no note column on procurement.invoices yet).
+  async getVendorInvoice(invoice_id: string): Promise<InvoiceRow> {
+    const invoice = await this.repo.findInvoiceById(invoice_id);
+    if (!invoice) {
+      throw new NotFoundException(`Invoice ${invoice_id} not found`);
+    }
+    return invoice;
+  }
+
+  // G-M14 — set/overwrite the invoice free-text note.
+  async setInvoiceNote(invoice_id: string, note: string): Promise<InvoiceRow> {
+    const invoice = await this.repo.findInvoiceById(invoice_id);
+    if (!invoice) {
+      throw new NotFoundException(`Invoice ${invoice_id} not found`);
+    }
+    await this.repo.updateInvoiceNote(invoice_id, note);
+    logger.info({ invoice_id, actor_id: this.userId }, 'vendor-invoice.note-set');
+    return { ...invoice, note };
+  }
+
+  // G-W5 — vendor score from the 3 decided criteria over available data (OTD grace-2d, quality =
+  // 1−dispute-rate, price = min/quote per RFQ). Weights are equal (spec default 1/3), re-normalized
+  // over whichever criteria have data; a vendor with no data yet grades null (N/A).
+  async computeVendorScore(vendorId: string): Promise<{
+    vendorId: string;
+    grade: VendorGrade | null;
+    totalScore: number | null;
+    breakdown: ScoreCriteria[];
+  }> {
+    const [otd, disp, price] = await Promise.all([
+      this.repo.vendorOtdStats(vendorId),
+      this.repo.vendorDisputeStats(vendorId),
+      this.repo.vendorPriceStats(vendorId),
+    ]);
+
+    const criteria: ScoreCriteria[] = [];
+    if (otd.total > 0) {
+      criteria.push({
+        name: 'on_time_delivery',
+        weight: 0,
+        value: (100 * otd.on_time) / otd.total,
+      });
+    }
+    if (disp.total > 0) {
+      criteria.push({ name: 'quality', weight: 0, value: 100 * (1 - disp.disputed / disp.total) });
+    }
+    if (price.count > 0 && price.price_pct != null) {
+      criteria.push({ name: 'price', weight: 0, value: price.price_pct });
+    }
+
+    if (criteria.length === 0) {
+      return { vendorId, grade: null, totalScore: null, breakdown: [] };
+    }
+
+    const weight = 1 / criteria.length; // equal weights, re-normalized over available criteria
+    const scored = new VendorScoring().score(
+      vendorId,
+      criteria.map((c) => ({ ...c, weight })),
+    );
+    return {
+      vendorId,
+      grade: scored.grade,
+      totalScore: scored.totalScore,
+      breakdown: scored.breakdown,
+    };
   }
 
   async markInvoicePaid(po_id: string): Promise<void> {

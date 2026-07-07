@@ -17,6 +17,7 @@ export interface SiteReportRow {
   submitted_by: string;
   status: 'DRAFT' | 'SUBMITTED' | 'ACKNOWLEDGED';
   summary: string | null;
+  blockers?: string | null; // spec 11 §474 (optional for back-compat with pre-migration rows)
   weather: string | null;
   manpower_count: number | null;
   client_submitted_at: Date | null;
@@ -49,6 +50,8 @@ export interface InspectionRow {
   inspected_by: string;
   inspected_at: Date;
   notes: string | null;
+  // spec 11 §517 — nullable; populated when result is FAILED/conditional (optional for back-compat).
+  issue_severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | null;
 }
 
 export interface SafetyChecklistRow {
@@ -119,6 +122,7 @@ export class SiteOpsRepository {
     submitted_by: string;
     report_date: string;
     summary: string | null;
+    blockers?: string | null;
     weather: string | null;
     manpower_count: number | null;
     client_submitted_at: string | null;
@@ -130,17 +134,18 @@ export class SiteOpsRepository {
         tx.$queryRaw<SiteReportRow[]>`
         INSERT INTO site_ops.site_reports
           (report_id, project_id, tenant_id, report_date, submitted_by,
-           summary, weather, manpower_count, client_submitted_at, latitude, longitude)
+           summary, blockers, weather, manpower_count, client_submitted_at, latitude, longitude)
         VALUES
           (${params.report_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid, ${params.report_date}::date,
            ${params.submitted_by}::uuid,
-           ${params.summary}, ${params.weather}, ${params.manpower_count},
+           ${params.summary}, ${params.blockers ?? null}, ${params.weather}, ${params.manpower_count},
            ${params.client_submitted_at}::timestamptz,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         ON CONFLICT (project_id, report_date, submitted_by)
           DO UPDATE SET
             summary             = EXCLUDED.summary,
+            blockers            = EXCLUDED.blockers,
             weather             = EXCLUDED.weather,
             manpower_count      = EXCLUDED.manpower_count,
             client_submitted_at = EXCLUDED.client_submitted_at,
@@ -341,6 +346,7 @@ export class SiteOpsRepository {
     inspected_by: string;
     inspected_at: string;
     notes: string | null;
+    issue_severity?: string | null;
     latitude?: number | null;
     longitude?: number | null;
   }): Promise<InspectionRow> {
@@ -349,12 +355,13 @@ export class SiteOpsRepository {
         tx.$queryRaw<InspectionRow[]>`
         INSERT INTO site_ops.inspections
           (inspection_id, project_id, tenant_id, checklist_id, status,
-           inspected_by, inspected_at, notes, latitude, longitude)
+           inspected_by, inspected_at, notes, issue_severity, latitude, longitude)
         VALUES
           (${params.inspection_id}::uuid, ${params.project_id}::uuid,
            ${this.tenantId}::uuid, ${params.checklist_id}::uuid,
            ${params.status}, ${params.inspected_by}::uuid,
            ${params.inspected_at}::timestamptz, ${params.notes},
+           ${params.issue_severity ?? null},
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *
       `,

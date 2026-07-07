@@ -28,10 +28,13 @@ describe('VendorPortalController', () => {
     listPurchaseOrders: jest.fn().mockReturnValue('pos'),
     submitInvoice: jest.fn().mockReturnValue('invoice'),
     listInvoices: jest.fn().mockReturnValue('invoices'),
+    listQuotations: jest.fn().mockReturnValue('quotations'),
+    listInvitedRfqs: jest.fn().mockReturnValue('invited-rfqs'),
   };
   const controller = new VendorPortalController(service as never);
   const tier1 = { vendorInvitationId: 'inv-1' } as VendorRequest;
   const tier2 = { vendorId: 'ven-1' } as VendorRequest;
+  const tier2Identity = { vendorIdentityId: 'vid-1' } as VendorRequest;
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -71,6 +74,20 @@ describe('VendorPortalController', () => {
   it('listInvoices passes the vendor context', () => {
     expect(controller.listInvoices(tier2)).toBe('invoices');
     expect(service.listInvoices).toHaveBeenCalledWith('ven-1');
+  });
+
+  it('listQuotations passes the vendor context', () => {
+    expect(controller.listQuotations(tier2)).toBe('quotations');
+    expect(service.listQuotations).toHaveBeenCalledWith('ven-1');
+  });
+
+  it('listInvitedRfqs passes the vendor identity context', () => {
+    expect(controller.listInvitedRfqs(tier2Identity)).toBe('invited-rfqs');
+    expect(service.listInvitedRfqs).toHaveBeenCalledWith('vid-1');
+  });
+
+  it('listInvitedRfqs throws when vendor identity context is missing', () => {
+    expect(() => controller.listInvitedRfqs({} as VendorRequest)).toThrow(UnauthorizedException);
   });
 
   it('vendor endpoints throw when vendor context is missing', () => {

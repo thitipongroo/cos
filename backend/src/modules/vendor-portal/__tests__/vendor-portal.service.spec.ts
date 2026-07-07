@@ -40,6 +40,8 @@ function build(
     listPurchaseOrdersByVendor: jest.fn().mockResolvedValue([{ po_id: 'po-1' }]),
     createInvoice: jest.fn().mockResolvedValue({ invoice_id: 'i-1' }),
     listInvoicesByVendor: jest.fn().mockResolvedValue([{ invoice_id: 'i-1' }]),
+    listQuotationsByVendor: jest.fn().mockResolvedValue([{ quotation_id: 'q-1' }]),
+    listRfqInvitationsByVendor: jest.fn().mockResolvedValue([{ rfq_id: 'r-1' }]),
   };
   const identities = {
     upsertIdentity: jest.fn().mockResolvedValue({ vendor_identity_id: 'vid-1' }),
@@ -201,6 +203,16 @@ describe('VendorPortalService', () => {
     it('listInvoices', async () => {
       const { service } = build();
       expect(await service.listInvoices('ven-1')).toEqual([{ invoice_id: 'i-1' }]);
+    });
+
+    it('listQuotations', async () => {
+      const { service } = build();
+      expect(await service.listQuotations('ven-1')).toEqual([{ quotation_id: 'q-1' }]);
+    });
+
+    it('listInvitedRfqs', async () => {
+      const { service } = build();
+      expect(await service.listInvitedRfqs('vid-1')).toEqual([{ rfq_id: 'r-1' }]);
     });
   });
 

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { DataTable, type Column } from '../../../components/ui/DataTable';
 import { StatusChip } from '../../../components/ui/StatusChip';
@@ -29,7 +30,15 @@ export default function PortfolioPage() {
 
   const columns: Column<ProjectRow>[] = [
     { headerKey: 'table.code', cell: (p) => p.project_code },
-    { headerKey: 'table.project', cell: (p) => p.project_name },
+    {
+      headerKey: 'table.project',
+      // §20.7.1 "drill to project health" — link to the project detail (health) page.
+      cell: (p) => (
+        <Link href={`/projects/${p.project_id}`} className="text-blue-600 hover:underline">
+          {p.project_name}
+        </Link>
+      ),
+    },
     { headerKey: 'table.status', cell: (p) => <StatusChip status={p.status} /> },
     {
       headerKey: 'table.budget',

@@ -133,6 +133,15 @@ export async function mutate<T>(
   }
 }
 
+// ── Non-queuing POST ─────────────────────────────────────────────────────────
+// Unlike mutate(), this NEVER enqueues on network error — it throws so the caller can surface an
+// offline/"unavailable" state. Use for online-only actions that must not be replayed later, e.g.
+// AI report generation (master 3099 — EXEC reports are read-only/last-cached offline, not queued).
+export async function post<T>(path: string, payload: unknown): Promise<T> {
+  const { data } = await http.post<T>(path, payload);
+  return data;
+}
+
 // ── GET helper ─────────────────────────────────────────────────────────────
 
 export async function get<T>(path: string, params?: Record<string, string>): Promise<T> {

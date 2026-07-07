@@ -12,7 +12,7 @@ import type { Task } from '../../db/database';
 import { localTasks } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 import { useCollection } from '../../hooks/useCollection';
-import { StatusChip } from '../../components/StatusChip';
+import { TaskCard } from '../../components/TaskCard';
 import { mutate } from '../../api/client';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
@@ -46,6 +46,15 @@ export default function TasksScreen() {
       selected.taskId,
     );
     setSavedValue(value);
+  };
+
+  // Swipe-right on a TaskCard completes the task (progress → 100). Same offline path as onSave.
+  const completeTask = async (task: Task): Promise<void> => {
+    await db
+      .update(localTasks)
+      .set({ progressPercent: 100, offlineSyncStatus: 'PENDING' })
+      .where(eq(localTasks.id, task.id));
+    await mutate('PATCH', `/tasks/${task.taskId}`, { progress_percent: 100 }, 'task', task.taskId);
   };
 
   if (selected) {
@@ -85,18 +94,11 @@ export default function TasksScreen() {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={<Text style={styles.empty}>{t('tasks.list.empty')}</Text>}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            testID={item.taskId ? `task-${item.taskId}` : 'task-item'}
-            style={styles.item}
+          <TaskCard
+            task={item}
             onPress={() => openTask(item)}
-          >
-            <Text style={styles.itemTitle}>{item.taskName}</Text>
-            <View style={styles.chips}>
-              <Text style={styles.pct}>{item.progressPercent}%</Text>
-              <StatusChip label={item.status} />
-              <StatusChip label={item.offlineSyncStatus} />
-            </View>
-          </TouchableOpacity>
+            onComplete={() => void completeTask(item)}
+          />
         )}
       />
     </View>

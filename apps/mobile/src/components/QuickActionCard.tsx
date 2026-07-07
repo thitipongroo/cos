@@ -1,35 +1,37 @@
-// QuickActionCard — §32.7: 60px min height, icon + label + badge, single tap.
-// A large, outdoor-friendly action tile used on role home screens.
+// QuickActionCard (§32.7; G-M9) — 60px min-height tap target with an icon + label + optional count
+// badge, single tap. Used on the field Home for one-tap access to daily actions.
 
-import type { ReactNode } from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
 
-interface QuickActionCardProps {
+export function QuickActionCard({
+  icon,
+  label,
+  badge,
+  onPress,
+  testID,
+}: {
+  icon?: string;
   label: string;
-  onPress: () => void;
-  icon?: ReactNode;
   badge?: number;
+  onPress: () => void;
   testID?: string;
-}
-
-export function QuickActionCard({ label, onPress, icon, badge, testID }: QuickActionCardProps) {
+}) {
   return (
     <TouchableOpacity
       testID={testID}
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.7}
       accessibilityRole="button"
       accessibilityLabel={label}
+      style={styles.card}
+      onPress={onPress}
     >
-      {icon ? <View style={styles.icon}>{icon}</View> : null}
-      <Text style={styles.label} numberOfLines={1}>
+      {icon ? <Text style={styles.icon}>{icon}</Text> : null}
+      <Text style={styles.label} numberOfLines={2}>
         {label}
       </Text>
       {typeof badge === 'number' && badge > 0 ? (
-        <View testID="quick-action-badge" style={styles.badge}>
-          <Text style={styles.badgeText}>{badge > 99 ? '99+' : String(badge)}</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{badge}</Text>
         </View>
       ) : null}
     </TouchableOpacity>
@@ -38,33 +40,38 @@ export function QuickActionCard({ label, onPress, icon, badge, testID }: QuickAc
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 60,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-  },
-  icon: { width: 28, alignItems: 'center' },
-  label: {
     flex: 1,
+    minHeight: 60,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  icon: { fontSize: 22 },
+  label: {
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.medium,
     color: colors.textPrimary,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
+    textAlign: 'center',
   },
   badge: {
-    minWidth: 22,
-    height: 22,
-    paddingHorizontal: 6,
-    borderRadius: 11,
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   badgeText: {
     color: colors.bg,
-    fontSize: typography.label.fontSize,
-    fontFamily: fontFamily.semibold,
+    fontSize: 10,
+    fontFamily: fontFamily.bold,
   },
 });

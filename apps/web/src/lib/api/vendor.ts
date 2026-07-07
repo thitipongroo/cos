@@ -39,6 +39,23 @@ export interface VendorInvoice {
   status: string;
 }
 
+export interface VendorQuotation {
+  quotation_id: string;
+  rfq_id: string;
+  total_amount: string;
+  currency_code: string;
+  validity_days: number;
+  submitted_at: string;
+}
+
+export interface VendorInvitedRfq {
+  rfq_id: string;
+  rfq_number: string;
+  status: string;
+  deadline: string;
+  invitation_status: string;
+}
+
 export interface SubmitQuotationInput {
   total_amount: string;
   currency_code: string;
@@ -124,6 +141,21 @@ export function useVendorInvoices() {
   return useQuery({
     queryKey: ['vendor-invoices'],
     queryFn: () => tier2Fetch<VendorInvoice[]>('/vendor/invoices'),
+  });
+}
+
+export function useVendorQuotations() {
+  return useQuery({
+    queryKey: ['vendor-quotations'],
+    queryFn: () => tier2Fetch<VendorQuotation[]>('/vendor/quotations'),
+  });
+}
+
+/** Tier-2: RFQs this vendor was invited to (§20.7.12 → GET /vendor/rfqs). */
+export function useVendorInvitedRfqs() {
+  return useQuery({
+    queryKey: ['vendor-invited-rfqs'],
+    queryFn: () => tier2Fetch<VendorInvitedRfq[]>('/vendor/rfqs'),
   });
 }
 

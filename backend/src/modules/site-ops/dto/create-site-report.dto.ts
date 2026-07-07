@@ -26,6 +26,13 @@ export class CreateSiteReportDto {
   @MaxLength(2000)
   summary?: string;
 
+  // spec 11 §474 Site Reports — free-text obstacles on the daily report (§20.7.6 "manpower, blockers").
+  @ApiPropertyOptional({ maxLength: 2000 })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  blockers?: string;
+
   @ApiPropertyOptional({ maxLength: 100 })
   @IsOptional()
   @IsString()

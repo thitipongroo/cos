@@ -43,7 +43,11 @@
       "sendOtp": "Send OTP",
       "verify": "Verify",
       "otpSendError": "Could not send OTP. Check the phone number and try again.",
-      "otpVerifyError": "Invalid or expired OTP. Please try again."
+      "otpVerifyError": "Invalid or expired OTP. Please try again.",
+      "office": "Office login (email / password)",
+      "fieldWorker": "Field worker — sign in with phone (OTP)",
+      "backToOffice": "← Back to office login",
+      "oidcError": "Sign-in failed. Please try again."
     }
   },
   "home": {
@@ -54,6 +58,29 @@
       "checkIn": "Check in",
       "checkedIn": "Checked in — will sync when online",
       "checkInError": "Check-in unavailable: no worker profile linked to your account."
+    },
+    "exec": {
+      "title": "Executive Overview",
+      "activeProjects": "Active projects",
+      "openCritical": "Open critical issues",
+      "budget": "Total budget",
+      "actual": "Actual"
+    },
+    "finance": {
+      "title": "Finance",
+      "pendingPayments": "Pending approvals",
+      "overdueInvoices": "Overdue invoices"
+    },
+    "procurement": {
+      "title": "Procurement",
+      "openRfqs": "Open RFQs",
+      "awaitingAck": "POs awaiting ack",
+      "deliveries": "Deliveries"
+    },
+    "pm": {
+      "title": "Project Overview",
+      "activeProjects": "Active projects",
+      "openIssues": "Open issues"
     }
   },
   "tasks": {
@@ -65,6 +92,9 @@
       "progressLabel": "Progress %",
       "save": "Save progress",
       "back": "← Back to tasks"
+    },
+    "card": {
+      "done": "Done"
     }
   },
   "site": {
@@ -72,7 +102,9 @@
       "title": "Daily Report",
       "summaryPlaceholder": "Summary — manpower, progress, blockers",
       "save": "Save report",
-      "saved": "Saved offline — will sync when online"
+      "saved": "Saved offline — will sync when online",
+      "manpowerPlaceholder": "Manpower count",
+      "blockersPlaceholder": "Blockers (if any)"
     },
     "reports": {
       "title": "Site Reports",
@@ -88,7 +120,9 @@
       "title": "Issues",
       "titlePlaceholder": "Describe the issue",
       "submit": "Report issue",
-      "empty": "No issues yet"
+      "empty": "No issues yet",
+      "escalate": "Escalate",
+      "escalated": "Escalated"
     },
     "inspections": {
       "title": "Inspections",
@@ -99,7 +133,10 @@
       "pass": "Pass",
       "passed": "Passed",
       "submit": "Submit inspection",
-      "saved": "Saved offline — will sync when online"
+      "saved": "Saved offline — will sync when online",
+      "fail": "Fail",
+      "failed": "Failed",
+      "severityLabel": "Issue severity"
     }
   },
   "safety": {
@@ -135,7 +172,10 @@
     "conflictReview": {
       "title": "Conflicts to review",
       "empty": "No conflicts 🎉",
-      "resolve": "Mark resolved"
+      "resolve": "Mark resolved",
+      "field": "Field",
+      "client": "Client",
+      "server": "Server"
     }
   },
   "photos": {
@@ -170,7 +210,14 @@
   "exec": {
     "portfolio": {
       "title": "Portfolio",
-      "empty": "No projects cached"
+      "empty": "No projects cached",
+      "budget": "Budget",
+      "committed": "Committed",
+      "actual": "Actual",
+      "utilization": "Utilization",
+      "overdue": "Overdue invoices",
+      "atRisk": "At risk",
+      "noHealth": "No project health data (offline?)"
     },
     "alerts": {
       "title": "Alerts",
@@ -180,13 +227,24 @@
       "utilization": "Utilization: {value}%",
       "budgetLine": "Budget {budget} · Committed {committed} · Actual {actual}",
       "overdueInvoices": "Overdue invoices: {count}"
+    },
+    "reports": {
+      "title": "Executive Reports (AI)",
+      "generate": "Generate report",
+      "generating": "Generating…",
+      "unavailable": "AI summary service is unavailable",
+      "lowConfidence": "Low confidence — insufficient data",
+      "error": "Could not generate report",
+      "empty": "Select a project and generate a report"
     }
   },
   "finance": {
     "payments": {
       "title": "Payments",
       "empty": "No payments",
-      "approve": "Approve"
+      "approve": "Approve",
+      "invoiceRef": "Invoice ref",
+      "date": "Date"
     },
     "budget": {
       "title": "Budget",
@@ -201,7 +259,17 @@
     },
     "invoices": {
       "title": "Invoices",
-      "empty": "No invoices"
+      "empty": "No invoices",
+      "all": "All",
+      "number": "Invoice number",
+      "amount": "Amount",
+      "dueDate": "Due date",
+      "poRef": "PO ref",
+      "statusLabel": "Status",
+      "note": "Note",
+      "notePlaceholder": "Add a note",
+      "saveNote": "Save note",
+      "noteSaved": "Note saved"
     }
   },
   "procurement": {
@@ -211,7 +279,9 @@
     },
     "orders": {
       "title": "Purchase Orders",
-      "empty": "No purchase orders"
+      "empty": "No purchase orders",
+      "lineItems": "Line items",
+      "noLines": "No line items"
     },
     "deliveries": {
       "title": "Deliveries",
@@ -219,7 +289,10 @@
       "notePlaceholder": "Delivery note (optional)",
       "record": "Record delivery",
       "recorded": "Recorded — will sync when online",
-      "empty": "No deliveries"
+      "empty": "No deliveries",
+      "selectPo": "Select a purchase order",
+      "ordered": "Ordered {qty} {unit}",
+      "linesOffline": "PO lines unavailable (offline) — note-only record"
     }
   },
   "profile": {
@@ -231,6 +304,11 @@
       "thai": "ไทย",
       "english": "English",
       "logout": "Log out"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "on": "On",
+      "off": "Off"
     }
   },
   "status": {
@@ -251,5 +329,13 @@
     "DRAFT": "Draft",
     "LOW": "Low",
     "MEDIUM": "Medium"
+  },
+  "voice": {
+    "record": "Record voice note",
+    "stop": "Stop & transcribe",
+    "processing": "Transcribing…",
+    "unavailable": "Transcription service unavailable",
+    "error": "Recording/transcription failed",
+    "denied": "Microphone permission denied"
   }
 }

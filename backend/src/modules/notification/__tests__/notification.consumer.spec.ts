@@ -31,6 +31,7 @@ const mockSvc = { handleEvent: mockHandleEvent };
 const EXPECTED_EVENT_TYPES = [
   'site.inspection.failed.v1',
   'site.issue.created.v1',
+  'site.issue.escalated.v1',
   'site.conflict.flagged.v1',
   'procurement.po.status_changed.v1',
   'procurement.po.approval_requested.v1',
@@ -52,14 +53,14 @@ beforeEach(() => {
 describe('onModuleInit', () => {
   it('registers a handler for each of the 9 subscribed topics', async () => {
     await consumer.onModuleInit();
-    expect(mockOn).toHaveBeenCalledTimes(9);
+    expect(mockOn).toHaveBeenCalledTimes(10);
     const registeredEventTypes = mockOn.mock.calls.map((c: unknown[]) => c[0]);
     for (const eventType of EXPECTED_EVENT_TYPES) {
       expect(registeredEventTypes).toContain(eventType);
     }
   });
 
-  it('connects with the shared group ID and all 9 event types', async () => {
+  it('connects with the shared group ID and all 10 event types', async () => {
     await consumer.onModuleInit();
     expect(mockConnect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -68,7 +69,7 @@ describe('onModuleInit', () => {
       }),
     );
     const callArgs = mockConnect.mock.calls[0][0] as { eventTypes: string[] };
-    expect(callArgs.eventTypes).toHaveLength(9);
+    expect(callArgs.eventTypes).toHaveLength(10);
   });
 
   it('connects with fromBeginning = false', async () => {

@@ -39,17 +39,30 @@ export default function BudgetScreen() {
     }
   };
 
+  // Variance badge colour thresholds (master 3111): green < 5%, amber 5–10%, red > 10%.
+  const varianceColor = (pct: number): string => {
+    const abs = Math.abs(pct);
+    if (abs > 10) return colors.danger;
+    if (abs >= 5) return colors.warning;
+    return colors.success;
+  };
+
   const figures = data
     ? ([
         [
           t('finance.budget.totalBudget'),
           `${data.budget.total_budget_amount} ${data.budget.total_budget_currency}`,
+          null,
         ],
-        [t('finance.budget.allocated'), data.budget.allocated_amount],
-        [t('finance.budget.committed'), data.budget.committed_amount],
-        [t('finance.budget.actual'), data.budget.actual_amount],
-        [t('finance.budget.variance'), `${data.variance_percentage}%`],
-      ] as Array<[string, string]>)
+        [t('finance.budget.allocated'), data.budget.allocated_amount, null],
+        [t('finance.budget.committed'), data.budget.committed_amount, null],
+        [t('finance.budget.actual'), data.budget.actual_amount, null],
+        [
+          t('finance.budget.variance'),
+          `${data.variance_percentage}%`,
+          varianceColor(Number(data.variance_percentage)),
+        ],
+      ] as Array<[string, string, string | null]>)
     : [];
 
   return (
@@ -64,10 +77,10 @@ export default function BudgetScreen() {
       {data ? (
         <>
           <View testID="budget-figures">
-            {figures.map(([label, value]) => (
+            {figures.map(([label, value, color]) => (
               <View key={label} style={styles.row}>
                 <Text style={styles.key}>{label}</Text>
-                <Text style={styles.value}>{value}</Text>
+                <Text style={[styles.value, color ? { color } : null]}>{value}</Text>
               </View>
             ))}
           </View>

@@ -31,6 +31,10 @@ const mockSvc = {
   receiveInvoice: jest.fn(),
   listInvoices: jest.fn(),
   approveInvoice: jest.fn(),
+  disputeVendorInvoice: jest.fn(),
+  getVendorInvoice: jest.fn(),
+  setInvoiceNote: jest.fn(),
+  computeVendorScore: jest.fn(),
   markInvoicePaid: jest.fn(),
   disputeInvoice: jest.fn(),
   listAllPurchaseRequests: jest.fn(),
@@ -214,6 +218,26 @@ describe('ProcurementController', () => {
   it('approveInvoice delegates to svc.approveInvoice (flat /vendor-invoices/:id/approve)', () => {
     ctrl.approveInvoice('inv-001');
     expect(mockSvc.approveInvoice).toHaveBeenCalledWith('inv-001');
+  });
+
+  it('disputeVendorInvoice delegates to svc.disputeVendorInvoice', () => {
+    ctrl.disputeVendorInvoice('inv-001');
+    expect(mockSvc.disputeVendorInvoice).toHaveBeenCalledWith('inv-001');
+  });
+
+  it('getVendorInvoice delegates to svc.getVendorInvoice', () => {
+    ctrl.getVendorInvoice('inv-001');
+    expect(mockSvc.getVendorInvoice).toHaveBeenCalledWith('inv-001');
+  });
+
+  it('setInvoiceNote delegates to svc.setInvoiceNote', () => {
+    ctrl.setInvoiceNote('inv-001', { note: 'hello' });
+    expect(mockSvc.setInvoiceNote).toHaveBeenCalledWith('inv-001', 'hello');
+  });
+
+  it('getVendorScore delegates to svc.computeVendorScore', () => {
+    ctrl.getVendorScore('v-001');
+    expect(mockSvc.computeVendorScore).toHaveBeenCalledWith('v-001');
   });
 
   it('markInvoicePaid delegates to svc.markInvoicePaid', () => {

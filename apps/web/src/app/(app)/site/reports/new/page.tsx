@@ -12,6 +12,7 @@ export default function NewSiteReportPage() {
   const [projectId, setProjectId] = useState('');
   const [reportDate, setReportDate] = useState('');
   const [summary, setSummary] = useState('');
+  const [blockers, setBlockers] = useState('');
   const [manpower, setManpower] = useState('');
 
   const submit = (e: React.FormEvent) => {
@@ -20,6 +21,7 @@ export default function NewSiteReportPage() {
       project_id: projectId,
       report_date: reportDate,
       summary: summary || undefined,
+      blockers: blockers || undefined,
       manpower_count: manpower ? Number(manpower) : undefined,
     });
   };
@@ -66,6 +68,13 @@ export default function NewSiteReportPage() {
           placeholder={t('site.fieldSummary')}
           className={field}
           rows={3}
+        />
+        <textarea
+          value={blockers}
+          onChange={(e) => setBlockers(e.target.value)}
+          placeholder={t('site.fieldBlockers')}
+          className={field}
+          rows={2}
         />
         <button
           type="submit"

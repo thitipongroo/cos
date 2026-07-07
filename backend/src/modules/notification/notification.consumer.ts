@@ -15,6 +15,7 @@ const logger = createLogger('notification-consumer');
 const SUBSCRIBED_EVENT_TYPES = [
   'site.inspection.failed.v1',
   'site.issue.created.v1',
+  'site.issue.escalated.v1',
   'site.conflict.flagged.v1',
   'procurement.po.status_changed.v1',
   'procurement.po.approval_requested.v1',

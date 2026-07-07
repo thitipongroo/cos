@@ -14,6 +14,7 @@ const mockSvc = {
   syncSiteReports: jest.fn(),
   createIssue: jest.fn(),
   updateIssue: jest.fn(),
+  escalateIssue: jest.fn(),
   listIssues: jest.fn(),
   submitInspection: jest.fn(),
   listInspections: jest.fn(),
@@ -91,6 +92,11 @@ describe('SiteOpsController', () => {
     const dto = { description: 'Updated' };
     ctrl.updateIssue('i-001', dto as never);
     expect(mockSvc.updateIssue).toHaveBeenCalledWith('i-001', dto);
+  });
+
+  it('escalateIssue delegates to svc.escalateIssue', () => {
+    ctrl.escalateIssue('i-001');
+    expect(mockSvc.escalateIssue).toHaveBeenCalledWith('i-001');
   });
 
   it('listIssues uses default page=1 and limit=20 when not provided (covers default param branches)', () => {

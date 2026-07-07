@@ -23,6 +23,7 @@ import {
   QuotationRow,
   PurchaseOrderRow,
   InvoiceRow,
+  InvitedRfqRow,
 } from './vendor-portal.repository';
 
 @Injectable({ scope: Scope.REQUEST })
@@ -136,6 +137,14 @@ export class VendorPortalService {
 
   listInvoices(vendorId: string): Promise<InvoiceRow[]> {
     return this.repo.listInvoicesByVendor(vendorId);
+  }
+
+  listQuotations(vendorId: string): Promise<QuotationRow[]> {
+    return this.repo.listQuotationsByVendor(vendorId);
+  }
+
+  listInvitedRfqs(vendorIdentityId: string): Promise<InvitedRfqRow[]> {
+    return this.repo.listRfqInvitationsByVendor(vendorIdentityId);
   }
 
   // ── internals ───────────────────────────────────────────────────────────────
