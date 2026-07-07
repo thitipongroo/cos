@@ -15,6 +15,7 @@ from pydantic import BaseModel
 import flags
 from otel import configure_telemetry
 from providers.llm_provider import Message, StubLLMProvider
+from rag.retrieval import HybridRetriever
 from reports.pipeline import generate_report
 from templates.loader import render_template
 
@@ -23,6 +24,9 @@ configure_telemetry(app)
 
 _provider = StubLLMProvider()
 _db_pool = None  # injected at startup in production
+# Injected at startup in production (keyword=OpenSearch + vector=pgvector backends). Stage-1 leaves
+# it None — the /rag/query endpoint then returns 503, consistent with the StubLLMProvider posture.
+_retriever: HybridRetriever | None = None
 
 # Voice transcription (spec 21.4 Layer A) runs in the internal ai-transcription-pipeline service;
 # the gateway is the client-facing entry (Kong routes /api/v1/ai here) and meters usage.
@@ -85,9 +89,33 @@ async def completions(req: CompletionsRequest):
 
 @app.post("/api/v1/rag/query", response_model=RAGQueryResponse)
 async def rag_query(req: RAGQueryRequest):
-    raise HTTPException(
-        status_code=503,
-        detail="RAG pipeline requires LLMProvider and vector store — not yet configured",
+    # Hybrid retrieval (keyword + vector, fused via RRF) runs whenever the backends are injected.
+    # Stage-1 leaves them unconfigured, so this returns 503 — same posture as StubLLMProvider.
+    if _retriever is None:
+        raise HTTPException(
+            status_code=503,
+            detail="RAG retrieval backends (OpenSearch + pgvector) not configured",
+        )
+
+    chunks = await _retriever.retrieve(
+        req.query, req.tenant_id, req.entity_types, req.top_k
+    )
+    context = _retriever.assemble_context(chunks)
+    messages = [
+        Message(
+            role="system",
+            content="Answer strictly from the provided context. If it is insufficient, say so.",
+        ),
+        Message(role="user", content=f"Context:\n{context}\n\nQuestion: {req.query}"),
+    ]
+    try:
+        response = await _provider.complete(messages, "report-generation")
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    return RAGQueryResponse(
+        answer=response.content,
+        sources=[chunk.to_dict() for chunk in chunks],
     )
 
 

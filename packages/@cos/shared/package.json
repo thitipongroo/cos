@@ -14,9 +14,9 @@
   "scripts": {
     "build": "tsc --project tsconfig.build.json && pnpm run copy:avro",
     "dev": "pnpm run copy:avro && tsc --watch --project tsconfig.build.json",
-    "copy:avro": "mkdir -p dist/avro && cp src/avro/*.avsc dist/avro/",
+    "copy:avro": "node scripts/copy-avro.mjs",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist *.tsbuildinfo",
+    "clean": "node ../../../scripts/rimraf-dist.mjs",
     "test": "jest --testPathPatterns='src/'",
     "test:unit": "jest --testPathPatterns='src/'",
     "test:integration": "jest --testPathPatterns='test/'",

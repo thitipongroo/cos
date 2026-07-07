@@ -15,7 +15,7 @@
     "build": "tsc --project tsconfig.build.json",
     "dev": "tsc --watch",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf dist *.tsbuildinfo",
+    "clean": "node ../../../scripts/rimraf-dist.mjs",
     "test": "jest",
     "test:unit": "jest --testPathPatterns='src/'",
     "test:cov": "jest --coverage"

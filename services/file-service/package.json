@@ -10,7 +10,7 @@
     "test": "jest",
     "test:unit": "jest --testPathPatterns='src/'",
     "test:cov": "jest --coverage",
-    "clean": "rm -rf dist"
+    "clean": "node ../../scripts/rimraf-dist.mjs"
   },
   "dependencies": {
     "@cos/logger": "workspace:*",
