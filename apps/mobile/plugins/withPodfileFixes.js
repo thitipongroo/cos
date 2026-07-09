@@ -7,6 +7,13 @@
 // 2. Add `pod 'React-jsinspector', :modular_headers => true` — ExpoModulesCore (Swift, static lib)
 //    imports React-jsinspector, which ships no module map by default; without this, pod install fails
 //    "does not define modules". The :path matches the autolinked source to avoid a duplicate-source error.
+// 3. Force EXPO_USE_PRECOMPILED_MODULES=false in Podfile.properties.json — prebuild regenerates that
+//    file with the default "true", which ships React core as a Release-compiled prebuilt xcframework
+//    (React-Core-prebuilt/React.xcframework). New-arch third-party libs (react-native-svg,
+//    react-native-gesture-handler, react-native-reanimated) build from source and, in a Debug build,
+//    reference React-Fabric debug symbols (ShadowNode::getDebugName/getDebugValue/getDebugChildren,
+//    Sealable) that the Release prebuilt omits → "Undefined symbols … linker command failed". Building
+//    React from source keeps the debug flags consistent so Debug links. (Release already links either way.)
 //
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { withDangerousMod } = require('@expo/config-plugins');
@@ -37,6 +44,15 @@ module.exports = function withPodfileFixes(config) {
       }
 
       fs.writeFileSync(podfilePath, contents);
+
+      // (3) build React Native from source (not the Release prebuilt) so Debug links — see header.
+      const propsPath = path.join(cfg.modRequest.platformProjectRoot, 'Podfile.properties.json');
+      if (fs.existsSync(propsPath)) {
+        const props = JSON.parse(fs.readFileSync(propsPath, 'utf8'));
+        props['EXPO_USE_PRECOMPILED_MODULES'] = 'false';
+        fs.writeFileSync(propsPath, `${JSON.stringify(props, null, 2)}\n`);
+      }
+
       return cfg;
     },
   ]);

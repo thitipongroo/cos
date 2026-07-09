@@ -70,7 +70,8 @@
         {
           "microphonePermission": "Allow Construction OS to record audio for site voice notes."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": false

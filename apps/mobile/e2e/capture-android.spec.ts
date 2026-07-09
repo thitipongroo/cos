@@ -69,8 +69,12 @@ describe('android screen capture', () => {
     // ADR-050). Tap the OTP link first to reach the phone-input screen.
     await element(by.id('field-login-link')).tap();
     await delay(1500);
+    // Phone is split into a country picker + national number; pick Thailand explicitly (deterministic
+    // regardless of the emulator's region) and enter the national digits (the login re-adds +66).
+    await element(by.id('country-picker')).tap();
+    await element(by.id('country-option-th')).tap();
     await element(by.id('phone-input')).tap();
-    await element(by.id('phone-input')).replaceText(PHONE);
+    await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, ''));
     await delay(1500);
     await element(by.id('request-otp-button')).tap();
     await delay(6000);

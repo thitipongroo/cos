@@ -245,7 +245,8 @@
       "backToOffice": "Back to office sign-in",
       "sent": "An OTP code has been sent to your phone.",
       "requestError": "Failed to request OTP.",
-      "verifyError": "Invalid or expired OTP."
+      "verifyError": "Invalid or expired OTP.",
+      "countryLabel": "Country"
     },
     "logout": {
       "title": "Signing out..."

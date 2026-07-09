@@ -23,7 +23,12 @@ async function loginIfNeeded(): Promise<void> {
   } catch {
     return; // no login screen — session restored, already on home
   }
-  await element(by.id('phone-input')).replaceText(PHONE);
+  // Phone is split into a country picker + national number; pick Thailand explicitly (deterministic
+  // regardless of device region) and enter the national digits (the login re-adds +66).
+  await element(by.id('country-picker')).tap();
+  await element(by.id('country-option-th')).tap();
+  await element(by.id('phone-input')).tap();
+  await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, ''));
   await delay(1500);
   await element(by.id('request-otp-button')).tap();
   await delay(6000);

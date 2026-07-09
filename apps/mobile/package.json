@@ -37,6 +37,7 @@
     "expo-file-system": "~56.0.8",
     "expo-font": "~56.0.7",
     "expo-linking": "~56.0.14",
+    "expo-localization": "~56.0.6",
     "expo-location": "~56.0.19",
     "expo-router": "~56.2.12",
     "expo-secure-store": "~56.0.4",
@@ -46,12 +47,13 @@
     "expo-system-ui": "~56.0.5",
     "expo-task-manager": "~56.0.20",
     "expo-web-browser": "~56.0.5",
-    "react-native-gesture-handler": "~2.31.1",
     "intl-messageformat": "^10.7.0",
     "react": "19.2.3",
     "react-native": "0.85.3",
+    "react-native-gesture-handler": "~2.31.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-svg": "15.15.4",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
