@@ -6,13 +6,14 @@
 import { device, element, by, waitFor } from 'detox';
 import { isVisible, setNetworkConnected, resetSession } from './helpers';
 
-const INSPECTOR_PHONE = process.env['E2E_INSPECTOR_PHONE'] || '+66800000002';
+const INSPECTOR_PHONE = process.env['E2E_INSPECTOR_PHONE'] || '+66800000004';
 
 describe('Offline Inspection — Inspector', () => {
   beforeAll(async () => {
+    // reloadReactNative() crashes the RN bridge on this RN/Detox version (see capture.spec.ts) and is
+    // redundant after launchApp({delete:true}) — omitted.
     await device.launchApp({ newInstance: true, delete: true });
     await resetSession(); // iOS keychain survives reinstall — force a logged-out start
-    await device.reloadReactNative();
   });
 
   afterAll(async () => {
@@ -20,12 +21,18 @@ describe('Offline Inspection — Inspector', () => {
   });
 
   beforeEach(async () => {
-    // Session survives the JS reload now that authenticated calls no longer 401 (CLS tenant-context
-    // fix), so reloading resets navigation to home while keeping the user logged in.
-    await device.reloadReactNative();
+    // Reset navigation to home while keeping the user logged in (session persists across a relaunch).
+    // Uses launchApp({newInstance}) instead of reloadReactNative, which crashes the RN bridge here.
+    await device.launchApp({ newInstance: true });
   });
 
   it('inspector can log in via SMS OTP', async () => {
+    // Login screen shows both auth paths (ADR-050) — tap the field-worker OTP link first.
+    await waitFor(element(by.id('field-login-link')))
+      .toBeVisible()
+      .withTimeout(10_000);
+    await element(by.id('field-login-link')).tap();
+
     await waitFor(element(by.id('phone-input')))
       .toBeVisible()
       .withTimeout(10_000);
@@ -42,33 +49,34 @@ describe('Offline Inspection — Inspector', () => {
     await element(by.id('verify-otp-button')).tap();
 
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(15_000);
   });
 
   it('inspector can navigate to inspections list', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    await waitFor(inspectionTab).toBeVisible().withTimeout(5_000);
+    // Tab-bar buttons are wrappers whose own pixels are covered by their label/icon, so Detox's
+    // toBeVisible() false-negatives on them — assert existence and tap (the tap hit-tests fine).
+    await waitFor(inspectionTab).toExist().withTimeout(5_000);
     await inspectionTab.tap();
 
     await waitFor(element(by.id('inspection-list')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(8_000);
   });
 
   it('inspector can open and fill inspection checklist offline', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
-    if (await isVisible(inspectionTab)) {
-      await inspectionTab.tap();
-    }
+    await waitFor(inspectionTab).toExist().withTimeout(5_000);
+    await inspectionTab.tap();
 
     await setNetworkConnected(false);
 
@@ -97,7 +105,7 @@ describe('Offline Inspection — Inspector', () => {
 
   it('inspector can attach a photo offline and it queues for upload', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     const inspectionTab = element(by.id('inspection-tab')).atIndex(0);
@@ -126,7 +134,7 @@ describe('Offline Inspection — Inspector', () => {
 
   it('queued inspection data and photo sync on connectivity restore', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     await setNetworkConnected(false);

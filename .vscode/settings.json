@@ -3,5 +3,6 @@
   "files.associations": {
     ".markdownlintignore": "ignore",
     ".sqlfluffignore": "ignore"
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

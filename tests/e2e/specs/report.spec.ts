@@ -13,20 +13,19 @@ test.beforeEach(async ({ page }) => {
 
 test.describe('Report Submit', () => {
   test('user can submit a daily progress report', async ({ page }) => {
-    await page.getByRole('link', { name: /reports?/i }).click();
-    await page.getByRole('button', { name: /new report|create report|submit report/i }).click();
-
+    // The daily-report form lives at /site/reports/new — an inline form (not a modal): project
+    // select + manpower + a summary/blockers textarea, submitted with the "Submit" button; on
+    // success the page shows "Submitted". (Matches apps/web/src/app/(app)/site/reports/new.)
+    await page.goto('/site/reports/new');
+    // project + date are the required fields that gate the (disabled) Submit button.
+    await page.locator('select').first().selectOption({ index: 1 });
+    await page.locator('input[type="date"]').fill(new Date().toISOString().split('T')[0]);
+    await page.getByPlaceholder(/manpower/i).fill('12');
     await page
-      .getByLabel(/title|report name/i)
-      .fill(`Daily Report ${new Date().toISOString().split('T')[0]}`);
-
-    const textarea = page.getByRole('textbox', { name: /description|notes|content/i });
-    if (await textarea.isVisible()) {
-      await textarea.fill('E2E test daily progress report — automated submission');
-    }
-
-    await page.getByRole('button', { name: /submit|save|create/i }).click();
-    await expect(page.getByText(/submitted|created|success/i)).toBeVisible({ timeout: 15_000 });
+      .getByPlaceholder(/summary/i)
+      .fill('E2E test daily progress report — automated submission');
+    await page.getByRole('button', { name: /^submit$/i }).click();
+    await expect(page.getByText(/submitted/i)).toBeVisible({ timeout: 15_000 });
   });
 });
 
@@ -44,9 +43,13 @@ test.describe('Dashboard', () => {
   });
 
   test('dashboard loads within 3 seconds', async ({ page }) => {
+    // Measure time-to-interactive-content, NOT networkidle: the app holds a persistent SSE
+    // notifications stream (/api/v1/notifications/stream), so the network is never idle and
+    // waitForLoadState('networkidle') would always time out. The role-landing <main> becoming
+    // visible is the real "loaded" signal.
     const start = Date.now();
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('main')).toBeVisible({ timeout: 10_000 });
     const elapsed = Date.now() - start;
     expect(elapsed).toBeLessThan(3000);
   });

@@ -5,6 +5,7 @@
 import { Injectable, Scope, Inject, NotFoundException, ConflictException } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { createLogger } from '@cos/logger';
+import { clsUserId } from '../../shared/context/cls-context';
 import { MasterDataRepository } from './master-data.repository';
 import type {
   MaterialRow,
@@ -20,21 +21,25 @@ import type { CreateIssueCategoryDto } from './dto/create-issue-category.dto';
 import type { CreateCostCategoryDto } from './dto/create-cost-category.dto';
 
 interface IncomingRequest {
-  user?: { user_id: string };
+  userId?: string;
 }
 
 const logger = createLogger('master-data-service');
 
 @Injectable({ scope: Scope.REQUEST })
 export class MasterDataService {
-  private readonly userId: string;
+  // Resolve user_id lazily via req.userId (TenantContextInterceptor) with a CLS fallback: under
+  // @nestjs/platform-fastify req.userId does not reliably reach a Scope.REQUEST provider's injected
+  // REQUEST, so fall back to CLS (set by JwtAuthGuard). The old `user.user_id` was always undefined
+  // here → '' written into uuid columns → Postgres 22P02. (Matches workforce.)
+  private get userId(): string {
+    return (this.request as IncomingRequest).userId || clsUserId();
+  }
 
   constructor(
     private readonly repo: MasterDataRepository,
-    @Inject(REQUEST) request: IncomingRequest,
-  ) {
-    this.userId = request.user?.user_id ?? '';
-  }
+    @Inject(REQUEST) private readonly request: IncomingRequest,
+  ) {}
 
   // ── Materials ─────────────────────────────────────────────────────────────
 

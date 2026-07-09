@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { createLogger } from '@cos/logger';
+import { clsUserId } from '../../shared/context/cls-context';
 import { CrmRepository } from './crm.repository';
 import type { LeadRow, OpportunityRow, ContactRow, CrmCustomerRow } from './crm.repository';
 import type { CreateLeadDto, CreateOpportunityDto, CreateContactDto } from './dto/crm.dto';
@@ -19,14 +20,18 @@ const logger = createLogger('crm-service');
 
 @Injectable({ scope: Scope.REQUEST })
 export class CrmService {
-  private readonly userId: string;
+  // Resolve user_id lazily via req.userId (TenantContextInterceptor) with a CLS fallback: under
+  // @nestjs/platform-fastify req.userId does not reliably reach a Scope.REQUEST provider's injected
+  // REQUEST, so fall back to CLS (set by JwtAuthGuard). The old `user.user_id` was always undefined
+  // here → '' written into uuid columns → Postgres 22P02. (Matches workforce.)
+  private get userId(): string {
+    return (this.request as { userId?: string }).userId || clsUserId();
+  }
 
   constructor(
     private readonly repo: CrmRepository,
-    @Inject(REQUEST) request: { user?: { user_id?: string } },
-  ) {
-    this.userId = request.user?.user_id ?? '';
-  }
+    @Inject(REQUEST) private readonly request: unknown,
+  ) {}
 
   // ── Leads ───────────────────────────────────────────────────────────────────
 

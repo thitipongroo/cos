@@ -30,43 +30,26 @@ test.describe('Safety Incident Reporting', () => {
   test('safety officer reports an incident with severity level', async ({ page }) => {
     await loginAs(page, SAFETY_EMAIL, SAFETY_PASSWORD);
 
-    await page.getByRole('link', { name: /safety|incident/i }).click();
-
-    const reportButton = page.getByRole('button', {
-      name: /report.*incident|new.*incident|create.*incident/i,
-    });
-    if (await reportButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await reportButton.click();
-
-      const descField = page
-        .getByLabel(/description|detail|รายละเอียด/i)
-        .first()
-        .or(page.getByRole('textbox').first());
-      if (await descField.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        await descField.fill(INCIDENT_DESCRIPTION);
-      }
-
-      const severityField = page
-        .getByLabel(/severity|ระดับ/i)
-        .first()
-        .or(page.getByRole('combobox', { name: /severity/i }))
-        .or(page.getByTestId('severity-select'));
-      if (await severityField.isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await severityField.selectOption({ label: /high|critical|serious/i }).catch(async () => {
-          await severityField.click();
-          await page
-            .getByRole('option', { name: /high|critical|serious/i })
-            .first()
-            .click()
-            .catch(() => null);
-        });
-      }
-
-      await page.getByRole('button', { name: /submit|report|save/i }).click();
-      await expect(page.getByText(/reported|submitted|success|บันทึกแล้ว/i)).toBeVisible({
-        timeout: 15_000,
-      });
-    }
+    // /safety/incidents is an inline form (project select [required] + incident-type input [required] +
+    // severity select + "Report" button, disabled until project + type are set) above the incidents
+    // list; the incident_type text then shows in that list. Wait for the project options to load
+    // before selecting (the select starts with only the "Select a project" placeholder).
+    await page.goto('/safety/incidents');
+    const projectSelect = page.locator('select').first();
+    await projectSelect
+      .locator('option:not([value=""])')
+      .first()
+      .waitFor({ state: 'attached', timeout: 10_000 });
+    await projectSelect.selectOption({ index: 1 });
+    // incident_type is a short VARCHAR(64) column (a type, not a long description), so use a short
+    // unique marker and assert it shows in the incidents list. Fill + verify the value stuck before
+    // submitting (the Report button is disabled until project + type are both set).
+    const incidentType = `E2E slip near scaffold ${Date.now().toString().slice(-6)}`;
+    const typeInput = page.getByPlaceholder(/incident type/i);
+    await typeInput.fill(incidentType);
+    await expect(typeInput).toHaveValue(incidentType);
+    await page.getByRole('button', { name: /^report$/i }).click();
+    await expect(page.getByText(incidentType).first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('PM receives notification after safety incident is reported', async ({ page, browser }) => {
@@ -108,41 +91,41 @@ test.describe('Safety Incident Reporting', () => {
     await pmContext.close();
   });
 
-  test('PM can acknowledge a safety incident within SLA window', async ({ page }) => {
-    await loginAs(page, PM_EMAIL, PM_PASSWORD);
+  test('an authorized role acknowledges a safety incident within SLA window', async ({ page }) => {
+    // Acknowledgement is restricted by RBAC to SAFETY_OFFICER | TENANT_ADMIN (the incidents
+    // controller @Roles guard). A PROJECT_MANAGER is notified but cannot ack (403), so the ack is
+    // performed by the Safety Officer here.
+    await loginAs(page, SAFETY_EMAIL, SAFETY_PASSWORD);
 
-    await page.getByRole('link', { name: /safety|incident|notification/i }).click();
+    // /safety/incidents lists incidents; each OPEN incident renders an "Acknowledge" button (hidden
+    // only for the read-only VIEWER role). Clicking it fires the ack mutation, which moves that
+    // incident out of OPEN, so its Acknowledge button is removed from the list.
+    await page.goto('/safety/incidents');
+    const ackButtons = page.getByRole('button', { name: /acknowledge/i });
+    await expect(ackButtons.first()).toBeVisible({ timeout: 15_000 });
 
-    const incidentRow = page
-      .getByRole('row')
-      .filter({ hasText: /incident|safety|pending/i })
-      .first()
-      .or(page.getByTestId('incident-item').first());
+    // Assert on the ack round-trip itself, not the list count: OPEN incidents accumulate across runs
+    // and the list is paginated, so acking one can pull a previously-hidden OPEN incident onto the
+    // page and keep the button count unchanged. The PATCH .../acknowledge response is the ground truth.
+    const ackTime = Date.now();
+    const [ackResponse] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.url().includes('/acknowledge') && r.request().method() === 'PATCH',
+        { timeout: 15_000 },
+      ),
+      ackButtons.first().click(),
+    ]);
+    expect(ackResponse.status()).toBeLessThan(300);
 
-    if (await incidentRow.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await incidentRow.click();
-
-      const ackButton = page.getByRole('button', { name: /acknowledge|ack|รับทราบ/i });
-      if (await ackButton.isVisible({ timeout: 3_000 }).catch(() => false)) {
-        const ackTime = Date.now();
-        await ackButton.click();
-        await expect(page.getByText(/acknowledged|รับทราบแล้ว|success/i)).toBeVisible({
-          timeout: 10_000,
-        });
-        const elapsed = Date.now() - ackTime;
-        expect(elapsed).toBeLessThan(SLA_MS);
-      }
-    }
+    // The acknowledgement round-trip must complete well within the 30-min SLA.
+    expect(Date.now() - ackTime).toBeLessThan(SLA_MS);
   });
 
-  test('incident status changes to acknowledged after PM acks', async ({ page }) => {
-    await loginAs(page, PM_EMAIL, PM_PASSWORD);
-
-    await page.getByRole('link', { name: /safety|incident/i }).click();
-
-    const acknowledgedBadge = page.getByText(/acknowledged|รับทราบ/i).first();
-    if (await acknowledgedBadge.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await expect(acknowledgedBadge).toBeVisible();
-    }
+  test('incident status moves out of OPEN after acknowledgement', async ({ page }) => {
+    // After the ack above (acknowledgeIncident sets status = 'IN_PROGRESS', §11 has no separate
+    // ACKNOWLEDGED state), at least one incident row shows the IN_PROGRESS status in the list.
+    await loginAs(page, SAFETY_EMAIL, SAFETY_PASSWORD);
+    await page.goto('/safety/incidents');
+    await expect(page.getByText(/in_progress/i).first()).toBeVisible({ timeout: 15_000 });
   });
 });

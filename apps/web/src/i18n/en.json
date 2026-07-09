@@ -168,7 +168,12 @@
     "colPo": "PO",
     "colDueDate": "Due date",
     "colReference": "Reference",
-    "dispute": "Dispute"
+    "dispute": "Dispute",
+    "recordPayment": "Record payment",
+    "amount": "Amount",
+    "paymentDate": "Payment date",
+    "selectInvoice": "Select invoice",
+    "paymentReference": "Reference (optional)"
   },
   "nav": {
     "exec": {

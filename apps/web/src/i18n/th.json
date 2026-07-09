@@ -168,7 +168,12 @@
     "colPo": "PO",
     "colDueDate": "ครบกำหนด",
     "colReference": "อ้างอิง",
-    "dispute": "โต้แย้ง"
+    "dispute": "โต้แย้ง",
+    "recordPayment": "บันทึกการจ่ายเงิน",
+    "amount": "จำนวนเงิน",
+    "paymentDate": "วันที่จ่าย",
+    "selectInvoice": "เลือกใบแจ้งหนี้",
+    "paymentReference": "เลขอ้างอิง (ไม่บังคับ)"
   },
   "nav": {
     "exec": {

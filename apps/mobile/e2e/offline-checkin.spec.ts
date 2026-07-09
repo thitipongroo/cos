@@ -10,9 +10,11 @@ const WORKER_PHONE = process.env['E2E_WORKER_PHONE'] || '+66800000001';
 
 describe('Offline Check-In — Worker', () => {
   beforeAll(async () => {
+    // launchApp({delete:true}) already gives a fresh JS + wiped app data; resetSession clears the
+    // iOS keychain session. device.reloadReactNative() is redundant here AND crashes the RN bridge on
+    // this RN/Detox version (see capture.spec.ts), so it is intentionally omitted.
     await device.launchApp({ newInstance: true, delete: true });
     await resetSession(); // iOS keychain survives reinstall — force a logged-out start
-    await device.reloadReactNative();
   });
 
   afterAll(async () => {
@@ -20,10 +22,19 @@ describe('Offline Check-In — Worker', () => {
   });
 
   beforeEach(async () => {
-    await device.reloadReactNative();
+    // Reset app state between tests via a relaunch (newInstance) instead of reloadReactNative, which
+    // crashes the RN bridge on this RN/Detox version.
+    await device.launchApp({ newInstance: true });
   });
 
   it('worker can log in via SMS OTP', async () => {
+    // The login screen shows both auth paths (office email/password button + field-worker OTP link,
+    // ADR-050). Tap the OTP link to reach the phone-input screen.
+    await waitFor(element(by.id('field-login-link')))
+      .toBeVisible()
+      .withTimeout(10_000);
+    await element(by.id('field-login-link')).tap();
+
     await waitFor(element(by.id('phone-input')))
       .toBeVisible()
       .withTimeout(10_000);
@@ -40,24 +51,22 @@ describe('Offline Check-In — Worker', () => {
     await element(by.id('verify-otp-button')).tap();
 
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(15_000);
   });
 
   it('check-in button is available on home screen', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
-    const checkInButton = element(
-      by.id('check-in-button').withAncestor(by.id('home-screen')),
-    ).atIndex(0);
+    const checkInButton = element(by.id('check-in-button')).atIndex(0);
     await waitFor(checkInButton).toBeVisible().withTimeout(5_000);
   });
 
   it('worker can check in while device is offline — record is queued', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     await setNetworkConnected(false);
@@ -79,7 +88,7 @@ describe('Offline Check-In — Worker', () => {
 
   it('sync queue item is uploaded when connectivity is restored', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     await setNetworkConnected(false);

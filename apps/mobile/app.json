@@ -28,6 +28,7 @@
       "expo-router",
       "expo-font",
       "expo-secure-store",
+      "@config-plugins/detox",
       [
         "expo-build-properties",
         {
