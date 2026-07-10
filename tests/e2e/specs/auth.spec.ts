@@ -3,7 +3,7 @@
 //   email/password flows; JWT issued; protected route accessible". §20.6.1: the office
 //   email+password flow is handled by Keycloak's hosted login page, not a form on /login.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 import { loginViaKeycloak } from '../helpers/auth';
 
 const TEST_EMAIL = process.env['E2E_EMAIL'] || 'e2e-admin@construction-os.io';
@@ -19,7 +19,7 @@ test.describe('Authentication', () => {
 
   test('invalid credentials keep the user on Keycloak, unauthenticated', async ({ page }) => {
     await page.goto('/login');
-    await page.getByRole('button').click(); // office button → Keycloak hosted login
+    await page.getByRole('button', { name: /keycloak/i }).click(); // office → Keycloak hosted login
     await page.locator('#username').fill('wrong@example.com');
     await page.locator('#password').fill('wrongpassword');
     await page.locator('#kc-login').click();

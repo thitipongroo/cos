@@ -1,8 +1,9 @@
 // E2E — Daily site report with manpower count and blockers
-// Source: spec §Phase 18 item 6 — "Daily site report — Site Engineer submits report
-//   with manpower count and blockers"
+// Source: spec §Phase 18 item 6 — "Daily site report — Site Engineer submits report with
+//   manpower count and blockers". The submit form is at /site/reports/new (§20.7.6); the
+//   /site/reports list (§20.7.5) is the read-only review view.
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 import { loginViaKeycloak } from '../helpers/auth';
 
 const SE_EMAIL = process.env['E2E_SE_EMAIL'] || 'e2e-engineer@construction-os.io';
@@ -17,12 +18,10 @@ test.beforeEach(async ({ page }) => {
 });
 
 test.describe('Daily Site Report', () => {
-  test('site engineer can navigate to daily report creation', async ({ page }) => {
-    // The daily-report form is the inline page /site/reports/new (title "Submit daily report").
+  test('site engineer can open the daily report form', async ({ page }) => {
     await page.goto('/site/reports/new');
-    await expect(page.getByRole('heading', { name: /submit daily report/i })).toBeVisible({
-      timeout: 10_000,
-    });
+    await expect(page.getByRole('heading', { name: /submit daily report/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^submit$/i })).toBeVisible();
   });
 
   test('site engineer submits daily report with manpower count and blocker', async ({ page }) => {
@@ -38,15 +37,8 @@ test.describe('Daily Site Report', () => {
   });
 
   test('submitted report appears in the report list', async ({ page }) => {
-    await page.getByRole('link', { name: /report|site.*ops|daily/i }).click();
-    await expect(page.getByRole('main')).toBeVisible();
-
-    const reportList = page
-      .getByRole('table')
-      .or(page.getByRole('list').filter({ hasText: /report/i }))
-      .or(page.getByTestId('report-list'));
-
-    await expect(reportList).toBeVisible({ timeout: 10_000 });
+    await page.goto('/site/reports');
+    await expect(page.getByRole('table')).toBeVisible({ timeout: 10_000 });
   });
 
   test('PM receives notification after site engineer submits report', async ({ page, browser }) => {
@@ -60,16 +52,20 @@ test.describe('Daily Site Report', () => {
     await page.getByRole('button', { name: /^submit$/i }).click();
     await expect(page.getByText(/submitted/i)).toBeVisible({ timeout: 15_000 });
 
+    // PM checks the notification bell — best-effort, the notification is delivered
+    // asynchronously via Kafka so its arrival within the test window is not guaranteed.
     const pmContext = await browser.newContext();
     const pmPage = await pmContext.newPage();
+    await pmPage.addInitScript(() => {
+      try {
+        window.localStorage.setItem('cos.locale', 'en');
+      } catch {
+        /* ignore */
+      }
+    });
     const pmEmail = process.env['E2E_PM_EMAIL'] || 'e2e-pm@construction-os.io';
     const pmPassword = process.env['E2E_PM_PASSWORD'] || 'E2eTestPass123!';
-
     await loginViaKeycloak(pmPage, { email: pmEmail, password: pmPassword });
-
-    const notificationBell = pmPage
-      .getByRole('button', { name: /notification|bell|แจ้งเตือน/i })
-      .or(pmPage.getByTestId('notification-bell'));
 
     if (await notificationBell.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await notificationBell.click();
@@ -81,7 +77,6 @@ test.describe('Daily Site Report', () => {
         await expect(reportNotification).toBeVisible();
       }
     }
-
     await pmContext.close();
   });
 });

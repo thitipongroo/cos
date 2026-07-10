@@ -1,14 +1,17 @@
-// E2E — Report submit + Dashboard view
-// Source: spec §Phase 18 — "Playwright E2E test for: login, project create, report submit, dashboard view"
+// E2E — Report submit
+// Source: spec §Phase 18 item 3 — "report submit — Site Engineer submits daily site report;
+//   Kafka event emitted; PM notified". Submit form: /site/reports/new.
+// ("dashboard view" — §Phase 18 item — is covered by dashboard.spec against the Executive
+//  analytics page; it was previously duplicated here against the '/' home and removed.)
 
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures';
 import { loginViaKeycloak } from '../helpers/auth';
 
-const TEST_EMAIL = process.env['E2E_EMAIL'] || 'e2e-admin@construction-os.io';
-const TEST_PASSWORD = process.env['E2E_PASSWORD'] || 'E2eTestPass123!';
+const SE_EMAIL = process.env['E2E_SE_EMAIL'] || 'e2e-engineer@construction-os.io';
+const SE_PASSWORD = process.env['E2E_SE_PASSWORD'] || 'E2eTestPass123!';
 
 test.beforeEach(async ({ page }) => {
-  await loginViaKeycloak(page, { email: TEST_EMAIL, password: TEST_PASSWORD });
+  await loginViaKeycloak(page, { email: SE_EMAIL, password: SE_PASSWORD });
 });
 
 test.describe('Report Submit', () => {

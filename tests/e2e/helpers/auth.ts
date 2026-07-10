@@ -49,9 +49,11 @@ export async function loginViaKeycloak(
     }
   });
   await page.goto('/login');
-  // /login renders a single <button> (the office/Keycloak action; the field-role OTP
-  // path is a <Link>). Clicking it navigates to the hosted Keycloak login form.
-  await page.getByRole('button').click();
+  // The office/Keycloak action button (i18n label contains "Keycloak" in every locale:
+  // "Sign in with Keycloak" / "เข้าสู่ระบบด้วย Keycloak"). Matched by name rather than as
+  // "the only button" because dev tooling (e.g. the Next.js dev overlay) injects its own.
+  // Clicking it navigates to the hosted Keycloak login form.
+  await page.getByRole('button', { name: /keycloak/i }).click();
   await page.locator('#username').fill(email);
   await page.locator('#password').fill(password);
   await page.locator('#kc-login').click();

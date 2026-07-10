@@ -15,6 +15,7 @@ import {
 import { REQUEST } from '@nestjs/core';
 import { createLogger } from '@cos/logger';
 import { clsUserId } from '../../shared/context/cls-context';
+import { clsUserId } from '../../shared/context/cls-context';
 import { SafetyRepository } from './safety.repository';
 import type { IncidentRow, PermitRow, ComplianceSummaryRow } from './safety.repository';
 import type { CreateIncidentDto, CreatePermitDto } from './dto/safety.dto';
@@ -34,8 +35,16 @@ export class SafetyService {
 
   constructor(
     private readonly repo: SafetyRepository,
-    @Inject(REQUEST) private readonly request: unknown,
+    @Inject(REQUEST) private readonly request: { userId?: string },
   ) {}
+
+  // `request.userId` is published by JwtAuthGuard and read at call time (same pattern as
+  // project/procurement/finance services). The nested Passport `request.user` projection is
+  // unreliable under @nestjs/platform-fastify (see cls-context), which left `reported_by`
+  // empty and failed incident insert with `22P02` (empty-uuid). CLS is the final fallback.
+  private get userId(): string {
+    return this.request.userId ?? clsUserId();
+  }
 
   // ── Incidents ───────────────────────────────────────────────────────────────
 

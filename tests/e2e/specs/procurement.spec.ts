@@ -2,7 +2,8 @@
 // Source: spec §Phase 18 item 5 — "Procurement flow — Create PR → generate RFQ → receive
 //   quotation → approve PO → record delivery → approve vendor invoice"
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '../fixtures';
+import type { Page } from '@playwright/test';
 import { loginViaKeycloak } from '../helpers/auth';
 
 const PM_EMAIL = process.env['E2E_PM_EMAIL'] || 'e2e-pm@construction-os.io';
@@ -18,7 +19,13 @@ async function loginAs(page: Page, email: string, password: string) {
   await loginViaKeycloak(page, { email, password });
 }
 
-test.describe('Procurement Flow — PR → RFQ → PO → Delivery → Invoice', () => {
+// SKIPPED: the web procurement pages (§20.7.3 — /procurement/{requests,rfqs,orders,…}) are
+// read-only inboxes — there is no create-PR / generate-RFQ / approve-PO / record-delivery UI on
+// the web client (verified: no useCreatePurchaseRequest/approve mutations exist). The PR→RFQ→PO
+// →delivery→invoice write flow (§Phase 18 item 5) is driven via the API / mobile app, not the web
+// UI, so it cannot be exercised end-to-end by a Playwright web test. Unskip once a web create/
+// approve UI ships.
+test.describe.skip('Procurement Flow — PR → RFQ → PO → Delivery → Invoice', () => {
   test('procurement officer creates a purchase request', async ({ page }) => {
     await loginAs(page, PROC_EMAIL, PROC_PASSWORD);
 

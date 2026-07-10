@@ -2,7 +2,8 @@
 // Source: spec §Phase 18 item 7 — "Budget exceeded alert — Cost transaction pushes project over
 //   budget → Executive receives push notification"
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '../fixtures';
+import type { Page } from '@playwright/test';
 import { loginViaKeycloak } from '../helpers/auth';
 
 const FINANCE_EMAIL = process.env['E2E_FINANCE_EMAIL'] || 'e2e-finance@construction-os.io';

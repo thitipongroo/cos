@@ -37,7 +37,13 @@ export class KeycloakJwtStrategy
   constructor() {
     const keycloakUrl = process.env['KEYCLOAK_URL'] ?? 'http://localhost:8090';
     const realm = process.env['KEYCLOAK_REALM'] ?? 'construction-os';
-    const issuer = `${keycloakUrl}/realms/${realm}`;
+    // JWKS is fetched from the URL the backend can reach (e.g. the internal Docker
+    // hostname http://keycloak:8080). The token `iss` claim, however, reflects Keycloak's
+    // public/front-channel URL as seen by the browser (e.g. http://localhost:8090), which
+    // can differ. Validate `iss` against KEYCLOAK_ISSUER when set (split-horizon deploys);
+    // otherwise fall back to the JWKS URL's issuer. Signing keys are identical either way.
+    const jwksIssuer = `${keycloakUrl}/realms/${realm}`;
+    const issuer = process.env['KEYCLOAK_ISSUER'] ?? jwksIssuer;
 
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -47,7 +53,7 @@ export class KeycloakJwtStrategy
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 10,
-        jwksUri: `${issuer}/protocol/openid-connect/certs`,
+        jwksUri: `${jwksIssuer}/protocol/openid-connect/certs`,
       }),
       issuer,
       audience: process.env['KEYCLOAK_AUDIENCE'] ?? 'cos-backend',
