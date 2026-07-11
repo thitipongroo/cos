@@ -1,0 +1,225 @@
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "on-tertiary": "#003640",
+                      "on-secondary-fixed": "#00174b",
+                      "secondary": "#b4c5ff",
+                      "on-background": "#d3e4fe",
+                      "error": "#ffb4ab",
+                      "error-container": "#93000a",
+                      "on-secondary-container": "#cdd7ff",
+                      "on-secondary": "#002a78",
+                      "surface-bright": "#2a3a4f",
+                      "on-error": "#690005",
+                      "on-primary-fixed": "#161b2b",
+                      "surface-container-lowest": "#000f21",
+                      "inverse-primary": "#595e71",
+                      "outline-variant": "#46464c",
+                      "surface-container-low": "#0b1c30",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "inverse-surface": "#d3e4fe",
+                      "on-primary-container": "#777c90",
+                      "surface-container-high": "#1b2b3f",
+                      "warning": "#F59E0B",
+                      "on-tertiary-fixed": "#001f26",
+                      "outline": "#909097",
+                      "on-tertiary-container": "#0088a0",
+                      "primary": "#c1c5dc",
+                      "mobile-primary": "#0066FF",
+                      "syncing": "#FFD60A",
+                      "on-primary": "#2b3041",
+                      "offline": "#8E8E93",
+                      "surface-container": "#102034",
+                      "tertiary-container": "#001318",
+                      "surface-tint": "#c1c5dc",
+                      "concrete-white": "#F8FAFC",
+                      "success": "#10B981",
+                      "primary-container": "#0b1020",
+                      "on-surface-variant": "#c7c6cd",
+                      "primary-fixed": "#dee1f9",
+                      "on-primary-fixed-variant": "#414658",
+                      "tertiary": "#4cd7f6",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "surface": "#031427",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "on-surface": "#d3e4fe",
+                      "inverse-on-surface": "#213145",
+                      "danger": "#EF4444",
+                      "surface-dim": "#031427",
+                      "secondary-container": "#0053db",
+                      "surface-variant": "#26364a",
+                      "background": "#031427",
+                      "tertiary-fixed": "#acedff",
+                      "secondary-fixed": "#dbe1ff",
+                      "surface-container-highest": "#26364a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "mobile-icon-pad": "8px",
+                      "web-gap-tight": "4px",
+                      "web-page-gap": "64px",
+                      "touch-target-min": "44px",
+                      "touch-target-optimum": "52px",
+                      "web-base": "4px",
+                      "mobile-card-pad": "12px",
+                      "web-padding-card": "16px",
+                      "web-margin-component": "32px",
+                      "mobile-section-pad": "16px",
+                      "mobile-edge-margin": "24px",
+                      "mobile-base": "8px"
+              },
+              "fontFamily": {
+                      "mobile-hero": ["Inter"],
+                      "mobile-body": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-h1": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "label-tiny": ["Inter"],
+                      "headline-h2": ["Inter"],
+                      "headline-h3": ["Inter"],
+                      "mobile-title": ["Inter"],
+                      "display-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                      "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    }catch(_e){}</script></head><body class="antialiased text-on-surface">
+
+    <!-- TopAppBar (Suppressed based on Transactional Flow, but used as branding container per prompt) -->
+    <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum bg-surface border-b border-outline-variant">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-primary" data-icon="construction" data-original-icon="construction">construction</span>
+            <h1 class="font-headline-h1 text-headline-h1 tracking-tighter text-primary">CONSTRUCTION OS</h1>
+        </div>
+        <button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-100 rounded-lg">
+            <span class="material-symbols-outlined" data-icon="settings_remote" data-original-icon="settings_remote">settings_remote</span>
+        </button>
+    </header>
+
+    <main class="min-h-screen pt-20 pb-32 px-mobile-edge-margin flex flex-col justify-center">
+        <!-- Brand Identity -->
+        <div class="flex flex-col items-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div class="w-24 h-24 mb-6 rounded-2xl overflow-hidden shadow-2xl">
+                <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqOgkUk7EHChktEjBYoj6QkY5eyJ0gO3mmpHcIUwTrtenMG-kj5oNrjyAHK9s7vJRpX7im5u3l_Avc3FCa5qX_6d41Er35Xt4jGpdLnvXdbcVGuHLyvW-WEC98mQ2u6Z2xN4Bjli9DD_KPyKzdPbu7_rl7b6fwvBSiZ6CipSrJ-pJuulJSuz9VWcBSDjs7jK6BfiEUHIUpE3Wr3afxPPb0FIW5eVpbSFLYD-Z6KeZypy4SQCcmonM17ZObbq9_tbdMJic" class="w-full h-full object-cover">
+            </div>
+            <h2 class="font-mobile-title text-mobile-title text-center text-on-surface">Secure Access</h2>
+            <p class="font-body-md text-body-md text-on-surface-variant text-center mt-2">Manage your fleet and projects in real-time.</p>
+        </div>
+
+        <!-- Login Form -->
+        <form class="space-y-6 max-w-md mx-auto w-full">
+            <div class="space-y-2">
+                <label for="email" class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider block ml-1">Email Address</label>
+                <div class="relative flex items-center bg-surface-container border border-outline-variant rounded-xl input-focus-ring transition-all group">
+                    <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-tertiary" data-icon="mail">mail</span>
+                    <input type="email" id="email" placeholder="name@company.com" class="w-full h-touch-target-optimum bg-transparent border-none pl-12 pr-4 text-on-surface focus:ring-0 font-mobile-body text-mobile-body placeholder:text-outline/50">
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label for="password" class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider block ml-1">Password</label>
+                <div class="relative flex items-center bg-surface-container border border-outline-variant rounded-xl input-focus-ring transition-all group">
+                    <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-tertiary" data-icon="lock">lock</span>
+                    <input type="password" id="password" placeholder="••••••••" class="w-full h-touch-target-optimum bg-transparent border-none pl-12 pr-12 text-on-surface focus:ring-0 font-mobile-body text-mobile-body placeholder:text-outline/50">
+                    <button type="button" class="absolute right-4 text-outline hover:text-on-surface transition-colors">
+                        <span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+                    </button>
+                </div>
+                <div class="flex justify-end">
+                    <a href="#" class="font-body-sm text-body-sm text-secondary hover:text-on-secondary-fixed transition-colors">Forgot Password?</a>
+                </div>
+            </div>
+
+            <div class="pt-4 space-y-4">
+                <button type="submit" class="w-full h-touch-target-optimum bg-mobile-primary text-white font-headline-h3 text-headline-h3 rounded-xl shadow-lg shadow-mobile-primary/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                    Sign In
+                    <span class="material-symbols-outlined" data-icon="login">login</span>
+                </button>
+
+                <div class="flex items-center gap-4 py-2">
+                    <div class="h-[1px] flex-1 bg-outline-variant"></div>
+                    <span class="font-label-tiny text-label-tiny text-outline-variant">OR</span>
+                    <div class="h-[1px] flex-1 bg-outline-variant"></div>
+                </div>
+
+                
+            </div>
+        </form>
+
+        <!-- Security Footer -->
+        <footer class="mt-auto pt-12 flex flex-col items-center gap-2 opacity-60">
+            <div class="flex items-center gap-1.5 text-on-surface-variant">
+                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: &quot;FILL&quot; 1;" data-icon="encrypted">encrypted</span>
+                <span class="font-label-tiny text-label-tiny">AES-256 ENCRYPTED CONNECTION</span>
+            </div>
+            <p class="font-body-sm text-body-sm text-on-surface-variant/50">© 2024 CONSTRUCTION OS. v4.2.1-PRO</p>
+        </footer>
+    </main>
+
+    <!-- BottomNavBar (Support context) -->
+    <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-touch-target-optimum pb-safe bg-surface-container border-t border-outline-variant">
+        <a href="#" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:opacity-80 transition-opacity">
+            <span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
+            <span class="font-label-tiny text-label-tiny mt-1">SUPPORT</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:opacity-80 transition-opacity">
+            <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;" data-icon="shield">shield</span>
+            <span class="font-label-tiny text-label-tiny mt-1">SECURITY</span>
+        </a>
+        <a href="#" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:opacity-80 transition-opacity">
+            <span class="material-symbols-outlined" data-icon="dns">dns</span>
+            <span class="font-label-tiny text-label-tiny mt-1">SYSTEM</span>
+        </a>
+    </nav>
+
+    <script>
+        // Micro-interactions for input focus
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', () => {
+                input.parentElement.classList.add('border-tertiary');
+            });
+            input.addEventListener('blur', () => {
+                input.parentElement.classList.remove('border-tertiary');
+            });
+        });
+
+        // Simple form validation visual feedback
+        document.querySelector('form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span> Authenticating...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                btn.innerHTML = '<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span> Success';
+                btn.classList.remove('bg-mobile-primary');
+                btn.classList.add('bg-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.classList.add('bg-mobile-primary');
+                    btn.classList.remove('bg-</script></body></html>

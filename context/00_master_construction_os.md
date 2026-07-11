@@ -3361,7 +3361,8 @@ AI Provider Decision:
     Consuming: Embedding Worker — ทุก embedding call ผ่าน interface นี้
     Embedding storage: pgvector (vector(1536)) + OpenSearch k-NN index
 
-  LangChain: langchain>=0.3, langchain-openai>=0.2 (langgraph: candidate only — LAYER-C-001 decision pending)
+  LangChain: langchain>=0.3, langchain-openai>=0.2 (langgraph: fallback candidate only — LAYER-C-001
+    provisionally resolved to Temporal.io, PO decision 2026-07-10; final commit gated by spec §22.6 benchmark)
     LangChainProviderConfig
     Interface: { getProviderPackage(): str, getModelClass(): type }
 
@@ -3582,7 +3583,8 @@ APIs:
 
 Orchestration:
   Framework: plain Python sequential pipeline (no Agent Orchestrator — Layer A scope;
-             LangGraph deferred to LAYER-C-001 decision for Layer C autonomous AI;
+             Layer C orchestration = LAYER-C-001, provisionally resolved to Temporal.io
+             (PO 2026-07-10; final commit gated by §22.6 benchmark);
              see docs/specifications/22-ai-architecture.md §22.3)
   Step 1: RAG retrieval (via Phase 11 RAG API)
   Step 2: Context assembly and token budget check
@@ -3607,7 +3609,7 @@ Orchestration:
 
 Generate:
 
-- LangGraph orchestration chain for each report type
+- Orchestration chain (plain Python sequential pipeline — no LangGraph in Phase 12) for each report type
 - HallucinationGuard class with all 5 checks above
 - Structured output Pydantic models for each report type
 - Prompt templates (ai/prompts/): one per report type

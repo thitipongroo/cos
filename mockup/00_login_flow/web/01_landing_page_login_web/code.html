@@ -1,0 +1,185 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Construction OS | Field Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pulse-success {
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        /* Mobile-first constraints */
+        body {
+            background-color: #031427; /* Fallback for dark theme foundation */
+            overscroll-behavior-y: contain;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "error-container": "#93000a",
+                      "on-error": "#690005",
+                      "on-primary": "#2b3041",
+                      "inverse-primary": "#595e71",
+                      "success": "#10B981",
+                      "on-secondary": "#002a78",
+                      "surface-dim": "#031427",
+                      "surface-container-low": "#0b1c30",
+                      "inverse-surface": "#d3e4fe",
+                      "surface-bright": "#2a3a4f",
+                      "danger": "#EF4444",
+                      "surface-variant": "#26364a",
+                      "surface-container-lowest": "#000f21",
+                      "on-surface": "#d3e4fe",
+                      "surface-container": "#102034",
+                      "tertiary": "#4cd7f6",
+                      "on-surface-variant": "#c7c6cd",
+                      "surface-container-high": "#1b2b3f",
+                      "background": "#031427",
+                      "tertiary-container": "#001318",
+                      "outline": "#909097",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-tertiary": "#003640",
+                      "on-primary-fixed": "#161b2b",
+                      "mobile-primary": "#0066FF",
+                      "tertiary-fixed": "#acedff",
+                      "surface-container-highest": "#26364a",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "syncing": "#FFD60A",
+                      "secondary": "#b4c5ff",
+                      "offline": "#8E8E93",
+                      "inverse-on-surface": "#213145",
+                      "on-secondary-fixed": "#00174b",
+                      "surface": "#031427",
+                      "on-tertiary-fixed": "#001f26",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "primary-container": "#0b1020",
+                      "on-primary-container": "#777c90",
+                      "on-secondary-container": "#cdd7ff",
+                      "outline-variant": "#46464c",
+                      "warning": "#F59E0B",
+                      "primary": "#c1c5dc",
+                      "primary-fixed": "#dee1f9",
+                      "on-tertiary-container": "#0088a0",
+                      "on-error-container": "#ffdad6",
+                      "surface-tint": "#c1c5dc",
+                      "secondary-fixed": "#dbe1ff",
+                      "concrete-white": "#F8FAFC",
+                      "error": "#ffb4ab",
+                      "on-background": "#d3e4fe",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "on-primary-fixed-variant": "#414658",
+                      "secondary-container": "#0053db"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-gap-tight": "4px",
+                      "web-padding-card": "16px",
+                      "mobile-icon-pad": "8px",
+                      "web-base": "4px",
+                      "mobile-section-pad": "16px",
+                      "mobile-edge-margin": "24px",
+                      "touch-target-optimum": "52px",
+                      "mobile-base": "8px",
+                      "mobile-card-pad": "12px",
+                      "touch-target-min": "44px",
+                      "web-page-gap": "64px",
+                      "web-margin-component": "32px"
+              },
+              "fontFamily": {
+                      "mobile-title": ["Inter"],
+                      "body-md": ["Inter"],
+                      "headline-h3": ["Inter"],
+                      "label-tiny": ["Inter"],
+                      "mobile-body": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "mobile-hero": ["Inter"],
+                      "headline-h2": ["Inter"],
+                      "headline-h1": ["Inter"]
+              },
+              "fontSize": {
+                      "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                      "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-[#0B1020] text-on-surface selection:bg-mobile-primary selection:text-white font-body-md overflow-x-hidden min-h-screen">
+<!-- Hero / Background Layer -->
+<!-- Main Mobile Canvas -->
+<main class="relative z-10 min-h-screen flex flex-col w-full bg-transparent">
+<!-- Top App Bar (As per Shared Components JSON) -->
+<header class="w-full top-0 bg-[#0B1020]/80 backdrop-blur-md border-b border-white/10 flex justify-between items-center px-12 h-16 sticky z-30"><div class="flex items-center gap-8"><div class="flex items-center gap-3"><img alt="COS Logo" class="w-8 h-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkJiWstAZlrmFIk9k0HWyLviz8FMneWFMlpPOaWo0A8qlodmnVng2te7LUA6pL-M7CNLy38k3JiOAco1WFwVhDyLGd7pVLlJoM-dTwzt3dq-a7AVbRQRfal6aKBHdvNAXE8vqz5DjSLx8b0uA49Sld51R7MNzPtShy0mGSwvX4gKmXiDVx18s0A6JhVn7zREJfoJAPPQly_JVq1Ei3Niq8VySJPnqwF1gIFMUhoELh5aZbZ8oe0adr3V0pDOpw2RHPmxM"><span class="text-white font-bold tracking-widest uppercase text-lg">Construction OS</span></div><nav class="hidden md:flex gap-6"><a class="text-on-surface-variant hover:text-white text-sm font-medium transition-colors" href="#">Solutions</a><a class="text-on-surface-variant hover:text-white text-sm font-medium transition-colors" href="#">Security</a><a class="text-on-surface-variant hover:text-white text-sm font-medium transition-colors" href="#">Hardware</a><a class="text-on-surface-variant hover:text-white text-sm font-medium transition-colors" href="#">Network</a></nav></div><div class="flex items-center gap-4"><div class="flex items-center gap-2 px-3 py-1 bg-success/10 border border-success/20 rounded-full"><div class="w-1.5 h-1.5 rounded-full bg-success pulse-success"></div><span class="text-[10px] font-bold text-success uppercase tracking-tighter">Cloud Sync Active</span></div><span class="material-symbols-outlined text-on-surface-variant cursor-pointer">account_circle</span></div></header>
+<!-- Brand Hero Section -->
+<section class="flex-grow flex items-center justify-center px-12 py-20 gap-24 max-w-7xl mx-auto w-full"><div class="flex-1 flex flex-col gap-6 text-left"><div class="w-full mb-8 max-w-2xl"><img alt="Construction OS Wordmark" class="h-auto object-contain w-[92%]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCUCRk1JY2mn5cgniiu6MrYECngz5A9T64Vh95F8cPndmOhnGE_yWufXFCyypyDqYJNa-W_YG64xYIhJN3rMec0PbjLZX48QhEnlygkZjtKVZg6yxfSiPi94z3vfrSmpANiiksJMUp1shvGLeqDku-FlZLdndoKCI-CFWGTDPM7Mof_LS8kCIJsJaQHZMK3xzEBCw-PIrzUa6xixhADDKvRRAKmAL_0wAbI9fCWuAMbNrqmbndBYL3yygwxSK4je5aauY137xCMOqJH1Xc"></div><h2 class="text-5xl font-bold text-white leading-tight tracking-tight">The Industrial Intelligence Layer for Modern Infrastructure.</h2><p class="text-xl text-on-surface-variant max-w-lg">Real-time telemetry, secure asset tracking, and AI-native field operations for enterprise-scale projects.</p><div class="flex gap-4 mt-4"><div class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg flex items-center gap-3"><span class="material-symbols-outlined text-mobile-primary">verified_user</span><span class="text-xs text-on-surface-variant uppercase font-bold tracking-widest">Enterprise Grade</span></div><div class="px-4 py-2 bg-white/5 border border-white/10 rounded-lg flex items-center gap-3"><span class="material-symbols-outlined text-mobile-primary">hub</span><span class="text-xs text-on-surface-variant uppercase font-bold tracking-widest">Global Network</span></div></div></div><div class="w-[440px] bg-[#0F172A] border border-white/10 rounded-2xl p-10 shadow-2xl"><div class="mb-8"><h3 class="text-2xl font-bold text-white mb-2">Secure Access</h3><p class="text-sm text-on-surface-variant">Enter your credentials to access the command center.</p></div><div class="space-y-6"><div class="space-y-2"><label class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Field Worker Access</label><div class="flex gap-2"><select class="w-24 h-12 bg-[#0B1020] border border-white/10 rounded-lg text-white px-3 focus:ring-2 focus:ring-mobile-primary outline-none appearance-none"><option>+1</option></select><input class="flex-grow h-12 bg-[#0B1020] border border-white/10 rounded-lg px-4 text-white focus:ring-2 focus:ring-mobile-primary outline-none" placeholder="Phone Number" type="tel"></div></div><button class="w-full h-12 bg-[#2563EB] hover:bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-lg shadow-blue-600/20" style="transform: scale(1);"><span class="">SEND SECURE PASSCODE</span><span class="material-symbols-outlined">arrow_forward</span></button><div class="flex items-center gap-4 py-2"><div class="h-px bg-white/10 flex-grow"></div><span class="text-[10px] font-bold text-on-surface-variant uppercase">OR</span><div class="h-px bg-white/10 flex-grow"></div></div><button class="w-full h-12 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-bold rounded-lg flex items-center justify-center gap-3 transition-all"> <span class="material-symbols-outlined text-mobile-primary">mail</span><span class="">Login with Email</span></button></div></div></section>
+<!-- Login Path: Field Workers (Primary) -->
+<!-- System Status & Visual Anchor -->
+<footer class="mt-auto w-full border-t border-white/10 bg-[#0B1020] px-12 py-8"><div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6"><div class="flex flex-col gap-1"><p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">© 2026 CONSTRUCTION OS ENTERPRISE</p><p class="text-[10px] text-on-surface-variant/40 uppercase tracking-tighter">Industrial Intelligence Unit / Global Operations</p></div><div class="flex gap-8"><a class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest hover:text-white transition-colors" href="#">Security Policy</a><a class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest hover:text-white transition-colors" href="#">Terms</a></div><div class="flex items-center gap-6"><div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-success"></div><span class="text-[10px] font-bold text-white uppercase tracking-widest">All Systems Operational</span></div><div class="px-2 py-1 bg-white/5 border border-white/10 rounded text-[10px] font-mono text-on-surface-variant">GLOBAL: SFO-7</div></div></div></footer>
+<!-- Bottom Navigation Shell (Relevance check: Suppressed for login focus as per guidelines) -->
+</main>
+<!-- Micro-interaction Scripts -->
+<script>
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.transform = 'scale(0.97)';
+            });
+            button.addEventListener('mouseup', () => {
+                button.style.transform = 'scale(1)';
+            });
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simple OTP Focus simulation
+        const phoneInput = document.querySelector('input[type="tel"]');
+        if(phoneInput) {
+            phoneInput.addEventListener('focus', () => {
+                phoneInput.parentElement.classList.add('ring-2', 'ring-mobile-primary/20');
+            });
+            phoneInput.addEventListener('blur', () => {
+                phoneInput.parentElement.classList.remove('ring-2', 'ring-mobile-primary/20');
+            });
+        }
+    </script>
+
+
+
+
+</body></html>

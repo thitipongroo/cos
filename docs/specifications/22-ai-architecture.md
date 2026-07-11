@@ -1,8 +1,8 @@
 ---
 title: 'AI Architecture'
-version: '1.9.0'
+version: '1.10.0'
 status: Active
-last_updated: '2026-07-04'
+last_updated: '2026-07-10'
 authors:
   - thitipongroo
 related_docs:
@@ -100,18 +100,17 @@ agent must plan, invoke tools, and act across multiple services.
 - Full autonomous multi-agent framework (Layer C) : framework selection deferred until
   post-Stage 2, when Layer B capabilities are validated in production.
 
-> ⚠️ **DECISION PENDING [LAYER-C-001]:** Agent orchestration framework for Layer C has not been
-> selected. Candidates: LangGraph, CrewAI, AutoGen, or custom Temporal.io activity chains.
-> **Decision trigger:** Layer B deployed to production and first Analytical AI feature is
-> stable for ≥ 30 days.
-> **Owner:** thitipongroo (interim AI/Platform Lead).
-> **Decision deadline:** No later than 4 weeks after Layer B goes live in production.
-> **Leading candidate:** Temporal.io (already in use for approval workflows — see
-> 15-event-driven-workflow section 15.4); evaluate against LangGraph before committing.
-> **Evaluation rubric** (apply when trigger fires — see §22.5 LAYER-C-001 Evaluation Rubric):
-> rank each candidate on 5 axes: (1) LangChain compatibility (>=0.3), (2) Temporal.io co-existence,
-> (3) Thai-language tool-calling accuracy, (4) durable execution / human-in-the-loop support,
-> (5) operational complexity. Select the highest scorer; document rationale in a one-page ADR.
+> 🟡 **PROVISIONALLY RESOLVED [LAYER-C-001]**:
+> **Temporal.io is pre-selected as the provisional agent orchestration framework for
+> Layer C** — it is already in use for approval workflows (15-event-driven-workflow
+> §15.4) and provides durable execution + human-in-the-loop natively.
+> **Final commitment is still gated:** when the trigger fires (Layer B deployed to
+> production and first Analytical AI feature stable for ≥ 30 days), run the §22.6
+> evaluation rubric — including the Thai construction benchmark (minimum pass 4/5) —
+> against Temporal.io as a **validation gate**. If Temporal.io fails the benchmark,
+> re-open the full candidate set (LangGraph, CrewAI, AutoGen).
+> **Decision deadline (final commitment):** no later than 4 weeks after Layer B goes
+> live in production (§22.6 Decision Output).
 > **Action:** Open a spec issue tagged `layer-c-decision` when Layer B stabilises.
 
 ### Vector Store Tenant Isolation
@@ -275,9 +274,11 @@ Thai Language :
 
 ## 22.6 LAYER-C-001 Evaluation Rubric
 
-> This section is **not active** — it is a decision template to be used when the
-> trigger condition fires: _Layer B deployed to production and stable for ≥ 30 days._
-> Do not use this rubric to justify selecting a framework before the trigger.
+> This section activates when the trigger condition fires: _Layer B deployed to
+> production and stable for ≥ 30 days._ Per §22.3, **Temporal.io is provisionally pre-selected**; when the trigger
+> fires this rubric runs as a **validation gate** against Temporal.io first — the full candidate
+> set below is re-opened only if Temporal.io fails the Thai benchmark (< 4/5).
+> Do not treat the provisional selection as final before the trigger.
 
 ### Candidates
 
