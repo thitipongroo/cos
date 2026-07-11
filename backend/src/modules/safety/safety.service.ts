@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { createLogger } from '@cos/logger';
+import { clsUserId } from '../../shared/context/cls-context';
+import { clsUserId } from '../../shared/context/cls-context';
 import { SafetyRepository } from './safety.repository';
 import type { IncidentRow, PermitRow, ComplianceSummaryRow } from './safety.repository';
 import type { CreateIncidentDto, CreatePermitDto } from './dto/safety.dto';
@@ -22,13 +24,26 @@ const logger = createLogger('safety-service');
 
 @Injectable({ scope: Scope.REQUEST })
 export class SafetyService {
-  private readonly userId: string;
+  // Resolve the caller's user_id lazily. TenantContextInterceptor publishes `req.userId`, but under
+  // @nestjs/platform-fastify that mutation does not reliably reach a Scope.REQUEST provider's injected
+  // REQUEST (the request is cloned), so fall back to CLS (set reliably by JwtAuthGuard). Reading in a
+  // getter (not the constructor) guarantees CLS is active at call time. `req.user?.user_id` — the old
+  // source — was always undefined here → reported_by='' → Postgres 22P02 on ::uuid. (Matches workforce.)
+  private get userId(): string {
+    return (this.request as { userId?: string }).userId || clsUserId();
+  }
 
   constructor(
     private readonly repo: SafetyRepository,
-    @Inject(REQUEST) request: { user?: { user_id?: string } },
-  ) {
-    this.userId = request.user?.user_id ?? '';
+    @Inject(REQUEST) private readonly request: { userId?: string },
+  ) {}
+
+  // `request.userId` is published by JwtAuthGuard and read at call time (same pattern as
+  // project/procurement/finance services). The nested Passport `request.user` projection is
+  // unreliable under @nestjs/platform-fastify (see cls-context), which left `reported_by`
+  // empty and failed incident insert with `22P02` (empty-uuid). CLS is the final fallback.
+  private get userId(): string {
+    return this.request.userId ?? clsUserId();
   }
 
   // ── Incidents ───────────────────────────────────────────────────────────────

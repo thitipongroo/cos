@@ -30,7 +30,12 @@ export async function apiFetch<T>(
   init?: RequestInit,
 ): Promise<T> {
   const headers = new Headers(init?.headers);
-  headers.set('content-type', 'application/json');
+  // Only advertise a JSON body when one is actually sent. Setting content-type: application/json on a
+  // bodyless request (e.g. PATCH .../acknowledge) makes Fastify try to parse an empty body and reject
+  // it with 400 "Body cannot be empty when content-type is set to 'application/json'".
+  if (init?.body != null) {
+    headers.set('content-type', 'application/json');
+  }
   if (token) {
     headers.set('authorization', `Bearer ${token}`);
   }

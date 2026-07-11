@@ -47,7 +47,8 @@
       "office": "Office login (email / password)",
       "fieldWorker": "Field worker — sign in with phone (OTP)",
       "backToOffice": "← Back to office login",
-      "oidcError": "Sign-in failed. Please try again."
+      "oidcError": "Sign-in failed. Please try again.",
+      "countryLabel": "Country"
     }
   },
   "home": {

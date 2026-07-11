@@ -1,6 +1,7 @@
 ---
 title: Construction OS — Android Screen Capture
 last_updated: 2026-07-08
+last_updated: 2026-07-08
 ---
 
 # Construction OS — Android App Screens

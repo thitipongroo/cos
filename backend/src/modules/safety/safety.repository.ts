@@ -76,7 +76,7 @@ export class SafetyRepository {
           (tenant_id, project_id, task_id, incident_type, severity, reported_by, latitude, longitude)
         VALUES
           (${this.tenantId}::uuid, ${params.project_id}::uuid, ${params.task_id ?? null}::uuid,
-           ${params.incident_type}, ${params.severity}, ${params.reported_by}::uuid,
+           ${params.incident_type}::text, ${params.severity}::text, ${params.reported_by}::uuid,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *
       `,
@@ -97,9 +97,9 @@ export class SafetyRepository {
         tx.$queryRaw<IncidentRow[]>`
         SELECT * FROM site_ops.incidents
         WHERE tenant_id = ${this.tenantId}::uuid
-          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
-          AND (${params.severity ?? null} IS NULL OR severity = ${params.severity ?? null})
+          AND (NULLIF(${params.project_id ?? ''}, '')::uuid IS NULL OR project_id = NULLIF(${params.project_id ?? ''}, '')::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
+          AND (${params.severity ?? null}::text IS NULL OR severity = ${params.severity ?? null}::text)
         ORDER BY created_at DESC
         LIMIT ${params.limit} OFFSET ${offset}
       `,
@@ -109,9 +109,9 @@ export class SafetyRepository {
         tx.$queryRaw<[{ count: bigint }]>`
         SELECT COUNT(*)::bigint AS count FROM site_ops.incidents
         WHERE tenant_id = ${this.tenantId}::uuid
-          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
-          AND (${params.severity ?? null} IS NULL OR severity = ${params.severity ?? null})
+          AND (NULLIF(${params.project_id ?? ''}, '')::uuid IS NULL OR project_id = NULLIF(${params.project_id ?? ''}, '')::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
+          AND (${params.severity ?? null}::text IS NULL OR severity = ${params.severity ?? null}::text)
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };
@@ -184,8 +184,8 @@ export class SafetyRepository {
         tx.$queryRaw<PermitRow[]>`
         SELECT * FROM site_ops.permits
         WHERE tenant_id = ${this.tenantId}::uuid
-          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+          AND (NULLIF(${params.project_id ?? ''}, '')::uuid IS NULL OR project_id = NULLIF(${params.project_id ?? ''}, '')::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
         ORDER BY created_at DESC
         LIMIT ${params.limit} OFFSET ${offset}
       `,
@@ -195,8 +195,8 @@ export class SafetyRepository {
         tx.$queryRaw<[{ count: bigint }]>`
         SELECT COUNT(*)::bigint AS count FROM site_ops.permits
         WHERE tenant_id = ${this.tenantId}::uuid
-          AND (${params.project_id ?? null}::uuid IS NULL OR project_id = ${params.project_id ?? null}::uuid)
-          AND (${params.status ?? null} IS NULL OR status = ${params.status ?? null})
+          AND (NULLIF(${params.project_id ?? ''}, '')::uuid IS NULL OR project_id = NULLIF(${params.project_id ?? ''}, '')::uuid)
+          AND (${params.status ?? null}::text IS NULL OR status = ${params.status ?? null}::text)
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };

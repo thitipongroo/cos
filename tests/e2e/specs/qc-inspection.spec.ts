@@ -2,7 +2,8 @@
 // Source: spec §Phase 18 item 9 — "QC inspection — Inspector fills checklist → result recorded
 //   as fail → issue_severity populated → photo uploaded"
 
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '../fixtures';
+import type { Page } from '@playwright/test';
 import { loginViaKeycloak } from '../helpers/auth';
 
 const INSPECTOR_EMAIL = process.env['E2E_INSPECTOR_EMAIL'] || 'e2e-inspector@construction-os.io';

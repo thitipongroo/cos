@@ -48,9 +48,13 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  // CORS — QM-4: explicit origins only, never wildcard in production
+  // CORS — QM-4: explicit origins only, never wildcard in production. `methods` must be listed
+  // explicitly: without it the preflight advertises only GET,HEAD,POST, so the browser blocks every
+  // cross-origin PATCH/PUT/DELETE (e.g. incident acknowledge, permit approve) with net::ERR_FAILED.
   app.enableCors({
     origin: process.env['CORS_ORIGINS']?.split(',') ?? ['http://localhost:3001'],
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['authorization', 'content-type'],
     credentials: true,
   });
 

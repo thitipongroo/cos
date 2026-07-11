@@ -2,26 +2,44 @@
 
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useT } from '../../../i18n';
+import {
+  COUNTRIES,
+  DEFAULT_COUNTRY_ISO2,
+  countryFromLocale,
+  findCountry,
+  toE164,
+} from '../../../lib/countries';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
 type Step = 'phone' | 'otp';
 
 /**
- * Path A login (§20.6.1) — phone + SMS OTP for field roles. Step 1 requests an
- * OTP via the backend (`POST /auth/otp/request`); step 2 submits {phoneNumber,
- * otp} to the next-auth `otp` credentials provider, which verifies against the
- * backend and issues the Keycloak-signed session.
+ * Path A login (§20.6.1) — phone + SMS OTP for field roles. The phone is entered as a country
+ * (flag + E.164 dial code, defaulting to the device locale's country) plus a national number,
+ * combined into E.164 before the request. Step 1 requests an OTP via the backend
+ * (`POST /auth/otp/request`); step 2 submits {phoneNumber, otp} to the next-auth `otp` credentials
+ * provider, which verifies against the backend and issues the Keycloak-signed session.
  */
 export default function OtpLoginPage() {
   const t = useT();
   const [step, setStep] = useState<Step>('phone');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [countryIso2, setCountryIso2] = useState(DEFAULT_COUNTRY_ISO2);
+  const [nationalNumber, setNationalNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Default the country to the device/browser locale (e.g. "th-TH" → Thailand), falling back to the
+  // home market. Runs client-side only; navigator is unavailable during SSR.
+  useEffect(() => {
+    setCountryIso2(countryFromLocale(navigator.language));
+  }, []);
+
+  const country = findCountry(countryIso2);
+  const phoneNumber = toE164(country.dialCode, nationalNumber);
 
   async function requestOtp(e: React.FormEvent) {
     e.preventDefault();
@@ -75,20 +93,46 @@ export default function OtpLoginPage() {
 
         {step === 'phone' ? (
           <form onSubmit={requestOtp} className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700">
+            <div className="block text-sm font-medium text-gray-700">
               {t('auth.otp.phoneLabel')}
-              <input
-                type="tel"
-                required
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                placeholder={t('auth.otp.phonePlaceholder')}
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-              />
-            </label>
+              <div className="mt-1 flex gap-2">
+                {/* Country code — flag (bundled SVG) + selectable E.164 dial code. */}
+                <div className="flex items-center gap-1.5 rounded-md border border-gray-300 pl-2 focus-within:border-blue-500">
+                  {/* Bundled flag SVG served from public/flags; a plain <img> keeps it dependency-free
+                      and avoids next/image's loader for a tiny static asset. */}
+                  <img
+                    src={`/flags/${country.iso2}.svg`}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-4 w-6 shrink-0 rounded-sm object-cover"
+                  />
+                  <select
+                    aria-label={t('auth.otp.countryLabel')}
+                    value={countryIso2}
+                    onChange={(e) => setCountryIso2(e.target.value)}
+                    className="bg-transparent py-2 pr-1 text-sm focus:outline-none"
+                  >
+                    {COUNTRIES.map((c) => (
+                      <option key={c.iso2} value={c.iso2}>
+                        {c.dialCode} {c.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <input
+                  type="tel"
+                  inputMode="tel"
+                  required
+                  value={nationalNumber}
+                  onChange={(e) => setNationalNumber(e.target.value)}
+                  placeholder={t('auth.otp.phonePlaceholder')}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || nationalNumber.trim().length === 0}
               className="w-full rounded-md bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {t('auth.otp.requestButton')}

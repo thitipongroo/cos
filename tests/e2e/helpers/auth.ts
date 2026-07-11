@@ -37,10 +37,23 @@ export async function loginViaKeycloak(
   page: Page,
   { email, password }: Credentials,
 ): Promise<void> {
+  // Force the app into English for E2E. The UI defaults to Thai (locale persisted in localStorage
+  // `cos.locale`, see apps/web/src/i18n), but the specs match nav/actions by their English labels
+  // (e.g. getByRole('link', { name: /safety|incident/i })). Setting the locale before any app script
+  // runs makes those selectors resolve against the English strings instead of the Thai defaults.
+  await page.addInitScript(() => {
+    try {
+      window.localStorage.setItem('cos.locale', 'en');
+    } catch {
+      /* localStorage unavailable on the Keycloak origin — ignore */
+    }
+  });
   await page.goto('/login');
-  // /login renders a single <button> (the office/Keycloak action; the field-role OTP
-  // path is a <Link>). Clicking it navigates to the hosted Keycloak login form.
-  await page.getByRole('button').click();
+  // The office/Keycloak action button (i18n label contains "Keycloak" in every locale:
+  // "Sign in with Keycloak" / "เข้าสู่ระบบด้วย Keycloak"). Matched by name rather than as
+  // "the only button" because dev tooling (e.g. the Next.js dev overlay) injects its own.
+  // Clicking it navigates to the hosted Keycloak login form.
+  await page.getByRole('button', { name: /keycloak/i }).click();
   await page.locator('#username').fill(email);
   await page.locator('#password').fill(password);
   await page.locator('#kc-login').click();

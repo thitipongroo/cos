@@ -832,8 +832,10 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
 - **Simulate offline in Detox via `device.setStatusBar`/NetInfo jest mock** — neither works: Detox has no connectivity API (setStatusBar is cosmetic) and the NetInfo jest mock is unit-only (Detox runs the real binary). Use an app-level hook gated by `EXPO_PUBLIC_E2E=1` (deep link `cos://e2e/network` → `useNetworkStatus`); and there is **no boolean `element().isVisible()`** — use `await waitFor(el).toBeVisible().withTimeout()` (spec §30.7)
 - **Call `useSearchParams()` / `usePathname()` / `useRouter()` (or any CSR-bailout hook) without a `<Suspense>` boundary in a Next.js App Router page** — these hooks opt the subtree into client-side rendering, and `next build` fails the static export of the route with `missing-suspense-with-csr-bailout` ("Error occurred prerendering page"). `tsc --noEmit` (the `type-check` gate) does NOT catch this — only the `build` gate does (ADR-033). Isolate the hook in a child component and wrap it: `export default function Page(){ return <Suspense fallback={…}><Inner/></Suspense> }`. Example fix: `apps/web/src/app/login/page.tsx` (spec §32.7 → Web Implementation)
 - Implement BigQuery or Snowflake — analytics uses ClickHouse only
-- Implement LangGraph in Phase 11–12 — Phase 12 uses plain Python sequential pipeline; LangGraph
-  deferred to LAYER-C-001 decision for Layer C autonomous AI (source: spec §22-ai-architecture §22.3)
+- Implement LangGraph in Phase 11–12 — Phase 12 uses plain Python sequential pipeline; Layer C
+  orchestration is LAYER-C-001, provisionally resolved to **Temporal.io** (PO decision 2026-07-10);
+  final commitment gated by the §22.6 Thai benchmark when Layer B is stable ≥ 30 days — LangGraph
+  remains a fallback candidate only (source: spec §22-ai-architecture §22.3)
 - Use IndexedDB in React Native — smartphone uses **Drizzle ORM on expo-sqlite** (`cos_offline_v2.db`, useLiveQuery reactive reads) for all main business entities (site_reports, issues, local_photos, etc.); `sync_queue` keeps its own expo-sqlite handle (`cos_sync_queue.db`). Raw expo-sqlite for other entities is prohibited — go through the Drizzle schema (spec 17 §17.10 / ADR-048)
 - Skip hallucination guard on AI report endpoints
 - Invent workflow states or transitions beyond those defined in master §WORKFLOW ENGINE SPEC — implement exactly what is specified, nothing more (master §9; spec §32.6)

@@ -1,8 +1,8 @@
 ---
 title: 'UX Flow'
-version: '1.5.0'
+version: '1.6.0'
 status: Active
-last_updated: '2026-07-03'
+last_updated: '2026-07-10'
 authors:
   - thitipongroo
 related_docs:
@@ -502,6 +502,38 @@ CRM UI (pipeline kanban, dashboards, proposal generation) remains post-MVP.
 
 - Cross-tenant platform administration is the separate **`/admin` panel** specified in §20.4 —
   not part of the tenant-scoped page set above.
+
+### 20.7.12b Asset Management (post-MVP)
+
+Source: module permissions §06 §6.4 (Asset Management); entities §11 §11.2 (Unit, Assets).
+**IA decision: Hybrid** — tenant-level asset registry +
+project-scoped handover entry (registry: Yardi Voyager / MRI standalone pattern, aligned
+with the V3 direction in §28.9; handover: Procore / Autodesk Construction Cloud
+project-closeout pattern).
+
+| Route                 | Page           | Purpose                                                   | Source      |
+| --------------------- | -------------- | --------------------------------------------------------- | ----------- |
+| `/assets/units`       | Unit inventory | Unit list (unit_number, unit_type, status)                | §6.4, §11.2 |
+| `/projects/{id}`      | Handover tab   | Record handover; emits `AssetHandedOver`; writes registry | §6.4, §11.2 |
+| `/assets/warranty`    | Warranty       | warranty_expiry tracking (`WarrantyActivated`)            | §6.4, §11.2 |
+| `/assets/maintenance` | Maintenance    | maintenance_status (`MaintenanceScheduled`)               | §6.4, §11.2 |
+
+### 20.7.12c Preconstruction (post-MVP)
+
+Source: §01 §1.2 (Phase-2 extensions to the CRM Service). **UI decision (product owner,
+2026-07-10): separate "Preconstruction" nav section** (Procore Preconstruction /
+Autodesk BuildingConnected pattern — tender & bid management as its own product area);
+backend remains a CRM Service extension per §01 §1.2.
+
+| Route                          | Page                | Purpose                       | Source   |
+| ------------------------------ | ------------------- | ----------------------------- | -------- |
+| `/preconstruction/feasibility` | Feasibility studies | Feasibility study capability  | §01 §1.2 |
+| `/preconstruction/land`        | Land acquisition    | Land acquisition capability   | §01 §1.2 |
+| `/preconstruction/tenders`     | Tenders             | Tender management capability  | §01 §1.2 |
+| `/preconstruction/bids`        | Contractor bids     | Contractor bidding capability | §01 §1.2 |
+
+> Detailed screen contents for both sections are elaborated in `DESIGN.md` §15.3 /
+> §15.10; capability-level scope only is defined here until each phase begins.
 
 ### 20.7.12 Vendor Portal (`VENDOR_PORTAL`)
 

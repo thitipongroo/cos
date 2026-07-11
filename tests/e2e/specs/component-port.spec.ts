@@ -143,6 +143,12 @@ test.describe('Component port (web) — LocationDisplay', () => {
   });
 });
 
+// LEGACY MOCKUP TARGET. These three tests exercise the figma/mockup's browser-API components
+// (testids `location-display` / `voice-input`, English copy, browser Web Speech / Nominatim) — NOT
+// the apps/web port, whose AI-transcription VoiceInput and /geo/reverse LocationDisplay are covered
+// by the "Component port (web) — …" blocks above (testids `web-location-display` / `web-voice-input`).
+// Point COMPONENT_PREVIEW_URL at the Vite mockup to run these; against the apps/web preview the
+// mockup testids are absent, so each test skips itself rather than reporting a false failure.
 test.describe('Component port — permission-denied paths', () => {
   test('LocationDisplay shows the denied message when geolocation permission is refused', async ({
     page,
@@ -153,6 +159,13 @@ test.describe('Component port — permission-denied paths', () => {
     await context.clearPermissions();
 
     await openPreview(page);
+    // The apps/web preview wraps its (Thai-i18n, AI/geo-backend) port in `web-location-display`;
+    // its inner component ALSO carries `location-display`, so skip on the wrapper's presence, not on
+    // the inner testid. The apps/web port is covered by the "(web)" block; these assert the mockup.
+    test.skip(
+      (await page.getByTestId('web-location-display').count()) > 0,
+      'running against the apps/web preview — LocationDisplay is covered by the "(web)" block',
+    );
     const loc = page.getByTestId('location-display');
     await expect(loc).toBeVisible();
 
@@ -180,6 +193,10 @@ test.describe('Component port — permission-denied paths', () => {
     await context.route('**/nominatim.openstreetmap.org/**', (route) => route.abort());
 
     await openPreview(page);
+    test.skip(
+      (await page.getByTestId('web-location-display').count()) > 0,
+      'running against the apps/web preview — LocationDisplay is covered by the "(web)" block',
+    );
     const loc = page.getByTestId('location-display');
 
     const unsupported = loc.getByText('Location services not available');
@@ -196,6 +213,10 @@ test.describe('Component port — permission-denied paths', () => {
     await context.clearPermissions();
 
     await openPreview(page);
+    test.skip(
+      (await page.getByTestId('web-voice-input').count()) > 0,
+      'running against the apps/web preview — VoiceInput is covered by the "(web)" block',
+    );
     const voice = page.getByTestId('voice-input');
     await expect(voice).toBeVisible();
 

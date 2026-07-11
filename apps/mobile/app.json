@@ -28,6 +28,7 @@
       "expo-router",
       "expo-font",
       "expo-secure-store",
+      "@config-plugins/detox",
       [
         "expo-build-properties",
         {
@@ -69,7 +70,8 @@
         {
           "microphonePermission": "Allow Construction OS to record audio for site voice notes."
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": false

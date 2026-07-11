@@ -18,14 +18,27 @@ import {
   StyleSheet,
   ActivityIndicator,
   Image,
+  Modal,
+  FlatList,
+  Pressable,
 } from 'react-native';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
+import { SvgXml } from 'react-native-svg';
+import { getLocales } from 'expo-localization';
 import { CosRole } from '@cos/types';
 import { useAuthStore } from '../../store/authStore';
 import { decodeJwtPayload } from '../../lib/jwt';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import {
+  COUNTRIES,
+  DEFAULT_COUNTRY_ISO2,
+  FLAG_SVG,
+  countryFromRegion,
+  findCountry,
+  toE164,
+} from '../../lib/countries';
 import logoDark from '../../../assets/logo-dark.png';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -47,10 +60,20 @@ export default function LoginScreen() {
 
   const [mode, setMode] = useState<Mode>('select');
   const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('');
+  const [countryIso2, setCountryIso2] = useState(DEFAULT_COUNTRY_ISO2);
+  const [nationalNumber, setNationalNumber] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [otp, setOtp] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Default the country to the device region (e.g. locale "th-TH" → Thailand); fall back to the home
+  // market when the device region isn't one of the supported markets.
+  useEffect(() => {
+    setCountryIso2(countryFromRegion(getLocales()[0]?.regionCode));
+  }, []);
+
+  const country = findCountry(countryIso2);
 
   // ── Path B — Keycloak OIDC (Authorization Code + PKCE) ──
   const discovery = AuthSession.useAutoDiscovery(KEYCLOAK_ISSUER);
@@ -103,11 +126,13 @@ export default function LoginScreen() {
     void promptAsync();
   };
 
+  const e164Phone = (): string => toE164(country.dialCode, nationalNumber);
+
   const onRequestOtp = async (): Promise<void> => {
     setBusy(true);
     setError(null);
     try {
-      await requestOtp(phone.trim());
+      await requestOtp(e164Phone());
       setStep('otp');
     } catch {
       setError(t('auth.login.otpSendError'));
@@ -120,7 +145,7 @@ export default function LoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      await verifyOtp(phone.trim(), otp.trim());
+      await verifyOtp(e164Phone(), otp.trim());
     } catch {
       setError(t('auth.login.otpVerifyError'));
     } finally {
@@ -161,22 +186,35 @@ export default function LoginScreen() {
         </>
       ) : step === 'phone' ? (
         <>
-          <TextInput
-            testID="phone-input"
-            style={styles.input}
-            placeholder={t('auth.login.phonePlaceholder')}
-            placeholderTextColor={colors.textSecondary}
-            keyboardType="phone-pad"
-            autoCapitalize="none"
-            value={phone}
-            onChangeText={setPhone}
-            editable={!busy}
-          />
+          <View style={styles.phoneRow}>
+            {/* Country code — flag (bundled SVG) + E.164 dial code; opens the country picker. */}
+            <TouchableOpacity
+              testID="country-picker"
+              style={styles.countryButton}
+              onPress={() => setPickerOpen(true)}
+              disabled={busy}
+              accessibilityLabel={t('auth.login.countryLabel')}
+            >
+              <SvgXml xml={FLAG_SVG[country.iso2] ?? ''} width={24} height={16} />
+              <Text style={styles.dialCode}>{country.dialCode}</Text>
+            </TouchableOpacity>
+            <TextInput
+              testID="phone-input"
+              style={[styles.input, styles.phoneInput]}
+              placeholder={t('auth.login.phonePlaceholder')}
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="phone-pad"
+              autoCapitalize="none"
+              value={nationalNumber}
+              onChangeText={setNationalNumber}
+              editable={!busy}
+            />
+          </View>
           <TouchableOpacity
             testID="request-otp-button"
             style={[styles.button, busy && styles.buttonDisabled]}
             onPress={onRequestOtp}
-            disabled={busy || phone.trim().length === 0}
+            disabled={busy || nationalNumber.trim().length === 0}
           >
             {busy ? (
               <ActivityIndicator color={colors.bg} />
@@ -187,6 +225,36 @@ export default function LoginScreen() {
           <TouchableOpacity testID="back-to-office-link" onPress={() => setMode('select')}>
             <Text style={styles.link}>{t('auth.login.backToOffice')}</Text>
           </TouchableOpacity>
+
+          <Modal
+            visible={pickerOpen}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setPickerOpen(false)}
+          >
+            <Pressable style={styles.modalBackdrop} onPress={() => setPickerOpen(false)}>
+              <View style={styles.modalCard}>
+                <FlatList
+                  data={COUNTRIES}
+                  keyExtractor={(c) => c.iso2}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      testID={`country-option-${item.iso2}`}
+                      style={styles.countryRow}
+                      onPress={() => {
+                        setCountryIso2(item.iso2);
+                        setPickerOpen(false);
+                      }}
+                    >
+                      <SvgXml xml={FLAG_SVG[item.iso2] ?? ''} width={28} height={19} />
+                      <Text style={styles.countryName}>{item.nameEn}</Text>
+                      <Text style={styles.countryDial}>{item.dialCode}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            </Pressable>
+          </Modal>
         </>
       ) : (
         <>
@@ -273,5 +341,59 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: typography.caption.fontSize,
     textAlign: 'center',
+  },
+  phoneRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  countryButton: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.textSecondary,
+    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+  },
+  dialCode: {
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textPrimary,
+  },
+  phoneInput: {
+    flex: 1,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalCard: {
+    backgroundColor: colors.bg,
+    borderRadius: 12,
+    maxHeight: '70%',
+    overflow: 'hidden',
+  },
+  countryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.textSecondary,
+  },
+  countryName: {
+    flex: 1,
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textPrimary,
+  },
+  countryDial: {
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textSecondary,
   },
 });

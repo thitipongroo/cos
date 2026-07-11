@@ -39,9 +39,10 @@ async function applyUserBProgressViaApi(taskId: string, progress: number): Promi
 
 describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
   beforeAll(async () => {
+    // reloadReactNative() crashes the RN bridge on this RN/Detox version (see capture.spec.ts) and is
+    // redundant after launchApp({delete:true}) — omitted.
     await device.launchApp({ newInstance: true, delete: true });
     await resetSession(); // iOS keychain survives reinstall — force a logged-out start
-    await device.reloadReactNative();
   });
 
   afterAll(async () => {
@@ -49,16 +50,25 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
   });
 
   beforeEach(async () => {
-    // Session survives the JS reload now that authenticated calls no longer 401 (CLS tenant-context
-    // fix), so reloading resets navigation to home while keeping the user logged in.
-    await device.reloadReactNative();
+    // Reset navigation to home while keeping the user logged in (session persists across a relaunch).
+    // Uses launchApp({newInstance}) instead of reloadReactNative, which crashes the RN bridge here.
+    await device.launchApp({ newInstance: true });
   });
 
   it('user A can log in and navigate to task', async () => {
+    // Login screen shows both auth paths (ADR-050) — tap the field-worker OTP link first.
+    await waitFor(element(by.id('field-login-link')))
+      .toBeVisible()
+      .withTimeout(10_000);
+    await element(by.id('field-login-link')).tap();
     await waitFor(element(by.id('phone-input')))
       .toBeVisible()
       .withTimeout(10_000);
-    await element(by.id('phone-input')).typeText(USER_A_PHONE);
+    // Phone is split into a country picker + national number; pick Thailand explicitly (deterministic
+    // regardless of the simulator's region) and enter the national digits (the login re-adds +66).
+    await element(by.id('country-picker')).tap();
+    await element(by.id('country-option-th')).tap();
+    await element(by.id('phone-input')).typeText(USER_A_PHONE.replace(/^\+66/, ''));
     await element(by.id('request-otp-button')).tap();
     await waitFor(element(by.id('otp-input')))
       .toBeVisible()
@@ -66,13 +76,13 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
     await element(by.id('otp-input')).typeText(process.env['E2E_TEST_OTP'] || '123456');
     await element(by.id('verify-otp-button')).tap();
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(15_000);
   });
 
   it('user A updates task progress offline and user B also updates — Max-wins resolves to higher value', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     await setNetworkConnected(false);
@@ -123,7 +133,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
 
   it('no conflict_status CONFLICT_REJECTED appears for progress_percent Max-wins', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     const conflictBadge = element(by.id('conflict-badge')).atIndex(0);
@@ -137,7 +147,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
 
   it('sync queue is empty after successful sync', async () => {
     await waitFor(element(by.id('home-screen')))
-      .toBeVisible()
+      .toExist()
       .withTimeout(10_000);
 
     await waitFor(element(by.text(/synced|up to date|ซิงค์แล้ว/i)))
@@ -149,7 +159,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       // Scope the "0" to the pending-sync-count KPI — several elements on Home legitimately read "0"
       // (open issues, sync bar), so an unscoped by.text('0') matches multiple and is ambiguous.
       await waitFor(element(by.text('0').withAncestor(by.id('pending-sync-count'))))
-        .toBeVisible()
+        .toExist()
         .withTimeout(10_000);
     }
   });

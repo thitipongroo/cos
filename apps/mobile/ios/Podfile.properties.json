@@ -5,5 +5,7 @@
   "expo.inlineModules.xcodeProjectTargets": "{\"mainTarget\":\"COS\",\"targets\":[]}",
   "ios.forceStaticLinking": "[]",
   "apple.privacyManifestAggregationEnabled": "true",
-  "EXPO_USE_PRECOMPILED_MODULES": "true"
+  "EXPO_USE_PRECOMPILED_MODULES": "false",
+  "apple.extraPods": "[]",
+  "apple.ccacheEnabled": "false"
 }
