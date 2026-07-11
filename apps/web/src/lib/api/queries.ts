@@ -89,7 +89,7 @@ export function useExecutiveDashboard(projectIds: string[], dateRange: string) {
     enabled: projectIds.length > 0 && tenantId !== '',
     queryFn: () => {
       const params = new URLSearchParams({ tenantId, dateRange });
-      projectIds.forEach((id) => params.append('projectIds[]', id));
+      projectIds.forEach((id) => params.append('projectIds', id));
       return api<ExecutiveDashboardRow[]>(`/analytics/executive?${params.toString()}`);
     },
   });

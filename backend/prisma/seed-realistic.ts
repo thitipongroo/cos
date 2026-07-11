@@ -282,22 +282,22 @@ const MATERIALS = [
 const M = (k: string): string => uid(`material/${k}`);
 
 const WEATHER = [
-  'Clear',
-  'Partly cloudy',
-  'Hot and humid',
-  'Overcast',
-  'Afternoon thunderstorm',
-  'Light rain',
+  'แจ่มใส',
+  'มีเมฆบางส่วน',
+  'ร้อนชื้น',
+  'ครึ้มฟ้าครึ้มฝน',
+  'ฝนฟ้าคะนองช่วงบ่าย',
+  'ฝนตกเล็กน้อย',
 ];
 const TRADES = [
-  'Steel Fixer',
-  'Mason',
-  'Carpenter',
-  'Electrician',
-  'Plumber',
-  'General Labour',
-  'Welder',
-  'Painter',
+  'ช่างเหล็ก',
+  'ช่างปูน',
+  'ช่างไม้',
+  'ช่างไฟฟ้า',
+  'ช่างประปา',
+  'กรรมกรทั่วไป',
+  'ช่างเชื่อม',
+  'ช่างสี',
 ];
 
 // Worker pool (shared; allocated across projects).
@@ -435,14 +435,18 @@ async function run(): Promise<void> {
       await tx.$executeRawUnsafe(
         `DELETE FROM equipment_telemetry.equipment_utilization WHERE tenant_id = '${TENANT_ID}'`,
       );
+      // Full reset of this tenant's domain rows so re-runs pick up edited (e.g. Thai) content —
+      // deterministic-UUID rows are otherwise kept by ON CONFLICT DO NOTHING.
+      await wipeTenant(tx);
       await seedMasterData(tx);
       await seedVendorsMaterials(tx);
       await seedWorkersEquipment(tx);
       for (const p of PROJECTS) await seedProject(tx, p);
+      await seedCrm(tx);
       await seedNotifications(tx);
       await seedAiReports(tx);
     },
-    { timeout: 120_000 },
+    { timeout: 180_000 },
   );
 
   logger.info('seed-realistic: complete');
@@ -700,38 +704,129 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   }
 
   // Procurement chain — 3 POs (concrete, rebar, formwork) per project with delivery + invoice.
+  // Refresh this project's transactional procurement + finance rows so re-runs pick up updated
+  // volumes (deterministic-UUID rows would otherwise be kept by ON CONFLICT DO NOTHING).
+  await tx.$executeRawUnsafe(`DELETE FROM finance.payments WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.invoices WHERE po_id IN (SELECT po_id FROM procurement.purchase_orders WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.deliveries WHERE po_id IN (SELECT po_id FROM procurement.purchase_orders WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.po_line_items WHERE po_id IN (SELECT po_id FROM procurement.purchase_orders WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(`DELETE FROM finance.cost_transactions WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(`DELETE FROM procurement.purchase_orders WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.quotations WHERE rfq_id IN (SELECT rfq_id FROM procurement.rfqs WHERE project_id = '${pid}')`,
+  );
+  await tx.$executeRawUnsafe(`DELETE FROM procurement.rfqs WHERE project_id = '${pid}'`);
+  await tx.$executeRawUnsafe(
+    `DELETE FROM procurement.purchase_requests WHERE project_id = '${pid}'`,
+  );
   let committed = 0,
     actual = 0;
-  const poDefs = [
+  // Volumes reflect ~1 month of substructure/superstructure works so committed/actual read as a
+  // progressed month (most delivered + invoiced, several paid; a couple still in transit).
+  const poDefs: {
+    key: string;
+    vendor: string;
+    mat: string;
+    qty: number;
+    unit: string;
+    price: number;
+    days: number;
+    delivered: boolean;
+    paid: boolean;
+  }[] = [
     {
       key: 'concrete',
       vendor: 'crm',
       mat: 'rmc',
-      qty: Math.round(180 * scale),
+      qty: Math.round(3200 * scale),
       unit: 'M3',
       price: 2650,
-      days: 4,
+      days: 3,
       delivered: true,
+      paid: true,
     },
     {
       key: 'rebar',
       vendor: 'millcon',
       mat: 'db16',
-      qty: Math.round(45 * scale),
+      qty: Math.round(340 * scale),
       unit: 'TON',
       price: 24500,
-      days: 9,
+      days: 6,
       delivered: true,
+      paid: true,
+    },
+    {
+      key: 'rebar2',
+      vendor: 'millcon',
+      mat: 'db12',
+      qty: Math.round(180 * scale),
+      unit: 'TON',
+      price: 23800,
+      days: 8,
+      delivered: true,
+      paid: true,
+    },
+    {
+      key: 'cement',
+      vendor: 'insee',
+      mat: 'cement',
+      qty: Math.round(9500 * scale),
+      unit: 'BAG',
+      price: 185,
+      days: 4,
+      delivered: true,
+      paid: true,
     },
     {
       key: 'formwork',
       vendor: 'scg',
       mat: 'ply',
-      qty: Math.round(1200 * scale),
+      qty: Math.round(8500 * scale),
       unit: 'M2',
       price: 320,
-      days: 6,
+      days: 5,
+      delivered: true,
+      paid: false,
+    },
+    {
+      key: 'block',
+      vendor: 'scg',
+      mat: 'block',
+      qty: Math.round(22000 * scale),
+      unit: 'UNIT',
+      price: 42,
+      days: 11,
+      delivered: true,
+      paid: false,
+    },
+    {
+      key: 'formwork2',
+      vendor: 'scg',
+      mat: 'ply',
+      qty: Math.round(4200 * scale),
+      unit: 'M2',
+      price: 325,
+      days: 14,
       delivered: false,
+      paid: false,
+    },
+    {
+      key: 'sand',
+      vendor: 'crm',
+      mat: 'sand',
+      qty: Math.round(1800 * scale),
+      unit: 'M3',
+      price: 480,
+      days: 16,
+      delivered: false,
+      paid: false,
     },
   ];
   for (const po of poDefs) {
@@ -741,17 +836,17 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     const total = po.qty * po.price;
     const orderedAt = addDays(p.start, po.days);
     await tx.$executeRaw`INSERT INTO procurement.purchase_requests (pr_id, project_id, tenant_id, pr_number, status, requested_by, required_date)
-      VALUES (${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PR-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, 'PO_CREATED', ${U('proc')}::uuid, ${addDays(orderedAt, 10)}::date)
+      VALUES (${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PR-${p.code}-${po.key.toUpperCase()}`}, 'PO_CREATED', ${U('proc')}::uuid, ${addDays(orderedAt, 10)}::date)
       ON CONFLICT (pr_id) DO NOTHING`;
     await tx.$executeRaw`INSERT INTO procurement.rfqs (rfq_id, pr_id, project_id, tenant_id, rfq_number, status, deadline, created_by)
-      VALUES (${rfqId}::uuid, ${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`RFQ-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, 'AWARDED', ${ts(addDays(orderedAt, 3), '17:00')}::timestamptz, ${U('proc')}::uuid)
+      VALUES (${rfqId}::uuid, ${prId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`RFQ-${p.code}-${po.key.toUpperCase()}`}, 'AWARDED', ${ts(addDays(orderedAt, 3), '17:00')}::timestamptz, ${U('proc')}::uuid)
       ON CONFLICT (rfq_id) DO NOTHING`;
     await tx.$executeRaw`INSERT INTO procurement.quotations (quotation_id, rfq_id, vendor_id, tenant_id, total_amount, currency_code, validity_days, submitted_at, is_selected)
       VALUES (${uid(`quo/${p.key}/${po.key}`)}::uuid, ${rfqId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, 30, ${ts(addDays(orderedAt, 2), '11:00')}::timestamptz, true)
       ON CONFLICT (quotation_id) DO NOTHING`;
     const poStatus = po.delivered ? 'INVOICED' : 'ACKNOWLEDGED';
     await tx.$executeRaw`INSERT INTO procurement.purchase_orders (po_id, rfq_id, vendor_id, project_id, tenant_id, po_number, status, total_amount, currency_code, delivery_date, created_by)
-      VALUES (${poId}::uuid, ${rfqId}::uuid, ${V(po.vendor)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PO-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, ${poStatus}, ${total}, ${THB}, ${addDays(orderedAt, 12)}::date, ${U('procmgr')}::uuid)
+      VALUES (${poId}::uuid, ${rfqId}::uuid, ${V(po.vendor)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${`PO-${p.code}-${po.key.toUpperCase()}`}, ${poStatus}, ${total}, ${THB}, ${addDays(orderedAt, 12)}::date, ${U('procmgr')}::uuid)
       ON CONFLICT (po_id) DO NOTHING`;
     await tx.$executeRaw`INSERT INTO procurement.po_line_items (line_id, po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
       VALUES (${uid(`poli/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TENANT_ID}::uuid, NULL, ${MATERIALS.find((m) => m.key === po.mat)?.name ?? po.key}, ${po.qty}, ${po.unit}, ${po.price}, ${total})
@@ -764,19 +859,19 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     if (po.delivered) {
       const invId = uid(`inv/${p.key}/${po.key}`);
       await tx.$executeRaw`INSERT INTO procurement.deliveries (delivery_id, po_id, tenant_id, delivery_note, delivered_at, received_by, notes)
-        VALUES (${uid(`del/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TENANT_ID}::uuid, ${`DN-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, ${ts(addDays(orderedAt, 12), '10:30')}::timestamptz, ${U(p.se)}::uuid, 'Received in full, quantity verified')
+        VALUES (${uid(`del/${p.key}/${po.key}`)}::uuid, ${poId}::uuid, ${TENANT_ID}::uuid, ${`DN-${p.code}-${po.key.toUpperCase()}`}, ${ts(addDays(orderedAt, 12), '10:30')}::timestamptz, ${U(p.se)}::uuid, 'รับครบตามจำนวน ตรวจสอบปริมาณเรียบร้อย')
         ON CONFLICT (delivery_id) DO NOTHING`;
       await tx.$executeRaw`INSERT INTO procurement.invoices (invoice_id, po_id, vendor_id, tenant_id, invoice_number, amount, currency_code, invoice_date, due_date, status)
-        VALUES (${invId}::uuid, ${poId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${`INV-${p.code}-${po.key.slice(0, 3).toUpperCase()}`}, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${addDays(orderedAt, 44)}::date, 'APPROVED')
+        VALUES (${invId}::uuid, ${poId}::uuid, ${V(po.vendor)}::uuid, ${TENANT_ID}::uuid, ${`INV-${p.code}-${po.key.toUpperCase()}`}, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${addDays(orderedAt, 44)}::date, 'APPROVED')
         ON CONFLICT (invoice_id) DO NOTHING`;
       actual += total;
       await tx.$executeRaw`INSERT INTO finance.cost_transactions (transaction_id, project_id, tenant_id, source_type, source_id, amount, currency_code, transaction_date, description, recorded_by)
         VALUES (${uid(`ct-inv/${p.key}/${po.key}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, 'INVOICE'::finance."CostSourceType", ${invId}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 14)}::date, ${`Actual: ${po.key} delivered`}, ${U('fin')}::uuid)
         ON CONFLICT (transaction_id) DO NOTHING`;
-      // payment for the concrete invoice only (rest outstanding)
-      if (po.key === 'concrete') {
+      // Payment recorded for the paid invoices (rest remain outstanding / AP queue).
+      if (po.paid) {
         await tx.$executeRaw`INSERT INTO finance.payments (payment_id, invoice_id, project_id, tenant_id, amount, currency_code, payment_date, payment_reference, status, recorded_by)
-          VALUES (${uid(`pay/${p.key}/${po.key}`)}::uuid, ${invId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 20)}::date, ${`TT-${p.code}-001`}, 'PROCESSED'::finance."PaymentStatus", ${U('fin')}::uuid)
+          VALUES (${uid(`pay/${p.key}/${po.key}`)}::uuid, ${invId}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${total}, ${THB}, ${addDays(orderedAt, 20)}::date, ${`TT-${p.code}-${po.key.toUpperCase()}`}, 'PROCESSED'::finance."PaymentStatus", ${U('fin')}::uuid)
           ON CONFLICT (payment_id) DO NOTHING`;
       }
     }
@@ -785,11 +880,11 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
 
   // Tasks (a handful with progress).
   const taskDefs = [
-    ['Pile foundation - Zone A', 'FOUNDATION', 'COMPLETED', 100],
-    ['Pile cap & tie beam', 'FOUNDATION', 'IN_PROGRESS', 65],
-    ['Ground floor columns', 'STRUCTURE', 'IN_PROGRESS', 40],
-    ['Basement waterproofing', 'STRUCTURE', 'NOT_STARTED', 0],
-    ['Temporary electrical supply', 'MEP', 'COMPLETED', 100],
+    ['งานเสาเข็ม โซน A', 'FOUNDATION', 'COMPLETED', 100],
+    ['ฐานรากและคานคอดิน', 'FOUNDATION', 'IN_PROGRESS', 65],
+    ['เสาคอนกรีตชั้นล่าง', 'STRUCTURE', 'IN_PROGRESS', 40],
+    ['งานกันซึมชั้นใต้ดิน', 'STRUCTURE', 'NOT_STARTED', 0],
+    ['ระบบไฟฟ้าชั่วคราวหน้างาน', 'MEP', 'COMPLETED', 100],
   ] as const;
   for (let ti = 0; ti < taskDefs.length; ti++) {
     const [tname, wt, status, prog] = taskDefs[ti];
@@ -806,20 +901,19 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   // Daily site reports across the ~1-month window (weekdays).
   const days = workdays(addDays(p.start, 1), SEED_END);
   const summaries = [
-    'Excavation ongoing at zone A; pile rig operating on schedule.',
-    'Pile cap reinforcement fixed; concrete pour scheduled tomorrow.',
-    'Column formwork erected on ground floor; QC checked rebar.',
-    'Concrete delivered and poured for slab section B; cube samples taken.',
-    'Masonry work progressing on level 1; MEP conduit first-fix started.',
-    'Backfill and compaction completed at north side; density test passed.',
-    'Steel delivery received and stacked; formwork stripping on columns.',
+    'ขุดดินโซน A ต่อเนื่อง เครื่องเจาะเสาเข็มทำงานตามแผน',
+    'ผูกเหล็กฐานรากเสร็จ เตรียมเทคอนกรีตวันพรุ่งนี้',
+    'ตั้งแบบเสาชั้นล่าง QC ตรวจเหล็กเสริมเรียบร้อย',
+    'เทคอนกรีตพื้นส่วน B และเก็บตัวอย่างลูกปูนทดสอบ',
+    'งานก่ออิฐชั้น 1 คืบหน้า เริ่มเดินท่อร้อยสายระบบ MEP',
+    'ถมดินบดอัดฝั่งทิศเหนือเสร็จ ผ่านการทดสอบความหนาแน่น',
+    'รับเหล็กเข้าไซต์และจัดเก็บ ถอดแบบเสาบางส่วน',
   ];
   for (let di = 0; di < days.length; di++) {
     const day = days[di];
     const rid = uid(`report/${p.key}/${day}`);
     const manpower = 32 + ((di * 7) % 28);
-    const blockers =
-      di % 9 === 4 ? 'Ready-mix concrete delivery delayed 2 hours due to traffic.' : null;
+    const blockers = di % 9 === 4 ? 'คอนกรีตผสมเสร็จส่งล่าช้า 2 ชั่วโมง เนื่องจากการจราจร' : null;
     await tx.$executeRaw`INSERT INTO site_ops.site_reports (report_id, project_id, tenant_id, report_date, submitted_by, status, summary, weather, manpower_count, client_submitted_at, latitude, longitude, blockers)
       VALUES (${rid}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${day}::date, ${U(p.se)}::uuid, 'SUBMITTED', ${summaries[di % summaries.length]}, ${WEATHER[di % WEATHER.length]}, ${manpower}, ${ts(day, '17:30')}::timestamptz, ${p.lat}, ${p.lng}, ${blockers})
       ON CONFLICT (report_id) DO NOTHING`;
@@ -834,16 +928,16 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
 
   // Issues (mix of open/resolved).
   const issueDefs = [
-    ['Rebar spacing exceeds tolerance at grid C3', 'Quality', 'MEDIUM', 'RESOLVED', 'DEFECT'],
-    ['Water seepage in basement pit', 'Design', 'HIGH', 'IN_PROGRESS', 'DEFECT'],
-    ['Late formwork delivery affecting slab pour', 'Delay', 'MEDIUM', 'OPEN', 'GENERAL'],
-    ['Damaged tiles found in delivery batch', 'Material', 'LOW', 'RESOLVED', 'GENERAL'],
-    ['Missing edge protection on level 2', 'Safety', 'HIGH', 'OPEN', 'PUNCH'],
+    ['ระยะเหล็กเสริมเกินพิกัดที่แนวเสา C3', 'Quality', 'MEDIUM', 'RESOLVED', 'DEFECT'],
+    ['มีน้ำซึมบริเวณบ่อพักชั้นใต้ดิน', 'Design', 'HIGH', 'IN_PROGRESS', 'DEFECT'],
+    ['ไม้แบบส่งล่าช้า กระทบการเทพื้น', 'Delay', 'MEDIUM', 'OPEN', 'GENERAL'],
+    ['พบกระเบื้องชำรุดในล็อตที่ส่งมอบ', 'Material', 'LOW', 'RESOLVED', 'GENERAL'],
+    ['ขาดราวกันตกบริเวณชั้น 2', 'Safety', 'HIGH', 'OPEN', 'PUNCH'],
   ] as const;
   for (let ai = 0; ai < issueDefs.length; ai++) {
     const [title, , sev, status, itype] = issueDefs[ai];
     await tx.$executeRaw`INSERT INTO site_ops.issues (issue_id, project_id, tenant_id, title, description, severity, status, assigned_to, issue_type, client_submitted_at, latitude, longitude)
-      VALUES (${uid(`issue/${p.key}/${ai}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${title}, ${`${title}. Reported during daily inspection.`}, ${sev}, ${status}, ${U(p.se)}::uuid, ${itype}, ${ts(addDays(p.start, 5 + ai * 3), '14:00')}::timestamptz, ${p.lat}, ${p.lng})
+      VALUES (${uid(`issue/${p.key}/${ai}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${title}, ${`${title} — พบระหว่างการตรวจงานประจำวัน`}, ${sev}, ${status}, ${U(p.se)}::uuid, ${itype}, ${ts(addDays(p.start, 5 + ai * 3), '14:00')}::timestamptz, ${p.lat}, ${p.lng})
       ON CONFLICT (issue_id) DO NOTHING`;
   }
 
@@ -857,7 +951,7 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   for (let ni = 0; ni < inspNames.length; ni++) {
     const status = ni === 1 ? 'FAILED' : 'PASSED';
     await tx.$executeRaw`INSERT INTO site_ops.inspections (inspection_id, project_id, tenant_id, checklist_id, status, inspected_by, inspected_at, notes, issue_severity)
-      VALUES (${uid(`insp/${p.key}/${ni}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${uid(`chk/${p.key}/${ni}`)}::uuid, ${status}, ${U(p.se)}::uuid, ${ts(addDays(p.start, 8 + ni * 4), '11:00')}::timestamptz, ${status === 'FAILED' ? 'Slump test out of range; re-pour required.' : 'All checklist items satisfied.'}, ${status === 'FAILED' ? 'HIGH' : null})
+      VALUES (${uid(`insp/${p.key}/${ni}`)}::uuid, ${pid}::uuid, ${TENANT_ID}::uuid, ${uid(`chk/${p.key}/${ni}`)}::uuid, ${status}, ${U(p.se)}::uuid, ${ts(addDays(p.start, 8 + ni * 4), '11:00')}::timestamptz, ${status === 'FAILED' ? 'ค่ายุบตัวคอนกรีตเกินพิกัด ต้องเทใหม่' : 'ผ่านทุกรายการตรวจสอบ'}, ${status === 'FAILED' ? 'HIGH' : null})
       ON CONFLICT (inspection_id) DO NOTHING`;
   }
 
@@ -871,7 +965,7 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
 
   // Safety incident (one acknowledged).
   await tx.$executeRaw`INSERT INTO site_ops.incidents (incident_id, tenant_id, project_id, incident_type, severity, reported_by, status, acknowledged_by, acknowledged_at, latitude, longitude)
-    VALUES (${uid(`inc/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'Near Miss', 'MEDIUM', ${U(p.se)}::uuid, 'IN_PROGRESS', ${U('safety')}::uuid, ${ts(addDays(p.start, 12), '15:20')}::timestamptz, ${p.lat}, ${p.lng})
+    VALUES (${uid(`inc/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'เกือบเกิดอุบัติเหตุ (Near Miss)', 'MEDIUM', ${U(p.se)}::uuid, 'IN_PROGRESS', ${U('safety')}::uuid, ${ts(addDays(p.start, 12), '15:20')}::timestamptz, ${p.lat}, ${p.lng})
     ON CONFLICT (incident_id) DO NOTHING`;
 
   // Workforce allocation + attendance + timesheets for a subset of workers.
@@ -915,8 +1009,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'exec',
       ch: 'IN_APP',
       evt: 'finance.variance.alert.v1',
-      subj: 'Budget variance alert — Rama IX Corporate Tower',
-      body: 'Actual cost has reached 82% of the allocated concrete budget line.',
+      subj: 'แจ้งเตือนงบประมาณเกินเกณฑ์ — Rama IX Corporate Tower',
+      body: 'ค่าใช้จ่ายจริงถึง 82% ของงบหมวดคอนกรีตที่จัดสรรไว้',
       status: 'READ',
     },
     {
@@ -924,8 +1018,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'pm2',
       ch: 'IN_APP',
       evt: 'site.inspection.failed.v1',
-      subj: 'Inspection failed — Concrete Pour',
-      body: 'Slump test out of range on slab section B. Re-pour required.',
+      subj: 'ตรวจงานไม่ผ่าน — การเทคอนกรีต',
+      body: 'ค่ายุบตัวคอนกรีตพื้นส่วน B เกินพิกัด ต้องเทใหม่',
       status: 'SENT',
     },
     {
@@ -933,8 +1027,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'safety',
       ch: 'IN_APP',
       evt: 'site.incident.reported.v1',
-      subj: 'Safety near-miss reported',
-      body: 'A near-miss incident was reported at The Sukhumvit 45 Residences.',
+      subj: 'แจ้งเหตุเกือบเกิดอุบัติเหตุ',
+      body: 'มีการแจ้งเหตุเกือบเกิดอุบัติเหตุที่โครงการ The Sukhumvit 45 Residences',
       status: 'READ',
     },
     {
@@ -942,8 +1036,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'proc',
       ch: 'EMAIL',
       evt: 'procurement.po.status_changed.v1',
-      subj: 'PO acknowledged by vendor',
-      body: 'Millcon Steel acknowledged PO-SKV45-REB.',
+      subj: 'ผู้ขายยืนยันรับใบสั่งซื้อ',
+      body: 'Millcon Steel ยืนยันรับใบสั่งซื้อ PO-SKV45-REBAR',
       status: 'SENT',
     },
     {
@@ -951,8 +1045,8 @@ async function seedNotifications(tx: Tx): Promise<void> {
       to: 'fin',
       ch: 'IN_APP',
       evt: 'procurement.invoice.received.v1',
-      subj: 'New vendor invoice received',
-      body: 'CPAC invoice INV-R9CT-CON is ready for approval.',
+      subj: 'ได้รับใบแจ้งหนี้จากผู้ขายรายใหม่',
+      body: 'ใบแจ้งหนี้ CPAC เลขที่ INV-R9CT-CONCRETE รอการอนุมัติ',
       status: 'PENDING',
     },
   ];
@@ -967,10 +1061,10 @@ async function seedAiReports(tx: Tx): Promise<void> {
   for (const p of PROJECTS.slice(0, 3)) {
     const pid = uid(`project/${p.key}`);
     const content = {
-      summary: `Over the past month, ${p.name} progressed steadily. Foundation works are largely complete and superstructure has commenced. Procurement of concrete and steel is on track; one inspection failure (concrete pour) was remediated.`,
+      summary: `เดือนที่ผ่านมา โครงการ ${p.name} มีความคืบหน้าอย่างต่อเนื่อง งานฐานรากเสร็จเป็นส่วนใหญ่และเริ่มงานโครงสร้างส่วนบนแล้ว การจัดซื้อคอนกรีตและเหล็กเป็นไปตามแผน มีการตรวจงานไม่ผ่าน 1 ครั้ง (การเทคอนกรีต) ซึ่งได้แก้ไขเรียบร้อยแล้ว`,
       key_issues: [
-        'Water seepage in basement pit under remediation',
-        'Formwork delivery delay affecting one slab pour',
+        'อยู่ระหว่างแก้ไขปัญหาน้ำซึมบริเวณบ่อพักชั้นใต้ดิน',
+        'ไม้แบบส่งล่าช้า กระทบการเทพื้น 1 จุด',
       ],
       confidence: 0.82,
       data_gaps: [],
@@ -979,6 +1073,159 @@ async function seedAiReports(tx: Tx): Promise<void> {
       VALUES (${uid(`ai/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'SITE_SUMMARY'::ai.report_type_enum, ${JSON.stringify(content)}::jsonb, 0.82, 'gpt-4o', 1450, ${U('pm1')}::uuid)
       ON CONFLICT (report_id) DO NOTHING`;
   }
+}
+
+// Delete this tenant's domain rows in FK-safe (children-first) order.
+async function wipeTenant(tx: Tx): Promise<void> {
+  const tables = [
+    'site_ops.manpower_logs',
+    'finance.payments',
+    'procurement.invoices',
+    'procurement.deliveries',
+    'procurement.po_line_items',
+    'finance.cost_transactions',
+    'procurement.purchase_orders',
+    'procurement.quotations',
+    'procurement.rfqs',
+    'procurement.purchase_requests',
+    'site_ops.issues',
+    'site_ops.inspections',
+    'site_ops.incidents',
+    'site_ops.material_consumptions',
+    'site_ops.permits',
+    'site_ops.site_reports',
+    'projects.tasks',
+    'workforce_telemetry.attendance_logs',
+    'workforce_telemetry.timesheets',
+    'workforce.project_workforce',
+    'equipment_telemetry.equipment_utilization',
+    'equipment.equipment_maintenance',
+    'equipment.equipment_assignments',
+    'boq.boq_items',
+    'boq.boq_categories',
+    'boq.boq_versions',
+    'projects.rooms',
+    'projects.floors',
+    'projects.buildings',
+    'projects.project_members',
+    'finance.budget_lines',
+    'finance.project_budgets',
+    'finance.contracts',
+    'finance.customers',
+    'crm.contacts',
+    'crm.opportunities',
+    'crm.leads',
+    'notifications.notifications',
+    'ai.ai_generated_reports',
+    'workforce.workers',
+    'equipment.equipment',
+    'procurement.materials',
+    'projects.projects',
+  ];
+  for (const t of tables) {
+    await tx.$executeRawUnsafe(`DELETE FROM ${t} WHERE tenant_id = '${TENANT_ID}'`);
+  }
+}
+
+// CRM pipeline (sales) — leads → opportunities → contacts. Thai company/contact details.
+async function seedCrm(tx: Tx): Promise<void> {
+  const leads = [
+    {
+      key: 'l1',
+      contact: 'คุณสมชาย วัฒนกิจ',
+      company: 'บริษัท ริเวอร์ไซด์ ดีเวลลอปเมนท์ จำกัด',
+      status: 'QUALIFIED',
+      source: 'อ้างอิงจากลูกค้าเดิม',
+    },
+    {
+      key: 'l2',
+      contact: 'คุณอรุณี พาณิชย์',
+      company: 'บริษัท กรีนพาร์ค พร็อพเพอร์ตี้ จำกัด',
+      status: 'NEW',
+      source: 'งานแสดงสินค้าอสังหาริมทรัพย์',
+    },
+    {
+      key: 'l3',
+      contact: 'คุณวีรพงษ์ ศรีสุข',
+      company: 'ห้างหุ้นส่วนจำกัด เมืองทองการโยธา',
+      status: 'QUALIFIED',
+      source: 'เว็บไซต์บริษัท',
+    },
+    {
+      key: 'l4',
+      contact: 'คุณนภัสสร ทองใบ',
+      company: 'บริษัท เดอะเมทริกซ์ เรสซิเดนซ์ จำกัด',
+      status: 'NEW',
+      source: 'โทรศัพท์เข้าสอบถาม',
+    },
+    {
+      key: 'l5',
+      contact: 'คุณกิตติ ชาญวิทย์',
+      company: 'บริษัท อีสเทิร์น โลจิสติกส์ จำกัด',
+      status: 'DISQUALIFIED',
+      source: 'อีเมล',
+    },
+  ];
+  for (const l of leads) {
+    await tx.$executeRaw`INSERT INTO crm.leads (lead_id, tenant_id, contact_name, company, status, source, assigned_to, created_by)
+      VALUES (${uid(`lead/${l.key}`)}::uuid, ${TENANT_ID}::uuid, ${l.contact}, ${l.company}, ${l.status}, ${l.source}, ${U('crm')}::uuid, ${U('crm')}::uuid)
+      ON CONFLICT (lead_id) DO NOTHING`;
+  }
+  const opps = [
+    {
+      key: 'o1',
+      lead: 'l1',
+      title: 'อาคารชุดพักอาศัยริมแม่น้ำ 28 ชั้น',
+      value: 520_000_000,
+      status: 'OPEN',
+      close: '2026-09-30',
+    },
+    {
+      key: 'o2',
+      lead: 'l3',
+      title: 'อาคารสำนักงานให้เช่า 12 ชั้น ย่านรัชดาภิเษก',
+      value: 180_000_000,
+      status: 'WON',
+      close: '2026-06-15',
+    },
+    {
+      key: 'o3',
+      lead: 'l1',
+      title: 'งานปรับปรุงสโมสรและสระว่ายน้ำส่วนกลาง',
+      value: 35_000_000,
+      status: 'OPEN',
+      close: '2026-10-31',
+    },
+  ];
+  for (const o of opps) {
+    await tx.$executeRaw`INSERT INTO crm.opportunities (opportunity_id, tenant_id, lead_id, title, value, status, expected_close_date, assigned_to, created_by)
+      VALUES (${uid(`opp/${o.key}`)}::uuid, ${TENANT_ID}::uuid, ${uid(`lead/${o.lead}`)}::uuid, ${o.title}, ${o.value}, ${o.status}, ${o.close}::date, ${U('crm')}::uuid, ${U('crm')}::uuid)
+      ON CONFLICT (opportunity_id) DO NOTHING`;
+  }
+  const contacts = [
+    {
+      key: 'c1',
+      lead: 'l1',
+      name: 'คุณสมชาย วัฒนกิจ',
+      email: 'somchai@riverside-dev.co.th',
+      phone: '+66818880001',
+      role: 'กรรมการผู้จัดการ',
+    },
+    {
+      key: 'c2',
+      lead: 'l3',
+      name: 'คุณวีรพงษ์ ศรีสุข',
+      email: 'weerapong@mtcivil.co.th',
+      phone: '+66818880003',
+      role: 'ผู้จัดการโครงการ',
+    },
+  ];
+  for (const c of contacts) {
+    await tx.$executeRaw`INSERT INTO crm.contacts (contact_id, tenant_id, lead_id, name, email, phone, role, created_by)
+      VALUES (${uid(`contact/${c.key}`)}::uuid, ${TENANT_ID}::uuid, ${uid(`lead/${c.lead}`)}::uuid, ${c.name}, ${c.email}, ${c.phone}, ${c.role}, ${U('crm')}::uuid)
+      ON CONFLICT (contact_id) DO NOTHING`;
+  }
+  logger.info({ leads: leads.length, opps: opps.length }, 'seed-realistic: CRM done');
 }
 
 run()

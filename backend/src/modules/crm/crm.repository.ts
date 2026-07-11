@@ -88,7 +88,7 @@ export class CrmRepository {
         tx.$queryRaw<LeadRow[]>`
         SELECT * FROM crm.leads
         WHERE tenant_id = ${this.tenantId}::uuid AND deleted_at IS NULL
-          AND (${status ?? null} IS NULL OR status = ${status ?? null})
+          AND (${status ?? null}::text IS NULL OR status = ${status ?? null}::text)
         ORDER BY created_at DESC
       `,
     );
@@ -146,7 +146,7 @@ export class CrmRepository {
         tx.$queryRaw<OpportunityRow[]>`
         SELECT * FROM crm.opportunities
         WHERE tenant_id = ${this.tenantId}::uuid AND deleted_at IS NULL
-          AND (${status ?? null} IS NULL OR status = ${status ?? null})
+          AND (${status ?? null}::text IS NULL OR status = ${status ?? null}::text)
         ORDER BY created_at DESC
       `,
     );
