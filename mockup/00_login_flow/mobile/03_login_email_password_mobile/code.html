@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+<!DOCTYPE html><html lang="en" class="dark"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{try{
         tailwind.config = {
           darkMode: "class",
           theme: {
@@ -54,7 +54,7 @@
                       "surface-dim": "#031427",
                       "secondary-container": "#0053db",
                       "surface-variant": "#26364a",
-                      "background": "#031427",
+                      "background": "#000f21",
                       "tertiary-fixed": "#acedff",
                       "secondary-fixed": "#dbe1ff",
                       "surface-container-highest": "#26364a"
@@ -106,86 +106,89 @@
             },
           },
         }
-    }catch(_e){}</script></head><body class="antialiased text-on-surface">
+    }catch(_e){}}catch(_e){}</script></head><body class="antialiased text-on-surface bg-surface-container-lowest">
 
-    <!-- TopAppBar (Suppressed based on Transactional Flow, but used as branding container per prompt) -->
-    <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum bg-surface border-b border-outline-variant">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum bg-surface-container-lowest border-b border-outline-variant/30">
         <div class="flex items-center gap-3">
-            <span class="material-symbols-outlined text-primary" data-icon="construction" data-original-icon="construction">construction</span>
-            <h1 class="font-headline-h1 text-headline-h1 tracking-tighter text-primary">CONSTRUCTION OS</h1>
+            <span class="material-symbols-outlined text-mobile-primary" data-icon="construction">construction</span>
+            <h1 class="font-headline-h1 text-headline-h1 tracking-tighter text-on-surface">CONSTRUCTION OS</h1>
         </div>
         <button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors active:scale-95 duration-100 rounded-lg">
-            <span class="material-symbols-outlined" data-icon="settings_remote" data-original-icon="settings_remote">settings_remote</span>
+            <span class="material-symbols-outlined" data-icon="settings_remote">settings_remote</span>
         </button>
     </header>
 
     <main class="min-h-screen pt-20 pb-32 px-mobile-edge-margin flex flex-col justify-center">
         <!-- Brand Identity -->
-        <div class="flex flex-col items-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div class="w-24 h-24 mb-6 rounded-2xl overflow-hidden shadow-2xl">
+        <div class="flex flex-col items-center mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div class="w-24 h-24 mb-6 rounded-xl overflow-hidden shadow-2xl border border-outline-variant/20">
                 <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqOgkUk7EHChktEjBYoj6QkY5eyJ0gO3mmpHcIUwTrtenMG-kj5oNrjyAHK9s7vJRpX7im5u3l_Avc3FCa5qX_6d41Er35Xt4jGpdLnvXdbcVGuHLyvW-WEC98mQ2u6Z2xN4Bjli9DD_KPyKzdPbu7_rl7b6fwvBSiZ6CipSrJ-pJuulJSuz9VWcBSDjs7jK6BfiEUHIUpE3Wr3afxPPb0FIW5eVpbSFLYD-Z6KeZypy4SQCcmonM17ZObbq9_tbdMJic" class="w-full h-full object-cover">
             </div>
             <h2 class="font-mobile-title text-mobile-title text-center text-on-surface">Secure Access</h2>
-            <p class="font-body-md text-body-md text-on-surface-variant text-center mt-2">Manage your fleet and projects in real-time.</p>
+            <p class="font-body-md text-body-md text-on-surface-variant text-center mt-2 max-w-[280px]">Manage your fleet and projects in real-time.</p>
         </div>
 
-        <!-- Login Form -->
-        <form class="space-y-6 max-w-md mx-auto w-full">
-            <div class="space-y-2">
-                <label for="email" class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider block ml-1">Email Address</label>
-                <div class="relative flex items-center bg-surface-container border border-outline-variant rounded-xl input-focus-ring transition-all group">
-                    <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-tertiary" data-icon="mail">mail</span>
-                    <input type="email" id="email" placeholder="name@company.com" class="w-full h-touch-target-optimum bg-transparent border-none pl-12 pr-4 text-on-surface focus:ring-0 font-mobile-body text-mobile-body placeholder:text-outline/50">
+        <!-- Login Form Container -->
+        <div class="bg-surface-container-low border border-outline-variant/30 rounded-xl p-mobile-card-pad shadow-sm max-w-md mx-auto w-full">
+            <form class="space-y-6">
+                <div class="space-y-2">
+                    <label for="email" class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider block ml-1">Email Address</label>
+                    <div class="relative flex items-center bg-surface-container-lowest border border-outline-variant rounded-lg input-focus-ring transition-all group">
+                        <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-mobile-primary" data-icon="mail">mail</span>
+                        <input type="email" id="email" placeholder="name@company.com" class="w-full h-touch-target-optimum bg-transparent border-none pl-12 pr-4 text-on-surface focus:ring-0 font-mobile-body text-mobile-body placeholder:text-outline/50">
+                    </div>
                 </div>
-            </div>
 
-            <div class="space-y-2">
-                <label for="password" class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider block ml-1">Password</label>
-                <div class="relative flex items-center bg-surface-container border border-outline-variant rounded-xl input-focus-ring transition-all group">
-                    <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-tertiary" data-icon="lock">lock</span>
-                    <input type="password" id="password" placeholder="••••••••" class="w-full h-touch-target-optimum bg-transparent border-none pl-12 pr-12 text-on-surface focus:ring-0 font-mobile-body text-mobile-body placeholder:text-outline/50">
-                    <button type="button" class="absolute right-4 text-outline hover:text-on-surface transition-colors">
-                        <span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+                <div class="space-y-2">
+                    <label for="password" class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider block ml-1">Password</label>
+                    <div class="relative flex items-center bg-surface-container-lowest border border-outline-variant rounded-lg input-focus-ring transition-all group">
+                        <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-mobile-primary" data-icon="lock">lock</span>
+                        <input type="password" id="password" placeholder="••••••••" class="w-full h-touch-target-optimum bg-transparent border-none pl-12 pr-12 text-on-surface focus:ring-0 font-mobile-body text-mobile-body placeholder:text-outline/50">
+                        <button type="button" class="absolute right-4 text-outline hover:text-on-surface transition-colors">
+                            <span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+                        </button>
+                    </div>
+                    <div class="flex justify-end">
+                        <a href="#" class="font-body-sm text-body-sm text-mobile-primary hover:brightness-125 transition-colors">Forgot Password?</a>
+                    </div>
+                </div>
+
+                <div class="pt-2 space-y-4">
+                    <button type="submit" class="w-full h-touch-target-optimum bg-mobile-primary text-white font-headline-h3 text-headline-h3 rounded-lg shadow-lg shadow-mobile-primary/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                        Sign In
+                        <span class="material-symbols-outlined" data-icon="login">login</span>
                     </button>
-                </div>
-                <div class="flex justify-end">
-                    <a href="#" class="font-body-sm text-body-sm text-secondary hover:text-on-secondary-fixed transition-colors">Forgot Password?</a>
-                </div>
-            </div>
 
-            <div class="pt-4 space-y-4">
-                <button type="submit" class="w-full h-touch-target-optimum bg-mobile-primary text-white font-headline-h3 text-headline-h3 rounded-xl shadow-lg shadow-mobile-primary/20 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
-                    Sign In
-                    <span class="material-symbols-outlined" data-icon="login">login</span>
-                </button>
+                    <div class="flex items-center gap-4 py-2">
+                        <div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+                        <span class="font-label-tiny text-label-tiny text-outline-variant">OR</span>
+                        <div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+                    </div>
 
-                <div class="flex items-center gap-4 py-2">
-                    <div class="h-[1px] flex-1 bg-outline-variant"></div>
-                    <span class="font-label-tiny text-label-tiny text-outline-variant">OR</span>
-                    <div class="h-[1px] flex-1 bg-outline-variant"></div>
+                    <button type="button" class="w-full h-touch-target-optimum bg-surface-container border border-outline-variant/50 text-on-surface font-headline-h3 text-headline-h3 rounded-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-primary" data-icon="badge">badge</span>Login with phone (OTP)</button>
                 </div>
-
-                
-            </div>
-        </form>
+            </form>
+        </div>
 
         <!-- Security Footer -->
-        <footer class="mt-auto pt-12 flex flex-col items-center gap-2 opacity-60">
-            <div class="flex items-center gap-1.5 text-on-surface-variant">
+        <footer class="mt-auto pt-12 flex flex-col items-center gap-2">
+            <div class="flex items-center gap-1.5 text-on-surface-variant/60">
                 <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: &quot;FILL&quot; 1;" data-icon="encrypted">encrypted</span>
                 <span class="font-label-tiny text-label-tiny">AES-256 ENCRYPTED CONNECTION</span>
             </div>
-            <p class="font-body-sm text-body-sm text-on-surface-variant/50">© 2024 CONSTRUCTION OS. v4.2.1-PRO</p>
+            <p class="font-body-sm text-body-sm text-on-surface-variant/40">© 2024 CONSTRUCTION OS. v4.2.1-PRO</p>
         </footer>
     </main>
 
-    <!-- BottomNavBar (Support context) -->
-    <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-touch-target-optimum pb-safe bg-surface-container border-t border-outline-variant">
+    <!-- BottomNavBar -->
+    <nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-touch-target-optimum pb-safe bg-surface-container-lowest border-t border-outline-variant/30">
         <a href="#" class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:opacity-80 transition-opacity">
             <span class="material-symbols-outlined" data-icon="support_agent">support_agent</span>
             <span class="font-label-tiny text-label-tiny mt-1">SUPPORT</span>
         </a>
-        <a href="#" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:opacity-80 transition-opacity">
+        <a href="#" class="flex flex-col items-center justify-center bg-mobile-primary/10 text-mobile-primary rounded-full px-6 py-1 active:opacity-80 transition-opacity">
             <span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;" data-icon="shield">shield</span>
             <span class="font-label-tiny text-label-tiny mt-1">SECURITY</span>
         </a>
@@ -200,10 +203,10 @@
         const inputs = document.querySelectorAll('input');
         inputs.forEach(input => {
             input.addEventListener('focus', () => {
-                input.parentElement.classList.add('border-tertiary');
+                input.parentElement.classList.add('border-mobile-primary', 'ring-1', 'ring-mobile-primary/20');
             });
             input.addEventListener('blur', () => {
-                input.parentElement.classList.remove('border-tertiary');
+                input.parentElement.classList.remove('border-mobile-primary', 'ring-1', 'ring-mobile-primary/20');
             });
         });
 
@@ -216,10 +219,4 @@
             btn.disabled = true;
             
             setTimeout(() => {
-                btn.innerHTML = '<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span> Success';
-                btn.classList.remove('bg-mobile-primary');
-                btn.classList.add('bg-success');
-                setTimeout(() => {
-                    btn.innerHTML = originalContent;
-                    btn.classList.add('bg-mobile-primary');
-                    btn.classList.remove('bg-</script></body></html>
+                btn.innerHTML = '<span class="material-symbols-outlined" data-icon</script></body></html>
