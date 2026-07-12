@@ -387,6 +387,9 @@ services:
       - '${KEYCLOAK_PORT:-8090}:8080'
     volumes:
       - ./infrastructure/keycloak/realms:/opt/keycloak/data/import:ro
+      # Custom "cos" login theme (Path B, §20.6.1 / mockup web/03). start-dev disables theme caching,
+      # so edits under this dir are picked up on container restart without an image rebuild.
+      - ./infrastructure/keycloak/themes:/opt/keycloak/themes:ro
       - keycloak_data:/opt/keycloak/data
     depends_on:
       postgres:

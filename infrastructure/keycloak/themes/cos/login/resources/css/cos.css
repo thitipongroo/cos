@@ -1,0 +1,222 @@
+/*
+ * Construction OS — Keycloak login restyle (Path B, mockup/00_login_flow/web/03).
+ *
+ * Layers over the stock `keycloak` login theme (theme.properties parent=keycloak). Element ids
+ * (#username / #password / #kc-login / #kc-form-login) come from the inherited base login.ftl and
+ * are NOT changed here — the E2E helper depends on them. Colours are the §32.7 dark tokens:
+ *   page   #0B1020 (--cos-navy)      card   #0F172A (--cos-dark-surface / slate-900)
+ *   input  #0B1020                   accent #2563EB (--cos-blue)   focus #06B6D4 (--cos-cyan)
+ *   text   #F8FAFC                   muted  #94A3B8
+ * Selectors are intentionally broad (legacy .card-pf/.form-control/.btn-primary + generic tags) so
+ * the restyle survives minor base-theme markup differences across Keycloak patch versions.
+ */
+
+:root {
+  --cos-navy: #0b1020;
+  --cos-surface: #0f172a;
+  --cos-blue: #2563eb;
+  --cos-blue-hover: #1d4ed8;
+  --cos-cyan: #06b6d4;
+  --cos-text: #f8fafc;
+  --cos-muted: #94a3b8;
+  --cos-border: rgba(255, 255, 255, 0.1);
+}
+
+html,
+body,
+body.login-pf,
+.login-pf body {
+  background: var(--cos-navy) !important;
+  color: var(--cos-text) !important;
+  font-family: 'Inter Tight', Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+.login-pf-page {
+  padding-top: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Brand header (realm displayName "Construction OS") */
+#kc-header,
+#kc-header-wrapper {
+  color: var(--cos-text) !important;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding-bottom: 1.5rem;
+}
+
+/* The auth card */
+.card-pf,
+#kc-content,
+#kc-content-wrapper {
+  background: var(--cos-surface) !important;
+  border: 1px solid var(--cos-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+  color: var(--cos-text) !important;
+}
+
+.card-pf {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 2rem !important;
+}
+
+/* Form title → "Secure Access" (via messages override) */
+#kc-page-title {
+  color: var(--cos-text) !important;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Labels */
+label,
+.control-label,
+.pf-c-form__label,
+.pf-v5-c-form__label {
+  color: var(--cos-muted) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Inputs */
+input[type='text'],
+input[type='email'],
+input[type='password'],
+#username,
+#password,
+.form-control,
+.pf-c-form-control,
+.pf-v5-c-form-control {
+  background: var(--cos-navy) !important;
+  border: 1px solid var(--cos-border) !important;
+  border-radius: 8px !important;
+  color: var(--cos-text) !important;
+  height: 48px !important;
+  padding: 0 14px !important;
+  font-size: 14px !important;
+}
+
+input::placeholder {
+  color: rgba(148, 163, 184, 0.5) !important;
+}
+
+input[type='text']:focus,
+input[type='email']:focus,
+input[type='password']:focus,
+#username:focus,
+#password:focus,
+.form-control:focus {
+  border-color: var(--cos-cyan) !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.35) !important;
+  outline: none !important;
+}
+
+/* Primary button (Sign In) */
+#kc-login,
+input[type='submit'],
+.btn-primary,
+.pf-c-button.pf-m-primary,
+.pf-v5-c-button.pf-m-primary {
+  background: var(--cos-blue) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  height: 48px !important;
+  font-weight: 600 !important;
+  width: 100%;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.25) !important;
+  transition: background 0.15s ease;
+}
+
+#kc-login:hover,
+.btn-primary:hover {
+  background: var(--cos-blue-hover) !important;
+}
+
+/* Links (Forgot password, register, etc.) */
+a,
+#kc-registration a,
+#kc-info-wrapper a {
+  color: var(--cos-cyan) !important;
+}
+
+a:hover {
+  color: var(--cos-text) !important;
+}
+
+/* Alerts / error feedback (keep readable on dark) */
+.alert-error,
+.pf-c-alert.pf-m-danger,
+.pf-v5-c-alert.pf-m-danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+  border-radius: 8px;
+}
+
+.alert-success,
+.pf-c-alert.pf-m-success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  color: #6ee7b7 !important;
+}
+
+/* Password field: blend the reveal (eye) toggle + its input-group with the dark inputs
+   (base theme renders it as a white control button otherwise). */
+.pf-c-input-group,
+.pf-v5-c-input-group,
+.pf-c-form-control-group {
+  background: transparent !important;
+}
+
+.pf-c-button.pf-m-control,
+.pf-v5-c-button.pf-m-control,
+button[aria-label='Show password'],
+button[aria-label='Hide password'] {
+  background: var(--cos-navy) !important;
+  border: 1px solid var(--cos-border) !important;
+  border-left: none !important;
+  color: var(--cos-muted) !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+/* PatternFly draws the control button's fill/border via ::after — neutralise it so the reveal
+   toggle blends with the dark inputs instead of showing the base theme's light control surface. */
+.pf-c-button.pf-m-control::after,
+.pf-v5-c-button.pf-m-control::after,
+.pf-c-button.pf-m-control::before {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Nested form wrappers from the classic theme — flatten so the card reads as one surface. */
+#kc-form-wrapper,
+#kc-form,
+.pf-c-form,
+.pf-v5-c-form {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Checkbox row (remember me) */
+#kc-form-options,
+.checkbox label {
+  color: var(--cos-muted) !important;
+}
+
+/* Footer / locale selector */
+#kc-info,
+#kc-locale {
+  color: var(--cos-muted) !important;
+}

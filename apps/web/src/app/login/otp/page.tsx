@@ -1,48 +1,99 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { useT } from '../../../i18n';
-import {
-  COUNTRIES,
-  DEFAULT_COUNTRY_ISO2,
-  countryFromLocale,
-  findCountry,
-  toE164,
-} from '../../../lib/countries';
+import { LanguageSwitcher } from '../../../components/shell/LanguageSwitcher';
+import { COUNTRIES, DEFAULT_COUNTRY_ISO2, findCountry, toE164 } from '../../../lib/countries';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
-type Step = 'phone' | 'otp';
+const OTP_LENGTH = 6;
+const OTP_EXPIRY_SECONDS = 300; // OTP TTL 5 minutes (master Phase 2)
+const RESEND_COOLDOWN_SECONDS = 45;
+
+const SWITCHER_DARK =
+  'rounded border border-white/10 bg-white/5 px-2.5 py-1 text-tiny font-bold uppercase text-slate-300 hover:bg-white/10';
 
 /**
- * Path A login (§20.6.1) — phone + SMS OTP for field roles. The phone is entered as a country
- * (flag + E.164 dial code, defaulting to the device locale's country) plus a national number,
- * combined into E.164 before the request. Step 1 requests an OTP via the backend
- * (`POST /auth/otp/request`); step 2 submits {phoneNumber, otp} to the next-auth `otp` credentials
- * provider, which verifies against the backend and issues the Keycloak-signed session.
+ * Path A OTP verification (§20.6.1) — mockup/00_login_flow/web/02. The phone-entry step now lives on
+ * the landing (/login), which requests the passcode and hands off here with `?cc=<iso2>&n=<national>`.
+ * A direct visit without those params has no phone in flight, so we bounce back to /login. Wiring is
+ * unchanged: `POST /auth/otp/request` for resend + the next-auth `otp` credentials provider.
  */
-export default function OtpLoginPage() {
+function ArrowRightIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 12h14" />
+      <path d="m13 6 6 6-6 6" />
+    </svg>
+  );
+}
+
+function formatMMSS(total: number): string {
+  const m = Math.floor(total / 60)
+    .toString()
+    .padStart(2, '0');
+  const s = (total % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
+
+export default function OtpVerifyPage() {
   const t = useT();
-  const [step, setStep] = useState<Step>('phone');
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
   const [countryIso2, setCountryIso2] = useState(DEFAULT_COUNTRY_ISO2);
   const [nationalNumber, setNationalNumber] = useState('');
-  const [otp, setOtp] = useState('');
+  const [digits, setDigits] = useState<string[]>(() => Array<string>(OTP_LENGTH).fill(''));
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [expiry, setExpiry] = useState(OTP_EXPIRY_SECONDS);
+  const [resendIn, setResendIn] = useState(RESEND_COOLDOWN_SECONDS);
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
-  // Default the country to the device/browser locale (e.g. "th-TH" → Thailand), falling back to the
-  // home market. Runs client-side only; navigator is unavailable during SSR.
+  // The passcode is requested on the landing; arrive here with the phone in the query. Without it
+  // there is nothing to verify, so send the user back to /login to enter their number.
   useEffect(() => {
-    setCountryIso2(countryFromLocale(navigator.language));
-  }, []);
+    const params = new URLSearchParams(window.location.search);
+    const cc = params.get('cc');
+    const n = params.get('n');
+    if (cc && n && COUNTRIES.some((c) => c.iso2 === cc)) {
+      setCountryIso2(cc);
+      setNationalNumber(n);
+      setReady(true);
+    } else {
+      router.replace('/login');
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const id = setInterval(() => {
+      setExpiry((s) => (s > 0 ? s - 1 : 0));
+      setResendIn((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [ready]);
 
   const country = findCountry(countryIso2);
   const phoneNumber = toE164(country.dialCode, nationalNumber);
+  const otp = digits.join('');
+  const maskedPhone = `${country.dialCode} •••• ${nationalNumber.slice(-4)}`;
 
-  async function requestOtp(e: React.FormEvent) {
-    e.preventDefault();
+  async function resendOtp(): Promise<void> {
+    if (resendIn > 0 || submitting) return;
     setError(null);
     setSubmitting(true);
     try {
@@ -55,7 +106,10 @@ export default function OtpLoginPage() {
         setError(t('auth.otp.requestError'));
         return;
       }
-      setStep('otp');
+      setDigits(Array<string>(OTP_LENGTH).fill(''));
+      setExpiry(OTP_EXPIRY_SECONDS);
+      setResendIn(RESEND_COOLDOWN_SECONDS);
+      inputsRef.current[0]?.focus();
     } catch {
       setError(t('auth.otp.requestError'));
     } finally {
@@ -63,15 +117,11 @@ export default function OtpLoginPage() {
     }
   }
 
-  async function verifyOtp(e: React.FormEvent) {
+  async function verifyOtp(e: React.FormEvent): Promise<void> {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const result = await signIn('otp', {
-      phoneNumber,
-      otp,
-      redirect: false,
-    });
+    const result = await signIn('otp', { phoneNumber, otp, redirect: false });
     setSubmitting(false);
     if (!result || result.error) {
       setError(t('auth.otp.verifyError'));
@@ -80,95 +130,184 @@ export default function OtpLoginPage() {
     window.location.assign('/post-login');
   }
 
+  function setDigit(index: number, value: string): void {
+    const clean = value.replace(/\D/g, '');
+    setDigits((prev) => {
+      const next = [...prev];
+      next[index] = clean.slice(-1);
+      return next;
+    });
+    if (clean && index < OTP_LENGTH - 1) {
+      inputsRef.current[index + 1]?.focus();
+    }
+  }
+
+  function onDigitKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>): void {
+    if (e.key === 'Backspace' && !digits[index] && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    }
+  }
+
+  function onPaste(e: React.ClipboardEvent<HTMLInputElement>): void {
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    e.preventDefault();
+    const next = Array<string>(OTP_LENGTH).fill('');
+    for (let i = 0; i < pasted.length; i += 1) next[i] = pasted[i];
+    setDigits(next);
+    inputsRef.current[Math.min(pasted.length, OTP_LENGTH - 1)]?.focus();
+  }
+
+  // Hold render until the phone is resolved from the query (or the redirect kicks in).
+  if (!ready) {
+    return <div className="min-h-screen bg-cos-navy" />;
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-center text-xl font-bold text-gray-800">{t('auth.otp.title')}</h1>
+    <div className="flex min-h-screen flex-col bg-cos-navy text-white">
+      {/* Top bar */}
+      <header className="flex h-16 items-center justify-between border-b border-white/10 px-6 md:px-12">
+        <Image
+          src="/icons/logo-light.png"
+          alt={t('common.appName')}
+          width={180}
+          height={30}
+          priority
+          className="h-auto w-[150px] sm:w-[180px]"
+        />
+        <div className="flex items-center gap-4">
+          <LanguageSwitcher className={SWITCHER_DARK} />
+          <span className="hidden text-tiny font-bold uppercase tracking-widest text-slate-400 sm:inline">
+            {t('auth.login.support')}
+          </span>
+          <span className="hidden items-center gap-1.5 text-tiny font-bold uppercase tracking-widest text-slate-400 sm:flex">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            {t('auth.login.systemStatus')}
+          </span>
+        </div>
+      </header>
 
-        {error && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
-            {error}
-          </div>
-        )}
-
-        {step === 'phone' ? (
-          <form onSubmit={requestOtp} className="space-y-4">
-            <div className="block text-sm font-medium text-gray-700">
-              {t('auth.otp.phoneLabel')}
-              <div className="mt-1 flex gap-2">
-                {/* Country code — flag (bundled SVG) + selectable E.164 dial code. */}
-                <div className="flex items-center gap-1.5 rounded-md border border-gray-300 pl-2 focus-within:border-blue-500">
-                  {/* Bundled flag SVG served from public/flags; a plain <img> keeps it dependency-free
-                      and avoids next/image's loader for a tiny static asset. */}
-                  <img
-                    src={`/flags/${country.iso2}.svg`}
-                    alt=""
-                    aria-hidden="true"
-                    className="h-4 w-6 shrink-0 rounded-sm object-cover"
-                  />
-                  <select
-                    aria-label={t('auth.otp.countryLabel')}
-                    value={countryIso2}
-                    onChange={(e) => setCountryIso2(e.target.value)}
-                    className="bg-transparent py-2 pr-1 text-sm focus:outline-none"
-                  >
-                    {COUNTRIES.map((c) => (
-                      <option key={c.iso2} value={c.iso2}>
-                        {c.dialCode} {c.nameEn}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  required
-                  value={nationalNumber}
-                  onChange={(e) => setNationalNumber(e.target.value)}
-                  placeholder={t('auth.otp.phonePlaceholder')}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                />
-              </div>
+      {/* Card */}
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
+        <form
+          onSubmit={verifyOtp}
+          className="w-full max-w-md rounded-xl border border-white/10 bg-slate-900 p-8 shadow-2xl"
+        >
+          {/* Project logo mark — white box (matches the email/password screen) */}
+          <div className="mb-6 flex justify-center">
+            <div className="h-[72px] w-[72px] overflow-hidden rounded-2xl bg-white">
+              <Image
+                src="/icons/icon-512.png"
+                alt={t('common.appName')}
+                width={72}
+                height={72}
+                className="h-full w-full object-contain"
+              />
             </div>
-            <button
-              type="submit"
-              disabled={submitting || nationalNumber.trim().length === 0}
-              className="w-full rounded-md bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          </div>
+
+          {error && (
+            <div
+              role="alert"
+              className="mb-6 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-body text-red-300"
             >
-              {t('auth.otp.requestButton')}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={verifyOtp} className="space-y-4">
-            <p className="text-sm text-green-600">{t('auth.otp.sent')}</p>
-            <label className="block text-sm font-medium text-gray-700">
-              {t('auth.otp.otpLabel')}
+              {error}
+            </div>
+          )}
+
+          <div className="text-center">
+            <h1 className="text-h1 font-bold text-white">{t('auth.otp.verifyTitle')}</h1>
+            <p className="mx-auto mt-2 max-w-[300px] text-body text-slate-400">
+              {t('auth.otp.verifySubtitle')}{' '}
+              <span className="font-mono text-cos-cyan">{maskedPhone}</span>
+            </p>
+          </div>
+
+          <div className="mt-8 grid grid-cols-6 gap-2 sm:gap-3">
+            {digits.map((digit, i) => (
               <input
+                key={i}
+                ref={(el) => {
+                  inputsRef.current[i] = el;
+                }}
+                data-testid={`otp-input-${i}`}
                 type="text"
                 inputMode="numeric"
-                required
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength={6}
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 tracking-widest focus:border-blue-500 focus:outline-none"
+                autoComplete={i === 0 ? 'one-time-code' : 'off'}
+                maxLength={1}
+                value={digit}
+                onChange={(e) => setDigit(i, e.target.value)}
+                onKeyDown={(e) => onDigitKeyDown(i, e)}
+                onPaste={onPaste}
+                className="h-14 w-full rounded-lg border border-white/10 bg-slate-800 text-center text-h1 font-bold text-white focus:border-cos-cyan focus:outline-none focus:ring-2 focus:ring-cos-blue/40"
               />
-            </label>
+            ))}
+          </div>
+
+          <div className="mt-8 space-y-3">
             <button
+              data-testid="verify-otp-button"
               type="submit"
-              disabled={submitting}
-              className="w-full rounded-md bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              disabled={submitting || otp.length !== OTP_LENGTH}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-cos-blue font-semibold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
               {t('auth.otp.verifyButton')}
+              <ArrowRightIcon />
             </button>
-          </form>
-        )}
+            <button
+              type="button"
+              onClick={resendOtp}
+              disabled={resendIn > 0 || submitting}
+              className="w-full py-1 text-center text-tiny font-bold uppercase tracking-widest text-slate-400 transition-colors hover:text-white disabled:text-slate-600"
+            >
+              {t('auth.otp.resendCode')}
+              {resendIn > 0 ? ` (${resendIn}s)` : ''}
+            </button>
+          </div>
 
-        <div className="mt-6 text-center">
-          <Link href="/login" className="text-sm text-blue-600 hover:underline">
-            {t('auth.otp.backToOffice')}
-          </Link>
+          <div className="mt-8 flex items-center justify-between border-t border-white/10 pt-5 text-small text-slate-400">
+            <span>
+              {t('auth.otp.expiresIn')}{' '}
+              <span className="font-mono text-amber-400">{formatMMSS(expiry)}</span>
+            </span>
+            <span className="text-tiny font-bold uppercase tracking-widest text-emerald-400">
+              {t('auth.otp.aesActive')}
+            </span>
+          </div>
+          <p className="mt-4 text-small leading-snug text-slate-500">
+            {t('auth.otp.securityNote')}
+          </p>
+
+          <div className="mt-8 text-center">
+            <Link
+              href="/login"
+              className="text-small text-slate-400 transition-colors hover:text-white hover:underline"
+            >
+              {t('auth.otp.backToOffice')}
+            </Link>
+          </div>
+        </form>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 px-6 py-5 md:px-12">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 sm:flex-row">
+          <p className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            {t('auth.login.copyright')} · {t('auth.login.footerUnit')}
+          </p>
+          <div className="flex gap-6">
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+              {t('auth.login.termsOfService')}
+            </span>
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+              {t('auth.login.privacyPolicy')}
+            </span>
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+              {t('auth.login.systemStatus')}
+            </span>
+          </div>
         </div>
-      </div>
-    </main>
+      </footer>
+    </div>
   );
 }

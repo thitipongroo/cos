@@ -2,6 +2,7 @@
   "id": "construction-os",
   "realm": "construction-os",
   "displayName": "Construction OS",
+  "loginTheme": "cos",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,

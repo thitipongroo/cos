@@ -39,9 +39,24 @@
   "auth": {
     "login": {
       "phonePlaceholder": "+66812345678",
+      "phoneLabel": "Phone number",
       "otpPlaceholder": "6-digit code",
       "sendOtp": "Send OTP",
       "verify": "Verify",
+      "verifyContinue": "Verify & Continue",
+      "verifyTitle": "Verify Your Identity",
+      "verifySubtitle": "Enter the 6-digit code sent to",
+      "resendPrompt": "Didn't receive code?",
+      "resendCode": "Resend Code",
+      "securityProtocol": "Security Protocol",
+      "securityNote": "AES-256 encrypted session active. Device recognized as trusted hardware.",
+      "heroTitle": "AI-Native Construction Platform",
+      "heroSubtitle": "Secure access for field operations and enterprise project management.",
+      "fieldWorkerAccess": "Field Worker Access",
+      "or": "or",
+      "loginEmail": "Login with Email",
+      "officeHelper": "Office staff and project managers can log in using their corporate credentials.",
+      "systemOperational": "System Operational",
       "otpSendError": "Could not send OTP. Check the phone number and try again.",
       "otpVerifyError": "Invalid or expired OTP. Please try again.",
       "office": "Office login (email / password)",
@@ -49,6 +64,10 @@
       "backToOffice": "← Back to office login",
       "oidcError": "Sign-in failed. Please try again.",
       "countryLabel": "Country"
+    },
+    "loading": {
+      "title": "Securing your session",
+      "status": "Securing session context"
     }
   },
   "home": {
