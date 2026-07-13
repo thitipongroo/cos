@@ -33,13 +33,13 @@ beforeEach(async () => {
     providers: [
       SafetyService,
       { provide: SafetyRepository, useValue: mockRepo },
-      { provide: REQUEST, useValue: { user: { user_id: 'user-1' } } },
+      { provide: REQUEST, useValue: { userId: 'user-1' } },
     ],
   }).compile();
   service = await moduleRef.resolve<SafetyService>(SafetyService);
 });
 
-it('constructor tolerates missing request context', async () => {
+it('constructor tolerates missing request context; userId falls back to empty', async () => {
   const m = await Test.createTestingModule({
     providers: [
       SafetyService,
@@ -47,7 +47,10 @@ it('constructor tolerates missing request context', async () => {
       { provide: REQUEST, useValue: {} },
     ],
   }).compile();
-  expect(await m.resolve<SafetyService>(SafetyService)).toBeDefined();
+  const s = await m.resolve<SafetyService>(SafetyService);
+  expect(s).toBeDefined();
+  // exercise the userId getter's `|| clsUserId()` fallback branch (no request.userId, no CLS → '')
+  expect((s as unknown as { userId: string }).userId).toBe('');
 });
 
 describe('incidents', () => {

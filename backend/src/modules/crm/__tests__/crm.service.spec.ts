@@ -32,13 +32,13 @@ beforeEach(async () => {
     providers: [
       CrmService,
       { provide: CrmRepository, useValue: mockRepo },
-      { provide: REQUEST, useValue: { user: { user_id: 'user-1' } } },
+      { provide: REQUEST, useValue: { userId: 'user-1' } },
     ],
   }).compile();
   service = await moduleRef.resolve<CrmService>(CrmService);
 });
 
-it('constructor tolerates missing request context', async () => {
+it('constructor tolerates missing request context; userId falls back to empty', async () => {
   const m = await Test.createTestingModule({
     providers: [
       CrmService,
@@ -46,7 +46,10 @@ it('constructor tolerates missing request context', async () => {
       { provide: REQUEST, useValue: {} },
     ],
   }).compile();
-  expect(await m.resolve<CrmService>(CrmService)).toBeDefined();
+  const s = await m.resolve<CrmService>(CrmService);
+  expect(s).toBeDefined();
+  // exercise the userId getter's `|| clsUserId()` fallback branch (no request.userId, no CLS → '')
+  expect((s as unknown as { userId: string }).userId).toBe('');
 });
 
 it('createLead sets created_by (all fields); listLeads delegates', async () => {

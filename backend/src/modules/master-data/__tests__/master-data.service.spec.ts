@@ -84,7 +84,7 @@ const mockRepo = {
   createCostCategory: jest.fn(),
 };
 
-const mockRequest = { user: { user_id: 'user-uuid-001' } };
+const mockRequest = { userId: 'user-uuid-001' };
 const mockRequestNoUser = {};
 
 function uniqueError(): Error & { code: string } {
@@ -287,6 +287,8 @@ describe('MasterDataService', () => {
       mockRepo.listMaterials.mockResolvedValue([]);
       // Service constructs with userId = '' — no error thrown
       await expect(noUserSvc.listMaterials()).resolves.toEqual([]);
+      // exercise the userId getter's `|| clsUserId()` fallback branch (no request.userId, no CLS → '')
+      expect((noUserSvc as unknown as { userId: string }).userId).toBe('');
     });
   });
 
