@@ -1,47 +1,55 @@
 ---
 title: Construction OS — Android Screen Capture
-last_updated: 2026-07-08
-last_updated: 2026-07-08
+last_updated: 2026-07-15
 ---
 
 # Construction OS — Android App Screens
 
-> Part of [`docs/screens/`](../README.md) · platform: **Android**.
+> Part of [`docs/screens/`](../README.md) · platform: **Android** (emulator). iOS and Web live in sibling folders.
 
-⏳ **Pending capture.** No Android screenshots have been captured yet.
+Screenshots of the Construction OS mobile app (Expo / React Native, Android), captured against the
+**local backend with seeded demo data** — real logins and live API calls, not mockups.
 
-Planned: the same 21-flow set as [iOS](../ios/README.md) (`00-login` … `20-profile`), captured on an
-Android emulator via the Detox `android.emu.release` configuration
-([`apps/mobile/.detoxrc.js`](../../../apps/mobile/.detoxrc.js)) with the same deep-link + screenshot
-approach as `e2e/capture.spec.ts`. Screenshots land here as `00-login.png` … `20-profile.png`.
+| Device  | `Medium_Phone` AVD — Android 37 (`google_apis_playstore`), x86_64, 1080×2400     |
+| ------- | -------------------------------------------------------------------------------- |
+| App     | Debug build (`android/app/build/outputs/apk/debug/app-debug.apk`) + Metro        |
+| Backend | NestJS @ `localhost:3001` (`E2E_AUTH_BYPASS=true`) · Keycloak @ `localhost:8090` |
+| Project | `DEMO-001` — _Bangkok Tower — Phase 1_                                           |
 
-## Why not captured on this workstation (verified 2026-07-08)
+## Login flow — [`_public/`](_public/)
 
-Capture is deferred (product-owner decision) because the local Android capture chain is incomplete.
-Verified state of this Windows workstation:
+English UI (matching [`mockup/00_login_flow/mobile/`](../../../mockup/00_login_flow/mobile)); the
+login header's language switcher is used to leave the th-TH default (QM-3).
 
-| Component | Status |
-| --- | --- |
-| Android SDK (`%LOCALAPPDATA%\Android\Sdk`) | ✅ present — `platform-tools` (adb), `emulator`, `platforms/android-36.1`, `build-tools` |
-| JDK for the Gradle build | ✅ Android Studio JBR **21** at `C:\Program Files\Android\Android Studio\jbr` (system default is JDK 25; the earlier "JDK-17 only" note is outdated) |
-| `cmdline-tools` (`sdkmanager` / `avdmanager`) | ❌ not installed |
-| System image (e.g. `system-images/android-3x/google_apis/...`) | ❌ none installed |
-| AVD (`emulator -list-avds`) | ❌ none created |
-| Connected device (`adb devices`) | ❌ none |
-| Expo web fallback (`react-native-web` + `react-dom`) | ❌ not in `apps/mobile/package.json` deps |
+| #   | Screen                                            | What it shows                                                                  |
+| --- | ------------------------------------------------- | ------------------------------------------------------------------------------ |
+| 00  | [Login](_public/00-login.png)                     | Landing — Path A phone form, Path B "Login with Email" as the secondary action |
+| 01  | [OTP verify](_public/01-login-otp-verify.png)     | Passcode step for `+66 •••• 0010`, requested from the landing                  |
+| 02  | [Email + password](_public/02-login-password.png) | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)    |
+| 03  | [Securing session](_public/03-login-loading.png)  | `VerifyingOverlay`, shown while the Path B code→token exchange runs            |
 
-To actually capture, on this or a CI machine:
+Captured by [`apps/mobile/scripts/capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
+(`cd apps/mobile && pnpm capture:android` — it installs standalone, see the root `pnpm-workspace.yaml`)
+— adb/uiautomator only, deliberately **not** Detox:
+Path B hands off to Keycloak in a Chrome Custom Tab, and while Detox holds the UiAutomation
+connection a `uiautomator dump` only ever returns the instrumented app's own window, leaving the
+browser undrivable. The script asserts the screen it expects (e.g. `verifying-overlay`) before saving
+each frame, so a mis-tap fails the run instead of writing a screenshot of the wrong thing.
 
-1. Install `cmdline-tools`, then `sdkmanager` a system image (~1–2 GB download).
-2. `avdmanager create avd` (e.g. `Pixel_4_API_34`, matching
-   [`apps/mobile/.detoxrc.js`](../../../apps/mobile/.detoxrc.js)); boot the emulator.
-3. Build + install the app with the JBR-21 toolchain (`JAVA_HOME` → Android Studio `jbr`) — either
-   `npm run build:e2e:android` (Detox release) or a debug `expo run:android`. First RN Gradle build is
-   slow and failure-prone.
-4. Run capture: adapt [`apps/mobile/e2e/capture.spec.ts`](../../../apps/mobile/e2e/capture.spec.ts) — swap
-   its one iOS-only `xcrun simctl io booted screenshot` line for `adb exec-out screencap -p` (or
-   `device.takeScreenshot`). It already logs in (Path A OTP bypass) and loops all 21 routes via
-   `cos:///<route>` deep links.
+## App screens — `00-login.png` … `20-profile.png`
 
-Screenshots land here as `00-login.png` … `20-profile.png`, the same 21-flow set as
-[iOS](../ios/README.md) (which is fully captured). See spec `17 §17.10` native-rebuild note.
+The 21 flat files are the same route set as [iOS](../ios/README.md), captured by
+[`apps/mobile/e2e/capture.spec.ts`](../../../apps/mobile/e2e/capture.spec.ts) from **one
+`PROJECT_MANAGER` session** (`+66800000002` — the role with the widest data access), deep-linking
+each route via `cos:///<route>`. They are not per-role views: unlike [`../web/`](../web), which is
+grouped into role folders, this set documents routes as one user sees them — matching the iOS layout.
+
+`00-login.png` here predates the login redesign — `_public/00-login.png` is the current landing.
+
+## Known gaps
+
+- **Per-role capture is not possible with the current demo provisioning.** Path A (phone + OTP) needs
+  a Keycloak user whose _username_ is the phone number (`identity.service.ts` `issueTokensForPhone` →
+  `keycloak-admin.service.ts` `exchangeOtpForTokens`), but
+  [`provision-keycloak-demo.ts`](../../../backend/prisma/provision-keycloak-demo.ts) provisions the
+  demo users as Path B (username = email), so no seeded role can complete an OTP login.

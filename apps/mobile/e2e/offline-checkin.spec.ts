@@ -28,13 +28,8 @@ describe('Offline Check-In — Worker', () => {
   });
 
   it('worker can log in via SMS OTP', async () => {
-    // The login screen shows both auth paths (office email/password button + field-worker OTP link,
-    // ADR-050). Tap the OTP link to reach the phone-input screen.
-    await waitFor(element(by.id('field-login-link')))
-      .toBeVisible()
-      .withTimeout(10_000);
-    await element(by.id('field-login-link')).tap();
-
+    // The login landing carries the Path-A phone form directly (office email/password button is the
+    // secondary action, ADR-050) — there is no separate phone-entry screen to tap through.
     await waitFor(element(by.id('phone-input')))
       .toBeVisible()
       .withTimeout(10_000);

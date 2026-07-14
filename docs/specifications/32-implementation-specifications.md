@@ -670,6 +670,27 @@ Optimised for outdoor sunlight visibility.
 > Use `--mobile-primary` for tap targets and CTAs in React Native only.
 > Use `--cos-blue` for all web (Next.js) and PWA surfaces.
 
+#### Mobile Auth Screens
+
+The table above applies to the **signed-in** field app. The pre-auth screens (login, OTP verify,
+session-securing overlay) render **dark**, on the shared `--cos-dark-*` tokens above — the same
+surface as the web login and the Keycloak `cos` theme, so all three entry points to the product look
+like one product.
+
+| Surface            | Token                 | Hex       |
+| ------------------ | --------------------- | --------- |
+| Background         | `--cos-dark-bg`       | `#020617` |
+| Card               | `--cos-dark-surface`  | `#0F172A` |
+| Input / border     | `--cos-dark-elevated` | `#111827` |
+| Text               | `--cos-dark-text`     | `#F8FAFC` |
+| Secondary / footer | `--cos-dark-muted`    | `#94A3B8` |
+| CTA                | `--mobile-primary`    | `#0066FF` |
+
+> **Why the field app stays light:** the sunlight-visibility rationale is about all-day outdoor use.
+> Signing in is a one-off, usually indoor, so the auth screens follow the brand's dark entry surface
+> instead. CTAs keep `--mobile-primary` so the tap target a field worker learns never changes colour.
+> Reference: `mockup/00_login_flow/mobile/`.
+
 ### Typography Tokens
 
 **Brand font:** Inter Tight

@@ -56,34 +56,60 @@ const SEED_END = D('2026-07-03'); // last working Friday of the ~1-month window
 
 // ─── Users (one per role area; Thai names, company domain) ───────────────────
 type SeedUser = { key: string; name: string; email: string; role: string; phone?: string };
+// Every seeded user carries a phone_number so the React Native app (which renders BOTH auth paths for
+// every role — master §Phase 10) can be driven through Path A (phone + SMS OTP) for per-role screen
+// capture. Office/management roles still use Path B (Keycloak) in real usage per §5.4; the phone here
+// is demo/test data only.
 const USERS: SeedUser[] = [
-  { key: 'exec', name: 'Wichai Ekachai', email: 'wichai.e@ekachai.co.th', role: 'EXECUTIVE' },
+  {
+    key: 'exec',
+    name: 'Wichai Ekachai',
+    email: 'wichai.e@ekachai.co.th',
+    role: 'EXECUTIVE',
+    phone: '+66811000001',
+  },
   {
     key: 'admin',
     name: 'Suphaporn Rattanakul',
     email: 'suphaporn.r@ekachai.co.th',
     role: 'TENANT_ADMIN',
+    phone: '+66811000002',
   },
   {
     key: 'pm1',
     name: 'Thanawat Boonmee',
     email: 'thanawat.b@ekachai.co.th',
     role: 'PROJECT_MANAGER',
+    phone: '+66811000003',
   },
-  { key: 'pm2', name: 'Kanya Srisawat', email: 'kanya.s@ekachai.co.th', role: 'PROJECT_MANAGER' },
+  {
+    key: 'pm2',
+    name: 'Kanya Srisawat',
+    email: 'kanya.s@ekachai.co.th',
+    role: 'PROJECT_MANAGER',
+    phone: '+66811000004',
+  },
   {
     key: 'proc',
     name: 'Nattapong Wongchai',
     email: 'nattapong.w@ekachai.co.th',
     role: 'PROCUREMENT_OFFICER',
+    phone: '+66811000005',
   },
   {
     key: 'procmgr',
     name: 'Rungnapa Chaiyo',
     email: 'rungnapa.c@ekachai.co.th',
     role: 'PROC_MANAGER',
+    phone: '+66811000006',
   },
-  { key: 'fin', name: 'Pimchanok Thongchai', email: 'pimchanok.t@ekachai.co.th', role: 'FINANCE' },
+  {
+    key: 'fin',
+    name: 'Pimchanok Thongchai',
+    email: 'pimchanok.t@ekachai.co.th',
+    role: 'FINANCE',
+    phone: '+66811000011',
+  },
   {
     key: 'safety',
     name: 'Decha Phumipat',
@@ -117,6 +143,7 @@ const USERS: SeedUser[] = [
     name: 'Chalermsak Nithat',
     email: 'chalermsak.n@ekachai.co.th',
     role: 'CRM_SALES_MANAGER',
+    phone: '+66811000012',
   },
 ];
 const U = (k: string): string => uid(`user/${k}`);

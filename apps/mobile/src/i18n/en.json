@@ -38,7 +38,7 @@
   },
   "auth": {
     "login": {
-      "phonePlaceholder": "+66812345678",
+      "phonePlaceholder": "e.g. 0812345678",
       "phoneLabel": "Phone number",
       "otpPlaceholder": "6-digit code",
       "sendOtp": "Send OTP",
@@ -50,7 +50,7 @@
       "resendCode": "Resend Code",
       "securityProtocol": "Security Protocol",
       "securityNote": "AES-256 encrypted session active. Device recognized as trusted hardware.",
-      "heroTitle": "AI-Native Construction Platform",
+      "heroTitle": "AI-NATIVE",
       "heroSubtitle": "Secure access for field operations and enterprise project management.",
       "fieldWorkerAccess": "Field Worker Access",
       "or": "or",
@@ -63,7 +63,15 @@
       "fieldWorker": "Field worker — sign in with phone (OTP)",
       "backToOffice": "← Back to office login",
       "oidcError": "Sign-in failed. Please try again.",
-      "countryLabel": "Country"
+      "countryLabel": "Country",
+      "heroTitle2": "Construction Platform",
+      "appName": "CONSTRUCTION OS",
+      "privacyPolicy": "PRIVACY POLICY",
+      "termsOfUse": "TERMS OF USE",
+      "siteVersion": "System Operational: Site v2.4.12",
+      "copyright": "© 2024 CONSTRUCTION OS. INDUSTRIAL GRADE SECURITY.",
+      "getSupport": "Get Support",
+      "privacyData": "Privacy Data"
     },
     "loading": {
       "title": "Securing your session",

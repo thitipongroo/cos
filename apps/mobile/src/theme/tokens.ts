@@ -19,6 +19,28 @@ export const colors = {
   synced: '#00C853', // --mobile-synced — synced indicator
 } as const;
 
+/**
+ * Auth-screen palette (§32.7 "Mobile Auth Screens"). The signed-in field app stays on `colors`
+ * above — that light palette exists for outdoor sunlight visibility — but the pre-auth screens are
+ * indoor/one-off and are specified dark, matching the web login surface and
+ * mockup/00_login_flow/mobile/. These are the shared `--cos-dark-*` tokens rather than a mobile-only
+ * dark set, so the product carries exactly one dark palette; `primary` stays `--mobile-primary`.
+ */
+export const authColors = {
+  primary: colors.primary, // --mobile-primary — CTAs stay the field-app blue
+  onPrimary: '#F8FAFC', // --cos-dark-text — label/icon on a primary-filled button
+  bg: '#020617', // --cos-dark-bg
+  surface: '#0F172A', // --cos-dark-surface — card surface
+  elevated: '#111827', // --cos-dark-elevated — inputs, inner panels, logo plate
+  text: '#F8FAFC', // --cos-dark-text
+  muted: '#94A3B8', // --cos-dark-muted — secondary text, footer
+  success: '#10B981', // --cos-dark-success — security/status marks
+  danger: '#EF4444', // --cos-dark-danger — errors
+  // Derived: --cos-dark-muted at low alpha. The dark set has no outline token, and --cos-dark-elevated
+  // (#111827) is invisible against --cos-dark-surface (#0F172A), so borders take a muted tint instead.
+  border: 'rgba(148, 163, 184, 0.24)',
+} as const;
+
 // Font family per weight (Inter Tight via @expo-google-fonts/inter-tight).
 // Use these instead of `fontWeight` — custom fonts select the face by family name.
 export const fontFamily = {
@@ -61,6 +83,7 @@ export const touchTarget = {
 
 export const theme = {
   colors,
+  authColors,
   fontFamily,
   typography,
   lineHeightRatio,

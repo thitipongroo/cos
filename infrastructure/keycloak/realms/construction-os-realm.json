@@ -975,6 +975,96 @@
       "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
     },
     {
+      "id": "e3f1c6a2-4b7d-4e59-9c31-2a8d5f0b7c14",
+      "clientId": "cos-mobile",
+      "name": "Construction OS Mobile",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": ["cos://oauth2redirect"],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": true,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "post.logout.redirect.uris": "+",
+        "pkce.code.challenge.method": "S256",
+        "access.token.signed.response.alg": "RS256"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "5b0a1f3c-9d24-4f18-8a67-31c9e0b45d72",
+          "name": "user_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "user_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "user_id",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "7c1b2e4d-0e35-4a29-9b78-42d0f1c56e83",
+          "name": "tenant_id",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "tenant_id",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "tenant_id",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "9d2c3f5e-1f46-4b3a-8c89-53e1a2d67f94",
+          "name": "role",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "role",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "role",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "af3d4a6f-2a57-4c4b-9d9a-64f2b3e78a05",
+          "name": "cos-backend-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "cos-backend",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "email"],
+      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
+    },
+    {
       "id": "149e17d0-0753-4857-b346-98d8355e60b5",
       "clientId": "realm-management",
       "name": "${client_realm-management}",

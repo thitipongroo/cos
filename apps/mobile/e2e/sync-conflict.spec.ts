@@ -56,11 +56,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
   });
 
   it('user A can log in and navigate to task', async () => {
-    // Login screen shows both auth paths (ADR-050) — tap the field-worker OTP link first.
-    await waitFor(element(by.id('field-login-link')))
-      .toBeVisible()
-      .withTimeout(10_000);
-    await element(by.id('field-login-link')).tap();
+    // Login landing carries the Path-A phone form directly (ADR-050) — no phone-entry step to tap.
     await waitFor(element(by.id('phone-input')))
       .toBeVisible()
       .withTimeout(10_000);

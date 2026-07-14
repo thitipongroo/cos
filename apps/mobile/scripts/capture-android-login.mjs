@@ -1,0 +1,315 @@
+// Android login-flow screenshot capture — adb/uiautomator only, deliberately NOT Detox.
+//
+// Writes the four public login screens to docs/screens/android/_public/, mirroring the web set
+// (docs/screens/web/_public/00-login.png … 03-login-loading.png) so both platforms document the same
+// flow under the same numbering:
+//   00-login             landing (Path A phone form + Path B "Login with Email" secondary action)
+//   01-login-otp-verify  OTP-verify step, reached by requesting a passcode from the landing
+//   02-login-password    Keycloak's hosted email/password page (Path B, §20.6.1 / QM-4)
+//   03-login-loading     VerifyingOverlay, shown while the Path B code→token exchange is in flight
+//
+// WHY NOT DETOX: Path B hands off to Keycloak in a Chrome Custom Tab. While Detox holds the
+// UiAutomation connection, `uiautomator dump` only ever returns the instrumented app's window — a
+// dump taken with Detox attached reports exactly one package, com.constructionos.cos — so the
+// Keycloak form is invisible to every matcher and the flow can only be driven blind (it isn't: the
+// taps land back in the app). Detached, uiautomator sees both the RN app (testID → resource-id) and
+// the browser, so plain adb can drive the whole flow and each frame can be checked before it is kept.
+//
+// Prerequisites (all must already be running):
+//   - emulator booted, debug app installed (android/app/build/outputs/apk/debug/app-debug.apk)
+//   - Metro:    EXPO_PUBLIC_API_URL=http://localhost:3001/api/v1 npx expo start
+//   - backend with E2E_AUTH_BYPASS=true on :3001, Keycloak on :8090, realm seeded+provisioned
+//   - adb reverse tcp:8081/tcp:3001/tcp:8090 (this script re-asserts them)
+//   - Chrome's first-run screens dismissed once on the emulator
+// Run: node scripts/capture-android-login.mjs
+
+import { execFileSync } from 'node:child_process';
+import { mkdirSync, writeFileSync } from 'node:fs';
+import http from 'node:http';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const OUT = resolve(HERE, '../../../docs/screens/android/_public');
+const PKG = 'com.constructionos.cos';
+
+// Path B demo account — seeded by backend/prisma/seed-realistic.ts, given this password by
+// backend/prisma/provision-keycloak-demo.ts (DEMO_USER_PASSWORD).
+const DEMO_EMAIL = process.env['E2E_DEMO_EMAIL'] ?? 'wichai.e@ekachai.co.th';
+const DEMO_PASSWORD = process.env['DEMO_USER_PASSWORD'] ?? 'Ekachai@2026';
+// Any seeded phone reaches the OTP step; the backend's E2E bypass accepts a fixed code.
+const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '811000010';
+
+const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
+const ADB = SDK
+  ? join(SDK, 'platform-tools', process.platform === 'win32' ? 'adb.exe' : 'adb')
+  : 'adb';
+
+const adb = (...args) => execFileSync(ADB, args, { maxBuffer: 16 * 1024 * 1024 }).toString();
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * A dump only succeeds once the window is idle; mid-transition it fails with
+ *   ERROR: null root node returned by UiTestAutomationBridge.
+ * and leaves the previous /sdcard/ui.xml in place, so a naive read silently returns the *last*
+ * screen. Delete first, and trust the file only when the tool says it wrote one.
+ */
+async function dump() {
+  for (let i = 0; i < 12; i++) {
+    adb('shell', 'rm', '-f', '/sdcard/ui.xml');
+    if (adb('shell', 'uiautomator', 'dump', '/sdcard/ui.xml').includes('dumped to')) {
+      return adb('shell', 'cat', '/sdcard/ui.xml').split('<');
+    }
+    await delay(700);
+  }
+  throw new Error('capture: uiautomator never reached an idle state');
+}
+
+const centreOf = (node) => {
+  const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
+  if (!m) return null;
+  return {
+    x: Math.round((+m[1] + +m[3]) / 2),
+    y: Math.round((+m[2] + +m[4]) / 2),
+  };
+};
+
+/** Wait for a node matching `pred` and return its centre. */
+async function find(pred, what, tries = 20) {
+  for (let i = 0; i < tries; i++) {
+    const node = (await dump()).find((n) => pred(n) && n.includes('bounds='));
+    if (node) return centreOf(node);
+    await delay(1000);
+  }
+  throw new Error(`capture: ${what} never appeared`);
+}
+
+const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
+const byText = (t) => (n) => n.includes(`text="${t}"`);
+
+async function tap(pred, what) {
+  const c = await find(pred, what);
+  adb('shell', 'input', 'tap', String(c.x), String(c.y));
+  await delay(900);
+}
+
+/** RN's LogBox notification ("Open debugger to view warnings.") — debug-only, keep it out of docs. */
+async function dismissDevBanners() {
+  for (let i = 0; i < 4; i++) {
+    const node = (await dump()).find(
+      (n) => n.includes('content-desc="!,') && n.includes('clickable="true"'),
+    );
+    if (!node) return;
+    const m = /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(node);
+    if (!m) return;
+    // The dismiss X is an unlabelled child at the banner's right edge.
+    adb('shell', 'input', 'tap', String(+m[3] - 58), String(Math.round((+m[2] + +m[4]) / 2)));
+    await delay(800);
+  }
+}
+
+/**
+ * Gboard shows one-time onboarding ("Try out your stylus") the first time it opens on a fresh
+ * emulator, and it covers the screen — it silently replaced the OTP screen in an earlier run.
+ */
+async function dismissImeOnboarding() {
+  for (const label of ['Cancel', 'Got it', 'No thanks', 'Done']) {
+    const node = (await dump()).find((n) => n.includes(`text="${label}"`) && n.includes('bounds='));
+    if (!node) continue;
+    const c = centreOf(node);
+    adb('shell', 'input', 'tap', String(c.x), String(c.y));
+    await delay(1200);
+    return;
+  }
+}
+
+async function keyboardUp() {
+  return adb('shell', 'dumpsys', 'input_method').includes('mInputShown=true');
+}
+
+/**
+ * Close the soft keyboard with ESC, not BACK. BACK only stops at the IME while it is really showing,
+ * and `mInputShown` goes stale — a BACK sent on a stale reading falls through to the activity, which
+ * on the root login route quits the app (it did: the run ended on the launcher). ESC is a no-op for
+ * both the RN screen and the Custom Tab, so a wrong guess costs nothing.
+ */
+async function hideKeyboard() {
+  if (!(await keyboardUp())) return;
+  adb('shell', 'input', 'keyevent', '111'); // KEYCODE_ESCAPE
+  await delay(1200);
+}
+
+async function type(text) {
+  adb('shell', 'input', 'text', text);
+  await delay(600);
+  await dismissImeOnboarding();
+}
+
+/**
+ * Type into the nth <input> of the Keycloak page, resolving its position immediately beforehand with
+ * the keyboard down — the IME scrolls the page, so coordinates read earlier no longer hold.
+ */
+async function fillField(index, text, what) {
+  await hideKeyboard();
+  const fields = (await dump()).filter((n) => n.includes('class="android.widget.EditText"'));
+  if (fields.length <= index) throw new Error(`capture: Keycloak ${what} field not found`);
+  const c = centreOf(fields[index]);
+  adb('shell', 'input', 'tap', String(c.x), String(c.y));
+  await delay(700);
+  await type(text);
+  await hideKeyboard();
+}
+
+const KEYCLOAK_PORT = 8090;
+const STALL_PROXY_PORT = 8099;
+
+/**
+ * Keycloak proxy that answers everything normally except the OIDC token endpoint, whose request it
+ * accepts and then simply never replies to.
+ *
+ * 03-login-loading is the VerifyingOverlay, and login.tsx only raises oidcBusy for the duration of
+ * exchangeCodeAsync — against a local Keycloak that is a couple hundred milliseconds, so the frame is
+ * gone long before a screencap lands. Two simpler tricks failed: a fixed sleep before pulling the
+ * port forward always lost the race (the app reached Home), and pulling the forward at all makes the
+ * request fail *fast* (connection refused) rather than hang, which just flips oidcBusy back off via
+ * the catch/finally. Stalling only /token leaves the whole sign-in genuine — Chrome's credential POST
+ * and the discovery document still go through — and holds the app in the state being documented.
+ */
+function startStallProxy() {
+  const sockets = new Set();
+  const server = http.createServer((req, res) => {
+    if (req.url.includes('/protocol/openid-connect/token')) {
+      req.resume(); // consume the body, answer nothing — the app sits in exchangeCodeAsync
+      return;
+    }
+    const upstream = http.request(
+      {
+        host: '127.0.0.1',
+        port: KEYCLOAK_PORT,
+        path: req.url,
+        method: req.method,
+        headers: req.headers,
+      },
+      (up) => {
+        res.writeHead(up.statusCode, up.headers);
+        up.pipe(res);
+      },
+    );
+    upstream.on('error', () => res.destroy());
+    req.pipe(upstream);
+  });
+  server.on('connection', (s) => {
+    sockets.add(s);
+    s.on('close', () => sockets.delete(s));
+  });
+  return {
+    listen: () => new Promise((r) => server.listen(STALL_PROXY_PORT, '127.0.0.1', r)),
+    close: () => {
+      for (const s of sockets) s.destroy(); // the stalled /token socket is still open
+      server.close();
+    },
+  };
+}
+
+/** Poll the focused window — far cheaper than a uiautomator dump, so it can be tight. */
+async function waitForForeground(pkg, timeoutMs = 25_000) {
+  const until = Date.now() + timeoutMs;
+  while (Date.now() < until) {
+    const m = /mCurrentFocus=Window\{[^}]*\s([\w.]+)\//.exec(adb('shell', 'dumpsys', 'window'));
+    if (m && m[1] === pkg) return;
+    await delay(50);
+  }
+  throw new Error(`capture: ${pkg} never returned to the foreground after sign-in`);
+}
+
+function shot(name) {
+  mkdirSync(OUT, { recursive: true });
+  const png = execFileSync(ADB, [`exec-out`, 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
+  writeFileSync(`${OUT}/${name}.png`, png);
+  console.log(`  ✓ ${name}.png (${(png.length / 1024).toFixed(0)} KB)`);
+}
+
+/** `pm clear` wipes app data (session + offline DB + stored locale) → deterministic login screen. */
+async function freshApp() {
+  adb('shell', 'pm', 'clear', PKG);
+  adb('shell', 'monkey', '-p', PKG, '-c', 'android.intent.category.LAUNCHER', '1');
+  await find(byId('office-login-button'), 'login screen');
+  await delay(2500); // let the hero/card finish laying out
+  await dismissDevBanners();
+  // The docs set is English (so are the mockups); QM-3 keeps th-TH as the app default, so switch via
+  // the login header's LanguageSwitcher — it is named for the locale it switches TO.
+  await tap(byId('locale-en'), 'language switcher');
+  await delay(1000);
+}
+
+async function main() {
+  for (const port of ['tcp:8081', 'tcp:3001', 'tcp:8090']) {
+    adb('reverse', port, port); // Metro, backend, Keycloak — all reached as localhost on-device
+  }
+
+  console.log('00-login — landing');
+  await freshApp();
+  await dismissDevBanners();
+  shot('00-login');
+
+  console.log('01-login-otp-verify — passcode step');
+  await tap(byId('country-picker'), 'country picker');
+  await tap(byId('country-option-th'), 'Thailand option');
+  await tap(byId('phone-input'), 'phone input');
+  await type(OTP_PHONE);
+  await hideKeyboard();
+  await tap(byId('request-otp-button'), 'request OTP button');
+  await find(byId('otp-input'), 'OTP input'); // proves the step actually rendered
+  await hideKeyboard();
+  await dismissDevBanners();
+  shot('01-login-otp-verify');
+
+  console.log('02-login-password — Keycloak hosted page');
+  // Route the app's Keycloak traffic through the stall proxy for the rest of the run, so the token
+  // exchange below hangs and 03's overlay stays on screen long enough to photograph.
+  const proxy = startStallProxy();
+  await proxy.listen();
+  adb('reverse', `tcp:${KEYCLOAK_PORT}`, `tcp:${STALL_PROXY_PORT}`);
+  try {
+    await capturePathB();
+  } finally {
+    adb('reverse', `tcp:${KEYCLOAK_PORT}`, `tcp:${KEYCLOAK_PORT}`);
+    proxy.close();
+  }
+
+  console.log(`\nDone — 4 screens in ${OUT}`);
+}
+
+async function capturePathB() {
+  await freshApp();
+  await dismissDevBanners();
+  await tap(byId('office-login-button'), 'office login button');
+  // Keycloak's page autofocuses the email field, so the IME covers half of it.
+  await find(byText('Sign In'), 'Keycloak Sign In button');
+  await hideKeyboard();
+  await delay(1000);
+  shot('02-login-password');
+
+  console.log('03-login-loading — token exchange');
+  // Re-locate the fields before every tap, with the keyboard down. Raising the IME scrolls the page,
+  // so coordinates read once go stale: doing it the other way put both strings in the email box
+  // ("wichai.e@ekachai.co.thEkachai@2026") and Keycloak answered "Invalid username or password."
+  await fillField(0, DEMO_EMAIL, 'email');
+  await fillField(1, DEMO_PASSWORD, 'password');
+  // Submit with ENTER from the password field rather than tapping Sign In: the button's coordinates
+  // move as the IME opens and closes, and a tap read a moment earlier lands on the keyboard instead
+  // (both fields ended up filled with the form never submitted). ENTER needs no coordinates.
+  adb('shell', 'input', 'keyevent', '66'); // KEYCODE_ENTER
+
+  // The redirect brings the app back; the stall proxy holds its token request open, so the overlay
+  // stays up. Asserting it also proves the sign-in landed — a missed tap fails the run rather than
+  // quietly saving a screenshot of the wrong screen.
+  await waitForForeground(PKG);
+  await find(byId('verifying-overlay'), 'verifying overlay');
+  shot('03-login-loading');
+}
+
+main().catch((e) => {
+  console.error(`\n${e.message}`);
+  process.exit(1);
+});

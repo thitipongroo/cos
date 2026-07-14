@@ -58,6 +58,10 @@
       background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:600;font-family:inherit;
       cursor:pointer;box-shadow:0 10px 24px rgba(37,99,235,.25);transition:background .15s}
     .btn:hover{background:var(--blue-h)}
+    /* Path A escape hatch — mobile client only (see the #if around it). */
+    .alt{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;
+      min-height:52px;border:1px solid var(--border);border-radius:8px;
+      color:var(--text);font-size:15px;font-weight:600;text-decoration:none}
     .unable{text-align:center;margin:20px 0 0;font-size:13px;color:var(--muted)}
     .unable a{color:var(--text);font-weight:600}
     .alert{margin-bottom:20px;padding:10px 12px;border-radius:8px;font-size:13px}
@@ -129,6 +133,19 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
           </button>
         </form>
+
+        <#-- Way back to Path A. Only the mobile client gets it: mockup/00_login_flow/mobile/03 offers
+             "Login with phone (OTP)" as the escape from this page, while the web mockup (…/web/03)
+             has no such control — the browser's own back button serves there. Keycloak serves one
+             page to both, so gate it on the client. `cos://oauth2redirect` is the app's AuthSession
+             redirect (see apps/mobile/src/app/(auth)/login.tsx); returning to it without a code
+             cancels the OIDC request and drops the user back on the login screen. -->
+        <#if client?? && client.clientId?? && client.clientId == "cos-mobile">
+          <a class="alt" href="cos://oauth2redirect">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+            ${msg("cosLoginWithPhone")}
+          </a>
+        </#if>
 
         <p class="unable">${msg("cosUnable")} <a href="#">${msg("cosContactAdmin")}</a></p>
       </div>

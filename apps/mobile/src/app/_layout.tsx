@@ -85,14 +85,17 @@ export default function RootLayout() {
     return () => sub.remove();
   }, []);
 
-  // Note: we intentionally do NOT block rendering on font load. expo-font applies the brand face as
-  // soon as it resolves; blocking here risked a permanently blank screen if the font hangs/fails in a
-  // release build. `fontsLoaded`/`fontError` are referenced so the values are not flagged unused.
-  void fontsLoaded;
-  void fontError;
-
-  // Hold until the session is hydrated (fast local SecureStore read) so AuthGate routes correctly.
-  if (!hydrated) return null;
+  // Hold the first render until the session is hydrated (fast local SecureStore read) so AuthGate
+  // routes correctly, AND until the brand font has resolved.
+  //
+  // The font gate is not cosmetic: text laid out before Inter Tight resolves is measured with the
+  // fallback face, and the swap does not re-measure — Android then clips the last glyph of the wider
+  // brand face ("CONSTRUCTION OS" drew as "CONSTRUCTION", "AI-NATIVE" as "AI-NATIV", "+66" as "+6",
+  // while the view tree held the full strings). It only shows on a cold start, so it comes and goes.
+  //
+  // An earlier note here avoided blocking for fear of a permanently blank screen if the font hangs or
+  // fails; `fontError` covers that — useFonts reports a failure and we render with the fallback.
+  if (!hydrated || !(fontsLoaded || fontError)) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
