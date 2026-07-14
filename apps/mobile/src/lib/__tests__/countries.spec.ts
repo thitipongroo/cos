@@ -19,6 +19,14 @@ describe('countries — OTP phone split/combine', () => {
     expect(findCountry('th').dialCode).toBe('+66');
   });
 
+  it('findCountry falls back to the home market for an unknown code', () => {
+    // The login screen calls findCountry with whatever iso2 is in state, so the picker never has to
+    // handle an undefined country — a stored/region-derived code that has since left COUNTRIES
+    // (Myanmar, say) resolves to Thailand rather than crashing on a missing dial code.
+    expect(findCountry('zz').iso2).toBe(DEFAULT_COUNTRY_ISO2);
+    expect(findCountry('mm').dialCode).toBe('+66');
+  });
+
   describe('toE164', () => {
     it('prefixes the dial code and strips a leading trunk 0 + separators (TH)', () => {
       expect(toE164('+66', '081-234-5678')).toBe('+66812345678');
