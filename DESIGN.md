@@ -46,7 +46,7 @@
 **PROHIBITED in all visual work (spec 32 §32.7):**
 
 - ❌ Building / crane / hard-hat / blueprint / gear icons
-- ❌ Orange / amber as brand colour (note: orange IS allowed as the mobile *warning*
+- ❌ Orange / amber as brand colour (note: orange IS allowed as the mobile _warning_
   semantic token and web dark-theme warning — just never as brand identity)
 - ❌ Rounded playful shapes
 - ❌ Gradients or glow effects
@@ -190,16 +190,16 @@ Android over a poor network.
 
 ### 4.1 Tenant roles and their core needs
 
-| Role (display name) | JWT enum              | Primary surface   | Core UX needs (spec 20 §20.2)                                               |
-| ------------------- | --------------------- | ----------------- | --------------------------------------------------------------------------- |
-| Executive           | `EXECUTIVE`           | Web dashboard     | Portfolio health, risk alerts, cash flow, margin forecast, delay prediction |
-| Project Manager     | `PROJECT_MANAGER`     | Web + mobile      | Schedule tracking, procurement status, budget variance, site blockers       |
-| Site Engineer       | `SITE_ENGINEER`       | **Mobile-first**  | Daily tasks, drawing access, inspection forms, material requests            |
-| Procurement Officer | `PROCUREMENT_OFFICER` | Web               | RFQs, vendor comparisons, delivery tracking                                 |
-| Finance             | `FINANCE`             | Web               | Cost recognition, payment approvals, cash flow                              |
-| Safety Officer      | `SAFETY_OFFICER`      | Web + mobile      | Safety checklists, incident reporting, compliance status, violation alerts  |
-| CRM / Sales Manager | `CRM_SALES_MANAGER`   | Web               | Lead pipeline, opportunity tracking (basic UI in MVP)                       |
-| Tenant Admin        | `TENANT_ADMIN`        | Web               | Users, roles, workflows, tenant settings, integrations                      |
+| Role (display name) | JWT enum              | Primary surface  | Core UX needs (spec 20 §20.2)                                               |
+| ------------------- | --------------------- | ---------------- | --------------------------------------------------------------------------- |
+| Executive           | `EXECUTIVE`           | Web dashboard    | Portfolio health, risk alerts, cash flow, margin forecast, delay prediction |
+| Project Manager     | `PROJECT_MANAGER`     | Web + mobile     | Schedule tracking, procurement status, budget variance, site blockers       |
+| Site Engineer       | `SITE_ENGINEER`       | **Mobile-first** | Daily tasks, drawing access, inspection forms, material requests            |
+| Procurement Officer | `PROCUREMENT_OFFICER` | Web              | RFQs, vendor comparisons, delivery tracking                                 |
+| Finance             | `FINANCE`             | Web              | Cost recognition, payment approvals, cash flow                              |
+| Safety Officer      | `SAFETY_OFFICER`      | Web + mobile     | Safety checklists, incident reporting, compliance status, violation alerts  |
+| CRM / Sales Manager | `CRM_SALES_MANAGER`   | Web              | Lead pipeline, opportunity tracking (basic UI in MVP)                       |
+| Tenant Admin        | `TENANT_ADMIN`        | Web              | Users, roles, workflows, tenant settings, integrations                      |
 
 Sub-roles (spec 06 §6.8): `PROC_MANAGER` (procurement approval tier above Officer),
 `SITE_WORKER` (field worker — mobile-primary; tasks/reports/checklists/issues read-write),
@@ -252,10 +252,10 @@ external surface (§8 below). Platform operator: `SYSTEM_ADMIN` — separate `/a
 
 Two login paths — BOTH rendered on web and on mobile:
 
-| Path | Route (web)  | Users                                                             | Mechanism                          |
-| ---- | ------------ | ----------------------------------------------------------------- | ---------------------------------- |
-| B    | `/login`     | Office/management (PM, Finance, Exec, Admin, Procurement, Safety) | Email + password (Keycloak OIDC)   |
-| A    | `/login/otp` | Field roles (Site Engineer, Site Worker)                          | Phone + 6-digit SMS OTP            |
+| Path | Route (web)  | Users                                                             | Mechanism                        |
+| ---- | ------------ | ----------------------------------------------------------------- | -------------------------------- |
+| B    | `/login`     | Office/management (PM, Finance, Exec, Admin, Procurement, Safety) | Email + password (Keycloak OIDC) |
+| A    | `/login/otp` | Field roles (Site Engineer, Site Worker)                          | Phone + 6-digit SMS OTP          |
 
 - OTP: 6-digit numeric, TTL 5 min, max 3 attempts/session, 10 requests/phone/day —
   design countdown, resend limits, attempt errors (spec 05 §5.4.2).
@@ -328,16 +328,16 @@ full screen specs in §15.3.
     → executive summary
 - **Mobile core component library (spec 32 §32.7 — design these first):**
 
-| Component             | Spec behaviour                                              |
-| --------------------- | ----------------------------------------------------------- |
-| `<MobileNav />`       | Bottom nav, 4–5 items max, icons + labels                   |
-| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap           |
-| `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue     |
-| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription      |
-| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect           |
-| `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count   |
-| `<StatusChip />`      | Todo / InProgress / Done / Syncing / Synced                 |
-| `<OptimisticList />`  | Instant UI update, rollback on failure, retry option        |
+| Component             | Spec behaviour                                            |
+| --------------------- | --------------------------------------------------------- |
+| `<MobileNav />`       | Bottom nav, 4–5 items max, icons + labels                 |
+| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap         |
+| `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue   |
+| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription    |
+| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect         |
+| `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count |
+| `<StatusChip />`      | Todo / InProgress / Done / Syncing / Synced               |
+| `<OptimisticList />`  | Instant UI update, rollback on failure, retry option      |
 
 - **Mobile prohibitions (spec 32 §32.7 + context Never-rules):**
   - ❌ Tables — use card layouts
@@ -425,7 +425,7 @@ Internal platform-operator UI. Not visible to tenants. All actions audit-logged.
 Human-gate notifications: workflow pauses at AWAITING_APPROVAL → SYSTEM_ADMIN gets in-app
 
 - email ("Data migration approval required — Approve or abort") — design an approval
-action surface (spec 19 §19.8, 34 §34.5).
+  action surface (spec 19 §19.8, 34 §34.5).
 
 ---
 
@@ -488,16 +488,16 @@ Warn-only budget banners:
 
 ### 9.3 Approval workflows (spec 15 §15.5 — design chains, timers, escalation)
 
-| Workflow                | Initiator            | Approver(s)                | Final authority              |
-| ----------------------- | -------------------- | -------------------------- | ---------------------------- |
-| PR → PO                 | Site Eng / Proc Off  | PM (to threshold)          | Finance + Executive (above)  |
-| Vendor Invoice (AP)     | Procurement Officer  | Finance                    | Executive (above limit)      |
-| Client Billing (AR)     | Finance              | PM                         | Executive (above limit)      |
-| Budget amendment / VO   | PM                   | Finance                    | Executive                    |
-| Safety permit           | Site Engineer        | Safety Officer             | PM                           |
-| Work permit             | Site Engineer        | Safety Officer             | —                            |
-| Drawing approval        | Site Engineer        | PM                         | —                            |
-| Contractor payment      | Finance              | Executive                  | —                            |
+| Workflow              | Initiator           | Approver(s)       | Final authority             |
+| --------------------- | ------------------- | ----------------- | --------------------------- |
+| PR → PO               | Site Eng / Proc Off | PM (to threshold) | Finance + Executive (above) |
+| Vendor Invoice (AP)   | Procurement Officer | Finance           | Executive (above limit)     |
+| Client Billing (AR)   | Finance             | PM                | Executive (above limit)     |
+| Budget amendment / VO | PM                  | Finance           | Executive                   |
+| Safety permit         | Site Engineer       | Safety Officer    | PM                          |
+| Work permit           | Site Engineer       | Safety Officer    | —                           |
+| Drawing approval      | Site Engineer       | PM                | —                           |
+| Contractor payment    | Finance             | Executive         | —                           |
 
 - Default PO thresholds (tenant-configurable): ≤ 50,000 THB PM alone; 50,001–500,000
   PM + Finance; > 500,000 PM + Finance + Executive.
@@ -533,12 +533,12 @@ Warn-only budget banners:
 
 ### 10.1 Channels
 
-| Channel       | Mechanism                            | Use                                                                   |
-| ------------- | ------------------------------------ | --------------------------------------------------------------------- |
-| In-app (web)  | SSE feed → bell + inbox              | Real-time while active in web UI                                      |
-| Push (mobile) | Expo Push (APNs/FCM)                 | Field alerts                                                          |
-| Email         | SendGrid → AWS SES                   | Digests, escalations                                                  |
-| LINE          | LINE Messaging API                   | Parallel channel (tenant configures Channel Access Token in settings) |
+| Channel       | Mechanism               | Use                                                                   |
+| ------------- | ----------------------- | --------------------------------------------------------------------- |
+| In-app (web)  | SSE feed → bell + inbox | Real-time while active in web UI                                      |
+| Push (mobile) | Expo Push (APNs/FCM)    | Field alerts                                                          |
+| Email         | SendGrid → AWS SES      | Digests, escalations                                                  |
+| LINE          | LINE Messaging API      | Parallel channel (tenant configures Channel Access Token in settings) |
 
 SMS exists in the enum but has **no MVP adapter** — do not design SMS notification UI.
 
@@ -615,17 +615,17 @@ executive-summary (Exec) · delay-risk (Exec/PM) · history list (spec 14 §14.3
 
 ## 13. Accessibility — WCAG 2.2 AA (spec 20 §20.8 — shipping gate)
 
-| Criterion                        | Applied requirement                                                                    |
-| -------------------------------- | -------------------------------------------------------------------------------------- |
-| 1.4.3 Contrast                   | Text ≥ **4.5:1** (≥ 3:1 large) — verify §32.7 tokens against a sunlight-readable floor |
-| 1.4.11 Non-text contrast         | Component/state indicators (borders, focus, chips) ≥ **3:1**                           |
-| 1.4.4 Resize text                | Layout survives **200% font scale** (verify at 375pt width)                            |
-| 2.5.8 Target size                | ≥ 24×24px — already exceeded by 44px minimum; keep it                                  |
-| 2.5.7 Dragging                   | Every drag/swipe has a single-tap alternative                                          |
-| 2.4.7/2.4.11 Focus visible       | Visible, non-obscured focus (web); logical focus order (RN)                            |
-| 3.3.7 Redundant entry            | Never re-ask data already provided in the same flow                                    |
-| 3.3.8 Accessible authentication  | No cognitive tests / inaccessible CAPTCHA on OTP login                                 |
-| 4.1.2 Name/Role/Value            | Every control exposes accessible name + role + state                                   |
+| Criterion                       | Applied requirement                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| 1.4.3 Contrast                  | Text ≥ **4.5:1** (≥ 3:1 large) — verify §32.7 tokens against a sunlight-readable floor |
+| 1.4.11 Non-text contrast        | Component/state indicators (borders, focus, chips) ≥ **3:1**                           |
+| 1.4.4 Resize text               | Layout survives **200% font scale** (verify at 375pt width)                            |
+| 2.5.8 Target size               | ≥ 24×24px — already exceeded by 44px minimum; keep it                                  |
+| 2.5.7 Dragging                  | Every drag/swipe has a single-tap alternative                                          |
+| 2.4.7/2.4.11 Focus visible      | Visible, non-obscured focus (web); logical focus order (RN)                            |
+| 3.3.7 Redundant entry           | Never re-ask data already provided in the same flow                                    |
+| 3.3.8 Accessible authentication | No cognitive tests / inaccessible CAPTCHA on OTP login                                 |
+| 4.1.2 Name/Role/Value           | Every control exposes accessible name + role + state                                   |
 
 - **Colour is never the only signal** (1.4.1) — pair status colours with icon + text;
   mandatory for safety flows; safety alerts must be screen-reader announced.
@@ -637,17 +637,17 @@ executive-summary (Exec) · delay-risk (Exec/PM) · history list (spec 14 §14.3
 
 ## 14. Performance Budgets that Constrain Design (context QM-6, spec 30 §30.9, 31 §31.6)
 
-| Metric                            | Budget                                   |
-| --------------------------------- | ---------------------------------------- |
-| Web LCP (p75)                     | ≤ 2.5 s (throttled mobile profile)       |
-| Web INP (p75)                     | ≤ 200 ms                                 |
-| Web CLS (p75)                     | ≤ 0.1 — reserve space; no layout shift   |
-| JS bundle per route               | ≤ 250 KB script transfer                 |
-| API read p95 / write p95          | < 300 ms / < 500 ms                      |
-| Dashboard (ClickHouse) p95        | < 1 s                                    |
-| AI report generation p95          | < 5 s                                    |
-| Mobile cold start                 | < 3 s on mid-range Android               |
-| Offline sync (3G, 5 MB)           | < 30 s                                   |
+| Metric                     | Budget                                 |
+| -------------------------- | -------------------------------------- |
+| Web LCP (p75)              | ≤ 2.5 s (throttled mobile profile)     |
+| Web INP (p75)              | ≤ 200 ms                               |
+| Web CLS (p75)              | ≤ 0.1 — reserve space; no layout shift |
+| JS bundle per route        | ≤ 250 KB script transfer               |
+| API read p95 / write p95   | < 300 ms / < 500 ms                    |
+| Dashboard (ClickHouse) p95 | < 1 s                                  |
+| AI report generation p95   | < 5 s                                  |
+| Mobile cold start          | < 3 s on mid-range Android             |
+| Offline sync (3G, 5 MB)    | < 30 s                                 |
 
 Design implications: skeletons over spinners for dashboards; fixed-height media/badge
 slots (CLS); lightweight imagery; no heavy chart libraries beyond budget; p75 must hold
@@ -750,8 +750,8 @@ Capabilities: **auto-create RFQs · auto-detect risks · auto-generate schedules
 auto-route approvals**. Design as supervised-automation surfaces, never silent actions:
 
 - **Autonomy ladder UI (COORD-001):** < THB 50,000 executes autonomously (logged);
-  50,001–500,000 renders as a *recommendation* awaiting PM/Finance approval;
-  500,001–5,000,000 *flag & pause* (Finance + Executive); > 5,000,000 *blocked*
+  50,001–500,000 renders as a _recommendation_ awaiting PM/Finance approval;
+  500,001–5,000,000 _flag & pause_ (Finance + Executive); > 5,000,000 _blocked_
   (Executive + Board review). Each tier needs a distinct visual state.
 - **Whitelist of autonomous actions (spec 22 §22.7):** send notification, generate
   report draft (PM reviews), flag risk/delay. AI never approves PO/invoice, never

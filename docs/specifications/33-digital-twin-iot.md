@@ -437,12 +437,12 @@ principle as RT-001, `22-ai-architecture` §22.7).
 
 **Technical metrics (AWS IoT Lens pattern):**
 
-| Metric                        | Definition                                                                            | Target set from                   |
-| ----------------------------- | ------------------------------------------------------------------------------------- | --------------------------------- |
-| Device connectivity           | Connected device count; **% devices disconnected + disconnect reasons**               | First 90 days production baseline |
-| Data freshness                | Device-vs-cloud timestamp delta, mapped to the §33.3 confidence tiers (≤ 60 s = live) | First 90 days production baseline |
-| Twin confidence distribution  | % of TwinState records per §33.3 confidence tier (1.0 / 0.7–0.9 / < 0.7)              | First 90 days production baseline |
-| Divergence detection latency  | State write → `twin.divergence.detected.v1` notification delivered                    | First 90 days production baseline |
+| Metric                       | Definition                                                                            | Target set from                   |
+| ---------------------------- | ------------------------------------------------------------------------------------- | --------------------------------- |
+| Device connectivity          | Connected device count; **% devices disconnected + disconnect reasons**               | First 90 days production baseline |
+| Data freshness               | Device-vs-cloud timestamp delta, mapped to the §33.3 confidence tiers (≤ 60 s = live) | First 90 days production baseline |
+| Twin confidence distribution | % of TwinState records per §33.3 confidence tier (1.0 / 0.7–0.9 / < 0.7)              | First 90 days production baseline |
+| Divergence detection latency | State write → `twin.divergence.detected.v1` notification delivered                    | First 90 days production baseline |
 
 **Business metrics (house style per `28-ecosystem-expansion` §28.4 — "% of tenants"):**
 

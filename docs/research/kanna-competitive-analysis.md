@@ -46,7 +46,7 @@ strong.** KANNA ships a lightweight, **manual-entry, project-level financial lay
 
 - **Executive Summary tab = Financial Overview** 🔬: a donut of Project Value / Billed (%) / Collected
   (%), a **Project Value** field (with input date), and **Billed and Collected** — `Total Billed −
-  Total Collected = Balance` — with an "+ Add" to enter billing/collection records manually. This is a
+Total Collected = Balance` — with an "+ Add" to enter billing/collection records manually. This is a
   lightweight **AR/billing-and-collection tracker** per project.
 - **Project Dashboard tab = EVM** 🔬: Planned vs Actual start/end, days elapsed/remaining, overall
   progress (planned % / actual % / variance %), and a **Cost & Value Overview**: Planned Cost, Actual
@@ -66,18 +66,18 @@ In-app **Change Plan** page 🔬 shows KANNA is **two independently-licensed pro
 **KANNA Project** and **KANNA Report** (each member consumes a KANNA Project seat and/or a KANNA
 Report seat; the trial shows 1/10 of each). The **KANNA Project** ladder (Thai tenant, current) is:
 
-| Plan | Company accounts | Storage | Price |
-| --- | --- | --- | --- |
-| **Free (ฟรี)** | 0 | 0.5 GB | ¥0 — "receive invitations from other companies + view project data" only; **trial auto-downgrades here** after 14 days |
-| Trial | 10 | 5 GB | active now, 14 days left |
-| **Light** | 10+ | 200 GB | quote (ใบเสนอราคา) |
-| **Pro** | 15+ | 400 GB | quote — "mid-size firms managing large sites, data-driven ops" |
-| **ProPlus** | quote | quote | quote — "all Pro features **+ KANNA Report — create & send reports even without internet**" |
-| **Enterprise** | quote | quote | quote — security + support focus |
+| Plan           | Company accounts | Storage | Price                                                                                                                  |
+| -------------- | ---------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Free (ฟรี)** | 0                | 0.5 GB  | ¥0 — "receive invitations from other companies + view project data" only; **trial auto-downgrades here** after 14 days |
+| Trial          | 10               | 5 GB    | active now, 14 days left                                                                                               |
+| **Light**      | 10+              | 200 GB  | quote (ใบเสนอราคา)                                                                                                     |
+| **Pro**        | 15+              | 400 GB  | quote — "mid-size firms managing large sites, data-driven ops"                                                         |
+| **ProPlus**    | quote            | quote   | quote — "all Pro features **+ KANNA Report — create & send reports even without internet**"                            |
+| **Enterprise** | quote            | quote   | quote — security + support focus                                                                                       |
 
 **KANNA Report** is priced separately by number of company user accounts (quote-only). This **corrects**
 the earlier "Light / Basic / Enterprise" lineup (that was a stale JP-page reading) and confirms two
-things: (a) there **is** a genuine ¥0 Free plan, but only for *external-invitee/viewer* use; (b) **offline
+things: (a) there **is** a genuine ¥0 Free plan, but only for _external-invitee/viewer_ use; (b) **offline
 report creation is a paid capability gated to ProPlus+** — not a base feature.
 
 ### 0.4 What is genuinely ABSENT — verified by exhaustive in-product walk 🔬
@@ -90,14 +90,14 @@ Walked every global nav item, all 12 project tabs, and all Settings sub-pages. *
   There is no vendor master and no vendor portal.
 - **BOQ** — no bill-of-quantities line-item engine; no quantity × unit-rate estimating structure.
 - **AP / invoicing documents** — no vendor-invoice object, no PO document, no double-entry ledger.
-  ("Billed/Collected" is a manual AR *tracker*, not an invoicing/AP system.)
+  ("Billed/Collected" is a manual AR _tracker_, not an invoicing/AP system.)
 - **Dedicated inspection/checklist entity** — Forms (`/gembadocs`) are generic custom forms; there is
   no first-class inspection with pass/fail that auto-creates an issue/defect record.
 
 ### 0.5 KANNA AI, in-product 🔬 — ⬇️ CORRECTION #3 (scope)
 
 The header **KANNA AI** button (`aria-label="สอบถาม KANNA AI"`) opens a slide-out chatbot whose own
-greeting is: *"Hello! The AI will answer questions about **how to use KANNA**."* with FAQ chips like
+greeting is: _"Hello! The AI will answer questions about **how to use KANNA**."_ with FAQ chips like
 "How do I approve members from other companies?", "How do I add members?". So the **web** KANNA AI is a
 **product-usage/help assistant**, **not** an operational AI that reads project data or generates site
 reports. The marketing-advertised "AI Voice Reporting" and "AI Assistance/MCP" were **not observable in
@@ -137,7 +137,7 @@ Export, Audit log, Company profile, Partners), and opened create/add modals to r
   address (อำเภอ/เขต/ตำบล, จังหวัด, รหัสไปรษณีย์) and business type (corporate/individual).
 - **Create-Project modal** 🔬 (`/projects/quick-register/new`): template · management ID · title ·
   description · start/end date · status (3 radios) · note. **No budget or cost field at all** — a
-  project has no financial attribute; cost/value is a *separate manual overlay* added later on the
+  project has no financial attribute; cost/value is a _separate manual overlay_ added later on the
   Dashboard / Executive-Summary tabs.
 - **A KANNA "task" is not a cost object — RESOLVED by a create→inspect→delete test** 🔬 (a throwaway
   task was created, inspected, then deleted; the account is back to 0 tasks). The task **create modal**,
@@ -171,7 +171,7 @@ Export, Audit log, Company profile, Partners), and opened create/add modals to r
   multi-stage, and an "editing-during-request" flag (not allowed / own-company only). **Confirmed: there
   is NO amount-threshold or value-conditional routing** (the field is `stages.N.approvalCondition` =
   all/single, never an amount). So KANNA approval is **person/stage-list based**, categorically unlike
-  COS's *financial-amount-tiered* chains (≤50k→PM, 50k–500k→+FINANCE, >500k→+EXECUTIVE, §15.5). The
+  COS's _financial-amount-tiered_ chains (≤50k→PM, 50k–500k→+FINANCE, >500k→+EXECUTIVE, §15.5). The
   inbox (`/approval-requests`) carries requester · approver · request date · **approval deadline**.
 - **Notification channels** 🔬 (`/settings/notifications`): per-user web channels are **Desktop
   (browser push) + Email only** (email requires verification first). Event toggles cover project
@@ -216,38 +216,38 @@ automation; and **Enterprise-tier security** (2FA/SSO/IP-allowlist) is not reach
 
 ## 1. Company snapshot
 
-| Fact | Evidence |
-| --- | --- |
-| Aldagram Inc., Tokyo; KANNA launched July 2020 | ✅ [aldagram.com/en/news/w2sote4ziq](https://aldagram.com/en/news/w2sote4ziq/) |
-| Series A ~2B JPY (~$20M), announced 2022-06-01, from MonotaRO, JAFCO, Full Commit Partners (no source names a lead investor) | ✅ same press release |
-| Strategic investment from Panasonic, May 2023 (amount undisclosed) | 🔶 [TechCrunch 2023-05-15](https://techcrunch.com/2023/05/15/japanese-construction-tech-aldagram-nails-down-backing-from-panasonic/) — not adversarially verified |
-| Customer count: 5,000 (Jun 2022) → 30,000+ (Oct 2023) → 50,000+ (Sep 2024) → **70,000+ (Jul 2025, 5th anniversary)** — all vendor-reported | ✅ (to 30k) / 🔶 (50k, 70k from [aldagram.com/en/news/](https://aldagram.com/en/news/) listing) |
-| Target industries: construction, real estate, manufacturing | ✅ |
+| Fact                                                                                                                                       | Evidence                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Aldagram Inc., Tokyo; KANNA launched July 2020                                                                                             | ✅ [aldagram.com/en/news/w2sote4ziq](https://aldagram.com/en/news/w2sote4ziq/)                                                                                    |
+| Series A \~2B JPY (\~$20M), announced 2022-06-01, from MonotaRO, JAFCO, Full Commit Partners (no source names a lead investor)             | ✅ same press release                                                                                                                                             |
+| Strategic investment from Panasonic, May 2023 (amount undisclosed)                                                                         | 🔶 [TechCrunch 2023-05-15](https://techcrunch.com/2023/05/15/japanese-construction-tech-aldagram-nails-down-backing-from-panasonic/) — not adversarially verified |
+| Customer count: 5,000 (Jun 2022) → 30,000+ (Oct 2023) → 50,000+ (Sep 2024) → **70,000+ (Jul 2025, 5th anniversary)** — all vendor-reported | ✅ (to 30k) / 🔶 (50k, 70k from [aldagram.com/en/news/](https://aldagram.com/en/news/) listing)                                                                   |
+| Target industries: construction, real estate, manufacturing                                                                                | ✅                                                                                                                                                                |
 
 ## 2. Thailand / SEA presence — KANNA is already in our market
 
-| Fact | Evidence |
-| --- | --- |
-| First overseas office = **representative office in Thailand** (announced 2023-08-10) | 🔶 [aldagram.com/en/news/](https://aldagram.com/en/news/) listing; corroborated by Thai press (mgronline, ryt9) in the verified run ✅ |
-| iOS app localized in **Thai** (+ Vietnamese, Indonesian, Spanish, English, Japanese) | ✅ App Store JP listing v19.5.0 |
-| SEA named expansion target (2022 press release); TechCrunch reports users in TH/VN/PH/MY and a Thai-language release Nov 2022 | ✅ |
-| Bahasa Indonesia version launched 2025-08-11 ("SEA's largest market") | 🔶 news listing |
-| **KANNA Dashboard (Jan 2026) shipped with Thai on day one** | 🔶 [aldagram.com/en/news/7c000qadv9](https://aldagram.com/en/news/7c000qadv9/) |
-| Approval Flow (Mar 2025) launched JP/EN with Thai "to be added soon" | 🔶 [PR TIMES](https://prtimes.jp/main/html/rd/p/000000079.000058603.html) |
+| Fact                                                                                                                          | Evidence                                                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| First overseas office = **representative office in Thailand** (announced 2023-08-10)                                          | 🔶 [aldagram.com/en/news/](https://aldagram.com/en/news/) listing; corroborated by Thai press (mgronline, ryt9) in the verified run ✅ |
+| iOS app localized in **Thai** (+ Vietnamese, Indonesian, Spanish, English, Japanese)                                          | ✅ App Store JP listing v19.5.0                                                                                                        |
+| SEA named expansion target (2022 press release); TechCrunch reports users in TH/VN/PH/MY and a Thai-language release Nov 2022 | ✅                                                                                                                                     |
+| Bahasa Indonesia version launched 2025-08-11 ("SEA's largest market")                                                         | 🔶 news listing                                                                                                                        |
+| **KANNA Dashboard (Jan 2026) shipped with Thai on day one**                                                                   | 🔶 [aldagram.com/en/news/7c000qadv9](https://aldagram.com/en/news/7c000qadv9/)                                                         |
+| Approval Flow (Mar 2025) launched JP/EN with Thai "to be added soon"                                                          | 🔶 [PR TIMES](https://prtimes.jp/main/html/rd/p/000000079.000058603.html)                                                              |
 
 ## 3. Verified feature inventory
 
-| Feature | Status | Notes |
-| --- | --- | --- |
-| Consolidated site photo management + annotation | ✅ standard | |
-| Electronic blackboard (電子小黒板) + tamper detection (J-COMSIA certified, CRYPTREC crypto) | ✅ **paid option**, not base product | Vendor's own page: "電子小黒板機能はKANNAのオプション機能となっています". JP-public-works oriented |
-| Gantt (工程表) with task dependencies | ✅ standard | Claim that Gantt is a paid option was ❌ REFUTED (1-2) |
-| Per-site document sharing, site-linked chat, shared calendar | ✅ standard | |
-| Daily/progress reports | ✅ standard | |
-| KANNA Report — Excel-template → digital form (fields, formulas, e-signature, Excel/PDF export), Nov 2023 | ✅ | Template conversion is **staff-assisted**, not self-serve |
-| **Approval Flow** (2025-03-31): submit/approve documents & reports, internal + external partners, multi-step, "all approvers"/"one-person" modes, comments, return-for-revision | 🔶 PR + [feature page](https://lp.kanna4u.com/feature/approval-flow/) | Generic document/report approval — **no financial thresholds, no procurement chain** in the announcement |
-| **KANNA Dashboard** (2026-01-29): portfolio profitability visualization — "aggregates sales, billing, and collection data against targets"; schedule-risk flags; drill-down; EN/JP/**TH**/ID | 🔶 press release | A **visualization layer**, not a budgeting/cost-management module (per release text) |
-| Integrations advertised on the JP feature page | ✅ Google Calendar only | |
+| Feature                                                                                                                                                                                      | Status                                                                | Notes                                                                                                    |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Consolidated site photo management + annotation                                                                                                                                              | ✅ standard                                                           |                                                                                                          |
+| Electronic blackboard (電子小黒板) + tamper detection (J-COMSIA certified, CRYPTREC crypto)                                                                                                  | ✅ **paid option**, not base product                                  | Vendor's own page: "電子小黒板機能はKANNAのオプション機能となっています". JP-public-works oriented       |
+| Gantt (工程表) with task dependencies                                                                                                                                                        | ✅ standard                                                           | Claim that Gantt is a paid option was ❌ REFUTED (1-2)                                                   |
+| Per-site document sharing, site-linked chat, shared calendar                                                                                                                                 | ✅ standard                                                           |                                                                                                          |
+| Daily/progress reports                                                                                                                                                                       | ✅ standard                                                           |                                                                                                          |
+| KANNA Report — Excel-template → digital form (fields, formulas, e-signature, Excel/PDF export), Nov 2023                                                                                     | ✅                                                                    | Template conversion is **staff-assisted**, not self-serve                                                |
+| **Approval Flow** (2025-03-31): submit/approve documents & reports, internal + external partners, multi-step, "all approvers"/"one-person" modes, comments, return-for-revision              | 🔶 PR + [feature page](https://lp.kanna4u.com/feature/approval-flow/) | Generic document/report approval — **no financial thresholds, no procurement chain** in the announcement |
+| **KANNA Dashboard** (2026-01-29): portfolio profitability visualization — "aggregates sales, billing, and collection data against targets"; schedule-risk flags; drill-down; EN/JP/**TH**/ID | 🔶 press release                                                      | A **visualization layer**, not a budgeting/cost-management module (per release text)                     |
+| Integrations advertised on the JP feature page                                                                                                                                               | ✅ Google Calendar only                                               |                                                                                                          |
 
 ### AI features — advertised, depth unverified ⚠️
 
@@ -269,7 +269,7 @@ account. The MCP claim, if real, is strategically notable (agent-accessible proj
 project info + fill/edit forms created while online**. No documentation of sync behavior or
 conflict handling anywhere. The JP App Store description doesn't mention offline.
 🔶 The EN pricing page places offline report creation ("KANNA Report — … even without an internet
-connection") in the **Pro Plus tier and above** — i.e., offline is a *paid* capability.
+connection") in the **Pro Plus tier and above** — i.e., offline is a _paid_ capability.
 
 **COS contrast (spec-sourced):** offline-first Drizzle/expo-sqlite, sync queue with priority order
 (safety → attendance → inspections → task progress → reports → material → equipment → media),
@@ -292,16 +292,16 @@ spec 17. This is the single largest verified technical gap in COS's favor.
 - **Unlimited external (subcontractor/partner) accounts on every tier** ("アカウント数無制限") —
   their headline differentiator. Third-party sources say these are free; the "free" wording is not
   on the pricing page itself.
-- A ¥0 free *plan* is reported by aggregators (imitsu, BOXIL) but ⚠️ UNVERIFIED — official pages
+- A ¥0 free _plan_ is reported by aggregators (imitsu, BOXIL) but ⚠️ UNVERIFIED — official pages
   show only a free **trial** ("無料ではじめる", no credit card).
 
 ### International (lp.kanna4u.com/en/pricing — published prices) 🔶
 
-| Plan | Price | Extra user | Included | Notable |
-| --- | --- | --- | --- | --- |
-| Pro | **$200/mo** (annual −20%) | $20/user/mo | 200 GB, 10 users, 5 templates | base PM features |
-| Pro Plus | **$250/mo** | $25/user/mo | 200 GB, 10 users | + KANNA Report (incl. **offline** form entry), custom reporting, **approval workflows** |
-| Enterprise | **$600/mo** | $40/user/mo | 1,000 GB, 15 users, 100 templates | security controls, IP allowlist, 2FA, device restrictions, company dashboard, volume pricing |
+| Plan       | Price                     | Extra user  | Included                          | Notable                                                                                      |
+| ---------- | ------------------------- | ----------- | --------------------------------- | -------------------------------------------------------------------------------------------- |
+| Pro        | **$200/mo** (annual −20%) | $20/user/mo | 200 GB, 10 users, 5 templates     | base PM features                                                                             |
+| Pro Plus   | **$250/mo**               | $25/user/mo | 200 GB, 10 users                  | + KANNA Report (incl. **offline** form entry), custom reporting, **approval workflows**      |
+| Enterprise | **$600/mo**               | $40/user/mo | 1,000 GB, 15 users, 100 templates | security controls, IP allowlist, 2FA, device restrictions, company dashboard, volume pricing |
 
 > Note the JP↔international divergence: JP = quote-only Light/Basic/Enterprise; international =
 > published Pro/Pro Plus/Enterprise. The earlier deep-research conclusion "no price points published
@@ -309,12 +309,12 @@ spec 17. This is the single largest verified technical gap in COS's favor.
 
 ## 6. User reviews (previously an unanswered gap — now sourced) 🔶
 
-| Platform | Rating | Volume | Signal |
-| --- | --- | --- | --- |
-| Capterra | **4.5★** | 15 reviews | Pros: intuitive UI, docs-in-one-place, cheaper than Procore, strong support, offline access, customization. Cons: "limited or not fully customizable" advanced features; mobile app "needs improvement"; **missing S-Curve reports** ("industry-mandatory" per one construction reviewer); storage limits; one "waste of time and money / blank slate" review |
-| App Store (JP) | **4.3★** | 275 ratings | Praise: unifies scattered info, replaces email/LINE. Complaint: account deletion requires PC login |
-| Google Play (via applion.jp) | **4.0★** | ~100 ratings | 62×5★ / 13×4★ / 8×3★ / 1×2★ / **16×1★ (~16%)** — negative review texts not visible on the aggregator |
-| ITreview (JP) | 4.0★ | **1 review** | Thin JP public-review footprint (✅ from verified run) |
+| Platform                     | Rating   | Volume       | Signal                                                                                                                                                                                                                                                                                                                                                        |
+| ---------------------------- | -------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Capterra                     | **4.5★** | 15 reviews   | Pros: intuitive UI, docs-in-one-place, cheaper than Procore, strong support, offline access, customization. Cons: "limited or not fully customizable" advanced features; mobile app "needs improvement"; **missing S-Curve reports** ("industry-mandatory" per one construction reviewer); storage limits; one "waste of time and money / blank slate" review |
+| App Store (JP)               | **4.3★** | 275 ratings  | Praise: unifies scattered info, replaces email/LINE. Complaint: account deletion requires PC login                                                                                                                                                                                                                                                            |
+| Google Play (via applion.jp) | **4.0★** | ~100 ratings | 62×5★ / 13×4★ / 8×3★ / 1×2★ / **16×1★ (~16%)** — negative review texts not visible on the aggregator                                                                                                                                                                                                                                                          |
+| ITreview (JP)                | 4.0★     | **1 review** | Thin JP public-review footprint (✅ from verified run)                                                                                                                                                                                                                                                                                                        |
 
 Review volume is small everywhere relative to a claimed 70,000+ companies — public review
 sentiment is a weak signal either way.
@@ -325,7 +325,7 @@ sentiment is a weak signal either way.
   per-project reports/photos/documents) **but** it is an optional add-on, fully sales-gated — even
   API documentation requires contacting a representative. No public developer portal.
 - ❌ REFUTED (0-3): "the API surface excludes procurement/cost/BOQ endpoints" — we can only say the
-  API is *gated*, not what its data model lacks.
+  API is _gated_, not what its data model lacks.
 - COS contrast: API-first, OpenAPI 3.1 per service, versioned `/api/v1/` from day one (QM-2).
 
 ## 8. Feature-by-feature vs Construction OS phases
@@ -334,24 +334,24 @@ sentiment is a weak signal either way.
 > as audited 2026-07-13 (raw-HTML keyword audit: zero hits for 発注/受発注/購買/原価/予算/請求;
 > corroborated by third-party review aippearnet.com: "見積・請求・原価管理機能がありません") ✅.
 
-| Capability | KANNA | Construction OS |
-| --- | --- | --- |
-| Daily site reports + photos | ✅ core strength | Priority 1 / Phase 6 (site-ops) — parity required; target: report < 2 min |
-| Electronic blackboard + tamper-evident photos | ✅ (paid option; JP public works) | — not in spec (JP-market-specific; no Thai regulatory equivalent identified — decide only if Thai compliance demands it) |
-| Gantt / schedule dependencies | ✅ standard | Task tracking + progress % + baseline variance (Priority 1, §11 tasks); a Gantt *UI* is not named in the master doc |
-| Custom form digitization (Excel → form) | 🔬 "Forms"/gembadocs — create form + folders + QR field entry (staff-assisted conversion) | Checklists/inspections are first-class entities (Phase 6), not generic form templates |
-| Document approval workflow | 🔬 multi-stage approver-list routes; per-stage all/single condition; **no amount thresholds** | Threshold-based financial approval chains (≤50k THB PM; 50k–500k +FINANCE; >500k +EXECUTIVE) + 48h escalation, Temporal-backed (§15.5, Phase 5) — far deeper, domain-specific |
-| Procurement PR→RFQ→PO state machines, vendor mgmt, deliveries | **— absent** 🔬 (no procurement surface; only Clients, no vendor entity) | Phase 5 full state machines + events; Vendor Portal (ADR-030) |
-| BOQ engine + financial precision | **— absent** 🔬 | Phase 4 (DECIMAL(19,4), decimal.js, versioning) |
-| Cost/budget tracking | 🔬 **present but manual & (sub-)project-level**: EVM (Planned/Actual Cost, PV, EV, Cost & Schedule Variance); hand-entered, **not** procurement-derived; **tasks carry no cost at all** (verified by create→delete test) | Priority 3 / Phase 7 (budget lines, cost transactions auto-fed from procurement events, variance alerts) |
-| Finance / billing | 🔬 **lightweight manual AR only**: Project Value + Total Billed − Total Collected = Balance. No AP/vendor-invoice, no PO docs, no double-entry, no cash-flow forecast | Phase 7 (AR billing + receipts, AP from procurement, 13-week direct-method forecast, ADR-024) |
-| Offline field operation | Limited: pre-download + form entry; **paid tier (ProPlus+)** 🔬 | Offline-first (core, all tiers), 3+ conflict strategies, sync priority, delta+tombstones (Phase 6/10, spec 17) |
-| AI | 🔬 web KANNA AI = **usage-help chatbot** (not operational). Voice reporting/MCP advertised, ⚠️ not observable in web trial | Phase 11–12: RAG (pgvector+OpenSearch+RRF), HallucinationGuard, confidence scores, token caps — operational report generation |
-| Analytics | 🔬 EVM/financial dashboards (project + company), manual-fed; Thai day-one | Phase 14 ClickHouse (p95 < 1s SLO) + Phase 13 knowledge graph |
-| Multi-tenant enterprise | Enterprise tier: IP allowlist, 2FA, device restrictions; 🔬 coarse company-authority RBAC (not per-module) | RLS-enforced shared DB + dedicated DB per enterprise tenant (Phase 25), Keycloak realms, 12-role matrix |
-| External collaborators | **Unlimited free external accounts (headline differentiator)** ✅ | Vendor Portal magic-link (ADR-030) — pricing/packaging for external users not yet defined in spec §26 |
-| Thai localization | Thai UI (app + Dashboard); Bangkok rep office | th-TH default locale, Buddhist Era calendar, Thai WHT rules, PDPA compliance (QM-3/QM-5) |
-| API openness | Sales-gated optional add-on | API-first, OpenAPI 3.1, versioned from day 1 |
+| Capability                                                    | KANNA                                                                                                                                                                                                                    | Construction OS                                                                                                                                                               |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Daily site reports + photos                                   | ✅ core strength                                                                                                                                                                                                         | Priority 1 / Phase 6 (site-ops) — parity required; target: report < 2 min                                                                                                     |
+| Electronic blackboard + tamper-evident photos                 | ✅ (paid option; JP public works)                                                                                                                                                                                        | — not in spec (JP-market-specific; no Thai regulatory equivalent identified — decide only if Thai compliance demands it)                                                      |
+| Gantt / schedule dependencies                                 | ✅ standard                                                                                                                                                                                                              | Task tracking + progress % + baseline variance (Priority 1, §11 tasks); a Gantt _UI_ is not named in the master doc                                                           |
+| Custom form digitization (Excel → form)                       | 🔬 "Forms"/gembadocs — create form + folders + QR field entry (staff-assisted conversion)                                                                                                                                | Checklists/inspections are first-class entities (Phase 6), not generic form templates                                                                                         |
+| Document approval workflow                                    | 🔬 multi-stage approver-list routes; per-stage all/single condition; **no amount thresholds**                                                                                                                            | Threshold-based financial approval chains (≤50k THB PM; 50k–500k +FINANCE; >500k +EXECUTIVE) + 48h escalation, Temporal-backed (§15.5, Phase 5) — far deeper, domain-specific |
+| Procurement PR→RFQ→PO state machines, vendor mgmt, deliveries | **— absent** 🔬 (no procurement surface; only Clients, no vendor entity)                                                                                                                                                 | Phase 5 full state machines + events; Vendor Portal (ADR-030)                                                                                                                 |
+| BOQ engine + financial precision                              | **— absent** 🔬                                                                                                                                                                                                          | Phase 4 (DECIMAL(19,4), decimal.js, versioning)                                                                                                                               |
+| Cost/budget tracking                                          | 🔬 **present but manual & (sub-)project-level**: EVM (Planned/Actual Cost, PV, EV, Cost & Schedule Variance); hand-entered, **not** procurement-derived; **tasks carry no cost at all** (verified by create→delete test) | Priority 3 / Phase 7 (budget lines, cost transactions auto-fed from procurement events, variance alerts)                                                                      |
+| Finance / billing                                             | 🔬 **lightweight manual AR only**: Project Value + Total Billed − Total Collected = Balance. No AP/vendor-invoice, no PO docs, no double-entry, no cash-flow forecast                                                    | Phase 7 (AR billing + receipts, AP from procurement, 13-week direct-method forecast, ADR-024)                                                                                 |
+| Offline field operation                                       | Limited: pre-download + form entry; **paid tier (ProPlus+)** 🔬                                                                                                                                                          | Offline-first (core, all tiers), 3+ conflict strategies, sync priority, delta+tombstones (Phase 6/10, spec 17)                                                                |
+| AI                                                            | 🔬 web KANNA AI = **usage-help chatbot** (not operational). Voice reporting/MCP advertised, ⚠️ not observable in web trial                                                                                               | Phase 11–12: RAG (pgvector+OpenSearch+RRF), HallucinationGuard, confidence scores, token caps — operational report generation                                                 |
+| Analytics                                                     | 🔬 EVM/financial dashboards (project + company), manual-fed; Thai day-one                                                                                                                                                | Phase 14 ClickHouse (p95 < 1s SLO) + Phase 13 knowledge graph                                                                                                                 |
+| Multi-tenant enterprise                                       | Enterprise tier: IP allowlist, 2FA, device restrictions; 🔬 coarse company-authority RBAC (not per-module)                                                                                                               | RLS-enforced shared DB + dedicated DB per enterprise tenant (Phase 25), Keycloak realms, 12-role matrix                                                                       |
+| External collaborators                                        | **Unlimited free external accounts (headline differentiator)** ✅                                                                                                                                                        | Vendor Portal magic-link (ADR-030) — pricing/packaging for external users not yet defined in spec §26                                                                         |
+| Thai localization                                             | Thai UI (app + Dashboard); Bangkok rep office                                                                                                                                                                            | th-TH default locale, Buddhist Era calendar, Thai WHT rules, PDPA compliance (QM-3/QM-5)                                                                                      |
+| API openness                                                  | Sales-gated optional add-on                                                                                                                                                                                              | API-first, OpenAPI 3.1, versioned from day 1                                                                                                                                  |
 
 ## 9. Strategic read
 
@@ -363,13 +363,13 @@ sentiment is a weak signal either way.
 2. **Verified white space (COS moat), narrowed but real:** the moat is **not** "cost visibility"
    (KANNA has a manual version) — it is the **transactional layer that auto-populates cost**:
    procurement PR→RFQ→PO state machines, vendor master + Vendor Portal, BOQ line items, AP/vendor
-   invoices, and cost that *flows from those events* instead of being typed in. Plus true offline-first
+   invoices, and cost that _flows from those events_ instead of being typed in. Plus true offline-first
    (KANNA's is paid + shallow), operational AI with guardrails (KANNA's web AI is only usage-help), and
    an open versioned API (KANNA's is sales-gated). COS's edge is **"the numbers are a by-product of the
    workflow," not "someone re-keys them into a dashboard."**
 3. **White-space erosion is underway and faster than the marketing pages suggested:** in-product
    Approval Route + EVM + billing/collection dashboards (Thai day-one) show Aldagram already at the
-   *cost-visibility* layer — but still **not** the transactional layer (no PO/BOQ/vendor-invoice
+   _cost-visibility_ layer — but still **not** the transactional layer (no PO/BOQ/vendor-invoice
    objects; cost is hand-keyed). That gap is the defensible line. Expect continued movement; re-audit
    semi-annually with a fresh trial account.
 4. **Packaging lesson:** unlimited free subcontractor accounts is their wedge into networks of
@@ -418,7 +418,7 @@ sentiment is a weak signal either way.
    has th-TH default, Buddhist Era, Thai WHT, PDPA (QM-3/QM-5) — parity here is required just to be in
    the game; specced ≠ shipped.
 
-### P2 — build and *demonstrate* the moat KANNA structurally lacks
+### P2 — build and _demonstrate_ the moat KANNA structurally lacks
 
 1. **Make "cost/finance emerges from workflow" real end-to-end and demoable** ✅📋. The defensible
    differentiator: procurement (Phase 5, PR→RFQ→PO) → cost transactions (Phase 7) → EVM/variance,
@@ -460,7 +460,7 @@ first; layer the procurement→cost moat as the retention/expansion play.
    Collected have input fields; cost is typed per project/task, not transaction-derived).
 2. ~~Whether a genuine ¥0 plan exists~~ → **Answered 🔬: yes**, but only for external-invitee/viewer use
    (0 company accounts, 0.5 GB); it's the auto-downgrade target after trial.
-3. Web KANNA AI = usage-help chatbot (answered 🔬). **Still open:** depth/GA of the *mobile* "AI Voice
+3. Web KANNA AI = usage-help chatbot (answered 🔬). **Still open:** depth/GA of the _mobile_ "AI Voice
    Reporting" and "AI MCP" — needs a mobile-device test (not doable from this web audit).
 4. **Still open:** does KANNA's offline sync do conflict resolution, and how (needs the ProPlus+ tier +
    mobile app to test)? COS's offline conflict strategies have no observed KANNA counterpart.
