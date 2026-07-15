@@ -8,8 +8,8 @@
 > channels (banks/CVCs, LINE, depa, government procurement, accounting-software, materials dealers).
 >
 > **Evidence discipline:** 📊 = cited fact · 📋 = strategic judgment (reasoned, not a fact) ·
-> ⚠️ = UNVERIFIED (do not act on as fact). Question answered: *how must COS adapt to out-distribute
-> these competitors?* This is a distribution *strategy*, not a promise — several inputs depend on
+> ⚠️ = UNVERIFIED (do not act on as fact). Question answered: _how must COS adapt to out-distribute
+> these competitors?_ This is a distribution _strategy_, not a promise — several inputs depend on
 > decisions only the product owner can make (§7).
 
 ---
@@ -55,7 +55,7 @@ BUILK-conflicted and SCG-controlled channels**.
 
 **Evidence:** LINE has **56M MAU = 85.7% of Thai internet users** ([DataReportal 2025](https://datareportal.com/reports/digital-2025-thailand));
 Thai construction crews live on LINE (the real incumbent is "LINE + Excel + paper"). LINE **MINI Apps**
-(LIFF) run *inside* the chat with **no app-store install**, and Thailand is an officially supported
+(LIFF) run _inside_ the chat with **no app-store install**, and Thailand is an officially supported
 region ([LINE MINI App docs](https://developers.line.biz/en/docs/line-mini-app/develop/develop-overview/)).
 
 **Action:** ship the contractor/crew-facing surface as a **LINE MINI App + Official Account** (push job
@@ -160,7 +160,7 @@ Retail)**.
 
 **Action (optional, later phase):** if a materials co-marketing channel is wanted, court **INSEE
 Alliance / Do Home / HomePro-Mega Home / Thai Watsadu** — never SCG-linked chains. But see §3: don't try
-to *become* a materials marketplace.
+to _become_ a materials marketplace.
 
 ### 2.10 Industry associations + trade shows (cheapest membership-free entry) 📊 → 📋
 
@@ -181,7 +181,7 @@ plug into without a membership gate — only sponsorship/booth cost:
 
 **Action:** capital-light entry = **speak/run a workshop at TCA or on EIT's course platform, and exhibit
 or co-market a talk at BCT/CBA/House & Condo expos** — the cheapest way to reach clustered contractor
-buyers without a channel-partner deal. ⚠️ No vendor-partnership *program* is confirmed at any body — the
+buyers without a channel-partner deal. ⚠️ No vendor-partnership _program_ is confirmed at any body — the
 route is sponsorship/speaking, not an official partner track; association member counts are UNVERIFIED
 (only ASA's ~10,000 architects is official). **COE (สภาวิศวกร) is a regulator — useful for market sizing
 and credibility, not distribution.**
@@ -198,7 +198,7 @@ and credibility, not distribution.**
 - **Don't bet on the GC-mandate motion in Thailand** — ⚠️ unverified there (§1); run the free-external
   loop bottom-up instead.
 - **Don't approach KBank/Beacon, Krungsri/Finnovate, or any SCG-controlled channel** — all BUILK-conflicted 📊.
-- **Don't out-spend KANNA on local office + executive events** — match its *localization* (Thai UI is
+- **Don't out-spend KANNA on local office + executive events** — match its _localization_ (Thai UI is
   table stakes) but win on scope + the capital-light channels above, not on sales headcount.
 - **Don't rely on developer/GC PropTech CVCs for a contractor SaaS** — Sansiri/Origin/SC Asset invest in
   **lifestyle/home-services**, not contractor tools 📊 (poor fit).

@@ -4,6 +4,15 @@
     "code_blocks": false,
     "tables": false
   },
+  "_comment_MD060": [
+    "Prettier owns table formatting (same stance as MD013 tables:false above, and as .sqlfluff:",
+    "'Line length is not enforced for SQL in this repo (consistent with Prettier owning width",
+    "elsewhere)'). MD060 and Prettier measure Thai differently — Thai vowels and tone marks are",
+    "combining characters, zero-width when rendered but one code point each — so on any table row",
+    "containing Thai they disagree about where the pipe belongs. Every MD060 hit in this repo was a",
+    "Thai row; there is no formatting that satisfies both tools, so the one that formats wins."
+  ],
+  "MD060": false,
   "MD024": {
     "siblings_only": true
   },

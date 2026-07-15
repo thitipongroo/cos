@@ -3,8 +3,8 @@
 > **Status:** research + strategy document — NOT an architecture spec; nothing here overrides
 > `docs/specifications/`. **Companion docs:** [`competitive-landscape.md`](competitive-landscape.md),
 > [`distribution-playbook.md`](distribution-playbook.md), [`kanna-competitive-analysis.md`](kanna-competitive-analysis.md).
-> **Date:** 2026-07-14. **Question answered:** *how does COS **disrupt** (displace / take share from)
-> these competitors* — not how to out-feature them, and not distribution (that is the companion doc).
+> **Date:** 2026-07-14. **Question answered:** _how does COS **disrupt** (displace / take share from)
+> these competitors_ — not how to out-feature them, and not distribution (that is the companion doc).
 >
 > **Evidence discipline:** 📊 = cited fact (from the companion research docs) · 📋 = strategic judgment
 > (reasoned, not a fact) · ⚠️ = risk / UNVERIFIED / spec-gap. **Spec-status tags** on the product bets
@@ -15,7 +15,7 @@
 ## 1. Thesis
 
 **COS disrupts by NOT playing the incumbents' game.** Beating Procore/KANNA/BUILK feature-for-feature is
-*sustaining* innovation — and in sustaining fights the larger, better-funded, already-localized incumbent
+_sustaining_ innovation — and in sustaining fights the larger, better-funded, already-localized incumbent
 wins. Disruption here is **new-market disruption of the non-consumer**: make a construction OS usable by
 the Thai SME contractor who today can only use **LINE + Excel + paper**, using **AI-native** as the
 disruptive technology and a **business-model flip** (free field layer; cost/finance as an automatic
@@ -35,8 +35,8 @@ target.**
 1. **Target the non-consumer, not Procore's customer** 📋 — the small contractor who never adopted
    software because forms/BIM need staff they don't have. Winning here is invisible to the enterprise
    incumbents and beneath their cost structure to serve.
-2. **AI-native is the disruptive technology** 📊📋 — the job-to-be-done is *"get the paperwork done,"* not
-   *"fill in a form."* Every competitor bolts AI onto a form-based workflow (ANDPAD Stellarc, Novade AI,
+2. **AI-native is the disruptive technology** 📊📋 — the job-to-be-done is _"get the paperwork done,"_ not
+   _"fill in a form."_ Every competitor bolts AI onto a form-based workflow (ANDPAD Stellarc, Novade AI,
    KANNA voice) or has none (BUILK). Inverting it — **talk / snap a photo / chat in Thai → AI produces the
    daily report, BOQ, PO, and cost entry** — turns the non-technical contractor into a full-OS user. That
    is what converts non-consumers; a better form does not.
@@ -53,13 +53,13 @@ target.**
 
 ## 3. Why each incumbent cannot respond (innovator's dilemma, per competitor)
 
-| Incumbent | Why COS can disrupt it / why it can't easily copy | Evidence |
-| --- | --- | --- |
-| **Procore / Autodesk** | Going down-market to the Thai SME + localizing (ราคากลาง, Thai UI) **cannibalizes their enterprise ACV/per-seat model** and requires localization they've deprioritized (Procore Thai UI = beta; Autodesk Thai UI = none). Classic incumbent's dilemma. | 📊 competitive-landscape §3.1–3.2 |
-| **KANNA** | Its data model has **no vendor / PO / BOQ objects at all** (verified in-product); adding a transactional engine is a different product/company, not a feature. It also treats offline as a paid upsell. | 📊 kanna-competitive-analysis §0.4 |
-| **BUILK** | DNA is a **materials-margin marketplace**; software is a loss-leader funnel. Becoming an AI-native, offline-first, BOQ-integrated OS is off-model, and it is tied to SCG. It has **no BOQ, no verified AI, no verified offline**. | 📊 competitive-landscape §2.2 |
-| **ANDPAD** | The **most dangerous** — it already has transactional depth (procurement + cost) + the strongest AI (Stellarc) + Thai UI (Dec 2025). But its AI is **bolted onto a form workflow**, and it is Japan-first / Vietnam-office. COS must out-execute on *AI-native* + *Thai ground game* and *speed*, not assume it can't respond. | 📊 competitive-landscape §2.1 · 📋 |
-| **Novade** | Enterprise field-ops with deep AI, but **no procurement/BOQ/cost/finance** and reseller-led in Thailand — a field-layer rival, not a transactional-OS one. | 📊 competitive-landscape §2.4 |
+| Incumbent              | Why COS can disrupt it / why it can't easily copy                                                                                                                                                                                                                                                                              | Evidence                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------- |
+| **Procore / Autodesk** | Going down-market to the Thai SME + localizing (ราคากลาง, Thai UI) **cannibalizes their enterprise ACV/per-seat model** and requires localization they've deprioritized (Procore Thai UI = beta; Autodesk Thai UI = none). Classic incumbent's dilemma.                                                                        | 📊 competitive-landscape §3.1–3.2  |
+| **KANNA**              | Its data model has **no vendor / PO / BOQ objects at all** (verified in-product); adding a transactional engine is a different product/company, not a feature. It also treats offline as a paid upsell.                                                                                                                        | 📊 kanna-competitive-analysis §0.4 |
+| **BUILK**              | DNA is a **materials-margin marketplace**; software is a loss-leader funnel. Becoming an AI-native, offline-first, BOQ-integrated OS is off-model, and it is tied to SCG. It has **no BOQ, no verified AI, no verified offline**.                                                                                              | 📊 competitive-landscape §2.2      |
+| **ANDPAD**             | The **most dangerous** — it already has transactional depth (procurement + cost) + the strongest AI (Stellarc) + Thai UI (Dec 2025). But its AI is **bolted onto a form workflow**, and it is Japan-first / Vietnam-office. COS must out-execute on _AI-native_ + _Thai ground game_ and _speed_, not assume it can't respond. | 📊 competitive-landscape §2.1 · 📋 |
+| **Novade**             | Enterprise field-ops with deep AI, but **no procurement/BOQ/cost/finance** and reseller-led in Thailand — a field-layer rival, not a transactional-OS one.                                                                                                                                                                     | 📊 competitive-landscape §2.4      |
 
 ---
 
@@ -84,7 +84,7 @@ where they exist.
   hand-entered**; activation rate of first-time non-technical users; AI report **p95 < 5s** (QM-6 📊).
 - **Spec status** ⚠️ **PARTIAL / GAP**: Phase 11 RAG + Phase 12 AI Report Assistant + HallucinationGuard
   exist; voice notes exist but spec says **STT/transcription is a Stage-2 item** and voice/photo/chat →
-  *auto-generate BOQ/PO/cost in Thai* is **not specified** (grep-verified: present only as report
+  _auto-generate BOQ/PO/cost in Thai_ is **not specified** (grep-verified: present only as report
   generation from data, not multimodal capture → transactional docs). **This is the biggest spec gap to
   close for the disruption thesis.**
 - **Kill criterion**: if Thai voice/photo → correct BOQ/PO extraction accuracy is too low to trust (needs
@@ -150,7 +150,7 @@ where they exist.
 
 ## 5. Sequencing 📋
 
-1. **Prove BET A first** (AI paperwork elimination) — it is the disruptive core *and* the biggest spec
+1. **Prove BET A first** (AI paperwork elimination) — it is the disruptive core _and_ the biggest spec
    gap. Without "talk → paperwork done in Thai" working, the rest is a better ERP, not a disruption.
 2. **BET D in parallel** (LINE-native) — the delivery vehicle that makes A reach the non-consumer.
 3. **BET C** (transactional-by-product) — converts free field users into a monetizable, defensible OS;
@@ -162,7 +162,7 @@ where they exist.
 
 ## 6. Risks & what must be true ⚠️ (stated, not hidden)
 
-- **This is COS's *design ambition*, not a proven capability.** AI (Phase 11–12), offline, and the
+- **This is COS's _design ambition_, not a proven capability.** AI (Phase 11–12), offline, and the
   transactional chain are spec, not shipped; the backend QM-1 build gate was **red** earlier this session
   (now fixed). Disruption requires **execution**, not positioning.
 - **BET A must actually deliver in Thai** — if voice/photo → Thai BOQ/PO/cost extraction isn't accurate

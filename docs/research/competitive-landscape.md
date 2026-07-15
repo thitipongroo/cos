@@ -23,19 +23,19 @@ as its moat.
 
 **Threat ranking for the Thai market (this analysis, 📋):**
 
-| # | Competitor | Why it matters in Thailand | Threat |
-| --- | --- | --- | --- |
-| 1 | **ANDPAD** (Japan) | Full construction OS (procurement + cost/budget) + strongest AI (Stellarc) + **Thai UI added Dec 2025** | **HIGH & rising** |
-| 2 | **BUILK One Group** (Thai) | Homegrown incumbent: free cost-control + materials marketplace + ERP + e-procurement, all Thai, SCG/KBank-backed | **HIGH** |
-| 3 | **KANNA** (Japan) | Bangkok office + Thai UI since 2022; owns the site-reporting wedge (see companion doc) | **HIGH (on site reporting only)** |
-| 4 | **Novade** (Singapore) | Enterprise field-management, Thailand sales office, deep AI, free external viewers | **MEDIUM-HIGH** |
-| 5 | **Procore** (US) | Global leader; ASEAN via Singapore hub; no Thai office/UI | **MEDIUM (enterprise)** |
-| 6 | **Autodesk Construction Cloud** (US) | Via Thai resellers (MTECH, VR Digital); BIM-centric | **MEDIUM (BIM segment)** |
-| — | Everyone else (Raken, CompanyCam, Fonn, Dashpivot, Fieldwire, CMiC/Sage/SAP, BOQ tools, AI-native startups) | No confirmed Thai presence / benchmark-or-watch only | **LOW now** |
+| #   | Competitor                                                                                                  | Why it matters in Thailand                                                                                       | Threat                            |
+| --- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| 1   | **ANDPAD** (Japan)                                                                                          | Full construction OS (procurement + cost/budget) + strongest AI (Stellarc) + **Thai UI added Dec 2025**          | **HIGH & rising**                 |
+| 2   | **BUILK One Group** (Thai)                                                                                  | Homegrown incumbent: free cost-control + materials marketplace + ERP + e-procurement, all Thai, SCG/KBank-backed | **HIGH**                          |
+| 3   | **KANNA** (Japan)                                                                                           | Bangkok office + Thai UI since 2022; owns the site-reporting wedge (see companion doc)                           | **HIGH (on site reporting only)** |
+| 4   | **Novade** (Singapore)                                                                                      | Enterprise field-management, Thailand sales office, deep AI, free external viewers                               | **MEDIUM-HIGH**                   |
+| 5   | **Procore** (US)                                                                                            | Global leader; ASEAN via Singapore hub; no Thai office/UI                                                        | **MEDIUM (enterprise)**           |
+| 6   | **Autodesk Construction Cloud** (US)                                                                        | Via Thai resellers (MTECH, VR Digital); BIM-centric                                                              | **MEDIUM (BIM segment)**          |
+| —   | Everyone else (Raken, CompanyCam, Fonn, Dashpivot, Fieldwire, CMiC/Sage/SAP, BOQ tools, AI-native startups) | No confirmed Thai presence / benchmark-or-watch only                                                             | **LOW now**                       |
 
 **The single most important finding:** COS's "transactional moat" (procurement → cost → finance) is
 **NOT empty white space in Thailand** — **BUILK** (Thai) and **ANDPAD** (now Thai) both already do it.
-COS's genuine differentiation is the *combination* nobody holds: **BOQ engine + procurement + cost +
+COS's genuine differentiation is the _combination_ nobody holds: **BOQ engine + procurement + cost +
 finance + AI-native + offline-first + Thai-localized + multi-tenant** in one platform. See §6.
 
 ---
@@ -56,7 +56,7 @@ finance + AI-native + offline-first + Thai-localized + multi-tenant** in one pla
 - **Thailand:** **Thai-language UI added 2025-12-16** (alongside Indonesian, Traditional Chinese,
   Spanish). Source: [Media OutReach](https://www.media-outreach.com/news/japan/2025/12/16/436179/),
   [Zawya](https://www.zawya.com/en/economy/global/the-andpad-cloud-based-construction-project-management-service-adds-supporting-indonesian-thai-traditional-wt0olt57).
-  Its physical SEA office is **Vietnam (Hanoi)** — so it is now *product-localized* for Thai but not yet
+  Its physical SEA office is **Vietnam (Hanoi)** — so it is now _product-localized_ for Thai but not yet
   office-present there. Source: [Media OutReach Apr 2026](https://www.media-outreach.com/news/japan/2026/04/08/458614/hanoi-office-at-andpad-vietnam-relocated/).
 - **Scale:** 265,000 organizations / 690,000 users (JP-reported, 2026). Same source.
 - **Pricing:** quote-only (Lite/Basic/Business/Enterprise), setup ~¥100k + monthly. Source:
@@ -88,9 +88,9 @@ without modern offline-first mobile + AI, but they hold the transactional-BOQ gr
   existence-confirmed, scale/pricing/capabilities ⚠️ vendor-claim-only / UNVERIFIED.
 - **BuildSpace** (Malaysia) — BQ/BOQ-centric + e-tendering (clients Gamuda/PKNS); no Thai presence.
 
-**Implication:** COS's BOQ differentiation is **not "BOQ exists"** (it does, in Thai) — it is *BOQ
+**Implication:** COS's BOQ differentiation is **not "BOQ exists"** (it does, in Thai) — it is _BOQ
 integrated into a modern AI-native, offline-first, multi-tenant OS with the procurement→cost→finance
-chain*, which these legacy Thai ERPs do not offer. Their competitive weight beyond BUILK/Pojjaman is
+chain_, which these legacy Thai ERPs do not offer. Their competitive weight beyond BUILK/Pojjaman is
 ⚠️ UNVERIFIED (thin public documentation) — treat as an unquantified but real local ERP long tail.
 
 ### 2.2 BUILK One Group (the homegrown Thai incumbent) — HIGH 📋
@@ -110,7 +110,7 @@ chain*, which these legacy Thai ERPs do not offer. Their competitive weight beyo
 - **Native Thai** (+ EN/ID/MM/KH). **BUILK Cost Control is 100% free** (sponsor-monetized) — the free
   software is a **funnel into materials-margin monetization**: ~2020 group revenue ~570M baht was
   **~500M from YELLO materials vs only ~70M from software** ([The Story Thailand](https://www.thestorythailand.com/en/builk-an-empire-built-on-an-11-year-construction-job/)).
-  So COS competes with a *materials-marketplace business wearing a free-software coat*, not a software P&L.
+  So COS competes with a _materials-marketplace business wearing a free-software coat_, not a software P&L.
 - **Ownership / backing:** SET-listed insurer **TQM bought 40% (Aug 2022, ~247M baht → ~617M baht /
   ~US$17M implied valuation)**; cap table TQM 40% / founder (Longkong) 30% / SCG Distribution ~18.6%.
   Deep Thai-corporate backing (SCG + KBank + Krungsri + TQM). Source:
@@ -193,14 +193,14 @@ list ⚠️ UNVERIFIED.** Per-user ($0/$39/$64/$89) with financials gated to top
 
 ### 4.1 Field / daily-report / photo point tools (KANNA's category, no Thai presence)
 
-| App | Focus | Offline | AI | Thai presence |
-| --- | --- | --- | --- | --- |
-| **Raken** (US) | Daily reports | Supported but **review-reported unreliable**; ~5-project cache | Photo tagging, Photo ID, report *summaries* | Thai **App Store listing** only; no real footprint ([apps.apple.com/th](https://apps.apple.com/th/app/raken-construction-management/id747582049?l=th)); free collaborators |
-| **CompanyCam** (US) | Jobsite photos | **Robust** (60-project cache; unsynced-photo loss risk) | **Voice→caption/report, generative docs** (some beta) | ⚠️ none found |
-| **Photoruction** (JP) | Photo/blackboard/BIM | ⚠️ **not verified** | Auto photo-sorting + BPO | ⚠️ none found |
-| **Fonn** (NO/UK, now Access Group) | Broad field mgmt | Queue-and-sync; internals ⚠️ undocumented | Predictive "Project Heartrate" only | ⚠️ none found; **flat-fee, unlimited users/subs** |
-| **Dashpivot / Sitemate** (AU) | Forms/records + HSEQ | **Documented** (300 photos/30 forms per template cached) | **Generative "Storm": voice→report, photo AI** | ⚠️ none found; per-seat, free "Visitors" on Pro+ |
-| **GoCanvas** (US, Nemetschek) | Mobile forms | Form-submission scoped | Light (AI PDF→form) | Reseller-only (ASt); ⚠️ no Thai |
+| App                                | Focus                | Offline                                                        | AI                                                    | Thai presence                                                                                                                                                              |
+| ---------------------------------- | -------------------- | -------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Raken** (US)                     | Daily reports        | Supported but **review-reported unreliable**; ~5-project cache | Photo tagging, Photo ID, report _summaries_           | Thai **App Store listing** only; no real footprint ([apps.apple.com/th](https://apps.apple.com/th/app/raken-construction-management/id747582049?l=th)); free collaborators |
+| **CompanyCam** (US)                | Jobsite photos       | **Robust** (60-project cache; unsynced-photo loss risk)        | **Voice→caption/report, generative docs** (some beta) | ⚠️ none found                                                                                                                                                              |
+| **Photoruction** (JP)              | Photo/blackboard/BIM | ⚠️ **not verified**                                            | Auto photo-sorting + BPO                              | ⚠️ none found                                                                                                                                                              |
+| **Fonn** (NO/UK, now Access Group) | Broad field mgmt     | Queue-and-sync; internals ⚠️ undocumented                      | Predictive "Project Heartrate" only                   | ⚠️ none found; **flat-fee, unlimited users/subs**                                                                                                                          |
+| **Dashpivot / Sitemate** (AU)      | Forms/records + HSEQ | **Documented** (300 photos/30 forms per template cached)       | **Generative "Storm": voice→report, photo AI**        | ⚠️ none found; per-seat, free "Visitors" on Pro+                                                                                                                           |
+| **GoCanvas** (US, Nemetschek)      | Mobile forms         | Form-submission scoped                                         | Light (AI PDF→form)                                   | Reseller-only (ASt); ⚠️ no Thai                                                                                                                                            |
 
 Sources: Raken [rakenapp.com](https://www.rakenapp.com/); CompanyCam [companycam.com/ai-features](https://companycam.com/ai-features),
 [offline](https://help.companycam.com/en/articles/6828443-access-offline-mode); Photoruction
@@ -214,14 +214,14 @@ procurement/BOQ/cost/finance.
 
 Strong on procurement+BOQ+cost+finance, but **Thai presence is the differentiator**:
 
-| ERP | Full stack | AI | Thai partner | Thai language |
-| --- | --- | --- | --- | --- |
-| CMiC | Yes (native, strong) | Strong (NEXUS) | ⚠️ none found | ⚠️ no |
-| Jonas | Mostly (weak BOQ) | Moderate | ⚠️ none found | ⚠️ no |
-| Trimble Viewpoint | Mostly (estimating separate) | Weak | ⚠️ none found | ⚠️ no |
-| Sage 300 CRE | Yes (native, strong) | Add-on (Copilot) | ⚠️ US only | ⚠️ no |
-| **MS Dynamics 365 + ISV** | Yes (needs ISV: ProjectPro/MetaConstructX) | Yes (Copilot) | **Yes** (BC/F&O partners) | **Yes** (Thai localization packs) |
-| **SAP E&C / S/4HANA** | Yes (native, incl. BOQ) | Yes (Joule) | **Yes** (NDBS/Oasis, Bangkok) | Yes (standard localization) |
+| ERP                       | Full stack                                 | AI               | Thai partner                  | Thai language                     |
+| ------------------------- | ------------------------------------------ | ---------------- | ----------------------------- | --------------------------------- |
+| CMiC                      | Yes (native, strong)                       | Strong (NEXUS)   | ⚠️ none found                 | ⚠️ no                             |
+| Jonas                     | Mostly (weak BOQ)                          | Moderate         | ⚠️ none found                 | ⚠️ no                             |
+| Trimble Viewpoint         | Mostly (estimating separate)               | Weak             | ⚠️ none found                 | ⚠️ no                             |
+| Sage 300 CRE              | Yes (native, strong)                       | Add-on (Copilot) | ⚠️ US only                    | ⚠️ no                             |
+| **MS Dynamics 365 + ISV** | Yes (needs ISV: ProjectPro/MetaConstructX) | Yes (Copilot)    | **Yes** (BC/F&O partners)     | **Yes** (Thai localization packs) |
+| **SAP E&C / S/4HANA**     | Yes (native, incl. BOQ)                    | Yes (Joule)      | **Yes** (NDBS/Oasis, Bangkok) | Yes (standard localization)       |
 
 Sources: [CMiC](https://cmicglobal.com/), [Sage 300 CRE](https://www.sage.com/en-us/products/sage-300-construction-and-real-estate/),
 [Dynamics Thai localization](https://appsource.microsoft.com/en-gb/marketplace/consulting-services/naviworldasia-1951359.dynamics365business-central-thai-localization),
@@ -281,19 +281,19 @@ Well-funded but **zero Thailand/SEA presence or Thai UI** across every one resea
 
 Legend: ✅ documented · ~ partial/manual · ✗ absent/not found · ⚠️ unverified.
 
-| Capability | KANNA | ANDPAD | BUILK | Novade | Procore | Autodesk | COS (spec) |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| Daily site reports + photos | ✅ | ✅ | ✅ (INSITE) | ✅ | ✅ | ✅ | ✅ (Priority 1) |
-| Procurement PR→RFQ→PO | ✗ | ✅ | ✅ | ✗ | ✅ | ~ | ✅ (Phase 5) |
-| BOQ / quantity takeoff | ✗ | ⚠️ | ✗ | ✗ | ~ | ✅ (BIM) | ✅ (Phase 4) |
-| Cost / budget (EVM) | ~ (manual) | ✅ | ✅ | ✗ | ✅ | ~ | ✅ (Phase 7) |
-| Finance AR/AP | ✗ | ~ | ~ | ✗ | ~ | ✗ | ✅ (Phase 7) |
-| Offline-first w/ conflict resolution | ~ (paid, shallow) | ~ (complaints) | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ✅ (spec; conflict strategies) |
-| AI (generative/voice) | ✅ (voice) | ✅ (Stellarc) | ✗ | ✅ | ⚠️ | ~ | ✅ (Phase 11–12) |
-| Knowledge graph / analytics | ✗ | ~ (Knowledge AI) | ✗ | ~ | ✅ | ~ | ✅ (Phase 13–14) |
-| Multi-tenant SaaS | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Thai-language UI** | ✅ | ✅ (Dec 2025) | ✅ | ⚠️ | ⚠️ | ⚠️ | ✅ (QM-3) |
-| ราคากลาง / e-GP integration | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | not yet specced (opportunity) |
+| Capability                           | KANNA             | ANDPAD           | BUILK       | Novade | Procore | Autodesk | COS (spec)                     |
+| ------------------------------------ | ----------------- | ---------------- | ----------- | ------ | ------- | -------- | ------------------------------ |
+| Daily site reports + photos          | ✅                | ✅               | ✅ (INSITE) | ✅     | ✅      | ✅       | ✅ (Priority 1)                |
+| Procurement PR→RFQ→PO                | ✗                 | ✅               | ✅          | ✗      | ✅      | ~        | ✅ (Phase 5)                   |
+| BOQ / quantity takeoff               | ✗                 | ⚠️               | ✗           | ✗      | ~       | ✅ (BIM) | ✅ (Phase 4)                   |
+| Cost / budget (EVM)                  | ~ (manual)        | ✅               | ✅          | ✗      | ✅      | ~        | ✅ (Phase 7)                   |
+| Finance AR/AP                        | ✗                 | ~                | ~           | ✗      | ~       | ✗        | ✅ (Phase 7)                   |
+| Offline-first w/ conflict resolution | ~ (paid, shallow) | ~ (complaints)   | ⚠️          | ⚠️     | ⚠️      | ⚠️       | ✅ (spec; conflict strategies) |
+| AI (generative/voice)                | ✅ (voice)        | ✅ (Stellarc)    | ✗           | ✅     | ⚠️      | ~        | ✅ (Phase 11–12)               |
+| Knowledge graph / analytics          | ✗                 | ~ (Knowledge AI) | ✗           | ~      | ✅      | ~        | ✅ (Phase 13–14)               |
+| Multi-tenant SaaS                    | ✅                | ✅               | ✅          | ✅     | ✅      | ✅       | ✅                             |
+| **Thai-language UI**                 | ✅                | ✅ (Dec 2025)    | ✅          | ⚠️     | ⚠️      | ⚠️       | ✅ (QM-3)                      |
+| ราคากลาง / e-GP integration          | ✗                 | ✗                | ✗           | ✗      | ✗       | ✗        | not yet specced (opportunity)  |
 
 > **No competitor shows ✅ across the whole column.** The BOQ row, the offline-with-conflict-resolution
 > row, the Thai-language row (for Western players), and the ราคากลาง/e-GP row are where the field thins out.
@@ -308,7 +308,7 @@ Legend: ✅ documented · ~ partial/manual · ✗ absent/not found · ⚠️ unv
 
 2. **The "transactional moat" is contested, not empty.** ⚠️ **Correction to the earlier KANNA-only
    framing:** BUILK (Thai) and ANDPAD (now Thai) already do procurement + cost. "We do procurement/cost"
-   is **not** a differentiator in Thailand. COS must win on the *combination* + specific gaps below.
+   is **not** a differentiator in Thailand. COS must win on the _combination_ + specific gaps below.
 
 3. **Genuine gaps COS can own (each backed by a competitor absence above):**
    - **Full BOQ engine integrated with procurement + cost + AI + offline** — nuance: **BOQ itself is
@@ -322,20 +322,20 @@ Legend: ✅ documented · ~ partial/manual · ✗ absent/not found · ⚠️ unv
    - **e-GP (public procurement) integration** — the gateway for public-works contractors; no competitor
      integrates it. A procurement differentiator worth a spec decision.
    - **AI-native from the ground up + Thai** — ANDPAD (Stellarc) and Novade are bolting AI on and are the
-     ones to beat on AI; being AI-native *and* Thai-localized *and* multi-tenant is still rare.
+     ones to beat on AI; being AI-native _and_ Thai-localized _and_ multi-tenant is still rare.
    - **Deep offline-first with documented conflict resolution** — **every competitor leaves conflict
      handling ⚠️ undocumented.** COS's spec'd 3+ conflict strategies (LWW / field-merge / server-wins /
      max-wins / no-auto-resolution for financial) are a genuine, demonstrable edge **if shipped and shown**.
 
 4. **Offline-first is a targeted edge, not a blanket moat.** Urban Thailand has near-universal 4G/5G;
    the offline advantage is real for **rural/remote/infrastructure corridors** (rural usage ~85%,
-   occasional 3G-only zones). KANNA and FASTInspect already market offline, so *having* offline is
+   occasional 3G-only zones). KANNA and FASTInspect already market offline, so _having_ offline is
    table-stakes — COS's edge is **deeper** offline (conflict resolution), not offline per se. Sources:
    [Thailand connectivity](https://ts2.tech/en/thailands-high-speed-internet-revolution-5g-fiber-and-the-battle-to-bridge-the-digital-divide/).
 
 5. **The full combination is the moat.** No single competitor holds the full set — **BOQ, procurement,
    cost, finance, AI-native, offline-first, Thai, and multi-tenant** — together. That integrated whole
-   — with ราคากลาง / e-GP localization — is COS's defensible position. But because every *individual*
+   — with ราคากลาง / e-GP localization — is COS's defensible position. But because every _individual_
    piece has a strong
    incumbent, COS wins on **integration + Thai-localization depth**, and must not assume any single
    feature is unique.
@@ -362,12 +362,12 @@ paperwork"** capture layer, and **ราคากลาง / e-GP localization**
 
 **Where to fight vs where not to fight (📋, grounded in §2 / §5):**
 
-| Competitor | Fight here — their verified gap | Do NOT fight here — their real strength |
-| --- | --- | --- |
-| **KANNA** | No procurement/BOQ/cost/finance; offline shallow + paywalled (§2.3, §5) | Field/photo UX; Bangkok office + Thai UI + events (§2.3) |
-| **BUILK** | No BOQ engine; no documented AI; offline undocumented (§2.2, §5) | Free + Yello materials margin + SCG/KBank/TQM backing (§2.2) |
-| **ANDPAD** | AI bolted on forms; no Thai office (SEA=Vietnam); no ราคากลาง/e-GP; quote-only (§2.1) | Full OS + best AI (Stellarc) + Thai UI + capital (§2.1) |
-| **Novade** | No procurement/BOQ/cost/finance; reseller-led; Thai UI ⚠️ unverified (§2.4) | Enterprise field-ops + deep AI + Thai sales office (§2.4) |
+| Competitor | Fight here — their verified gap                                                       | Do NOT fight here — their real strength                      |
+| ---------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **KANNA**  | No procurement/BOQ/cost/finance; offline shallow + paywalled (§2.3, §5)               | Field/photo UX; Bangkok office + Thai UI + events (§2.3)     |
+| **BUILK**  | No BOQ engine; no documented AI; offline undocumented (§2.2, §5)                      | Free + Yello materials margin + SCG/KBank/TQM backing (§2.2) |
+| **ANDPAD** | AI bolted on forms; no Thai office (SEA=Vietnam); no ราคากลาง/e-GP; quote-only (§2.1) | Full OS + best AI (Stellarc) + Thai UI + capital (§2.1)      |
+| **Novade** | No procurement/BOQ/cost/finance; reseller-led; Thai UI ⚠️ unverified (§2.4)           | Enterprise field-ops + deep AI + Thai sales office (§2.4)    |
 
 **Sequence to win (📋):** (1) **Land** the field wedge against KANNA; (2) **Expand** into the transactional
 layer against BUILK/ANDPAD; (3) **Defend** with the integrated OS + ราคากลาง/e-GP no one holds (§6, item 5).
@@ -434,12 +434,12 @@ battleground to pick per competitor is the table in §7.0; the strategic "what m
 ## 9. Key UNVERIFIED items (do not assert as fact)
 
 - Thai-language **product UI** for: Novade, Procore, Autodesk ACC, all Western BOQ tools, all Western ERPs
-  (except Dynamics/SAP which have Thai *localization packs*, not construction editions).
+  (except Dynamics/SAP which have Thai _localization packs_, not construction editions).
 - ANDPAD Thai **office/go-to-market** (product is Thai-localized; office is Vietnam) and its offline
   conflict/subcontractor-pricing mechanics.
 - Named large Thai contractors running any Western ERP as their construction system.
 - Oracle (Aconex / Primavera) was **not deeply researched** in this pass — treat its Thai position as
   unknown, not assumed.
 - Conflict-resolution internals for **every** field/offline competitor (KANNA, ANDPAD, Novade, Fonn,
-  Dashpivot, Fieldwire) — none documents it.
+Dashpivot, Fieldwire) — none documents it.
 </content>
