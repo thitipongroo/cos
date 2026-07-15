@@ -10,9 +10,11 @@ pydantic==2.13.4
 pydantic-settings==2.14.2
 opentelemetry-sdk==1.43.0
 opentelemetry-instrumentation-fastapi==0.64b0
-# opentelemetry-instrumentation imports pkg_resources, which Python 3.12 venvs no longer bundle.
-# Provide setuptools (<81, where pkg_resources still ships) so FastAPIInstrumentor imports.
-setuptools<81
+# setuptools is not bundled by Python 3.12 venvs, so it is requested explicitly. The old `<81` cap
+# was there because opentelemetry-instrumentation imported pkg_resources, which setuptools dropped
+# in 81 — that is no longer true of 0.64b0 (FastAPIInstrumentor.instrument_app runs with 83.0.0 and
+# never loads pkg_resources), and the cap was pinning us to 80.10.2 / PYSEC-2026-3447.
+setuptools>=83
 opentelemetry-exporter-otlp-proto-http==1.43.0
 opentelemetry-instrumentation-httpx==0.64b0
 httpx==0.28.1
