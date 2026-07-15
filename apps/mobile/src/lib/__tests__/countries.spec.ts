@@ -38,15 +38,15 @@ describe('countries — OTP phone split/combine', () => {
       expect(toE164('+66', '800000004')).toBe('+66800000004');
     });
 
-    it('applies other ASEAN dial codes', () => {
-      expect(toE164('+95', '9123456789')).toBe('+959123456789'); // Myanmar
-      expect(toE164('+65', '81234567')).toBe('+6581234567'); // Singapore
+    it('applies the other supported markets', () => {
+      expect(toE164('+84', '0912345678')).toBe('+84912345678'); // Vietnam — trunk 0, stripped
+      expect(toE164('+65', '81234567')).toBe('+6581234567'); // Singapore — no trunk prefix
     });
 
     it('produces backend-valid E.164 (^\\+[1-9]\\d{7,14}$)', () => {
       const e164 = /^\+[1-9]\d{7,14}$/;
       expect(toE164('+66', '0812345678')).toMatch(e164);
-      expect(toE164('+855', '12345678')).toMatch(e164);
+      expect(toE164('+84', '912345678')).toMatch(e164);
     });
   });
 

@@ -360,16 +360,22 @@ jobs:
       - name: govulncheck — analytics-worker
         working-directory: services/analytics-worker
         run: govulncheck ./...
-      # Python safety check for ai-gateway
+      # Python safety check — every service with a runtime requirements.txt. Globbed rather than
+      # listed: auditing only ai-gateway is how Pillow 12.2.0 (PYSEC-2026-2254) sat unnoticed in
+      # ai-ocr-pipeline, and a new service would inherit the same blind spot.
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: pip-audit — ai-gateway
-        working-directory: services/ai-gateway
+      - name: pip-audit — Python services
         run: |
           pip install pip-audit
-          # PYSEC-2026-161 resolved 2026-07-04: starlette pinned to 1.0.1 in requirements.txt
-          pip-audit -r requirements.txt
+          status=0
+          for req in services/*/requirements.txt; do
+            echo "::group::pip-audit — $req"
+            pip-audit -r "$req" || status=1
+            echo "::endgroup::"
+          done
+          exit $status
 
   # ─── Step 5b: Secret Scan (gitleaks) ────────────────────────────────────────
   # QM-4: block secret patterns in CI (complements the .husky/pre-commit gitleaks hook,

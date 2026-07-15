@@ -48,7 +48,11 @@ module.exports = {
     emulator: {
       type: 'android.emulator',
       device: {
-        avdName: 'cos_test',
+        // Unlike the iOS `device.type` above, this must name an AVD that exists on the machine —
+        // and no CI job runs Detox, so it is always someone's local emulator. `cos_test` is the
+        // documented one (docs/screens/README.md); override for any other without editing this
+        // file: DETOX_AVD_NAME=Medium_Phone detox test -c android.emu.debug
+        avdName: process.env.DETOX_AVD_NAME || 'cos_test',
       },
     },
   },
