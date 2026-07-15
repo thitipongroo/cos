@@ -3,10 +3,15 @@
 > **Purpose:** Design brief for the UX/UI AI Agent designing every screen of the
 > **entire** Construction OS platform — MVP AND all post-MVP phases (external portals,
 > marketplace, financial infrastructure, Layer B/C AI, IoT / Digital Twin, and the V2
-> Infrastructure / V3 Real Estate verticals). Compiled line-by-line from all 35
-> specification documents in `docs/specifications/` (00–34). Every rule below cites its
-> authoritative spec section — on any conflict, `docs/specifications/` wins (and
-> `32-implementation-specifications.md` wins within the spec set).
+> Infrastructure / V3 Real Estate verticals). Compiled line-by-line from the 36
+> specification documents in `docs/specifications/` (numbered 00–34; `00` covers both
+> `00-executive-overview` and `00-glossary`). Two carry no design surface and are
+> deliberately uncited: `07-multi-tenant-architecture` (isolation internals — its
+> operator-facing provisioning workflow reaches design through `34` §34.5, cited in §7) and
+> `24-ai-training-pipeline` (MLOps; §24 states no model training is required for MVP LLM
+> features). Every rule below cites its authoritative spec section — on any conflict,
+> `docs/specifications/` wins (and `32-implementation-specifications.md` wins within the
+> spec set).
 >
 > **Scope of design work:** Web app (Next.js), Mobile field app (React Native/Expo),
 > SYSTEM_ADMIN panel (`/admin`), external Vendor Portal (`/vendor`), plus the post-MVP
@@ -100,6 +105,22 @@
 > Field workers use the app in direct sunlight; `#0066FF` has higher outdoor visibility.
 > Use `--mobile-primary` for tap targets/CTAs in React Native ONLY; use `--cos-blue`
 > on all web (Next.js) and PWA surfaces. Never reuse web `--cos-*` values on mobile.
+
+**Exception — mobile auth screens (spec 32 §32.7 Mobile Auth Screens):** the table above is the
+**signed-in** field app. The pre-auth screens (login, OTP verify, session-securing overlay) render
+**dark**, on the shared `--cos-dark-*` tokens of §2.2 — the same surface as the web login and the
+Keycloak `cos` theme, so all three entry points to the product look like one product. CTAs keep
+`--mobile-primary` so the tap target a field worker learns never changes colour. The sunlight
+rationale governs all-day outdoor use; signing in is a one-off, usually indoor.
+
+| Surface on the mobile auth screens | Token                 |
+| ---------------------------------- | --------------------- |
+| Background                         | `--cos-dark-bg`       |
+| Card                               | `--cos-dark-surface`  |
+| Input / border / logo plate        | `--cos-dark-elevated` |
+| Text                               | `--cos-dark-text`     |
+| Secondary / footer                 | `--cos-dark-muted`    |
+| CTA                                | `--mobile-primary`    |
 
 ### 2.4 Typography
 
@@ -227,7 +248,7 @@ external surface (§8 below). Platform operator: `SYSTEM_ADMIN` — separate `/a
 
 ## 5. Platform Surfaces & Information Architecture
 
-### 5.1 Deployable client surfaces (spec 32 §32.2, 03 §3.1)
+### 5.1 Deployable client surfaces (spec 32 §32.2, 03 §3.1, 04 §4.1)
 
 | Surface    | Tech                                | Audience                                    |
 | ---------- | ----------------------------------- | ------------------------------------------- |
@@ -422,10 +443,9 @@ Internal platform-operator UI. Not visible to tenants. All actions audit-logged.
    already has dedicated DB (button hidden).
 5. **Deactivate Tenant (20.4.5)** — type-code confirmation dialog; row greys out.
 
-Human-gate notifications: workflow pauses at AWAITING_APPROVAL → SYSTEM_ADMIN gets in-app
-
-- email ("Data migration approval required — Approve or abort") — design an approval
-  action surface (spec 19 §19.8, 34 §34.5).
+Human-gate notifications: workflow pauses at AWAITING_APPROVAL → SYSTEM_ADMIN gets in-app +
+email ("Data migration approval required — Approve or abort") — design an approval action
+surface (spec 19 §19.8, 34 §34.5).
 
 ---
 
@@ -466,6 +486,12 @@ onboarding is a strategic goal (no account required to answer an RFQ — spec 27
 - Vendor invoice (AP): pending / approved / paid
 - Billing (AR): draft / issued / paid; Payment: scheduled / released / reconciled
 - Retention: held / partially_released / released
+- Contract (spec 11): draft / signed / active / terminated; `contract_type`
+  main_contract / subcontract / supply_agreement. **A Contract is not a PO** — main_contract is the
+  client-side agreement (`customer_id`, no vendor), subcontract/supply_agreement are vendor-side
+  (`vendor_id`, no customer). `contract_value` on a main_contract is the basis for retention % and
+  billing milestones, so Contract screens are the entry point to both (spec 12 §12.2 Note on
+  Contract).
 - Issue: open / in_progress / resolved / closed; types defect/rework/punch/general;
   severity low/medium/high/critical
 - Inspection result: pass / fail / conditional (+ issue_severity when fail/conditional)
@@ -692,7 +718,10 @@ admin + SYSTEM_ADMIN panel.
 - **Opportunity tracking dashboards** — CRM analytics dashboards.
 - **Proposal generation workflows** — AI-assisted proposal generation is the CRM/Sales
   AI collaboration point (spec 23 §23.2); advisory-only rules of §11.2 apply.
-- **Contract management** views (spec 20 §20.2 CRM needs; Contract entity §9.1).
+- **Contract management** views (spec 20 §20.2 CRM needs; Contract entity spec 11, statuses in
+  §9.1). API is `finance/contracts` (spec 14 §14.3) and signing emits `ContractSigned`
+  (spec 16 §16.2) — the module spans CRM and Finance; design one Contract record reachable from
+  both.
 - **CRM mobile screens** (excluded from MVP per spec 21 §21.6 — design for post-MVP
   mobile with the §5.5 component library and mobile prohibitions).
 
@@ -701,7 +730,8 @@ Feasibility study · Land acquisition · Tender management · Contractor bidding
 **UI decided (product owner, 2026-07-10): separate "Preconstruction" nav section**
 (`/preconstruction/*` — Procore Preconstruction / Autodesk BuildingConnected pattern:
 tender & bid management as its own product area). Backend remains a CRM Service
-extension per spec 01 §1.2 (service placement, not UI). Recorded in spec 20 §20.7.14.
+extension per spec 01 §1.2 (service placement, not UI). Recorded in spec 20 §20.7.12c.
+Tendering is Phase A of the end-to-end lifecycle (spec 02 §2.1).
 
 **Document engine — post-MVP capabilities (spec 03 §3.2, 13 §13.1):**
 Version management · format conversion · **drawing viewer** (MVP has only OCR + file
@@ -741,6 +771,30 @@ Activates for Mid-market package when Layer B releases (spec 13 §13.2).
   Exec/PM. Executive `/alerts` and the AI risk report (spec 09 §9.5) are the primary
   surfaces; acknowledge affordance required (unacknowledged 24 h → escalate to PM,
   spec 19 §19.3).
+
+**Knowledge-graph read view (spec 12 — what the screen must answer):**
+
+The view is not a graph for its own sake; spec 12 §12.4 states the four questions it exists to
+answer, and those are the design brief:
+
+1. **Risk propagation** — _"If supplier A delays cement delivery, which tasks/projects become
+   affected?"_ Design the traversal from a cause to everything downstream, not a node explorer.
+2. **Root cause analysis** — surface recurring failure patterns.
+3. **AI context retrieval** — the same graph backs the Copilot's reasoning (§11.1); an answer
+   should be able to cite the path it came from.
+4. **Cross-project learning** — carry lessons between projects.
+
+Nodes (spec 12 §12.2): Project · Building · Floor · Room · Structure · Task · Worker · Material ·
+Equipment · Procurement · Contract · Inspection · Incident · Invoice · Delay. Three are conceptual
+and resolve at query time — `Worker` → Employee via Workforce attendance, `Procurement` → the
+stage-specific record (PR/RFQ/PO/Delivery/Vendor Invoice), `Invoice` → the AR Billing record — so
+labels must show the resolved record, never the abstract node name.
+
+Relationships to visualize (spec 12 §12.3): `DEPENDS_ON` · `USES` · `LOCATED_IN` · `PART_OF` ·
+`DELIVERED_BY` · `FULFILLED_BY` · `VALIDATES` · `IMPACTS` · `BELONGS_TO`. Physical containment
+(Room → Floor → Building) and dependency (`Task DEPENDS_ON Task`) are the two structures the layout
+must make legible. Entity vocabulary and key properties: spec 10 §10.2.
+
 - **Vendor/contractor trust scoring (ECO-004, spec 22 §22.7):** score 0.0–1.0 shown on
   vendor and contractor profiles, updated weekly; W3C Verifiable Credential adds +0.1.
 
@@ -852,7 +906,8 @@ Same minimal external-shell pattern as the Vendor Portal (§8 — no internal na
 project-scoped handover entry point (registry follows the Yardi Voyager / MRI standalone
 pattern, aligned with the V3 direction spec 28 §28.9 already uses; handover follows the
 Procore / Autodesk Construction Cloud project-closeout pattern). Recorded in
-spec 20 §20.7.13.
+spec 20 §20.7.12b. The registry serves Phase F of the end-to-end lifecycle —
+handover → warranty → maintenance (spec 02 §2.1).
 
 - `/assets/units` — **Unit inventory**: Unit entity (unit_number, unit_type, status);
   Exec R / PM RW / SE R / Finance R / CRM R.
@@ -985,9 +1040,8 @@ language switcher · mobile bottom-nav shell.
 project procurement · project budget variance · project site summary · PM analytics
 dashboard.
 
-**Procurement:** PRs · RFQs (+award/cancel) · quotation comparison · POs (+approval chain
-
-- delivery timeline) · deliveries · vendors (+scoring).
+**Procurement:** PRs · RFQs (+award/cancel) · quotation comparison · POs (+approval chain,
+delivery timeline) · deliveries · vendors (+scoring).
 
 **Finance:** payments approval queue · project budget + lines · invoices
 (verify/approve/dispute) · variance report · billing (AR) + receipts · contracts ·

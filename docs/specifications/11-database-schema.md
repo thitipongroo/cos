@@ -615,7 +615,8 @@ Contract :
 - contract_value (nullable — total contract amount; required for main_contract; may be null for framework agreements)
 - customer_id (nullable — FK → Customer; populated for main_contract — client-side contracts)
 - vendor_id (nullable — FK → Vendor; populated for subcontract / supply_agreement contracts)
-- status
+- status (draft / signed / active / terminated) — `signed` is the state the `ContractSigned` event
+  (16-enterprise-event-flow §16.2) announces; billing milestones and retention run against `active`
 
 Note : Contract covers both client-side and vendor-side agreements.
 main_contract = contractor ↔ client/owner — customer_id populated, vendor_id null;
