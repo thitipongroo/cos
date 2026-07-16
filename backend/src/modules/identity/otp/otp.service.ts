@@ -25,6 +25,9 @@ const OTP_TTL_SECONDS = 300; // 5 minutes
 const OTP_MAX_ATTEMPTS = 3;
 const OTP_DAILY_LIMIT = 10;
 const OTP_LENGTH = 6;
+// Minimum interval between two OTP sends to the same phone (§5.5 send-rate cap). Enforced server-side
+// (a Redis cooldown key) AND surfaced to the client so it can disable "resend" with a countdown.
+const RESEND_COOLDOWN_SECONDS = 60;
 
 function generateOtp(): string {
   // crypto.randomInt is a CSPRNG — Math.random() is predictable and must never mint a credential.
@@ -73,11 +76,16 @@ export class OtpService implements OnModuleDestroy {
    * or git, and a hash of a 6-digit code is trivially brute-forced (10^6 preimages) so it adds no real
    * protection. Confidentiality rests on Redis access control + short TTL.
    */
-  async requestOtp(phoneNumber: string): Promise<{ expiresInSeconds: number }> {
+  async requestOtp(
+    phoneNumber: string,
+  ): Promise<{ expiresInSeconds: number; resendCooldownSeconds: number }> {
     const fixedOtp = e2eFixedOtp();
-    // The E2E bypass also skips the per-phone daily rate limit: automated suites request many OTPs for
-    // the same test phone. Production (bypass inactive) always enforces the limit.
-    if (!fixedOtp) await this.enforceDailyLimit(phoneNumber);
+    // The E2E bypass skips BOTH the resend cooldown and the per-phone daily limit: automated suites
+    // request many OTPs for the same test phone back-to-back. Production always enforces both.
+    if (!fixedOtp) {
+      await this.enforceResendCooldown(phoneNumber);
+      await this.enforceDailyLimit(phoneNumber);
+    }
 
     const otp = fixedOtp ?? generateOtp();
     const attemptsKey = `otp:attempts:${phoneNumber}`;
@@ -88,10 +96,36 @@ export class OtpService implements OnModuleDestroy {
     await this.redis.set(attemptsKey, '0', 'EX', OTP_TTL_SECONDS);
 
     await this.sendSms(phoneNumber, otp);
+    // Open the cooldown window only after a send actually went out (a failed send lets the user retry).
+    if (!fixedOtp) await this.startResendCooldown(phoneNumber);
 
     // @pdpa: phone_number is PII — log as [REDACTED]
     logger.info({ phone: '[REDACTED]' }, 'OTP sent');
-    return { expiresInSeconds: OTP_TTL_SECONDS };
+    // The client always applies the cooldown countdown; the E2E bypass only relaxes SERVER enforcement
+    // (so suites can re-request via the API), not the advertised duration.
+    return { expiresInSeconds: OTP_TTL_SECONDS, resendCooldownSeconds: RESEND_COOLDOWN_SECONDS };
+  }
+
+  /**
+   * Reject a resend that arrives before the per-phone cooldown elapses, returning how many seconds are
+   * left so the client can sync its countdown. HTTP 429, distinct from the daily-limit 429 by its
+   * `retryAfterSeconds`.
+   */
+  private async enforceResendCooldown(phoneNumber: string): Promise<void> {
+    const remaining = await this.redis.ttl(`otp:cooldown:${phoneNumber}`);
+    if (remaining > 0) {
+      throw new HttpException(
+        {
+          message: 'An OTP was sent recently — please wait before requesting a new one',
+          retryAfterSeconds: remaining,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  private async startResendCooldown(phoneNumber: string): Promise<void> {
+    await this.redis.set(`otp:cooldown:${phoneNumber}`, '1', 'EX', RESEND_COOLDOWN_SECONDS);
   }
 
   /** Verify OTP — returns true on success, throws on failure/expiry/max attempts. */

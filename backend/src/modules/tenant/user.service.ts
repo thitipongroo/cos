@@ -28,6 +28,8 @@ export interface UserRow {
   email: string;
   // @pdpa(category: "identity") — display_name is PII
   display_name: string;
+  // @pdpa(category: "identity") — a profile photo identifies the person; NULL until one is uploaded
+  photo_url: string | null;
   is_active: boolean;
   mfa_enabled: boolean;
   created_at: Date;
@@ -74,6 +76,7 @@ export class UserService implements OnModuleDestroy {
           u.keycloak_user_id,
           u.email,
           u.display_name,
+          u.photo_url,
           u.is_active,
           u.mfa_enabled,
           u.created_at,
@@ -106,6 +109,39 @@ export class UserService implements OnModuleDestroy {
         total,
       },
     };
+  }
+
+  /**
+   * The signed-in user's own record. Self-service, so it is NOT gated on TENANT_ADMIN like the rest
+   * of this service — but it is still tenant-scoped, and the user_id comes from the JWT, never from
+   * the caller, so it cannot be pointed at anyone else's row.
+   */
+  async getMe(tenantId: string, userId: string): Promise<UserRow> {
+    const rows = await this.prisma.$queryRaw<UserRow[]>`
+      SELECT
+        u.user_id, u.tenant_id, u.keycloak_user_id, u.email, u.display_name, u.photo_url,
+        u.is_active, u.mfa_enabled, u.created_at, u.updated_at, m.role
+      FROM platform.users u
+      JOIN platform.tenant_memberships m
+        ON m.user_id = u.user_id AND m.tenant_id = u.tenant_id
+      WHERE u.user_id = ${userId}::uuid AND u.tenant_id = ${tenantId}::uuid
+    `;
+    const me = rows[0];
+    if (!me) throw new NotFoundException({ code: 'COS-USER-404', message: 'User not found' });
+    return me;
+  }
+
+  /**
+   * Set or clear the signed-in user's profile photo. `null` clears it, which is the only way back to
+   * initials once a photo is set.
+   */
+  async updateMyPhoto(tenantId: string, userId: string, photoUrl: string | null): Promise<UserRow> {
+    await this.prisma.$executeRaw`
+      UPDATE platform.users
+      SET photo_url = ${photoUrl}::text, updated_at = now()
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+    `;
+    return this.getMe(tenantId, userId);
   }
 
   async createUser(dto: CreateUserDto, tenantId: string, actorId: string): Promise<UserRow> {

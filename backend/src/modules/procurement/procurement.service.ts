@@ -132,11 +132,16 @@ export class ProcurementService {
   // ── Purchase Requests ──────────────────────────────────────────────────────
 
   async createPurchaseRequest(dto: CreatePurchaseRequestDto): Promise<PurchaseRequestRow> {
+    // A caller that supplies its own number keeps it (the web form does); everyone else gets the
+    // tenant's next PR-<year>-<seq>, because a document number is not something to ask a site
+    // engineer to invent on their phone.
+    const pr_number = dto.pr_number ?? (await this.repo.nextPrNumber(new Date().getFullYear()));
     const pr = await this.repo.createPurchaseRequest({
       project_id: dto.project_id,
-      pr_number: dto.pr_number,
+      pr_number,
       requested_by: this.userId,
       required_date: dto.required_date,
+      items: dto.items,
     });
     logger.info({ pr_id: pr.pr_id, tenant_id: this.tenantId }, 'pr.created');
     return pr;

@@ -28,7 +28,7 @@ async function loginIfNeeded(): Promise<void> {
   await element(by.id('country-picker')).tap();
   await element(by.id('country-option-th')).tap();
   await element(by.id('phone-input')).tap();
-  await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, ''));
+  await element(by.id('phone-input')).replaceText(PHONE.replace(/^\+66/, '0'));
   await delay(1500);
   await element(by.id('request-otp-button')).tap();
   await delay(6000);

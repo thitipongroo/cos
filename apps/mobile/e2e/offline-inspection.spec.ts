@@ -36,7 +36,7 @@ describe('Offline Inspection — Inspector', () => {
     // regardless of the simulator's region) and enter the national digits (the login re-adds +66).
     await element(by.id('country-picker')).tap();
     await element(by.id('country-option-th')).tap();
-    await element(by.id('phone-input')).typeText(INSPECTOR_PHONE.replace(/^\+66/, ''));
+    await element(by.id('phone-input')).typeText(INSPECTOR_PHONE.replace(/^\+66/, '0'));
     await element(by.id('request-otp-button')).tap();
 
     await waitFor(element(by.id('otp-input')))

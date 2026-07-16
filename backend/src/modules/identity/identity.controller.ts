@@ -3,15 +3,32 @@
 // Path B: Keycloak OIDC (office) — redirect handled by Keycloak; /auth/refresh here
 // MFA (TOTP) — required for TENANT_ADMIN and FINANCE (Path B users only)
 
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
 import { MfaService } from './mfa/mfa.service';
+import { DeviceTrustService } from './device-trust/device-trust.service';
 import { FeatureFlag } from '../../shared/feature-flags/feature-flag.decorator';
-import { RequestOtpDto, VerifyOtpDto } from './dto/request-otp.dto';
+import {
+  RequestOtpDto,
+  VerifyOtpDto,
+  AttestDeviceDto,
+  RegisterDeviceDto,
+} from './dto/request-otp.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { JwtPayload } from './jwt.payload';
 
@@ -24,6 +41,7 @@ export class IdentityController {
     private readonly otpService: OtpService,
     private readonly identityService: IdentityService,
     private readonly mfaService: MfaService,
+    private readonly deviceTrust: DeviceTrustService,
   ) {}
 
   // ─── Path A: SMS OTP ───────────────────────────────────────────────────
@@ -35,7 +53,14 @@ export class IdentityController {
   @ApiResponse({ status: 200, description: 'OTP sent to phone number' })
   @ApiResponse({ status: 429, description: 'Rate limit exceeded' })
   async requestOtp(@Body() dto: RequestOtpDto) {
-    return this.otpService.requestOtp(dto.phoneNumber);
+    const result = await this.otpService.requestOtp(dto.phoneNumber);
+    // Device trust (§20.6.1): when the client sends a deviceId, mint a single-use challenge it signs
+    // with its hardware key. Absent a deviceId the response is unchanged.
+    if (dto.deviceId) {
+      const challenge = await this.deviceTrust.issueChallenge(dto.phoneNumber, dto.deviceId);
+      return { ...result, challenge };
+    }
+    return result;
   }
 
   @Post('otp/verify')
@@ -47,6 +72,67 @@ export class IdentityController {
   async verifyOtp(@Body() dto: VerifyOtpDto) {
     await this.otpService.verifyOtp(dto.phoneNumber, dto.otp);
     return this.identityService.issueTokensForPhone(dto.phoneNumber);
+  }
+
+  @Post('otp/attest')
+  @HttpCode(HttpStatus.OK)
+  @FeatureFlag('s1.identity.sms-otp-login')
+  @ApiOperation({ summary: 'Attest device trust before OTP (§20.6.1) — powers the trust banner' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns { deviceTrusted } for the OTP screen indicator',
+  })
+  async attestDevice(@Body() dto: AttestDeviceDto) {
+    // Verifies the device signed the issued challenge with its registered key. Never blocks login —
+    // it only reports trust; a failure (unknown/revoked/expired/bad signature) returns false.
+    const deviceTrusted = await this.deviceTrust.evaluateTrust({
+      phoneNumber: dto.phoneNumber,
+      deviceId: dto.deviceId,
+      signature: dto.signature,
+    });
+    return { deviceTrusted };
+  }
+
+  // ─── Device trust (§20.6.1) — enrol / list / revoke a user's devices ───
+
+  @Post('devices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Enrol this device for trust (register its public key)' })
+  @ApiResponse({ status: 204, description: 'Device enrolled (idempotent on user+deviceId)' })
+  @ApiResponse({ status: 401, description: 'Unauthenticated' })
+  async registerDevice(@Req() req: Request, @Body() dto: RegisterDeviceDto) {
+    const user = req.user as JwtPayload;
+    await this.deviceTrust.registerDevice({
+      userId: user.user_id,
+      tenantId: user.tenant_id,
+      deviceId: dto.deviceId,
+      publicKey: dto.publicKey,
+      platform: dto.platform,
+      model: dto.model ?? null,
+    });
+  }
+
+  @Get('devices')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: "List the authenticated user's trusted devices" })
+  @ApiResponse({ status: 200, description: 'Active (non-revoked) trusted devices' })
+  async listDevices(@Req() req: Request) {
+    const user = req.user as JwtPayload;
+    return this.deviceTrust.listDevices(user.user_id);
+  }
+
+  @Delete('devices/:deviceId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revoke a trusted device' })
+  @ApiResponse({ status: 204, description: 'Device revoked (idempotent)' })
+  async revokeDevice(@Req() req: Request, @Param('deviceId') deviceId: string) {
+    const user = req.user as JwtPayload;
+    await this.deviceTrust.revokeDevice(user.user_id, deviceId);
   }
 
   // ─── Path B: Keycloak OIDC ─────────────────────────────────────────────

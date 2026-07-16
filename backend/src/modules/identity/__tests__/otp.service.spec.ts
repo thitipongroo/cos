@@ -20,6 +20,10 @@ jest.mock('ioredis', () => ({
       redisMock[key] = String(parseInt(redisMock[key] ?? '0', 10) + 1);
       return parseInt(redisMock[key]!, 10);
     }),
+    // Mirrors ioredis TTL semantics: seconds left, -1 (no expiry), or -2 (no key).
+    ttl: jest.fn(async (key: string) =>
+      key in expiryMock ? expiryMock[key] : key in redisMock ? -1 : -2,
+    ),
     expire: jest.fn(),
     quit: jest.fn().mockResolvedValue(undefined),
   })),
@@ -42,12 +46,32 @@ describe('OtpService', () => {
 
   beforeEach(() => {
     Object.keys(redisMock).forEach((k) => delete redisMock[k]);
+    Object.keys(expiryMock).forEach((k) => delete expiryMock[k]);
     service = new OtpService();
   });
 
-  it('requestOtp returns expiresInSeconds', async () => {
+  it('requestOtp returns expiresInSeconds and the resend cooldown', async () => {
     const result = await service.requestOtp('+66812345678');
     expect(result.expiresInSeconds).toBe(300);
+    expect(result.resendCooldownSeconds).toBe(60);
+  });
+
+  it('blocks a resend within the 60s cooldown, with retryAfterSeconds', async () => {
+    await service.requestOtp('+66812345678'); // opens the cooldown window
+    await expect(service.requestOtp('+66812345678')).rejects.toMatchObject({
+      status: 429,
+      response: { retryAfterSeconds: 60 },
+    });
+  });
+
+  it('allows the next send once the cooldown key has expired', async () => {
+    await service.requestOtp('+66812345678');
+    // Simulate the cooldown key expiring (ioredis would return -2 once gone).
+    delete redisMock['otp:cooldown:+66812345678'];
+    delete expiryMock['otp:cooldown:+66812345678'];
+    await expect(service.requestOtp('+66812345678')).resolves.toMatchObject({
+      resendCooldownSeconds: 60,
+    });
   });
 
   it('verifyOtp succeeds with correct OTP', async () => {
@@ -98,6 +122,7 @@ describe('OtpService — production SNS path (line 105)', () => {
 
   beforeEach(() => {
     Object.keys(redisMock).forEach((k) => delete redisMock[k]);
+    Object.keys(expiryMock).forEach((k) => delete expiryMock[k]);
   });
 
   afterEach(() => {
@@ -125,6 +150,7 @@ describe('OtpService — E2E auth bypass (double-gated)', () => {
 
   beforeEach(() => {
     Object.keys(redisMock).forEach((k) => delete redisMock[k]);
+    Object.keys(expiryMock).forEach((k) => delete expiryMock[k]);
   });
 
   afterEach(() => {
@@ -141,6 +167,18 @@ describe('OtpService — E2E auth bypass (double-gated)', () => {
     delete process.env['E2E_TEST_OTP'];
     await new OtpService().requestOtp('+66800000001');
     expect(redisMock['otp:value:+66800000001']).toBe('123456');
+  });
+
+  it('skips resend-cooldown ENFORCEMENT under bypass so suites can re-request back-to-back', async () => {
+    process.env['E2E_AUTH_BYPASS'] = 'true';
+    process.env['NODE_ENV'] = 'development';
+    delete process.env['E2E_TEST_OTP'];
+    const svc = new OtpService();
+    await svc.requestOtp('+66800000009');
+    // The second request must NOT throw a cooldown 429; the advertised duration is still returned.
+    await expect(svc.requestOtp('+66800000009')).resolves.toMatchObject({
+      resendCooldownSeconds: 60,
+    });
   });
 
   it('honours the E2E_TEST_OTP override when bypass is enabled', async () => {

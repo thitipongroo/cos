@@ -27,6 +27,14 @@ describe('countries — OTP phone split/combine', () => {
     expect(findCountry('mm').dialCode).toBe('+66');
   });
 
+  it('caps the phone field to each market’s national digit count', () => {
+    // Drives the login field's maxLength/validation: TH mobile "081-234-5678" and VN "091-234-5678"
+    // are 10 digits (leading trunk 0); SG "8123 4567" is 8 (no trunk prefix). toE164 strips the 0.
+    expect(findCountry('th').nationalDigits).toBe(10);
+    expect(findCountry('vn').nationalDigits).toBe(10);
+    expect(findCountry('sg').nationalDigits).toBe(8);
+  });
+
   describe('toE164', () => {
     it('prefixes the dial code and strips a leading trunk 0 + separators (TH)', () => {
       expect(toE164('+66', '081-234-5678')).toBe('+66812345678');

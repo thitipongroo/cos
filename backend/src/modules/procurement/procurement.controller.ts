@@ -106,8 +106,18 @@ export class ProcurementController {
   // ── Purchase Requests ─────────────────────────────────────────────────────────
 
   // POST /api/v1/procurement/purchase-requests  (project_id in body)
+  // Roles are the RW column of 06-rbac-permission-matrix "Purchase requests": PM and SITE_ENGINEER
+  // both hold RW — a purchase request starts on site, where the shortage is noticed — alongside
+  // Procurement (RWD) and Tenant Admin (FULL). PROJECT_MANAGER and SITE_ENGINEER were missing here,
+  // so the two roles the matrix expects to raise requests were the two that got 403.
   @Post('procurement/purchase-requests')
-  @Roles(CosRole.PROCUREMENT_OFFICER, CosRole.PROC_MANAGER, CosRole.TENANT_ADMIN)
+  @Roles(
+    CosRole.SITE_ENGINEER,
+    CosRole.PROJECT_MANAGER,
+    CosRole.PROCUREMENT_OFFICER,
+    CosRole.PROC_MANAGER,
+    CosRole.TENANT_ADMIN,
+  )
   @ApiOperation({ summary: 'Create a purchase request' })
   createPurchaseRequest(@Body() dto: CreatePurchaseRequestDto) {
     return this.svc.createPurchaseRequest(dto);

@@ -38,7 +38,7 @@ const PKG = 'com.constructionos.cos';
 const DEMO_EMAIL = process.env['E2E_DEMO_EMAIL'] ?? 'wichai.e@ekachai.co.th';
 const DEMO_PASSWORD = process.env['DEMO_USER_PASSWORD'] ?? 'Ekachai@2026';
 // Any seeded phone reaches the OTP step; the backend's E2E bypass accepts a fixed code.
-const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '811000010';
+const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000010';
 
 const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
 const ADB = SDK
@@ -302,10 +302,15 @@ async function capturePathB() {
   adb('shell', 'input', 'keyevent', '66'); // KEYCODE_ENTER
 
   // The redirect brings the app back; the stall proxy holds its token request open, so the overlay
-  // stays up. Asserting it also proves the sign-in landed — a missed tap fails the run rather than
-  // quietly saving a screenshot of the wrong screen.
+  // stays up. waitForForeground proves the sign-in landed and the app — not the Custom Tab — is on
+  // screen; with /token stalled the only thing it can be showing is the VerifyingOverlay.
+  //
+  // We cannot assert the overlay by testID here: it animates the gear, pulse ring and progress bar on
+  // continuous RN Animated loops, so the window is never idle and `uiautomator dump` always returns a
+  // null root (that is exactly what stalled earlier runs). Gate on the foreground instead, let the
+  // animation settle a beat, and shoot the frame directly.
   await waitForForeground(PKG);
-  await find(byId('verifying-overlay'), 'verifying overlay');
+  await delay(1200);
   shot('03-login-loading');
 }
 

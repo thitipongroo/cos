@@ -304,8 +304,9 @@ AWS SDK v3 `@aws-sdk/client-sns` (`SNSClient.publish()`). **On-premise** = plugg
 the `SmsSender` abstraction (in-country aggregator / SMPP / customer gateway).
 OTP delivery is the only step that uses the SMS gateway; token
 issuance is Keycloak (below). OTP parameters: 6-digit numeric, TTL 5 min, max 3 attempts per session,
-rate-limited 10 OTP requests per phone per day (see §14.3). A Thai SMS fallback applies if +66 delivery
-rate < 95%.
+a **60-second resend cooldown per phone** (send-rate cap — a resend inside the window is rejected 429
+with `retryAfterSeconds`, and the client counts it down on the "resend" control), and rate-limited 10
+OTP requests per phone per day (see §14.3). A Thai SMS fallback applies if +66 delivery rate < 95%.
 
 1. OTP verification succeeds in COS identity service.
 2. `KeycloakAdminService.provisionPhoneUser(phone, displayName, realm)` creates a Keycloak user and sets an ephemeral one-time credential.
@@ -568,7 +569,7 @@ File upload (file-service) · Mobile offline sync (`/sync/delta`, `/sync/push`) 
 
 | STRIDE | Threat                         | Mitigation                                                                      |
 | ------ | ------------------------------ | ------------------------------------------------------------------------------- |
-| S      | OTP interception / brute force | OTP send-rate cap + attempt lockout **[GAP: define thresholds]**; short OTP TTL |
+| S      | OTP interception / brute force | OTP send-rate cap (60s resend cooldown/phone + 10/phone/day) + attempt lockout (3 tries/OTP); short OTP TTL (5 min) |
 | R      | Repudiate login                | Auth events audited                                                             |
 | I      | Token leakage                  | Short-lived access token + secure refresh; `expo-secure-store` on device        |
 | E      | Token replay / forged claims   | Signed JWT, audience/issuer checks (§5.4.2), key rotation (180d)                |

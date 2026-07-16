@@ -358,6 +358,19 @@ The web login renders **both** authentication paths already defined in §5.4 (ma
 - **Post-login routing:** redirect to the role's landing page (first row of that role's table in
   §20.7), resolved from the JWT `role` claim.
 - **Logout:** `/logout` clears the local session and performs Keycloak RP-initiated logout.
+- **Device trust (mobile Path A):** the OTP verification screen shows a trusted/untrusted device
+  indicator — green when the device is trusted, red when not. "Trusted" is a **server-side fact**, not
+  a client claim: the mobile app holds a non-extractable P-256 key (Secure Enclave / Android Keystore)
+  whose SPKI public key is registered per user in `platform.trusted_devices`; the device proves
+  possession by signing a single-use challenge (`/auth/otp/request` → `challenge`, verified at
+  `/auth/otp/attest` → `deviceTrusted`) **before** the OTP step, so the banner shows a real state while
+  the user enters the code. Login (`/auth/otp/verify`) is plain OTP and never gated on trust. Trust is
+  **earned** — a device is untrusted on its first
+  login (the OTP is the authenticator) and enrols on success, so the next login from it is trusted;
+  trust has a 30-day sliding window and can be revoked (`/auth/devices`). Device trust is **additive
+  and non-blocking**: a failed check only shows red, it never prevents login. See ADR-054; a hardened
+  v2 (Play Integrity / App Attest device+app attestation) is deferred. The `deviceId`/`signature`
+  fields are optional in the OTP API (`docs/api/auth.openapi.yaml`).
 
 ### 20.6.2 Web Application Shell (all authenticated pages)
 

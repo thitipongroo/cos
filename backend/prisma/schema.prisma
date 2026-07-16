@@ -4,13 +4,13 @@
 // All tenant entity schemas are defined and migrated per-phase
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   // multiSchema is GA since Prisma 6 — no longer a preview feature. The "schemas" field on the
   // datasource below keeps working without it.
   // Alpine (node:*-alpine) ships OpenSSL 3.x with musl libc. Without an explicit target Prisma
   // generated the openssl-1.1.x musl engine, which fails at runtime ("libssl.so.1.1: not found").
   // Pin the musl + openssl-3.0.x engines for both CPU arches (x64 CI, arm64 local) plus native.
-  binaryTargets   = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
@@ -66,9 +66,9 @@ model Tenant {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  users            User[]
-  memberships      TenantMembership[]
-  auditLogs        AuditLog[]
+  users       User[]
+  memberships TenantMembership[]
+  auditLogs   AuditLog[]
 
   @@map("tenants")
   @@schema("platform")
@@ -76,28 +76,60 @@ model Tenant {
 
 // @pdpa(category: "identity") — email and display_name are personal data
 model User {
-  userId          String   @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
-  tenantId        String   @map("tenant_id") @db.Uuid
-  keycloakUserId  String   @unique @map("keycloak_user_id") @db.VarChar(255)
+  userId         String   @id @default(dbgenerated("gen_random_uuid()")) @map("user_id") @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  keycloakUserId String   @unique @map("keycloak_user_id") @db.VarChar(255)
   // @pdpa(category: "contact") — phone_number is PII (Path A users only)
-  phoneNumber     String?  @map("phone_number") @db.VarChar(20)
+  phoneNumber    String?  @map("phone_number") @db.VarChar(20)
   // @pdpa(category: "contact") — email is personal data
-  email           String   @map("email") @db.VarChar(255)
+  email          String   @map("email") @db.VarChar(255)
   // @pdpa(category: "identity") — display name is personal data
-  displayName     String   @map("display_name") @db.VarChar(255)
-  isActive        Boolean  @default(true) @map("is_active")
-  mfaEnabled      Boolean  @default(false) @map("mfa_enabled")
-  mfaTotpSecret   String?  @map("mfa_totp_secret") @db.VarChar(255)
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  displayName    String   @map("display_name") @db.VarChar(255)
+  isActive       Boolean  @default(true) @map("is_active")
+  mfaEnabled     Boolean  @default(false) @map("mfa_enabled")
+  mfaTotpSecret  String?  @map("mfa_totp_secret") @db.VarChar(255)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  tenant      Tenant             @relation(fields: [tenantId], references: [tenantId])
-  memberships TenantMembership[]
-  auditLogs   AuditLog[]         @relation("ActorLogs")
+  tenant         Tenant             @relation(fields: [tenantId], references: [tenantId])
+  memberships    TenantMembership[]
+  auditLogs      AuditLog[]         @relation("ActorLogs")
+  trustedDevices TrustedDevice[]
 
   @@index([tenantId, email])
   @@index([phoneNumber])
   @@map("users")
+  @@schema("platform")
+}
+
+// Device trust (§20.6.1) — a user's hardware-bound devices for the "trusted device" indicator.
+// A device is trusted when it holds a non-extractable P-256 key (Secure Enclave / Android Keystore)
+// whose SPKI public key is registered here, is not revoked, has not expired, and proves possession by
+// signing a fresh server challenge at OTP verify. Cross-tenant identity data (like users) — looked up
+// before a tenant context exists — so it lives in the platform schema. public_key is a PUBLIC key, not
+// a secret; the private key never leaves the device's secure hardware.
+// @pdpa(category: "identity") — device_id + model identify a person's device
+model TrustedDevice {
+  deviceRowId String    @id @default(dbgenerated("gen_random_uuid()")) @map("device_row_id") @db.Uuid
+  tenantId    String    @map("tenant_id") @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  // Stable per-install identifier the app keeps in secure storage (not a hardware serial).
+  deviceId    String    @map("device_id") @db.VarChar(128)
+  // Base64url-encoded SPKI DER P-256 public key (react-native-secure-sign getPublicKey()).
+  publicKey   String    @map("public_key") @db.Text
+  platform    String    @map("platform") @db.VarChar(16)
+  model       String?   @map("model") @db.VarChar(128)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  lastSeenAt  DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz()
+  // Sliding trust window — extended on each successful trusted verify (§20.6.1: 30d / renew on use).
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz()
+  revokedAt   DateTime? @map("revoked_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@index([userId])
+  @@map("trusted_devices")
   @@schema("platform")
 }
 

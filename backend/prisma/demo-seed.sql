@@ -183,18 +183,33 @@ VALUES
 ON CONFLICT (payment_id) DO NOTHING;
 
 -- ── Tasks ────────────────────────────────────────────────────────────────────
+-- Both tasks carry planned dates and real progress so the Site Engineer Home's progress card has
+-- something to compute (§32.12): it weights progress_percent by the linked BOQ item's
+-- estimated_total, and derives the schedule verdict from where each task should be today.
+--   foundation : weight 2,000,000 (FND-001), 85% done, planned 2026-01-15 → 2026-09-30
+--   rebar      : weight 1,000,000 (FND-002), 30% done, planned 2026-06-01 → 2026-11-30
+-- → earned 66.7%, planned ~55.3% as of 2026-07-16, SPI ~1.21 → "ahead". The figures move with the
+-- date (planned% is interpolated against now()), which is inherent to a live metric; the margin over
+-- the 1.05 band edge is wide enough that the verdict is stable across a normal capture window.
+-- Both are IN_PROGRESS with an actual_start: progress > 0 on a NOT_STARTED task is incoherent data
+-- and would render as such on the tasks screen.
 INSERT INTO projects.tasks
-(task_id, tenant_id, project_id, task_name, work_type, status, boq_item_id, progress_percent, qc_status)
+(
+    task_id, tenant_id, project_id, task_name, work_type, status, boq_item_id,
+    progress_percent, qc_status, planned_start, planned_end, actual_start
+)
 VALUES
 (
     'b0000000-0000-4000-8000-000000000501', '00000000-0000-4000-8000-000000000001',
     'b0000000-0000-4000-8000-000000000001', 'Pour foundation — Zone A', 'FOUNDATION',
-    'NOT_STARTED', 'b0000000-0000-4000-8000-000000000103', 0, 'NONE'
+    'IN_PROGRESS', 'b0000000-0000-4000-8000-000000000103', 85, 'NONE',
+    DATE '2026-01-15', DATE '2026-09-30', DATE '2026-01-20'
 ),
 (
     'b0000000-0000-4000-8000-000000000502', '00000000-0000-4000-8000-000000000001',
     'b0000000-0000-4000-8000-000000000001', 'Install rebar — Level 2', 'STRUCTURE',
-    'NOT_STARTED', 'b0000000-0000-4000-8000-000000000104', 0, 'NONE'
+    'IN_PROGRESS', 'b0000000-0000-4000-8000-000000000104', 30, 'NONE',
+    DATE '2026-06-01', DATE '2026-11-30', DATE '2026-06-03'
 )
 ON CONFLICT (task_id) DO NOTHING;
 

@@ -15,7 +15,7 @@
 // expo-auth-session API verified against installed build types (~56.0.14): useAutoDiscovery /
 // makeRedirectUri / useAuthRequest / exchangeCodeAsync.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ import {
   Pressable,
   ScrollView,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { SvgXml } from 'react-native-svg';
@@ -37,10 +38,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CosRole } from '@cos/types';
 import { useAuthStore } from '../../store/authStore';
 import { decodeJwtPayload } from '../../lib/jwt';
+import Constants from 'expo-constants';
 import { useT } from '../../i18n';
-import { authColors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { darkColors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { VerifyingOverlay } from '../../components/VerifyingOverlay';
+import { checkBackendHealth } from '../../api/health';
 import {
   COUNTRIES,
   DEFAULT_COUNTRY_ISO2,
@@ -59,7 +62,7 @@ const KEYCLOAK_CLIENT_ID = process.env['EXPO_PUBLIC_KEYCLOAK_CLIENT_ID'] ?? 'cos
 
 type Step = 'phone' | 'otp';
 
-const ARROW_XML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="${authColors.onPrimary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ARROW_XML = `<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14M13 6l6 6-6 6" stroke="${darkColors.onPrimary}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 export default function LoginScreen() {
   // The auth stack has no navigator chrome of its own, so the header must clear the status bar
@@ -68,6 +71,7 @@ export default function LoginScreen() {
   const requestOtp = useAuthStore((s) => s.requestOtp);
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
   const setTokens = useAuthStore((s) => s.setTokens);
+  const deviceTrusted = useAuthStore((s) => s.deviceTrusted);
   const t = useT();
 
   const [step, setStep] = useState<Step>('phone');
@@ -75,12 +79,42 @@ export default function LoginScreen() {
   const [nationalNumber, setNationalNumber] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
   const [otp, setOtp] = useState('');
+  const otpRef = useRef<TextInput>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // null = not yet checked; true/false = last liveness result for the footer status dot.
+  const [healthy, setHealthy] = useState<boolean | null>(null);
+  // Seconds left before "resend" is allowed again (§5.5 send-rate cap). >0 disables the control.
+  const [resendIn, setResendIn] = useState(0);
 
   useEffect(() => {
     setCountryIso2(countryFromRegion(getLocales()[0]?.regionCode));
   }, []);
+
+  // Tick the resend cooldown down to zero.
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const id = setInterval(() => setResendIn((s) => (s <= 1 ? 0 : s - 1)), 1000);
+    return () => clearInterval(id);
+  }, [resendIn]);
+
+  // Poll backend liveness so the footer reflects real connectivity, not a static "operational".
+  useEffect(() => {
+    let active = true;
+    const ping = (): void => {
+      void checkBackendHealth().then((ok) => {
+        if (active) setHealthy(ok);
+      });
+    };
+    ping();
+    const id = setInterval(ping, 15_000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  const appVersion = Constants.expoConfig?.version ?? '0.1.0';
 
   const country = findCountry(countryIso2);
   const maskedPhone = `${country.dialCode} •••• ${nationalNumber.slice(-4)}`;
@@ -141,7 +175,8 @@ export default function LoginScreen() {
     setBusy(true);
     setError(null);
     try {
-      await requestOtp(e164Phone());
+      const { resendCooldownSeconds } = await requestOtp(e164Phone());
+      setResendIn(resendCooldownSeconds); // start the resend cooldown countdown
       setOtp('');
       setStep('otp');
     } catch {
@@ -181,7 +216,10 @@ export default function LoginScreen() {
         <LanguageSwitcher />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.scroll, step === 'otp' && styles.scrollCentered]}
+        keyboardShouldPersistTaps="handled"
+      >
         {step === 'phone' ? (
           <>
             {/* Hero — icon mark, then the tagline split over two lines (mockup 01). */}
@@ -212,22 +250,29 @@ export default function LoginScreen() {
                   testID="phone-input"
                   style={[styles.input, styles.phoneInput]}
                   placeholder={t('auth.login.phonePlaceholder')}
-                  placeholderTextColor={authColors.muted}
+                  placeholderTextColor={darkColors.muted}
                   keyboardType="phone-pad"
                   autoCapitalize="none"
+                  maxLength={country.nationalDigits}
                   value={nationalNumber}
-                  onChangeText={setNationalNumber}
+                  onChangeText={(v) =>
+                    setNationalNumber(v.replace(/\D/g, '').slice(0, country.nationalDigits))
+                  }
                   editable={!busy}
                 />
               </View>
               <TouchableOpacity
                 testID="request-otp-button"
-                style={[styles.button, busy && styles.buttonDisabled]}
+                style={[
+                  styles.button,
+                  (busy || nationalNumber.length !== country.nationalDigits) &&
+                    styles.buttonDisabled,
+                ]}
                 onPress={onRequestOtp}
-                disabled={busy || nationalNumber.trim().length === 0}
+                disabled={busy || nationalNumber.length !== country.nationalDigits}
               >
                 {busy ? (
-                  <ActivityIndicator color={authColors.onPrimary} />
+                  <ActivityIndicator color={darkColors.onPrimary} />
                 ) : (
                   <>
                     <Text style={styles.buttonText}>{t('auth.login.sendOtp')}</Text>
@@ -249,9 +294,12 @@ export default function LoginScreen() {
                 disabled={!request || oidcBusy}
               >
                 {oidcBusy ? (
-                  <ActivityIndicator color={authColors.primary} />
+                  <ActivityIndicator color={darkColors.primary} />
                 ) : (
-                  <Text style={styles.buttonOutlineText}>{t('auth.login.loginEmail')}</Text>
+                  <>
+                    <MaterialIcons name="corporate-fare" size={20} color={darkColors.primary} />
+                    <Text style={styles.buttonOutlineText}>{t('auth.login.loginEmail')}</Text>
+                  </>
                 )}
               </TouchableOpacity>
               <Text style={styles.helper}>{t('auth.login.officeHelper')}</Text>
@@ -274,6 +322,8 @@ export default function LoginScreen() {
                         style={styles.countryRow}
                         onPress={() => {
                           setCountryIso2(item.iso2);
+                          // Trim a number that no longer fits the newly-selected country's format.
+                          setNationalNumber((n) => n.slice(0, item.nationalDigits));
                           setPickerOpen(false);
                         }}
                       >
@@ -290,15 +340,43 @@ export default function LoginScreen() {
             {/* Footer (mockup 01) */}
             <View style={styles.footer}>
               <View style={styles.footerRow}>
-                <View style={styles.statusDot} />
-                <Text style={styles.footerText}>{t('auth.login.siteVersion')}</Text>
+                {/* Green when the backend answers /health/live, red when it does not. Grey until the
+                    first probe returns, so it never flashes a wrong state on launch. */}
+                <View
+                  testID="health-dot"
+                  style={[
+                    styles.statusDot,
+                    {
+                      backgroundColor:
+                        healthy === null
+                          ? darkColors.muted
+                          : healthy
+                            ? darkColors.success
+                            : darkColors.danger,
+                    },
+                  ]}
+                />
+                <Text style={styles.footerText}>
+                  {t('auth.login.footerStatus', {
+                    status: t(healthy === false ? 'auth.login.statusError' : 'auth.login.statusOk'),
+                    version: appVersion,
+                  })}
+                </Text>
               </View>
               <View style={styles.footerLinks}>
-                <Text style={styles.footerLink}>{t('auth.login.privacyPolicy')}</Text>
+                <View style={styles.footerLinkItem}>
+                  <MaterialIcons name="policy" size={16} color={darkColors.muted} />
+                  <Text style={styles.footerLink}>{t('auth.login.privacyPolicy')}</Text>
+                </View>
                 <Text style={styles.footerDivider}>·</Text>
-                <Text style={styles.footerLink}>{t('auth.login.termsOfUse')}</Text>
+                <View style={styles.footerLinkItem}>
+                  <MaterialIcons name="gavel" size={16} color={darkColors.muted} />
+                  <Text style={styles.footerLink}>{t('auth.login.termsOfUse')}</Text>
+                </View>
               </View>
-              <Text style={styles.footerFine}>{t('auth.login.copyright')}</Text>
+              <Text style={styles.footerFine}>
+                {t('auth.login.copyright', { year: new Date().getFullYear() })}
+              </Text>
             </View>
           </>
         ) : (
@@ -311,17 +389,44 @@ export default function LoginScreen() {
             <Text style={styles.cardSubtitle}>
               {t('auth.login.verifySubtitle')} <Text style={styles.maskedPhone}>{maskedPhone}</Text>
             </Text>
-            <TextInput
-              testID="otp-input"
-              style={styles.otpInput}
-              placeholder={t('auth.login.otpPlaceholder')}
-              placeholderTextColor={authColors.muted}
-              keyboardType="number-pad"
-              maxLength={6}
-              value={otp}
-              onChangeText={setOtp}
-              editable={!busy}
-            />
+            {/* Verify error sits directly above the code boxes it refers to. */}
+            {error ? (
+              <Text testID="login-error" style={styles.error}>
+                {error}
+              </Text>
+            ) : null}
+            {/* Six-box OTP (mockup 02). RN-Android New Arch ignores a transparent/alpha-0 text colour
+                (facebook/react-native#53343), so the input's glyphs can't be hidden by colour. Instead
+                the row has a uniform fill, the input's text is coloured to match it (invisible), and the
+                boxes + digits are painted in a pointer-events-none overlay ON TOP. The input keeps
+                testID="otp-input" + value={otp} and stays visible, so Detox tap/typeText are unaffected. */}
+            <Pressable style={styles.otpRow} onPress={() => otpRef.current?.focus()}>
+              <TextInput
+                testID="otp-input"
+                ref={otpRef}
+                style={styles.otpMaskInput}
+                keyboardType="number-pad"
+                maxLength={6}
+                value={otp}
+                onChangeText={(v) => setOtp(v.replace(/\D/g, '').slice(0, 6))}
+                editable={!busy}
+                autoFocus
+                caretHidden
+              />
+              <View style={styles.otpBoxesOverlay} pointerEvents="none">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.otpCell,
+                      (i === otp.length || (otp.length === 6 && i === 5)) && styles.otpCellActive,
+                    ]}
+                  >
+                    <Text style={styles.otpCellText}>{otp[i] ?? ''}</Text>
+                  </View>
+                ))}
+              </View>
+            </Pressable>
             <TouchableOpacity
               testID="verify-otp-button"
               style={[styles.button, busy && styles.buttonDisabled]}
@@ -329,7 +434,7 @@ export default function LoginScreen() {
               disabled={busy || otp.trim().length !== 6}
             >
               {busy ? (
-                <ActivityIndicator color={authColors.onPrimary} />
+                <ActivityIndicator color={darkColors.onPrimary} />
               ) : (
                 <>
                   <Text style={styles.buttonText}>{t('auth.login.verifyContinue')}</Text>
@@ -339,13 +444,44 @@ export default function LoginScreen() {
             </TouchableOpacity>
             <View style={styles.resendRow}>
               <Text style={styles.helper}>{t('auth.login.resendPrompt')}</Text>
-              <TouchableOpacity onPress={onRequestOtp} disabled={busy}>
-                <Text style={styles.link}>{t('auth.login.resendCode')}</Text>
+              <TouchableOpacity onPress={onRequestOtp} disabled={busy || resendIn > 0}>
+                <Text style={[styles.link, resendIn > 0 && styles.linkDisabled]}>
+                  {resendIn > 0
+                    ? t('auth.login.resendCodeIn', { seconds: resendIn })
+                    : t('auth.login.resendCode')}
+                </Text>
               </TouchableOpacity>
             </View>
+            {/* Device-trust banner (§20.6.1) — green shield when trusted, red when not, neutral while
+                the attest check is in flight. Driven by the server verdict, never a client claim. */}
             <View style={styles.securityBanner}>
-              <Text style={styles.securityLabel}>{t('auth.login.securityProtocol')}</Text>
-              <Text style={styles.securityNote}>{t('auth.login.securityNote')}</Text>
+              <MaterialIcons
+                name={
+                  deviceTrusted === true
+                    ? 'verified-user'
+                    : deviceTrusted === false
+                      ? 'gpp-bad'
+                      : 'shield'
+                }
+                size={18}
+                color={
+                  deviceTrusted === true
+                    ? darkColors.success
+                    : deviceTrusted === false
+                      ? darkColors.danger
+                      : darkColors.muted
+                }
+                style={styles.securityIcon}
+              />
+              <Text style={styles.securityNote}>
+                {t(
+                  deviceTrusted === true
+                    ? 'auth.login.securityNoteTrusted'
+                    : deviceTrusted === false
+                      ? 'auth.login.securityNoteUntrusted'
+                      : 'auth.login.securityNoteChecking',
+                )}
+              </Text>
             </View>
             <TouchableOpacity onPress={() => setStep('phone')}>
               <Text style={styles.link}>{t('auth.login.backToOffice')}</Text>
@@ -354,15 +490,21 @@ export default function LoginScreen() {
         )}
 
         {step === 'otp' ? (
-          /* Footer (mockup 02) */
-          <View style={styles.footerLinks}>
-            <Text style={styles.footerLink}>{t('auth.login.getSupport')}</Text>
-            <Text style={styles.footerDivider}>·</Text>
-            <Text style={styles.footerLink}>{t('auth.login.privacyData')}</Text>
+          /* Footer (mockup 02) — icon + label links */
+          <View style={styles.otpFooterLinks}>
+            <View style={styles.footerLinkItem}>
+              <MaterialIcons name="help-center" size={18} color={darkColors.muted} />
+              <Text style={styles.footerLink}>{t('auth.login.getSupport')}</Text>
+            </View>
+            <View style={styles.footerLinkItem}>
+              <MaterialIcons name="privacy-tip" size={18} color={darkColors.muted} />
+              <Text style={styles.footerLink}>{t('auth.login.privacyData')}</Text>
+            </View>
           </View>
         ) : null}
 
-        {error ? (
+        {/* Phone-step errors stay at the bottom; the OTP-step error is shown above the code boxes. */}
+        {error && step === 'phone' ? (
           <Text testID="login-error" style={styles.error}>
             {error}
           </Text>
@@ -375,7 +517,7 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: authColors.bg },
+  container: { flex: 1, backgroundColor: darkColors.bg },
   header: {
     height: 56,
     paddingHorizontal: spacing.lg,
@@ -383,25 +525,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: authColors.border,
+    borderBottomColor: darkColors.border,
   },
   headerBrand: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerIcon: { width: 32, height: 32 },
   headerWordtext: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.bold,
-    color: authColors.primary,
+    color: darkColors.primary,
     letterSpacing: -0.5,
   },
   scroll: { padding: spacing.lg, gap: spacing.md, flexGrow: 1 },
+  // OTP step has only the verify card — centre it vertically instead of pinning it to the top.
+  scrollCentered: { justifyContent: 'center' },
   hero: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   logoBox: {
     width: 88,
     height: 88,
     borderRadius: 20,
-    backgroundColor: authColors.elevated,
+    backgroundColor: darkColors.elevated,
     borderWidth: 1,
-    borderColor: authColors.border,
+    borderColor: darkColors.border,
     overflow: 'hidden',
     marginBottom: spacing.xs,
   },
@@ -409,9 +553,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 16,
-    backgroundColor: authColors.elevated,
+    backgroundColor: darkColors.elevated,
     borderWidth: 1,
-    borderColor: authColors.border,
+    borderColor: darkColors.border,
     overflow: 'hidden',
     alignSelf: 'center',
     marginBottom: spacing.sm,
@@ -420,19 +564,19 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: typography.hero.fontSize,
     fontFamily: fontFamily.bold,
-    color: authColors.text,
+    color: darkColors.text,
     textAlign: 'center',
   },
   heroSubtitle: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.muted,
+    color: darkColors.muted,
     textAlign: 'center',
     maxWidth: 280,
     lineHeight: typography.caption.lineHeight,
   },
   card: {
-    backgroundColor: authColors.surface,
+    backgroundColor: darkColors.surface,
     borderRadius: 12,
     padding: spacing.md,
     gap: spacing.md,
@@ -440,59 +584,95 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.semibold,
-    color: authColors.text,
+    color: darkColors.text,
     textAlign: 'center',
   },
   cardSubtitle: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.muted,
+    color: darkColors.muted,
     textAlign: 'center',
     lineHeight: typography.caption.lineHeight,
   },
-  maskedPhone: { fontFamily: fontFamily.semibold, color: authColors.primary },
+  maskedPhone: { fontFamily: fontFamily.semibold, color: darkColors.primary },
   label: {
     fontSize: typography.label.fontSize,
     fontFamily: fontFamily.semibold,
-    color: authColors.muted,
+    color: darkColors.muted,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
   },
   input: {
     minHeight: 48,
     borderWidth: 1,
-    borderColor: authColors.border,
+    borderColor: darkColors.border,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.text,
+    color: darkColors.text,
   },
-  otpInput: {
-    minHeight: 60,
-    borderWidth: 1,
-    borderColor: authColors.border,
+  // Uniform fill for the whole row so the capture input's (unhideable) glyphs, coloured to match,
+  // are invisible against it — the boxes + digits are drawn by the overlay on top.
+  otpRow: {
+    position: 'relative',
+    height: 60,
+    backgroundColor: darkColors.elevated,
     borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.hero.fontSize,
-    fontFamily: fontFamily.bold,
-    color: authColors.text,
+    overflow: 'hidden',
+  },
+  // The capture field: fills the row, its text coloured to the row fill (so glyphs never show) and
+  // caret hidden. Stays visible + focusable for Detox; value lives in `otp`.
+  otpMaskInput: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    color: darkColors.elevated,
+    fontSize: typography.title.fontSize,
     textAlign: 'center',
-    letterSpacing: 8,
+  },
+  otpBoxesOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  otpCell: {
+    flex: 1,
+    height: 60,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    borderRadius: 8,
+    backgroundColor: darkColors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  otpCellActive: { borderColor: darkColors.primary },
+  otpCellText: {
+    fontSize: typography.title.fontSize,
+    fontFamily: fontFamily.bold,
+    color: darkColors.text,
   },
   button: {
     minHeight: 52,
     flexDirection: 'row',
     gap: spacing.xs,
-    backgroundColor: authColors.primary,
+    backgroundColor: darkColors.primary,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonOutline: {
     minHeight: 52,
+    flexDirection: 'row',
+    gap: spacing.sm,
     borderWidth: 1,
-    borderColor: authColors.border,
+    borderColor: darkColors.border,
     backgroundColor: 'transparent',
     borderRadius: 8,
     alignItems: 'center',
@@ -500,38 +680,39 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: { opacity: 0.5 },
   buttonText: {
-    color: authColors.onPrimary,
+    color: darkColors.onPrimary,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.semibold,
   },
   buttonOutlineText: {
-    color: authColors.text,
+    color: darkColors.text,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.semibold,
   },
   helper: {
-    color: authColors.muted,
+    color: darkColors.muted,
     fontFamily: fontFamily.regular,
     fontSize: typography.label.fontSize,
     textAlign: 'center',
   },
   link: {
-    color: authColors.primary,
+    color: darkColors.primary,
     fontFamily: fontFamily.medium,
     fontSize: typography.body.fontSize,
     textAlign: 'center',
   },
+  linkDisabled: { color: darkColors.muted, opacity: 0.7 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  divider: { flex: 1, height: 1, backgroundColor: authColors.muted, opacity: 0.3 },
+  divider: { flex: 1, height: 1, backgroundColor: darkColors.muted, opacity: 0.3 },
   dividerText: {
     fontSize: typography.label.fontSize,
     fontFamily: fontFamily.medium,
-    color: authColors.muted,
+    color: darkColors.muted,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
   },
   error: {
-    color: authColors.danger,
+    color: darkColors.danger,
     fontFamily: fontFamily.regular,
     fontSize: typography.caption.fontSize,
     textAlign: 'center',
@@ -543,25 +724,24 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   securityBanner: {
-    backgroundColor: authColors.elevated,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: darkColors.elevated,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: authColors.border,
+    borderColor: darkColors.border,
     padding: spacing.sm,
-    gap: 2,
   },
-  securityLabel: {
-    fontSize: typography.label.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: authColors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
+  securityIcon: {},
   securityNote: {
+    flexShrink: 1,
     fontSize: typography.label.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.muted,
+    color: darkColors.muted,
     lineHeight: typography.label.lineHeight,
+    textAlign: 'center',
   },
   phoneRow: { flexDirection: 'row', gap: spacing.sm },
   countryButton: {
@@ -570,19 +750,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     borderWidth: 1,
-    borderColor: authColors.border,
+    borderColor: darkColors.border,
     borderRadius: 8,
     paddingHorizontal: spacing.md,
   },
   dialCode: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.text,
+    color: darkColors.text,
   },
   phoneInput: { flex: 1 },
   footer: { alignItems: 'center', gap: spacing.xs, paddingTop: spacing.lg },
   footerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: authColors.success },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: darkColors.success },
   footerLinks: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -590,22 +770,30 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingTop: spacing.md,
   },
+  otpFooterLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+  },
+  footerLinkItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   footerText: {
     fontSize: typography.label.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.muted,
+    color: darkColors.muted,
   },
   footerLink: {
     fontSize: typography.label.fontSize,
     fontFamily: fontFamily.medium,
-    color: authColors.muted,
+    color: darkColors.muted,
     letterSpacing: 0.8,
   },
-  footerDivider: { color: authColors.muted, fontSize: typography.label.fontSize },
+  footerDivider: { color: darkColors.muted, fontSize: typography.label.fontSize },
   footerFine: {
     fontSize: typography.label.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.muted,
+    color: darkColors.muted,
     opacity: 0.7,
     textAlign: 'center',
   },
@@ -616,7 +804,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   modalCard: {
-    backgroundColor: authColors.bg,
+    backgroundColor: darkColors.bg,
     borderRadius: 12,
     maxHeight: '70%',
     overflow: 'hidden',
@@ -628,17 +816,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: authColors.border,
+    borderBottomColor: darkColors.border,
   },
   countryName: {
     flex: 1,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.text,
+    color: darkColors.text,
   },
   countryDial: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
-    color: authColors.muted,
+    color: darkColors.muted,
   },
 });

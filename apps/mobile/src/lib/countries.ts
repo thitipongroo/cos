@@ -7,21 +7,35 @@ export interface Country {
   dialCode: string;
   nameEn: string;
   nameTh: string;
+  /**
+   * Digits a user types in the national format, including any leading trunk "0" \u2014 used to cap and
+   * validate the phone field. TH mobile "081-234-5678" = 10; VN "091-234-5678" = 10; SG "8123 4567" =
+   * 8 (no trunk prefix). `toE164` strips the trunk 0 before assembling the E.164 number.
+   */
+  nationalDigits: number;
 }
 
 export const COUNTRIES: Country[] = [
-  { iso2: 'th', dialCode: '+66', nameEn: 'Thailand', nameTh: '\u0e44\u0e17\u0e22' },
+  {
+    iso2: 'th',
+    dialCode: '+66',
+    nameEn: 'Thailand',
+    nameTh: '\u0e44\u0e17\u0e22',
+    nationalDigits: 10,
+  },
   {
     iso2: 'vn',
     dialCode: '+84',
     nameEn: 'Vietnam',
     nameTh: '\u0e40\u0e27\u0e35\u0e22\u0e14\u0e19\u0e32\u0e21',
+    nationalDigits: 10,
   },
   {
     iso2: 'sg',
     dialCode: '+65',
     nameEn: 'Singapore',
     nameTh: '\u0e2a\u0e34\u0e07\u0e04\u0e42\u0e1b\u0e23\u0e4c',
+    nationalDigits: 8,
   },
 ];
 

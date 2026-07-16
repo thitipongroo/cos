@@ -209,16 +209,50 @@ export class ProcurementRepository {
     pr_number: string;
     requested_by: string;
     required_date?: string;
+    items?: Array<{ description: string; quantity: number; unit: string; material_id?: string }>;
   }): Promise<PurchaseRequestRow> {
-    const rows = await this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<PurchaseRequestRow[]>`
+    // PR + its lines in one transaction: a request that records no materials is not a request, so
+    // the two must not be able to land separately.
+    return this.db.run(async (prisma) => {
+      const rows = await prisma.$queryRaw<PurchaseRequestRow[]>`
         INSERT INTO procurement.purchase_requests (project_id, tenant_id, pr_number, requested_by, required_date)
         VALUES (${params.project_id}::uuid, ${this.tenantId}::uuid, ${params.pr_number},
                 ${params.requested_by}::uuid, ${params.required_date ?? null}::date)
-        RETURNING *`,
+        RETURNING *`;
+      const pr = rows[0]!;
+      const items = params.items ?? [];
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i]!;
+        await prisma.$executeRaw`
+          INSERT INTO procurement.pr_line_items
+            (pr_id, tenant_id, material_id, description, quantity, unit, sort_order)
+          VALUES (${pr.pr_id}::uuid, ${this.tenantId}::uuid, ${it.material_id ?? null}::uuid,
+                  ${it.description}, ${it.quantity}::decimal, ${it.unit}, ${i})`;
+      }
+      return pr;
+    });
+  }
+
+  /**
+   * Next PR number for the tenant, as `PR-<year>-<seq>`.
+   *
+   * Derived from the highest existing number for that year rather than a sequence, so the series
+   * stays per-tenant (pr_number is unique per tenant, not globally) and restarts each January.
+   * Called inside the caller's transaction; concurrent creates collide on uq_pr_tenant_number, which
+   * is the constraint doing the real work here.
+   */
+  async nextPrNumber(year: number): Promise<string> {
+    const prefix = `PR-${year}-`;
+    const rows = await this.db.run(
+      (prisma) =>
+        prisma.$queryRaw<Array<{ max_seq: number | null }>>`
+        SELECT MAX(NULLIF(regexp_replace(pr_number, '^PR-[0-9]{4}-', ''), '')::int) AS max_seq
+        FROM procurement.purchase_requests
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND pr_number LIKE ${prefix + '%'}`,
     );
-    return rows[0]!;
+    const next = (rows[0]?.max_seq ?? 0) + 1;
+    return `${prefix}${String(next).padStart(4, '0')}`;
   }
 
   async findPrById(pr_id: string): Promise<PurchaseRequestRow | null> {

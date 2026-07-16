@@ -10,6 +10,7 @@ import { IdentityService } from './identity.service';
 import { KeycloakAdminService } from './keycloak-admin.service';
 import { MfaService } from './mfa/mfa.service';
 import { OtpService } from './otp/otp.service';
+import { DeviceTrustService } from './device-trust/device-trust.service';
 import { KeycloakJwtStrategy } from './strategies/keycloak-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
@@ -21,6 +22,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     IdentityService,
     MfaService,
     OtpService,
+    DeviceTrustService,
     KeycloakJwtStrategy,
     JwtAuthGuard,
   ],

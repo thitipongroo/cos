@@ -32,6 +32,13 @@ components:
           pattern: '^\+[1-9]\d{7,14}$'
           example: '+66812345678'
           description: E.164 format
+        deviceId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 128
+          description: |
+            Optional stable per-install device id (device trust, §20.6.1). When present, the
+            response includes a single-use `challenge` for the device to sign with its hardware key.
 
     RequestOtpResponse:
       type: object
@@ -39,6 +46,18 @@ components:
         expiresInSeconds:
           type: integer
           example: 300
+        resendCooldownSeconds:
+          type: integer
+          example: 60
+          description: |
+            Minimum seconds the client must wait before requesting another OTP (§5.5 send-rate cap).
+            The client disables "resend" and counts down for this long; the server also enforces it
+            via a per-phone cooldown and answers 429 with `retryAfterSeconds` if hit early.
+        challenge:
+          type: string
+          description: |
+            Base64url single-use nonce, present only when `deviceId` was supplied. The device signs
+            it (ECDSA P-256 / SHA-256, IEEE-P1363) and returns the signature to `/auth/otp/verify`.
 
     VerifyOtpRequest:
       type: object
@@ -63,6 +82,74 @@ components:
         expiresIn:
           type: integer
           example: 900
+
+    AttestDeviceRequest:
+      type: object
+      required: [phoneNumber, deviceId, signature]
+      properties:
+        phoneNumber:
+          type: string
+          pattern: '^\+[1-9]\d{7,14}$'
+          example: '+66812345678'
+        deviceId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 128
+        signature:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 200
+          description: Base64url IEEE-P1363 signature over the challenge from `/auth/otp/request`.
+
+    AttestDeviceResponse:
+      type: object
+      properties:
+        deviceTrusted:
+          type: boolean
+          description: |
+            Device trust (§20.6.1). True only when a registered, non-revoked, unexpired device proved
+            possession of its key by a valid signature over the issued challenge. Reporting-only — it
+            never blocks login; login proceeds through `/auth/otp/verify` regardless.
+
+    RegisterDeviceRequest:
+      type: object
+      required: [deviceId, publicKey, platform]
+      properties:
+        deviceId:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 128
+        publicKey:
+          type: string
+          pattern: '^[A-Za-z0-9_-]+$'
+          maxLength: 1000
+          description: Base64url SPKI DER P-256 public key.
+        platform:
+          type: string
+          enum: [ios, android]
+        model:
+          type: string
+          maxLength: 128
+
+    TrustedDeviceSummary:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        platform:
+          type: string
+        model:
+          type: string
+          nullable: true
+        lastSeenAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
 
     RefreshResponse:
       type: object
@@ -138,7 +225,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '429':
-          description: Rate limit exceeded (10 OTP/phone/day)
+          description: |
+            Rate limit exceeded — either the resend cooldown (§5.5: another OTP was requested within
+            `resendCooldownSeconds`; body carries `retryAfterSeconds`) or the 10 OTP/phone/day cap.
           headers:
             Retry-After:
               schema:
@@ -177,6 +266,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
+  /auth/otp/attest:
+    post:
+      summary: Attest device trust before OTP (§20.6.1)
+      description: |
+        Verifies the device signed the challenge from `/auth/otp/request` with its registered key, and
+        returns `deviceTrusted` for the OTP screen's trusted/untrusted indicator. Reporting-only: it
+        never blocks login (which proceeds via `/auth/otp/verify`). Public but throttled; a caller
+        without the private key can only ever receive `deviceTrusted: false`, so it is no enrolment
+        oracle. Consumes the single-use challenge and slides the trust window on success.
+      tags: [auth, device-trust]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttestDeviceRequest'
+      responses:
+        '200':
+          description: Device-trust verdict for the OTP banner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttestDeviceResponse'
+
+  /auth/devices:
+    post:
+      summary: Enrol this device for trust (§20.6.1)
+      description: |
+        Registers the device's SPKI public key for the authenticated user. Idempotent on
+        (user, deviceId): a fresh key replaces the old one and clears any prior revocation. Trust is
+        earned — a device enrols after its first successful OTP login, so the next login is trusted.
+      tags: [auth, device-trust]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterDeviceRequest'
+      responses:
+        '204':
+          description: Device enrolled
+        '401':
+          description: Unauthenticated
+    get:
+      summary: List the authenticated user's trusted devices (§20.6.1)
+      tags: [auth, device-trust]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Active (non-revoked) trusted devices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrustedDeviceSummary'
+        '401':
+          description: Unauthenticated
+
+  /auth/devices/{deviceId}:
+    delete:
+      summary: Revoke a trusted device (§20.6.1)
+      tags: [auth, device-trust]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Device revoked (idempotent)
+        '401':
+          description: Unauthenticated
 
   /auth/refresh:
     post:

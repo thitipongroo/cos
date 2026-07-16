@@ -619,8 +619,17 @@ DRAFT → PENDING_APPROVAL → APPROVED → SENT → ACKNOWLEDGED
 | Personality       | Industrial · Intelligent · Enterprise · AI-native · Mission-critical          | —                                     |
 | Positioning       | Palantir / Datadog / Linear aesthetic — not construction contractor aesthetic | —                                     |
 
-Prohibited in all visual work: building/crane/hard hat/blueprint/gear icons;
+Prohibited in the signed-in app: building/crane/hard hat/blueprint/gear icons;
 orange/amber colour; rounded playful shapes; gradients or glow effects.
+
+**Exception — pre-auth entry screens** (login, OTP verify, verification/loading overlay). These
+screens may use the "technical / mission-critical" motif — a rotating gear, the `architecture`
+mark, and a cyan glow on progress/accent elements — because the entry sequence is where the
+"mission-critical operating system" personality is set, before any project data is on screen
+(product-owner decision 2026-07-16; reference `mockup/00_authen/mobile/04_verification_loading_mobile`).
+The prohibition still holds everywhere the signed-in app shows project data — the dashboard, lists,
+and forms drop these motifs (§32.7 Mobile Dark Surfaces). Amber remains a semantic warning token
+throughout; only its use as a _brand_ colour is prohibited.
 
 ### Brand Colour Tokens (web/PWA + desktop)
 
@@ -670,12 +679,20 @@ Optimised for outdoor sunlight visibility.
 > Use `--mobile-primary` for tap targets and CTAs in React Native only.
 > Use `--cos-blue` for all web (Next.js) and PWA surfaces.
 
-#### Mobile Auth Screens
+#### Mobile Dark Surfaces
 
-The table above applies to the **signed-in** field app. The pre-auth screens (login, OTP verify,
-session-securing overlay) render **dark**, on the shared `--cos-dark-*` tokens above — the same
-surface as the web login and the Keycloak `cos` theme, so all three entry points to the product look
-like one product.
+The table above applies to **task screens** — the forms and lists a field worker keeps open all day.
+A defined set of screens renders **dark** instead, on the shared `--cos-dark-*` tokens above: the
+same surface as the web login and the Keycloak `cos` theme, so the product looks like one product.
+
+Dark screens (exhaustive — do not extend this list without a product-owner decision):
+
+| Screen                   | Reference                                |
+| ------------------------ | ---------------------------------------- |
+| Login                    | `mockup/00_login_flow/mobile/`           |
+| OTP verify               | `mockup/00_login_flow/mobile/`           |
+| Session-securing overlay | `mockup/00_login_flow/mobile/`           |
+| Site Engineer Home       | `mockup/site-engineer/dashboard-mobile/` |
 
 | Surface            | Token                 | Hex       |
 | ------------------ | --------------------- | --------- |
@@ -686,10 +703,16 @@ like one product.
 | Secondary / footer | `--cos-dark-muted`    | `#94A3B8` |
 | CTA                | `--mobile-primary`    | `#0066FF` |
 
-> **Why the field app stays light:** the sunlight-visibility rationale is about all-day outdoor use.
-> Signing in is a one-off, usually indoor, so the auth screens follow the brand's dark entry surface
-> instead. CTAs keep `--mobile-primary` so the tap target a field worker learns never changes colour.
-> Reference: `mockup/00_login_flow/mobile/`.
+> **Why these screens and not the rest:** the sunlight-visibility rationale is about all-day outdoor
+> use. Signing in is a one-off, usually indoor. The Site Engineer Home is a read-first command view
+> — glanced at, not worked in — and a product-owner decision (2026-07-16) put it on the dark entry
+> surface. Screens a worker _acts_ in (daily report, task list, issue capture, inspection checklist)
+> stay light. CTAs keep `--mobile-primary` everywhere, so the tap target a field worker learns never
+> changes colour.
+>
+> Dark screens use the `--cos-dark-*` values above verbatim. The Site Engineer Home mockup's
+> `#031427` background and `#4cd7f6` accent are **not** adopted — they are not tokens, and §32.7
+> "Mobile Implementation" forbids hardcoded hex.
 
 ### Typography Tokens
 
@@ -806,6 +829,7 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
 
 | Component             | Description                                                |
 | --------------------- | ---------------------------------------------------------- |
+| `<TopBar />`          | Standard top app bar, every role — see below               |
 | `<MobileNav />`       | Bottom navigation, 4–5 items max, icons + labels           |
 | `<QuickActionCard />` | 60px min height, icon + label + badge, single tap          |
 | `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue    |
@@ -818,17 +842,36 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
 Do **not** implement on mobile: tables (use cards), navigation deeper than 3 levels,
 modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
 
+#### Standard Top Bar (`<TopBar />`)
+
+Every role's authenticated screens carry one shared top app bar (product-owner decision 2026-07-16),
+so the mobile app frames its content between two pieces of chrome — the top bar and the bottom nav —
+each on a **surface** background distinct from the content area, exactly as the bottom nav is:
+
+| Element | Content                                                                                    |
+| ------- | ------------------------------------------------------------------------------------------ |
+| Left    | App icon + `CONSTRUCTION OS` wordmark                                                      |
+| Right   | Notification bell (unread badge → `/notifications`) · avatar (photo/initials → `/profile`) |
+
+- **One component, all roles.** It is not per-screen; it lives in the authenticated layout so a role
+  screen never renders its own header. The safe-area strip above it takes the same surface colour, so
+  the notch region reads as part of the bar.
+- **Palette follows the screen.** On a dark surface (Site Engineer Home, §32.7 Mobile Dark Surfaces)
+  the bar uses `--cos-dark-surface`; on the light field app it uses `--mobile-surface`.
+- Avatar falls back to initials, then a person glyph, when there is no `photo_url` (§11 `platform.users`).
+
 ### Mobile Implementation — token wiring (React Native + Expo)
 
 As with web, defining the mobile tokens above is **not** sufficient — they take effect only when
 wired into the React Native app. The contract for `apps/mobile`:
 
-| Item                  | Required content                                                                                                                                                                                                              |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/theme/tokens.ts` | Export the `--mobile-*` colours, typography (hero/title/body/caption/label), spacing (xs–xl), touch-target minimums, and `fontFamily` names as typed JS objects (RN has no CSS variables — tokens are a module, not `:root`). |
-| Brand font            | Add `expo-font` + `@expo-google-fonts/inter-tight`; load `InterTight_400Regular/500Medium/600SemiBold/700Bold` via `useFonts` in the root `app/_layout.tsx` and hold render until `fontsLoaded`.                              |
-| Components            | Use `colors.*` / `fontFamily.*` from the theme — never hardcode hex or `fontWeight`. With custom fonts, select weight by `fontFamily` (e.g. `fontFamily.semibold`), not `fontWeight`.                                         |
-| Expo config           | `app.json` (or `app.config.js`) MUST exist with `expo-router` + `expo-font` plugins and `main: 'expo-router/entry'`, or the app does not boot and fonts never load.                                                           |
+| Item                  | Required content                                                                                                                                                                                                                                                                                                                                                                    |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/theme/tokens.ts` | Export the `--mobile-*` colours, typography (hero/title/body/caption/label), spacing (xs–xl), touch-target minimums, and `fontFamily` names as typed JS objects (RN has no CSS variables — tokens are a module, not `:root`).                                                                                                                                                       |
+| Brand font            | Add `expo-font` + `@expo-google-fonts/inter-tight`; load `InterTight_400Regular/500Medium/600SemiBold/700Bold` via `useFonts` in the root `app/_layout.tsx` and hold render until `fontsLoaded`.                                                                                                                                                                                    |
+| Icon library          | `@expo/vector-icons` (product-owner decision 2026-07-16) — add it explicitly with `npx expo install @expo/vector-icons`; it is **not** a transitive dependency of the `expo` package. Use the `MaterialIcons` set — the family the mockups are drawn in. Icons are glyphs, so they take `color` from the theme like text. Emoji are acceptable only where a glyph would read worse. |
+| Components            | Use `colors.*` / `fontFamily.*` from the theme — never hardcode hex or `fontWeight`. With custom fonts, select weight by `fontFamily` (e.g. `fontFamily.semibold`), not `fontWeight`.                                                                                                                                                                                               |
+| Expo config           | `app.json` (or `app.config.js`) MUST exist with `expo-router` + `expo-font` plugins and `main: 'expo-router/entry'`, or the app does not boot and fonts never load.                                                                                                                                                                                                                 |
 
 Notes:
 
@@ -1026,6 +1069,159 @@ at two mandatory gates:
 
 ---
 
+## 32.12 Project Progress Metric
+
+Product-owner decision 2026-07-16. Defines the single figure a role Home shows for "how far along
+is this project", and the schedule verdict beside it. Served by `GET /projects/{projectId}/progress`
+(`docs/api/project.openapi.yaml`); consumed by the Site Engineer Home (§32.7 Mobile Dark Surfaces).
+
+> **Why this is not an `/analytics/*` endpoint.** The analytics module reads ClickHouse
+> (`analytics.project_cost_daily`, `procurement_activity_daily`, `site_activity_daily`), and none of
+> those tables carry task progress, BOQ value, or planned dates. This metric joins `tasks` × `boq` in
+> PostgreSQL, so it lives with the other `/projects/{projectId}/*` task routes. It is also a
+> read-your-writes figure — a site engineer who logs progress expects the bar to move — whereas the
+> ClickHouse aggregates are Kafka-fed and eventually consistent.
+
+### Earned percent (EV%)
+
+Heterogeneous work cannot be averaged raw — a task is weighted by the **value** of the BOQ line it
+delivers, not by task count. This is the cost-ratio / equivalent-units method used across the
+industry (AACE EVM practice).
+
+```text
+EV% = Σ(task.progress_percent × boq.estimated_total) / Σ(boq.estimated_total)
+```
+
+over every Task joined to its BOQ item: `projects.tasks.boq_item_id` → `boq.boq_items.item_id`.
+
+> **Column names differ from §11.** §11 names the BOQ key `boq_item_id` and gives BOQ a `project_id`.
+> The implemented table is `boq.boq_items` with PK `item_id` and no `project_id` — a BOQ item reaches
+> its project through `version_id` → `boq.boq_versions.project_id`. The join above uses the
+> implemented names. The project filter comes from `projects.tasks.project_id`, so `boq_versions`
+> does not need to be joined at all.
+
+### Planned percent (PV%)
+
+Where the project _should_ be right now, using the same weights:
+
+```text
+task.planned% = clamp01((now − planned_start) / (planned_end − planned_start)) × 100
+PV%           = Σ(task.planned% × boq.estimated_total) / Σ(boq.estimated_total)
+```
+
+PV% is summed over the **schedulable subset** only: BOQ-linked, not cancelled, and carrying both
+`planned_start` and `planned_end`. A task with no planned dates has nothing to be measured against.
+
+### Schedule verdict
+
+SPI must compare like with like, so **both sides are summed over the schedulable subset** — not the
+EV% published above, which spans every BOQ-linked task including undated ones. Mixing the two bases
+would make SPI drift with how many tasks happen to lack dates.
+
+```text
+EV%(scheduled) = Σ(progress_percent × estimated_total) / Σ(estimated_total)   ← schedulable subset
+SPI            = EV%(scheduled) / PV%
+```
+
+| SPI         | Status     |
+| ----------- | ---------- |
+| > 1.05      | `ahead`    |
+| 0.95 – 1.05 | `on_track` |
+| < 0.95      | `behind`   |
+
+`percentComplete` (the headline figure) therefore uses the wider base, while `spi` / `status` use the
+schedulable base. When every task has planned dates the two bases are identical.
+
+### Schedule variance in days (Earned Schedule)
+
+`spi` says _whether_ a project is behind but not _how far_ in terms a site engineer plans around —
+days. `scheduleDaysBehind` answers that (product-owner decision 2026-07-16): a positive number of
+days behind, negative ahead, from Earned Schedule.
+
+Define the time-phased planned curve over the schedulable subset (same subset as `spi`):
+
+```text
+PV(d) = Σ(clamp01((d − planned_start) / (planned_end − planned_start)) × 100 × estimated_total)
+        / Σ(estimated_total)
+```
+
+`PV(d)` rises monotonically from 0 (before the earliest start) to 100 (after the latest end). The
+**earned schedule date** `ES` is the date the plan expected to reach today's actual earned percent:
+
+```text
+ES                 = the date d where PV(d) = EV%(scheduled)
+scheduleDaysBehind = round(today − ES)      (+ behind · − ahead)
+```
+
+- `EV%(scheduled) ≥ 100` (all scheduled work done) → `ES` = the latest `planned_end`; the value is how
+  many days after the plan's finish the project still stands (0 if finished on time or early).
+- `EV%(scheduled) ≤ 0` → `ES` = the earliest `planned_start`.
+- No schedulable task → `null` (same as `spi`).
+
+Unlike `spi`, this does not collapse to "on track" at a late finish — a project done a month late
+reads `+31`.
+
+### Display (Site Engineer Home)
+
+How the Site Engineer Home (§32.7 Mobile Dark Surfaces) renders the figures — product-owner decision
+2026-07-16. The API contract is unchanged; these are presentation rules only.
+
+- **Headline** is `percentComplete`, rounded, with the progress bar.
+- **Schedule verdict** is one line: the status word carrying the day-variance —
+  "ช้ากว่าแผน 21 วัน" (behind), "เร็วกว่าแผน N วัน" (ahead), or "เป็นไปตามแผน" (on_track, no number).
+  The word/colour come from `status`/`spi`; the number is `|scheduleDaysBehind|`. Behind and ahead
+  agree in sign with `spi` (behind ⇒ spi < 1 ⇒ days > 0). Hidden when `scheduleDaysBehind` is null.
+  The earlier percentage ratio ("ตามแผน N%") was replaced by this — days are what a site engineer
+  plans around, and a percentage of a fully-aged plan was unintuitive.
+- **Status colour** is a three-band split of the same `spi`, finer than the `status` enum so a
+  gentle slip and a serious one do not look the same:
+
+  | SPI           | Colour | (status)       |
+  | ------------- | ------ | -------------- |
+  | ≥ 0.95        | green  | ahead/on_track |
+  | 0.90 – < 0.95 | amber  | behind         |
+  | < 0.90        | red    | behind         |
+
+  The colour is derived on the client from `spi`; the `status` string is unchanged. `null` spi shows
+  no colour/verdict. Amber is a semantic warning token (`--cos-dark-warning`), not a brand colour, so
+  §32.7:622's amber prohibition does not apply.
+
+### Rules
+
+- **Tasks with `boq_item_id = null` are excluded** from both sums — they carry no value weight, so
+  including them at zero weight would silently drag the figure down. This means the metric measures
+  BOQ-linked work only.
+- **Tasks with `status = CANCELLED` are excluded** from both sums (product-owner decision
+  2026-07-16). Cancelled work is descoped, and EVM removes descoped work from the baseline; leaving
+  it in at `progress_percent = 0` would cap the project below 100% forever.
+- **BOQ version status is not filtered** (product-owner decision 2026-07-16). A task is weighted by
+  whatever item it points at, whether that item's `boq_versions.status` is `DRAFT`, `APPROVED`, or
+  `SUPERSEDED`. The weights are ratios and self-normalise, and a task must not lose its weight the
+  moment a new BOQ version supersedes the old one.
+- **`Σ(estimated_total) = 0`** (no BOQ-linked task) → return `null` for all four fields. Do not
+  return `0`; "no data" and "zero progress" are different, and a `0%` bar is a lie.
+- **`PV% = 0`** (nothing planned to have started yet) → `spi = null`, `status = null`. Division by
+  zero, and "ahead of schedule" is meaningless before the first task was due to start.
+- **`planned_end ≤ planned_start`** → that task's `planned%` is `100` if `now ≥ planned_end`, else
+  `0`. A zero-length task is a milestone, not a ramp.
+- **`planned_start` or `planned_end` null** → the task contributes to EV% but is excluded from PV%.
+  It has no schedule to be measured against.
+- Money is weight-only here, never displayed — §32.5 Financial Precision Rules governs any figure
+  shown as currency. The weights are ratios, so `DECIMAL` reads may be summed as numbers.
+
+### Known limits — state these before trusting the number
+
+- **SPI converges to 1.0 as a project completes**, even for a late project: once every task is done
+  `EV% = PV% = 100`. A late project reads `on_track` at the finish line. The standard fix is Earned
+  Schedule (Lipke 2003; now in the PMI EVM practice standard), which measures the variance in **time**
+  rather than value — and COS **does** have the time-phased baseline it needs: `planned_start` /
+  `planned_end` per task. The day-variance below is that Earned Schedule, and it does not converge to
+  zero at a late finish (a project completed a month late reads "31 days behind", not "on track").
+- The metric trusts `Tasks.progress_percent`, which is self-reported by the field and conflict-resolved
+  Max-wins (§17.5). It is not a physical-quantity survey.
+
+---
+
 ## References
 
 | ID                 | Title                                                              | Source                                                                                                                      |
@@ -1038,6 +1234,8 @@ at two mandatory gates:
 | [PostgreSQL]       | PostgreSQL Documentation                                           | [postgresql.org/docs](https://www.postgresql.org/docs/)                                                                     |
 | [W3C-DesignTokens] | W3C Design Tokens Community Group Report                           | [tr.designtokens.org/format](https://tr.designtokens.org/format/)                                                           |
 | [IEEE-754]         | IEEE Standard for Floating-Point Arithmetic                        | IEEE Std 754-2019                                                                                                           |
+| [AACE-EVM]         | Earned Value Analysis — Why It Doesn't Work (progress measurement) | AACE International Transactions EVM.01, Lukas 2008                                                                          |
+| [EarnedSchedule]   | Earned Schedule — schedule performance analysis from EVM measures  | Lipke, W., PM World Today Vol XIII (2011) — [earnedschedule.com](https://www.earnedschedule.com/)                           |
 
 > 📎 See also: [03-system-design](03-system-design.md) — service decomposition and architecture overview
 > · [09-data-architecture](09-data-architecture.md) — data domains and storage strategy

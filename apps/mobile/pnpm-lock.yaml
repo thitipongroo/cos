@@ -20,6 +20,9 @@ importers:
       '@expo/config-plugins':
         specifier: ~8.0.11
         version: 8.0.11
+      '@expo/vector-icons':
+        specifier: ^15.1.1
+        version: 15.1.1(expo-font@56.0.7)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       '@react-native-community/netinfo':
         specifier: 12.0.1
         version: 12.0.1(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -122,6 +125,9 @@ importers:
       react-native-screens:
         specifier: 4.25.2
         version: 4.25.2(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+      react-native-secure-sign:
+        specifier: ^0.0.2
+        version: 0.0.2(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
       react-native-svg:
         specifier: 15.15.4
         version: 15.15.4(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
@@ -851,6 +857,13 @@ packages:
         optional: true
       react-native-worklets:
         optional: true
+
+  '@expo/vector-icons@15.1.1':
+    resolution: {integrity: sha512-Iu2VkcoI5vygbtYngm7jb4ifxElNVXQYdDrYkT7UCEIiKLeWnQY0wf2ZhHZ+Wro6Sc5TaumpKUOqDRpLi5rkvw==}
+    peerDependencies:
+      expo-font: '>=14.0.4'
+      react: '*'
+      react-native: '*'
 
   '@expo/ws-tunnel@2.0.0':
     resolution: {integrity: sha512-j+JfTRdCk820J9dU0sA2SqshQIKFOMo7ED84w9MJFcebfbNQgsLztEY/SABDkGnjatrW4xGqnUhVRxSBVyCkXw==}
@@ -3828,6 +3841,12 @@ packages:
       react: '*'
       react-native: '>=0.82.0'
 
+  react-native-secure-sign@0.0.2:
+    resolution: {integrity: sha512-sHadNW/HnwtSPqcNvh/T6O/BATOV8JB64maDjqyRAuYcD7k+iTAloM6ndDHGdeWAD74THzobTWRf/CoQWMSzSA==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+
   react-native-svg@15.15.4:
     resolution: {integrity: sha512-boT/vIRgj6zZKBpfTPJJiYWMbZE9duBMOwPK6kCSTgxsS947IFMOq9OgIFkpWZTB7t229H24pDRkh3W9ZK/J1A==}
     peerDependencies:
@@ -5603,6 +5622,12 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  '@expo/vector-icons@15.1.1(expo-font@56.0.7)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)':
+    dependencies:
+      expo-font: 56.0.7(expo@56.0.13)(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3)
+      react: 19.2.3
+      react-native: 0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
   '@expo/ws-tunnel@2.0.0(ws@8.21.0)':
     dependencies:
@@ -8942,6 +8967,11 @@ snapshots:
       react-freeze: 1.0.4(react@19.2.3)
       react-native: 0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
       warn-once: 0.1.1
+
+  react-native-secure-sign@0.0.2(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
+    dependencies:
+      react: 19.2.3
+      react-native: 0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3)
 
   react-native-svg@15.15.4(react-native@0.85.3(patch_hash=e5cd5e539043730f8be38dd20185cd3c184e422e9f4987588999c6f2ad252ee3)(@babel/core@7.29.7)(@react-native/metro-config@0.86.0(@babel/core@7.29.7))(@types/react@19.2.17)(react@19.2.3))(react@19.2.3):
     dependencies:

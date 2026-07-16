@@ -1,7 +1,8 @@
 // Home screen — role-aware landing (G-M1; master §Phase 10 role Home specs).
 // The bottom-nav gives every role a "Home" tab (see (app)/_layout.tsx), and the spec defines a
 // DISTINCT Home per role:
-//   SITE_WORKER / SITE_ENGINEER : KPI + self check-in (offline-first)          (master 3076/3079)
+//   SITE_WORKER                 : KPI + self check-in (offline-first)          (master 3076/3202)
+//   SITE_ENGINEER               : dashboard — see components/SiteEngineerHome  (§32.12; PO 2026-07-16)
 //   EXECUTIVE                   : active projects · budget vs actual · open critical issues (3093)
 //   FINANCE                     : pending payment approvals · overdue invoices  (3107)
 //   PROCUREMENT_OFFICER/MANAGER : open RFQs · POs awaiting ack · deliveries     (3120)
@@ -26,6 +27,7 @@ import { refreshProjectsCache } from '../../api/projects';
 import { useAuthStore } from '../../store/authStore';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { QuickActionCard } from '../../components/QuickActionCard';
+import SiteEngineerHome from '../../components/SiteEngineerHome';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 
@@ -61,7 +63,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
   return Array.isArray(res) ? res : (res.items ?? []);
 }
 
-// ── SITE_WORKER / SITE_ENGINEER — KPI + self check-in ────────────────────────
+// ── SITE_WORKER — KPI + self check-in ────────────────────────────────────────
 function FieldHome() {
   const issues = useCollection<Issue>('local_issues');
   const pending = usePendingCount();
@@ -377,8 +379,9 @@ export default function HomeScreen() {
       return <ProcurementHome />;
     case CosRole.PROJECT_MANAGER:
       return <PmHome />;
-    case CosRole.SITE_WORKER:
     case CosRole.SITE_ENGINEER:
+      return <SiteEngineerHome />;
+    case CosRole.SITE_WORKER:
       return <FieldHome />;
     default:
       return <MinimalHome />;

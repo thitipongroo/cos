@@ -44,38 +44,44 @@
       "sendOtp": "Send OTP",
       "verify": "Verify",
       "verifyContinue": "Verify & Continue",
-      "verifyTitle": "Verify Your Identity",
+      "verifyTitle": "Verify identity",
       "verifySubtitle": "Enter the 6-digit code sent to",
       "resendPrompt": "Didn't receive code?",
       "resendCode": "Resend Code",
       "securityProtocol": "Security Protocol",
-      "securityNote": "AES-256 encrypted session active. Device recognized as trusted hardware.",
       "heroTitle": "AI-NATIVE",
       "heroSubtitle": "Secure access for field operations and enterprise project management.",
       "fieldWorkerAccess": "Field Worker Access",
       "or": "or",
       "loginEmail": "Login with Email",
-      "officeHelper": "Office staff and project managers can log in using their corporate credentials.",
+      "officeHelper": "For office staff and project directors",
       "systemOperational": "System Operational",
       "otpSendError": "Could not send OTP. Check the phone number and try again.",
       "otpVerifyError": "Invalid or expired OTP. Please try again.",
       "office": "Office login (email / password)",
       "fieldWorker": "Field worker — sign in with phone (OTP)",
-      "backToOffice": "← Back to office login",
+      "backToOffice": "← Back to main screen",
       "oidcError": "Sign-in failed. Please try again.",
       "countryLabel": "Country",
       "heroTitle2": "Construction Platform",
       "appName": "CONSTRUCTION OS",
       "privacyPolicy": "PRIVACY POLICY",
       "termsOfUse": "TERMS OF USE",
-      "siteVersion": "System Operational: Site v2.4.12",
-      "copyright": "© 2024 CONSTRUCTION OS. INDUSTRIAL GRADE SECURITY.",
+      "copyright": "© {year} CONSTRUCTION OS.",
       "getSupport": "Get Support",
-      "privacyData": "Privacy Data"
+      "privacyData": "Privacy Data",
+      "statusOk": "System operational",
+      "statusError": "Error",
+      "footerStatus": "{status} : Version {version}",
+      "securityNoteTrusted": "This device is verified as trusted",
+      "securityNoteUntrusted": "This device is not yet verified",
+      "securityNoteChecking": "Checking device…",
+      "resendCodeIn": "Resend in {seconds}s"
     },
     "loading": {
-      "title": "Securing your session",
-      "status": "Securing session context"
+      "title": "Verifying security code",
+      "status": "System Authentication in Progress",
+      "securing": "Securing Session Context"
     }
   },
   "home": {
@@ -86,6 +92,28 @@
       "checkIn": "Check in",
       "checkedIn": "Checked in — will sync when online",
       "checkInError": "Check-in unavailable: no worker profile linked to your account."
+    },
+    "engineer": {
+      "appName": "CONSTRUCTION OS",
+      "notifications": "Notifications",
+      "progressTitle": "Project progress",
+      "progressEmpty": "No BOQ-linked task yet",
+      "ahead": "Ahead by {days} d",
+      "onTrack": "On schedule",
+      "behind": "Behind by {days} d",
+      "quickActions": "Menu",
+      "reviewReports": "Review reports",
+      "issues": "Issues",
+      "capturePhoto": "Capture photo",
+      "materialRequest": "Request materials",
+      "activeIssues": "Issues to resolve",
+      "noIssues": "No open issues",
+      "upcomingTasks": "Tasks starting soon",
+      "noTasks": "No upcoming tasks",
+      "starts": "Starts {date}",
+      "unit": "items",
+      "overdueLabel": "Overdue",
+      "dueSoonLabel": "Due soon"
     },
     "exec": {
       "title": "Executive Overview",
@@ -322,6 +350,25 @@
       "ordered": "Ordered {qty} {unit}",
       "linesOffline": "PO lines unavailable (offline) — note-only record"
     }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications"
+  },
+  "materialRequest": {
+    "title": "Request materials",
+    "item": "Item {n}",
+    "descriptionPlaceholder": "What do you need? e.g. DB12 rebar",
+    "quantityPlaceholder": "Quantity",
+    "unitPlaceholder": "Unit",
+    "addItem": "Add item",
+    "removeItem": "Remove",
+    "requiredDate": "Needed by",
+    "submit": "Send request",
+    "created": "Request sent",
+    "queued": "Saved — will send when online",
+    "error": "Could not send the request"
   },
   "profile": {
     "main": {

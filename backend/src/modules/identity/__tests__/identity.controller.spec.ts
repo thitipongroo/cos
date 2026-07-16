@@ -1,4 +1,5 @@
-// Unit tests for IdentityController — delegates to OtpService, IdentityService, MfaService
+// Unit tests for IdentityController — delegates to OtpService, IdentityService, MfaService,
+// DeviceTrustService
 
 const mockOtpService = {
   requestOtp: jest.fn(),
@@ -17,6 +18,14 @@ const mockMfaService = {
   authenticate: jest.fn(),
 };
 
+const mockDeviceTrust = {
+  issueChallenge: jest.fn(),
+  evaluateTrust: jest.fn(),
+  registerDevice: jest.fn(),
+  listDevices: jest.fn(),
+  revokeDevice: jest.fn(),
+};
+
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
@@ -32,6 +41,7 @@ describe('IdentityController', () => {
       mockOtpService as never,
       mockIdentityService as never,
       mockMfaService as never,
+      mockDeviceTrust as never,
     );
   });
 
@@ -41,11 +51,24 @@ describe('IdentityController', () => {
       const result = await controller.requestOtp({ phoneNumber: '+66812345678' });
       expect(mockOtpService.requestOtp).toHaveBeenCalledWith('+66812345678');
       expect(result).toEqual({ expiresInSeconds: 300 });
+      // No deviceId → no challenge minted.
+      expect(mockDeviceTrust.issueChallenge).not.toHaveBeenCalled();
+    });
+
+    it('mints a device-trust challenge when a deviceId is supplied', async () => {
+      mockOtpService.requestOtp.mockResolvedValue({ expiresInSeconds: 300 });
+      mockDeviceTrust.issueChallenge.mockResolvedValue('CHALLENGE_B64U');
+      const result = await controller.requestOtp({
+        phoneNumber: '+66812345678',
+        deviceId: 'dev-1',
+      });
+      expect(mockDeviceTrust.issueChallenge).toHaveBeenCalledWith('+66812345678', 'dev-1');
+      expect(result).toEqual({ expiresInSeconds: 300, challenge: 'CHALLENGE_B64U' });
     });
   });
 
   describe('verifyOtp', () => {
-    it('verifies OTP then issues tokens', async () => {
+    it('verifies OTP then issues tokens (login is plain — trust is a separate step)', async () => {
       const tokens = {
         accessToken: 'at',
         refreshToken: 'rt',
@@ -59,7 +82,35 @@ describe('IdentityController', () => {
 
       expect(mockOtpService.verifyOtp).toHaveBeenCalledWith('+66812345678', '123456');
       expect(mockIdentityService.issueTokensForPhone).toHaveBeenCalledWith('+66812345678');
+      expect(mockDeviceTrust.evaluateTrust).not.toHaveBeenCalled();
       expect(result).toBe(tokens);
+    });
+  });
+
+  describe('attestDevice', () => {
+    it('reports the device-trust verdict for the OTP banner', async () => {
+      mockDeviceTrust.evaluateTrust.mockResolvedValue(true);
+      const result = await controller.attestDevice({
+        phoneNumber: '+66812345678',
+        deviceId: 'dev-1',
+        signature: 'SIG_B64U',
+      });
+      expect(mockDeviceTrust.evaluateTrust).toHaveBeenCalledWith({
+        phoneNumber: '+66812345678',
+        deviceId: 'dev-1',
+        signature: 'SIG_B64U',
+      });
+      expect(result).toEqual({ deviceTrusted: true });
+    });
+
+    it('returns deviceTrusted:false when the check fails', async () => {
+      mockDeviceTrust.evaluateTrust.mockResolvedValue(false);
+      const result = await controller.attestDevice({
+        phoneNumber: '+66812345678',
+        deviceId: 'dev-1',
+        signature: 'BAD',
+      });
+      expect(result).toEqual({ deviceTrusted: false });
     });
   });
 
@@ -86,7 +137,54 @@ describe('IdentityController', () => {
     });
   });
 
-  const fakeReq = (userId: string, sub: string) => ({ user: { user_id: userId, sub } }) as never;
+  const fakeReq = (userId: string, sub: string, tenantId = 'tenant-1') =>
+    ({ user: { user_id: userId, tenant_id: tenantId, sub } }) as never;
+
+  describe('device trust endpoints', () => {
+    it('registerDevice delegates to deviceTrust.registerDevice with the JWT identity', async () => {
+      mockDeviceTrust.registerDevice.mockResolvedValue(undefined);
+      await controller.registerDevice(fakeReq('user-1', 'kc-1', 'tenant-9'), {
+        deviceId: 'dev-1',
+        publicKey: 'PUB_B64U',
+        platform: 'android',
+        model: 'Pixel 8',
+      });
+      expect(mockDeviceTrust.registerDevice).toHaveBeenCalledWith({
+        userId: 'user-1',
+        tenantId: 'tenant-9',
+        deviceId: 'dev-1',
+        publicKey: 'PUB_B64U',
+        platform: 'android',
+        model: 'Pixel 8',
+      });
+    });
+
+    it('registerDevice passes null when model is omitted', async () => {
+      mockDeviceTrust.registerDevice.mockResolvedValue(undefined);
+      await controller.registerDevice(fakeReq('user-1', 'kc-1'), {
+        deviceId: 'dev-1',
+        publicKey: 'PUB_B64U',
+        platform: 'ios',
+      });
+      expect(mockDeviceTrust.registerDevice).toHaveBeenCalledWith(
+        expect.objectContaining({ model: null }),
+      );
+    });
+
+    it('listDevices delegates for the authenticated user', async () => {
+      const devices = [{ deviceId: 'dev-1', platform: 'android' }];
+      mockDeviceTrust.listDevices.mockResolvedValue(devices);
+      const res = await controller.listDevices(fakeReq('user-1', 'kc-1'));
+      expect(mockDeviceTrust.listDevices).toHaveBeenCalledWith('user-1');
+      expect(res).toBe(devices);
+    });
+
+    it('revokeDevice delegates for the authenticated user', async () => {
+      mockDeviceTrust.revokeDevice.mockResolvedValue(undefined);
+      await controller.revokeDevice(fakeReq('user-1', 'kc-1'), 'dev-1');
+      expect(mockDeviceTrust.revokeDevice).toHaveBeenCalledWith('user-1', 'dev-1');
+    });
+  });
 
   describe('mfaEnroll', () => {
     it('delegates to mfaService.generateEnrollmentSecret', async () => {

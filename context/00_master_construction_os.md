@@ -3080,10 +3080,18 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       Workflows:  daily report, quick issue, task list, safety checklist
 
     SITE_ENGINEER:
-      Bottom nav: Home | Reports | Issues | Inspections | Profile
+      Bottom nav: Home | Issues | Inspections | Reports  (dark tab bar — the role's landing is the
+                  dark dashboard; order per mockup, product-owner decision 2026-07-16)
       Workflows:  review reports, conflict resolution, inspection approval,
-                  manpower overview, issue escalation
+                  manpower overview, issue escalation, material requisition
       Extra:      ConflictBadge, conflict review screen
+      Profile:    NOT a bottom-nav tab for this role — reached from the avatar in the Home
+                  header, next to the notification bell (product-owner decision 2026-07-16,
+                  from mockup/site-engineer/dashboard-mobile/). The route stays mounted, so
+                  router.push('/profile') still works. Four tabs is within the 4–5 that
+                  spec §32.7 allows for <MobileNav />. Every other role keeps Profile as a tab.
+      Material requisition: SITE_ENGINEER raises purchase requests — 06-rbac-permission-matrix
+                  gives the role RW on "Purchase requests", and a shortage is noticed on site.
 
     PROJECT_MANAGER:
       Bottom nav: Home | Projects | Procurement | Dashboard | Profile

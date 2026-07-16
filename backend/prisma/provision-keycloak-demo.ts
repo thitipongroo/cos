@@ -81,8 +81,17 @@ interface DemoUser {
 async function upsertKeycloakUser(token: string, tenantId: string, u: DemoUser): Promise<string> {
   const [firstName, ...rest] = u.display_name.split(' ');
   const lastName = rest.join(' ') || firstName;
+  // Username is the phone number when the user has one, so BOTH auth paths work for one account:
+  //   Path A (SMS OTP) — identity.service.ts issueTokensForPhone() resolves the account from the DB,
+  //     then keycloak-admin.service.ts exchangeOtpForTokens() does a Direct Grant with
+  //     `username: <phone>`. That only matches if the Keycloak username IS the phone number.
+  //   Path B (email + password) — still fine: the realm sets loginWithEmailAllowed, so Keycloak
+  //     accepts the email as the login identifier regardless of what the username is.
+  // Provisioning username = email (the previous behaviour) made Path A impossible for every seeded
+  // user, which is what docs/screens/android/README.md recorded as a known gap.
+  const username = u.phone_number ?? u.email;
   const rep = {
-    username: u.email,
+    username,
     email: u.email,
     emailVerified: true,
     enabled: true,
@@ -102,20 +111,53 @@ async function upsertKeycloakUser(token: string, tenantId: string, u: DemoUser):
   }
 
   // Resolve the Keycloak user id (exact email match).
-  const find = await fetch(
-    `${KC}/admin/realms/${REALM}/users?email=${encodeURIComponent(u.email)}&exact=true`,
-    { headers: { authorization: `Bearer ${token}` } },
-  );
-  const found = (await find.json()) as { id: string }[];
+  const findByEmail = async (): Promise<{ id: string; username: string }[]> => {
+    const res = await fetch(
+      `${KC}/admin/realms/${REALM}/users?email=${encodeURIComponent(u.email)}&exact=true`,
+      { headers: { authorization: `Bearer ${token}` } },
+    );
+    return (await res.json()) as { id: string; username: string }[];
+  };
+  let found = await findByEmail();
   if (!found.length) throw new Error(`user ${u.email} not found after create`);
+
+  // An account provisioned before the phone-username change still has the email as its username, and
+  // it CANNOT be renamed in place: this realm sets editUsernameAllowed=false, so Keycloak rejects a
+  // username change with 400 error-user-attribute-read-only. Recreate the account instead — these are
+  // demo users this script owns, and the caller re-links platform.users.keycloak_user_id to the new
+  // id, so nothing is left pointing at the deleted account.
+  if (found[0].username !== username) {
+    const del = await fetch(`${KC}/admin/realms/${REALM}/users/${found[0].id}`, {
+      method: 'DELETE',
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (!del.ok && del.status !== 404) {
+      throw new Error(`rename ${u.email} → ${username}: delete failed ${del.status}`);
+    }
+    const recreate = await fetch(`${KC}/admin/realms/${REALM}/users`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+      body: JSON.stringify(rep),
+    });
+    if (recreate.status !== 201) {
+      throw new Error(`recreate ${username} failed: ${recreate.status} ${await recreate.text()}`);
+    }
+    found = await findByEmail();
+    if (!found.length) throw new Error(`user ${u.email} not found after recreate`);
+    return found[0].id;
+  }
+
   const kcId = found[0].id;
 
-  // If it already existed (409), re-apply attributes + password so the account is login-ready.
+  // If it already existed (409), re-apply username + attributes + password so the account is
+  // login-ready. `username` is re-sent deliberately: accounts provisioned before the phone-username
+  // change still carry the email as their username, and without this they stay unable to do Path A.
   if (create.status === 409) {
     await fetch(`${KC}/admin/realms/${REALM}/users/${kcId}`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
       body: JSON.stringify({
+        username,
         email: u.email,
         emailVerified: true,
         enabled: true,

@@ -1,6 +1,6 @@
 ---
 title: Construction OS — Android Screen Capture
-last_updated: 2026-07-15
+last_updated: 2026-07-16
 ---
 
 # Construction OS — Android App Screens
@@ -36,6 +36,33 @@ connection a `uiautomator dump` only ever returns the instrumented app's own win
 browser undrivable. The script asserts the screen it expects (e.g. `verifying-overlay`) before saving
 each frame, so a mis-tap fails the run instead of writing a screenshot of the wrong thing.
 
+## Site Engineer dashboard — [`21-site-engineer-home.png`](21-site-engineer-home.png)
+
+The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`, from
+[`mockup/site-engineer/dashboard-mobile/`](../../../mockup/site-engineer/dashboard-mobile)), captured
+against the `seed-realistic.ts` dataset through a real Path A (SMS OTP) login as
+`+66811000009` — Waraporn Klinhom, the SITE_ENGINEER the Rama IX Corporate Tower (`R9CT`) tasks are
+assigned to. Thai UI: this screen is documented in the th-TH default (QM-3).
+
+Everything on it is live: `76%` is the BOQ-value-weighted earned percent from
+`GET /projects/{projectId}/progress` (§32.12 — the API returned `percentComplete: 75.56`,
+`plannedPercent: 100`, `spi: 0.756`, `status: "behind"`), and the issues are the project's real
+`site_ops.issues` rows. The verdict "ช้ากว่าแผน" is **red** because `spi` 0.756 is below 0.90
+(§32.12 Display three-band colour), and "ตามแผน 132%" is `plannedPercent ÷ percentComplete` — over
+100% exactly because the project is behind. The header right badge "สูง 1 รายการ" is the worst
+severity present (HIGH) and its count; the issues list is ordered worst-first.
+
+> **Why it reads "ช้ากว่าแผน" (behind) and not the mockup's "Ahead of Schedule":** `seed-realistic.ts`
+> anchors its tasks to fixed calendar dates about a month wide, so every planned end date is now in
+> the past and planned% pins at 100 while earned% sits at 76. That is the dataset ageing out, not a
+> defect — the figure moves with `now()` by design.
+
+Captured by [`apps/mobile/scripts/capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs)
+(`node scripts/capture-android-home.mjs`) — adb/uiautomator only, same reasoning as the login script
+below. It asserts the `site-engineer-home` testID before saving, and fails outright if the progress
+card is showing its "no BOQ-linked task" placeholder, so a screenshot of an empty card cannot be
+committed by accident.
+
 ## App screens — `00-login.png` … `20-profile.png`
 
 The 21 flat files are the same route set as [iOS](../ios/README.md), captured by
@@ -48,8 +75,19 @@ grouped into role folders, this set documents routes as one user sees them — m
 
 ## Known gaps
 
-- **Per-role capture is not possible with the current demo provisioning.** Path A (phone + OTP) needs
-  a Keycloak user whose _username_ is the phone number (`identity.service.ts` `issueTokensForPhone` →
-  `keycloak-admin.service.ts` `exchangeOtpForTokens`), but
-  [`provision-keycloak-demo.ts`](../../../backend/prisma/provision-keycloak-demo.ts) provisions the
-  demo users as Path B (username = email), so no seeded role can complete an OTP login.
+- **Per-role capture is possible now — this gap is closed** (2026-07-16). Path A needs a Keycloak user
+  whose _username_ is the phone number (`identity.service.ts` `issueTokensForPhone` →
+  `keycloak-admin.service.ts` `exchangeOtpForTokens` does a Direct Grant with `username: <phone>`),
+  and [`provision-keycloak-demo.ts`](../../../backend/prisma/provision-keycloak-demo.ts) used to
+  provision every demo user with the email as username, so no seeded role could complete an OTP login.
+  It now uses the phone number as the username whenever the account has one; Path B still works
+  because the realm sets `loginWithEmailAllowed`. `21-site-engineer-home.png` is the first screen
+  captured through a real per-role OTP login.
+  - Accounts provisioned before this change cannot simply be renamed — the realm sets
+    `editUsernameAllowed: false`, and Keycloak rejects a username change with
+    `400 error-user-attribute-read-only` — so the script deletes and recreates them, then re-links
+    `platform.users.keycloak_user_id`. Re-run it once against an existing realm to migrate.
+- **The flat `00`–`20` set cannot be regenerated on Windows.**
+  [`apps/mobile/e2e/capture.spec.ts`](../../../apps/mobile/e2e/capture.spec.ts) writes to
+  `docs/screens/ios/` and shells out to `xcrun simctl`, so as committed it only drives an iOS
+  simulator. The Android equivalents are the two adb scripts referenced above.

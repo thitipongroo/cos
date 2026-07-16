@@ -906,18 +906,29 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   await tx.$executeRaw`UPDATE finance.project_budgets SET committed_amount=${committed}, actual_amount=${actual} WHERE budget_id=${bid}::uuid`;
 
   // Tasks (a handful with progress).
+  //
+  // The last column is the BOQ_TEMPLATE line each task delivers (`<group code>/<item index>`), which
+  // is what gives the project-progress metric its weights: §32.12 weights progress_percent by the
+  // linked item's estimated_total and EXCLUDES tasks with boq_item_id = null. Without these links the
+  // metric has nothing to sum and reports "not computable" for every project.
+  //
+  // Waterproofing maps to null on purpose — BOQ_TEMPLATE has no waterproofing line, and inventing a
+  // link to an unrelated item would silently mis-weight the figure. It is real, unmeasured scope.
   const taskDefs = [
-    ['งานเสาเข็ม โซน A', 'FOUNDATION', 'COMPLETED', 100],
-    ['ฐานรากและคานคอดิน', 'FOUNDATION', 'IN_PROGRESS', 65],
-    ['เสาคอนกรีตชั้นล่าง', 'STRUCTURE', 'IN_PROGRESS', 40],
-    ['งานกันซึมชั้นใต้ดิน', 'STRUCTURE', 'NOT_STARTED', 0],
-    ['ระบบไฟฟ้าชั่วคราวหน้างาน', 'MEP', 'COMPLETED', 100],
+    ['งานเสาเข็ม โซน A', 'FOUNDATION', 'COMPLETED', 100, 'B/0'], // Bored pile ø600mm
+    ['ฐานรากและคานคอดิน', 'FOUNDATION', 'IN_PROGRESS', 65, 'B/1'], // Pile cap concrete 240ksc
+    ['เสาคอนกรีตชั้นล่าง', 'STRUCTURE', 'IN_PROGRESS', 40, 'C/0'], // Reinforced concrete columns
+    ['งานกันซึมชั้นใต้ดิน', 'STRUCTURE', 'NOT_STARTED', 0, null], // no BOQ line for waterproofing
+    ['ระบบไฟฟ้าชั่วคราวหน้างาน', 'MEP', 'COMPLETED', 100, 'E/0'], // Electrical conduit & wiring
   ] as const;
   for (let ti = 0; ti < taskDefs.length; ti++) {
-    const [tname, wt, status, prog] = taskDefs[ti];
-    await tx.$executeRaw`INSERT INTO projects.tasks (task_id, tenant_id, project_id, task_name, work_type, status, assigned_to, planned_start, planned_end, progress_percent, qc_status)
-      VALUES (${uid(`task/${p.key}/${ti}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${tname}, ${wt}, ${status}, ${U(p.se)}::uuid, ${addDays(p.start, ti * 3)}::date, ${addDays(p.start, ti * 3 + 20)}::date, ${prog}, ${prog === 100 ? 'QC_PASSED' : 'NONE'})
-      ON CONFLICT (task_id) DO NOTHING`;
+    const [tname, wt, status, prog, boqKey] = taskDefs[ti];
+    const boqItemId = boqKey === null ? null : uid(`boqi/${p.key}/${boqKey}`);
+    // DO UPDATE on boq_item_id, not DO NOTHING: these tasks predate the link, so a plain
+    // insert-or-skip would leave every existing database with the metric still unusable.
+    await tx.$executeRaw`INSERT INTO projects.tasks (task_id, tenant_id, project_id, task_name, work_type, status, assigned_to, planned_start, planned_end, progress_percent, qc_status, boq_item_id)
+      VALUES (${uid(`task/${p.key}/${ti}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${tname}, ${wt}, ${status}, ${U(p.se)}::uuid, ${addDays(p.start, ti * 3)}::date, ${addDays(p.start, ti * 3 + 20)}::date, ${prog}, ${prog === 100 ? 'QC_PASSED' : 'NONE'}, ${boqItemId}::uuid)
+      ON CONFLICT (task_id) DO UPDATE SET boq_item_id = EXCLUDED.boq_item_id`;
   }
 
   // Permit (active work permit).

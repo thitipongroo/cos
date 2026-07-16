@@ -20,13 +20,18 @@ export const colors = {
 } as const;
 
 /**
- * Auth-screen palette (§32.7 "Mobile Auth Screens"). The signed-in field app stays on `colors`
- * above — that light palette exists for outdoor sunlight visibility — but the pre-auth screens are
- * indoor/one-off and are specified dark, matching the web login surface and
- * mockup/00_login_flow/mobile/. These are the shared `--cos-dark-*` tokens rather than a mobile-only
- * dark set, so the product carries exactly one dark palette; `primary` stays `--mobile-primary`.
+ * Dark-surface palette (§32.7 "Mobile Dark Surfaces").
+ *
+ * Task screens — the forms and lists a worker keeps open all day — stay on `colors` above, whose
+ * light palette exists for outdoor sunlight visibility. A defined set of screens renders dark
+ * instead: login, OTP verify, the session-securing overlay, and the Site Engineer Home. §32.7 lists
+ * them exhaustively; do not put a new screen on this palette without a product-owner decision.
+ *
+ * These are the shared `--cos-dark-*` tokens rather than a mobile-only dark set, so the product
+ * carries exactly one dark palette across mobile, web login, and the Keycloak theme. `primary` stays
+ * `--mobile-primary` so a learned tap target never changes colour between screens.
  */
-export const authColors = {
+export const darkColors = {
   primary: colors.primary, // --mobile-primary — CTAs stay the field-app blue
   onPrimary: '#F8FAFC', // --cos-dark-text — label/icon on a primary-filled button
   bg: '#020617', // --cos-dark-bg
@@ -34,8 +39,13 @@ export const authColors = {
   elevated: '#111827', // --cos-dark-elevated — inputs, inner panels, logo plate
   text: '#F8FAFC', // --cos-dark-text
   muted: '#94A3B8', // --cos-dark-muted — secondary text, footer
-  success: '#10B981', // --cos-dark-success — security/status marks
-  danger: '#EF4444', // --cos-dark-danger — errors
+  cyan: '#22D3EE', // --cos-dark-cyan — AI/technical accent (auth entry screens only, §32.7)
+  // Status marks take the --cos-dark-* set, not the --mobile-* one, so every colour on a dark screen
+  // comes from the same palette. #F59E0B is amber, which §32.7 prohibits as a *brand* colour — as a
+  // semantic warning token it is exactly what the spec's own dark table defines it for.
+  success: '#10B981', // --cos-dark-success — on-track, security/status marks
+  warning: '#F59E0B', // --cos-dark-warning — behind-schedule, medium-severity
+  danger: '#EF4444', // --cos-dark-danger — errors, critical severity
   // Derived: --cos-dark-muted at low alpha. The dark set has no outline token, and --cos-dark-elevated
   // (#111827) is invisible against --cos-dark-surface (#0F172A), so borders take a muted tint instead.
   border: 'rgba(148, 163, 184, 0.24)',
@@ -83,7 +93,7 @@ export const touchTarget = {
 
 export const theme = {
   colors,
-  authColors,
+  darkColors,
   fontFamily,
   typography,
   lineHeightRatio,

@@ -12,7 +12,7 @@ import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useI18n } from '../i18n';
 import type { Locale } from '../i18n/translate';
-import { authColors } from '../theme/tokens';
+import { darkColors } from '../theme/tokens';
 
 const TH_FLAG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600"><path fill="#A51931" d="M0 0h900v600H0z"/><path fill="#F4F5F8" d="M0 100h900v400H0z"/><path fill="#2D2A4A" d="M0 200h900v200H0z"/></svg>`;
 
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: authColors.border,
+    borderColor: darkColors.border,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -54,6 +54,6 @@ const styles = StyleSheet.create({
   code: {
     fontSize: 12,
     fontWeight: '600',
-    color: authColors.muted,
+    color: darkColors.muted,
   },
 });

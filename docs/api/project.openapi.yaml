@@ -828,6 +828,70 @@ paths:
       responses:
         '201':
           description: Task created
+  /projects/{projectId}/progress:
+    get:
+      summary: Project progress — BOQ-value-weighted earned percent, planned percent, and SPI
+      description: |
+        Authoritative formula and thresholds: 32-implementation-specifications §32.12.
+
+        Earned percent weights each task's progress_percent by the value of the BOQ item it delivers
+        (cost-ratio method) rather than averaging tasks, so a 10M concrete pour outweighs a 5k paint
+        task. Planned percent applies the same weights to where each task should be today, and
+        SPI = earned / planned yields the schedule verdict.
+
+        Every field is nullable and null means "not computable", never zero — a project with no
+        BOQ-linked task returns nulls rather than a 0% bar. Tasks with boq_item_id = null carry no
+        weight and are excluded.
+      operationId: getProjectProgress
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Progress figures for the project as of now
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [percentComplete, plannedPercent, spi, status, scheduleDaysBehind]
+                properties:
+                  percentComplete:
+                    type: number
+                    nullable: true
+                    minimum: 0
+                    maximum: 100
+                    description: Earned percent (EV%). Null when no BOQ-linked task exists.
+                    example: 65.4
+                  plannedPercent:
+                    type: number
+                    nullable: true
+                    minimum: 0
+                    maximum: 100
+                    description: Planned percent (PV%) as of now. Null when no BOQ-linked task has planned dates.
+                    example: 60.1
+                  spi:
+                    type: number
+                    nullable: true
+                    description: Schedule Performance Index (EV% / PV%). Null when plannedPercent is null or 0.
+                    example: 1.088
+                  status:
+                    type: string
+                    nullable: true
+                    enum: [ahead, on_track, behind]
+                    description: SPI verdict — >1.05 ahead, 0.95–1.05 on_track, <0.95 behind. Null when spi is null.
+                    example: ahead
+                  scheduleDaysBehind:
+                    type: integer
+                    nullable: true
+                    description: >-
+                      Earned Schedule day-variance (§32.12): positive = days behind, negative = days
+                      ahead. The date the plan expected today's earned percent, versus today. Null when
+                      there is no schedulable task.
+                    example: 21
   /tasks/{taskId}:
     patch:
       summary: Update task progress / status (completion gate on COMPLETED)

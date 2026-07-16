@@ -4,18 +4,20 @@
 
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePathname } from 'expo-router';
+import { CosRole } from '@cos/types';
 import { runDeltaSync } from '../../sync/runDeltaSync';
 import { checkLocalDbLimit } from '../../db/database';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { SyncStatusBar } from '../../components/SyncStatusBar';
+import { TopBar } from '../../components/TopBar';
 import { MobileNav } from '../../components/MobileNav';
+import { useAuthStore } from '../../store/authStore';
 import { setLastAppPath } from '../../lib/e2e/lastRoute';
 
 export default function AppLayout() {
-  const insets = useSafeAreaInsets();
   const pathname = usePathname();
+  const role = useAuthStore((s) => s.role);
 
   // Remember the current in-app route so the E2E network-toggle deep link can return here (see
   // lib/e2e/lastRoute). No-op effect in production beyond bookkeeping.
@@ -35,10 +37,14 @@ export default function AppLayout() {
       });
   }, []);
 
+  // The Site Engineer's shell is dark (§32.7 Mobile Dark Surfaces); every other role is light.
+  const variant = role === CosRole.SITE_ENGINEER ? 'dark' : 'light';
+
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      {/* Network + sync state, shown above the tab content on every authenticated screen. The top
-          inset keeps the banners clear of the status bar / notch so they are visible to Detox. */}
+    <View style={styles.root}>
+      {/* Standard top bar (§32.7) owns the safe-area top inset and gives the header its surface
+          background. Then the offline/sync banners, then the tab content. */}
+      <TopBar variant={variant} />
       <OfflineBanner />
       <SyncStatusBar />
       <View style={styles.tabs}>

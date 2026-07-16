@@ -14,12 +14,14 @@
     "test:e2e:android": "detox test --configuration android.emu.release",
     "build:e2e:ios": "detox build --configuration ios.sim.release",
     "build:e2e:android": "detox build --configuration android.emu.release",
-    "capture:android": "node scripts/capture-android-login.mjs"
+    "capture:android": "node scripts/capture-android-login.mjs",
+    "capture:android:home": "node scripts/capture-android-home.mjs"
   },
   "dependencies": {
     "@cos/types": "file:../../packages/@cos/types",
     "@expo-google-fonts/inter-tight": "^0.4.2",
     "@expo/config-plugins": "~8.0.11",
+    "@expo/vector-icons": "^15.1.1",
     "@react-native-community/netinfo": "12.0.1",
     "@tanstack/react-query": "^5.35.0",
     "axios": "^1.7.0",
@@ -54,6 +56,7 @@
     "react-native-gesture-handler": "~2.31.1",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "4.25.2",
+    "react-native-secure-sign": "^0.0.2",
     "react-native-svg": "15.15.4",
     "zustand": "^4.5.0"
   },

@@ -43,6 +43,21 @@ const TASK_WRITE_ROLES = [
 export class TasksController {
   constructor(private readonly svc: TasksService) {}
 
+  // GET /api/v1/projects/:projectId/progress
+  @Get('projects/:projectId/progress')
+  @Roles(...TASK_READ_ROLES)
+  @ApiOperation({
+    summary: 'Project progress — BOQ-value-weighted earned percent, planned percent, and SPI',
+    description:
+      'Formula and thresholds: 32-implementation-specifications §32.12. Every field is nullable; ' +
+      'null means not computable (no BOQ-linked task, or nothing planned to have started yet), ' +
+      'never zero.',
+  })
+  @ApiParam({ name: 'projectId', type: 'string', format: 'uuid' })
+  getProjectProgress(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.svc.getProjectProgress(projectId);
+  }
+
   // GET /api/v1/projects/:projectId/tasks  (filter ?assigned_to=&status=)
   @Get('projects/:projectId/tasks')
   @Roles(...TASK_READ_ROLES)

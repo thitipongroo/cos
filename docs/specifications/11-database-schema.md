@@ -128,6 +128,7 @@ See `07-multi-tenant-architecture §7.1` and `docs/runbooks/dedicated-db-provisi
 | `keycloak_user_id` | VARCHAR(255) | UNIQUE NOT NULL              | Path A: phone_number; Path B: Keycloak UUID                                                 |
 | `email`            | VARCHAR(255) | NOT NULL                     | Path A: empty string; Path B: actual email                                                  |
 | `display_name`     | VARCHAR(255) | NOT NULL                     |                                                                                             |
+| `photo_url`        | TEXT         | NULL                         | Profile photo, uploaded via the file service. NULL → clients show the user's initials       |
 | `is_active`        | BOOLEAN      | NOT NULL DEFAULT true        |                                                                                             |
 | `mfa_enabled`      | BOOLEAN      | NOT NULL DEFAULT false       |                                                                                             |
 | `mfa_totp_secret`  | VARCHAR(255) | NULL                         | TOTP secret, encrypted at rest (app-layer AES-256-GCM); NULL until MFA enrollment completes |
@@ -345,13 +346,32 @@ Procurement — Purchase Request (PR) :
 - pr_id
 - tenant_id
 - project_id
+- pr_number (VARCHAR(50); UNIQUE per tenant. Server-allocated as `PR-<year>-<seq>` when the client
+  omits it — a site engineer must not have to invent a unique document number on their phone)
 - requested_by (FK → Employee.employee_id)
-- description
-- quantity
-- unit
-- required_by_date
-- status (draft / submitted / approved / rejected)
+- required_date
+- status (draft / submitted / approved / rejected / po_created)
 - created_at
+
+Procurement — PR Line Item :
+
+- line_id
+- pr_id (FK → Purchase Request; ON DELETE CASCADE)
+- tenant_id
+- material_id (nullable — FK → Material catalogue; free text stays authoritative, a site shortage is
+  never blocked on cataloguing it first)
+- description
+- quantity (DECIMAL(10,4); CHECK > 0)
+- unit
+- sort_order
+- created_at
+
+Note : the requested materials are line items, not columns on the PR (product-owner decision
+2026-07-16). §11 previously put a single `description` / `quantity` / `unit` on the PR itself; none
+of the three were ever implemented, so a request could record that someone asked for something but
+not what — and one PR could only ever have carried one material. Line items mirror `po_line_items`,
+which the downstream PO already uses. They carry no `unit_price` / `line_total`: a request states a
+need, and pricing appears only once vendors quote against the RFQ (§32.6).
 
 Procurement — RFQ :
 
