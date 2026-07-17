@@ -31,6 +31,10 @@ export class PhotoUploadQueue {
     private readonly photoRepo: PhotoRepository,
     private readonly baseUrl: string,
     private readonly getToken: () => string | null,
+    // Fired after a photo's file is uploaded and its server file_id is known. The annotation flow
+    // uses this to enqueue a pending photo_annotation now that the parent has a server id
+    // (enqueue-after-parent; ADR-056). Best-effort — a throw here must not fail the upload.
+    private readonly onUploaded?: (localId: string, serverFileId: string) => Promise<void>,
   ) {}
 
   async processNext(): Promise<void> {
@@ -65,7 +69,17 @@ export class PhotoUploadQueue {
       });
 
       const body = JSON.parse(result.body) as { file_id?: string };
-      await this.photoRepo.markUploaded(photo.localId, body.file_id ?? '');
+      const serverFileId = body.file_id ?? '';
+      await this.photoRepo.markUploaded(photo.localId, serverFileId);
+      if (serverFileId && this.onUploaded) {
+        // A dirty annotation for this photo can now be addressed to its server file_id. Best-effort:
+        // a failure here leaves the annotation dirty for the next cycle, it must not fail the upload.
+        try {
+          await this.onUploaded(photo.localId, serverFileId);
+        } catch {
+          /* annotation stays dirty; retried next sync */
+        }
+      }
       this.retryMap.delete(photo.localId);
     } catch {
       this.retryMap.set(photo.localId, retries + 1);

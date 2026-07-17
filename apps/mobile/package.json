@@ -23,6 +23,7 @@
     "@expo/config-plugins": "~8.0.11",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-community/netinfo": "12.0.1",
+    "@shopify/react-native-skia": "2.6.2",
     "@tanstack/react-query": "^5.35.0",
     "axios": "^1.7.0",
     "babel-preset-expo": "~56.0.16",

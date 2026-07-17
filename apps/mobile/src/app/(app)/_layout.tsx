@@ -7,6 +7,7 @@ import { View, StyleSheet } from 'react-native';
 import { usePathname } from 'expo-router';
 import { CosRole } from '@cos/types';
 import { runDeltaSync } from '../../sync/runDeltaSync';
+import { runPushSync } from '../../sync/runPushSync';
 import { checkLocalDbLimit } from '../../db/database';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { SyncStatusBar } from '../../components/SyncStatusBar';
@@ -25,10 +26,16 @@ export default function AppLayout() {
     setLastAppPath(pathname);
   }, [pathname]);
 
-  // Pull server-side delta into the local DB on entering the app (best-effort; offline ignored).
-  // After the pull grows the cache, check it against the §17.7 500 MB ceiling (warns on WARN/FULL).
+  // On entering the app: flush the outbound mutation queue + photo uploads (push), then pull the
+  // server-side delta into the local DB. Both are best-effort — offline or transient failures leave
+  // local state untouched and are retried on the next entry. After the pull grows the cache, check
+  // it against the §17.7 500 MB ceiling (warns on WARN/FULL).
   useEffect(() => {
-    runDeltaSync()
+    runPushSync()
+      .catch(() => {
+        /* offline or transient — queued mutations stay pending, retried next entry */
+      })
+      .then(() => runDeltaSync())
       .catch(() => {
         /* offline or transient — local cache stays as-is */
       })

@@ -253,6 +253,14 @@
       "queued": "{count, plural, one {# photo queued} other {# photos queued}}",
       "queueWarn": "Photo queue is filling up — upload soon (80+ pending)",
       "queueFull": "Photo queue is full (100). Connect to upload before capturing more."
+    },
+    "gallery": {
+      "title": "Photos",
+      "empty": "No photos yet",
+      "tapToAnnotate": "Tap to annotate",
+      "annotated": "Annotated",
+      "pending": "Pending upload",
+      "uploaded": "Uploaded"
     }
   },
   "pm": {

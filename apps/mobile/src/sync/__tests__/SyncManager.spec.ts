@@ -76,6 +76,32 @@ describe('SyncManager', () => {
       expect(result).toEqual({ synced: 1, failed: 0, exhausted: 0 });
     });
 
+    it('ACCEPTED calls onAccepted with the entity + server payload (ADR-056 reconcile)', async () => {
+      mockFetchPending.mockReturnValueOnce([makeItem()]);
+      const http = makeHttpClient('ACCEPTED', { version: 4 });
+      const onAccepted = jest.fn().mockResolvedValue(undefined);
+      const manager = makeManager(http, 'tok', { onAccepted });
+      await manager.processQueue();
+      expect(onAccepted).toHaveBeenCalledWith('local_site_reports', 'entity-1', { version: 4 });
+    });
+
+    it('ACCEPTED without an onAccepted callback is a no-op (still synced)', async () => {
+      mockFetchPending.mockReturnValueOnce([makeItem()]);
+      const http = makeHttpClient('ACCEPTED');
+      const manager = makeManager(http);
+      const result = await manager.processQueue();
+      expect(result.synced).toBe(1);
+    });
+
+    it('ACCEPTED onAccepted with no server_payload passes null (covers ?? branch)', async () => {
+      mockFetchPending.mockReturnValueOnce([makeItem()]);
+      const http = makeHttpClient('ACCEPTED'); // no serverPayload
+      const onAccepted = jest.fn().mockResolvedValue(undefined);
+      const manager = makeManager(http, 'tok', { onAccepted });
+      await manager.processQueue();
+      expect(onAccepted).toHaveBeenCalledWith('local_site_reports', 'entity-1', null);
+    });
+
     it('includes Authorization header when token is present', async () => {
       mockFetchPending.mockReturnValueOnce([makeItem()]);
       const http = makeHttpClient('ACCEPTED');

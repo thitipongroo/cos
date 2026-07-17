@@ -25,7 +25,15 @@ import {
 export const sqlite = openDatabaseSync('cos_offline_v2.db', { enableChangeListener: true });
 sqlite.execSync('PRAGMA journal_mode = WAL');
 
-const DDL_VERSION = 2;
+const DDL_VERSION = 3;
+
+// v2→v3 (ADR-056): the re-editable photo-annotation table. Idempotent (IF NOT EXISTS), so it is safe
+// to run both as an upgrade step and — via the fresh CREATE block below — on a first install.
+const ANNOTATIONS_DDL = `
+  CREATE TABLE IF NOT EXISTS local_photo_annotations (
+    local_photo_id TEXT PRIMARY KEY NOT NULL, strokes TEXT NOT NULL,
+    base_version INTEGER NOT NULL, dirty INTEGER NOT NULL, updated_at TEXT NOT NULL);
+`;
 
 function ddl(): void {
   const row = sqlite.getFirstSync<{ user_version: number }>('PRAGMA user_version');
@@ -39,6 +47,16 @@ function ddl(): void {
     sqlite.execSync(`
       ALTER TABLE local_site_reports ADD COLUMN blockers TEXT;
       ALTER TABLE local_site_reports ADD COLUMN manpower_count INTEGER;
+      ${ANNOTATIONS_DDL}
+      PRAGMA user_version = ${DDL_VERSION};
+    `);
+    return;
+  }
+
+  // v2→v3: existing v2 installs already have every v2 table — only the annotations table is new.
+  if (current === 2) {
+    sqlite.execSync(`
+      ${ANNOTATIONS_DDL}
       PRAGMA user_version = ${DDL_VERSION};
     `);
     return;
@@ -80,6 +98,7 @@ function ddl(): void {
       id TEXT PRIMARY KEY NOT NULL, consumption_id TEXT NOT NULL, project_id TEXT NOT NULL,
       material_name TEXT NOT NULL, quantity REAL NOT NULL, unit TEXT NOT NULL,
       consumed_at TEXT, sync_status TEXT NOT NULL);
+    ${ANNOTATIONS_DDL}
     PRAGMA user_version = ${DDL_VERSION};
   `);
 }

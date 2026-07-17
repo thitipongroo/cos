@@ -50,6 +50,21 @@ export const localPhotos = sqliteTable('local_photos', {
   serverFileId: text('server_file_id'), // populated after upload
 });
 
+// ── local_photo_annotations — re-editable markup on a photo (ADR-056) ──
+// Keyed by the LOCAL photo row (local_photos.id), because a photo has no server file_id until it is
+// uploaded. On upload success (markUploaded), a dirty annotation is enqueued to /sync/push addressed
+// to the now-known serverFileId — enqueue-after-parent, so SyncManager needs no dependency ordering.
+// `strokes` is the retained-mode stroke list as JSON (normalised 0..1 coords), never a raster.
+// `baseVersion` is the optimistic-concurrency token the client read; the server bumps it and flags a
+// mismatch as CONFLICT_FLAGGED (§17.5). `dirty` = has unsynced local edits.
+export const localPhotoAnnotations = sqliteTable('local_photo_annotations', {
+  localPhotoId: text('local_photo_id').primaryKey(), // FK → local_photos.id (one annotation per photo)
+  strokes: text('strokes').notNull(), // JSON: AnnotationStroke[]
+  baseVersion: integer('base_version').notNull(), // last server version the client saw (0 = never synced)
+  dirty: integer('dirty').notNull(), // 0/1 — has local edits not yet pushed
+  updatedAt: text('updated_at').notNull(), // ISO 8601
+});
+
 // ── local_tasks — offline subset; progress_percent is Max-wins (§17.5) ──
 export const localTasks = sqliteTable('local_tasks', {
   id: text('id').primaryKey(),
@@ -123,6 +138,7 @@ export const localMaterialConsumptions = sqliteTable('local_material_consumption
 export type SiteReport = typeof localSiteReports.$inferSelect;
 export type Issue = typeof localIssues.$inferSelect;
 export type Photo = typeof localPhotos.$inferSelect;
+export type PhotoAnnotationRow = typeof localPhotoAnnotations.$inferSelect;
 export type Task = typeof localTasks.$inferSelect;
 export type Attendance = typeof localAttendance.$inferSelect;
 export type SafetyChecklist = typeof localSafetyChecklists.$inferSelect;

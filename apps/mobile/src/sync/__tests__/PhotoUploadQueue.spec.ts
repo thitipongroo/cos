@@ -50,6 +50,31 @@ describe('PhotoUploadQueue', () => {
       expect(repo.markUploaded).toHaveBeenCalledWith('photo-1', '');
     });
 
+    it('fires the onUploaded hook with the server file id after a successful upload', async () => {
+      const repo = makeRepo([makePhoto()]);
+      const onUploaded = jest.fn().mockResolvedValue(undefined);
+      const queue = new PhotoUploadQueue(repo, BASE_URL, () => 'token', onUploaded);
+      await queue.processNext();
+      expect(onUploaded).toHaveBeenCalledWith('photo-1', 'server-file-id');
+    });
+
+    it('does not fire onUploaded when the server returns no file id', async () => {
+      (FileSystem.uploadAsync as jest.Mock).mockResolvedValueOnce({ status: 200, body: '{}' });
+      const repo = makeRepo([makePhoto()]);
+      const onUploaded = jest.fn().mockResolvedValue(undefined);
+      const queue = new PhotoUploadQueue(repo, BASE_URL, () => 'token', onUploaded);
+      await queue.processNext();
+      expect(onUploaded).not.toHaveBeenCalled();
+    });
+
+    it('swallows an onUploaded failure — the upload itself still succeeds', async () => {
+      const repo = makeRepo([makePhoto()]);
+      const onUploaded = jest.fn().mockRejectedValue(new Error('enqueue failed'));
+      const queue = new PhotoUploadQueue(repo, BASE_URL, () => 'token', onUploaded);
+      await expect(queue.processNext()).resolves.toBeUndefined();
+      expect(repo.markUploaded).toHaveBeenCalledWith('photo-1', 'server-file-id');
+    });
+
     it('includes Authorization header when token is present', async () => {
       const repo = makeRepo([makePhoto()]);
       const queue = new PhotoUploadQueue(repo, BASE_URL, () => 'my-token');

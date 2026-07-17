@@ -45,6 +45,7 @@ export interface SyncResult {
 export interface SyncManagerCallbacks {
   onConflict?: (entityType: string, entityId: string, serverPayload: unknown) => void;
   onRejected?: (entityType: string, entityId: string, serverPayload: unknown) => void;
+  onAccepted?: (entityType: string, entityId: string, serverPayload: unknown) => Promise<void>;
   onExhausted?: (entityType: string, entityId: string, operation: string) => Promise<void>;
   onUserNotify?: (message: string) => void;
 }
@@ -124,6 +125,15 @@ export class SyncManager {
       if (this.callbacks.onRejected) {
         this.callbacks.onRejected(item.entity_type, item.entity_id, data.server_payload ?? null);
       }
+    } else if (this.callbacks.onAccepted) {
+      // ACCEPTED — let a caller reconcile local state with the server payload (e.g. clear an
+      // annotation's dirty flag and adopt the server's new version so a later re-edit is not
+      // wrongly flagged as a conflict; ADR-056).
+      await this.callbacks.onAccepted(
+        item.entity_type,
+        item.entity_id,
+        data.server_payload ?? null,
+      );
     }
 
     if (resolution.userMessage) {

@@ -44,6 +44,13 @@ two gaps were closed by an on-device spike instead — the measurements below ar
 11. **Server storage: a new `files.photo_annotations` table** carrying `version` + `modified_at`.
 12. **The `<PhotoAnnotation />` toolbar owns its own i18n labels** under the `site` domain
     (`site.photo.annotate.*`), rather than taking them from the caller as `<LoadingState />` does.
+13. **A dependent annotation is enqueued only after its photo has a server file id.** An annotation is
+    addressed by the server `file_id`, which is `NULL` until the photo binary uploads. The client stores
+    the strokes locally (`local_photo_annotations`, `dirty=1`) the instant they are saved, and defers the
+    `/sync/push` (`entity_type="photo_annotation"`) until `PhotoUploadQueue.markUploaded` yields the
+    `file_id` — a blocking upload-then-reference (two-phase) sequence, not a client-generated parent id
+    or an id-remap table. This matches the §17.6 rule that media flushes last, and needs no dependency
+    graph because there is exactly one edge (annotation → its photo).
 
 ## Rationale
 
@@ -156,6 +163,15 @@ round at sub-pixel scale.
 - A new table, migration, rollback, RLS policy, and sync endpoint before the first stroke ships.
 - Peak ~465 MB through the export pipeline is close enough to a mid-range budget that a real device
   must be tested before release.
+- **Accepted orphan-annotation window (evidence gap, PO-accepted).** Because the annotation push is
+  deferred until the photo uploads, an annotation drawn on a photo that _never_ uploads (upload
+  permanently `FAILED`, or the record is deleted before its media flushes) stays local forever and is
+  never evidenced server-side. The deep-research round found no framework that closes this window
+  without a client-generated parent id (which the server file model does not offer); blocking-until-parent
+  is the documented pattern and it inherently carries this tail risk. We accept it: the strokes remain on
+  the device and re-editable, and no dangling server reference is created (the push is what carries the
+  strokes, so no push ⇒ no server row to dangle). Revisit only if field data shows annotations stranded
+  behind stuck uploads.
 
 ### Neutral
 
