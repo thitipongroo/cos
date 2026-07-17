@@ -13,8 +13,15 @@ function harness() {
   };
   const safety = { createIncident: jest.fn() };
   const workforce = { recordAttendance: jest.fn() };
-  const svc = new SyncService(db as never, siteOps as never, safety as never, workforce as never);
-  return { svc, tx, db, siteOps, safety, workforce };
+  const annotations = { applyPush: jest.fn() };
+  const svc = new SyncService(
+    db as never,
+    siteOps as never,
+    safety as never,
+    workforce as never,
+    annotations as never,
+  );
+  return { svc, tx, db, siteOps, safety, workforce, annotations };
 }
 
 const push = (over: Partial<PushItemDto>): PushItemDto => ({
@@ -138,6 +145,44 @@ describe('SyncService', () => {
         server_payload: { inspection_id: 'insp1', status: 'FAILED' },
       });
       expect(siteOps.submitInspection).toHaveBeenCalledWith(payload);
+    });
+
+    it('photo_annotation delegates to AnnotationService and passes conflict_status through', async () => {
+      const { svc, annotations } = harness();
+      annotations.applyPush.mockResolvedValue({
+        conflict_status: 'ACCEPTED',
+        server_version: 2,
+        annotation: { file_id: 'f1', strokes: [{ tool: 'pen' }], version: 2 },
+      });
+
+      const res = await svc.push(
+        push({
+          entity_type: 'photo_annotation',
+          entity_id: 'f1',
+          payload: { strokes: [{ tool: 'pen' }], version: 1 },
+        }),
+      );
+
+      expect(annotations.applyPush).toHaveBeenCalledWith('f1', [{ tool: 'pen' }], 1);
+      expect(res).toEqual({
+        status: 'ACCEPTED',
+        server_payload: { file_id: 'f1', strokes: [{ tool: 'pen' }], version: 2 },
+      });
+    });
+
+    it('photo_annotation surfaces CONFLICT_FLAGGED and omits server_payload when none', async () => {
+      const { svc, annotations } = harness();
+      annotations.applyPush.mockResolvedValue({
+        conflict_status: 'CONFLICT_FLAGGED',
+        server_version: 5,
+        annotation: null,
+      });
+
+      const res = await svc.push(push({ entity_type: 'photo_annotation', entity_id: 'f1' }));
+
+      // payload defaults: strokes → [], version → 0
+      expect(annotations.applyPush).toHaveBeenCalledWith('f1', [], 0);
+      expect(res).toEqual({ status: 'CONFLICT_FLAGGED', server_payload: undefined });
     });
 
     it('rejects an unknown entity_type', async () => {

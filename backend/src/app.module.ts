@@ -13,6 +13,7 @@ import { BoqModule } from './modules/boq/boq.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
+import { FilesModule } from './modules/files/files.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { SafetyModule } from './modules/safety/safety.module';
 import { GeoModule } from './modules/geo/geo.module';
@@ -66,6 +67,7 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     ProcurementModule,
     FinanceModule,
     SiteOpsModule,
+    FilesModule, // Photo annotations — GET endpoint; write path via SyncModule (ADR-056)
     TasksModule,
     SafetyModule,
     GeoModule,

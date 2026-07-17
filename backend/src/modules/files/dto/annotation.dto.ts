@@ -1,21 +1,9 @@
-// Photo-annotation DTOs (ADR-056). Validated with class-validator (QM-4 — never hand-written checks).
-
-import { IsArray, IsInt, Min } from 'class-validator';
-
-/**
- * The body of a `photo_annotation` sync push. `strokes` is the retained-mode stroke list in
- * normalised (0..1) coordinates; `version` is the base version the client read, which drives the
- * `CONFLICT_FLAGGED` check. Stroke shape is intentionally not constrained here — it is opaque to the
- * server, which stores and returns it verbatim.
- */
-export class PushAnnotationDto {
-  @IsArray()
-  strokes!: unknown[];
-
-  @IsInt()
-  @Min(0)
-  version!: number;
-}
+// Photo-annotation response shape (ADR-056).
+//
+// There is no request DTO here: writing an annotation goes through POST /sync/push, whose PushItemDto
+// payload is opaque `Record<string, unknown>` for every entity (issue, safety, …). The sync switch
+// reads `strokes` / `version` from the payload with safe defaults, exactly as the other entities do,
+// and the stroke shape is intentionally not constrained — the server stores and returns it verbatim.
 
 export interface AnnotationResponse {
   file_id: string;

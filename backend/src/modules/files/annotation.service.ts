@@ -19,12 +19,12 @@ export interface ApplyAnnotationResult {
 export class AnnotationService {
   constructor(private readonly repo: AnnotationRepository) {}
 
-  /** GET — the photo's current annotation. 404 when the photo has none (COS-FILE-404). */
+  /** GET — the photo's current annotation. 404 when the photo has none (COS-FILE-015). */
   async getByFileId(fileId: string): Promise<AnnotationResponse> {
     const row = await this.repo.findByFileId(fileId);
     if (!row) {
       throw new NotFoundException({
-        code: 'COS-FILE-009',
+        code: 'COS-FILE-015',
         message: 'No annotation for this file',
         messageKey: 'files.annotation.notFound',
       });
@@ -50,11 +50,13 @@ export class AnnotationService {
     );
 
     if (result.conflict_status !== 'ACCEPTED') {
-      // Flagged (or otherwise not accepted): keep the stored row, hand back the server version.
+      // Flagged: keep the stored row, hand back the server version. A null `current` is impossible
+      // here — the resolver only reaches a non-ACCEPTED status when a server row exists (a missing
+      // annotation is always a clean first write), so `current` is guaranteed non-null.
       return {
         conflict_status: result.conflict_status,
         server_version: result.server_version,
-        annotation: current ? toResponse(current) : null,
+        annotation: toResponse(current!),
       };
     }
 
