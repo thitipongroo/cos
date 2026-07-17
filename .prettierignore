@@ -11,6 +11,7 @@ pnpm-lock.yaml
 infrastructure/helm/**/templates/**
 # Local Claude Code session state — never committed (globally gitignored), not format-gated
 .claude/
-# Figma-to-React export — design reference/prototype, not a workspace member; excluded from the
-# format gate alongside the ESLint ignore (eslint.config.mjs).
+# Figma-to-React export — design reference/prototype, not a workspace member.
 figma/
+# Design-tool export (DESIGN.md + code.html + screen.png per screen) — reference for implementation
+mockup/

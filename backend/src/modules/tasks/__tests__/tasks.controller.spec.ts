@@ -5,6 +5,7 @@ const mockSvc = {
   listTasks: jest.fn(),
   createTask: jest.fn(),
   updateTask: jest.fn(),
+  getProjectProgress: jest.fn(),
 };
 
 describe('TasksController', () => {
@@ -58,5 +59,13 @@ describe('TasksController', () => {
     const dto = { status: 'COMPLETED' };
     ctrl.updateTask('task-1', dto as never);
     expect(mockSvc.updateTask).toHaveBeenCalledWith('task-1', dto);
+  });
+
+  it('getProjectProgress delegates to svc.getProjectProgress', () => {
+    const progress = { percentComplete: 45, plannedPercent: 50, spi: 0.9, status: 'behind' };
+    mockSvc.getProjectProgress.mockReturnValue(progress);
+
+    expect(ctrl.getProjectProgress('proj-1')).toBe(progress);
+    expect(mockSvc.getProjectProgress).toHaveBeenCalledWith('proj-1');
   });
 });

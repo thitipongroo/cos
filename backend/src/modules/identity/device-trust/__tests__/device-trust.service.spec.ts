@@ -241,6 +241,22 @@ describe('DeviceTrustService', () => {
       const days = (arg.create.expiresAt.getTime() - Date.now()) / 86_400_000;
       expect(days).toBeGreaterThan(29);
     });
+
+    it('stores model as null when the device does not report one', async () => {
+      // iOS often does not expose a model (see deviceModel() on the mobile side), so `model` arrives
+      // undefined — it must land as an explicit null, not undefined, on both upsert halves.
+      prismaMock.trustedDevice.upsert.mockResolvedValue({});
+      await service.registerDevice({
+        userId: 'u1',
+        tenantId: 't1',
+        deviceId: 'dev-1',
+        publicKey: 'PUB',
+        platform: 'ios',
+      });
+      const arg = prismaMock.trustedDevice.upsert.mock.calls[0][0];
+      expect(arg.create.model).toBeNull();
+      expect(arg.update.model).toBeNull();
+    });
   });
 
   describe('revokeDevice', () => {
@@ -281,6 +297,18 @@ describe('DeviceTrustService', () => {
           expiresAt: now,
         },
       ]);
+    });
+  });
+
+  describe('onModuleDestroy', () => {
+    // This service owns both a PrismaClient and a Redis connection, so it must close both on
+    // shutdown or a SIGTERM (K8s rolling deploy) leaves the handles open — ADR-034 / QM-18, which
+    // also require this test to exist for every lifecycle hook.
+    it('closes the Prisma and Redis handles', async () => {
+      await service.onModuleDestroy();
+
+      expect(prismaMock.$disconnect).toHaveBeenCalledTimes(1);
+      expect(redisMock.quit).toHaveBeenCalledTimes(1);
     });
   });
 });

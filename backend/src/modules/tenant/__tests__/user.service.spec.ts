@@ -3,6 +3,7 @@
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
     $queryRaw: jest.fn(),
+    $executeRaw: jest.fn(),
     $transaction: jest.fn(),
     $disconnect: jest.fn(),
   })),
@@ -323,5 +324,69 @@ describe('UserService onModuleDestroy', () => {
     expect(
       (svc as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,
     ).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Self-service reads/writes. Unlike the rest of this service these are not TENANT_ADMIN-gated, so
+// the tenant+user scoping in the SQL is the only thing keeping a caller on their own row.
+describe('UserService self-service', () => {
+  let service: UserService;
+  let prismaMock: jest.Mocked<PrismaClient>;
+
+  beforeEach(() => {
+    service = new UserService({} as never);
+    prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
+  });
+
+  describe('getMe', () => {
+    it('returns the caller’s own row', async () => {
+      const me = { ...mockUserRow, role: CosRole.SITE_ENGINEER };
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([me]);
+
+      expect(await service.getMe(TENANT_ID, USER_ID)).toBe(me);
+    });
+
+    it('throws COS-USER-404 when the row is missing', async () => {
+      // A JWT whose user was deleted, or pointed at another tenant: not found, never someone else's row.
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([]);
+
+      await expect(service.getMe(TENANT_ID, USER_ID)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateMyPhoto', () => {
+    it('writes the photo URL then returns the refreshed row', async () => {
+      const updated = {
+        ...mockUserRow,
+        photo_url: 'https://files/p.jpg',
+        role: CosRole.SITE_WORKER,
+      };
+      (prismaMock.$executeRaw as jest.Mock).mockResolvedValueOnce(1);
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([updated]);
+
+      const r = await service.updateMyPhoto(TENANT_ID, USER_ID, 'https://files/p.jpg');
+
+      expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
+      expect(r).toBe(updated);
+    });
+
+    it('accepts null to clear the photo and fall back to initials', async () => {
+      const cleared = { ...mockUserRow, photo_url: null, role: CosRole.SITE_WORKER };
+      (prismaMock.$executeRaw as jest.Mock).mockResolvedValueOnce(1);
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([cleared]);
+
+      const r = await service.updateMyPhoto(TENANT_ID, USER_ID, null);
+
+      expect(r.photo_url).toBeNull();
+    });
+
+    it('propagates the 404 when the row vanished before the re-read', async () => {
+      (prismaMock.$executeRaw as jest.Mock).mockResolvedValueOnce(0);
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([]);
+
+      await expect(service.updateMyPhoto(TENANT_ID, USER_ID, null)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 });

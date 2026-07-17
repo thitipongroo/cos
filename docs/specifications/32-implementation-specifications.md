@@ -868,19 +868,19 @@ One component per platform, same name and same props, so a loading state reads i
 mobile and web (product-owner decision 2026-07-17; ADR-055). It is **presentational only** — it
 owns no data source, no timer, and no i18n copy.
 
-| Prop       | Type                | Behaviour                                                            |
-| ---------- | ------------------- | -------------------------------------------------------------------- |
-| `variant`  | see table below     | Required. Selects the layout.                                        |
-| `progress` | `number` (0–100)    | Optional. Omitted → indeterminate (no bar, no %). Given → clamped and shown. |
+| Prop       | Type                | Behaviour                                                                                                  |
+| ---------- | ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `variant`  | see table below     | Required. Selects the layout.                                                                              |
+| `progress` | `number` (0–100)    | Optional. Omitted → indeterminate (no bar, no %). Given → clamped and shown.                               |
 | `label`    | `string`            | Optional. Caller passes **already-translated** text — the component never holds a key or a literal (QM-3). |
-| `theme`    | `'light' \| 'dark'` | Required on mobile. Selects `colors` vs `darkColors` (§32.7 Mobile Dark Surfaces). |
+| `theme`    | `'light' \| 'dark'` | Required on mobile. Selects `colors` vs `darkColors` (§32.7 Mobile Dark Surfaces).                         |
 
 **Variants are per platform** — the layouts genuinely differ, so the union is not shared:
 
-| Platform | Variants                        | Notes                                                      |
-| -------- | ------------------------------- | ---------------------------------------------------------- |
-| Mobile   | `widget` `list` `ai` `micro`    | `list` = stacked card skeletons. **No `table`** — §32.7 prohibits tables on mobile. |
-| Web      | `widget` `table` `ai` `micro`   | `table` = row skeletons across columns. **No `list`.**      |
+| Platform | Variants                      | Notes                                                                               |
+| -------- | ----------------------------- | ----------------------------------------------------------------------------------- |
+| Mobile   | `widget` `list` `ai` `micro`  | `list` = stacked card skeletons. **No `table`** — §32.7 prohibits tables on mobile. |
+| Web      | `widget` `table` `ai` `micro` | `table` = row skeletons across columns. **No `list`.**                              |
 
 Rules:
 

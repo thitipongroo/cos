@@ -223,6 +223,58 @@ describe('ProcurementRepository', () => {
     expect(result.pr_id).toBe('pr-uuid-001');
   });
 
+  it('createPurchaseRequest inserts one pr_line_items row per item, in order', async () => {
+    // The PR and its lines share one transaction — a PR that records no materials is not a request.
+    mockPrisma.$queryRaw.mockResolvedValue([prRow]);
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+
+    await repo.createPurchaseRequest({
+      project_id: 'proj-uuid-001',
+      pr_number: 'PR-001',
+      requested_by: 'user-uuid-001',
+      required_date: '2026-08-01',
+      items: [
+        { description: 'Cement', quantity: 10, unit: 'bag', material_id: 'mat-uuid-001' },
+        // No material_id: a site engineer can request something not yet in the material master.
+        { description: 'Misc fixings', quantity: 2, unit: 'box' },
+      ],
+    });
+
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('createPurchaseRequest inserts no line items when items is omitted', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([prRow]);
+
+    await repo.createPurchaseRequest({
+      project_id: 'proj-uuid-001',
+      pr_number: 'PR-001',
+      requested_by: 'user-uuid-001',
+    });
+
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('nextPrNumber starts the year at 0001 when the tenant has no PR yet', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ max_seq: null }]);
+    expect(await repo.nextPrNumber(2026)).toBe('PR-2026-0001');
+  });
+
+  it('nextPrNumber increments the tenant’s highest number for that year', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ max_seq: 41 }]);
+    expect(await repo.nextPrNumber(2026)).toBe('PR-2026-0042');
+  });
+
+  it('nextPrNumber starts at 0001 when the aggregate returns no row at all', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    expect(await repo.nextPrNumber(2026)).toBe('PR-2026-0001');
+  });
+
+  it('nextPrNumber keeps padding past four digits rather than truncating', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ max_seq: 9999 }]);
+    expect(await repo.nextPrNumber(2026)).toBe('PR-2026-10000');
+  });
+
   it('findPrById returns null when not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([]);
     expect(await repo.findPrById('missing')).toBeNull();

@@ -214,6 +214,32 @@ describe('earnedScheduleDays — schedule variance in days (§32.12)', () => {
     expect(earnedScheduleDays([], day('2026-01-16'))).toBeNull();
   });
 
+  // A milestone — planned_start == planned_end — has a zero-length span, so the planned ramp cannot
+  // be interpolated: it is a step. Both sides of that step are asserted here, because dividing by a
+  // zero-length span is exactly the case that would otherwise produce NaN.
+  it('treats a milestone as 0% planned before its date', () => {
+    // Milestone due Jan 21, nothing earned. Today is Jan 11: PV is still 0, so earned (0) sits at
+    // the plan's start → ES == the milestone day, and today is 10 days ahead of it.
+    const rows = [task('2026-01-21', '2026-01-21', 0)];
+    expect(earnedScheduleDays(rows, day('2026-01-11'))).toBe(-10);
+  });
+
+  it('treats a milestone as 100% planned from its date onwards', () => {
+    // Same milestone, now complete, and today is its due date → exactly on schedule.
+    const rows = [task('2026-01-21', '2026-01-21', 100)];
+    expect(earnedScheduleDays(rows, day('2026-01-21'))).toBe(0);
+  });
+
+  it('a milestone contributes nothing to the planned curve before its due date', () => {
+    // A milestone alongside a longer task — the case a milestone-only project cannot exercise,
+    // because there the curve is only ever sampled on the milestone's own day.
+    // Equal weights: the 20-day task is 50% done, the milestone is not, so earned = 25%.
+    // Before Jan 21 the milestone plans 0%, so PV(d) is half the task's ramp; PV hits 25% when the
+    // task's ramp hits 50% — Jan 11. Today is Jan 16 → 5 days behind.
+    const rows = [task('2026-01-01', '2026-01-21', 50), task('2026-01-21', '2026-01-21', 0)];
+    expect(earnedScheduleDays(rows, day('2026-01-16'))).toBe(5);
+  });
+
   it('reproduces the R9CT case — ~21 days behind (76% done, plan finished 7 Jul, today 16 Jul)', () => {
     const rows = [
       task('2026-06-05', '2026-06-25', 100, 4_096_000),

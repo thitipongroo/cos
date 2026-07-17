@@ -50,9 +50,15 @@ jobs:
         run: sqlfluff lint .
       # markdownlint runs on CHANGED Markdown files only — a repo-wide gate is not feasible
       # (~101k pre-existing violations). The large legacy reference trees (docs/specifications/,
-      # context/, context.md) carry that backlog and are excluded here AND in .markdownlintignore;
-      # all other new/edited .md must be clean (uses .markdownlint.json). markdownlint lints the
-      # whole changed file, so touching a non-excluded legacy doc means tidying it.
+      # context/, context.md) carry that backlog, and mockup/ is a design-tool export that is never
+      # hand-edited — all are excluded here; all other new/edited .md must be clean (uses
+      # .markdownlint.json). markdownlint lints the whole changed file, so touching a non-excluded
+      # legacy doc means tidying it.
+      # The pathspec below is what actually gates: markdownlint-cli2 does NOT honour
+      # .markdownlintignore for paths passed as explicit arguments (only for its own glob
+      # expansion), so an entry there alone would not exclude anything from this step. The
+      # .markdownlintignore entries mirror this list for local `markdownlint-cli2 "**/*.md"` runs —
+      # keep the two in sync.
       - name: markdownlint (changed Markdown only)
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -61,7 +67,8 @@ jobs:
             base="${{ github.event.before }}"
           fi
           changed=$(git diff --name-only --diff-filter=ACMR "$base" HEAD -- '*.md' \
-            ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' 2>/dev/null || true)
+            ':(exclude)context.md' ':(exclude)context/**' ':(exclude)docs/specifications/**' \
+            ':(exclude)mockup/**' 2>/dev/null || true)
           if [ -z "$changed" ]; then echo "No changed (non-legacy) Markdown files — skipping."; exit 0; fi
           echo "Changed Markdown files:"; echo "$changed"
           echo "$changed" | xargs pnpm exec markdownlint-cli2

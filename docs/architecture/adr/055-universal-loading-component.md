@@ -27,7 +27,7 @@ before any code could be written:
    a scan-line gradient, and a waveform behind a signed-in bottom nav. The existing exception was
    scoped to pre-auth entry screens only.
 2. §32.7 "Mobile Dark Surfaces" lists the dark screens exhaustively and forbids extending the list
-   without a product-owner decision. The mockups are dark, but a *universal* component must also
+   without a product-owner decision. The mockups are dark, but a _universal_ component must also
    render on the light task screens.
 3. The mockup palette (`#031427`, `#4cd7f6`, `surface-container-*`) is not a §32.7 token set. §32.7
    had already rejected the same `#031427` / `#4cd7f6` pair for the Site Engineer Home, on the
@@ -48,7 +48,7 @@ same props — and resolve the three conflicts as follows (product-owner decisio
 5. **Caller owns copy** — `label?: string` carries already-translated text; the component holds no
    i18n key and no literal.
 6. **Per-platform variants** — mobile `widget | list | ai | micro`, web `widget | table | ai |
-   micro`. The mockups genuinely differ (mobile stacks cards, desktop renders table rows), and
+micro`. The mockups genuinely differ (mobile stacks cards, desktop renders table rows), and
    §32.7 prohibits tables on mobile.
 7. **No feature flag** — see Rationale.
 8. **Additive on web** — `<LoadingState />` joins the existing exports in
@@ -61,7 +61,7 @@ same props — and resolve the three conflicts as follows (product-owner decisio
 
 **Why extend the glow exception rather than strip the motif.** The pre-auth exception exists
 because "no project data is on screen yet" — the entry sequence sets the mission-critical
-personality before content competes with it. A loading state is *definitionally* that same
+personality before content competes with it. A loading state is _definitionally_ that same
 interval: it is the placeholder that exists precisely because data has not arrived. The moment real
 data renders, the component unmounts and the motif goes with it. The prohibition's purpose — that
 project data is never dressed in decoration — is therefore untouched. Restricting the motif to the
@@ -69,7 +69,7 @@ project data is never dressed in decoration — is therefore untouched. Restrict
 AI-native features.
 
 **Why `theme` prop over extending the dark-screen list.** The dark-screen list is a list of
-*screens*, chosen per §32.7 on a use-context argument (indoor one-off vs all-day outdoor). A
+_screens_, chosen per §32.7 on a use-context argument (indoor one-off vs all-day outdoor). A
 component is not a screen and has no use-context of its own — it inherits the surface of whatever
 screen hosts it. Adding it to the list would have been a category error, and would have forced the
 light task screens to render a dark loading state.
@@ -96,12 +96,12 @@ no feedback at all or a second loading implementation to maintain.
 
 **Alternatives rejected:**
 
-- *Drop variants A and C and ship only the flat skeletons* — would have kept §32.7 unchanged, but
+- _Drop variants A and C and ship only the flat skeletons_ — would have kept §32.7 unchanged, but
   discards the AI processor pattern, which is the one loading state where the platform has something
   specific to say (an AI job is running, not a fetch).
-- *Adopt the mockup palette as new tokens* — rejected for the same reason §32.7 rejected it for the
+- _Adopt the mockup palette as new tokens_ — rejected for the same reason §32.7 rejected it for the
   Site Engineer Home: it is a second dark palette, and the product carries exactly one.
-- *Render the component with `@testing-library/react-native`* — rejected: `react-native` is mocked
+- _Render the component with `@testing-library/react-native`_ — rejected: `react-native` is mocked
   wholesale in `apps/mobile/jest.config.ts` (`src/__mocks__/react-native.ts` exports only
   `I18nManager` and `Platform`), and `testMatch` accepts `.ts` only. Introducing a renderer would
   mean swapping the environment to jsdom and removing the mock that the currently-green

@@ -86,6 +86,7 @@ const mockRepo = {
   listVendors: jest.fn(),
   deactivateVendor: jest.fn(),
   createPurchaseRequest: jest.fn(),
+  nextPrNumber: jest.fn(),
   findPrById: jest.fn(),
   updatePrStatus: jest.fn(),
   createRfq: jest.fn(),
@@ -640,6 +641,30 @@ describe('Purchase Requests', () => {
       pr_number: 'PR-001',
     });
     expect(result.pr_id).toBe('pr-001');
+  });
+
+  it('keeps a caller-supplied pr_number instead of allocating one', async () => {
+    mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'pr-001' });
+
+    await service.createPurchaseRequest({ project_id: 'p-001', pr_number: 'PR-MANUAL-9' });
+
+    expect(mockRepo.nextPrNumber).not.toHaveBeenCalled();
+    expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ pr_number: 'PR-MANUAL-9' }),
+    );
+  });
+
+  it('allocates the tenant’s next pr_number when the caller omits one', async () => {
+    // The mobile path: a site engineer should not be asked to invent a document number.
+    mockRepo.nextPrNumber.mockResolvedValue('PR-2026-0042');
+    mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'pr-001' });
+
+    await service.createPurchaseRequest({ project_id: 'p-001' } as never);
+
+    expect(mockRepo.nextPrNumber).toHaveBeenCalledWith(new Date().getFullYear());
+    expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith(
+      expect.objectContaining({ pr_number: 'PR-2026-0042' }),
+    );
   });
 });
 

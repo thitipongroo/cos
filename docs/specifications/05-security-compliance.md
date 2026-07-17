@@ -567,12 +567,12 @@ File upload (file-service) · Mobile offline sync (`/sync/delta`, `/sync/push`) 
 
 ### 5.9.2 Authentication — SMS OTP + JWT
 
-| STRIDE | Threat                         | Mitigation                                                                      |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------- |
+| STRIDE | Threat                         | Mitigation                                                                                                          |
+| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
 | S      | OTP interception / brute force | OTP send-rate cap (60s resend cooldown/phone + 10/phone/day) + attempt lockout (3 tries/OTP); short OTP TTL (5 min) |
-| R      | Repudiate login                | Auth events audited                                                             |
-| I      | Token leakage                  | Short-lived access token + secure refresh; `expo-secure-store` on device        |
-| E      | Token replay / forged claims   | Signed JWT, audience/issuer checks (§5.4.2), key rotation (180d)                |
+| R      | Repudiate login                | Auth events audited                                                                                                 |
+| I      | Token leakage                  | Short-lived access token + secure refresh; `expo-secure-store` on device                                            |
+| E      | Token replay / forged claims   | Signed JWT, audience/issuer checks (§5.4.2), key rotation (180d)                                                    |
 
 ### 5.9.3 CRM webhook (`/platform/webhooks/*`)
 
