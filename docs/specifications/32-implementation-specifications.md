@@ -622,11 +622,25 @@ DRAFT → PENDING_APPROVAL → APPROVED → SENT → ACKNOWLEDGED
 Prohibited in the signed-in app: building/crane/hard hat/blueprint/gear icons;
 orange/amber colour; rounded playful shapes; gradients or glow effects.
 
-**Exception — pre-auth entry screens** (login, OTP verify, verification/loading overlay). These
+**Exception 1 — pre-auth entry screens** (login, OTP verify, verification/loading overlay). These
 screens may use the "technical / mission-critical" motif — a rotating gear, the `architecture`
 mark, and a cyan glow on progress/accent elements — because the entry sequence is where the
 "mission-critical operating system" personality is set, before any project data is on screen
 (product-owner decision 2026-07-16; reference `mockup/00_authen/mobile/04_verification_loading_mobile`).
+
+**Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
+`mockup/mobile/universal_loading_component_mobile_view` + `mockup/desktop/universal_loading_component_desktop_view`).
+`<LoadingState />` may use the same motif — a cyan glow, a scan-line gradient, and a waveform on
+the `ai` variant — **for the same reason the pre-auth exception exists: no project data is on
+screen yet**. A loading state is by definition the interval before data arrives, so the motif never
+competes with project content. The exception is scoped to `<LoadingState />` itself:
+
+- It applies **only while loading**. The moment real data renders, the motif unmounts with the
+  component — a loaded dashboard, list, or form carries none of it.
+- It does **not** extend to any other signed-in surface, and it does not license a new palette:
+  the glow/scan-line/waveform take `--cos-cyan` / `--cos-dark-cyan`, and every other colour takes
+  an existing §32.7 token (see "Mobile Core Component Library" → `<LoadingState />`).
+
 The prohibition still holds everywhere the signed-in app shows project data — the dashboard, lists,
 and forms drop these motifs (§32.7 Mobile Dark Surfaces). Amber remains a semantic warning token
 throughout; only its use as a _brand_ colour is prohibited.
@@ -802,6 +816,11 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
   The client registers it via `<SerwistProvider swUrl="/serwist/sw.js">` in `app/layout.tsx`, and `next.config.mjs`
   wraps the config with `withSerwist`. Unlike next-pwa (`dest: 'public'`), **no `sw.js` / `workbox-*.js` artifacts land
   in `apps/web/public/`** — the SW is part of the `.next` build output, so there is nothing to git-ignore under `public/`.
+- **`createSerwistRoute` MUST pass `useNativeEsbuild: false`.** The option defaults to
+  `process.platform === 'win32'`, so on a Windows dev machine Serwist imports the **native** `esbuild` package —
+  which is not a dependency here (only `esbuild-wasm` is, per the line above). Left at the default, `next build`
+  fails on Windows with `Cannot find package 'esbuild'` / `ERR_MODULE_NOT_FOUND` while passing on Linux CI, so the
+  gate cannot catch it. Pinning the option keeps one bundler on every platform and matches the declared dependency.
 
 #### Mobile Spacing
 
@@ -838,9 +857,43 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
 | `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count  |
 | `<StatusChip />`      | Visual status: Todo / InProgress / Done / Syncing / Synced |
 | `<OptimisticList />`  | Instant UI update, rollback on failure, retry option       |
+| `<LoadingState />`    | Loading placeholder / progress, 4 variants — see below     |
 
 Do **not** implement on mobile: tables (use cards), navigation deeper than 3 levels,
 modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
+
+#### Loading State (`<LoadingState />`)
+
+One component per platform, same name and same props, so a loading state reads identically on
+mobile and web (product-owner decision 2026-07-17; ADR-055). It is **presentational only** — it
+owns no data source, no timer, and no i18n copy.
+
+| Prop       | Type                | Behaviour                                                            |
+| ---------- | ------------------- | -------------------------------------------------------------------- |
+| `variant`  | see table below     | Required. Selects the layout.                                        |
+| `progress` | `number` (0–100)    | Optional. Omitted → indeterminate (no bar, no %). Given → clamped and shown. |
+| `label`    | `string`            | Optional. Caller passes **already-translated** text — the component never holds a key or a literal (QM-3). |
+| `theme`    | `'light' \| 'dark'` | Required on mobile. Selects `colors` vs `darkColors` (§32.7 Mobile Dark Surfaces). |
+
+**Variants are per platform** — the layouts genuinely differ, so the union is not shared:
+
+| Platform | Variants                        | Notes                                                      |
+| -------- | ------------------------------- | ---------------------------------------------------------- |
+| Mobile   | `widget` `list` `ai` `micro`    | `list` = stacked card skeletons. **No `table`** — §32.7 prohibits tables on mobile. |
+| Web      | `widget` `table` `ai` `micro`   | `table` = row skeletons across columns. **No `list`.**      |
+
+Rules:
+
+- **Tokens only.** Mobile reads `colors` / `darkColors` from `apps/mobile/src/theme/tokens.ts`;
+  web reads Tailwind token utilities. No hardcoded hex, no arbitrary values.
+- **Caller owns progress.** The component does not read the sync queue, an AI job, or any store —
+  §17.6 sync ordering and AI progress are the caller's concern. This keeps one component usable for
+  sync, AI, and plain fetch alike.
+- **Caller owns copy.** No default string. A `<LoadingState />` with no `label` renders no text.
+- **Not a screen.** It is a presentational component, not a screen or workflow step, so QM-15 does
+  not require a feature flag (ADR-055).
+- **The `ai` variant is the only one carrying the glow/scan-line/waveform** — see "Exception 2 —
+  loading states" above. `widget` / `list` / `table` / `micro` are flat skeletons and spinners.
 
 #### Standard Top Bar (`<TopBar />`)
 

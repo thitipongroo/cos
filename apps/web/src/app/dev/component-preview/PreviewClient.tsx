@@ -2,7 +2,12 @@
 
 import { useState } from 'react';
 import { ImageWithFallback } from '../../../components/ui/ImageWithFallback';
-import { SkeletonCard, LoadingSpinner, EmptyState } from '../../../components/ui/LoadingState';
+import {
+  LoadingState,
+  SkeletonCard,
+  LoadingSpinner,
+  EmptyState,
+} from '../../../components/ui/LoadingState';
 import { VoiceInput } from '../../../components/ui/VoiceInput';
 import { LocationDisplay } from '../../../components/ui/LocationDisplay';
 
@@ -29,6 +34,30 @@ export function PreviewClient() {
             Server-independent on purpose: a broken *path* is redirected to /login by the auth
             middleware under Next, which does not fire onError; a data-URI never hits the server. */}
         <ImageWithFallback src="data:image/png;base64,AAAA" alt="probe" width={88} height={88} />
+      </section>
+
+      {/* <LoadingState /> — the §32.7 component (ADR-055). Each variant twice: determinate
+          (progress given) and indeterminate (progress omitted), which are visually distinct states. */}
+      <section data-testid="loading-state-widget">
+        <LoadingState variant="widget" progress={65} label="Initializing site telemetry..." />
+        <LoadingState variant="widget" label="Loading, no percentage" />
+      </section>
+
+      <section data-testid="loading-state-table">
+        <LoadingState variant="table" />
+      </section>
+
+      <section data-testid="loading-state-ai">
+        <LoadingState
+          variant="ai"
+          progress={82}
+          label="Analyzing site reports for budget variance..."
+        />
+      </section>
+
+      <section data-testid="loading-state-micro">
+        <LoadingState variant="micro" progress={42} label="Syncing database..." />
+        <LoadingState variant="micro" />
       </section>
 
       <section data-testid="loading-skeleton">

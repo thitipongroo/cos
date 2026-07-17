@@ -118,6 +118,9 @@ importers:
       '@tailwindcss/postcss':
         specifier: 4.3.2
         version: 4.3.2
+      '@types/jest':
+        specifier: ^30.0.0
+        version: 30.0.0
       '@types/node':
         specifier: ^20.12.0
         version: 20.19.43
@@ -130,9 +133,15 @@ importers:
       esbuild-wasm:
         specifier: 0.28.1
         version: 0.28.1
+      jest:
+        specifier: ^30.4.2
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       tailwindcss:
         specifier: ^4.3.2
         version: 4.3.2
+      ts-jest:
+        specifier: ^29.4.11
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

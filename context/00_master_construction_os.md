@@ -1009,6 +1009,15 @@ Avoid in all visual work:
   ✗ Rounded playful shapes
   ✗ Gradients or glow effects
 
+  TWO EXCEPTIONS to the gradient/glow rule — both because no project data is on screen yet:
+    1. Pre-auth entry screens (login, OTP verify, verification overlay) — rotating gear,
+       `architecture` mark, cyan glow. PO decision 2026-07-16.
+    2. <LoadingState /> `ai` variant only — cyan glow, scan-line, waveform; unmounts the
+       moment data renders. PO decision 2026-07-17; ADR-055.
+  Everywhere the signed-in app shows project data, the prohibition holds.
+  Amber stays a semantic warning token — only its use as a *brand* colour is prohibited.
+  Authoritative: spec §32.7 "Exception 1 / Exception 2".
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 BRAND COLOR TOKENS (global — web/PWA + mobile)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1170,6 +1179,11 @@ Core components (React Native — implement in apps/mobile/):
   <TaskCard />          Swipeable (swipe-right = done), status badge, photo count
   <StatusChip />        Visual status: Todo / InProgress / Done / Syncing / Synced
   <OptimisticList />    Instant UI update, rollback on failure, retry option
+  <LoadingState />      Loading placeholder / progress. Presentational only — caller owns
+                        `progress` (0–100, omit = indeterminate) and `label` (pre-translated).
+                        Mobile variants: widget | list | ai | micro (no `table` — see below).
+                        Web variants:    widget | table | ai | micro (no `list`).
+                        Full contract: spec §32.7 "Loading State"; ADR-055.
 
 Form components:
   <LocationPicker />    Map + auto-detect GPS
@@ -3227,6 +3241,9 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
 
   Generate (Web App — apps/web/):
     - Serwist configuration (@serwist/turbopack: withSerwist + createSerwistRoute) with runtime caching strategies
+      createSerwistRoute MUST pass `useNativeEsbuild: false` — it defaults to `platform === 'win32'`, which
+      imports the native `esbuild` (not a dependency; only `esbuild-wasm` is) and breaks `next build` on
+      Windows while Linux CI stays green. Authoritative: spec §32.7 → Web Implementation build constraints.
     - IndexedDB schema using idb library (typed, versioned)
     - PWA sync service using Background Sync API + IndexedDB queue
     - Service worker registration via SerwistProvider in the Next.js App Router root layout (app/layout.tsx)

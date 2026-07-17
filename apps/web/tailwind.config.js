@@ -26,6 +26,22 @@ module.exports = {
           cyan: 'var(--cos-cyan)',
           gray: 'var(--cos-gray)',
           white: 'var(--cos-white)',
+          // §32.7 Dark Theme Tokens. These already existed as CSS vars in globals.css but were
+          // unreachable from a utility class, so `dark:` variants had no token to name. Mapped here
+          // so dark-surface components (e.g. <LoadingState />, ADR-055) stay on tokens rather than
+          // reaching for arbitrary values.
+          dark: {
+            bg: 'var(--cos-dark-bg)',
+            surface: 'var(--cos-dark-surface)',
+            elevated: 'var(--cos-dark-elevated)',
+            text: 'var(--cos-dark-text)',
+            muted: 'var(--cos-dark-muted)',
+            blue: 'var(--cos-dark-blue)',
+            cyan: 'var(--cos-dark-cyan)',
+            success: 'var(--cos-dark-success)',
+            warning: 'var(--cos-dark-warning)',
+            danger: 'var(--cos-dark-danger)',
+          },
         },
       },
       fontFamily: {
