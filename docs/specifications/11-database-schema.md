@@ -516,6 +516,11 @@ site issues (general). When issue_type IN (defect, rework, punch) and status = o
 the linked task cannot be marked completed (gate #2). Conflict resolution: FIELD_LEVEL_MERGE
 (description / resolution_note: last-writer-wins; status: server wins; photos: union).
 
+Note : `photos: union` resolves WHICH photos are attached — that set only ever grows, so attaching
+a photo cannot conflict. It does NOT resolve a photo's own contents. A photo's annotation (the
+retained-mode stroke list of ADR-056) is editable after sync, so it carries its own strategy,
+`CONFLICT_FLAGGED` — see 17-offline-mobile-sync §17.5.
+
 QC Inspection Template :
 
 - qc_template_id
@@ -892,6 +897,60 @@ The four lifecycle states of a record:
 | Set          | Set             | Fully completed lifecycle — deleted and PII erased                   |
 
 See 05-security-compliance section 5.3 for the full PDPA / GDPR compliance strategy.
+
+---
+
+## 11.5 Files Schema (`files`)
+
+The `files` schema (registered in §11.0) backs the File Service. Its tables live in
+`backend/prisma/schema.prisma` and were not enumerated here before — the same as `notifications`,
+`ai`, and the telemetry schemas, whose §11.0 registry entry is authoritative and whose tables are
+owned by their service. The set is enumerated here now because a new sibling (`photo_annotations`)
+joins it (ADR-056), and a table cannot reference a parent that the spec never names.
+
+`stored_files` (`files.files`) — one row per uploaded object :
+
+- file_id (PK)
+- tenant_id
+- original_filename
+- stored_key (object key in the bucket)
+- bucket_name
+- mime_type
+- file_size_bytes
+- file_status (ENUM: PENDING_SCAN / CLEAN / QUARANTINED — ClamAV gate, §5.9.4)
+- uploaded_by (FK → Employee)
+- uploaded_at
+- deleted_at (nullable — soft delete, §11.4)
+- quarantined_at (nullable)
+
+`file_metadata` (`files.file_metadata`) — open key/value metadata attached to a file :
+
+- metadata_id (PK)
+- file_id (FK → stored_files)
+- tenant_id
+- entity_type (nullable — the kind of record the file is attached to, e.g. `issue`, `inspection`)
+- entity_id (nullable — that record's id)
+- metadata_key
+- metadata_value (nullable)
+
+`photo_annotations` (`files.photo_annotations`) — the re-editable markup on a photo (ADR-056) :
+
+- annotation_id (PK)
+- file_id (FK → stored_files; the photo being marked up)
+- tenant_id
+- strokes (JSONB — retained-mode stroke list; coordinates NORMALISED 0..1 so one list renders at any
+  resolution; never a flattened raster — the flattened image is exported to a separate `stored_files` row)
+- version (INT — bumped on every save; the concurrency token that makes `CONFLICT_FLAGGED` detectable)
+- modified_by (FK → Employee)
+- modified_at
+- created_at
+- deleted_at (nullable — soft delete, §11.4)
+
+Note : one annotation row per photo (`file_id` unique per tenant). Conflict resolution is
+`CONFLICT_FLAGGED` — on sync the server compares the client's base `version` against the stored one;
+a mismatch means someone else edited the same photo offline, so the write is flagged for
+`SITE_ENGINEER` review rather than merged or overwritten (17-offline-mobile-sync §17.5). RLS per the
+§11.0 template applies to all three tables.
 
 ---
 

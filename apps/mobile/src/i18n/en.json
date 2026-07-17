@@ -193,6 +193,18 @@
       "fail": "Fail",
       "failed": "Failed",
       "severityLabel": "Issue severity"
+    },
+    "photo": {
+      "annotate": {
+        "title": "Annotate photo",
+        "pen": "Pen",
+        "arrow": "Arrow",
+        "text": "Text",
+        "undo": "Undo",
+        "clear": "Clear all",
+        "save": "Save",
+        "conflictBanner": "Edited elsewhere — pending review"
+      }
     }
   },
   "safety": {

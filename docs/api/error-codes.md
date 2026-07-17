@@ -29,6 +29,7 @@ All API error responses follow the structure:
 | COS-FILE-006 | 404  | File has been deleted                   | File exists but deleted_at is set     |
 | COS-FILE-007 | 500  | File upload failed                      | MinIO write error                     |
 | COS-FILE-008 | 500  | Failed to generate signed URL           | MinIO presign error                   |
+| COS-FILE-009 | 404  | No annotation for this file             | GET annotation on a photo with none (ADR-056) |
 | COS-FILE-009 | 500  | Antivirus scan failed                   | ClamAV unreachable or scan error      |
 | COS-FILE-010 | 422  | File is not in quarantine status        | Recover on non-quarantined file       |
 | COS-FILE-011 | 403  | Insufficient permissions                | Caller lacks the required role        |

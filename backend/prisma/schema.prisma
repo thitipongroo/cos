@@ -198,7 +198,8 @@ model StoredFile {
   deletedAt        DateTime?  @map("deleted_at") @db.Timestamptz()
   quarantinedAt    DateTime?  @map("quarantined_at") @db.Timestamptz()
 
-  metadata FileMetadata[]
+  metadata   FileMetadata[]
+  annotation PhotoAnnotation?
 
   @@index([tenantId, uploadedBy])
   @@index([tenantId, fileStatus])
@@ -220,5 +221,28 @@ model FileMetadata {
   @@index([fileId])
   @@index([entityType, entityId])
   @@map("file_metadata")
+  @@schema("files")
+}
+
+// Re-editable markup on a photo (ADR-056). The stroke list is retained-mode with NORMALISED (0..1)
+// coordinates, so one list renders at any resolution; the flattened marked-up image is a separate
+// StoredFile, never stored here. `version` is the concurrency token: an offline edit carries the
+// base version it read, and on sync a mismatch means someone else edited the same photo → the write
+// is CONFLICT_FLAGGED for SITE_ENGINEER review, never merged (17-offline-mobile-sync §17.5).
+model PhotoAnnotation {
+  annotationId String    @id @default(dbgenerated("gen_random_uuid()")) @map("annotation_id") @db.Uuid
+  fileId       String    @unique @map("file_id") @db.Uuid
+  tenantId     String    @map("tenant_id") @db.Uuid
+  strokes      Json      @map("strokes") @db.JsonB
+  version      Int       @default(1) @map("version")
+  modifiedBy   String    @map("modified_by") @db.Uuid
+  modifiedAt   DateTime  @default(now()) @map("modified_at") @db.Timestamptz()
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  deletedAt    DateTime? @map("deleted_at") @db.Timestamptz()
+
+  file StoredFile @relation(fields: [fileId], references: [fileId])
+
+  @@index([tenantId])
+  @@map("photo_annotations")
   @@schema("files")
 }

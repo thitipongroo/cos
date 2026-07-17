@@ -2360,9 +2360,22 @@ Offline Conflict Resolution Strategy (authoritative):
       - description:  last writer wins (client_submitted_at)
       - status:       server wins (status changes are authoritative)
       - photos:       union of both (no conflict — additive)
+                      SCOPE: this resolves WHICH photos are attached; the set only grows.
+                      A photo's own annotation is NOT covered here — see below.
       - resolution_note: last writer wins
     Conflict flag: if status was changed server-side while client had offline edit,
                    create ConflictRecord for ROLE: SITE_ENGINEER to review
+
+  Entity: photo annotation (the ADR-056 stroke list on a photo)
+    Strategy: CONFLICT_FLAGGED — no auto-resolution
+    Rationale: an annotation stays editable after sync, so two people can mark up the same
+               photo offline. Merging strokes would silently blend two readings of one defect;
+               last-write-wins would silently discard one. Neither is acceptable on a record
+               used to evidence site defects.
+    Implementation: on sync, server checks for concurrent server-side modification since the
+                    client's last sync; if found → status CONFLICT_FLAGGED, notify
+                    ROLE: SITE_ENGINEER; never auto-merge, auto-overwrite, or discard.
+    Product-owner decision 2026-07-17; ADR-056. Authoritative rule table: spec §17.5.
 
   Entity: safety_checklists
     Strategy: SERVER_WINS

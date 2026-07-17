@@ -846,21 +846,65 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
 
 ### Mobile Core Component Library (React Native)
 
-| Component             | Description                                                |
-| --------------------- | ---------------------------------------------------------- |
-| `<TopBar />`          | Standard top app bar, every role — see below               |
-| `<MobileNav />`       | Bottom navigation, 4–5 items max, icons + labels           |
-| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap          |
-| `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue    |
-| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription     |
-| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect          |
-| `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count  |
-| `<StatusChip />`      | Visual status: Todo / InProgress / Done / Syncing / Synced |
-| `<OptimisticList />`  | Instant UI update, rollback on failure, retry option       |
-| `<LoadingState />`    | Loading placeholder / progress, 4 variants — see below     |
+| Component             | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| `<TopBar />`          | Standard top app bar, every role — see below                |
+| `<MobileNav />`       | Bottom navigation, 4–5 items max, icons + labels            |
+| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap           |
+| `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue     |
+| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription      |
+| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect           |
+| `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count   |
+| `<StatusChip />`      | Visual status: Todo / InProgress / Done / Syncing / Synced  |
+| `<OptimisticList />`  | Instant UI update, rollback on failure, retry option        |
+| `<LoadingState />`    | Loading placeholder / progress, 4 variants — see below      |
+| `<PhotoAnnotation />` | Draw/erase over a captured photo, undo, flatten — see below |
 
 Do **not** implement on mobile: tables (use cards), navigation deeper than 3 levels,
 modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
+
+#### Photo Annotation (`<PhotoAnnotation />`)
+
+Mark up a site photo — the "inline annotation" `<PhotoCapture />` above has always specified but has
+never had. **Mobile only** (product-owner decision 2026-07-17): photo markup is a field task done on
+the phone where the photo is taken. A web (Konva) annotator was scoped and then dropped — research
+into Procore, SiteCam, Fieldwire and Bluebeam found photo markup to be a predominantly mobile
+feature, with no verifiable evidence of web photo annotation as an industry norm. Rationale and
+on-device measurements in ADR-056.
+
+**Engine: `@shopify/react-native-skia`** — React Native has no Canvas 2D, and Skia's own
+`makeImageSnapshot` exports without a second capture library. Requires RN ≥ 0.79 / React ≥ 19
+(satisfied on SDK 56 / RN 0.85.3). `tldraw` was rejected during the web evaluation and remains
+**prohibited** for any future annotation surface — its SDK licence permits development use only and
+bars production without a paid agreement (`LICENSE.md`: "Not to use the Software in Production
+Environments"); the free hobby key forces a watermark.
+
+**Rules — each one is load-bearing, not a preference:**
+
+- **Draw the photo INSIDE the annotation canvas**, never as a separate view under a transparent
+  overlay. Skia's `canvasRef.makeImageSnapshot()` captures Skia content only, so an overlay exports
+  the strokes on a blank background. Drawing the photo as a Skia `<Image>` in the same canvas also
+  sidesteps the `collapsable={false}` view-flattening trap entirely (which Fabric widened to iOS).
+- **Undo is a retained-mode stroke list, not a pixel buffer.** Skia exposes no
+  `getImageData`/`putImageData`, so the browser pixel-snapshot idiom does not apply. Batch strokes at
+  interaction boundaries (pointer-up), not per frame.
+- **Strokes persist in NORMALISED (0..1) coordinates**, so one stroke list renders correctly at both
+  the editing size and the full-resolution export. Annotations stay re-editable; the flattened image
+  is an export artifact, not the record.
+- **Edit on a downscaled copy (long edge 2048), export at full resolution.** Measured: a 4000×3000
+  photo costs 45.8 MB decoded vs 12.0 MB at 2048×1536.
+- **`dispose()` every `SkImage`/`SkData`.** Measured: it genuinely returns the memory — a second
+  identical decode round added ~5 MB rather than another 275 MB. Native heap does not shrink after
+  dispose (the allocator keeps the pages); that is expected and is not a leak.
+- **Never call `takePictureAsync({ skipProcessing: true })`.** On SDK 56 expo-camera bakes rotation
+  into the pixels; `skipProcessing` returns the raw sensor image and is the documented cause of
+  cross-device orientation chaos. `exif` defaults to false and its shape is device-dependent
+  (typed `any`), so orientation must never be read from it. Normalise orientation before the photo
+  reaches the canvas — an SDK 57 revert (merged 2026-07-16) returns iOS to EXIF-tagged, unrotated
+  pixels, so code that relies on SDK 56's baking will break on upgrade.
+
+Conflict resolution for the persisted stroke list is `CONFLICT_FLAGGED` — see
+[17-offline-mobile-sync §17.5](17-offline-mobile-sync.md).
 
 #### Loading State (`<LoadingState />`)
 

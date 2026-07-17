@@ -306,6 +306,12 @@ POST /api/v1/projects
 | `GET`    | `/api/v1/files/{file_id}`             | Get file metadata and a short-lived download URL                                                                    | Any role     |
 | `DELETE` | `/api/v1/files/{file_id}`             | Soft-delete file; automatic hard-delete from MinIO 30 days later (see `09-data-architecture` File Lifecycle Policy) | Tenant Admin |
 | `GET`    | `/api/v1/projects/{project_id}/files` | List files attached to a project (filterable by type, uploader)                                                     | Any role     |
+| `GET`    | `/api/v1/files/{file_id}/annotation`  | Get the photo's annotation stroke list + `version` (404 if none) — powers re-editing                                | Any role     |
+
+> **Writing an annotation has no REST endpoint.** It flows through the offline-sync path like every
+> other field-editable entity: `POST /api/v1/sync/push` with `entity_type: "photo_annotation"`, which
+> runs the `version`-based `CONFLICT_FLAGGED` check (ADR-056; §17.5). A dedicated `PUT` was considered
+> and rejected as inconsistent with the seven entities already routed through `/sync/push`.
 
 ---
 

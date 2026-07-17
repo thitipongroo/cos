@@ -21,6 +21,7 @@ import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
 import { SiteOpsService } from '../site-ops/site-ops.service';
 import { SafetyService } from '../safety/safety.service';
 import { WorkforceService } from '../workforce/workforce.service';
+import { AnnotationService } from '../files/annotation.service';
 import type { CreateIssueDto } from '../site-ops/dto/create-issue.dto';
 import type { CreateMaterialConsumptionDto } from '../site-ops/dto/create-material-consumption.dto';
 import type { SubmitInspectionDto } from '../site-ops/dto/submit-inspection.dto';
@@ -50,6 +51,7 @@ export class SyncService {
     private readonly siteOps: SiteOpsService,
     private readonly safety: SafetyService,
     private readonly workforce: WorkforceService,
+    private readonly annotations: AnnotationService,
   ) {}
 
   async delta(sinceIso: string, entityTypes: string[]): Promise<DeltaResponse> {
@@ -135,6 +137,19 @@ export class SyncService {
           dto.payload as unknown as SubmitInspectionDto,
         );
         return { status: 'ACCEPTED', server_payload: row };
+      }
+
+      case 'photo_annotation': {
+        // Re-editable photo markup (ADR-056; §17.5). entity_id is the file_id; the payload carries the
+        // stroke list + the base version the client read. CONFLICT_FLAGGED when someone else saved in
+        // between — the resolver, not this switch, decides.
+        const strokes = (dto.payload['strokes'] as unknown[] | undefined) ?? [];
+        const baseVersion = (dto.payload['version'] as number | undefined) ?? 0;
+        const result = await this.annotations.applyPush(dto.entity_id, strokes, baseVersion);
+        return {
+          status: result.conflict_status as ServerSyncStatus,
+          server_payload: result.annotation ?? undefined,
+        };
       }
 
       default:

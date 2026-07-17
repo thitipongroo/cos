@@ -6,6 +6,7 @@ import {
   resolveReportConflict,
   resolveIssueConflict,
   resolveChecklistConflict,
+  resolveAnnotationConflict,
 } from '../conflict-handler';
 
 const OLDER_TS = '2026-06-04T08:00:00.000Z';
@@ -224,6 +225,59 @@ describe('resolveChecklistConflict — SERVER_WINS', () => {
   it('defaults server_version to 1 when version missing (covers line 104 ?? branch)', () => {
     const server = { checklist_name: 'Safety C', items: [] }; // no version
     const result = resolveChecklistConflict(server);
+    expect(result.server_version).toBe(1);
+  });
+});
+
+// ── photo_annotation: CONFLICT_FLAGGED (ADR-056; §17.5) ──────────────────────────────────────────
+describe('resolveAnnotationConflict', () => {
+  const strokes = [{ tool: 'pen', points: [0.1, 0.2, 0.3, 0.4] }];
+
+  it('accepts the first annotation at version 1 when none exists yet', () => {
+    const result = resolveAnnotationConflict({ file_id: 'f1', strokes, version: 0 }, null);
+
+    expect(result.conflict_status).toBe('ACCEPTED');
+    expect(result.server_version).toBe(1);
+    expect((result.resolved_payload as { version: number }).version).toBe(1);
+    expect((result.resolved_payload as { strokes: unknown }).strokes).toBe(strokes);
+    expect((result.resolved_payload as { modified_at?: string }).modified_at).toBeDefined();
+  });
+
+  it('fast-forwards and bumps the version when the client edited the current version', () => {
+    const server = { file_id: 'f1', strokes: [{ tool: 'arrow' }], version: 3 };
+    const result = resolveAnnotationConflict({ file_id: 'f1', strokes, version: 3 }, server);
+
+    expect(result.conflict_status).toBe('ACCEPTED');
+    expect(result.server_version).toBe(4);
+    expect((result.resolved_payload as { version: number }).version).toBe(4);
+    expect((result.resolved_payload as { strokes: unknown }).strokes).toBe(strokes);
+  });
+
+  it('flags for review when the client edited a stale version (someone else saved in between)', () => {
+    const server = { file_id: 'f1', strokes: [{ tool: 'text' }], version: 5 };
+    const result = resolveAnnotationConflict({ file_id: 'f1', strokes, version: 3 }, server);
+
+    expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(result.server_version).toBe(5);
+    // The server row is kept untouched — the client's strokes are NOT merged in.
+    expect(result.resolved_payload).toBe(server);
+  });
+
+  it('defaults the server version to 1 when the server row omits version', () => {
+    const server = { file_id: 'f1', strokes: [] }; // no version → treated as 1
+    // client base 0 ≠ server 1 → flagged
+    const result = resolveAnnotationConflict({ file_id: 'f1', strokes, version: 0 }, server);
+
+    expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(result.server_version).toBe(1);
+  });
+
+  it('defaults the client base version to 0 when the payload omits version', () => {
+    const server = { file_id: 'f1', strokes: [], version: 1 };
+    // client base defaults to 0 ≠ server 1 → flagged
+    const result = resolveAnnotationConflict({ file_id: 'f1', strokes }, server);
+
+    expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
     expect(result.server_version).toBe(1);
   });
 });

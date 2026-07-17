@@ -104,3 +104,49 @@ export function resolveChecklistConflict(serverRow: Record<string, unknown>): Sy
     server_version: (serverRow['version'] as number | undefined) ?? 1,
   };
 }
+
+// ── photo_annotation: CONFLICT_FLAGGED — no auto-resolution (ADR-056; §17.5) ─────────────────────
+// An annotation stays editable after sync, so two people can mark up the same photo offline. Merging
+// strokes would blend two readings of one defect; last-write-wins would discard one. Detection is by
+// `version`: the client sends the base version it read. If the server row is unchanged since
+// (versions match), the write is applied and the version bumped. If the server moved on, the write is
+// flagged for SITE_ENGINEER review — the server row is kept and the client's strokes are NOT merged.
+// A first-ever annotation (no server row) is a clean ACCEPTED write, not a conflict.
+export function resolveAnnotationConflict(
+  clientPayload: Record<string, unknown>,
+  serverRow: Record<string, unknown> | null,
+): SyncResult {
+  // No existing annotation → the client is the first writer. Accept at version 1.
+  if (!serverRow) {
+    return {
+      resolved_payload: { ...clientPayload, version: 1, modified_at: new Date().toISOString() },
+      conflict_status: 'ACCEPTED',
+      server_version: 1,
+    };
+  }
+
+  const serverVersion = (serverRow['version'] as number | undefined) ?? 1;
+  const clientBaseVersion = (clientPayload['version'] as number | undefined) ?? 0;
+
+  // The client edited from a stale base — someone else saved in between. Flag, do not merge.
+  if (clientBaseVersion !== serverVersion) {
+    return {
+      resolved_payload: serverRow,
+      conflict_status: 'CONFLICT_FLAGGED',
+      server_version: serverVersion,
+    };
+  }
+
+  // Clean fast-forward: bump the version and take the client's strokes.
+  const nextVersion = serverVersion + 1;
+  return {
+    resolved_payload: {
+      ...serverRow,
+      strokes: clientPayload['strokes'],
+      version: nextVersion,
+      modified_at: new Date().toISOString(),
+    },
+    conflict_status: 'ACCEPTED',
+    server_version: nextVersion,
+  };
+}
