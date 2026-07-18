@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Field Operations Hub | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#000f21",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-background": "#d3e4fe",
+                        "surface": "#031427",
+                        "mobile-success": "#00C853",
+                        "mobile-danger": "#FF3B30",
+                        "secondary-container": "#03b5d3",
+                        "on-error-container": "#ffdad6",
+                        "secondary": "#4cd7f6",
+                        "dark-surface": "#0F172A",
+                        "inverse-on-surface": "#213145",
+                        "surface-container": "#102034",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "primary": "#b4c5ff",
+                        "cos-blue": "#2563EB",
+                        "sync-active": "#FFD60A",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary": "#002a78",
+                        "on-tertiary": "#2b3041",
+                        "mobile-primary": "#0066FF",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-surface": "#d3e4fe",
+                        "tertiary": "#c1c5dc",
+                        "primary-container": "#2563eb",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary": "#003640",
+                        "surface-dim": "#031427",
+                        "cos-cyan": "#06B6D4",
+                        "outline-variant": "#434655",
+                        "tertiary-container": "#686c80",
+                        "surface-variant": "#26364a",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed": "#00174b",
+                        "surface-tint": "#b4c5ff",
+                        "cos-navy": "#0B1020",
+                        "surface-bright": "#2a3a4f",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "cos-white": "#F8FAFC",
+                        "on-primary-container": "#eeefff",
+                        "sync-pending": "#94A3B8",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "dark-bg": "#020617",
+                        "on-tertiary-container": "#eeefff",
+                        "on-error": "#690005",
+                        "outline": "#8d90a0",
+                        "inverse-primary": "#0053db",
+                        "background": "#031427",
+                        "on-secondary-container": "#00424e",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "secondary-fixed": "#acedff",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-highest": "#26364a",
+                        "surface-container-high": "#1b2b3f",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-container-low": "#0b1c30",
+                        "on-secondary-fixed": "#001f26",
+                        "on-tertiary-fixed": "#161b2b",
+                        "error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-3": "12px",
+                        "web-space-2": "8px",
+                        "mobile-touch-target": "52px",
+                        "web-space-4": "16px",
+                        "web-base": "4px",
+                        "web-space-1": "4px",
+                        "web-space-8": "32px",
+                        "mobile-edge": "24px"
+                    },
+                    "fontFamily": {
+                        "web-text-h2": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2563EB;
+            border-radius: 10px;
+        }
+        .map-layer-active {
+            box-shadow: 0 0 0 2px #06B6D4 inset;
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-on-background font-web-text-body selection:bg-cos-blue selection:text-white overflow-hidden">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 right-0 h-12 bg-dark-bg border-b border-outline/10 z-50 flex justify-between items-center px-web-space-4">
+<div class="flex items-center gap-web-space-4">
+<span class="font-web-text-h1 text-web-text-h1 font-bold text-cos-white tracking-tight">Construction OS</span>
+<div class="hidden md:flex h-8 w-64 bg-surface-container rounded border border-outline/20 items-center px-3 gap-2">
+<span class="material-symbols-outlined text-outline text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-web-text-small text-on-surface-variant w-full placeholder:text-outline" placeholder="Search projects, assets, or logs..." type="text"/>
+</div>
+</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-cos-blue font-bold border-b-2 border-cos-blue pb-1 text-web-text-body" href="#">Portfolio</a>
+<a class="text-on-surface-variant hover:bg-surface-variant/20 transition-colors text-web-text-body" href="#">Projects</a>
+<a class="text-on-surface-variant hover:bg-surface-variant/20 transition-colors text-web-text-body" href="#">Schedule</a>
+</nav>
+<div class="flex items-center gap-3">
+<button class="material-symbols-outlined text-outline hover:text-cos-blue transition-colors">notifications</button>
+<button class="material-symbols-outlined text-outline hover:text-cos-blue transition-colors">help</button>
+<button class="material-symbols-outlined text-outline hover:text-cos-blue transition-colors">apps</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-cos-blue/30">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a site engineer wearing a navy blue company polo, looking directly at the camera with a confident and serious expression. The lighting is crisp and cinematic, typical of a high-end corporate profile. The background is a blurred industrial office environment with architectural plans pinned to a wall." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvmiO8X-ahJgd4m35v05w_JUzok3LqBnOo5aIx6m6m8S0Js7nIrwo3gQV8DUhBYOZcE2JcxBmSeyh8cdhwXGMTlSa_i2karvQG0xsIJnKgMiXXYGRveqlfH5KkQl3KBcQMQBke2UL5aHXiinvqPJgcWXkMo3MJ-wPw2_VpPYR1exnvNot-hWTXmOwMsLpsMcYlZWTitiPVroBIADl-Y3uk0jLhuYp9tnzaWWPqodTibSvPn0z7D5DC0NNQzbzYQ2MRqRTO8-nSfio"/>
+</div>
+</div>
+</header>
+<!-- Side Navigation Bar -->
+<aside class="fixed left-0 top-12 h-[calc(100vh-48px)] w-64 bg-dark-surface border-r border-outline/10 flex flex-col pt-4 pb-4 z-40">
+<div class="px-4 mb-6">
+<div class="flex items-center gap-3 p-2 rounded-lg bg-cos-blue/5 border border-cos-blue/10">
+<div class="w-8 h-8 rounded bg-cos-cyan flex items-center justify-center">
+<span class="material-symbols-outlined text-dark-bg" style="font-variation-settings: 'FILL' 1;">architecture</span>
+</div>
+<div>
+<div class="text-cos-cyan font-web-text-h2 text-[14px] font-bold">Global Admin</div>
+<div class="text-outline text-web-text-tiny uppercase">Enterprise Tier</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-cos-blue font-semibold bg-cos-blue/10 border-l-2 border-cos-blue translate-x-1 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-web-text-small">Portfolio</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 transition-colors" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="text-web-text-small">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 transition-colors" href="#">
+<span class="material-symbols-outlined">warning</span>
+<span class="text-web-text-small">Alerts</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-web-text-small">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="text-web-text-small">Finance</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-web-text-small">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4 py-4 border-t border-outline/5 space-y-4">
+<button class="w-full bg-cos-blue text-white py-2 rounded font-web-text-body font-bold flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-cos-blue/20">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Project
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-2 py-1.5 text-outline text-web-text-small hover:text-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">support</span>
+                    Help Center
+                </a>
+<a class="flex items-center gap-3 px-2 py-1.5 text-outline text-web-text-small hover:text-mobile-danger transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">logout</span>
+                    Log Out
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="pl-64 pt-12 min-h-screen flex flex-col">
+<!-- Top Toolbar / Context Header -->
+<div class="h-14 border-b border-outline/10 bg-dark-bg/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-12 z-30">
+<div class="flex items-center gap-4">
+<h2 class="font-web-text-h2 text-on-surface">Field Operations Hub</h2>
+<div class="flex items-center gap-2 bg-surface-container-high px-2 py-1 rounded border border-outline/10">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="text-web-text-tiny uppercase text-on-surface-variant">Live Connection: Terminal 4</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="px-3 py-1.5 bg-error-container text-on-error-container text-web-text-small font-bold rounded flex items-center gap-2 hover:opacity-90 transition-opacity" onclick="toggleBlockerModal()">
+<span class="material-symbols-outlined text-[18px]">priority_high</span>
+                    Escalate Blocker
+                </button>
+<div class="h-6 w-px bg-outline/20 mx-2"></div>
+<div class="flex items-center gap-1 bg-surface-container rounded-lg p-1">
+<button class="px-3 py-1 text-web-text-small rounded bg-surface-container-highest text-cos-blue shadow-sm">Real-time Map</button>
+<button class="px-3 py-1 text-web-text-small rounded text-outline hover:text-on-surface-variant transition-colors">Analytics Grid</button>
+</div>
+</div>
+</div>
+<!-- Dashboard Canvas (Asymmetric Layout) -->
+<div class="flex-1 p-6 grid grid-cols-12 gap-6 overflow-hidden max-h-[calc(100vh-104px)]">
+<!-- Left Panel: Project List & Health (4 Columns) -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6 overflow-hidden">
+<div class="bg-dark-surface border border-outline/10 rounded-xl flex flex-col flex-1 overflow-hidden">
+<div class="p-4 border-b border-outline/5 flex items-center justify-between">
+<span class="text-web-text-small font-bold uppercase tracking-wider text-outline">Active Projects</span>
+<span class="text-web-text-tiny bg-cos-blue/20 text-cos-blue px-2 py-0.5 rounded-full">12 Total</span>
+</div>
+<!-- Scrollable Project List -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+<!-- Project Card 1 (Active/Warning) -->
+<div class="group p-3 bg-surface-container rounded border-l-4 border-mobile-warning hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-web-text-body font-bold text-cos-white">Terminal 4 Expansion</h4>
+<span class="material-symbols-outlined text-mobile-warning text-sm" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex items-center gap-4 text-web-text-tiny text-outline mb-2">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span>London, UK</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">groups</span>142 On-site</span>
+</div>
+<div class="w-full bg-surface-container-lowest h-1 rounded-full overflow-hidden">
+<div class="bg-mobile-warning h-full w-[68%]"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[10px] text-outline">Progress: 68%</span>
+<span class="text-[10px] text-mobile-warning">Delay: 4.2h</span>
+</div>
+</div>
+<!-- Project Card 2 (Healthy) -->
+<div class="group p-3 bg-surface-container/50 border-l-4 border-mobile-success hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-web-text-body font-bold text-on-surface">Data Center Alpha</h4>
+<span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-center gap-4 text-web-text-tiny text-outline mb-2">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span>Dublin, IE</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">groups</span>84 On-site</span>
+</div>
+<div class="w-full bg-surface-container-lowest h-1 rounded-full overflow-hidden">
+<div class="bg-mobile-success h-full w-[92%]"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[10px] text-outline">Progress: 92%</span>
+<span class="text-[10px] text-mobile-success">On Schedule</span>
+</div>
+</div>
+<!-- Project Card 3 (Neutral) -->
+<div class="group p-3 bg-surface-container/50 border-l-4 border-outline hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<h4 class="text-web-text-body font-bold text-on-surface">Central Bridge Refit</h4>
+<span class="material-symbols-outlined text-outline text-sm">schedule</span>
+</div>
+<div class="flex items-center gap-4 text-web-text-tiny text-outline mb-2">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span>Sydney, AU</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">groups</span>12 On-site</span>
+</div>
+<div class="w-full bg-surface-container-lowest h-1 rounded-full overflow-hidden">
+<div class="bg-outline h-full w-[15%]"></div>
+</div>
+<div class="flex justify-between mt-1">
+<span class="text-[10px] text-outline">Progress: 15%</span>
+<span class="text-[10px] text-outline">Startup Phase</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Insight Module -->
+<div class="bg-cos-cyan/5 border-l-2 border-cos-cyan p-4 rounded-r-xl">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-cos-cyan text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="text-web-text-small font-bold text-cos-cyan">Predictive Alert</span>
+</div>
+<p class="text-web-text-small text-on-surface-variant leading-relaxed">
+                        Expected rainfall in <span class="text-cos-white font-bold">Terminal 4</span> may cause a 15% drop in concrete pouring efficiency between 14:00 - 18:00 today. Suggest rescheduling heavy equipment movements.
+                    </p>
+<button class="mt-3 text-web-text-tiny font-bold uppercase tracking-wider text-cos-cyan hover:underline">Apply Recommendation</button>
+</div>
+</div>
+<!-- Right Panel: GIS Site Map (8 Columns) -->
+<div class="col-span-12 lg:col-span-8 bg-dark-surface border border-outline/10 rounded-xl relative overflow-hidden flex flex-col group/map">
+<!-- Map Header Overlay -->
+<div class="absolute top-4 left-4 z-20 flex gap-2">
+<div class="bg-dark-bg/90 backdrop-blur border border-outline/20 p-1.5 rounded-lg flex items-center gap-4">
+<div class="flex items-center gap-2 px-2 border-r border-outline/10">
+<span class="material-symbols-outlined text-cos-blue text-sm">layers</span>
+<span class="text-web-text-tiny font-bold text-on-surface uppercase">GIS Layers</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 rounded bg-cos-blue/20 text-cos-blue hover:bg-cos-blue/30 transition-colors map-layer-active">
+<span class="material-symbols-outlined text-[18px]">engineering</span>
+</button>
+<button class="p-1.5 rounded text-outline hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">foundation</span>
+</button>
+<button class="p-1.5 rounded text-outline hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">electric_bolt</span>
+</button>
+</div>
+</div>
+<div class="bg-dark-bg/90 backdrop-blur border border-outline/20 p-1.5 rounded-lg flex items-center gap-2 px-3">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success"></span>
+<span class="text-web-text-tiny font-bold text-on-surface">GPS Feed: Active</span>
+</div>
+</div>
+<!-- GIS Map Content (Mockup via Image) -->
+<div class="flex-1 w-full bg-[#020617] relative">
+<div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-900/10 via-transparent to-transparent opacity-50"></div>
+<!-- Detailed GIS Map Placeholder -->
+<div class="w-full h-full opacity-80" data-alt="A highly detailed dark-themed satellite GIS site map of a major airport terminal expansion under construction. The map features vector-style infrastructure overlays in neon blue and cyan, showing foundation outlines, plumbing grids, and site boundaries. Tiny digital markers in various colors represent personnel and heavy machinery, with subtle heat-map glows indicating areas of high activity. The aesthetic is ultra-modern, clinical, and data-driven, similar to a high-end logistics dashboard or a strategic military operation command screen." data-location="London Terminal 4" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDmVXZRJFncMc909ycyXsZLPgRNIUGaFycm-X1VbDfmjBaqMalUU7pMXi8TUqYpypyA1slLPruY4MhsGlj7aTIHJT584JbS1KSRocdcVzpzG363E3FbP-UA5u2zFKUNEE5MyPkJ93JbdE_dumOfjywupe2loGqUBXrPlfhG8zU7n93imAjlNYkf07BAe3xS6BgGGCGoi3qH-kX1f1qrHH7ikHm23DCFiQT0b7HjkkzULA5xljdpbJEZHGstPa79RTqp-Jma35cm2Nw')">
+</div>
+<!-- Map HUD Interaction (Right Side) -->
+<div class="absolute right-4 top-4 bottom-4 flex flex-col gap-2 z-20 pointer-events-none">
+<div class="pointer-events-auto bg-dark-bg/90 backdrop-blur border border-outline/20 p-2 rounded-lg flex flex-col gap-3">
+<button class="material-symbols-outlined text-outline hover:text-cos-blue transition-colors">add</button>
+<div class="h-px bg-outline/10"></div>
+<button class="material-symbols-outlined text-outline hover:text-cos-blue transition-colors">remove</button>
+<div class="h-px bg-outline/10"></div>
+<button class="material-symbols-outlined text-outline hover:text-cos-blue transition-colors">my_location</button>
+</div>
+<!-- Mini Asset List (Floating) -->
+<div class="pointer-events-auto mt-auto w-48 bg-dark-bg/90 backdrop-blur border border-outline/20 rounded-lg overflow-hidden flex flex-col">
+<div class="p-2 border-b border-outline/10 bg-surface-container-low text-web-text-tiny font-bold text-outline">ASSET TRACKING</div>
+<div class="max-h-40 overflow-y-auto custom-scrollbar">
+<div class="p-2 flex items-center justify-between border-b border-outline/5 hover:bg-surface-container transition-colors">
+<span class="text-web-text-tiny text-on-surface">Crane-04</span>
+<span class="text-web-text-tiny text-mobile-success">Stable</span>
+</div>
+<div class="p-2 flex items-center justify-between border-b border-outline/5 hover:bg-surface-container transition-colors">
+<span class="text-web-text-tiny text-on-surface">Excavator-12</span>
+<span class="text-web-text-tiny text-mobile-warning">Idling</span>
+</div>
+<div class="p-2 flex items-center justify-between border-b border-outline/5 hover:bg-surface-container transition-colors">
+<span class="text-web-text-tiny text-on-surface">Site-Van-09</span>
+<span class="text-web-text-tiny text-cos-blue">Moving</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Quick Action Bar -->
+<div class="h-14 bg-surface-container-lowest border-t border-outline/10 px-4 flex items-center justify-between">
+<div class="flex items-center gap-6">
+<div class="flex flex-col">
+<span class="text-web-text-tiny text-outline uppercase font-bold">Coordinates</span>
+<span class="text-web-text-small font-mono text-on-surface">51.4700° N, 0.4543° W</span>
+</div>
+<div class="flex flex-col">
+<span class="text-web-text-tiny text-outline uppercase font-bold">Active Zone</span>
+<span class="text-web-text-small text-on-surface">Sector C (Foundation)</span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-container-high hover:bg-surface-variant p-2 rounded border border-outline/10 transition-colors flex items-center gap-2 group">
+<span class="material-symbols-outlined text-[20px] text-outline group-hover:text-cos-cyan transition-colors">add_location_alt</span>
+<span class="text-web-text-small font-bold text-on-surface-variant">Log Activity</span>
+</button>
+<button class="bg-surface-container-high hover:bg-surface-variant p-2 rounded border border-outline/10 transition-colors flex items-center gap-2 group">
+<span class="material-symbols-outlined text-[20px] text-outline group-hover:text-cos-blue transition-colors">photo_camera</span>
+<span class="text-web-text-small font-bold text-on-surface-variant">Site Photo</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Blocker Escalation Modal (Hidden by default) -->
+<div class="fixed inset-0 z-[100] hidden flex items-center justify-center p-6" id="blocker-modal">
+<div class="absolute inset-0 bg-dark-bg/80 backdrop-blur-sm" onclick="toggleBlockerModal()"></div>
+<div class="relative w-full max-w-lg bg-dark-surface border border-mobile-danger/30 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+<div class="p-4 bg-mobile-danger text-white flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-web-text-h2 text-[16px] font-bold">Escalate Site Blocker</span>
+</div>
+<button class="material-symbols-outlined hover:bg-black/10 rounded p-1 transition-colors" onclick="toggleBlockerModal()">close</button>
+</div>
+<div class="p-6 space-y-4">
+<div>
+<label class="block text-web-text-small text-outline mb-1.5">Project Context</label>
+<select class="w-full bg-surface-container-lowest border border-outline/20 rounded-lg p-2.5 text-on-surface text-web-text-body focus:ring-2 focus:ring-mobile-danger focus:border-transparent outline-none">
+<option>Terminal 4 Expansion (LON-T4)</option>
+<option>Data Center Alpha (DUB-A)</option>
+</select>
+</div>
+<div>
+<label class="block text-web-text-small text-outline mb-1.5">Blocker Severity</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="p-2 border border-outline/20 rounded-lg text-web-text-tiny font-bold uppercase text-outline hover:bg-surface-container transition-colors">P3: Minor</button>
+<button class="p-2 border border-outline/20 rounded-lg text-web-text-tiny font-bold uppercase text-outline hover:bg-surface-container transition-colors">P2: Moderate</button>
+<button class="p-2 border border-mobile-danger bg-mobile-danger/10 rounded-lg text-web-text-tiny font-bold uppercase text-mobile-danger">P1: Critical</button>
+</div>
+</div>
+<div>
+<label class="block text-web-text-small text-outline mb-1.5">Issue Description</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline/20 rounded-lg p-2.5 text-on-surface text-web-text-body h-32 focus:ring-2 focus:ring-mobile-danger focus:border-transparent outline-none resize-none" placeholder="Detail the technical or operational bottleneck..."></textarea>
+</div>
+<div class="flex gap-3 pt-2">
+<button class="flex-1 py-3 bg-mobile-danger text-white font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[20px]">send</span>
+                        Notify HQ Immediately
+                    </button>
+<button class="px-6 py-3 border border-outline/20 text-outline font-bold rounded-lg hover:bg-surface-container transition-colors" onclick="toggleBlockerModal()">Cancel</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Floating Action Button (Only for specific task context) -->
+<div class="fixed bottom-8 right-8 z-40 flex flex-col items-end gap-4">
+<div class="hidden flex flex-col gap-2 mb-2 animate-in slide-in-from-bottom-4 duration-300" id="quick-action-menu">
+<button class="bg-surface-container-highest text-on-surface border border-outline/10 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 hover:bg-surface-bright transition-all group">
+<span class="text-web-text-small font-bold">New Delivery Log</span>
+<span class="material-symbols-outlined text-cos-cyan">local_shipping</span>
+</button>
+<button class="bg-surface-container-highest text-on-surface border border-outline/10 px-4 py-2 rounded-full shadow-xl flex items-center gap-2 hover:bg-surface-bright transition-all group">
+<span class="text-web-text-small font-bold">RFI Request</span>
+<span class="material-symbols-outlined text-cos-blue">quick_reference_all</span>
+</button>
+</div>
+<button class="w-14 h-14 bg-cos-blue text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all duration-200" onclick="toggleQuickAction()">
+<span class="material-symbols-outlined text-[28px]" id="fab-icon">add</span>
+</button>
+</div>
+<script>
+        function toggleBlockerModal() {
+            const modal = document.getElementById('blocker-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function toggleQuickAction() {
+            const menu = document.getElementById('quick-action-menu');
+            const icon = document.getElementById('fab-icon');
+            menu.classList.toggle('hidden');
+            if (menu.classList.contains('hidden')) {
+                icon.textContent = 'add';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                icon.textContent = 'close';
+                icon.style.transform = 'rotate(90deg)';
+            }
+        }
+
+        // Micro-interaction: Subtle hover parallax for map elements
+        document.addEventListener('mousemove', (e) => {
+            const map = document.querySelector('[data-location]');
+            if (!map) return;
+            const x = (window.innerWidth / 2 - e.pageX) / 100;
+            const y = (window.innerHeight / 2 - e.pageY) / 100;
+            map.style.transform = `scale(1.05) translate(${x}px, ${y}px)`;
+        });
+
+        // Initialize state
+        window.addEventListener('load', () => {
+            // Apply scale to map for movement effect
+            const map = document.querySelector('[data-location]');
+            if (map) map.style.transition = 'transform 0.1s ease-out';
+        });
+    </script>
+</body></html>

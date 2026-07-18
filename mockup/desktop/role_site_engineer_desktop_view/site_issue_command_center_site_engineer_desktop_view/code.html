@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CONSTRUCTION OS | Site Issue Command Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26364a;
+            border-radius: 2px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #434655;
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#031427",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "inverse-surface": "#d3e4fe",
+                        "outline-variant": "#434655",
+                        "surface-dim": "#031427",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-bright": "#2a3a4f",
+                        "on-error-container": "#ffdad6",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary": "#2b3041",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#eeefff",
+                        "cos-blue": "#2563EB",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface": "#d3e4fe",
+                        "cos-navy": "#0B1020",
+                        "secondary-fixed": "#acedff",
+                        "cos-white": "#F8FAFC",
+                        "surface-container-lowest": "#000f21",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "primary-fixed": "#dbe1ff",
+                        "dark-bg": "#020617",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error": "#690005",
+                        "secondary-container": "#03b5d3",
+                        "tertiary-fixed": "#dee1f9",
+                        "outline": "#8d90a0",
+                        "inverse-on-surface": "#213145",
+                        "background": "#031427",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "inverse-primary": "#0053db",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-tint": "#b4c5ff",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-secondary-container": "#00424e",
+                        "primary": "#b4c5ff",
+                        "mobile-danger": "#FF3B30",
+                        "error-container": "#93000a",
+                        "dark-surface": "#0F172A",
+                        "cos-cyan": "#06B6D4",
+                        "sync-pending": "#94A3B8",
+                        "on-primary": "#002a78",
+                        "primary-container": "#2563eb",
+                        "mobile-warning": "#FF9500",
+                        "surface-container": "#102034",
+                        "secondary": "#4cd7f6",
+                        "tertiary-container": "#686c80",
+                        "mobile-success": "#00C853",
+                        "surface-variant": "#26364a",
+                        "sync-active": "#FFD60A",
+                        "surface-container-highest": "#26364a",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-container-low": "#0b1c30",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary-fixed": "#001f26",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-secondary": "#003640",
+                        "tertiary": "#c1c5dc",
+                        "on-background": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-4": "16px",
+                        "web-space-3": "12px",
+                        "web-space-8": "32px",
+                        "web-space-2": "8px",
+                        "web-space-1": "4px",
+                        "web-base": "4px",
+                        "mobile-edge": "24px",
+                        "mobile-touch-target": "52px"
+                    },
+                    "fontFamily": {
+                        "web-text-display": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-dark-bg text-on-surface font-web-text-body text-web-text-body selection:bg-cos-blue selection:text-white">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="hidden md:flex flex-col w-64 bg-surface-container border-r border-outline-variant/30 h-full">
+<div class="p-web-space-8 flex items-center gap-3">
+<div class="w-8 h-8 bg-cos-blue rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">architecture</span>
+</div>
+<h1 class="font-web-text-h1 text-web-text-h1 text-cos-blue tracking-tighter">COS</h1>
+</div>
+<nav class="flex-1 px-web-space-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container/20 text-cos-blue font-bold rounded-lg" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">report_problem</span>
+<span>Issues</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span>Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Reports</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span>Safety</span>
+</a>
+<div class="pt-8 pb-2 px-3 text-web-text-tiny text-outline uppercase">Field Tools</div>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span>Daily Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 transition-colors rounded-lg" href="#">
+<span class="material-symbols-outlined">layers</span>
+<span>BIM Viewer</span>
+</a>
+</nav>
+<div class="p-web-space-4 border-t border-outline-variant/30">
+<div class="flex items-center gap-3 px-3 py-2">
+<div class="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a site engineer wearing a subtle modern vest, neutral lighting, industrial tech office background, high resolution photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATZ8koRrl0YZ9v5v6ZAZhcZixpoWy6EV2BxvqLZp2QhI_vEfaluBY9pc6tbYnexxB0A33-b5vTc8TNCGcnvzPy_0aC2IT6XOJ4iaMQzqP3n1TW64TTdTA_flQTEeMRQUdnnOnZRkLQPm0k3UOgQtpdRdvRJ0sT6c1WDB7U-hhxnuUtTigCLgJkpMHrBQA90Qwlf4t3oY0z9LMU9CWnr0TkHi94cKtdSGukqDGCQbMJCHXqgMXrN875m37z-NTMwd-NeN3sMqh5RFI"/>
+</div>
+<div>
+<p class="text-web-text-small font-bold">Site Operator</p>
+<p class="text-web-text-tiny text-outline">ID: #8829-X</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 bg-dark-bg">
+<!-- Top App Bar -->
+<header class="h-16 flex items-center justify-between px-web-space-8 border-b border-outline-variant/20 bg-surface/50 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<h2 class="font-web-text-h2 text-web-text-h2 text-cos-blue">CONSTRUCTION OS</h2>
+<span class="h-4 w-px bg-outline-variant/50"></span>
+<nav class="flex gap-4">
+<button class="text-web-text-small text-on-surface-variant hover:text-cos-blue transition-colors">Global Project Alpha</button>
+<span class="material-symbols-outlined text-outline text-sm">chevron_right</span>
+<button class="text-web-text-small text-on-surface font-bold">Issue Management</button>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="absolute inset-y-0 left-3 flex items-center text-outline group-focus-within:text-cos-blue">
+<span class="material-symbols-outlined text-sm">search</span>
+</span>
+<input class="bg-surface-container-low border border-outline-variant/30 rounded px-10 py-1.5 text-web-text-small w-64 focus:ring-1 focus:ring-cos-blue focus:border-cos-blue outline-none transition-all" placeholder="Search issues, IDs, or locations..." type="text"/>
+</div>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/10 rounded">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/10 rounded">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<!-- Workspace Scrollable -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-web-space-8">
+<!-- Dashboard Header -->
+<div class="flex items-end justify-between mb-8">
+<div>
+<h3 class="font-web-text-display text-web-text-display text-on-surface">Site Issue Command Center</h3>
+<p class="text-on-surface-variant mt-1">Manage and resolve mission-critical site obstructions in real-time.</p>
+</div>
+<button class="bg-cos-blue hover:bg-cos-blue/90 text-white font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-transform active:scale-95">
+<span class="material-symbols-outlined">add</span>
+<span>New Issue</span>
+</button>
+</div>
+<!-- KPI Stats Bar -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+<div class="bg-surface-container-low border border-outline-variant/20 p-5 rounded-xl flex items-center justify-between">
+<div>
+<p class="text-web-text-tiny text-outline uppercase font-bold tracking-widest">Total Issues</p>
+<h4 class="text-3xl font-bold mt-1">128</h4>
+</div>
+<span class="material-symbols-outlined text-cos-blue opacity-50 text-3xl">list_alt</span>
+</div>
+<div class="bg-surface-container-low border border-mobile-danger/20 p-5 rounded-xl flex items-center justify-between">
+<div>
+<p class="text-web-text-tiny text-mobile-danger uppercase font-bold tracking-widest">Critical Alerts</p>
+<h4 class="text-3xl font-bold mt-1 text-mobile-danger">04</h4>
+</div>
+<span class="material-symbols-outlined text-mobile-danger opacity-50 text-3xl">priority_high</span>
+</div>
+<div class="bg-surface-container-low border border-mobile-warning/20 p-5 rounded-xl flex items-center justify-between">
+<div>
+<p class="text-web-text-tiny text-mobile-warning uppercase font-bold tracking-widest">Open Blockers</p>
+<h4 class="text-3xl font-bold mt-1 text-mobile-warning">12</h4>
+</div>
+<span class="material-symbols-outlined text-mobile-warning opacity-50 text-3xl">block</span>
+</div>
+<div class="bg-surface-container-low border border-mobile-success/20 p-5 rounded-xl flex items-center justify-between">
+<div>
+<p class="text-web-text-tiny text-mobile-success uppercase font-bold tracking-widest">Resolved Today</p>
+<h4 class="text-3xl font-bold mt-1 text-mobile-success">31</h4>
+</div>
+<span class="material-symbols-outlined text-mobile-success opacity-50 text-3xl">task_alt</span>
+</div>
+</div>
+<!-- Filters & Table Area -->
+<div class="bg-surface-container-low border border-outline-variant/20 rounded-xl overflow-hidden">
+<div class="p-4 border-b border-outline-variant/20 flex flex-wrap items-center gap-4 bg-surface/30">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-variant/20 rounded border border-outline-variant/30">
+<span class="material-symbols-outlined text-sm text-outline">filter_list</span>
+<span class="text-web-text-small font-bold">Filters:</span>
+</div>
+<select class="bg-surface-container border border-outline-variant/30 rounded px-3 py-1.5 text-web-text-small focus:ring-1 focus:ring-cos-blue outline-none">
+<option>Project: All</option>
+<option>Main Infrastructure P1</option>
+<option>Sector B Utility</option>
+</select>
+<select class="bg-surface-container border border-outline-variant/30 rounded px-3 py-1.5 text-web-text-small focus:ring-1 focus:ring-cos-blue outline-none">
+<option>Severity: All</option>
+<option>Critical</option>
+<option>High</option>
+<option>Medium</option>
+</select>
+<select class="bg-surface-container border border-outline-variant/30 rounded px-3 py-1.5 text-web-text-small focus:ring-1 focus:ring-cos-blue outline-none">
+<option>Status: All Open</option>
+<option>Synced</option>
+<option>Pending</option>
+<option>Resolved</option>
+</select>
+<div class="ml-auto flex gap-2">
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant/20 rounded border border-outline-variant/30">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant/20 rounded border border-outline-variant/30">
+<span class="material-symbols-outlined text-sm">download</span>
+</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface/10 border-b border-outline-variant/10">
+<th class="px-6 py-4 text-web-text-tiny text-outline uppercase tracking-widest font-bold">Issue ID</th>
+<th class="px-6 py-4 text-web-text-tiny text-outline uppercase tracking-widest font-bold">Issue Title</th>
+<th class="px-6 py-4 text-web-text-tiny text-outline uppercase tracking-widest font-bold text-center">Severity</th>
+<th class="px-6 py-4 text-web-text-tiny text-outline uppercase tracking-widest font-bold text-center">Status</th>
+<th class="px-6 py-4 text-web-text-tiny text-outline uppercase tracking-widest font-bold">Location</th>
+<th class="px-6 py-4 text-web-text-tiny text-outline uppercase tracking-widest font-bold">Last Updated</th>
+<th class="px-6 py-4"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<!-- Row 1 (Critical) -->
+<tr class="hover:bg-surface-variant/5 transition-colors group cursor-pointer">
+<td class="px-6 py-4 font-mono text-cos-blue font-bold text-sm">IS-4402</td>
+<td class="px-6 py-4">
+<p class="font-bold">Concrete Slab Foundation Crack</p>
+<p class="text-web-text-tiny text-outline mt-0.5">Reported by: Foreman Mike S.</p>
+</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-mobile-danger/10 text-mobile-danger border border-mobile-danger/30">CRITICAL</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sync-active/10 text-sync-active border border-sync-active/30 text-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-sync-active animate-pulse"></span>
+<span>Syncing</span>
+</div>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-sm">Sector B - Grid 12</td>
+<td class="px-6 py-4 text-outline text-xs">2 mins ago</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-cos-blue">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 (High) -->
+<tr class="hover:bg-surface-variant/5 transition-colors group cursor-pointer">
+<td class="px-6 py-4 font-mono text-cos-blue font-bold text-sm">IS-4398</td>
+<td class="px-6 py-4">
+<p class="font-bold">MEP Riser Alignment Shift</p>
+<p class="text-web-text-tiny text-outline mt-0.5">Reported by: Lead MEP Eng.</p>
+</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-mobile-warning/10 text-mobile-warning border border-mobile-warning/30">HIGH</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-mobile-success/10 text-mobile-success border border-mobile-success/30 text-xs">
+<span class="material-symbols-outlined text-xs">done_all</span>
+<span>Synced</span>
+</div>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-sm">Core 1 - Level 4</td>
+<td class="px-6 py-4 text-outline text-xs">14 mins ago</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-cos-blue">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 (Medium) -->
+<tr class="hover:bg-surface-variant/5 transition-colors group cursor-pointer bg-primary-container/5 border-l-2 border-cos-blue">
+<td class="px-6 py-4 font-mono text-cos-blue font-bold text-sm">IS-4395</td>
+<td class="px-6 py-4">
+<p class="font-bold">HVAC Ducting Leakage</p>
+<p class="text-web-text-tiny text-outline mt-0.5">Reported by: AI Site Scanner</p>
+</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-cos-blue/10 text-cos-blue border border-cos-blue/30">MEDIUM</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sync-pending/10 text-sync-pending border border-sync-pending/30 text-xs">
+<span class="material-symbols-outlined text-xs">schedule</span>
+<span>Pending</span>
+</div>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-sm">Sector A - North Wall</td>
+<td class="px-6 py-4 text-outline text-xs">42 mins ago</td>
+<td class="px-6 py-4 text-right">
+<button class="p-1 text-cos-blue">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 (Resolved) -->
+<tr class="hover:bg-surface-variant/5 transition-colors group cursor-pointer opacity-70">
+<td class="px-6 py-4 font-mono text-cos-blue font-bold text-sm">IS-4382</td>
+<td class="px-6 py-4">
+<p class="font-bold line-through">Electrical Panel Overheating</p>
+<p class="text-web-text-tiny text-outline mt-0.5">Resolved by: Alex Rivera</p>
+</td>
+<td class="px-6 py-4 text-center">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold bg-surface-variant text-outline border border-outline-variant/30">LOW</span>
+</td>
+<td class="px-6 py-4 text-center">
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-mobile-success text-white border border-mobile-success text-xs">
+<span class="material-symbols-outlined text-xs">task_alt</span>
+<span>Resolved</span>
+</div>
+</td>
+<td class="px-6 py-4 text-on-surface-variant text-sm">External Hub 4</td>
+<td class="px-6 py-4 text-outline text-xs">2 hours ago</td>
+<td class="px-6 py-4 text-right">
+<button class="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-cos-blue">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Side Panel (AI Insights & Preview) -->
+<aside class="hidden xl:flex flex-col w-96 border-l border-outline-variant/30 bg-surface-container-low h-full overflow-y-auto custom-scrollbar">
+<!-- AI Panel -->
+<div class="p-6 border-b border-outline-variant/20 bg-cos-cyan/5 ai-glow relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl text-cos-cyan">auto_awesome</span>
+</div>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h4 class="font-bold text-cos-cyan tracking-tight">AI Issue Trends &amp; Risks</h4>
+</div>
+<div class="space-y-4 relative z-10">
+<div class="p-3 bg-dark-bg/50 rounded border border-cos-cyan/30">
+<p class="text-web-text-tiny font-bold text-cos-cyan uppercase">Projected Risk</p>
+<p class="text-web-text-small mt-1 text-on-surface">Thermal expansion in Sector B likely causing recurring foundation stress. +14% risk increase for adjacent structural grids.</p>
+</div>
+<div class="p-3 bg-dark-bg/50 rounded border border-mobile-warning/30">
+<p class="text-web-text-tiny font-bold text-mobile-warning uppercase">Optimization Tip</p>
+<p class="text-web-text-small mt-1 text-on-surface">Assign MEP alignment tasks to Team 'Delta' – their historical resolution speed for alignment issues is 40% faster.</p>
+</div>
+</div>
+</div>
+<!-- Issue Preview Panel -->
+<div class="flex-1 p-6 space-y-6">
+<div class="flex items-center justify-between">
+<h5 class="text-web-text-h2 font-bold">Issue Preview</h5>
+<span class="text-cos-blue font-mono text-sm">IS-4395</span>
+</div>
+<div class="aspect-video bg-surface-container-highest rounded-lg overflow-hidden border border-outline-variant/30 group relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A detailed high-definition photograph of industrial HVAC ductwork showing a small leak marked with a digital technical overlay, cinematic low lighting in a construction environment, industrial dark aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzI6ST33PBzQggtKBf0ZQfKu5orEuL38uuF2Bj0eB0r7CtWhwnreZr-3Kvb5HzUClx5BrTqspiu_yVwnhZ8zIPgFSkn-PWYlWKAWqKB6lDcI3HTW0s9e4kDQcGBxaezLLxdhd33es-9V4iWZbbTwHGcO7NZMqRsKHrnT3GD2Cvzh_eILT9DrcPcSjDk7c3Zzfsz15qAPMGisvL3a3mgdT6appa01j_T5_-ixUf_ldDgkQB5VS0Ttcfq4Fpbdsl1n8juL1tuFRnmaY"/>
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg/80 to-transparent flex items-end p-3">
+<button class="w-full bg-white/10 backdrop-blur-md text-white text-xs py-2 rounded border border-white/20 hover:bg-white/20 transition-colors">View High-Res Inspection Scan</button>
+</div>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-web-text-tiny text-outline uppercase font-bold">Primary Description</label>
+<p class="text-web-text-body mt-1">Detection of pressure drop in primary ventilation line. Visual inspection confirms minor seal failure at the north junction point.</p>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-3 bg-surface-variant/10 rounded-lg">
+<label class="text-web-text-tiny text-outline uppercase">Owner</label>
+<p class="text-web-text-small font-bold">J. Henderson</p>
+</div>
+<div class="p-3 bg-surface-variant/10 rounded-lg">
+<label class="text-web-text-tiny text-outline uppercase">Department</label>
+<p class="text-web-text-small font-bold">Utilities</p>
+</div>
+</div>
+<div>
+<label class="text-web-text-tiny text-outline uppercase font-bold">Recent Activities</label>
+<div class="mt-3 space-y-3 relative before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-outline-variant/30">
+<div class="flex gap-3 pl-6 relative">
+<span class="absolute left-0 w-3.5 h-3.5 rounded-full bg-cos-blue border-4 border-surface-container-low"></span>
+<div>
+<p class="text-web-text-small font-bold leading-tight">Status changed to Pending</p>
+<p class="text-web-text-tiny text-outline">12:45 PM by System</p>
+</div>
+</div>
+<div class="flex gap-3 pl-6 relative">
+<span class="absolute left-0 w-3.5 h-3.5 rounded-full bg-outline-variant border-4 border-surface-container-low"></span>
+<div>
+<p class="text-web-text-small font-bold leading-tight">AI Scan detected anomaly</p>
+<p class="text-web-text-tiny text-outline">12:38 PM by SiteBot-4</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="pt-6 flex gap-3">
+<button class="flex-1 bg-surface-container-highest border border-outline-variant/30 text-white font-bold py-2.5 rounded hover:bg-surface-variant transition-colors">Edit Details</button>
+<button class="flex-1 bg-cos-blue text-white font-bold py-2.5 rounded hover:brightness-110 transition-all">Resolve Now</button>
+</div>
+</div>
+</aside>
+</div>
+<!-- Mobile Navigation Shell (Triggered only on small screens) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 bg-surface-container-high rounded-t-xl border-t border-outline-variant/30 flex justify-around items-center h-20 px-4 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-[10px] mt-1">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-cos-blue bg-primary-container/10 rounded-xl px-3 py-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">report_problem</span>
+<span class="text-[10px] mt-1 font-bold">Issues</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span class="text-[10px] mt-1">Safety</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction: Row highlight sync
+        const rows = document.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            row.addEventListener('click', () => {
+                rows.forEach(r => {
+                    r.classList.remove('bg-primary-container/5', 'border-l-2', 'border-cos-blue');
+                });
+                row.classList.add('bg-primary-container/5', 'border-l-2', 'border-cos-blue');
+            });
+        });
+    </script>
+</body></html>

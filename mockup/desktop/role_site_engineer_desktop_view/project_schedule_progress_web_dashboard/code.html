@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Project Schedule Progress</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-background": "#d3e4fe",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "tertiary-container": "#686c80",
+                    "secondary-fixed": "#acedff",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-primary": "#0066FF",
+                    "on-error-container": "#ffdad6",
+                    "sync-pending": "#94A3B8",
+                    "sync-active": "#FFD60A",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container": "#102034",
+                    "surface": "#031427",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "surface-container-highest": "#26364a",
+                    "primary": "#b4c5ff",
+                    "on-surface": "#d3e4fe",
+                    "surface-container-lowest": "#000f21",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "inverse-on-surface": "#213145",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-dim": "#031427",
+                    "cos-white": "#F8FAFC",
+                    "primary-container": "#2563eb",
+                    "outline": "#8d90a0",
+                    "cos-blue": "#2563EB",
+                    "mobile-success": "#00C853",
+                    "dark-bg": "#020617",
+                    "surface-container-high": "#1b2b3f",
+                    "on-surface-variant": "#c3c6d7",
+                    "secondary": "#4cd7f6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "secondary-container": "#03b5d3",
+                    "outline-variant": "#434655",
+                    "on-secondary": "#003640",
+                    "error-container": "#93000a",
+                    "mobile-danger": "#FF3B30",
+                    "on-error": "#690005",
+                    "on-secondary-container": "#00424e",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "primary-fixed": "#dbe1ff",
+                    "error": "#ffb4ab",
+                    "cos-cyan": "#06B6D4",
+                    "on-tertiary-container": "#eeefff",
+                    "on-primary-fixed": "#00174b",
+                    "on-tertiary": "#2b3041",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-primary-container": "#eeefff",
+                    "surface-variant": "#26364a",
+                    "background": "#031427",
+                    "mobile-warning": "#FF9500",
+                    "cos-navy": "#0B1020",
+                    "surface-container-low": "#0b1c30",
+                    "inverse-primary": "#0053db",
+                    "dark-surface": "#0F172A",
+                    "on-primary": "#002a78",
+                    "on-tertiary-fixed": "#161b2b"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-base": "4px",
+                    "mobile-edge": "24px",
+                    "web-space-4": "16px",
+                    "web-space-3": "12px",
+                    "mobile-touch-target": "52px",
+                    "web-space-8": "32px",
+                    "web-space-2": "8px",
+                    "web-space-1": "4px"
+            },
+            "fontFamily": {
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #020617; /* Darkest layer */
+            color: #d3e4fe;
+            font-family: 'Inter Tight', sans-serif;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #000f21;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2563eb;
+            border-radius: 2px;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(67, 70, 85, 0.5);
+        }
+    </style>
+</head>
+<body class="flex h-screen w-screen selection:bg-cos-blue selection:text-white">
+<!-- SIDE NAVIGATION BAR -->
+<aside class="flex flex-col h-full p-web-space-3 bg-surface-container-lowest dark:bg-dark-bg w-64 border-r border-outline-variant shrink-0 z-50">
+<div class="mb-web-space-8 px-web-space-2">
+<h1 class="font-web-text-h2 text-web-text-h2 font-bold text-cos-blue">Construction OS</h1>
+<div class="mt-web-space-4 flex items-center gap-3 p-2 bg-surface-container-low rounded">
+<div class="w-8 h-8 bg-primary rounded-sm flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">domain</span>
+</div>
+<div>
+<p class="text-web-text-tiny uppercase text-on-surface-variant leading-none">Project Entity</p>
+<p class="text-web-text-body font-bold text-on-surface truncate">City of Metropolis</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-web-text-body">Dashboard</span>
+</a>
+<!-- Active State: Infrastructure mapped to Projects intent -->
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container font-semibold rounded-lg" href="#">
+<span class="material-symbols-outlined">construction</span>
+<span class="text-web-text-body">Infrastructure</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span class="text-web-text-body">Marketplace</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="text-web-text-body">Portfolio</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-web-text-body">Analytics</span>
+</a>
+</nav>
+<div class="mt-auto pt-web-space-4 border-t border-outline-variant space-y-1">
+<button class="w-full mb-4 py-2 px-4 bg-cos-cyan bg-opacity-10 text-cos-cyan border border-cos-cyan border-opacity-30 flex items-center justify-center gap-2 font-bold text-web-text-small uppercase tracking-wider rounded">
+<span class="material-symbols-outlined text-sm">bolt</span>
+                AI Insights
+            </button>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="text-web-text-body">Support</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="text-web-text-body">Logs</span>
+</a>
+</div>
+</aside>
+<div class="flex-1 flex flex-col min-w-0 relative">
+<!-- TOP NAV BAR -->
+<header class="flex justify-between items-center w-full px-web-space-4 py-web-space-2 max-w-full bg-surface-container dark:bg-surface-container border-b border-outline-variant z-40">
+<div class="flex items-center gap-8">
+<span class="font-web-text-h1 text-web-text-h1 font-bold text-on-surface">Skyline Central</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Marketplace</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Capital Planning</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="#">Assets</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Bidding</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative group">
+<span class="absolute inset-y-0 left-3 flex items-center text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">search</span>
+</span>
+<input class="bg-surface-container-low border border-outline-variant text-web-text-small px-9 py-1.5 rounded-sm focus:ring-2 focus:ring-cos-blue focus:outline-none w-64 transition-all group-hover:border-outline" placeholder="Global Search..." type="text"/>
+</div>
+<button class="bg-cos-blue text-white px-4 py-1.5 text-web-text-small font-bold rounded-sm hover:opacity-90 active:scale-95 transition-all">
+                    New Request
+                </button>
+<div class="flex items-center gap-2 border-l border-outline-variant pl-4 ml-2">
+<button class="text-on-surface-variant hover:text-primary transition-all p-1">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all p-1">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline ml-2 cursor-pointer hover:border-primary transition-all">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a senior construction project manager in their late 40s wearing a high-visibility technical vest over a black tactical shirt. The lighting is crisp and cold, using a cinematic corporate style with shallow depth of field. The background shows a modern construction site at dusk with steel girders and distant city lights. The image conveys authority, experience, and precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGUeY9ougWvmuI2BatcWBM5BP1J0XItdcYHAakiByn_RISIQmyKSL-ogIHYKOE8pSGOb1AeaP1JRix08z9ohiNYTQahQUAox4RvhpqXrG4Qvo_vjdr42VPd25OfItekyXSvL5rlel5toH6bl_nzdQXd0MtT6cIjWJggIyfkRQbdrnNfvYqSxYaXmbgrDConWWWHzwjcha5o8FOIShgXlCov3ZAQrUAakGvOgr75HARo5IEx1-Yucoin0xGCk6M5iw1vp8M6_J1NyA"/>
+</div>
+</div>
+</div>
+</header>
+<!-- MAIN CONTENT AREA -->
+<main class="flex-1 overflow-y-auto p-web-space-4 space-y-web-space-4 custom-scrollbar bg-dark-bg">
+<!-- HEADER SECTION -->
+<section class="flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-web-text-display text-web-text-display text-on-surface mb-1">Project Schedule Progress - Skyline Central</h2>
+<div class="flex items-center gap-3">
+<span class="text-web-text-h2 font-medium text-on-surface-variant">Current Phase: Phase 2: Superstructure</span>
+<span class="px-3 py-0.5 bg-mobile-success text-white text-web-text-tiny font-bold rounded-full flex items-center gap-1 uppercase tracking-tighter">
+<span class="material-symbols-outlined text-xs" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                                On Track
+                            </span>
+</div>
+</div>
+<div class="text-right">
+<p class="text-web-text-tiny text-on-surface-variant uppercase mb-1">Last Update: Oct 11, 23:45</p>
+<button class="flex items-center gap-2 text-cos-blue text-web-text-small hover:underline">
+<span class="material-symbols-outlined text-sm">sync</span>
+                            Refresh Live Data
+                        </button>
+</div>
+</div>
+<!-- Overall Progress Bar -->
+<div class="bg-surface-container-low p-web-space-4 border border-outline-variant rounded-sm">
+<div class="flex justify-between items-center mb-3">
+<span class="text-web-text-small font-bold text-on-surface">Overall Completion</span>
+<span class="text-web-text-h2 font-black text-primary">42%</span>
+</div>
+<div class="w-full h-4 bg-surface-container-highest rounded-full overflow-hidden border border-outline-variant">
+<div class="h-full bg-cos-blue shadow-[0_0_15px_rgba(37,99,235,0.4)] transition-all duration-1000 ease-out" style="width: 42%;"></div>
+</div>
+<div class="flex justify-between mt-2 text-web-text-tiny text-on-surface-variant">
+<span>Project Start: Jan 01</span>
+<span>Target Delivery: Dec 15</span>
+</div>
+</div>
+</section>
+<!-- AI INSIGHT & BLOCKER ROW -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-web-space-4">
+<!-- AI Schedule Insight -->
+<div class="glass-panel p-web-space-4 border-l-4 border-l-cos-cyan">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<h3 class="text-web-text-h2 font-bold text-cos-cyan uppercase tracking-wide">AI Schedule Insight</h3>
+</div>
+<div class="bg-cos-cyan bg-opacity-5 p-4 border border-cos-cyan border-opacity-20">
+<p class="text-web-text-body text-cos-white leading-relaxed">
+                            Advancing Level 3 Slab Pouring to tomorrow 07:00 could reduce the Phase 2 critical path by <span class="text-cos-cyan font-bold">1.5 days</span>. Current weather outlook is optimal.
+                        </p>
+</div>
+<div class="mt-4 flex gap-3">
+<button class="px-4 py-2 bg-cos-cyan text-on-secondary-fixed-variant text-web-text-small font-bold rounded-sm uppercase">Optimize Schedule</button>
+<button class="px-4 py-2 border border-cos-cyan border-opacity-40 text-cos-cyan text-web-text-small font-bold rounded-sm">View Analysis</button>
+</div>
+</div>
+<!-- Blocker Alerts -->
+<div class="bg-surface-container-low p-web-space-4 border border-outline-variant border-l-4 border-l-mobile-danger">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-mobile-danger" style="font-variation-settings: 'FILL' 1;">warning</span>
+<h3 class="text-web-text-h2 font-bold text-mobile-danger uppercase tracking-wide">Blocker Alerts</h3>
+</div>
+<div class="space-y-3">
+<div class="bg-dark-bg p-3 border border-outline-variant flex justify-between items-center group hover:border-mobile-danger transition-colors">
+<div class="flex gap-4">
+<div class="w-1 bg-mobile-danger"></div>
+<div>
+<p class="text-web-text-body font-bold text-on-surface">Rebar Installation Zone B</p>
+<p class="text-web-text-small text-on-surface-variant"><span class="text-mobile-danger font-medium">Reason:</span> Material Shortage (12mm High-tensile Steel)</p>
+</div>
+</div>
+<button class="px-3 py-1.5 bg-mobile-danger text-white text-web-text-tiny font-black uppercase rounded-sm hover:brightness-110 active:scale-95 transition-all">
+                                ESCALATE
+                            </button>
+</div>
+<div class="text-right">
+<a class="text-web-text-tiny text-on-surface-variant hover:text-mobile-danger uppercase font-bold tracking-widest" href="#">View All Blockers (4)</a>
+</div>
+</div>
+</div>
+</section>
+<!-- TASK MANAGEMENT SECTION -->
+<section class="bg-surface-container border border-outline-variant overflow-hidden">
+<div class="flex border-b border-outline-variant bg-surface-container-high px-web-space-4">
+<button class="px-6 py-4 text-web-text-small font-bold text-primary border-b-2 border-primary">ALL TASKS (142)</button>
+<button class="px-6 py-4 text-web-text-small font-bold text-on-surface-variant hover:text-on-surface border-b-2 border-transparent transition-all">CRITICAL PATH (12)</button>
+<button class="px-6 py-4 text-web-text-small font-bold text-on-surface-variant hover:text-mobile-danger border-b-2 border-transparent transition-all">BLOCKED (4)</button>
+<div class="ml-auto flex items-center gap-4">
+<div class="flex items-center gap-1 px-2 py-1 bg-dark-bg border border-outline-variant rounded">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">filter_list</span>
+<span class="text-web-text-tiny text-on-surface-variant uppercase font-bold">Filter</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-1 bg-dark-bg border border-outline-variant rounded">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">sort</span>
+<span class="text-web-text-tiny text-on-surface-variant uppercase font-bold">Sort</span>
+</div>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-highest">
+<tr>
+<th class="px-4 py-3 text-web-text-tiny font-black uppercase text-on-surface-variant tracking-wider">Task Name</th>
+<th class="px-4 py-3 text-web-text-tiny font-black uppercase text-on-surface-variant tracking-wider">Status</th>
+<th class="px-4 py-3 text-web-text-tiny font-black uppercase text-on-surface-variant tracking-wider">QC Status</th>
+<th class="px-4 py-3 text-web-text-tiny font-black uppercase text-on-surface-variant tracking-wider">Timeline</th>
+<th class="px-4 py-3 text-web-text-tiny font-black uppercase text-on-surface-variant tracking-wider">Progress (%)</th>
+<th class="px-4 py-3 text-web-text-tiny font-black uppercase text-on-surface-variant tracking-wider">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">layers</span>
+<span class="text-web-text-body font-bold text-on-surface">Level 3 Slab Pouring</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-cos-blue bg-opacity-10 text-cos-blue text-web-text-tiny font-bold uppercase rounded border border-cos-blue border-opacity-30">in_progress</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-mobile-success bg-opacity-10 text-mobile-success text-web-text-tiny font-bold uppercase rounded border border-mobile-success border-opacity-30">QC Pass</span>
+</td>
+<td class="px-4 py-4">
+<div class="text-web-text-small text-on-surface">
+<div class="flex items-center gap-1"><span class="text-on-surface-variant text-[10px] w-12">STARTS:</span> Oct 12</div>
+<div class="flex items-center gap-1"><span class="text-on-surface-variant text-[10px] w-12">ENDS:</span> Oct 15</div>
+</div>
+</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-cos-blue" style="width: 65%;"></div>
+</div>
+<span class="text-web-text-small font-bold text-on-surface">65%</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 bg-surface-container-lowest border border-outline-variant hover:border-cos-blue hover:text-cos-blue transition-all" title="Update Progress">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+<button class="p-1.5 bg-surface-container-lowest border border-outline-variant hover:border-cos-blue hover:text-cos-blue transition-all" title="Attachments">
+<span class="material-symbols-outlined text-sm">attach_file</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-danger text-sm" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-web-text-body font-bold text-on-surface">MEP Rough-in Zone A</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-mobile-danger bg-opacity-10 text-mobile-danger text-web-text-tiny font-bold uppercase rounded border border-mobile-danger border-opacity-30">blocked</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-mobile-warning bg-opacity-10 text-mobile-warning text-web-text-tiny font-bold uppercase rounded border border-mobile-warning border-opacity-30">QC Pending</span>
+</td>
+<td class="px-4 py-4">
+<div class="text-web-text-small text-on-surface">
+<div class="flex items-center gap-1"><span class="text-on-surface-variant text-[10px] w-12 text-mobile-danger">DELAY:</span> +3D</div>
+<div class="flex items-center gap-1"><span class="text-on-surface-variant text-[10px] w-12">ENDS:</span> Oct 18</div>
+</div>
+</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-mobile-danger" style="width: 12%;"></div>
+</div>
+<span class="text-web-text-small font-bold text-on-surface">12%</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="px-3 py-1 bg-mobile-danger text-white text-web-text-tiny font-bold uppercase rounded-sm">Resolve</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="px-4 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-web-text-body font-bold text-on-surface">Formwork Removal Level 2</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-mobile-success bg-opacity-10 text-mobile-success text-web-text-tiny font-bold uppercase rounded border border-mobile-success border-opacity-30">completed</span>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-1 bg-mobile-success bg-opacity-10 text-mobile-success text-web-text-tiny font-bold uppercase rounded border border-mobile-success border-opacity-30">QC Pass</span>
+</td>
+<td class="px-4 py-4">
+<div class="text-web-text-small text-on-surface-variant italic">
+                                        Completed Oct 10
+                                    </div>
+</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-mobile-success" style="width: 100%;"></div>
+</div>
+<span class="text-web-text-small font-bold text-on-surface">100%</span>
+</div>
+</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 bg-surface-container-lowest border border-outline-variant hover:border-primary transition-all">
+<span class="material-symbols-outlined text-sm">visibility</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Footer Pagination-like state -->
+<div class="bg-surface-container-high px-web-space-4 py-3 flex justify-between items-center border-t border-outline-variant">
+<p class="text-web-text-tiny text-on-surface-variant uppercase">Showing 3 of 142 tasks</p>
+<div class="flex gap-2">
+<button class="p-1 border border-outline-variant disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="p-1 border border-outline-variant hover:bg-surface-variant">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- SUBTLE DECORATIVE BACKGROUND ELEMENTS -->
+<div class="absolute bottom-0 right-0 p-8 pointer-events-none overflow-hidden opacity-10">
+<span class="material-symbols-outlined text-[300px] leading-none select-none" style="font-variation-settings: 'FILL' 1;">architecture</span>
+</div>
+</div>
+<!-- SCANLINE EFFECT OVERLAY -->
+<div class="fixed inset-0 pointer-events-none z-[100] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[length:100%_2px,3px_100%]"></div>
+<script>
+        // Micro-interaction for Progress Bar Animation
+        window.addEventListener('DOMContentLoaded', () => {
+            const progressBars = document.querySelectorAll('.h-full.transition-all');
+            progressBars.forEach(bar => {
+                const targetWidth = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = targetWidth;
+                }, 300);
+            });
+        });
+    </script>
+</body></html>

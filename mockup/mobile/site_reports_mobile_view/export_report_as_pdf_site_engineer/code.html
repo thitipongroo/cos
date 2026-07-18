@@ -1,0 +1,330 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Export Report - Project Horizon</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "tertiary": "#c1c5dc",
+                    "on-error": "#690005",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary": "#003640",
+                    "on-primary-container": "#eeefff",
+                    "surface-variant": "#26364a",
+                    "inverse-primary": "#0053db",
+                    "dark-surface": "#0F172A",
+                    "surface-container": "#102034",
+                    "primary-container": "#2563eb",
+                    "on-tertiary": "#2b3041",
+                    "surface-container-highest": "#26364a",
+                    "mobile-primary": "#0066FF",
+                    "background": "#031427",
+                    "mobile-success": "#00C853",
+                    "secondary": "#4cd7f6",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-on-surface": "#213145",
+                    "surface-bright": "#2a3a4f",
+                    "on-primary-fixed": "#00174b",
+                    "on-primary": "#002a78",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary-fixed": "#001f26",
+                    "outline-variant": "#434655",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-container-low": "#0b1c30",
+                    "tertiary-container": "#686c80",
+                    "secondary-container": "#03b5d3",
+                    "primary-fixed": "#dbe1ff",
+                    "on-background": "#d3e4fe",
+                    "cos-cyan": "#06B6D4",
+                    "on-surface": "#d3e4fe",
+                    "secondary-fixed": "#acedff",
+                    "on-surface-variant": "#c3c6d7",
+                    "error": "#ffb4ab",
+                    "dark-bg": "#020617",
+                    "cos-white": "#F8FAFC",
+                    "sync-pending": "#94A3B8",
+                    "cos-blue": "#2563EB",
+                    "primary": "#b4c5ff",
+                    "tertiary-fixed": "#dee1f9",
+                    "cos-navy": "#0B1020",
+                    "outline": "#8d90a0",
+                    "surface-dim": "#031427",
+                    "error-container": "#93000a",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "inverse-surface": "#d3e4fe",
+                    "mobile-danger": "#FF3B30",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "sync-active": "#FFD60A",
+                    "surface": "#031427",
+                    "surface-container-lowest": "#000f21",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-tint": "#b4c5ff",
+                    "mobile-warning": "#FF9500"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-8": "32px",
+                    "web-space-3": "12px",
+                    "web-space-4": "16px",
+                    "mobile-touch-target": "52px",
+                    "web-base": "4px",
+                    "web-space-1": "4px",
+                    "web-space-2": "8px",
+                    "mobile-edge": "24px"
+            },
+            "fontFamily": {
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #020617;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        /* Custom scrollbar for high-density UI */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0B1020;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26364a;
+            border-radius: 2px;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface dark:bg-dark-surface flex justify-between items-center px-mobile-edge h-mobile-touch-target">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-surface-bright transition-colors active:scale-90">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<h1 class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-mobile-primary dark:text-primary">
+                Export Report
+            </h1>
+</div>
+<div class="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A close-up, high-fidelity profile portrait of a modern site engineer wearing a sleek, dark technical vest and a minimalist safety helmet. The lighting is dramatic and cinematic, emphasizing technical precision. The background is a blurred high-tech construction site at dusk with cool blue and cyan tones, maintaining a professional corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8aaIBh-2AynOwKcllcjMiNZ8EIWJNZ8PRlf-gH44SV_HwwWoMQSW4YUo6yGFIGI_6pRQ9eRedSwfUqFqFAqLFWGGXdfeStRZpjF3rEmRNxe_mnePGbhs-pku97YsdF4Alx4qor3FjU6LHBD-25gXqcwDGHsmaD9wzAZIEUR7gZ2uoQiXEAduniDpaYjohAwBAQD9P2LlvbUq7o0Qk7WcP8sEqwKUEzMyiWU4AcLad32jBRVlSsvpwODjMdR4WymhsAHFv84wTHeA">
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="mt-[64px] px-mobile-edge space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+<!-- Document Preview Section -->
+<section class="mt-4">
+<div class="relative group">
+<div class="absolute -inset-0.5 bg-gradient-to-r from-cos-blue to-cos-cyan rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+<div class="relative glass-panel rounded-xl p-4 flex flex-col items-center">
+<div class="w-full aspect-[3/4] bg-surface-container-highest rounded-lg overflow-hidden border border-outline-variant mb-4 relative shadow-2xl">
+<!-- Simulated PDF Preview Content -->
+<div class="absolute inset-0 p-6 flex flex-col gap-4 opacity-80 scale-90 origin-top">
+<div class="h-8 w-3/4 bg-primary-container rounded opacity-20"></div>
+<div class="space-y-2">
+<div class="h-2 w-full bg-on-surface-variant rounded opacity-10"></div>
+<div class="h-2 w-full bg-on-surface-variant rounded opacity-10"></div>
+<div class="h-2 w-1/2 bg-on-surface-variant rounded opacity-10"></div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-4">
+<div class="aspect-video bg-surface-bright rounded border border-outline-variant/30"></div>
+<div class="aspect-video bg-surface-bright rounded border border-outline-variant/30"></div>
+</div>
+</div>
+<!-- Watermark Overlay -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none select-none rotate-12">
+<span class="text-4xl font-bold text-white/5 tracking-[1rem] uppercase">PREVIEW</span>
+</div>
+<!-- Gradient Overlay for Depth -->
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<div class="absolute bottom-4 left-4 right-4">
+<p class="font-mobile-text-label text-mobile-text-label text-cos-white">Full Inspection Report</p>
+<p class="text-[11px] text-on-surface-variant uppercase tracking-tighter">Skyline Tower A • Structural Steel</p>
+</div>
+</div>
+<div class="w-full flex items-center justify-between px-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-mobile-text-label text-[12px] text-on-surface">Ready for Export</span>
+</div>
+<span class="font-mobile-text-label text-[12px] text-on-surface-variant">12.4 MB</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Naming Field -->
+<section class="space-y-2">
+<label class="font-mobile-text-label text-mobile-text-label text-on-surface-variant px-1">File Name</label>
+<div class="relative">
+<input class="w-full h-mobile-touch-target bg-surface-container-low border border-outline-variant rounded-xl px-4 text-on-surface focus:border-cos-blue focus:ring-1 focus:ring-cos-blue transition-all outline-none font-mobile-text-body text-[15px]" type="text" value="Inspection_Report_Structural_Steel_24Oct2026.pdf">
+<div class="absolute right-4 top-1/2 -translate-y-1/2">
+<span class="material-symbols-outlined text-on-surface-variant text-lg">edit</span>
+</div>
+</div>
+</section>
+<!-- Export Options (Bento Style) -->
+<section class="space-y-4">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface-variant px-1">Select Format</h3>
+<div class="grid grid-cols-1 gap-3">
+<!-- Option 1: Standard PDF -->
+<button class="flex items-center justify-between p-4 rounded-xl border-2 border-cos-blue bg-surface-container-high transition-all active:scale-[0.98]">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-blue">picture_as_pdf</span>
+</div>
+<div class="text-left">
+<p class="font-mobile-text-label text-[15px] text-on-surface">Standard PDF</p>
+<p class="text-[12px] text-on-surface-variant">High Resolution Graphics</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full border-4 border-cos-blue bg-white flex items-center justify-center"></div>
+</button>
+<!-- Option 2: Compressed PDF -->
+<button class="flex items-center justify-between p-4 rounded-xl border border-outline-variant bg-surface-container-low transition-all active:scale-[0.98] hover:border-on-surface-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">compress</span>
+</div>
+<div class="text-left">
+<p class="font-mobile-text-label text-[15px] text-on-surface">Compressed PDF</p>
+<p class="text-[12px] text-on-surface-variant">Optimized for Field Sync</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full border border-outline-variant"></div>
+</button>
+<!-- Option 3: CSV Data -->
+<button class="flex items-center justify-between p-4 rounded-xl border border-outline-variant bg-surface-container-low transition-all active:scale-[0.98] hover:border-on-surface-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">csv</span>
+</div>
+<div class="text-left">
+<p class="font-mobile-text-label text-[15px] text-on-surface">CSV Data Export</p>
+<p class="text-[12px] text-on-surface-variant">Raw Inspection Tables</p>
+</div>
+</div>
+<div class="w-5 h-5 rounded-full border border-outline-variant"></div>
+</button>
+</div>
+</section>
+<!-- AI Status Hint -->
+<div class="p-4 rounded-xl bg-cos-cyan/5 border-l-4 border-cos-cyan flex gap-3">
+<span class="material-symbols-outlined text-cos-cyan mt-0.5">auto_awesome</span>
+<p class="text-[13px] leading-snug text-on-surface-variant">
+<strong class="text-cos-cyan">AI Optimization Active:</strong> Tables and photo captions have been formatted for architectural clarity.
+            </p>
+</div>
+</main>
+<!-- Fixed Action Footer -->
+<div class="fixed bottom-0 left-0 w-full bg-surface/80 backdrop-blur-md p-mobile-edge border-t border-outline-variant/20 flex flex-col gap-3">
+<button class="w-full h-mobile-touch-target bg-cos-blue text-cos-white rounded-xl font-mobile-text-label flex items-center justify-center gap-2 shadow-[0_8px_30px_rgb(37,99,235,0.3)] transition-all active:scale-95 group overflow-hidden relative" id="downloadBtn">
+<span class="relative z-10 flex items-center gap-2">
+<span class="material-symbols-outlined">download</span>
+                Download PDF
+            </span>
+<div class="absolute left-0 top-0 h-full bg-white/10 w-0 transition-all duration-300" id="progress"></div>
+</button>
+<div class="grid grid-cols-2 gap-3">
+<button class="h-mobile-touch-target border border-outline-variant bg-surface-container-low text-on-surface rounded-xl font-mobile-text-label flex items-center justify-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+                Email
+            </button>
+<button class="h-mobile-touch-target border border-outline-variant bg-surface-container-low text-on-surface rounded-xl font-mobile-text-label flex items-center justify-center gap-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">chat_bubble</span>
+                LINE
+            </button>
+</div>
+</div>
+<!-- Bottom Navigation Mockup (Suppressed as per rules for transactional focused screen) -->
+<script>
+        // Micro-interaction for the Download Button
+        const downloadBtn = document.getElementById('downloadBtn');
+        const progress = document.getElementById('progress');
+        
+        downloadBtn.addEventListener('click', () => {
+            if (downloadBtn.classList.contains('processing')) return;
+            
+            downloadBtn.classList.add('processing');
+            const btnText = downloadBtn.querySelector('.z-10');
+            const originalHTML = btnText.innerHTML;
+            
+            btnText.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Generating...';
+            
+            let width = 0;
+            const interval = setInterval(() => {
+                if (width >= 100) {
+                    clearInterval(interval);
+                    btnText.innerHTML = '<span class="material-symbols-outlined">check</span> Exported';
+                    setTimeout(() => {
+                        progress.style.width = '0%';
+                        btnText.innerHTML = originalHTML;
+                        downloadBtn.classList.remove('processing');
+                    }, 2000);
+                } else {
+                    width += 2;
+                    progress.style.width = width + '%';
+                }
+            }, 30);
+        });
+
+        // Hover animation logic for cards
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('opacity-70'));
+            btn.addEventListener('touchend', () => btn.classList.remove('opacity-70'));
+        });
+    </script>
+</body></html>

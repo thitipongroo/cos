@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Site Engineer Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#2b3041",
+                        "on-primary-container": "#eeefff",
+                        "cos-navy": "#0B1020",
+                        "cos-white": "#F8FAFC",
+                        "primary": "#b4c5ff",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-on-surface": "#213145",
+                        "surface-container-highest": "#26364a",
+                        "on-surface-variant": "#c3c6d7",
+                        "mobile-success": "#00C853",
+                        "mobile-primary": "#0066FF",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-fixed": "#001f26",
+                        "outline": "#8d90a0",
+                        "on-surface": "#d3e4fe",
+                        "error-container": "#93000a",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#686c80",
+                        "secondary-container": "#03b5d3",
+                        "background": "#031427",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container": "#102034",
+                        "surface-container-lowest": "#000f21",
+                        "secondary-fixed": "#acedff",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-high": "#1b2b3f",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-error-container": "#ffdad6",
+                        "outline-variant": "#434655",
+                        "on-secondary-container": "#00424e",
+                        "tertiary": "#c1c5dc",
+                        "dark-bg": "#020617",
+                        "on-background": "#d3e4fe",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-dim": "#031427",
+                        "on-secondary": "#003640",
+                        "on-tertiary-container": "#eeefff",
+                        "mobile-danger": "#FF3B30",
+                        "surface-variant": "#26364a",
+                        "cos-blue": "#2563EB",
+                        "surface-container-low": "#0b1c30",
+                        "sync-pending": "#94A3B8",
+                        "surface": "#031427",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "surface-bright": "#2a3a4f",
+                        "cos-cyan": "#06B6D4",
+                        "inverse-primary": "#0053db",
+                        "mobile-warning": "#FF9500",
+                        "on-primary": "#002a78",
+                        "primary-container": "#2563eb",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "secondary": "#4cd7f6",
+                        "sync-active": "#FFD60A",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-fixed-dim": "#c1c5dc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "mobile-edge": "24px",
+                        "web-space-2": "8px",
+                        "web-space-4": "16px",
+                        "web-space-1": "4px",
+                        "web-base": "4px",
+                        "web-space-3": "12px",
+                        "mobile-touch-target": "52px",
+                        "web-space-8": "32px"
+                    },
+                    "fontFamily": {
+                        "mobile-text-label": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; background-color: #020617; color: #d3e4fe; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+        .glass-panel { background: rgba(16, 32, 52, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(67, 70, 85, 0.3); }
+        .ai-border { border-left: 3px solid #06B6D4; background: linear-gradient(90deg, rgba(6, 182, 212, 0.05) 0%, transparent 100%); }
+        .scroll-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+<!-- Sidebar Navigation Shell -->
+<aside class="hidden md:flex flex-col h-full w-80 bg-surface-container border-r border-outline-variant/30 flex-shrink-0 transition-all duration-150">
+<!-- Profile Header -->
+<div class="flex flex-col p-mobile-edge border-b border-outline-variant/30">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center border border-outline-variant/30 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a senior field supervisor in high-visibility construction attire, set against a blurred background of a modern industrial site with steel structures and heavy machinery. The lighting is crisp and natural, highlighting a look of expertise and focus. The overall aesthetic is clean, high-density, and corporate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCk75Z1RkASdKg-1JuUPjpjF_MHDzHrvWiwDULEdtEsPbs1DR30DwhX6IdYa0CeZMBTxInNUPFuxBb4pBqZD5ShP5ZbGjZe-oiFu5mk6lQBpRix5aS4td241uLDw0NPIi2PuN2VLzELjmp73w744y171BW0SFt402mQe8mDff0KQrmQ-5L7vBv9kGDJOoCso-6gJs62uc3X7a8NmFxbetTn7g5WZpcy60uUKt2VcsRMXHpk5PIffBBnJtQ1QUrFRGlAUyLs_GIXvZQ"/>
+</div>
+<div class="flex-1 overflow-hidden">
+<h3 class="font-mobile-text-body text-mobile-text-body font-bold text-on-surface truncate">Alex Rivers</h3>
+<p class="text-web-text-small text-on-surface-variant truncate">Supervisor - Site A</p>
+</div>
+</div>
+<div class="flex items-center justify-between text-web-text-tiny uppercase tracking-wider text-on-surface-variant font-bold">
+<span>Sync Status</span>
+<span class="text-mobile-success flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse"></span>
+                    Online
+                </span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-primary/10 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-mobile-text-body text-mobile-text-body">Project Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-mobile-text-body text-mobile-text-body">Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="font-mobile-text-body text-mobile-text-body">BIM Viewer</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="font-mobile-text-body text-mobile-text-body">Photo Logs</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span class="font-mobile-text-body text-mobile-text-body">Safety Compliance</span>
+</a>
+<div class="pt-6 pb-2 px-4 text-web-text-tiny uppercase tracking-widest text-outline">System</div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-mobile-text-body text-mobile-text-body">Project Settings</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-mobile-text-body text-mobile-text-body">Team Directory</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-mobile-text-body text-mobile-text-body">Support Center</span>
+</a>
+</nav>
+<div class="p-4 border-t border-outline-variant/30">
+<div class="glass-panel p-4 rounded-xl flex items-center justify-between">
+<div>
+<p class="text-web-text-tiny text-on-surface-variant">STORAGE</p>
+<p class="text-web-text-body font-bold text-on-surface">82% Full</p>
+</div>
+<button class="text-cos-blue font-bold text-web-text-small">UPGRADE</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+<!-- Top App Bar -->
+<header class="w-full h-mobile-touch-target sticky top-0 bg-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge z-40">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-cos-blue"><span class="material-symbols-outlined">menu</span></button>
+<h1 class="font-mobile-text-hero text-[20px] font-bold text-cos-blue">Construction OS</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden lg:flex items-center bg-surface-container px-3 py-1.5 rounded border border-outline-variant/30">
+<span class="material-symbols-outlined text-outline text-sm mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-web-text-small w-64 placeholder:text-outline" placeholder="Search tasks, assets, or drawings..." type="text"/>
+<span class="text-web-text-tiny text-outline ml-2">⌘K</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant rounded-full relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-mobile-danger rounded-full"></span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-variant rounded-full">
+<span class="material-symbols-outlined">cloud_sync</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas -->
+<div class="flex-1 overflow-y-auto p-web-space-4 lg:p-web-space-8 space-y-web-space-4">
+<!-- Hero Metrics Row -->
+<div class="bento-grid">
+<!-- Progress Card -->
+<div class="col-span-12 lg:col-span-8 glass-panel p-6 rounded-xl flex flex-col md:flex-row gap-8 items-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-cos-blue"></div>
+<div class="flex flex-col justify-center text-center md:text-left">
+<p class="text-web-text-tiny text-cos-blue font-extrabold tracking-widest uppercase mb-1">Current Status</p>
+<h2 class="font-web-text-display text-web-text-display text-on-surface">65% Progress</h2>
+<div class="flex items-center gap-2 mt-2">
+<span class="px-2 py-0.5 bg-mobile-success/20 text-mobile-success text-web-text-tiny font-bold rounded uppercase">Ahead of Schedule</span>
+<span class="text-on-surface-variant text-web-text-small">• Phase 2: Structural</span>
+</div>
+<div class="mt-6 flex gap-6 text-web-text-small">
+<div>
+<p class="text-outline uppercase text-[10px] font-bold">Shift Start</p>
+<p class="text-on-surface font-bold">07:00 AM</p>
+</div>
+<div>
+<p class="text-outline uppercase text-[10px] font-bold">Current EOD Goal</p>
+<p class="text-on-surface font-bold">18:00 PM</p>
+</div>
+</div>
+</div>
+<div class="flex-1 w-full max-w-xs md:max-w-none relative">
+<!-- Progress Visualization Placeholder -->
+<div class="h-32 w-full bg-surface-container-highest/30 rounded-lg flex items-end p-2 gap-1 overflow-hidden">
+<div class="flex-1 bg-cos-blue/40 rounded-t h-[30%]"></div>
+<div class="flex-1 bg-cos-blue/40 rounded-t h-[45%]"></div>
+<div class="flex-1 bg-cos-blue/60 rounded-t h-[60%]"></div>
+<div class="flex-1 bg-cos-blue/60 rounded-t h-[75%]"></div>
+<div class="flex-1 bg-cos-blue h-[65%] relative">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 text-cos-cyan font-bold text-web-text-small">NOW</div>
+</div>
+<div class="flex-1 bg-surface-variant rounded-t h-[50%]"></div>
+<div class="flex-1 bg-surface-variant rounded-t h-[40%]"></div>
+<div class="flex-1 bg-surface-variant rounded-t h-[30%]"></div>
+</div>
+<p class="mt-3 text-center md:text-right text-web-text-tiny text-outline italic">Daily workload distribution vs historical average</p>
+</div>
+</div>
+<!-- Weather/Environment Mini-Card -->
+<div class="col-span-12 md:col-span-6 lg:col-span-4 glass-panel p-6 rounded-xl flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-on-surface text-web-text-h2 font-bold">24°C</p>
+<p class="text-on-surface-variant text-web-text-small">Mostly Clear • Site A</p>
+</div>
+<span class="material-symbols-outlined text-mobile-warning text-4xl">wb_sunny</span>
+</div>
+<div class="mt-4 p-3 bg-surface-variant/30 rounded-lg border border-outline-variant/20">
+<p class="text-web-text-tiny text-outline uppercase font-bold mb-2">Wind Speed</p>
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-mobile-success w-[15%]"></div>
+</div>
+<span class="text-web-text-small text-on-surface font-bold">12 km/h</span>
+</div>
+<p class="text-[10px] text-mobile-success font-bold mt-1 uppercase">Safe for Crane Operations</p>
+</div>
+</div>
+</div>
+<!-- Main Content Grid -->
+<div class="bento-grid">
+<!-- Active Issues & Upcoming Tasks -->
+<div class="col-span-12 lg:col-span-8 space-y-web-space-4">
+<!-- Quick Actions Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+<button class="flex flex-col items-center justify-center gap-2 p-4 bg-surface-container-high hover:bg-cos-blue transition-all duration-200 rounded-xl group border border-outline-variant/30">
+<span class="material-symbols-outlined text-cos-blue group-hover:text-cos-white">description</span>
+<span class="text-web-text-small font-bold text-on-surface group-hover:text-cos-white">Daily Report</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 bg-surface-container-high hover:bg-cos-blue transition-all duration-200 rounded-xl group border border-outline-variant/30">
+<span class="material-symbols-outlined text-cos-blue group-hover:text-cos-white">add_a_photo</span>
+<span class="text-web-text-small font-bold text-on-surface group-hover:text-cos-white">Capture Photo</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 bg-surface-container-high hover:bg-cos-blue transition-all duration-200 rounded-xl group border border-outline-variant/30">
+<span class="material-symbols-outlined text-cos-blue group-hover:text-cos-white">fact_check</span>
+<span class="text-web-text-small font-bold text-on-surface group-hover:text-cos-white">Safety Check</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-4 bg-surface-container-high hover:bg-cos-blue transition-all duration-200 rounded-xl group border border-outline-variant/30">
+<span class="material-symbols-outlined text-cos-blue group-hover:text-cos-white">inventory</span>
+<span class="text-web-text-small font-bold text-on-surface group-hover:text-cos-white">Material Req</span>
+</button>
+</div>
+<!-- Issues List -->
+<section class="glass-panel rounded-xl overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-variant/20">
+<h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">Active Issues</h3>
+<span class="text-web-text-tiny px-2 py-1 bg-mobile-danger/20 text-mobile-danger font-bold rounded uppercase">2 Critical</span>
+</div>
+<div class="divide-y divide-outline-variant/30">
+<!-- Issue 1 -->
+<div class="p-4 flex items-center gap-4 hover:bg-surface-variant/30 transition-colors cursor-pointer group">
+<div class="w-1 h-12 bg-mobile-danger rounded-full"></div>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="text-web-text-tiny font-extrabold text-mobile-danger uppercase">Critical</span>
+<span class="text-web-text-tiny text-outline">LOG-442</span>
+</div>
+<h4 class="font-bold text-on-surface">Steel Beam Delay - Supplier Logistics</h4>
+<p class="text-web-text-small text-on-surface-variant">Arrival delayed by 4h. Impacting Structural Phase 2.1.</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface">chevron_right</span>
+</div>
+</div>
+<!-- Issue 2 -->
+<div class="p-4 flex items-center gap-4 hover:bg-surface-variant/30 transition-colors cursor-pointer group">
+<div class="w-1 h-12 bg-mobile-warning rounded-full"></div>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="text-web-text-tiny font-extrabold text-mobile-warning uppercase">Medium</span>
+<span class="text-web-text-tiny text-outline">SAF-091</span>
+</div>
+<h4 class="font-bold text-on-surface">Safety Barrier Missing - West Wing</h4>
+<p class="text-web-text-small text-on-surface-variant">Barrier removed during equipment move. Not replaced.</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline group-hover:text-on-surface">chevron_right</span>
+</div>
+</div>
+</div>
+<div class="p-3 bg-surface-container-high/50 text-center">
+<button class="text-web-text-small font-bold text-cos-blue">View All Issues</button>
+</div>
+</section>
+<!-- Upcoming Tasks -->
+<section class="glass-panel rounded-xl overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-variant/20">
+<h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">Upcoming Tasks</h3>
+<button class="material-symbols-outlined text-on-surface-variant">filter_list</button>
+</div>
+<div class="p-4 space-y-4">
+<!-- Task 1 -->
+<div class="flex items-center gap-4 p-4 rounded-lg bg-surface-container border border-outline-variant/20 hover:border-cos-blue transition-all group">
+<div class="text-center min-w-[60px]">
+<p class="text-web-text-tiny text-outline uppercase">Starts</p>
+<p class="text-web-text-body font-bold text-on-surface">14:00</p>
+</div>
+<div class="h-8 w-px bg-outline-variant/50"></div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface group-hover:text-cos-blue transition-colors">Foundation Pouring - Sector 4</h4>
+<div class="flex gap-4 mt-1">
+<span class="text-web-text-tiny text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span> R. Thompson
+                                        </span>
+<span class="text-web-text-tiny text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span> Area 42
+                                        </span>
+</div>
+</div>
+<button class="px-4 py-1.5 bg-cos-blue text-web-text-tiny font-bold text-cos-white rounded hover:bg-cos-blue/80 uppercase">Start</button>
+</div>
+<!-- Task 2 -->
+<div class="flex items-center gap-4 p-4 rounded-lg bg-surface-container border border-outline-variant/20 hover:border-cos-blue transition-all group">
+<div class="text-center min-w-[60px]">
+<p class="text-web-text-tiny text-outline uppercase">Starts</p>
+<p class="text-web-text-body font-bold text-on-surface">16:30</p>
+</div>
+<div class="h-8 w-px bg-outline-variant/50"></div>
+<div class="flex-1">
+<h4 class="font-bold text-on-surface">Final Rebar Inspection</h4>
+<div class="flex gap-4 mt-1">
+<span class="text-web-text-tiny text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">person</span> J. Miller
+                                        </span>
+<span class="text-web-text-tiny text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span> West Core
+                                        </span>
+</div>
+</div>
+<button class="px-4 py-1.5 border border-outline-variant text-web-text-tiny font-bold text-on-surface-variant rounded uppercase">Pre-reqs</button>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: AI Insights & BIM Snapshot -->
+<div class="col-span-12 lg:col-span-4 space-y-web-space-4">
+<!-- AI Insights -->
+<div class="glass-panel p-6 rounded-xl ai-border">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="text-web-text-small font-extrabold uppercase tracking-widest text-cos-cyan">AI Site Analysis</h3>
+</div>
+<p class="text-web-text-body text-on-surface mb-4">Potential critical path delay detected in <span class="font-bold text-cos-cyan">Structural Sector B</span> due to forecasted wind gusts &gt; 45km/h tomorrow morning.</p>
+<div class="space-y-3">
+<div class="flex items-start gap-3 p-3 bg-surface-container rounded border border-cos-cyan/20">
+<span class="material-symbols-outlined text-cos-cyan text-sm mt-0.5">lightbulb</span>
+<p class="text-web-text-small text-on-surface-variant">Suggest rescheduling crane lift <span class="text-on-surface font-bold">LIFT-77</span> to today 17:00.</p>
+</div>
+<button class="w-full py-2 bg-cos-cyan/10 hover:bg-cos-cyan/20 text-cos-cyan text-web-text-small font-bold rounded border border-cos-cyan/30 transition-colors">Apply Recommended Schedule</button>
+</div>
+</div>
+<!-- BIM Mini-Viewer Snapshot -->
+<div class="glass-panel rounded-xl overflow-hidden">
+<div class="p-4 border-b border-outline-variant/30 flex justify-between items-center bg-surface-container">
+<span class="text-web-text-tiny font-bold uppercase text-on-surface-variant tracking-wider">Live Model View</span>
+<div class="flex gap-2">
+<button class="material-symbols-outlined text-sm text-outline">settings_overscan</button>
+<button class="material-symbols-outlined text-sm text-outline">layers</button>
+</div>
+</div>
+<div class="h-64 relative group">
+<img class="w-full h-full object-cover" data-alt="A sophisticated 3D Building Information Modeling (BIM) architectural render of a large-scale construction site. The image shows complex steel framing, concrete foundations, and mechanical systems rendered in a technical, blueprint-like aesthetic with glowing blue and cyan highlights. The lighting is low-key, emphasizing the structure's geometry and complexity within a dark, digital environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDp5hxnl0QOeP1EChZ7GMVTlNvbizF-hHfzbRAxM7SySZA8lclXHLMS6jhEXUtWkbujd8mgPz2aA9-LMVQVx32t7VC87pFfb6ioibn9ulCunesp5ipL_y5hnjJfjoGp9HiQ9qpmgCrREQf8CM7Of4Gf0jPUjXHJlkp9qT54ZcPe95IIktHG6CYmU-ha7ZwrnMSyZjDLi0A8qDJqVcundFXZexQvnKGL2KunQbnoqoYrCfEFt95d9pPNhqQqy1sq4go3uDhXtJVO2OQ"/>
+<div class="absolute inset-0 bg-cos-navy/20 group-hover:bg-transparent transition-colors"></div>
+<div class="absolute bottom-4 left-4">
+<span class="px-2 py-1 bg-cos-navy/80 text-cos-cyan text-[10px] font-bold rounded border border-cos-cyan/50 backdrop-blur-sm">MODEL v4.22-SITE_A</span>
+</div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-cos-blue text-cos-white px-4 py-2 rounded-lg font-bold text-web-text-small shadow-xl">Open Full Viewer</button>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-center mb-2">
+<span class="text-web-text-tiny text-outline uppercase font-bold">Active Zone</span>
+<span class="text-web-text-small text-on-surface font-bold">Sector 4 - Structural</span>
+</div>
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-surface bg-surface-variant overflow-hidden" title="Team Lead">
+<img class="w-full h-full object-cover" data-alt="Close-up headshot of a diverse male construction worker wearing a white hard hat and safety glasses, looking professionally into the camera with a confident smile. High-resolution corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3rG_ZCI0SAD2e4INMgTtJ6cmBcsVE9Ojgu0pmbTJf1evqOTH0r-kI8akV7OQ4d6nEIx138LIvyHZaXx5NtF0zkpK2ZvAIyyygV2QARjly8GAyanUodtiOoNeD_ZH1XIoTYWesRP_78BHJ1C4I-9FF7OnYRoxFKixdbJlsuhD8aTcH_kG4Ffelw_1i0APOGb3aUawYPMXMnPXgHG-OpBqeqBkaq7c-G5qOMowmF1K_H3WwCZTINpp_rtTNkdjsO--sL4_B2-MxQGc"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-surface bg-surface-variant overflow-hidden" title="Engineer">
+<img class="w-full h-full object-cover" data-alt="Portrait of a female structural engineer in a yellow high-visibility vest and safety helmet, holding a digital tablet. The background is a clean, modern construction site office." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCljk1a1vtrzeNgZsLNzaY1g9EneI-dhinTSksxr_UBRDfiJbxjjuN8AkRa_6nBU68yqbhAJGsU33_v_RI6QRw_48wPgDPSyKQQJi8heNAru0n9zpXwVSoLU_CoUeUIIXpyu8683J_5rueoRDMeft-3WYfyOjYiz4VB_8NQIfyqIuqMrzii2hoUoii-r8_-ItWH1_KDhitN0Zyk1Wd1kstx04zbF2wXRjzkpWAKALomyoWBdjRvzzKpimmnJLF-YJs1RVssza9Z27c"/>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-surface bg-surface-variant flex items-center justify-center text-[10px] font-bold text-on-surface-variant">
+                                    +4
+                                </div>
+</div>
+</div>
+</div>
+<!-- Voice Note / Record Module -->
+<div class="p-6 rounded-xl bg-gradient-to-br from-mobile-primary to-cos-blue shadow-lg relative overflow-hidden group cursor-pointer">
+<div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-125 transition-transform duration-500"></div>
+<div class="relative z-10 flex items-center gap-4">
+<div class="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md animate-pulse">
+<span class="material-symbols-outlined text-mobile-primary text-3xl">mic</span>
+</div>
+<div>
+<h4 class="font-bold text-white text-web-text-body">Voice Report</h4>
+<p class="text-white/80 text-web-text-small">Hold to record field observations</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Navigation (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full h-[72px] bg-surface border-t border-outline-variant/30 px-2 flex justify-around items-center z-50">
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-web-text-tiny">Tasks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="text-web-text-tiny">BIM</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="text-web-text-tiny">Photos</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span class="text-web-text-tiny">Safety</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="text-web-text-tiny">More</span>
+</div>
+</nav>
+</main>
+<!-- Floating Action Button (Contextual) -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-cos-blue text-white rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50 md:flex hidden">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<script>
+        // Simple micro-interactions
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                el.classList.add('scale-95');
+                setTimeout(() => el.classList.remove('scale-95'), 150);
+            });
+        });
+
+        // Search shortcut visual feedback
+        window.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                document.querySelector('input').focus();
+            }
+        });
+    </script>
+</body></html>

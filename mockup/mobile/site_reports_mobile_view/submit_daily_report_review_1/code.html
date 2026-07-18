@@ -1,0 +1,291 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Submit Daily Report - Review</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "dark-bg": "#020617",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-variant": "#26364a",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "secondary-container": "#03b5d3",
+                    "on-secondary": "#003640",
+                    "secondary-fixed": "#acedff",
+                    "cos-blue": "#2563EB",
+                    "outline": "#8d90a0",
+                    "cos-cyan": "#06B6D4",
+                    "surface-container": "#102034",
+                    "on-surface": "#d3e4fe",
+                    "mobile-success": "#00C853",
+                    "on-background": "#d3e4fe",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-low": "#0b1c30",
+                    "surface-bright": "#2a3a4f",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-tertiary-container": "#eeefff",
+                    "cos-navy": "#0B1020",
+                    "tertiary-fixed": "#dee1f9",
+                    "inverse-primary": "#0053db",
+                    "surface-container-highest": "#26364a",
+                    "mobile-warning": "#FF9500",
+                    "primary-container": "#2563eb",
+                    "on-tertiary-fixed": "#161b2b",
+                    "tertiary": "#c1c5dc",
+                    "on-secondary-fixed": "#001f26",
+                    "dark-surface": "#0F172A",
+                    "background": "#031427",
+                    "error-container": "#93000a",
+                    "on-primary": "#002a78",
+                    "secondary": "#4cd7f6",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-fixed": "#00174b",
+                    "on-error": "#690005",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "primary": "#b4c5ff",
+                    "on-primary-container": "#eeefff",
+                    "sync-active": "#FFD60A",
+                    "primary-fixed": "#dbe1ff",
+                    "outline-variant": "#434655",
+                    "on-tertiary": "#2b3041",
+                    "error": "#ffb4ab",
+                    "mobile-danger": "#FF3B30",
+                    "sync-pending": "#94A3B8",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-lowest": "#000f21",
+                    "surface-dim": "#031427",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-surface": "#d3e4fe",
+                    "inverse-on-surface": "#213145",
+                    "on-surface-variant": "#c3c6d7",
+                    "tertiary-container": "#686c80",
+                    "cos-white": "#F8FAFC",
+                    "surface": "#031427",
+                    "on-secondary-container": "#00424e"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "mobile-touch-target": "52px",
+                    "web-base": "4px",
+                    "web-space-8": "32px",
+                    "web-space-3": "12px",
+                    "mobile-edge": "24px",
+                    "web-space-1": "4px",
+                    "web-space-4": "16px",
+                    "web-space-2": "8px"
+            },
+            "fontFamily": {
+                    "web-text-h2": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #020617; /* dark-bg */
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        .ai-glow {
+            box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen text-on-surface antialiased">
+<!-- Top Navigation Header -->
+<header class="bg-surface dark:bg-dark-bg text-primary dark:text-primary-fixed border-b border-outline-variant dark:border-surface-container-highest w-full top-0 sticky z-40 flex justify-between items-center px-mobile-edge h-[64px]">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-cos-blue dark:text-cos-cyan">arrow_back</span>
+</button>
+<h1 class="font-web-text-h1 text-web-text-h1 font-bold tracking-tight text-cos-blue dark:text-cos-cyan">Review Report</h1>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full">
+<span class="material-symbols-outlined text-sync-active text-[18px]">sync</span>
+<span class="font-web-text-tiny text-web-text-tiny uppercase text-outline">Synced</span>
+</div>
+</header>
+<main class="flex-1 w-full max-w-3xl mx-auto p-mobile-edge space-y-6 pb-32">
+<!-- Section 1: Report Metadata -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container p-4 rounded-xl border border-outline-variant/30">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-cos-blue text-[20px]">calendar_today</span>
+<span class="font-web-text-tiny text-web-text-tiny text-outline uppercase">Report Date</span>
+</div>
+<p class="font-web-text-h2 text-web-text-h2 text-cos-white">Oct 24, 2023</p>
+</div>
+<div class="bg-surface-container p-4 rounded-xl border border-outline-variant/30">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-cos-blue text-[20px]">wb_sunny</span>
+<span class="font-web-text-tiny text-web-text-tiny text-outline uppercase">Conditions</span>
+</div>
+<p class="font-web-text-h2 text-web-text-h2 text-cos-white">Sunny / 28°C</p>
+</div>
+<div class="col-span-2 bg-surface-container p-4 rounded-xl border border-outline-variant/30">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-cos-blue text-[20px]">foundation</span>
+<span class="font-web-text-tiny text-web-text-tiny text-outline uppercase">Active Project Phase</span>
+</div>
+<p class="font-web-text-h2 text-web-text-h2 text-cos-white">Superstructure (Tower A)</p>
+</div>
+</div>
+<!-- Section 2: Manpower Summary -->
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-blue">Manpower Summary</h3>
+<span class="font-web-text-tiny text-web-text-tiny text-outline">DAILY TOTAL: 16</span>
+<button class="text-cos-cyan font-web-text-tiny uppercase tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">edit</span>Edit</button></div>
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden">
+<div class="flex items-center justify-between p-4 border-b border-outline-variant/20">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-cos-blue/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-blue text-[18px]">engineering</span>
+</div>
+<span class="font-mobile-text-label text-mobile-text-label text-cos-white">Site Engineers</span>
+</div>
+<span class="font-web-text-h2 text-web-text-h2 text-cos-blue">04</span>
+</div>
+<div class="flex items-center justify-between p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-cos-blue/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-blue text-[18px]">groups</span>
+</div>
+<span class="font-mobile-text-label text-mobile-text-label text-cos-white">General Labor</span>
+</div>
+<span class="font-web-text-h2 text-web-text-h2 text-cos-blue">12</span>
+</div>
+</div>
+</section>
+<!-- Section 3: Material Consumption Summary -->
+<section>
+<div class="flex items-center justify-between mb-3 px-1">
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-blue">Material Consumption</h3>
+<button class="text-cos-cyan font-web-text-tiny uppercase tracking-widest">Edit Details</button>
+</div>
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl p-4 flex items-center gap-4">
+<div class="w-16 h-16 rounded-lg bg-cover bg-center shrink-0" data-alt="Close-up architectural photograph of stacked rebar steel on a construction site, high contrast lighting, cool industrial tones, construction material background." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBa971P2PO8otWiGYdYfyqOrfOFs7z9fFkg2cR8kYdMTrOIumOZwvTvIMjK6xtwC56kxXP09l4z4yAhZn5qPIIHiCQlrOsMHW7QRteVT1IRxBfGLanR2rU6KVPoiNoY6WkdF_o-rS46kPQhQ5_6mV0tyP41Tg6PuCXyStDK0vQ5CdOpYMdHRpJbC7F8_UPVHoioWvqz0INaOFHzQiyVP6X2WTmLQaHDP4scIy-UN6utYcEYHtkiLxuLJlN_R_hS6dxqvcvVb2wsZ0c')"></div>
+<div class="flex-1">
+<p class="font-mobile-text-label text-mobile-text-label text-cos-white">Rebar 16mm (Grade 60)</p>
+<p class="font-web-text-tiny text-web-text-tiny text-outline uppercase">Category: Reinforcement Steel</p>
+</div>
+<div class="text-right">
+<p class="font-web-text-h2 text-web-text-h2 text-cos-cyan">2.4 <span class="text-[14px] font-medium text-outline">Tons</span></p>
+</div>
+</div>
+</section>
+<!-- Section 4: AI-Generated Summary (DRAFT) -->
+<section class="space-y-3">
+<div class="flex items-center gap-2 px-1">
+<span class="material-symbols-outlined text-cos-cyan animate-pulse">auto_awesome</span>
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-cyan">AI Insights Narrative</h3>
+<span class="bg-cos-cyan/10 text-cos-cyan text-[10px] px-2 py-0.5 rounded border border-cos-cyan/20 font-bold uppercase tracking-tighter">Draft</span>
+<button class="ml-auto text-cos-cyan font-web-text-tiny uppercase tracking-widest flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">edit</span>Edit</button></div>
+<div class="bg-cos-cyan/5 border-l-4 border-cos-cyan rounded-r-xl p-5 ai-glow relative overflow-hidden">
+<div class="absolute top-0 right-0 p-2">
+<span class="material-symbols-outlined text-cos-cyan/20 text-[48px]">text_fields</span>
+</div>
+<textarea class="bg-transparent border-none w-full font-mobile-text-body text-mobile-text-body text-on-surface focus:ring-0 p-0 leading-relaxed min-h-[160px] resize-none" spellcheck="false">Work focused on the Tower A Level 12 slab preparation. Reinforcement team completed the Rebar 16mm installation ahead of schedule. Weather conditions remained optimal for concrete pouring, which is slated for tomorrow morning. Manpower levels are stable, with 4 engineers overseeing 12 laborers. No safety incidents reported today. Sync status is active across all field devices.</textarea>
+<div class="mt-4 pt-4 border-t border-cos-cyan/10 flex justify-end">
+<p class="font-web-text-tiny text-web-text-tiny text-cos-cyan/60 italic">Generated from field logs and sync data</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 w-full p-4 bg-surface-container border-t border-outline-variant/30 z-50">
+<div class="max-w-3xl mx-auto">
+<button class="w-full h-mobile-touch-target bg-cos-blue hover:bg-primary-container text-cos-white rounded-xl flex items-center justify-center gap-3 active:scale-[0.98] transition-all shadow-lg shadow-cos-blue/20">
+<span class="material-symbols-outlined font-bold" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-web-text-h2 text-web-text-h2 uppercase tracking-tight">Save Changes</span>
+</button>
+<div class="mt-2 text-center">
+<p class="font-web-text-tiny text-web-text-tiny text-outline">Changes will be saved to the draft report.</p>
+</div>
+</div>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.querySelector('textarea');
+            textarea.addEventListener('focus', () => {
+                textarea.parentElement.classList.add('bg-cos-cyan/10');
+            });
+            textarea.addEventListener('blur', () => {
+                textarea.parentElement.classList.remove('bg-cos-cyan/10');
+            });
+
+            // Simulate the button click
+            const mainBtn = document.querySelector('button.bg-cos-blue');
+            mainBtn.addEventListener('click', function() {
+                const icon = this.querySelector('.material-symbols-outlined');
+                const text = this.querySelector('span:not(.material-symbols-outlined)');
+                
+                text.textContent = "SENDING...";
+                this.classList.add('opacity-80', 'pointer-events-none');
+                
+                setTimeout(() => {
+                    text.textContent = "REPORT SUBMITTED";
+                    icon.textContent = "task_alt";
+                    this.classList.remove('bg-cos-blue');
+                    this.classList.add('bg-mobile-success');
+                }, 1500);
+            });
+        });
+    </script>
+
+
+</body></html>

@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Notification Preferences | SaaS Enterprise</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: 'Inter Tight', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #031427;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #434655;
+      border-radius: 10px;
+    }
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: #2563EB;
+      background-color: #2563EB;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: #2563EB;
+    }
+  </style>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "tertiary": "#c1c5dc",
+            "on-secondary": "#003640",
+            "secondary": "#4cd7f6",
+            "tertiary-container": "#686c80",
+            "secondary-container": "#03b5d3",
+            "surface-container-lowest": "#000f21",
+            "mobile-primary": "#0066FF",
+            "inverse-primary": "#0053db",
+            "surface-tint": "#b4c5ff",
+            "dark-surface": "#0F172A",
+            "sync-pending": "#94A3B8",
+            "on-error": "#690005",
+            "cos-blue": "#2563EB",
+            "error-container": "#93000a",
+            "inverse-surface": "#d3e4fe",
+            "background": "#031427",
+            "surface-variant": "#26364a",
+            "on-tertiary-container": "#eeefff",
+            "surface-container": "#102034",
+            "on-secondary-container": "#00424e",
+            "secondary-fixed": "#acedff",
+            "on-tertiary-fixed": "#161b2b",
+            "tertiary-fixed-dim": "#c1c5dc",
+            "surface-container-highest": "#26364a",
+            "surface-bright": "#2a3a4f",
+            "on-primary-fixed": "#00174b",
+            "cos-navy": "#0B1020",
+            "secondary-fixed-dim": "#4cd7f6",
+            "on-surface": "#d3e4fe",
+            "on-error-container": "#ffdad6",
+            "tertiary-fixed": "#dee1f9",
+            "on-secondary-fixed": "#001f26",
+            "dark-bg": "#020617",
+            "on-secondary-fixed-variant": "#004e5c",
+            "primary-container": "#2563eb",
+            "surface-container-high": "#1b2b3f",
+            "on-primary-container": "#eeefff",
+            "on-primary": "#002a78",
+            "sync-active": "#FFD60A",
+            "surface-dim": "#031427",
+            "on-surface-variant": "#c3c6d7",
+            "on-primary-fixed-variant": "#003ea8",
+            "inverse-on-surface": "#213145",
+            "surface": "#031427",
+            "on-background": "#d3e4fe",
+            "primary-fixed-dim": "#b4c5ff",
+            "mobile-success": "#00C853",
+            "cos-cyan": "#06B6D4",
+            "outline-variant": "#434655",
+            "mobile-danger": "#FF3B30",
+            "primary": "#b4c5ff",
+            "outline": "#8d90a0",
+            "mobile-warning": "#FF9500",
+            "surface-container-low": "#0b1c30",
+            "on-tertiary-fixed-variant": "#414658",
+            "on-tertiary": "#2b3041",
+            "error": "#ffb4ab",
+            "primary-fixed": "#dbe1ff",
+            "cos-white": "#F8FAFC"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "web-space-3": "12px",
+            "mobile-edge": "24px",
+            "web-space-8": "32px",
+            "mobile-touch-target": "52px",
+            "web-space-1": "4px",
+            "web-space-4": "16px",
+            "web-base": "4px",
+            "web-space-2": "8px"
+          },
+          "fontFamily": {
+            "web-text-tiny": ["Inter Tight"],
+            "web-text-h1": ["Inter Tight"],
+            "mobile-text-label": ["Inter Tight"],
+            "mobile-text-body": ["Inter Tight"],
+            "web-text-small": ["Inter Tight"],
+            "web-text-body": ["Inter Tight"],
+            "web-text-display": ["Inter Tight"],
+            "web-text-h2": ["Inter Tight"],
+            "mobile-text-hero": ["Inter Tight"]
+          },
+          "fontSize": {
+            "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+            "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+            "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface custom-scrollbar overflow-hidden">
+<!-- TopNavBar (Shared Component) -->
+<header class="flex justify-between items-center h-12 px-web-space-4 w-full sticky top-0 z-50 bg-surface dark:bg-surface-dim border-b border-outline-variant/30">
+<div class="flex items-center gap-web-space-4">
+<span class="font-web-text-h1 text-web-text-h1 text-cos-blue dark:text-primary">SaaS Enterprise</span>
+<nav class="hidden md:flex gap-web-space-4 ml-web-space-8">
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:bg-surface-container-high transition-colors px-2 py-1" href="#">Dashboard</a>
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:bg-surface-container-high transition-colors px-2 py-1" href="#">Infrastructure</a>
+<a class="font-web-text-body text-web-text-body text-cos-blue border-b-2 border-cos-blue pb-1" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-web-space-3">
+<div class="relative flex items-center bg-surface-container-low border border-outline-variant/30 rounded px-2 h-8">
+<span class="material-symbols-outlined text-outline text-[18px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-web-text-small font-web-text-small w-48 text-on-surface" placeholder="Search system..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high p-1 rounded transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high p-1 rounded transition-colors">help</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/50 cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a corporate technology administrator, neutral background, cinematic lighting, sharp focus on facial features, digital painting style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwJ6KAHyUAdsGs8URZ33G6soDLlgwx354Evb8Tjgq9u-00sUuY8ukb_FJAfOrjmucFnl4HRn40ddIH0xXF9_snFahtsjVje4I_0A_AagnwLxVtNEmzzwTmOBef6E-YzvhD6rh-YspJmrq3InGbizbOUV3GP-NfhGpduT4ggD8KXEQB2btXVh2kICZtU2XYlaG6FCYwkqJ0QWbMj6qiY7QSAzcGHfpPhAUAaGpl_Zr-bcrwZ4Awxq1UIYvVDZ1fstmlCourmQj79v8"/>
+</div>
+</div>
+</header>
+<div class="flex h-[calc(100vh-48px)]">
+<!-- SideNavBar (Shared Component) -->
+<aside class="flex flex-col h-full border-r border-outline-variant bg-surface-container-low dark:bg-surface-container-lowest w-64 shrink-0 hidden md:flex">
+<div class="p-web-space-4 border-b border-outline-variant/20">
+<div class="flex items-center gap-2 mb-1">
+<div class="w-8 h-8 bg-cos-blue rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[18px]">domain</span>
+</div>
+<span class="font-web-text-h2 text-web-text-h2 text-on-surface">Tenant Admin</span>
+</div>
+<span class="font-web-text-small text-web-text-small text-on-surface-variant">Enterprise Tier</span>
+</div>
+<nav class="flex-1 py-web-space-4 overflow-y-auto custom-scrollbar">
+<a class="flex items-center gap-3 text-on-surface-variant py-2 px-web-space-4 hover:bg-surface-container-highest dark:hover:bg-surface-container transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-web-text-small text-web-text-small">User Management</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant py-2 px-web-space-4 hover:bg-surface-container-highest dark:hover:bg-surface-container transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-web-text-small text-web-text-small">System Settings</span>
+</a>
+<a class="flex items-center gap-3 bg-primary-container/10 text-cos-blue font-semibold border-r-2 border-cos-blue py-2 px-web-space-4" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+<span class="font-web-text-small text-web-text-small">Notification Preferences</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant py-2 px-web-space-4 hover:bg-surface-container-highest dark:hover:bg-surface-container transition-all duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+<span class="font-web-text-small text-web-text-small">Usage Dashboards</span>
+</a>
+</nav>
+<div class="p-web-space-4 border-t border-outline-variant/20">
+<button class="w-full py-2 bg-cos-blue text-white rounded font-web-text-small text-web-text-small font-semibold mb-4 hover:opacity-90 transition-opacity">Upgrade Plan</button>
+<div class="flex flex-col gap-2">
+<a class="flex items-center gap-2 text-on-surface-variant text-[12px] hover:text-on-surface" href="#">
+<span class="material-symbols-outlined text-[16px]">description</span> Documentation
+          </a>
+<a class="flex items-center gap-2 text-on-surface-variant text-[12px] hover:text-on-surface" href="#">
+<span class="material-symbols-outlined text-[16px]">contact_support</span> Support
+          </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-web-space-8 bg-background relative">
+<!-- AI Background Decoration (Subtle) -->
+
+<div class="max-w-5xl mx-auto relative z-10">
+<!-- Page Header -->
+<div class="mb-web-space-8 flex justify-between items-end">
+<div>
+<h1 class="font-web-text-display text-web-text-display text-on-surface mb-2">Notification Preferences</h1>
+<p class="font-web-text-body text-web-text-body text-on-surface-variant">Configure enterprise-wide alerting triggers and delivery channels for your operational infrastructure.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container-high border border-outline-variant/30 text-on-surface font-web-text-small text-web-text-small rounded hover:bg-surface-container-highest transition-colors">Reset Defaults</button>
+<button class="px-4 py-2 bg-cos-blue text-white font-web-text-small text-web-text-small font-semibold rounded hover:bg-blue-700 transition-colors">Save Changes</button>
+</div>
+</div>
+<!-- Notification Matrix Grid -->
+<div class="grid grid-cols-1 gap-web-space-4">
+<!-- Category: Immediate / Safety (LOCKED) -->
+<section class="bg-surface-container border-l-4 border-mobile-danger rounded-lg overflow-hidden border border-outline-variant/20 shadow-sm">
+<div class="px-web-space-4 py-web-space-3 bg-surface-container-high flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-danger">emergency_home</span>
+<h2 class="font-web-text-h2 text-web-text-h2">Immediate &amp; Safety Alerts</h2>
+</div>
+<span class="text-web-text-tiny font-web-text-tiny uppercase bg-mobile-danger/10 text-mobile-danger px-2 py-0.5 rounded border border-mobile-danger/30">Mandatory Channel</span>
+</div>
+<div class="p-0">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b border-outline-variant/10">
+<tr>
+<th class="p-4 font-web-text-tiny text-web-text-tiny text-outline uppercase">Message Type</th>
+<th class="p-4 font-web-text-tiny text-web-text-tiny text-outline uppercase text-center">SSE (In-App)</th>
+<th class="p-4 font-web-text-tiny text-web-text-tiny text-outline uppercase text-center">Push (Mobile)</th>
+<th class="p-4 font-web-text-tiny text-web-text-tiny text-outline uppercase text-center">LINE</th>
+<th class="p-4 font-web-text-tiny text-web-text-tiny text-outline uppercase text-center">Email</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<!-- Row: Critical Safety -->
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="p-4">
+<div class="font-web-text-body text-web-text-body font-semibold">Critical Safety Incident</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">BIM model detects structural instability or field emergency triggers.</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex justify-center items-center">
+<span class="material-symbols-outlined text-outline/50 cursor-not-allowed">lock</span>
+<div class="w-10 h-5 bg-cos-blue/40 rounded-full ml-2 relative">
+<div class="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+</div>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex justify-center items-center">
+<span class="material-symbols-outlined text-outline/50 cursor-not-allowed">lock</span>
+<div class="w-10 h-5 bg-cos-blue/40 rounded-full ml-2 relative">
+<div class="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+</div>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex justify-center items-center">
+<span class="material-symbols-outlined text-outline/50 cursor-not-allowed">lock</span>
+<div class="w-10 h-5 bg-cos-blue/40 rounded-full ml-2 relative">
+<div class="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+</div>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex justify-center items-center">
+<span class="material-symbols-outlined text-outline/50 cursor-not-allowed">lock</span>
+<div class="w-10 h-5 bg-cos-blue/40 rounded-full ml-2 relative">
+<div class="absolute right-1 top-1 w-3 h-3 bg-white rounded-full"></div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row: Budget Threshold -->
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="p-4">
+<div class="font-web-text-body text-web-text-body font-semibold">Budget Threshold Exceeded</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">Automated expense tracking exceeds 95% of project allocation.</div>
+</td>
+<td class="p-4"><div class="flex justify-center"><input checked="" class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/></div></td>
+<td class="p-4"><div class="flex justify-center"><input checked="" class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/></div></td>
+<td class="p-4"><div class="flex justify-center"><input class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/></div></td>
+<td class="p-4"><div class="flex justify-center"><input checked="" class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Category: Digest / Summary -->
+<section class="bg-surface-container rounded-lg overflow-hidden border border-outline-variant/20 shadow-sm">
+<div class="px-web-space-4 py-web-space-3 bg-surface-container-high flex justify-between items-center border-l-4 border-cos-cyan">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan">summarize</span>
+<h2 class="font-web-text-h2 text-web-text-h2">Digest &amp; Daily Summary</h2>
+</div>
+<span class="text-web-text-tiny font-web-text-tiny uppercase bg-cos-cyan/10 text-cos-cyan px-2 py-0.5 rounded border border-cos-cyan/30">Optimization Recommended</span>
+</div>
+<div class="p-0">
+<table class="w-full text-left border-collapse">
+<tbody class="divide-y divide-outline-variant/10">
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="p-4 w-1/3">
+<div class="font-web-text-body text-web-text-body font-semibold">Daily Operations Recap</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">Summary of all site activities, task completions, and blockers.</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">SSE</span>
+<input class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">Push</span>
+<input class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">LINE</span>
+<input class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">Email</span>
+<input checked="" class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/20 transition-colors">
+<td class="p-4 w-1/3">
+<div class="font-web-text-body text-web-text-body font-semibold">AI Resource Forecast</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">Predictive analysis of material needs and labor scheduling for next 48h.</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">SSE</span>
+<input checked="" class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">Push</span>
+<input class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">LINE</span>
+<input class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+<td class="p-4 text-center">
+<div class="flex flex-col items-center gap-1">
+<span class="text-web-text-tiny text-outline">Email</span>
+<input checked="" class="rounded bg-surface border-outline-variant text-cos-blue focus:ring-cos-blue" type="checkbox"/>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Category: Escalation -->
+<section class="bg-surface-container rounded-lg overflow-hidden border border-outline-variant/20 shadow-sm">
+<div class="px-web-space-4 py-web-space-3 bg-surface-container-high flex justify-between items-center border-l-4 border-mobile-warning">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-warning">priority_high</span>
+<h2 class="font-web-text-h2 text-web-text-h2">Escalation Protocol</h2>
+</div>
+<span class="text-web-text-tiny font-web-text-tiny uppercase bg-mobile-warning/10 text-mobile-warning px-2 py-0.5 rounded border border-mobile-warning/30">Action Required</span>
+</div>
+<div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Escalation Item Card -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low border border-outline-variant/10 rounded">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded bg-mobile-warning/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-mobile-warning">history</span>
+</div>
+<div>
+<div class="font-web-text-body text-web-text-body font-semibold">Unresolved High-Risk Tasks</div>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Alert sent when a safety-critical task is overdue by 4+ hours.</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 shrink-0">
+<label class="flex items-center cursor-pointer">
+<div class="relative">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="block bg-surface-variant w-10 h-5 rounded-full toggle-label transition-colors"></div>
+<div class="dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform"></div>
+</div>
+<span class="ml-2 font-web-text-tiny text-web-text-tiny text-outline uppercase">ALL</span>
+</label>
+</div>
+</div>
+<!-- Escalation Item Card 2 -->
+<div class="flex items-center justify-between p-4 bg-surface-container-low border border-outline-variant/10 rounded">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded bg-mobile-warning/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-mobile-warning">supervisor_account</span>
+</div>
+<div>
+<div class="font-web-text-body text-web-text-body font-semibold">Regional Manager Escalation</div>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Direct notification when local site managers bypass budget controls.</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 shrink-0">
+<label class="flex items-center cursor-pointer">
+<div class="relative">
+<input class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="block bg-surface-variant w-10 h-5 rounded-full toggle-label transition-colors"></div>
+<div class="dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform"></div>
+</div>
+<span class="ml-2 font-web-text-tiny text-web-text-tiny text-outline uppercase">ALL</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Integration Status (Bento Footer) -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-web-space-4">
+<div class="p-4 bg-surface-container rounded-lg border border-outline-variant/20 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-cos-blue mb-2" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+<div class="font-web-text-tiny text-web-text-tiny font-bold uppercase text-outline mb-1">SSE Status</div>
+<div class="font-web-text-body text-web-text-body text-mobile-success">CONNECTED</div>
+</div>
+<div class="p-4 bg-surface-container rounded-lg border border-outline-variant/20 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-cos-blue mb-2">smartphone</span>
+<div class="font-web-text-tiny text-web-text-tiny font-bold uppercase text-outline mb-1">Push Devices</div>
+<div class="font-web-text-body text-web-text-body">12 Active</div>
+</div>
+<div class="p-4 bg-surface-container rounded-lg border border-outline-variant/20 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-cos-blue mb-2">chat</span>
+<div class="font-web-text-tiny text-web-text-tiny font-bold uppercase text-outline mb-1">LINE Webhook</div>
+<div class="font-web-text-body text-web-text-body text-mobile-success">HEALTHY</div>
+</div>
+<div class="p-4 bg-surface-container rounded-lg border border-outline-variant/20 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-cos-blue mb-2">alternate_email</span>
+<div class="font-web-text-tiny text-web-text-tiny font-bold uppercase text-outline mb-1">SMTP Server</div>
+<div class="font-web-text-body text-web-text-body">AWS SES Ready</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<script>
+    // Logic for toggles and micro-interactions
+    document.querySelectorAll('.toggle-checkbox').forEach(toggle => {
+      toggle.addEventListener('change', function() {
+        const dot = this.nextElementSibling.nextElementSibling;
+        if (this.checked) {
+          dot.style.transform = 'translateX(20px)';
+          this.nextElementSibling.classList.add('bg-cos-blue');
+        } else {
+          dot.style.transform = 'translateX(0)';
+          this.nextElementSibling.classList.remove('bg-cos-blue');
+        }
+      });
+    });
+
+    // Initialize toggle positions
+    document.querySelectorAll('.toggle-checkbox').forEach(toggle => {
+      const dot = toggle.nextElementSibling.nextElementSibling;
+      if (toggle.checked) {
+        dot.style.transform = 'translateX(20px)';
+        toggle.nextElementSibling.classList.add('bg-cos-blue');
+      }
+    });
+
+    // Ripple effect for buttons
+    document.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.classList.add('opacity-70');
+        setTimeout(() => this.classList.remove('opacity-70'), 150);
+      });
+    });
+  </script>
+</body></html>

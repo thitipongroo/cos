@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>New Material Request | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#0b1c30",
+                    "tertiary-fixed": "#dee1f9",
+                    "dark-surface": "#0F172A",
+                    "outline": "#8d90a0",
+                    "tertiary": "#c1c5dc",
+                    "mobile-primary": "#0066FF",
+                    "surface-variant": "#26364a",
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-error": "#690005",
+                    "inverse-on-surface": "#213145",
+                    "mobile-success": "#00C853",
+                    "surface-bright": "#2a3a4f",
+                    "cos-navy": "#0B1020",
+                    "cos-blue": "#2563EB",
+                    "primary": "#b4c5ff",
+                    "outline-variant": "#434655",
+                    "on-background": "#d3e4fe",
+                    "inverse-primary": "#0053db",
+                    "surface-container-high": "#1b2b3f",
+                    "on-tertiary": "#2b3041",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-surface": "#d3e4fe",
+                    "on-surface-variant": "#c3c6d7",
+                    "error": "#ffb4ab",
+                    "surface-container": "#102034",
+                    "dark-bg": "#020617",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-primary-fixed": "#00174b",
+                    "on-secondary": "#003640",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-container-highest": "#26364a",
+                    "on-primary-container": "#eeefff",
+                    "error-container": "#93000a",
+                    "background": "#031427",
+                    "inverse-surface": "#d3e4fe",
+                    "surface": "#031427",
+                    "secondary-container": "#03b5d3",
+                    "cos-cyan": "#06B6D4",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-container": "#686c80",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary-fixed": "#001f26",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-primary": "#002a78",
+                    "surface-dim": "#031427",
+                    "secondary": "#4cd7f6",
+                    "secondary-fixed": "#acedff",
+                    "surface-container-lowest": "#000f21",
+                    "mobile-danger": "#FF3B30",
+                    "primary-container": "#2563eb",
+                    "mobile-warning": "#FF9500",
+                    "surface-tint": "#b4c5ff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "sync-active": "#FFD60A",
+                    "cos-white": "#F8FAFC"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-base": "4px",
+                    "web-space-3": "12px",
+                    "web-space-4": "16px",
+                    "web-space-2": "8px",
+                    "web-space-1": "4px",
+                    "mobile-touch-target": "52px",
+                    "web-space-8": "32px",
+                    "mobile-edge": "24px"
+            },
+            "fontFamily": {
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .urgent-border {
+            border-left: 4px solid #FF3B30;
+        }
+        .normal-border {
+            border-left: 4px solid #00C853;
+        }
+        .numeric-input-focus:focus {
+            outline: none;
+            box-shadow: inset 0 0 0 2px #2563EB;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-cos-white dark:bg-dark-bg text-on-surface selection:bg-mobile-primary selection:text-white">
+<!-- Top App Bar -->
+<header class="flex justify-between items-center px-mobile-edge w-full sticky top-0 z-50 h-mobile-touch-target bg-surface dark:bg-dark-bg transition-shadow">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-cos-blue active:scale-95 duration-150 p-2 -ml-2">arrow_back</button>
+<h1 class="font-web-text-h1 text-web-text-h1 font-bold text-on-background">New Material Request - AI Quantities</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-success text-web-text-h2" style="font-variation-settings: 'FILL' 1;">sync</span>
+<button class="material-symbols-outlined text-on-surface-variant p-2 -mr-2">more_vert</button>
+</div>
+</header>
+<main class="px-mobile-edge pb-32 pt-4 max-w-lg mx-auto">
+<!-- Project Context Read-Only Card -->
+<section class="mb-6 bg-surface-container dark:bg-dark-surface p-4 rounded-xl border border-outline-variant/30">
+<div class="flex justify-between items-start mb-2">
+<div>
+<p class="font-web-text-tiny text-web-text-tiny uppercase text-outline tracking-widest mb-1">Current Location</p>
+<h2 class="font-web-text-h2 text-web-text-h2 text-on-surface">Skyline Tower A</h2>
+</div>
+<span class="material-symbols-outlined text-cos-blue">apartment</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-surface-variant/50 text-on-surface-variant text-[11px] font-bold rounded uppercase tracking-tighter">Phase: Superstructure</span>
+</div>
+</section>
+<!-- Material Selection -->
+<section class="mb-8">
+<label class="block font-mobile-text-label text-mobile-text-label mb-3 text-on-surface-variant">Select Material from BOQ</label>
+<div class="relative mb-4">
+<span class="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline">search</span>
+<input class="w-full h-mobile-touch-target pl-12 bg-cos-white border border-outline-variant text-cos-navy rounded-lg focus:ring-2 focus:ring-mobile-primary focus:border-mobile-primary transition-all" placeholder="Search materials (e.g. Rebar, C35...)" type="text"/>
+</div>
+<!-- Quick Chips -->
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+<button class="shrink-0 px-4 py-2 bg-mobile-primary text-white rounded-full font-mobile-text-label text-mobile-text-label flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    Rebar 16mm
+                </button>
+<button class="shrink-0 px-4 py-2 bg-surface-container-low border border-outline-variant text-on-surface rounded-full font-mobile-text-label text-mobile-text-label">Concrete C35/45</button>
+<button class="shrink-0 px-4 py-2 bg-surface-container-low border border-outline-variant text-on-surface rounded-full font-mobile-text-label text-mobile-text-label">Portland Cement</button>
+</div>
+</section>
+<!-- Quantity Entry -->
+<section class="mb-8 grid grid-cols-3 gap-3">
+<div class="col-span-2">
+<label class="block font-mobile-text-label text-mobile-text-label mb-2 text-on-surface-variant">Quantity</label>
+<input class="w-full h-16 text-2xl font-bold bg-white dark:bg-slate-900 border-2 border-outline-variant rounded-xl text-center numeric-input-focus transition-all text-on-surface" placeholder="0.00" type="number" value="10.50"/>
+</div>
+<div class="col-span-1">
+<label class="block font-mobile-text-label text-mobile-text-label mb-2 text-on-surface-variant">Unit</label>
+<select class="w-full h-16 bg-surface-container-low border-2 border-outline-variant rounded-xl font-bold text-center appearance-none focus:border-mobile-primary text-on-surface">
+<option>Tons</option>
+<option>m3</option>
+<option>Bags</option>
+<option>Pcs</option>
+</select>
+</div>
+</section>
+<!-- Delivery Schedule -->
+<section class="mb-8">
+<div class="grid grid-cols-1 gap-6">
+<div>
+<label class="block font-mobile-text-label text-mobile-text-label mb-2 text-on-surface-variant">Requested Delivery Date</label>
+<div class="relative">
+<input class="w-full h-mobile-touch-target bg-white dark:bg-slate-900 border border-outline-variant rounded-lg px-4 text-on-surface focus:ring-2 focus:ring-mobile-primary" type="date"/>
+<span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline pointer-events-none">calendar_month</span>
+</div>
+</div>
+<div>
+<label class="block font-mobile-text-label text-mobile-text-label mb-3 text-on-surface-variant">Priority Level</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="priority-btn py-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface font-semibold text-web-text-small active:scale-95 duration-75" onclick="selectPriority(this)">Normal</button>
+<button class="priority-btn py-3 rounded-lg border-2 border-mobile-warning bg-orange-50 text-mobile-warning font-bold text-web-text-small active:scale-95 duration-75" onclick="selectPriority(this)">Urgent</button>
+<button class="priority-btn py-3 rounded-lg border border-outline-variant bg-surface-container-low text-on-surface font-semibold text-web-text-small active:scale-95 duration-75" onclick="selectPriority(this)">Emergency</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Notes & AI/Photo -->
+<section class="mb-8 space-y-4">
+<button class="w-full text-left p-4 bg-cos-cyan/5 border-l-4 rounded-r-lg transition-all active:scale-95 hover:bg-cos-cyan/10 group border-mobile-success">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-mobile-success">smart_toy</span>
+<span class="font-web-text-tiny text-web-text-tiny uppercase font-bold text-mobile-success">AI Suggestion</span>
+</div>
+<span class="material-symbols-outlined text-sm opacity-0 group-hover:opacity-100 transition-opacity text-mobile-success">add_circle</span>
+</div>
+<p class="text-web-text-small text-on-surface mb-2">Based on the pouring schedule for Floor 12, adding a 5% wastage buffer is recommended.</p>
+<div class="flex items-center gap-1 font-bold text-[10px] uppercase tracking-wider text-mobile-success"><span class="material-symbols-outlined text-xs">check_circle</span> BUFFER APPLIED (+5%)</div>
+</button>
+<div>
+<label class="block font-mobile-text-label text-mobile-text-label mb-2 text-on-surface-variant">Special Instructions / Site Notes</label>
+<textarea class="w-full bg-white dark:bg-slate-900 border border-outline-variant rounded-lg p-4 text-on-surface focus:ring-2 focus:ring-mobile-primary" placeholder="Specify drop-off point or gate entrance details..." rows="3"></textarea>
+</div>
+<div class="flex gap-3">
+<button class="flex-1 h-mobile-touch-target flex items-center justify-center gap-2 bg-surface-container-highest text-on-surface font-bold rounded-lg border border-outline-variant">
+<span class="material-symbols-outlined">add_a_photo</span>
+                    Attach Photo
+                </button>
+<button class="w-mobile-touch-target h-mobile-touch-target flex items-center justify-center bg-mobile-primary text-white rounded-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+</div>
+</section>
+<!-- Preview Image Space -->
+<div class="mb-8 rounded-xl overflow-hidden h-48 relative border border-outline-variant">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10"></div>
+<div class="absolute bottom-3 left-3 z-20 text-white">
+<p class="font-web-text-tiny uppercase opacity-80">Previous Request Reference</p>
+<p class="font-bold">Reinforcement Steel Delivery</p>
+</div>
+<div class="w-full h-full bg-cover bg-center" data-alt="A high-contrast industrial construction site scene in broad daylight. Close-up of neatly stacked steel rebar bundles on a concrete slab, with a bright blue clear sky and the skeletal structure of a modern skyscraper rising in the background. The aesthetic is clean, professional, and follows a corporate light-mode palette with deep blues and concrete whites." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC42WgiO_3ALP-V_TJwrvGW8UKYW_ApUDsHjGqJSGwL85RofbP10IZSH_wJpEukRF2RxjeIWvnX33O9vDu81wrkYbKyjBqL0GHMAU3yn0G7t-qB406e6HNmDkioD9WhixtuHAQAIGc3UTTBPgEnGG_vZknbh8Mqv05dA1hpDfYMtHoyVnOcOCj1rW00uvgAF8ZJaNeS0wjzDeeujjj3dStiw7bw4Fddq10wCL54IWHMVL1YrDxmb9sDt8oWqTc6HBa3kJSmgVkx01g')"></div>
+</div>
+</main>
+<!-- Fixed Bottom Action -->
+<div class="fixed bottom-0 w-full p-mobile-edge bg-white/80 dark:bg-dark-bg/80 backdrop-blur-md z-50">
+<button class="w-full h-mobile-touch-target bg-mobile-primary text-white font-bold text-web-text-h2 rounded-xl shadow-lg shadow-mobile-primary/20 flex items-center justify-center gap-3 active:scale-[0.98] transition-all" id="submitBtn">
+<span class="">Submit Request</span>
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<!-- Confirmation Modal (Hidden by default) -->
+<div class="fixed inset-0 bg-cos-navy/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 hidden" id="confirmOverlay">
+<div class="bg-surface rounded-2xl w-full max-w-xs p-8 text-center animate-in fade-in zoom-in duration-300">
+<div class="w-20 h-20 bg-mobile-success/20 text-mobile-success rounded-full flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-5xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<h3 class="font-mobile-text-hero text-mobile-text-hero text-on-surface mb-2">Request Sent</h3>
+<p class="text-on-surface-variant mb-8">Request #RE-4092 has been dispatched to procurement.</p>
+<button class="w-full h-12 bg-surface-container-highest text-on-surface font-bold rounded-lg" onclick="closeModal()">Dismiss</button>
+</div>
+</div>
+<script>
+        function selectPriority(btn) {
+            document.querySelectorAll('.priority-btn').forEach(b => {
+                b.classList.remove('border-2', 'border-mobile-warning', 'border-mobile-danger', 'border-mobile-primary', 'bg-orange-50', 'bg-red-50', 'bg-blue-50', 'font-bold');
+                b.classList.add('border', 'border-outline-variant', 'bg-surface-container-low', 'font-semibold');
+            });
+            
+            btn.classList.remove('border', 'border-outline-variant', 'bg-surface-container-low', 'font-semibold');
+            btn.classList.add('border-2', 'font-bold');
+            
+            if(btn.innerText === 'Urgent') {
+                btn.classList.add('border-mobile-warning', 'bg-orange-50', 'text-mobile-warning');
+            } else if(btn.innerText === 'Emergency') {
+                btn.classList.add('border-mobile-danger', 'bg-red-50', 'text-mobile-danger');
+            } else {
+                btn.classList.add('border-mobile-primary', 'bg-blue-50', 'text-mobile-primary');
+            }
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        const overlay = document.getElementById('confirmOverlay');
+
+        submitBtn.addEventListener('click', () => {
+            submitBtn.innerHTML = `<span class="animate-spin material-symbols-outlined">progress_activity</span> Sending...`;
+            submitBtn.classList.add('opacity-80', 'pointer-events-none');
+            
+            setTimeout(() => {
+                overlay.classList.remove('hidden');
+                submitBtn.innerHTML = `<span>Submit Request</span><span class="material-symbols-outlined">send</span>`;
+                submitBtn.classList.remove('opacity-80', 'pointer-events-none');
+            }, 1200);
+        });
+
+        function closeModal() {
+            overlay.classList.add('hidden');
+        }
+    </script>
+</body></html>

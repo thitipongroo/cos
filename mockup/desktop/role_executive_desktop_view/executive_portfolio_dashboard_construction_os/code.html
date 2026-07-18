@@ -1,0 +1,540 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS | Executive Portfolio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #020617;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 2px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "dark-bg": "#020617",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "surface-variant": "#26364a",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "secondary-container": "#03b5d3",
+                      "on-secondary": "#003640",
+                      "secondary-fixed": "#acedff",
+                      "cos-blue": "#2563EB",
+                      "outline": "#8d90a0",
+                      "cos-cyan": "#06B6D4",
+                      "surface-container": "#102034",
+                      "on-surface": "#d3e4fe",
+                      "mobile-success": "#00C853",
+                      "on-background": "#d3e4fe",
+                      "mobile-primary": "#0066FF",
+                      "surface-container-low": "#0b1c30",
+                      "surface-bright": "#2a3a4f",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "on-tertiary-container": "#eeefff",
+                      "cos-navy": "#0B1020",
+                      "tertiary-fixed": "#dee1f9",
+                      "inverse-primary": "#0053db",
+                      "surface-container-highest": "#26364a",
+                      "mobile-warning": "#FF9500",
+                      "primary-container": "#2563eb",
+                      "on-tertiary-fixed": "#161b2b",
+                      "tertiary": "#c1c5dc",
+                      "on-secondary-fixed": "#001f26",
+                      "dark-surface": "#0F172A",
+                      "background": "#031427",
+                      "error-container": "#93000a",
+                      "on-primary": "#002a78",
+                      "secondary": "#4cd7f6",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-error-container": "#ffdad6",
+                      "on-primary-fixed": "#00174b",
+                      "on-error": "#690005",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "primary": "#b4c5ff",
+                      "on-primary-container": "#eeefff",
+                      "sync-active": "#FFD60A",
+                      "primary-fixed": "#dbe1ff",
+                      "outline-variant": "#434655",
+                      "on-tertiary": "#2b3041",
+                      "error": "#ffb4ab",
+                      "mobile-danger": "#FF3B30",
+                      "sync-pending": "#94A3B8",
+                      "surface-tint": "#b4c5ff",
+                      "surface-container-lowest": "#000f21",
+                      "surface-dim": "#031427",
+                      "surface-container-high": "#1b2b3f",
+                      "inverse-surface": "#d3e4fe",
+                      "inverse-on-surface": "#213145",
+                      "on-surface-variant": "#c3c6d7",
+                      "tertiary-container": "#686c80",
+                      "cos-white": "#F8FAFC",
+                      "surface": "#031427",
+                      "on-secondary-container": "#00424e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-space-4": "16px",
+                      "web-space-2": "8px",
+                      "web-space-1": "4px",
+                      "mobile-edge": "24px",
+                      "web-space-3": "12px",
+                      "web-space-8": "32px",
+                      "web-base": "4px",
+                      "mobile-touch-target": "52px"
+              },
+              "fontFamily": {
+                      "web-text-small": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "mobile-text-label": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-dark-bg text-on-surface overflow-hidden">
+<!-- TopNavBar (Shared Component Strategy) -->
+<header class="fixed top-0 left-0 w-full h-12 z-50 flex justify-between items-center px-web-space-4 bg-dark-bg border-b border-outline/10">
+<div class="flex items-center gap-web-space-4">
+<img alt="CONSTRUCTION OS" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS4g5SxqpfGHNNJr7dtubnmBpDxISO9IEogzFPA96isZvePcjhGueueklYVvCnhczaQtKbUa04edfSEDTUW0jPsjn928LvkhnJ1fh84j-dnyIJy9e6W6Uh6QS98igtE8q1yFIrzOYO1Tw5rqHDJ687xSQzMh-WykYEiwQN3Lr0HHYJs4rTQ7FsbmX77-TA55VyANDvjTkU-u-V2LeQz6EqjTCgsBO8GsRbKKbfc9tiOdU7dcxGRd0je_lm-BrZCSNECRyZRUhdW28">
+<span class="font-web-text-h1 text-web-text-h1 font-bold text-cos-white border-l border-outline/20 pl-4 hidden md:block">Portfolio</span>
+</div>
+<div class="flex items-center gap-web-space-4">
+<div class="relative group">
+<button class="p-2 text-outline hover:bg-surface-variant/20 transition-colors rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-mobile-danger rounded-full ring-2 ring-dark-bg"></span>
+</button>
+</div>
+<button class="p-2 text-outline hover:bg-surface-variant/20 transition-colors rounded-lg">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="flex items-center gap-3 ml-2 pl-4 border-l border-outline/10">
+<div class="text-right hidden sm:block">
+<div class="font-web-text-small text-cos-white font-semibold">Executive Admin</div>
+<div class="text-web-text-tiny text-outline">Tier: Enterprise</div>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a corporate construction executive in a dark navy suit against a soft-focus architectural background. The image has a crisp, high-contrast dark-mode aesthetic with cool blue professional lighting and sharp focus on the subjects composed features. Professional and authoritative mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUXpw4sJiBW9MEopg7lO9gT0g-gOeo3fa07luHSOTI4Kw1fRul_p_Zb2Yz8AG1IsAhDlCd2KybZ7zjMn-2xlvr9mk-UTfFv_AegxhjrZmFJPXid8A6qTI6CvJym9oKeZ4gNgwM8DHdMZleoouayZMaOOfN-S6KRd9DtZoiIBnIZi7XLOFTw1pUP6pd5hwa00eEC1PBWFyf8h59N8f4uH38aNz5BAkf__lyeAyIJDF88opHjIUa51hmEwUI9dgkSSCQZYQXv0Ul7YQ">
+</div>
+</div>
+</div>
+</header>
+<div class="flex h-screen pt-12">
+<!-- SideNavBar (Shared Component Strategy) -->
+<aside class="fixed left-0 top-12 h-[calc(100vh-48px)] w-64 bg-dark-surface border-r border-outline/10 flex flex-col pt-6 pb-4 hidden md:flex">
+<nav class="flex-1 px-3 space-y-1">
+<a class="text-cos-blue font-semibold bg-cos-blue/10 border-l-2 border-cos-blue flex items-center gap-3 px-3 py-2 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-web-text-small">Portfolio</span>
+</a>
+<a class="text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 flex items-center gap-3 px-3 py-2" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="font-web-text-small">Projects</span>
+</a>
+<a class="text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 flex items-center gap-3 px-3 py-2" href="#">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-web-text-small">Alerts</span>
+</a>
+<a class="text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 flex items-center gap-3 px-3 py-2" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-web-text-small">Reports</span>
+</a>
+<a class="text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 flex items-center gap-3 px-3 py-2" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-web-text-small">Finance</span>
+</a>
+<a class="text-outline hover:text-on-surface-variant hover:bg-surface-container-high/50 flex items-center gap-3 px-3 py-2" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-web-text-small">Settings</span>
+</a>
+</nav>
+<div class="px-4 mt-auto space-y-1 border-t border-outline/5 pt-4">
+<a class="text-outline hover:text-on-surface-variant flex items-center gap-3 px-3 py-2" href="#">
+<span class="material-symbols-outlined">support</span>
+<span class="font-web-text-small text-web-text-small">Help Center</span>
+</a>
+<a class="text-outline hover:text-on-surface-variant flex items-center gap-3 px-3 py-2" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-web-text-small text-web-text-small">Log Out</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 bg-dark-bg p-web-space-4 overflow-y-auto custom-scrollbar">
+<!-- 1. Portfolio Health Summary -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-web-space-4 mb-web-space-8">
+<!-- KPI: Active Projects -->
+<div class="bg-dark-surface p-web-space-4 border border-outline/10 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-outline text-web-text-tiny font-medium">ACTIVE PROJECTS</span>
+<span class="material-symbols-outlined text-cos-blue">engineering</span>
+</div>
+<div class="mt-2">
+<div class="text-web-text-display font-bold text-cos-white">42</div>
+<div class="text-web-text-tiny text-mobile-success flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> +3 this month
+                        </div>
+</div>
+</div>
+<!-- KPI: Budget vs Actual -->
+<div class="bg-dark-surface p-web-space-4 border border-outline/10 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-outline text-web-text-tiny font-medium">BUDGET VARIANCE (YTD)</span>
+<span class="material-symbols-outlined text-mobile-warning">account_balance_wallet</span>
+</div>
+<div class="mt-2">
+<div class="text-web-text-display font-bold text-cos-white">฿12.4M</div>
+<div class="inline-flex items-center px-1.5 py-0.5 rounded bg-mobile-warning/10 text-mobile-warning text-web-text-tiny font-bold">
+                            -4.2% OVER
+                        </div>
+</div>
+</div>
+<!-- KPI: Total Workforce -->
+<div class="bg-dark-surface p-web-space-4 border border-outline/10 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<span class="text-outline text-web-text-tiny font-medium">WORKFORCE ON-SITE</span>
+<span class="material-symbols-outlined text-cos-cyan">groups</span>
+</div>
+<div class="mt-2">
+<div class="text-web-text-display font-bold text-cos-white">1,284</div>
+<div class="text-web-text-tiny text-outline">Across all project phases</div>
+</div>
+</div>
+<!-- KPI: Critical Issues -->
+<div class="bg-dark-surface p-web-space-4 border border-outline/10 rounded-lg flex flex-col justify-between border-l-4 border-l-mobile-danger">
+<div class="flex justify-between items-start">
+<span class="text-outline text-web-text-tiny font-medium">CRITICAL ISSUES</span>
+<span class="material-symbols-outlined text-mobile-danger">report_problem</span>
+</div>
+<div class="mt-2">
+<div class="text-web-text-display font-bold text-mobile-danger">08</div>
+<div class="text-web-text-tiny text-on-surface-variant">2 requiring immediate sign-off</div>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-web-space-4 items-start">
+<!-- 2. Project Health List (Bento Grid Style) -->
+<section class="lg:col-span-2 space-y-web-space-4">
+<div class="bg-dark-surface border border-outline/10 rounded-lg overflow-hidden">
+<div class="px-web-space-4 py-3 border-b border-outline/5 flex justify-between items-center">
+<h3 class="font-web-text-h2 text-web-text-body font-semibold text-cos-white uppercase tracking-wider">High-Priority Project Health</h3>
+<button class="text-web-text-tiny text-cos-blue font-bold hover:underline">VIEW ALL PROJECTS</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/50">
+<th class="px-4 py-3 text-web-text-tiny text-outline font-medium uppercase">Project Name</th>
+<th class="px-4 py-3 text-web-text-tiny text-outline font-medium uppercase">Status</th>
+<th class="px-4 py-3 text-web-text-tiny text-outline font-medium uppercase">Variance</th>
+<th class="px-4 py-3 text-web-text-tiny text-outline font-medium uppercase w-48">Progress</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline/5">
+<tr class="hover:bg-surface-container-high/20 transition-colors">
+<td class="px-4 py-4">
+<div class="font-web-text-body font-semibold text-cos-white">The Skybridge Central</div>
+<div class="text-web-text-tiny text-outline">BKK-2024-001</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-mobile-success/20 text-mobile-success border border-mobile-success/30">ACTIVE</span>
+</td>
+<td class="px-4 py-4 text-web-text-small font-mono text-mobile-success">+1.2%</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-outline/10 rounded-full overflow-hidden">
+<div class="h-full bg-cos-blue w-[78%]"></div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant font-mono">78%</span>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high/20 transition-colors">
+<td class="px-4 py-4">
+<div class="font-web-text-body font-semibold text-cos-white">Industrial Hub II</div>
+<div class="text-web-text-tiny text-outline">SR-2024-089</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-mobile-warning/20 text-mobile-warning border border-mobile-warning/30">AT RISK</span>
+</td>
+<td class="px-4 py-4 text-web-text-small font-mono text-mobile-danger">-8.4%</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-outline/10 rounded-full overflow-hidden">
+<div class="h-full bg-mobile-warning w-[42%]"></div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant font-mono">42%</span>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high/20 transition-colors">
+<td class="px-4 py-4">
+<div class="font-web-text-body font-semibold text-cos-white">Terminal 3 Expansion</div>
+<div class="text-web-text-tiny text-outline">BKK-2023-452</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-mobile-danger/20 text-mobile-danger border border-mobile-danger/30">DELAYED</span>
+</td>
+<td class="px-4 py-4 text-web-text-small font-mono text-mobile-danger">-12.1%</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-outline/10 rounded-full overflow-hidden">
+<div class="h-full bg-mobile-danger w-[92%]"></div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant font-mono">92%</span>
+</div>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high/20 transition-colors">
+<td class="px-4 py-4">
+<div class="font-web-text-body font-semibold text-cos-white">Riverfront Residences</div>
+<div class="text-web-text-tiny text-outline">BKK-2024-032</div>
+</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-variant text-outline border border-outline/20">DRAFT</span>
+</td>
+<td class="px-4 py-4 text-web-text-small font-mono text-outline">0.0%</td>
+<td class="px-4 py-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1.5 bg-outline/10 rounded-full overflow-hidden">
+<div class="h-full bg-outline/30 w-[5%]"></div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant font-mono">5%</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- 4. Financial Forecast -->
+<div class="bg-dark-surface border border-outline/10 rounded-lg p-web-space-4">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-web-text-h2 text-web-text-body font-semibold text-cos-white uppercase tracking-wider">13-Week Cash Flow Forecast</h3>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-cos-blue rounded-sm"></span>
+<span class="text-web-text-tiny text-outline">Inflow</span>
+<span class="w-3 h-3 bg-mobile-danger rounded-sm ml-2"></span>
+<span class="text-web-text-tiny text-outline">Outflow</span>
+</div>
+</div>
+<div class="h-48 w-full flex items-end justify-between gap-2 px-2">
+<!-- Simple Simulated Chart bars -->
+<div class="w-full flex flex-col items-center group">
+<div class="w-full flex gap-1 items-end h-32">
+<div class="bg-cos-blue w-1/2 h-[70%] rounded-t-sm opacity-80 group-hover:opacity-100 transition-opacity"></div>
+<div class="bg-mobile-danger w-1/2 h-[50%] rounded-t-sm opacity-80 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<span class="text-web-text-tiny text-outline mt-2 font-mono">W12</span>
+</div>
+<div class="w-full flex flex-col items-center group">
+<div class="w-full flex gap-1 items-end h-32">
+<div class="bg-cos-blue w-1/2 h-[85%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+<div class="bg-mobile-danger w-1/2 h-[45%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+</div>
+<span class="text-web-text-tiny text-outline mt-2 font-mono">W13</span>
+</div>
+<div class="w-full flex flex-col items-center group">
+<div class="w-full flex gap-1 items-end h-32">
+<div class="bg-cos-blue w-1/2 h-[60%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+<div class="bg-mobile-danger w-1/2 h-[55%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+</div>
+<span class="text-web-text-tiny text-outline mt-2 font-mono">W14</span>
+</div>
+<div class="w-full flex flex-col items-center group">
+<div class="w-full flex gap-1 items-end h-32">
+<div class="bg-cos-blue w-1/2 h-[95%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+<div class="bg-mobile-danger w-1/2 h-[30%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+</div>
+<span class="text-web-text-tiny text-outline mt-2 font-mono">W15</span>
+</div>
+<div class="w-full flex flex-col items-center group">
+<div class="w-full flex gap-1 items-end h-32">
+<div class="bg-cos-blue w-1/2 h-[40%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+<div class="bg-mobile-danger w-1/2 h-[70%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+</div>
+<span class="text-web-text-tiny text-outline mt-2 font-mono">W16</span>
+</div>
+<div class="w-full flex flex-col items-center group">
+<div class="w-full flex gap-1 items-end h-32">
+<div class="bg-cos-blue w-1/2 h-[75%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+<div class="bg-mobile-danger w-1/2 h-[40%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+</div>
+<span class="text-web-text-tiny text-outline mt-2 font-mono">W17</span>
+</div>
+<div class="w-full flex flex-col items-center group">
+<div class="w-full flex gap-1 items-end h-32">
+<div class="bg-cos-blue w-1/2 h-[80%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+<div class="bg-mobile-danger w-1/2 h-[45%] rounded-t-sm opacity-80 group-hover:opacity-100"></div>
+</div>
+<span class="text-web-text-tiny text-outline mt-2 font-mono">W18</span>
+</div>
+</div>
+<div class="mt-6 flex justify-between pt-4 border-t border-outline/5">
+<div>
+<div class="text-web-text-tiny text-outline">NET CASH FORECAST</div>
+<div class="text-web-text-h2 font-bold text-cos-white">฿482.5M</div>
+</div>
+<div class="text-right">
+<div class="text-web-text-tiny text-outline">MONTHLY BURN RATE</div>
+<div class="text-web-text-h2 font-bold text-mobile-danger">฿12.8M</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. AI Risk Alerts -->
+<aside class="space-y-web-space-4">
+<div class="bg-cos-cyan/5 border border-cos-cyan/30 rounded-lg p-web-space-4 ai-glow">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cos-cyan text-[20px]">psychology</span>
+<h3 class="text-web-text-tiny font-bold text-cos-cyan tracking-widest uppercase">AI Strategic Insights</h3>
+</div>
+<div class="space-y-4">
+<!-- Alert 1 -->
+<div class="p-3 bg-dark-bg/60 border border-outline/10 rounded-lg">
+<div class="flex justify-between items-start mb-2">
+<span class="text-web-text-tiny font-bold text-cos-white">Supply Chain Delay</span>
+<span class="text-[10px] text-cos-cyan font-mono px-1.5 py-0.5 border border-cos-cyan/30 rounded bg-cos-cyan/5">88% CONFIDENCE</span>
+</div>
+<p class="text-web-text-small text-outline leading-tight">Project <span class="text-on-surface">Industrial Hub II</span> is at high risk of a 14-day delay due to structural steel delivery bottlenecks in District 4.</p>
+<div class="mt-3 flex items-center justify-between">
+<div class="text-web-text-tiny text-mobile-warning flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> Critical Path Risk
+                                    </div>
+<button class="text-web-text-tiny text-cos-cyan hover:underline font-bold">MITIGATE</button>
+</div>
+</div>
+<!-- Alert 2 -->
+<div class="p-3 bg-dark-bg/60 border border-outline/10 rounded-lg">
+<div class="flex justify-between items-start mb-2">
+<span class="text-web-text-tiny font-bold text-cos-white">Safety Escalation</span>
+<span class="text-[10px] text-cos-cyan font-mono px-1.5 py-0.5 border border-cos-cyan/30 rounded bg-cos-cyan/5">92% CONFIDENCE</span>
+</div>
+<p class="text-web-text-small text-outline leading-tight">Predictive modeling indicates increased safety risk at <span class="text-on-surface">Terminal 3 Expansion</span> site due to fatigue patterns in concrete crew.</p>
+<div class="mt-3 flex items-center justify-between">
+<div class="text-web-text-tiny text-mobile-danger flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">security</span> Urgent Review
+                                    </div>
+<button class="text-web-text-tiny text-cos-cyan hover:underline font-bold">VIEW AUDIT</button>
+</div>
+</div>
+<!-- Alert 3 -->
+<div class="p-3 bg-dark-bg/60 border border-outline/10 rounded-lg">
+<div class="flex justify-between items-start mb-2">
+<span class="text-web-text-tiny font-bold text-cos-white">Budget Variance Alert</span>
+<span class="text-[10px] text-cos-cyan font-mono px-1.5 py-0.5 border border-cos-cyan/30 rounded bg-cos-cyan/5">74% CONFIDENCE</span>
+</div>
+<p class="text-web-text-small text-outline leading-tight">Labor cost projection for <span class="text-on-surface">Skybridge Central</span> shows 15% variance by Q4 based on current subcontractor burn rates.</p>
+<div class="mt-3 flex items-center justify-between">
+<div class="text-web-text-tiny text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> Trend Detected
+                                    </div>
+<button class="text-web-text-tiny text-cos-cyan hover:underline font-bold">ANALYSIS</button>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 py-2 border border-cos-cyan/30 text-cos-cyan text-web-text-tiny font-bold rounded hover:bg-cos-cyan/10 transition-colors uppercase">Generate Weekly AI Report</button>
+</div>
+<!-- Voice Note Placeholder (Brand Specific Mobile-ready) -->
+<div class="bg-dark-surface border border-outline/10 rounded-lg p-web-space-4 flex flex-col items-center justify-center space-y-3">
+<div class="text-center">
+<div class="text-web-text-tiny text-outline uppercase font-bold tracking-widest mb-1">Portfolio Voice Memo</div>
+<div class="text-web-text-small text-on-surface-variant">Record a quick update for the site managers.</div>
+</div>
+<button class="w-12 h-12 rounded-full bg-mobile-primary flex items-center justify-center text-white shadow-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<div class="text-web-text-tiny text-outline">Hold to record memo</div>
+</div>
+</aside>
+</div>
+</main>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Simple ripple-like effect on KPI tiles
+            const tiles = document.querySelectorAll('.bg-dark-surface');
+            tiles.forEach(tile => {
+                tile.addEventListener('mouseenter', () => {
+                    tile.style.borderColor = 'rgba(37, 99, 235, 0.3)';
+                });
+                tile.addEventListener('mouseleave', () => {
+                    tile.style.borderColor = 'rgba(141, 144, 160, 0.1)';
+                });
+            });
+
+            // Notification Bell animation
+            const bell = document.querySelector('.material-symbols-outlined:contains("notifications")');
+            if (bell) {
+                setInterval(() => {
+                    bell.classList.add('animate-bounce');
+                    setTimeout(() => bell.classList.remove('animate-bounce'), 1000);
+                }, 5000);
+            }
+        });
+
+        // Helper for contains selector in vanilla JS
+        window.NodeList.prototype.forEach = Array.prototype.forEach;
+        function findByText(tag, text) {
+            const elements = document.getElementsByTagName(tag);
+            for (let i = 0; i < elements.length; i++) {
+                if (elements[i].textContent.includes(text)) {
+                    return elements[i];
+                }
+            }
+        }
+    </script>
+
+
+
+
+</body></html>

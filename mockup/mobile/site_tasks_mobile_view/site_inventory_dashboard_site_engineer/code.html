@@ -1,0 +1,383 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Site Inventory Dashboard | Skyline Tower A</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .industrial-grid {
+            background-image: 
+                linear-gradient(to right, rgba(67, 70, 85, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(67, 70, 85, 0.1) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .ai-pulse {
+            animation: pulse-cyan 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-cyan {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #031427; }
+        ::-webkit-scrollbar-thumb { background: #26364a; border-radius: 4px; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface": "#031427",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "background": "#031427",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "cos-cyan": "#06B6D4",
+                      "cos-blue": "#2563EB",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "mobile-danger": "#FF3B30",
+                      "inverse-on-surface": "#213145",
+                      "secondary-container": "#03b5d3",
+                      "outline-variant": "#434655",
+                      "cos-white": "#F8FAFC",
+                      "surface-container-high": "#1b2b3f",
+                      "surface-dim": "#031427",
+                      "cos-navy": "#0B1020",
+                      "on-secondary-container": "#00424e",
+                      "sync-pending": "#94A3B8",
+                      "on-background": "#d3e4fe",
+                      "primary": "#b4c5ff",
+                      "dark-bg": "#020617",
+                      "on-primary": "#002a78",
+                      "surface-container-highest": "#26364a",
+                      "mobile-warning": "#FF9500",
+                      "mobile-success": "#00C853",
+                      "on-surface": "#d3e4fe",
+                      "on-error-container": "#ffdad6",
+                      "surface-variant": "#26364a",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "primary-container": "#2563eb",
+                      "on-primary-fixed": "#00174b",
+                      "outline": "#8d90a0",
+                      "on-secondary-fixed": "#001f26",
+                      "tertiary": "#c1c5dc",
+                      "sync-active": "#FFD60A",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "inverse-surface": "#d3e4fe",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "surface-tint": "#b4c5ff",
+                      "on-tertiary-container": "#eeefff",
+                      "surface-container-lowest": "#000f21",
+                      "dark-surface": "#0F172A",
+                      "secondary": "#4cd7f6",
+                      "on-tertiary": "#2b3041",
+                      "on-secondary": "#003640",
+                      "on-error": "#690005",
+                      "secondary-fixed": "#acedff",
+                      "surface-bright": "#2a3a4f",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-surface-variant": "#c3c6d7",
+                      "inverse-primary": "#0053db",
+                      "primary-fixed": "#dbe1ff",
+                      "error-container": "#93000a",
+                      "error": "#ffb4ab",
+                      "mobile-primary": "#0066FF",
+                      "surface-container": "#102034",
+                      "on-primary-container": "#eeefff",
+                      "tertiary-container": "#686c80",
+                      "surface-container-low": "#0b1c30"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-base": "4px",
+                      "mobile-touch-target": "52px",
+                      "web-space-3": "12px",
+                      "web-space-8": "32px",
+                      "web-space-4": "16px",
+                      "mobile-edge": "24px",
+                      "web-space-1": "4px",
+                      "web-space-2": "8px"
+              },
+              "fontFamily": {
+                      "mobile-text-label": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "web-text-small": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-mobile-text-body text-mobile-text-body industrial-grid min-h-screen pb-32">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge h-mobile-touch-target bg-surface dark:bg-dark-bg border-b border-outline-variant dark:border-outline-variant">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed cursor-pointer">arrow_back</span>
+<h1 class="font-web-text-h1 text-web-text-h1 text-cos-blue">Skyline Tower A</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
+</div>
+</header>
+<main class="pt-20 px-mobile-edge max-w-7xl mx-auto space-y-6">
+<!-- Summary Dashboard (Bento Grid) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Critical Items -->
+<div class="bg-surface-container border-l-4 border-mobile-danger p-5 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<p class="font-mobile-text-label text-mobile-text-label uppercase tracking-wider text-on-surface-variant">Critical Items</p>
+<span class="material-symbols-outlined text-mobile-danger">report_problem</span>
+</div>
+<div class="mt-4">
+<span class="font-web-text-display text-web-text-display text-on-surface">08</span>
+<p class="font-web-text-small text-web-text-small text-mobile-danger">Immediate action required</p>
+</div>
+</div>
+<!-- Expected Today -->
+<div class="bg-surface-container border-l-4 border-cos-blue p-5 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<p class="font-mobile-text-label text-mobile-text-label uppercase tracking-wider text-on-surface-variant">Expected Today</p>
+<span class="material-symbols-outlined text-cos-blue">local_shipping</span>
+</div>
+<div class="mt-4">
+<span class="font-web-text-display text-web-text-display text-on-surface">12</span>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Scheduled deliveries</p>
+</div>
+</div>
+<!-- Stock Value -->
+<div class="bg-surface-container border-l-4 border-mobile-success p-5 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<p class="font-mobile-text-label text-mobile-text-label uppercase tracking-wider text-on-surface-variant">Stock Value</p>
+<span class="material-symbols-outlined text-mobile-success">payments</span>
+</div>
+<div class="mt-4">
+<span class="font-web-text-display text-web-text-display text-on-surface">$1.2M</span>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Asset valuation</p>
+</div>
+</div>
+</section>
+<!-- Main Content Area -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Left: Material Stock (Industrial Table) -->
+<div class="lg:col-span-8 bg-surface-container border border-outline-variant">
+<div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-high">
+<h2 class="font-web-text-h2 text-web-text-h2">Material Stock</h2>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">filter_list</span>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase">Filter</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-highest/30">
+<th class="p-4 font-web-text-tiny text-web-text-tiny uppercase text-on-surface-variant border-b border-outline-variant">Item &amp; Code</th>
+<th class="p-4 font-web-text-tiny text-web-text-tiny uppercase text-on-surface-variant border-b border-outline-variant">Quantity</th>
+<th class="p-4 font-web-text-tiny text-web-text-tiny uppercase text-on-surface-variant border-b border-outline-variant">Status</th>
+<th class="p-4 border-b border-outline-variant"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<tr>
+<td class="p-4">
+<div class="font-mobile-text-label text-mobile-text-label text-on-surface">Structural Steel H-Beam</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">BEAM-H400-A2</div>
+</td>
+<td class="p-4 font-web-text-body text-web-text-body text-on-surface">42 Units</td>
+<td class="p-4">
+<span class="px-2 py-1 bg-mobile-success text-cos-white font-web-text-tiny text-web-text-tiny uppercase">In Stock</span>
+</td>
+<td class="p-4 text-right">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">chevron_right</span>
+</td>
+</tr>
+<tr class="bg-surface-container-low/50">
+<td class="p-4">
+<div class="font-mobile-text-label text-mobile-text-label text-on-surface">Portland Cement (50kg)</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">CEM-I-42.5</div>
+</td>
+<td class="p-4 font-web-text-body text-web-text-body text-on-surface">120 Bags</td>
+<td class="p-4">
+<span class="px-2 py-1 bg-mobile-warning text-cos-white font-web-text-tiny text-web-text-tiny uppercase">Low Stock</span>
+</td>
+<td class="p-4 text-right">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">chevron_right</span>
+</td>
+</tr>
+<tr>
+<td class="p-4">
+<div class="font-mobile-text-label text-mobile-text-label text-on-surface">Rebar Grade 60 (12mm)</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">REB-12MM-G60</div>
+</td>
+<td class="p-4 font-web-text-body text-web-text-body text-on-surface">0 Tons</td>
+<td class="p-4">
+<span class="px-2 py-1 bg-mobile-danger text-cos-white font-web-text-tiny text-web-text-tiny uppercase">Out of Stock</span>
+</td>
+<td class="p-4 text-right">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">chevron_right</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right: AI Consumption & Activity -->
+<div class="lg:col-span-4 space-y-6">
+<!-- AI Consumption Insight -->
+<div class="bg-surface-container border-l-4 border-cos-cyan p-5">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cos-cyan ai-pulse">psychology</span>
+<h2 class="font-web-text-h2 text-web-text-h2 text-cos-cyan">AI Insights</h2>
+</div>
+<div class="p-4 bg-cos-cyan/5 rounded-lg border border-cos-cyan/20">
+<p class="font-web-text-small text-web-text-small text-on-surface-variant mb-4">Predicted vs Actual Usage (Weekly)</p>
+<div class="h-32 flex items-end justify-between gap-1">
+<div class="w-full bg-cos-cyan/20 rounded-t-sm h-[60%] relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[80%] rounded-t-sm"></div>
+<span class="hidden group-hover:block absolute -top-6 left-0 text-[10px] text-cos-cyan">Mon</span>
+</div>
+<div class="w-full bg-cos-cyan/20 rounded-t-sm h-[80%] relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[95%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/20 rounded-t-sm h-[50%] relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[40%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/20 rounded-t-sm h-[90%] relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[85%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/20 rounded-t-sm h-[70%] relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[65%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/20 rounded-t-sm h-[40%] relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[30%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/20 rounded-t-sm h-[30%] relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[25%] rounded-t-sm"></div>
+</div>
+</div>
+<p class="mt-4 font-web-text-small text-web-text-small text-primary">Potential shortage of Portland Cement detected in T-minus 48 hours based on current schedule.</p>
+</div>
+</div>
+<!-- Recent Activity -->
+<div class="bg-surface-container border border-outline-variant">
+<div class="p-4 border-b border-outline-variant bg-surface-container-high">
+<h2 class="font-web-text-h2 text-web-text-h2">Recent Logs</h2>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-mobile-success/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-success text-sm">add_circle</span>
+</div>
+<div>
+<p class="font-web-text-body text-web-text-body text-on-surface">Material Received</p>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">500 units of Brick-G1 by J. Doe</p>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase">14:20 PM</span>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-mobile-danger/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-danger text-sm">remove_circle</span>
+</div>
+<div>
+<p class="font-web-text-body text-web-text-body text-on-surface">Material Consumed</p>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">12 beams used for Section B12</p>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase">11:05 AM</span>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-cos-blue/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-blue text-sm">local_shipping</span>
+</div>
+<div>
+<p class="font-web-text-body text-web-text-body text-on-surface">Delivery Gate-In</p>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Trailer #492 arrived at North Gate</p>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase">09:45 AM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Navigation Shell (Desktop Hidden, Mobile Visible) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[72px] px-mobile-edge pb-safe bg-surface dark:bg-dark-bg border-t border-outline-variant">
+<div class="flex flex-col items-center justify-center text-cos-blue font-semibold transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">report_problem</span>
+<span class="font-mobile-text-label text-mobile-text-label">Issues</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">map</span>
+<span class="font-mobile-text-label text-mobile-text-label">Map</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-mobile-text-label text-mobile-text-label">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">person</span>
+<span class="font-mobile-text-label text-mobile-text-label">Profile</span>
+</div>
+</nav>
+<!-- FABs -->
+<div class="fixed bottom-24 right-6 flex flex-col gap-4 z-40">
+<button class="w-14 h-14 rounded-full bg-cos-blue text-white shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 group relative">
+<span class="material-symbols-outlined">add_box</span>
+<span class="absolute right-16 bg-surface-container border border-outline-variant px-3 py-1 rounded-sm text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">LOG DELIVERY</span>
+</button>
+<button class="w-14 h-14 rounded-full bg-surface-container-highest border border-outline-variant text-primary shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 group relative">
+<span class="material-symbols-outlined">description</span>
+<span class="absolute right-16 bg-surface-container border border-outline-variant px-3 py-1 rounded-sm text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">REQUEST MATERIAL</span>
+</button>
+</div>
+<script>
+        // Simple Micro-interactions
+        document.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('click', () => {
+                row.classList.add('bg-primary/5');
+                setTimeout(() => row.classList.remove('bg-primary/5'), 200);
+            });
+        });
+
+        // Atmospheric effect: Subtle cursor following on the grid
+        const body = document.querySelector('body');
+        body.addEventListener('mousemove', (e) => {
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            body.style.backgroundPosition = `${x * 10}px ${y * 10}px`;
+        });
+    </script>
+</body></html>

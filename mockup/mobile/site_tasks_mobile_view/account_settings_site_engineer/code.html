@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Account Settings | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-background": "#d3e4fe",
+                    "background": "#031427",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-tertiary-fixed": "#161b2b",
+                    "outline-variant": "#434655",
+                    "on-tertiary": "#2b3041",
+                    "secondary-container": "#03b5d3",
+                    "primary-container": "#2563eb",
+                    "error": "#ffb4ab",
+                    "dark-surface": "#0F172A",
+                    "on-secondary-fixed": "#001f26",
+                    "surface": "#031427",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-dim": "#031427",
+                    "surface-container-low": "#0b1c30",
+                    "primary-fixed": "#dbe1ff",
+                    "cos-navy": "#0B1020",
+                    "surface-container": "#102034",
+                    "secondary": "#4cd7f6",
+                    "mobile-primary": "#0066FF",
+                    "error-container": "#93000a",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-container-high": "#1b2b3f",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-primary-fixed": "#00174b",
+                    "sync-active": "#FFD60A",
+                    "on-secondary-container": "#00424e",
+                    "surface-tint": "#b4c5ff",
+                    "on-error": "#690005",
+                    "surface-bright": "#2a3a4f",
+                    "cos-blue": "#2563EB",
+                    "cos-white": "#F8FAFC",
+                    "dark-bg": "#020617",
+                    "on-surface": "#d3e4fe",
+                    "cos-cyan": "#06B6D4",
+                    "secondary-fixed": "#acedff",
+                    "inverse-surface": "#d3e4fe",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "on-secondary": "#003640",
+                    "mobile-warning": "#FF9500",
+                    "on-primary-container": "#eeefff",
+                    "mobile-danger": "#FF3B30",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "outline": "#8d90a0",
+                    "inverse-on-surface": "#213145",
+                    "surface-container-lowest": "#000f21",
+                    "surface-variant": "#26364a",
+                    "surface-container-highest": "#26364a",
+                    "on-error-container": "#ffdad6",
+                    "inverse-primary": "#0053db",
+                    "tertiary": "#c1c5dc",
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "tertiary-container": "#686c80",
+                    "mobile-success": "#00C853",
+                    "primary": "#b4c5ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-3": "12px",
+                    "web-space-2": "8px",
+                    "web-space-8": "32px",
+                    "web-space-1": "4px",
+                    "web-base": "4px",
+                    "mobile-touch-target": "52px",
+                    "mobile-edge": "24px",
+                    "web-space-4": "16px"
+            },
+            "fontFamily": {
+                    "web-text-display": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1b2b3f;
+            border-radius: 10px;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(67, 70, 85, 0.3);
+        }
+        .active-ring {
+            box-shadow: inset 0 0 0 2px #2563eb;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface custom-scrollbar">
+<!-- TopAppBar -->
+<header class="bg-surface-dim text-primary flex items-center justify-between px-web-space-4 w-full h-mobile-touch-target fixed top-0 z-50">
+<div class="flex items-center gap-4">
+<button class="h-10 w-10 flex items-center justify-center rounded-full hover:bg-surface-bright transition-opacity active:opacity-80">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-mobile-text-hero text-[20px] font-bold tracking-tight">Account Settings</h1>
+</div>
+<button class="h-10 w-10 flex items-center justify-center rounded-full hover:bg-surface-bright transition-opacity active:opacity-80">
+<span class="material-symbols-outlined text-primary">more_vert</span>
+</button>
+</header>
+<main class="pt-20 pb-24 px-mobile-edge max-w-2xl mx-auto space-y-6">
+<!-- Profile Section -->
+<section class="glass-panel p-6 rounded-xl flex flex-col items-center text-center relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-cos-cyan"></div>
+<div class="relative mb-4">
+<div class="w-24 h-24 rounded-full border-4 border-surface-container-high overflow-hidden bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a senior site engineer wearing a white hard hat and high-visibility vest, standing against a background of a modern architectural steel structure at sunset. The lighting is crisp and cinematic with cool blue tones and warm orange highlights. The aesthetic is modern industrial and technical." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8e125A_OoNpXegOItIweuyJqT-Ulf7sIbGuRVxm-HUvXbWZA8KnQvCx-HlvDSczicK6q0Wn2UIZF7FZFi1-UMFMXmZOFUYrKAedzynf0VS8TBW1OQV95C5SmtsOhSZjBNaGr0bA5_wCpNAX8A3sEEsntl_mkwyIlSRVrCRlQVN2yTZMQBF9IvGqta3QiLi64JkKGRLci9AEW5ENxd1r4buoZpcwzi5l6ST5zDP0RGyFsuak_FNdUtC_NRbSORdqHIVT3bd7bdViU"/>
+</div>
+<div class="absolute bottom-0 right-0 bg-mobile-success w-6 h-6 rounded-full border-4 border-surface-container-low flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-white" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+<h2 class="font-mobile-text-hero text-2xl mb-1">Somchai Construction</h2>
+<p class="font-mobile-text-label text-cos-cyan uppercase tracking-wider text-xs mb-1">Senior Site Engineer</p>
+<p class="font-web-text-body text-on-surface-variant flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">domain</span>
+                BuildCorp Thailand
+            </p>
+<!-- Stats/Info Bento -->
+<div class="grid grid-cols-2 gap-3 w-full mt-6">
+<div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant/20 flex flex-col items-start">
+<span class="text-on-surface-variant font-web-text-tiny uppercase">Active Projects</span>
+<span class="font-mobile-text-hero text-primary">3</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg border border-outline-variant/20 flex flex-col items-start">
+<span class="text-on-surface-variant font-web-text-tiny uppercase">Reports Submitted</span>
+<span class="font-mobile-text-hero text-primary">142</span>
+</div>
+</div>
+</section>
+<!-- Application Settings Group -->
+<section class="space-y-3">
+<h3 class="font-mobile-text-label text-on-surface-variant uppercase tracking-widest text-[11px] px-1">Application Settings</h3>
+<div class="glass-panel rounded-xl overflow-hidden divide-y divide-outline-variant/20">
+<!-- Language Toggle -->
+<div class="flex items-center justify-between p-4 hover:bg-surface-bright transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">language</span>
+<div>
+<p class="font-mobile-text-label">Language</p>
+<p class="font-web-text-small text-on-surface-variant">Thai / English</p>
+</div>
+</div>
+<div class="flex bg-surface-container rounded p-1 gap-1">
+<button class="px-3 py-1 text-xs font-bold rounded bg-primary text-on-primary">TH</button>
+<button class="px-3 py-1 text-xs font-bold rounded text-on-surface-variant">EN</button>
+</div>
+</div>
+<!-- Theme Switcher -->
+<div class="flex items-center justify-between p-4 hover:bg-surface-bright transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">dark_mode</span>
+<div>
+<p class="font-mobile-text-label">Theme</p>
+<p class="font-web-text-small text-on-surface-variant">Dark Mode Active</p>
+</div>
+</div>
+<div class="flex bg-surface-container rounded-full p-1 border border-outline-variant/30">
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-on-surface-variant"><span class="material-symbols-outlined text-sm">light_mode</span></button>
+<button class="w-8 h-8 flex items-center justify-center rounded-full bg-primary text-on-primary"><span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">dark_mode</span></button>
+<button class="w-8 h-8 flex items-center justify-center rounded-full text-on-surface-variant"><span class="material-symbols-outlined text-sm">settings_brightness</span></button>
+</div>
+</div>
+<!-- Notification Settings -->
+<div class="flex items-center justify-between p-4 hover:bg-surface-bright transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">notifications_active</span>
+<div>
+<p class="font-mobile-text-label">Notifications</p>
+<p class="font-web-text-small text-on-surface-variant">Push &amp; Email</p>
+</div>
+</div>
+<div class="w-12 h-6 bg-primary-container rounded-full relative flex items-center px-1">
+<div class="w-4 h-4 bg-white rounded-full ml-auto"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Security Group -->
+<section class="space-y-3">
+<h3 class="font-mobile-text-label text-on-surface-variant uppercase tracking-widest text-[11px] px-1">Security &amp; Access</h3>
+<div class="glass-panel rounded-xl overflow-hidden divide-y divide-outline-variant/20">
+<!-- Password -->
+<button class="w-full flex items-center justify-between p-4 hover:bg-surface-bright transition-colors text-left">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">lock</span>
+<div>
+<p class="font-mobile-text-label">Password</p>
+<p class="font-web-text-small text-on-surface-variant">Last changed 3 months ago</p>
+</div>
+</div>
+<span class="text-primary font-mobile-text-label">Change</span>
+</button>
+<!-- 2FA -->
+<div class="flex items-center justify-between p-4">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">security</span>
+<div>
+<p class="font-mobile-text-label">Two-Factor Authentication</p>
+<p class="font-web-text-small text-on-surface-variant">Status: <span class="text-mobile-success">Active</span></p>
+</div>
+</div>
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</section>
+<!-- Support Section -->
+<section class="space-y-3">
+<h3 class="font-mobile-text-label text-on-surface-variant uppercase tracking-widest text-[11px] px-1">Support</h3>
+<div class="glass-panel rounded-xl overflow-hidden divide-y divide-outline-variant/20">
+<a class="flex items-center justify-between p-4 hover:bg-surface-bright transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">help</span>
+<p class="font-mobile-text-label">Help Center</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-surface-bright transition-colors" href="#">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">description</span>
+<p class="font-mobile-text-label">App Documentation</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</a>
+</div>
+</section>
+<!-- Footer Actions -->
+<section class="pt-6 space-y-6">
+<button class="w-full h-mobile-touch-target bg-mobile-danger text-white font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">logout</span>
+                Logout
+            </button>
+<div class="text-center">
+<p class="font-web-text-tiny text-on-surface-variant opacity-50 uppercase tracking-widest">Construction OS v2.4.0-Stable</p>
+<p class="font-web-text-tiny text-on-surface-variant opacity-30 mt-1">© 2024 BuildCorp Global Solutions</p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-mobile-edge py-web-space-2 bg-surface-container-low h-20 shadow-2xl">
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+<span class="font-mobile-text-label text-[10px] mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl">foundation</span>
+<span class="font-mobile-text-label text-[10px] mt-1">Projects</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl">sync</span>
+<span class="font-mobile-text-label text-[10px] mt-1">Sync</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full p-2 h-14 w-14 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-mobile-text-label text-[10px] mt-0.5">Profile</span>
+</div>
+</nav>
+<script>
+        // Simple micro-interactions
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                el.style.opacity = "0.7";
+            });
+            el.addEventListener('mouseup', () => {
+                el.style.opacity = "1";
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.opacity = "1";
+            });
+        });
+
+        // Toggle simulation for UI feedback
+        const languageBtns = document.querySelectorAll('.flex.bg-surface-container button');
+        languageBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                languageBtns.forEach(b => {
+                    b.classList.remove('bg-primary', 'text-on-primary');
+                    b.classList.add('text-on-surface-variant');
+                });
+                btn.classList.add('bg-primary', 'text-on-primary');
+                btn.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+</body></html>

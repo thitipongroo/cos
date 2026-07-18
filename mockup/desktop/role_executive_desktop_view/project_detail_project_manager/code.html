@@ -1,0 +1,479 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>ProjectOS | Skybridge Central Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #020617;
+            color: #d3e4fe;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 2px;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid #1e293b;
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-container-low": "#0b1c30",
+                        "dark-surface": "#0F172A",
+                        "outline": "#8d90a0",
+                        "mobile-primary": "#0066FF",
+                        "tertiary": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "sync-pending": "#94A3B8",
+                        "surface-variant": "#26364a",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#213145",
+                        "mobile-success": "#00C853",
+                        "surface-bright": "#2a3a4f",
+                        "cos-navy": "#0B1020",
+                        "cos-blue": "#2563EB",
+                        "primary": "#b4c5ff",
+                        "outline-variant": "#434655",
+                        "on-background": "#d3e4fe",
+                        "inverse-primary": "#0053db",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary": "#2b3041",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-surface": "#d3e4fe",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-surface-variant": "#c3c6d7",
+                        "error": "#ffb4ab",
+                        "dark-bg": "#020617",
+                        "surface-container": "#102034",
+                        "on-secondary": "#003640",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-highest": "#26364a",
+                        "on-tertiary-container": "#eeefff",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#eeefff",
+                        "error-container": "#93000a",
+                        "surface": "#031427",
+                        "inverse-surface": "#d3e4fe",
+                        "background": "#031427",
+                        "secondary-container": "#03b5d3",
+                        "primary-fixed": "#dbe1ff",
+                        "cos-cyan": "#06B6D4",
+                        "tertiary-container": "#686c80",
+                        "on-secondary-container": "#00424e",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-dim": "#031427",
+                        "secondary": "#4cd7f6",
+                        "on-primary": "#002a78",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-danger": "#FF3B30",
+                        "secondary-fixed": "#acedff",
+                        "mobile-warning": "#FF9500",
+                        "primary-container": "#2563eb",
+                        "sync-active": "#FFD60A",
+                        "cos-white": "#F8FAFC",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-tint": "#b4c5ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-8": "32px",
+                        "mobile-edge": "24px",
+                        "web-space-4": "16px",
+                        "web-space-2": "8px",
+                        "web-space-1": "4px",
+                        "mobile-touch-target": "52px",
+                        "web-base": "4px",
+                        "web-space-3": "12px"
+                    },
+                    "fontFamily": {
+                        "web-text": ["Inter Tight", "sans-serif"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-dark-bg text-on-surface selection:bg-cos-blue selection:text-white">
+<!-- Sidebar Navigation Shell -->
+<nav class="h-screen w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface-container-lowest flex flex-col py-web-space-8 z-50">
+<div class="px-web-space-4 mb-web-space-8">
+<div class="flex items-center gap-3"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUxHZSTQ9ruEbZVpPjRVDiwuUCB9y3JgNlaf95Y3uT_sWzPLQsHuwWMAEw7ySQqwlze-3Soh7FiXToITpiUTK2Qs9llce5sMaJ6JEiKRr4aBozLBpDaxlpuVMr6KEK-NE6CAu28fxM-DYLTIq5bHvMsfCN6ZpKjP7A5FBSu8cOVwCmmWQYM3Y6E1QRKtPjt8pfu2awziRXYQ6E1kt_XOcq3Jq4yp1GRlOzEUrohgOXYiPKE8u38WHzEZixIYJihaIgSIudzH_a7qk" alt="Construction OS Logo" class="h-8 w-auto object-contain"></div>
+</div>
+<div class="flex-1 px-web-space-2 space-y-1 overflow-y-auto custom-scrollbar">
+<a class="flex items-center gap-3 px-web-space-3 py-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded group" href="#">
+<span class="material-symbols-outlined">domain</span>
+<span class="font-web-text-body">Portfolio</span>
+</a>
+<a class="flex items-center gap-3 px-web-space-3 py-2 text-cos-blue bg-surface-container-high border-l-4 border-cos-blue transition-colors rounded-r" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">architecture</span>
+<span class="font-web-text-body font-semibold">Projects</span>
+</a>
+<a class="flex items-center gap-3 px-web-space-3 py-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded" href="#">
+<span class="material-symbols-outlined">notifications_active</span>
+<span class="font-web-text-body">Alerts</span>
+</a>
+<a class="flex items-center gap-3 px-web-space-3 py-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded" href="#">
+<span class="material-symbols-outlined">assessment</span>
+<span class="font-web-text-body">Reports</span>
+</a>
+<a class="flex items-center gap-3 px-web-space-3 py-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-web-text-body">Finance</span>
+</a>
+</div>
+<div class="px-web-space-2 pt-4 border-t border-outline-variant/30 space-y-1">
+<a class="flex items-center gap-3 px-web-space-3 py-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-web-text-body">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-web-space-3 py-2 text-on-surface-variant hover:bg-surface-container transition-colors rounded" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-web-text-body">Support</span>
+</a>
+</div>
+</nav>
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 left-64 h-14 bg-surface/80 backdrop-blur-md border-b border-outline-variant flex justify-between items-center px-web-space-8 z-40">
+<div class="flex items-center gap-2 text-web-text-small">
+<span class="text-outline">Portfolio</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-cos-white font-semibold">Project Detail</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-outline text-[18px]">search</span>
+<input class="bg-surface-container border border-outline-variant/50 rounded-full pl-10 pr-4 py-1 text-web-text-small w-64 focus:ring-1 focus:ring-cos-blue focus:border-cos-blue outline-none transition-all" placeholder="Global search..." type="text">
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-cos-white relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-mobile-danger rounded-full border-2 border-surface"></span>
+</button>
+<button class="text-on-surface-variant hover:text-cos-white">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-cos-blue/20 border border-cos-blue/40 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up professional portrait of a senior infrastructure executive manager, neutral grey background, corporate modern lighting, dark tailored suit, focused gaze, high resolution photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzFoyzJIIcHPrOvU57rdUub2iP3Vx46qOx6YkVs8qYyFhtn3YupFG0cBpHX_OcG_X--i-kVfGkI1jQIYI4der_s9Xt4lniw0Epp1zyEVs8YIf7WzNblgO1APIgmk9RrJmJdfXnZRovtYqRF_FQQgWDmvIBEVfLxBzS_UNfQlWiNEwAjbT4Ov54a22yHV0_e7lsSfs1FEZaO34BItlXEluBAfmcUl_u5A4oraoz-hEa1yDkVmM0z1rsQjnTDe37u6kF-U-WAHhAncs">
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-14 p-web-space-8 min-h-screen">
+<!-- Project Header -->
+<section class="mb-web-space-8">
+<div class="flex justify-between items-end mb-6">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="px-2 py-0.5 bg-mobile-success/10 text-mobile-success text-[10px] font-bold tracking-widest uppercase rounded">Active</span>
+<span class="text-outline font-web-text-small">BKK-2024-001</span>
+</div>
+<h2 class="text-web-text-display text-cos-white">Skybridge Central</h2>
+<div class="flex items-center gap-4 mt-2 text-outline">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="text-web-text-small">Bangkok, Thailand</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span class="text-web-text-small">Est. Sept 2025</span>
+</div>
+</div>
+</div>
+<div class="flex gap-4 h-fit">
+<div class="text-right px-4 border-r border-outline-variant/30">
+<p class="text-outline text-[11px] uppercase tracking-tighter">Budget</p>
+<p class="text-web-text-h2 text-cos-white">฿450M</p>
+</div>
+<div class="text-right px-4 border-r border-outline-variant/30">
+<p class="text-outline text-[11px] uppercase tracking-tighter">Duration</p>
+<p class="text-web-text-h2 text-cos-white">18 mo</p>
+</div>
+<div class="text-right px-4">
+<p class="text-outline text-[11px] uppercase tracking-tighter">Completion</p>
+<p class="text-web-text-h2 text-mobile-success">78%</p>
+</div>
+</div>
+</div>
+<!-- Tab Navigation -->
+<div class="flex border-b border-outline-variant gap-8 overflow-x-auto">
+<button class="pb-3 border-b-2 border-cos-blue text-cos-blue font-semibold text-web-text-body whitespace-nowrap">Summary</button>
+<button class="pb-3 border-b-2 border-transparent text-outline hover:text-on-surface-variant transition-colors text-web-text-body whitespace-nowrap">Schedule</button>
+<button class="pb-3 border-b-2 border-transparent text-outline hover:text-on-surface-variant transition-colors text-web-text-body whitespace-nowrap">Procurement</button>
+<button class="pb-3 border-b-2 border-transparent text-outline hover:text-on-surface-variant transition-colors text-web-text-body whitespace-nowrap">Finance</button>
+<button class="pb-3 border-b-2 border-transparent text-outline hover:text-on-surface-variant transition-colors text-web-text-body whitespace-nowrap">Site Logs</button>
+<button class="pb-3 border-b-2 border-transparent text-outline hover:text-on-surface-variant transition-colors text-web-text-body whitespace-nowrap">Members</button>
+</div>
+</section>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-web-space-4">
+<!-- Left Column: Key Progress & Financials (8 cols) -->
+<div class="col-span-8 space-y-web-space-4">
+<!-- Schedule Progress -->
+<div class="glass-panel p-web-space-4 rounded-lg">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-web-text-h2 text-cos-white flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-blue">event_upcoming</span>
+                            Schedule Progress
+                        </h3>
+<button class="text-cos-blue text-web-text-tiny uppercase tracking-widest font-bold">View Gantt</button>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between mb-2">
+<span class="text-web-text-body text-cos-white font-medium">Structural Works</span>
+<span class="text-web-text-body text-mobile-success font-bold">95%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-mobile-success h-2 rounded-full transition-all duration-1000" style="width: 95%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<span class="text-web-text-body text-cos-white font-medium">MEP Rough-in</span>
+<span class="text-web-text-body text-cos-blue font-bold">40%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-cos-blue h-2 rounded-full transition-all duration-1000" style="width: 40%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="text-web-text-body text-cos-white font-medium">Façade Installation</span>
+<span class="px-2 py-0.5 bg-mobile-danger/10 text-mobile-danger text-[10px] rounded uppercase font-bold">Delayed - 12 days</span>
+</div>
+<span class="text-web-text-body text-outline font-bold">12%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-mobile-danger h-2 rounded-full transition-all duration-1000" style="width: 12%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Middle Row Split -->
+<div class="grid grid-cols-2 gap-web-space-4">
+<!-- Financial Health -->
+<div class="glass-panel p-web-space-4 rounded-lg">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-web-text-h2 text-cos-white">Financial Health</h3>
+<span class="material-symbols-outlined text-outline">trending_down</span>
+</div>
+<div class="flex items-end gap-3 h-32 mb-4">
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-surface-container rounded-sm relative h-24">
+<div class="absolute bottom-0 w-full bg-cos-blue/40 h-full rounded-sm"></div>
+</div>
+<span class="text-[10px] text-outline uppercase">Budget</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-surface-container rounded-sm relative h-24">
+<div class="absolute bottom-0 w-full bg-cos-blue h-[65%] rounded-sm"></div>
+</div>
+<span class="text-[10px] text-outline uppercase">Actual</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2">
+<div class="w-full bg-surface-container rounded-sm relative h-24">
+<div class="absolute bottom-0 w-full bg-secondary h-[78%] rounded-sm"></div>
+</div>
+<span class="text-[10px] text-outline uppercase">Commit</span>
+</div>
+</div>
+<div class="bg-mobile-warning/10 border-l-4 border-mobile-warning p-3 rounded-r">
+<div class="flex justify-between items-center">
+<span class="text-web-text-small text-mobile-warning font-semibold">Variance Warning</span>
+<span class="text-web-text-body font-bold text-mobile-warning">฿12.4M</span>
+</div>
+</div>
+</div>
+<!-- Procurement Status -->
+<div class="glass-panel p-web-space-4 rounded-lg">
+<h3 class="font-web-text-h2 text-cos-white mb-4">Procurement Status</h3>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface-container-high p-4 rounded border border-outline-variant/30">
+<p class="text-web-text-display text-cos-white leading-tight">5</p>
+<p class="text-web-text-tiny text-outline uppercase mt-1">Pending Approval</p>
+</div>
+<div class="bg-surface-container-high p-4 rounded border border-outline-variant/30">
+<p class="text-web-text-display text-mobile-danger leading-tight">2</p>
+<p class="text-web-text-tiny text-outline uppercase mt-1">Delayed Deliveries</p>
+</div>
+</div>
+<div class="mt-4 space-y-2">
+<div class="flex justify-between items-center p-2 hover:bg-surface-container-highest transition-colors cursor-pointer rounded">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sync-pending text-[18px]">package_2</span>
+<span class="text-web-text-small text-on-surface">Concrete PO #902</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+</div>
+<div class="flex justify-between items-center p-2 hover:bg-surface-container-highest transition-colors cursor-pointer rounded">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-danger text-[18px]">error</span>
+<span class="text-web-text-small text-on-surface">Steel Rebar #441</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Feed -->
+<div class="glass-panel p-web-space-4 rounded-lg">
+<h3 class="font-web-text-h2 text-cos-white mb-6">Recent Site Activity</h3>
+<div class="space-y-4">
+<div class="flex gap-4 p-3 border border-outline-variant/30 rounded hover:bg-surface-container-high transition-colors">
+<div class="w-10 h-10 rounded bg-surface-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-cos-blue">description</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<p class="text-web-text-body font-semibold text-cos-white">Daily Field Report #122</p>
+<span class="text-web-text-tiny text-outline">2h ago</span>
+</div>
+<p class="text-web-text-small text-outline">Submitted by Somchai K. • Concrete pouring level 4 completed.</p>
+</div>
+</div>
+<div class="flex gap-4 p-3 border border-outline-variant/30 rounded hover:bg-surface-container-high transition-colors">
+<div class="w-10 h-10 rounded bg-mobile-success/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-mobile-success">verified_user</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<p class="text-web-text-body font-semibold text-cos-white">Safety Inspection Passed</p>
+<span class="text-web-text-tiny text-outline">5h ago</span>
+</div>
+<p class="text-web-text-small text-outline">0 Safety incidents reported. PPE compliance at 100%.</p>
+</div>
+</div>
+<div class="flex gap-4 p-3 border border-outline-variant/30 rounded hover:bg-surface-container-high transition-colors">
+<div class="w-10 h-10 rounded bg-cos-cyan/10 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-cos-cyan">biotech</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<p class="text-web-text-body font-semibold text-cos-white">QC Inspection: Foundation A</p>
+<span class="text-web-text-tiny text-outline">Yesterday</span>
+</div>
+<p class="text-web-text-small text-outline">Approved by Senior Inspector. Compressive strength tests meet specs.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: AI Sidebar (4 cols) -->
+<aside class="col-span-4 space-y-web-space-4">
+<div class="bg-cos-cyan/5 border border-cos-cyan/20 rounded-lg p-web-space-4 ai-glow sticky top-20">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-web-text-h2 text-cos-cyan">AI Site Intelligence</h3>
+</div>
+<!-- Delay Risk Module -->
+<div class="mb-8">
+<div class="flex justify-between items-end mb-2">
+<span class="text-web-text-small text-cos-cyan/80 uppercase font-bold tracking-wider">Delay Risk</span>
+<span class="text-web-text-h1 text-cos-cyan leading-none">72%</span>
+</div>
+<div class="h-1.5 w-full bg-cos-cyan/20 rounded-full overflow-hidden">
+<div class="h-full bg-cos-cyan transition-all duration-1000" style="width: 72%"></div>
+</div>
+<p class="text-web-text-small mt-3 text-on-surface-variant">Probability of <span class="text-cos-white font-semibold">MEP completion slip</span> detected based on current procurement delays and labor availability.</p>
+</div>
+<!-- Recommendation Module -->
+<div class="bg-surface-container-highest/50 p-4 rounded-lg border border-cos-cyan/10 mb-6">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-cos-cyan text-[18px]">lightbulb</span>
+<span class="text-web-text-small font-bold text-cos-cyan uppercase">Recommendation</span>
+</div>
+<p class="text-web-text-body text-cos-white leading-relaxed">
+                            Reassign <span class="text-cos-cyan font-bold underline decoration-cos-cyan/30">5 workers</span> from Structural to <span class="text-cos-cyan font-bold">MEP team</span> for the next 4 days.
+                        </p>
+<p class="text-[11px] text-outline mt-2 italic">Impact: Recovers 4 days of lost MEP schedule.</p>
+<button class="w-full mt-4 bg-cos-cyan text-cos-navy font-bold py-2 rounded text-web-text-small hover:bg-cos-cyan/90 transition-all active:scale-[0.98]">Execute Reallocation</button>
+</div>
+<!-- Resource Optimization -->
+<div class="space-y-4">
+<div class="flex items-center justify-between p-3 bg-cos-navy/40 rounded border border-outline-variant/20">
+<div>
+<p class="text-web-text-tiny text-outline uppercase">Concrete Pour Efficiency</p>
+<p class="text-web-text-body font-bold text-cos-white">+8% Improvement</p>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-mobile-success flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-success text-[18px]">trending_up</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-3 bg-cos-navy/40 rounded border border-outline-variant/20">
+<div>
+<p class="text-web-text-tiny text-outline uppercase">Waste Management</p>
+<p class="text-web-text-body font-bold text-cos-white">Optimized Paths</p>
+</div>
+<div class="w-10 h-10 rounded-full border-2 border-cos-cyan flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-cyan text-[18px]">route</span>
+</div>
+</div>
+</div>
+<!-- Quick Action -->
+<div class="mt-8 pt-6 border-t border-cos-cyan/10">
+<div class="flex items-center justify-between text-on-surface-variant hover:text-cos-cyan transition-colors cursor-pointer group">
+<span class="text-web-text-small font-semibold">Generate Labor Forecast</span>
+<span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Floating AI Assistant Trigger -->
+<div class="fixed bottom-8 right-8 z-50">
+<button class="w-14 h-14 bg-cos-cyan text-cos-navy rounded-full shadow-lg shadow-cos-cyan/20 flex items-center justify-center hover:scale-110 active:scale-90 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</button>
+</div>
+<script>
+        // Simple micro-interactions
+        document.querySelectorAll('.glass-panel, .bg-surface-container-high').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                el.style.borderColor = 'rgba(37, 99, 235, 0.4)';
+                el.style.transition = 'all 0.3s ease';
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.borderColor = '';
+            });
+        });
+    </script>
+
+
+</body></html>

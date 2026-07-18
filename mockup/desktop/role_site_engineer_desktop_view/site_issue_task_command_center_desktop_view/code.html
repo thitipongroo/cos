@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Site Issue &amp; Task Command Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#000f21",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-background": "#d3e4fe",
+                    "surface": "#031427",
+                    "mobile-success": "#00C853",
+                    "mobile-danger": "#FF3B30",
+                    "secondary-container": "#03b5d3",
+                    "on-error-container": "#ffdad6",
+                    "secondary": "#4cd7f6",
+                    "dark-surface": "#0F172A",
+                    "inverse-on-surface": "#213145",
+                    "surface-container": "#102034",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary": "#b4c5ff",
+                    "cos-blue": "#2563EB",
+                    "sync-active": "#FFD60A",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary": "#002a78",
+                    "on-tertiary": "#2b3041",
+                    "mobile-primary": "#0066FF",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-surface": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "primary-container": "#2563eb",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-secondary": "#003640",
+                    "surface-dim": "#031427",
+                    "cos-cyan": "#06B6D4",
+                    "outline-variant": "#434655",
+                    "tertiary-container": "#686c80",
+                    "surface-variant": "#26364a",
+                    "error": "#ffb4ab",
+                    "on-primary-fixed": "#00174b",
+                    "surface-tint": "#b4c5ff",
+                    "cos-navy": "#0B1020",
+                    "surface-bright": "#2a3a4f",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "cos-white": "#F8FAFC",
+                    "on-primary-container": "#eeefff",
+                    "sync-pending": "#94A3B8",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "dark-bg": "#020617",
+                    "on-tertiary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "outline": "#8d90a0",
+                    "inverse-primary": "#0053db",
+                    "background": "#031427",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "secondary-fixed": "#acedff",
+                    "mobile-warning": "#FF9500",
+                    "surface-container-highest": "#26364a",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-low": "#0b1c30",
+                    "on-secondary-fixed": "#001f26",
+                    "on-tertiary-fixed": "#161b2b",
+                    "error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-3": "12px",
+                    "web-space-2": "8px",
+                    "mobile-touch-target": "52px",
+                    "web-space-4": "16px",
+                    "web-base": "4px",
+                    "web-space-8": "32px",
+                    "mobile-edge": "24px"
+            },
+            "fontFamily": {
+                    "web-text-h2": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #020617;
+            overflow: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #434655;
+            border-radius: 10px;
+        }
+        .ai-glow {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-dark-bg text-on-surface h-screen flex flex-col">
+<!-- TopNavBar -->
+<header class="bg-surface-container border-b border-outline-variant flex justify-between items-center w-full px-web-space-4 py-web-space-2 max-w-full docked full-width top-0 z-50 h-14">
+<div class="flex items-center gap-web-space-8">
+<span class="font-web-text-h1 text-web-text-h1 font-bold text-on-surface">Construction OS</span>
+<nav class="hidden md:flex gap-web-space-4 items-center">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Marketplace</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Capital Planning</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200" href="#">Assets</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1" href="#">Bidding</a>
+</nav>
+</div>
+<div class="flex items-center gap-web-space-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-variant border-none rounded-lg pl-8 pr-4 py-1 text-web-text-body w-64 focus:ring-1 focus:ring-cos-blue" placeholder="Search tasks..." type="text"/>
+</div>
+<button class="bg-cos-blue text-cos-white px-web-space-3 py-1.5 rounded text-web-text-body font-semibold scale-95 active:opacity-80 transition-all">New Request</button>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-all">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-all">settings</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Close up of a professional construction project manager profile photo, neutral background, sharp focus, professional corporate photography style, high detail skin textures and soft overhead lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDN9xjcmT6PA5o9wNcE88zCvLq_G6U6UxGILrbo-P09E74oN8nG_z5FaN9JIswZ3mxZQbTEFl3SyRgeNf6CTsMn-_kiIBHjcLCho8tIXgtiqq6GVNQVMbhPpl77zwuXO5CXfaW5fE9q2pxE_YvA4U7Lfgs7oHxxco3Kq2xI9oq3c-oOTiZnlsi94966G1LKBHCV8Lw-ia8ylll4MARxbp_huz5fCay9Laz5qshsSZ0HTeGQIF-ZY0fpZHzjs-Gk7NXnF1NKYt4e2A4"/>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full p-web-space-3 w-64 bg-surface-container-low border-r border-outline-variant docked h-screen left-0">
+<div class="flex items-center gap-3 px-2 mb-8">
+<div class="w-10 h-10 bg-cos-blue rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-white" style="font-variation-settings: 'FILL' 1;">tv_guide</span>
+</div>
+<div>
+<h2 class="font-web-text-h2 text-web-text-body font-bold text-on-surface leading-tight">Metropolis V2</h2>
+<p class="text-web-text-tiny text-on-surface-variant uppercase tracking-wider">Capital Planning</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg font-web-text-body" href="#">
+<span class="material-symbols-outlined">dashboard</span> Dashboard
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg font-web-text-body" href="#">
+<span class="material-symbols-outlined">storefront</span> Marketplace
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container font-semibold rounded-lg font-web-text-body" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">construction</span> Infrastructure
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg font-web-text-body" href="#">
+<span class="material-symbols-outlined">domain</span> Portfolio
+                </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg font-web-text-body" href="#">
+<span class="material-symbols-outlined">analytics</span> Analytics
+                </a>
+</nav>
+<div class="mt-auto pt-4 border-t border-outline-variant space-y-4">
+<button class="w-full flex items-center justify-between px-3 py-2 bg-cos-cyan bg-opacity-10 text-cos-cyan rounded border border-cos-cyan/20 font-web-text-body hover:bg-opacity-20 transition-all">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span> AI Insights
+                    </span>
+<span class="bg-cos-cyan text-surface text-[10px] font-bold px-1 rounded">PRO</span>
+</button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-1.5 text-on-surface-variant hover:bg-surface-variant rounded transition-all font-web-text-small" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span> Support
+                    </a>
+<a class="flex items-center gap-3 px-3 py-1.5 text-on-surface-variant hover:bg-surface-variant rounded transition-all font-web-text-small" href="#">
+<span class="material-symbols-outlined text-[18px]">history</span> Logs
+                    </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Command Center -->
+<main class="flex-1 flex overflow-hidden bg-background">
+<!-- Left Pane: Task List -->
+<section class="w-[420px] border-r border-outline-variant flex flex-col bg-surface-container-low">
+<div class="p-web-space-4 border-b border-outline-variant bg-surface-container">
+<div class="flex justify-between items-center mb-4">
+<h1 class="font-web-text-h2 text-web-text-h2 text-on-surface">Active Issues</h1>
+<span class="text-web-text-tiny bg-surface-variant text-on-surface-variant px-2 py-0.5 rounded border border-outline-variant">14 Pending</span>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 text-web-text-tiny font-bold py-1 px-2 rounded bg-primary text-on-primary border border-primary">All Tasks</button>
+<button class="flex-1 text-web-text-tiny font-bold py-1 px-2 rounded bg-surface-variant text-on-surface-variant border border-outline-variant hover:bg-surface-bright transition-all">Blocked</button>
+<button class="flex-1 text-web-text-tiny font-bold py-1 px-2 rounded bg-surface-variant text-on-surface-variant border border-outline-variant hover:bg-surface-bright transition-all">Resolved</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-2">
+<!-- Task Item: Blocked -->
+<div class="group relative bg-surface-container-high border-l-4 border-mobile-danger rounded p-web-space-3 cursor-pointer hover:bg-surface-variant transition-all ring-1 ring-outline-variant/30 active:ring-primary">
+<div class="flex justify-between items-start mb-1">
+<span class="text-web-text-tiny text-on-surface-variant font-mono">#ISSUE-492</span>
+<span class="text-web-text-tiny bg-mobile-danger/10 text-mobile-danger px-2 py-0.5 rounded font-bold">BLOCKED</span>
+</div>
+<h3 class="font-web-text-body font-semibold text-on-surface leading-snug mb-2">Foundation concrete pour delay due to water table surge</h3>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<img class="w-6 h-6 rounded-full border-2 border-surface" data-alt="Close up avatar of a field engineer in a bright safety vest, daylight lighting, professional outdoor construction photography, sharp details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfn3g5-F4F_tFavT3iaPIG3N9TK6txYHfYMu4vWAESJ8WS8t2PmDvXTc51yEZe8a1e735tkSyTc_AXFh4k7Ygf3qHkDSxUc0LaNLrFnPpUp8wIuZhuRLKf7h7a_9fe-Cveb1gXA5BMJQpzplfr8jYTqX1Ah9urt6PzjDhFPi-vFf2TUlsac4X---QCrW1RKqOnn5uBkouPPSOQMAUUmTCVX-QpyyrTPEbyxfh2ak0A9zFati4IgYU1EYvQ3ADkKSF5TljhmkILUVI"/>
+<img class="w-6 h-6 rounded-full border-2 border-surface" data-alt="Portrait of a female structural engineer wearing a hardhat, looking focused, studio lighting with a soft gradient background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5IiwZ2rTteSDwR-OiOPDj5EM6Fuc5Z5JD1V8zcaMLyzzNO1VCnWRau7xhiWA_CPK4qVxZBFwPy4JddF6VSpWC7IJMSI-7wb_CRFCeg802G_M3vvkam5jA8XCUnBgwHdWc8zvwdxlWfU5pLJeRXEfpGukr__3wDn6H37kAy47ydpj7xqz5VSEAfRNacTwSbo7NYd0g99mC1KHCEd7FXKqkfNL7qy7rjyYFKHw4AlvyoxvHyV2HMg9hGD012AmCf2T5b51AXUnLt2c"/>
+</div>
+<span class="text-web-text-small text-on-surface-variant">2 Assignments</span>
+<span class="ml-auto text-web-text-tiny text-mobile-danger flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> Critical Risk
+                            </span>
+</div>
+<div class="mt-2 flex gap-2">
+<div class="h-1 flex-1 bg-outline-variant rounded-full overflow-hidden">
+<div class="h-full bg-mobile-danger w-3/4"></div>
+</div>
+</div>
+</div>
+<!-- Task Item: AI Monitored -->
+<div class="group relative bg-surface-container-high border-l-4 border-cos-cyan rounded p-web-space-3 cursor-pointer hover:bg-surface-variant transition-all ring-1 ring-outline-variant/30 bg-opacity-50">
+<div class="flex justify-between items-start mb-1">
+<span class="text-web-text-tiny text-on-surface-variant font-mono">#ISSUE-501</span>
+<span class="text-web-text-tiny bg-cos-cyan/10 text-cos-cyan px-2 py-0.5 rounded font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">auto_awesome</span> ANALYZING
+                            </span>
+</div>
+<h3 class="font-web-text-body font-semibold text-on-surface leading-snug mb-2">Steel reinforcement delivery logistics bottleneck</h3>
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 bg-surface-variant rounded-full flex items-center justify-center border-2 border-surface">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">person</span>
+</div>
+<span class="text-web-text-small text-on-surface-variant">Unassigned</span>
+<span class="ml-auto text-web-text-tiny text-on-surface-variant italic">ETA: 4h</span>
+</div>
+</div>
+<!-- Task Item: Resolved -->
+<div class="group relative bg-surface-container-high border-l-4 border-mobile-success rounded p-web-space-3 cursor-pointer hover:bg-surface-variant transition-all opacity-80 ring-1 ring-outline-variant/30">
+<div class="flex justify-between items-start mb-1">
+<span class="text-web-text-tiny text-on-surface-variant font-mono">#ISSUE-485</span>
+<span class="text-web-text-tiny bg-mobile-success/10 text-mobile-success px-2 py-0.5 rounded font-bold">RESOLVED</span>
+</div>
+<h3 class="font-web-text-body font-semibold text-on-surface leading-snug mb-2">Utility line relocation at Sector 4-B</h3>
+<div class="flex items-center gap-3">
+<img class="w-6 h-6 rounded-full border-2 border-surface" data-alt="Portrait of a civil engineer smiling confidently, construction site bokeh background, sunset warm lighting, high professional quality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrEhJF7TFYkEtB36e_zBP0OgIV1LBz7Xh8sQsCJmVyZeCMoLyLiFjsIlQLJLppg1ynIuXhrMqaKGNKXSCs0zOu53f--GPzURJsgs82_3p5Dcp6KAdViOMLiLLwygQHZ_OYieNqdXVK5zOG-WiuCuPJUDmrCj-vR5SfesULFv4MAb1cAfOolj49hHSYycwSB8oOaFt7-VDF1lfopXgFTMWqRKsuDsLPkQUBE5iW07gekyqYWZ6irP9Nk8ODxpl8IAxqSKJH28iKwyA"/>
+<span class="text-web-text-small text-on-surface-variant">J. Carter</span>
+<span class="ml-auto material-symbols-outlined text-mobile-success text-[16px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<!-- Repeated Items for Density -->
+<div class="group relative bg-surface-container-high border-l-4 border-mobile-warning rounded p-web-space-3 cursor-pointer hover:bg-surface-variant transition-all ring-1 ring-outline-variant/30">
+<div class="flex justify-between items-start mb-1">
+<span class="text-web-text-tiny text-on-surface-variant font-mono">#ISSUE-505</span>
+<span class="text-web-text-tiny bg-mobile-warning/10 text-mobile-warning px-2 py-0.5 rounded font-bold">WARNING</span>
+</div>
+<h3 class="font-web-text-body font-semibold text-on-surface leading-snug mb-2">HVAC ducting alignment discrepancy in Main Atrium</h3>
+<div class="flex items-center gap-3">
+<span class="text-web-text-small text-on-surface-variant">3 Assignments</span>
+<span class="ml-auto text-web-text-tiny text-on-surface-variant italic">2m ago</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Pane: Detail & Action Panel -->
+<section class="flex-1 flex flex-col overflow-hidden">
+<!-- Detail Header -->
+<div class="p-web-space-8 border-b border-outline-variant bg-surface shadow-sm z-10">
+<div class="flex justify-between items-start mb-6">
+<div class="max-w-2xl">
+<nav class="flex items-center gap-2 text-web-text-small text-on-surface-variant mb-2">
+<span>Infrastructure</span> <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span>Groundworks</span> <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-on-surface">ISSUE-492</span>
+</nav>
+<h1 class="font-web-text-display text-web-text-display text-on-surface mb-2">Foundation concrete pour delay due to water table surge</h1>
+<div class="flex flex-wrap gap-3">
+<span class="flex items-center gap-1.5 text-web-text-body bg-surface-variant border border-outline-variant px-3 py-1 rounded">
+<span class="material-symbols-outlined text-mobile-danger text-[18px]">emergency</span> Priority: Critical
+                                </span>
+<span class="flex items-center gap-1.5 text-web-text-body bg-surface-variant border border-outline-variant px-3 py-1 rounded">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">location_on</span> Sector 7, Block C
+                                </span>
+<span class="flex items-center gap-1.5 text-web-text-body bg-surface-variant border border-outline-variant px-3 py-1 rounded">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">calendar_today</span> 14 Oct 2023
+                                </span>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-variant hover:bg-surface-bright text-on-surface border border-outline-variant px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined">share</span> Export
+                            </button>
+<button class="bg-cos-blue hover:bg-blue-600 text-cos-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg shadow-cos-blue/20 transition-all">
+<span class="material-symbols-outlined">edit</span> Manual Override
+                            </button>
+</div>
+</div>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto custom-scrollbar p-web-space-8 space-y-8">
+<!-- Grid Layout for Intelligence -->
+<div class="grid grid-cols-12 gap-6">
+<!-- AI Risk Analysis Module -->
+<div class="col-span-12 lg:col-span-7 bg-cos-cyan/5 border-l-2 border-cos-cyan p-web-space-4 rounded-r-xl ai-glow">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-web-text-h2 text-web-text-body font-bold text-cos-cyan uppercase tracking-wider">AI Risk Analysis</h3>
+</div>
+<p class="text-web-text-body text-on-surface mb-6 leading-relaxed">
+                                Sensor data indicates ground water levels have risen by 14% in the last 6 hours due to upstream discharge. Continuing the pour now presents a 78% probability of structural micro-fissures within 3 years.
+                            </p>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-high border border-cos-cyan/20 p-3 rounded">
+<div class="text-web-text-tiny text-on-surface-variant mb-1">IMPACT ON SCHEDULE</div>
+<div class="text-web-text-h2 text-on-surface font-bold text-mobile-warning">+4.5 Days</div>
+</div>
+<div class="bg-surface-container-high border border-cos-cyan/20 p-3 rounded">
+<div class="text-web-text-tiny text-on-surface-variant mb-1">ESTIMATED COST AT RISK</div>
+<div class="text-web-text-h2 text-on-surface font-bold text-mobile-danger">$245k</div>
+</div>
+</div>
+<div class="mt-6">
+<h4 class="text-web-text-small font-bold text-on-surface-variant mb-2">PROPOSED REMEDIATION</h4>
+<ul class="space-y-2">
+<li class="flex items-center gap-2 text-web-text-small text-on-surface">
+<span class="material-symbols-outlined text-cos-cyan text-[16px]">check</span> Activate secondary dewatering pumps in Sector 7-C
+                                    </li>
+<li class="flex items-center gap-2 text-web-text-small text-on-surface">
+<span class="material-symbols-outlined text-cos-cyan text-[16px]">check</span> Re-route concrete delivery to Sector 8 North
+                                    </li>
+</ul>
+</div>
+</div>
+<!-- Impact Analysis Map/Asset -->
+<div class="col-span-12 lg:col-span-5 flex flex-col gap-4">
+<div class="bg-surface-container-high rounded-xl border border-outline-variant overflow-hidden flex-1 relative min-h-[300px]">
+<img class="w-full h-full object-cover" data-alt="A sophisticated architectural 3D site map displaying construction progress. A specific area is highlighted with a pulsating translucent red sphere indicating a problem zone. High-tech UI overlays with topographical lines, measurement callouts, and digital infrastructure indicators. Dark navy and blue color palette with glowing neon accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDEIjRtb62jK_mTKuVOEdDDy-iE27unqtwI8sJlSm4Iz8mce_3dIYaOfA61NtDYNvpzxyxV5eD73hC5urdROWeUjWOxaeEgQ-yWJ9IdlbaEoNdXCwCK5OCB2hGuHeGR3JAg3to1A3r9Bz8mQO8PnWwfr-vVWYbctZwqy1ZdnMBc2IGC9D9kre4VUrqPZTSwccuDBn26wC21VAJk37LIqkV_Kor7Rd7BpuFpYX25A0mGe1VCBV61S2moH2S_spaev8aHzpsozidAQNM"/>
+<div class="absolute bottom-4 right-4 bg-surface-container p-2 rounded-lg border border-outline-variant flex items-center gap-2">
+<span class="w-2 h-2 bg-mobile-danger rounded-full animate-pulse"></span>
+<span class="text-web-text-tiny font-bold text-on-surface">LIVE SITE FEED</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Steps / Manual Overrides -->
+<div class="space-y-4">
+<h3 class="font-web-text-h2 text-web-text-h2 text-on-surface">Action Status Tracking</h3>
+<div class="bg-surface-container-high border border-outline-variant rounded-xl divide-y divide-outline-variant">
+<!-- Action Item 1 -->
+<div class="p-web-space-4 flex items-center justify-between group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-mobile-success/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+</div>
+<div>
+<h4 class="font-web-text-body font-semibold text-on-surface">Secondary Pump Activation</h4>
+<p class="text-web-text-small text-on-surface-variant">Pump P-702 engaged at 08:45 AM. Pressure stabilized.</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-web-text-small text-mobile-success font-bold">COMPLETED</span>
+<button class="p-2 hover:bg-surface-variant rounded transition-all opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-on-surface-variant">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Action Item 2 -->
+<div class="p-web-space-4 flex items-center justify-between group">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-sync-active/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-sync-active">local_shipping</span>
+</div>
+<div>
+<h4 class="font-web-text-body font-semibold text-on-surface">Concrete Logistics Re-routing</h4>
+<p class="text-web-text-small text-on-surface-variant">Inbound trucks re-directed to alternate hold area.</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-variant border border-outline-variant rounded">
+<span class="w-2 h-2 bg-sync-active rounded-full"></span>
+<span class="text-web-text-tiny font-bold text-on-surface">PENDING OVERRIDE</span>
+</div>
+<button class="p-2 hover:bg-surface-variant rounded transition-all opacity-0 group-hover:opacity-100">
+<span class="material-symbols-outlined text-on-surface-variant">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Voice Note / Activity Log -->
+<div class="bg-surface-container border border-outline-variant rounded-xl p-web-space-4">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-web-text-body font-bold text-on-surface">Activity Log &amp; Voice Notes</h3>
+<button class="text-web-text-small text-cos-blue font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">add</span> Add Update
+                            </button>
+</div>
+<div class="space-y-4">
+<div class="flex gap-4">
+<img class="w-8 h-8 rounded-full" data-alt="Close up of a construction foreman profile, outdoor, sharp features, early morning light, wearing a high-visibility jacket." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDsHxHYNvhYiQoqnfa3QN8S-FAfMkryC5Nm7Ezsm1dg8uUn151GdAOrbvWRwEPzD55uVYW1-mKzMaef5OiWB5ufyBR7ntAg0spFDo5gADszKVcGszYtrE0F2nXmMOQYoEzdZam51B-mv71Ev3W_lgwfvWNcsL5v7RrAEUswFBb-qhQuhW2n0MtjFw18fgILNdLRG3A2RqsQvNRoqd4jDaOkfWlJYpI5j3TvDHfLxzHWS8DZ4hrFrGLM3qmx6s0qpKDwQiTnMAZOqo"/>
+<div class="flex-1 bg-surface-variant/50 p-3 rounded-lg border border-outline-variant">
+<div class="flex justify-between items-center mb-2">
+<span class="text-web-text-small font-bold text-on-surface">Mike Henderson</span>
+<span class="text-web-text-tiny text-on-surface-variant">10:12 AM</span>
+</div>
+<!-- Voice Note Component -->
+<div class="flex items-center gap-3 bg-surface-container rounded-full p-2 border border-outline-variant max-w-sm">
+<button class="w-8 h-8 bg-mobile-primary rounded-full flex items-center justify-center text-cos-white hover:bg-blue-600 transition-all">
+<span class="material-symbols-outlined text-[20px]">play_arrow</span>
+</button>
+<div class="flex-1 h-1 bg-outline-variant rounded-full relative overflow-hidden">
+<div class="absolute inset-y-0 left-0 bg-cos-blue w-1/3"></div>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant font-mono pr-2">0:14</span>
+</div>
+<p class="mt-3 text-web-text-body text-on-surface-variant leading-relaxed italic">
+                                        "Site check confirms water ingress from Sector 7 trench. Pumping capacity insufficient for planned 2pm pour."
+                                    </p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Quick Actions (Mobile Context Floating Elements) -->
+<div class="p-web-space-4 border-t border-outline-variant bg-surface-container flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-2 text-web-text-small text-on-surface-variant">
+<span class="material-symbols-outlined text-mobile-success text-[18px]">cloud_done</span> 
+                            Synced with Main Hub
+                        </span>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-variant text-on-surface px-4 py-1.5 rounded text-web-text-small font-bold hover:bg-surface-bright border border-outline-variant transition-all">Flag as Resolved</button>
+<button class="bg-mobile-danger text-cos-white px-4 py-1.5 rounded text-web-text-small font-bold hover:bg-red-600 shadow-md shadow-red-900/20 transition-all">Escalate Issue</button>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        // Simple hover effect and task selection logic placeholder
+        document.querySelectorAll('.group.relative').forEach(card => {
+            card.addEventListener('click', () => {
+                // Remove active ring from others
+                document.querySelectorAll('.group.relative').forEach(c => c.classList.remove('ring-primary', 'bg-surface-variant'));
+                // Add to current
+                card.classList.add('ring-primary', 'bg-surface-variant');
+            });
+        });
+    </script>
+</body></html>

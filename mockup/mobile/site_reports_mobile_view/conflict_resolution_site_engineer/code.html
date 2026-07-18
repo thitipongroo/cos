@@ -1,0 +1,317 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Conflict Resolution | SiteOps Project Horizon</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .technical-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+        }
+        .diff-highlight {
+            position: relative;
+        }
+        .diff-highlight::after {
+            content: '';
+            position: absolute;
+            left: -12px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: #06B6D4;
+            border-radius: 2px;
+        }
+    </style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-container": "#2563eb",
+                    "surface-container-lowest": "#000f21",
+                    "error-container": "#93000a",
+                    "on-tertiary": "#2b3041",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-danger": "#FF3B30",
+                    "inverse-primary": "#0053db",
+                    "surface-tint": "#b4c5ff",
+                    "dark-bg": "#020617",
+                    "on-tertiary-container": "#eeefff",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-background": "#d3e4fe",
+                    "cos-navy": "#0B1020",
+                    "on-surface": "#d3e4fe",
+                    "mobile-success": "#00C853",
+                    "on-tertiary-fixed": "#161b2b",
+                    "primary-fixed": "#dbe1ff",
+                    "cos-blue": "#2563EB",
+                    "on-primary": "#002a78",
+                    "primary": "#b4c5ff",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container": "#102034",
+                    "mobile-warning": "#FF9500",
+                    "outline-variant": "#434655",
+                    "on-surface-variant": "#c3c6d7",
+                    "sync-active": "#FFD60A",
+                    "sync-pending": "#94A3B8",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-high": "#1b2b3f",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary-container": "#686c80",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "tertiary": "#c1c5dc",
+                    "secondary": "#4cd7f6",
+                    "surface-bright": "#2a3a4f",
+                    "surface-variant": "#26364a",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-dim": "#031427",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-primary-container": "#eeefff",
+                    "outline": "#8d90a0",
+                    "surface-container-highest": "#26364a",
+                    "inverse-surface": "#d3e4fe",
+                    "secondary-fixed": "#acedff",
+                    "background": "#031427",
+                    "on-secondary-container": "#00424e",
+                    "secondary-container": "#03b5d3",
+                    "on-primary-fixed": "#00174b",
+                    "cos-cyan": "#06B6D4",
+                    "on-secondary": "#003640",
+                    "surface": "#031427",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-error-container": "#ffdad6",
+                    "inverse-on-surface": "#213145",
+                    "cos-white": "#F8FAFC",
+                    "dark-surface": "#0F172A",
+                    "on-error": "#690005"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-base": "4px",
+                    "mobile-touch-target": "52px",
+                    "web-space-3": "12px",
+                    "web-space-1": "4px",
+                    "web-space-2": "8px",
+                    "web-space-8": "32px",
+                    "web-space-4": "16px",
+                    "mobile-edge": "24px"
+            },
+            "fontFamily": {
+                    "mobile-text-label": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-dark-bg text-on-surface font-mobile-text-body selection:bg-cos-cyan/30 overflow-x-hidden">
+<!-- Top AppBar (From JSON logic) -->
+<header class="bg-surface dark:bg-dark-surface flex justify-between items-center w-full px-mobile-edge h-mobile-touch-target fixed top-0 z-[100] border-b border-white/5">
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-bright transition-colors active:scale-90">
+<span class="material-symbols-outlined text-mobile-primary">arrow_back</span>
+</button>
+<h1 class="font-mobile-text-hero text-web-text-h2 text-mobile-primary dark:text-primary">Resolve Conflict</h1>
+</div>
+<div class="flex items-center gap-3">
+<div class="hidden md:flex flex-col items-end mr-2">
+<span class="text-web-text-tiny uppercase text-on-surface-variant">Authored by</span>
+<span class="text-web-text-small font-bold">Site Engineer Profile</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+</div>
+</header>
+<main class="pt-[72px] pb-[100px] min-h-screen technical-grid">
+<!-- AI Insight Banner -->
+<div class="mx-mobile-edge mt-6 mb-8 p-4 rounded-xl border-l-4 border-cos-cyan bg-cos-cyan/5 flex items-start gap-4">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<div>
+<p class="text-cos-cyan font-mobile-text-label mb-1">AI SYNC ASSISTANT</p>
+<p class="text-web-text-small text-on-surface-variant">Detected data discrepancy in <span class="text-on-surface font-bold">Daily Site Report: Oct 24</span>. Cloud version updated 12 minutes ago by Field Sup. Sarah Jenkins.</p>
+</div>
+</div>
+<div class="px-mobile-edge max-w-4xl mx-auto space-y-6">
+<!-- Comparison Container -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Local Version Card -->
+<div class="flex flex-col rounded-xl border border-outline-variant/30 bg-surface-container overflow-hidden">
+<div class="p-4 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-high">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant">smartphone</span>
+<span class="font-mobile-text-label">Local Version</span>
+</div>
+<span class="text-web-text-tiny px-2 py-0.5 rounded bg-cos-blue/20 text-cos-blue">DEVICE</span>
+</div>
+<div class="p-6 space-y-6 flex-grow">
+<div class="space-y-1">
+<label class="text-web-text-tiny uppercase text-on-surface-variant">Manpower Count</label>
+<p class="text-mobile-text-hero text-cos-white diff-highlight">42 Workers</p>
+</div>
+<div class="space-y-1">
+<label class="text-web-text-tiny uppercase text-on-surface-variant">Blocker Notes</label>
+<p class="text-web-text-body text-on-surface leading-relaxed">Excavation paused at Zone B due to unmapped utility line. Awaiting technician arrival at 14:00.</p>
+</div>
+<div class="space-y-1">
+<label class="text-web-text-tiny uppercase text-on-surface-variant">Material Status</label>
+<p class="text-web-text-body text-on-surface">Concrete delivery delayed to Oct 25.</p>
+</div>
+</div>
+<div class="p-4 bg-surface-container-lowest/50">
+<button class="w-full h-mobile-touch-target bg-surface-bright hover:bg-white/10 text-on-surface border border-outline-variant/40 rounded-xl font-mobile-text-label transition-all active:scale-95">
+                            Keep Local
+                        </button>
+</div>
+</div>
+<!-- Server Version Card -->
+<div class="flex flex-col rounded-xl border-2 border-cos-cyan bg-dark-surface overflow-hidden shadow-2xl shadow-cos-cyan/10">
+<div class="p-4 border-b border-cos-cyan/20 flex justify-between items-center bg-cos-cyan/10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan">cloud_done</span>
+<span class="font-mobile-text-label text-cos-cyan">Server Version</span>
+</div>
+<span class="text-web-text-tiny px-2 py-0.5 rounded bg-cos-cyan/20 text-cos-cyan">CLOUD</span>
+</div>
+<div class="p-6 space-y-6 flex-grow">
+<div class="space-y-1">
+<label class="text-web-text-tiny uppercase text-on-surface-variant">Manpower Count</label>
+<p class="text-mobile-text-hero text-cos-white diff-highlight">38 Workers</p>
+</div>
+<div class="space-y-1">
+<label class="text-web-text-tiny uppercase text-on-surface-variant">Blocker Notes</label>
+<p class="text-web-text-body text-on-surface leading-relaxed">Minor delay at Zone B. Utility line identified. Technician cleared site at 11:30 AM.</p>
+</div>
+<div class="space-y-1">
+<label class="text-web-text-tiny uppercase text-on-surface-variant">Material Status</label>
+<p class="text-web-text-body text-on-surface">Concrete delivery confirmed for Oct 24, 16:30.</p>
+</div>
+</div>
+<div class="p-4 bg-cos-cyan/5">
+<button class="w-full h-mobile-touch-target bg-cos-cyan text-cos-navy rounded-xl font-mobile-text-label font-bold hover:brightness-110 transition-all active:scale-95 shadow-lg shadow-cos-cyan/20">
+                            Use Server Version
+                        </button>
+</div>
+</div>
+</div>
+<!-- Manual Merge Option -->
+<button class="w-full flex items-center justify-between p-5 rounded-xl border border-dashed border-outline-variant/60 hover:bg-surface-container-high transition-colors group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center group-hover:bg-cos-cyan/20 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-cos-cyan">call_merge</span>
+</div>
+<div class="text-left">
+<p class="font-mobile-text-label">Merge Manually</p>
+<p class="text-web-text-tiny text-on-surface-variant">Select specific fields from each version to combine</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</button>
+<!-- Visual Context Map/Image -->
+<div class="rounded-xl overflow-hidden border border-outline-variant/30 relative h-48">
+<img class="w-full h-full object-cover opacity-50 grayscale hover:grayscale-0 transition-all duration-500" data-alt="A highly detailed 3D architectural site map showing Zone B of a large-scale construction project. The render has a technical, dark mode aesthetic with glowing cyan and blue indicators highlighting a utility line conflict area. High contrast, sharp edges, and professional lighting suggest a mission-critical operating system interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDiyWKLCzZXw6xd2JtBr477mrbzjd3n7fYRw-Ik-kYIPrUU9xnl4nu9xa6ZNnI_04HbWp3Hu2PIMhbtAfTijkWfPqWP4vL2QHCygTLZMgWWvNQhPf5lXiCdyuJIr8fZoZXFtOtJeRklJijkr1-s_vBxIjD3pECerkekrFy2yaEUa3bAKK3kcKarMaHcku74kxDt0UbEkqITdvE73jG3WfgVbh0aTunafyprh_jilJZWVVO-DNVS3k4JboCwqj-UmuQsWoFLphXN5io">
+<div class="absolute inset-0 bg-gradient-to-t from-dark-bg to-transparent"></div>
+<div class="absolute bottom-4 left-6">
+<span class="flex items-center gap-2 text-web-text-small text-on-surface">
+<span class="w-2 h-2 rounded-full bg-cos-cyan animate-pulse"></span>
+                        Conflict Location: North Sector, Zone B
+                    </span>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Status Bar -->
+<footer class="fixed bottom-0 left-0 w-full z-[100] bg-surface-container-high dark:bg-dark-surface border-t border-white/5 flex flex-col">
+<div class="flex items-center justify-between px-6 h-12">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-success text-[16px]">sync</span>
+<span class="text-web-text-tiny text-on-surface-variant">Last synced: Today at 08:42 AM</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="text-web-text-tiny uppercase font-bold tracking-wider">Online</span>
+</div>
+<span class="text-web-text-tiny text-on-surface-variant">Lat: 40.7128° N, Lon: 74.0060° W</span>
+</div>
+</div>
+<!-- Tab Bar (Simulating BottomNavBar from JSON) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 h-[72px] bg-surface dark:bg-dark-surface border-t border-white/5 md:hidden">
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-web-text-tiny mt-1">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-web-text-tiny mt-1">Issues</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-web-text-tiny mt-1">Tasks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1">
+<span class="material-symbols-outlined">description</span>
+<span class="text-web-text-tiny mt-1">Reports</span>
+</div>
+</nav>
+</footer>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.classList.add('opacity-80');
+            });
+            button.addEventListener('touchend', function() {
+                this.classList.remove('opacity-80');
+            });
+        });
+        
+        // Auto-scroll simulation or simple interactions can be added here
+        console.log("Conflict Resolution Interface Loaded");
+    </script>
+</body></html>

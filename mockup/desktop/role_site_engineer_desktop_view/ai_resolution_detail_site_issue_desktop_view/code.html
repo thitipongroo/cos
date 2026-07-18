@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: 'Inter Tight', sans-serif;
+      background-color: #020617; /* dark-bg */
+      color: #d3e4fe; /* on-surface */
+      overflow-x: hidden;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      vertical-align: middle;
+    }
+    .glass-panel {
+      background: rgba(16, 32, 52, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(141, 144, 160, 0.1);
+    }
+    .ai-cyan-glow {
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+    }
+    /* Hide scrollbar for clean OS look */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #031427; }
+    ::-webkit-scrollbar-thumb { background: #26364a; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "mobile-primary": "#0066FF",
+            "on-tertiary-fixed": "#161b2b",
+            "tertiary": "#c1c5dc",
+            "outline": "#8d90a0",
+            "on-primary-container": "#eeefff",
+            "primary": "#b4c5ff",
+            "cos-cyan": "#06B6D4",
+            "surface-container-low": "#0b1c30",
+            "surface-container-lowest": "#000f21",
+            "surface-variant": "#26364a",
+            "secondary": "#4cd7f6",
+            "on-error-container": "#ffdad6",
+            "on-primary-fixed": "#00174b",
+            "tertiary-fixed-dim": "#c1c5dc",
+            "inverse-surface": "#d3e4fe",
+            "dark-surface": "#0F172A",
+            "tertiary-container": "#686c80",
+            "primary-fixed-dim": "#b4c5ff",
+            "on-secondary-fixed": "#001f26",
+            "surface-tint": "#b4c5ff",
+            "secondary-fixed": "#acedff",
+            "primary-container": "#2563eb",
+            "outline-variant": "#434655",
+            "inverse-primary": "#0053db",
+            "mobile-success": "#00C853",
+            "on-secondary-container": "#00424e",
+            "on-primary": "#002a78",
+            "on-error": "#690005",
+            "on-surface": "#d3e4fe",
+            "error": "#ffb4ab",
+            "on-tertiary-fixed-variant": "#414658",
+            "sync-active": "#FFD60A",
+            "cos-white": "#F8FAFC",
+            "surface": "#031427",
+            "error-container": "#93000a",
+            "background": "#031427",
+            "on-surface-variant": "#c3c6d7",
+            "dark-bg": "#020617",
+            "primary-fixed": "#dbe1ff",
+            "sync-pending": "#94A3B8",
+            "mobile-warning": "#FF9500",
+            "secondary-container": "#03b5d3",
+            "mobile-danger": "#FF3B30",
+            "surface-container": "#102034",
+            "surface-bright": "#2a3a4f",
+            "inverse-on-surface": "#213145",
+            "on-tertiary": "#2b3041",
+            "on-background": "#d3e4fe",
+            "cos-blue": "#2563EB",
+            "surface-container-highest": "#26364a",
+            "cos-navy": "#0B1020",
+            "secondary-fixed-dim": "#4cd7f6",
+            "on-tertiary-container": "#eeefff",
+            "on-primary-fixed-variant": "#003ea8",
+            "on-secondary-fixed-variant": "#004e5c",
+            "tertiary-fixed": "#dee1f9",
+            "on-secondary": "#003640",
+            "surface-container-high": "#1b2b3f",
+            "surface-dim": "#031427"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "web-space-3": "12px",
+            "web-base": "4px",
+            "web-space-8": "32px",
+            "web-space-4": "16px",
+            "web-space-1": "4px",
+            "web-space-2": "8px",
+            "mobile-touch-target": "52px",
+            "mobile-edge": "24px"
+          },
+          "fontFamily": {
+            "web-text-tiny": ["Inter Tight"],
+            "web-text-display": ["Inter Tight"],
+            "web-text-small": ["Inter Tight"],
+            "web-text-h2": ["Inter Tight"],
+            "web-text-body": ["Inter Tight"],
+            "web-text-h1": ["Inter Tight"]
+          },
+          "fontSize": {
+            "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+            "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="flex min-h-screen">
+<!-- Side Navigation Bar -->
+<aside class="w-64 h-screen fixed left-0 top-0 bg-surface-dim border-r border-outline-variant flex flex-col py-web-space-4 px-web-space-2 z-50">
+<div class="px-2 mb-web-space-8">
+<h1 class="font-web-text-h2 text-web-text-h2 font-black text-cos-blue tracking-tighter">Project Alpha</h1>
+<p class="text-web-text-tiny text-on-surface-variant uppercase tracking-widest">Infrastructure</p>
+</div>
+<nav class="flex-grow space-y-1">
+<a class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+<span class="font-web-text-small text-web-text-small">Dashboard</span>
+</a>
+<a class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mr-3">domain</span>
+<span class="font-web-text-small text-web-text-small">Assets</span>
+</a>
+<a class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mr-3">architecture</span>
+<span class="font-web-text-small text-web-text-small">BIM Viewer</span>
+</a>
+<a class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mr-3">assignment_turned_in</span>
+<span class="font-web-text-small text-web-text-small">Work Orders</span>
+</a>
+<a class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mr-3">group</span>
+<span class="font-web-text-small text-web-text-small">Resources</span>
+</a>
+<a class="flex items-center px-3 py-2 bg-primary-container text-on-primary-container font-semibold rounded-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined mr-3">psychology</span>
+<span class="font-web-text-small text-web-text-small">AI Insights</span>
+</a>
+</nav>
+<div class="mt-auto pt-web-space-4 border-t border-outline-variant space-y-1">
+<button class="w-full bg-cos-blue text-cos-white font-web-text-small text-web-text-small font-bold py-2 rounded mb-4 hover:opacity-90 active:scale-95 transition-all">
+        New Report
+      </button>
+<a class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">support_agent</span>
+<span class="font-web-text-small text-web-text-small">Support</span>
+</a>
+<a class="flex items-center px-3 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined mr-3">terminal</span>
+<span class="font-web-text-small text-web-text-small">Logs</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-grow ml-64 min-h-screen flex flex-col">
+<!-- Top Navigation Bar -->
+<header class="w-full h-12 sticky top-0 bg-surface-container border-b border-outline-variant flex justify-between items-center px-web-space-4 z-40">
+<div class="flex items-center gap-web-space-4">
+<span class="font-web-text-h1 text-web-text-h1 font-bold text-cos-white">Construction OS</span>
+<div class="h-4 w-[1px] bg-outline-variant mx-2"></div>
+<nav class="flex gap-web-space-4 text-web-text-body">
+<a class="text-on-surface-variant hover:text-cos-white transition-colors" href="#">Global View</a>
+<a class="text-on-surface-variant hover:text-cos-white transition-colors" href="#">Site Map</a>
+<a class="text-on-surface-variant hover:text-cos-white transition-colors" href="#">Schedule</a>
+<a class="text-cos-blue border-b-2 border-cos-blue pb-1 font-medium" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-web-space-4">
+<div class="relative group">
+<input class="bg-surface-variant border-none rounded-lg text-web-text-small py-1 px-8 focus:ring-1 focus:ring-cos-blue w-64" placeholder="Search parameters..." type="text"/>
+<span class="material-symbols-outlined absolute left-2 top-1.5 text-on-surface-variant text-sm">search</span>
+</div>
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-cos-white">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-cos-white">help</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-cos-white">settings</span>
+</div>
+<img class="w-8 h-8 rounded-full border border-outline-variant" data-alt="Professional corporate headshot of a female construction executive in dark mode office environment, high resolution portrait lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZzJ4JXrKpItkCv89dmIMkgVGnzWduqCLYZZ6EeJaqonwL3bG4jxRpaq8dGE9FyJaWKj1n_vR4cSeuVWqlla3GPRxmj2jgXijx9zphCR9EoIkSkXYDJ7Cyuud-OiMmctSppp8L0bQmIBHlbe5ph7fX6OftD7UAZxH_cNuiSwPAccpT8R4NWCz90ZQqCfwknLMuSCR6MIeQNVUxHv-MzjmUWrKKHRW4FQBlGTBGBZNphMbwT4CF3GxN-qS-vnuKbb4nk-rn7aBVBC0"/>
+</div>
+</header>
+<!-- Resolution Detail Content -->
+<div class="p-web-space-8 flex-grow space-y-web-space-8">
+<!-- Header Area -->
+<div class="flex justify-between items-end">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="text-cos-cyan bg-cos-cyan/10 px-2 py-0.5 rounded text-web-text-tiny font-bold uppercase tracking-widest border border-cos-cyan/30">AI Investigation</span>
+<span class="text-on-surface-variant text-web-text-small">ID: #RES-9421-B</span>
+</div>
+<h2 class="font-web-text-display text-web-text-display text-cos-white">Tensile Structural Discontinuity</h2>
+<p class="text-on-surface-variant font-web-text-body mt-1">Anomalous fracture pattern detected in Sector 7-B support column reinforcement.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 border border-outline-variant text-web-text-small font-semibold rounded hover:bg-surface-variant transition-all">Dismiss</button>
+<button class="px-4 py-2 bg-surface-container-highest border border-cos-cyan/50 text-cos-cyan text-web-text-small font-semibold rounded hover:bg-cos-cyan hover:text-dark-bg transition-all">Materials Request</button>
+<button class="px-6 py-2 bg-cos-blue text-cos-white text-web-text-small font-bold rounded shadow-lg shadow-cos-blue/20 hover:scale-105 active:scale-95 transition-all">Add to Work Plan</button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-web-space-4">
+<!-- Main Evidence Comparison -->
+<div class="col-span-8 space-y-web-space-4">
+<div class="glass-panel p-web-space-4 rounded-xl flex flex-col h-[520px]">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-web-text-h2 text-web-text-h2 text-cos-white flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-blue">visibility</span>
+                Evidence Comparison
+              </h3>
+<div class="flex bg-dark-bg/50 p-1 rounded-lg border border-outline-variant/30">
+<button class="px-3 py-1 text-web-text-tiny font-bold rounded bg-surface-variant text-cos-white">Split View</button>
+<button class="px-3 py-1 text-web-text-tiny font-bold rounded text-on-surface-variant hover:text-cos-white">Overlay</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 flex-grow relative overflow-hidden rounded-lg group">
+<!-- Original Scan -->
+<div class="relative overflow-hidden bg-cos-navy">
+<div class="w-full h-full bg-cover bg-center opacity-60" data-alt="High-resolution industrial site inspection photo showing a vertical concrete support column with structural cracks and weathered textures under harsh construction site lighting, dark moody tone." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCrgWNOybD6v58NEMaFaKxg6bdiB468ygNLm62q6CjlZOMLJUuZIgTAWv3HJT0vhAB6wMx6nmnHQsbOniwtuvsikRjm55Vr0bowX5joNmkOdatYIxZ4Uvo3v_fabpwu6rpEdzsr0miQ-ViZXtUTVO8IBKUWY1d10zVM2JPYRUfP9vTGducYTZmdWKJohRpPs6PO9zHUEPSjTneb_DgWRU0W0r0x9Pj-M4wuVpxZK7kmB1dx00zJneQmq8_nucZRVN90o1-wCGaYy0w')"></div>
+<div class="absolute top-4 left-4 bg-dark-bg/80 border border-outline-variant/30 px-3 py-1 rounded-full text-web-text-tiny font-bold uppercase tracking-widest text-on-surface">Original Raw Scan</div>
+</div>
+<!-- AI Annotated -->
+<div class="relative overflow-hidden bg-cos-navy border-l border-cos-cyan/50">
+<div class="w-full h-full bg-cover bg-center" data-alt="AI-enhanced construction inspection photo with cyan digital highlights and vector wireframes tracing structural cracks in a concrete column, technical diagnostic overlays, cyan data visualizations." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCim1sEVWqEC6EnzSoAWjGtOxR1yDrO7HKSarpO3FyRWldM8blT80ck1OLqFsWgIeJexNucCTggDATmvslbBNjpjU5Eb9NoJ2zqx8-o-FskFk1iJ8tSqLp52atUqYtFAyXdOJI5vhMeblDEZvllbVVUnNzWI_u9ZI3uA4USfLTU1VLvnAh_AjPC5vxgugLX-jcWIHFNsAzFto46IM8XnH1qntpJLYrUeGxW_OxIk8CExsC4VrVlRm0Yc_u7sZzibMLzcSoxfBWJoHE')"></div>
+<div class="absolute top-4 left-4 bg-cos-cyan/80 border border-cos-cyan/50 px-3 py-1 rounded-full text-web-text-tiny font-bold uppercase tracking-widest text-dark-bg">AI Annotated Evidence</div>
+<!-- Floating AI Tag -->
+<div class="absolute bottom-4 right-4 glass-panel p-3 rounded-lg border-cos-cyan/30 flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-cos-cyan/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-cyan">biotech</span>
+</div>
+<div>
+<p class="text-web-text-tiny text-cos-cyan font-bold uppercase">Anomaly Detected</p>
+<p class="text-web-text-small text-cos-white">Stress-fracture (Type-IV)</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Context Block -->
+<div class="grid grid-cols-2 gap-web-space-4">
+<div class="glass-panel p-web-space-4 rounded-xl border-l-4 border-cos-cyan ai-cyan-glow bg-cos-cyan/5">
+<h4 class="text-cos-cyan font-web-text-small font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">menu_book</span>
+                ASTM Standards Context
+              </h4>
+<p class="text-web-text-body text-cos-white leading-relaxed">
+                Matches ASTM C1583/C1583M-20 guidelines for tensile strength of concrete surfaces. Recommended intervention within 48 hours to prevent cascading structural fatigue in load-bearing nodes.
+              </p>
+<div class="mt-4 flex gap-2">
+<span class="text-web-text-tiny px-2 py-1 bg-surface-variant rounded text-on-surface">C1583-20</span>
+<span class="text-web-text-tiny px-2 py-1 bg-surface-variant rounded text-on-surface">ACI 318</span>
+</div>
+</div>
+<div class="glass-panel p-web-space-4 rounded-xl">
+<h4 class="text-on-surface-variant font-web-text-small font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">history</span>
+                Similar Site Historicals
+              </h4>
+<ul class="space-y-3">
+<li class="flex justify-between items-center text-web-text-small">
+<span class="text-cos-white">Site-Gamma (2023)</span>
+<span class="text-mobile-success font-bold">Resolved</span>
+</li>
+<li class="flex justify-between items-center text-web-text-small">
+<span class="text-cos-white">Bridge-Alpha-Node</span>
+<span class="text-mobile-warning font-bold">In Progress</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Sidebar Details -->
+<div class="col-span-4 space-y-web-space-4">
+<!-- Confidence Score -->
+<div class="glass-panel p-web-space-4 rounded-xl text-center flex flex-col justify-center py-8">
+<div class="relative w-32 h-32 mx-auto mb-4">
+<svg class="w-full h-full" viewbox="0 0 100 100">
+<circle class="text-surface-variant" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-cos-cyan" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="12.56" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-web-text-display font-black text-cos-white">95%</span>
+<span class="text-web-text-tiny text-cos-cyan font-bold">CONFIDENCE</span>
+</div>
+</div>
+<p class="text-web-text-body text-on-surface-variant px-4">AI Model: OS-Core V4.2 High confidence based on 4.2M structural datasets.</p>
+</div>
+<!-- Project Metadata Card -->
+<div class="glass-panel p-0 overflow-hidden rounded-xl">
+<div class="bg-surface-variant px-4 py-2 border-b border-outline-variant">
+<h4 class="text-web-text-tiny font-bold uppercase tracking-tighter text-on-surface-variant">Asset Metadata</h4>
+</div>
+<div class="p-4 space-y-4">
+<div class="flex justify-between border-b border-outline-variant pb-2">
+<span class="text-web-text-small text-on-surface-variant">Component</span>
+<span class="text-web-text-small text-cos-white font-semibold">RC-7 Load Bearing Col</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant pb-2">
+<span class="text-web-text-small text-on-surface-variant">Material Spec</span>
+<span class="text-web-text-small text-cos-white font-semibold">C40/50 Marine Grade</span>
+</div>
+<div class="flex justify-between border-b border-outline-variant pb-2">
+<span class="text-web-text-small text-on-surface-variant">Last Survey</span>
+<span class="text-web-text-small text-cos-white font-semibold">12 Oct 2024</span>
+</div>
+<div class="flex justify-between">
+<span class="text-web-text-small text-on-surface-variant">Risk Factor</span>
+<span class="text-web-text-small text-mobile-danger font-bold uppercase">High Priority</span>
+</div>
+</div>
+</div>
+<!-- Action Log / Timeline -->
+<div class="glass-panel p-web-space-4 rounded-xl flex-grow">
+<h4 class="text-on-surface-variant font-web-text-small font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">timeline</span>
+              Resolution Timeline
+            </h4>
+<div class="space-y-6 relative before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-0 before:w-0.5 before:bg-outline-variant">
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-[24px] h-[24px] rounded-full bg-cos-cyan flex items-center justify-center">
+<span class="material-symbols-outlined text-dark-bg text-sm">sensors</span>
+</div>
+<p class="text-web-text-small font-bold text-cos-white">Detection Logged</p>
+<p class="text-web-text-tiny text-on-surface-variant">14:22:05 — IoT Structural Sensor Node 88</p>
+</div>
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-[24px] h-[24px] rounded-full bg-cos-blue flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-white text-sm">psychology</span>
+</div>
+<p class="text-web-text-small font-bold text-cos-white">AI Analysis Complete</p>
+<p class="text-web-text-tiny text-on-surface-variant">14:22:12 — Resolution Engine Alpha</p>
+</div>
+<div class="relative pl-8">
+<div class="absolute left-0 top-1 w-[24px] h-[24px] rounded-full bg-surface-variant flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">hourglass_empty</span>
+</div>
+<p class="text-web-text-small font-bold text-on-surface-variant">Manual Review Pending</p>
+<p class="text-web-text-tiny text-on-surface-variant">In queue for Project Manager</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Panel Footer (Shadowy Floating effect) -->
+<div class="mt-web-space-8 glass-panel p-web-space-4 rounded-xl flex items-center justify-between border-t border-cos-blue/20">
+<div class="flex items-center gap-4">
+<div class="flex -space-x-2">
+<img class="w-8 h-8 rounded-full border-2 border-dark-bg" data-alt="Avatar of structural engineer in construction helmet, soft natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDc0aScZCNLQ3KOjY8wtJX8n6yL4tdTqKHpdVcbNcywXO4GGfBvBPclfqPY7Jp-RStXpHV8S1NQJ4yZCIDwuJ_EJdXz8KYHTeQ-7bbGeEaEbXyr-factEUq-EDMQBetTNC8V_FpnFTZBW049HsUxssEG3zzAEEqJ2Xk_Yw57tEU_MBOUGUT4CgFGzRuPaBwj4jMTWKgNqkTLIaQnqj2MykbykSMJIAWDwNb6GZK5srV6UkgYFMVeerM0x5AxhXBD0yj2ZQPd6Tv7kY"/>
+<img class="w-8 h-8 rounded-full border-2 border-dark-bg" data-alt="Avatar of site foreman with glasses, professional portrait." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCy1ffzb_fZdB12jLD7CgtXNId-QMh0exr-bbe-HWoAkwuJeh6QWIHXmFh_xwm1RfEcHOIv82Tk7gUesjc-CkAuEXgGbSjZKCzcYkKRiMjbro8u-rVnfT6BF5RLeZ5Yv2udf778EZiVDjCfbXhQXjaMqoOFw-Rf8vVl71NXwWD-q3BAFv4G2Jgm6_0sPnEJcc5iXWONMjLorAolLMMcEQ4_FvsZzQGUXlbiLNFHI7zp10OxZ7onBD8fFThI6DYVelvQcHvubK1aTDI"/>
+<div class="w-8 h-8 rounded-full bg-surface-variant border-2 border-dark-bg flex items-center justify-center text-web-text-tiny font-bold text-on-surface-variant">+3</div>
+</div>
+<span class="text-web-text-small text-on-surface-variant">Assigned to: <strong class="text-cos-white">Structural Integrity Team</strong></span>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-web-text-tiny font-bold uppercase text-on-surface-variant">Auto-Save Active</span>
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Interactive Script for Micro-interactions -->
+<script>
+    document.querySelectorAll('.active\\:scale-95').forEach(button => {
+      button.addEventListener('mousedown', () => {
+        button.style.transform = 'scale(0.95)';
+      });
+      button.addEventListener('mouseup', () => {
+        button.style.transform = 'scale(1)';
+      });
+      button.addEventListener('mouseleave', () => {
+        button.style.transform = 'scale(1)';
+      });
+    });
+
+    // Simple Split-View Animation Placeholder
+    const evidencePanel = document.querySelector('.evidence-panel');
+    if (evidencePanel) {
+      evidencePanel.addEventListener('mousemove', (e) => {
+        // Future logic for slider
+      });
+    }
+  </script>
+</body></html>

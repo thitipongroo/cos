@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Edit Draft Issue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "mobile-primary": "#0066FF",
+            "on-tertiary-fixed": "#161b2b",
+            "tertiary": "#c1c5dc",
+            "outline": "#8d90a0",
+            "on-primary-container": "#eeefff",
+            "primary": "#b4c5ff",
+            "cos-cyan": "#06B6D4",
+            "surface-container-low": "#0b1c30",
+            "surface-container-lowest": "#000f21",
+            "surface-variant": "#26364a",
+            "secondary": "#4cd7f6",
+            "on-error-container": "#ffdad6",
+            "on-primary-fixed": "#00174b",
+            "tertiary-fixed-dim": "#c1c5dc",
+            "inverse-surface": "#d3e4fe",
+            "dark-surface": "#0F172A",
+            "tertiary-container": "#686c80",
+            "primary-fixed-dim": "#b4c5ff",
+            "on-secondary-fixed": "#001f26",
+            "surface-tint": "#b4c5ff",
+            "secondary-fixed": "#acedff",
+            "primary-container": "#2563eb",
+            "outline-variant": "#434655",
+            "inverse-primary": "#0053db",
+            "mobile-success": "#00C853",
+            "on-secondary-container": "#00424e",
+            "on-primary": "#002a78",
+            "on-error": "#690005",
+            "on-surface": "#d3e4fe",
+            "error": "#ffb4ab",
+            "on-tertiary-fixed-variant": "#414658",
+            "sync-active": "#FFD60A",
+            "cos-white": "#F8FAFC",
+            "surface": "#031427",
+            "error-container": "#93000a",
+            "background": "#031427",
+            "on-surface-variant": "#c3c6d7",
+            "dark-bg": "#020617",
+            "primary-fixed": "#dbe1ff",
+            "sync-pending": "#94A3B8",
+            "mobile-warning": "#FF9500",
+            "secondary-container": "#03b5d3",
+            "mobile-danger": "#FF3B30",
+            "surface-container": "#102034",
+            "surface-bright": "#2a3a4f",
+            "inverse-on-surface": "#213145",
+            "on-tertiary": "#2b3041",
+            "on-background": "#d3e4fe",
+            "cos-blue": "#2563EB",
+            "surface-container-highest": "#26364a",
+            "cos-navy": "#0B1020",
+            "secondary-fixed-dim": "#4cd7f6",
+            "on-tertiary-container": "#eeefff",
+            "on-primary-fixed-variant": "#003ea8",
+            "on-secondary-fixed-variant": "#004e5c",
+            "tertiary-fixed": "#dee1f9",
+            "on-secondary": "#003640",
+            "surface-container-high": "#1b2b3f",
+            "surface-dim": "#031427"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "web-space-3": "12px",
+            "web-base": "4px",
+            "web-space-8": "32px",
+            "web-space-4": "16px",
+            "web-space-1": "4px",
+            "web-space-2": "8px",
+            "mobile-touch-target": "52px",
+            "mobile-edge": "24px"
+          },
+          "fontFamily": {
+            "mobile-text-hero": ["Inter Tight"],
+            "mobile-text-label": ["Inter Tight"],
+            "web-text-tiny": ["Inter Tight"],
+            "web-text-display": ["Inter Tight"],
+            "mobile-text-body": ["Inter Tight"],
+            "web-text-small": ["Inter Tight"],
+            "web-text-h2": ["Inter Tight"],
+            "web-text-body": ["Inter Tight"],
+            "web-text-h1": ["Inter Tight"]
+          },
+          "fontSize": {
+            "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+            "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+            "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+            "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #020617;
+      color: #d3e4fe;
+      -webkit-font-smoothing: antialiased;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .bento-card {
+      background: rgba(16, 32, 52, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(67, 70, 85, 0.4);
+    }
+    input, select, textarea {
+      background-color: transparent !important;
+      border-color: #434655 !important;
+      color: #d3e4fe !important;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #2563EB !important;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2) !important;
+      outline: none;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0b1c30;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #26364a;
+      border-radius: 3px;
+    }
+    .ai-tint {
+      border-left: 2px solid #06B6D4;
+      background: linear-gradient(90deg, rgba(6, 182, 212, 0.05) 0%, transparent 100%);
+    }
+  </style>
+</head>
+<body class="font-web-text-body text-web-text-body overflow-hidden">
+<!-- Side Navigation (Predicted Shared Component) -->
+<aside class="flex flex-col h-full py-web-space-4 px-web-space-2 z-50 w-64 h-screen fixed left-0 top-0 bg-surface-dim dark:bg-surface-dim border-r border-outline-variant">
+<div class="px-4 mb-8">
+<div class="font-web-text-h2 text-web-text-h2 font-black text-cos-blue">Project Alpha</div>
+<div class="font-web-text-small text-web-text-small text-on-surface-variant">Infrastructure</div>
+</div>
+<nav class="flex-1 space-y-1">
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all cursor-pointer rounded-lg font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2 bg-primary-container text-on-primary-container font-semibold rounded-lg font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span>Work Orders</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all cursor-pointer rounded-lg font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">domain</span>
+<span>Assets</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all cursor-pointer rounded-lg font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">architecture</span>
+<span>BIM Viewer</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all cursor-pointer rounded-lg font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">group</span>
+<span>Resources</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest hover:text-cos-white transition-all cursor-pointer rounded-lg font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">psychology</span>
+<span>AI Insights</span>
+</div>
+</nav>
+<div class="mt-auto space-y-1 border-t border-outline-variant pt-4">
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">support_agent</span>
+<span>Support</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:bg-surface-container-highest transition-all cursor-pointer font-web-text-small text-web-text-small">
+<span class="material-symbols-outlined">terminal</span>
+<span>Logs</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-64 h-screen flex flex-col overflow-hidden">
+<!-- Top Bar (Predicted Shared Component) -->
+<header class="flex justify-between items-center px-web-space-4 w-full z-40 w-full h-12 sticky top-0 bg-surface-container dark:bg-surface-container border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<div class="font-web-text-h1 text-web-text-h1 font-bold text-cos-white">Construction OS</div>
+<nav class="hidden md:flex gap-4">
+<a class="text-on-surface-variant hover:text-cos-white transition-colors cursor-pointer font-web-text-body text-web-text-body">Global View</a>
+<a class="text-on-surface-variant hover:text-cos-white transition-colors cursor-pointer font-web-text-body text-web-text-body">Site Map</a>
+<a class="text-on-surface-variant hover:text-cos-white transition-colors cursor-pointer font-web-text-body text-web-text-body">Schedule</a>
+<a class="text-cos-blue border-b-2 border-cos-blue pb-1 cursor-pointer font-web-text-body text-web-text-body">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="pl-9 pr-4 py-1 h-8 rounded bg-surface-container-highest border-outline-variant text-web-text-small focus:ring-1 focus:ring-cos-blue" placeholder="Search project logs..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-white transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-white transition-colors">help</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-cos-white transition-colors">settings</button>
+<div class="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional user profile avatar showing a high-tech clean corporate professional for a modern construction software interface. The person is looking directly at the camera with a neutral expression. High-end portrait photography style with soft studio lighting and a subtle blue-tinted dark background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCA0lmfjYO7W0RDhy_plhJnsqi7zsby9dtG1LrgLOcvzemFLDTonMJFGFSnlvvPEaKegGb5cJZp59p_K28Kmxi086zGFURT2LEe5cJYTwtbYooU7Ahc83jYmrJPPTaGNOOn3JwA2c2NFBcn258Fn2sK_dIBZ6A-wlq6_-VqRJlz0qxDV5ilEF0EjjUbInsXN7geSUcQW6E09mWi7wVrSFBPSmzOQh1qEm3W77PjHSWLRI7WAzvpcFQEV2YGL8RaOQAOton0vsz4As4"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Scrollable Content Canvas -->
+<div class="flex-1 overflow-y-auto p-web-space-8 bg-dark-bg">
+<div class="max-w-7xl mx-auto">
+<!-- Header Section -->
+<div class="flex items-center justify-between mb-8">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 bg-surface-container-highest text-on-surface-variant rounded text-web-text-tiny uppercase font-bold tracking-widest border border-outline-variant">Draft ID: #D-2045</span>
+<span class="material-symbols-outlined text-sync-pending text-sm">pending</span>
+</div>
+<h1 class="font-web-text-display text-web-text-display text-cos-white">Edit Draft Issue</h1>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 h-10 flex items-center gap-2 text-on-surface-variant hover:bg-surface-container-highest border border-outline-variant rounded transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">save</span>
+<span class="font-web-text-body">Save as Draft</span>
+</button>
+<button class="px-6 py-2 h-10 flex items-center gap-2 bg-cos-blue text-white rounded font-bold hover:brightness-110 shadow-lg shadow-cos-blue/20 transition-all active:scale-95">
+<span class="material-symbols-outlined text-[20px]">publish</span>
+<span class="font-web-text-body">Submit Issue</span>
+</button>
+</div>
+</div>
+<!-- Form Layout Grid (Bento Style) -->
+<div class="grid grid-cols-12 gap-web-space-4">
+<!-- Primary Details -->
+<div class="col-span-8 space-y-web-space-4">
+<div class="bento-card p-6 rounded-xl">
+<h2 class="text-cos-blue font-bold text-web-text-h2 mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">edit_note</span>
+                Issue Identification
+              </h2>
+<div class="space-y-6">
+<div>
+<label class="block text-web-text-tiny uppercase text-on-surface-variant mb-2">Issue Title</label>
+<input class="w-full px-4 py-3 rounded border border-outline-variant font-web-text-h1 focus:border-cos-blue transition-colors" type="text" value="Structural Deflection - Section B4"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-web-text-tiny uppercase text-on-surface-variant mb-2">Category</label>
+<select class="w-full px-4 py-3 rounded border border-outline-variant bg-surface-container-low appearance-none">
+<option>Structural Integrity</option>
+<option>Electrical/HVAC</option>
+<option>Safety Violation</option>
+<option>Material Quality</option>
+</select>
+</div>
+<div>
+<label class="block text-web-text-tiny uppercase text-on-surface-variant mb-2">Severity Level</label>
+<div class="flex gap-2">
+<button class="flex-1 py-3 px-2 border border-outline-variant rounded bg-surface-container text-web-text-small text-on-surface-variant hover:border-mobile-success transition-all">Low</button>
+<button class="flex-1 py-3 px-2 border border-outline-variant rounded bg-surface-container text-web-text-small text-on-surface-variant hover:border-mobile-warning transition-all">Medium</button>
+<button class="flex-1 py-3 px-2 border-2 border-mobile-danger bg-mobile-danger/10 text-web-text-small text-mobile-danger font-bold transition-all">High</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Description -->
+<div class="bento-card p-6 rounded-xl">
+<div class="flex justify-between items-center mb-4">
+<h2 class="text-cos-blue font-bold text-web-text-h2 flex items-center gap-2">
+<span class="material-symbols-outlined">description</span>
+                  Technical Description
+                </h2>
+<div class="flex items-center gap-2 text-cos-cyan text-web-text-tiny bg-cos-cyan/10 px-2 py-1 rounded ai-tint">
+<span class="material-symbols-outlined text-xs">auto_awesome</span>
+                  AI ENHANCEMENT ACTIVE
+                </div>
+</div>
+<textarea class="w-full px-4 py-3 rounded border border-outline-variant bg-surface-container-low focus:border-cos-blue transition-colors font-web-text-body resize-none" placeholder="Enter detailed observation notes..." rows="6">Observed vertical deflection exceeding tolerance (approx 12mm) in structural support beam 42-B. Measurements taken during peak load testing. No visible hairline fractures yet, but immediate mitigation strategy required. Previous survey indicated similar trend in adjacent units.</textarea>
+<div class="mt-4 flex gap-2 overflow-x-auto pb-2">
+<button class="px-3 py-1.5 bg-surface-container-highest text-web-text-tiny text-on-surface-variant rounded border border-outline-variant hover:text-cos-white">+ Add Suggestion</button>
+<button class="px-3 py-1.5 bg-surface-container-highest text-web-text-tiny text-on-surface-variant rounded border border-outline-variant hover:text-cos-white">+ Auto-complete Measurements</button>
+</div>
+</div>
+<!-- Photo Management -->
+<div class="bento-card p-6 rounded-xl">
+<h2 class="text-cos-blue font-bold text-web-text-h2 mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">photo_library</span>
+                Evidence &amp; Documentation
+              </h2>
+<div class="grid grid-cols-4 gap-4">
+<div class="aspect-square rounded border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-on-surface-variant hover:border-cos-blue hover:text-cos-blue transition-all cursor-pointer group">
+<span class="material-symbols-outlined text-3xl group-hover:scale-110 transition-transform">add_a_photo</span>
+<span class="text-web-text-tiny mt-2 font-bold">UPLOAD PHOTO</span>
+</div>
+<div class="relative aspect-square group">
+<img class="w-full h-full object-cover rounded border border-outline-variant" data-alt="A macro close-up photo of a steel structural beam in a construction site, showing clear vertical deflection and stress marks on the surface. The lighting is harsh industrial work lighting, casting dramatic shadows. The style is clear, high-resolution forensic engineering documentation photography in a dark industrial environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoJdf4QP1tE97hgcpsmX5q5uBszjE0mHm9JDZ6wxL_BPEOMtrkgz3ePAkijqTOWV7ty1-_TZNsrGkO-g-gmdDI4eC4gUEIGBNGUoMkbXSqCcoyQ70j6Mf1tQvd7li9T-2GSWknRdVNHHNUBGaLmtYEtHIj1EHRs9lL_xJKHb0SKwCBxWrBaW076dqNjHNQluX51fYy-SSpWuK4ik_EJXYK0UG7B-T1Sav3g5JapZDvVDgH_VbRUWe3h7aRbZ2i2sMrYDCtVLNARi0"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded">
+<button class="material-symbols-outlined p-2 bg-mobile-danger rounded text-white text-sm">delete</button>
+<button class="material-symbols-outlined p-2 bg-cos-blue rounded text-white text-sm">visibility</button>
+</div>
+<div class="absolute bottom-1 right-1 bg-mobile-success text-white px-1.5 py-0.5 rounded text-[8px] font-bold">PRIMARY</div>
+</div>
+<div class="relative aspect-square group">
+<img class="w-full h-full object-cover rounded border border-outline-variant opacity-70" data-alt="A wide angle shot of a construction site showing Section B4 of a steel infrastructure project. The scene is illuminated by overhead work lights against a dark night sky. Scaffolding is visible. The shot is precise, professional, and looks like a technical asset for structural analysis. Dark mode aesthetic with blue and gray tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2ir7-ZzgBgAs8OHYFT5vWEaK4gp69bmAvICnJ_Tn7FWCQmyDj_M-EK5fg9za1NOoMs1QsdgBN2pkXxCUenPfor9aWmyUj0p_1ex5yJtRT1GiCHIk4VeeKXZ7kKI-T4WLV6F62hHNqPyvxTZzupqyhJkEb0v4x4GhQ8IOPsuezVeC1Yizbv_yikHeepo0m1QDqe9dAS4nI6LfVvoDIQoc9yRtIK5vBh87Zu5D7twMiq4xqZs00IabcVJwAgxArhYrulmIwTZ02CRU"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 rounded">
+<button class="material-symbols-outlined p-2 bg-mobile-danger rounded text-white text-sm">delete</button>
+<button class="material-symbols-outlined p-2 bg-cos-blue rounded text-white text-sm">visibility</button>
+</div>
+</div>
+<div class="relative aspect-square group border border-outline-variant rounded bg-surface-container flex items-center justify-center">
+<div class="text-center">
+<span class="material-symbols-outlined text-sync-active animate-pulse">cloud_upload</span>
+<div class="text-[10px] text-on-surface-variant mt-1 uppercase">Uploading 45%</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Sidebar Data -->
+<div class="col-span-4 space-y-web-space-4">
+<!-- Location Map -->
+<div class="bento-card p-6 rounded-xl h-64 overflow-hidden relative">
+<h2 class="text-cos-blue font-bold text-web-text-h2 mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">location_on</span>
+                Precision Location
+              </h2>
+<div class="absolute inset-0 top-16 m-4 rounded border border-outline-variant overflow-hidden">
+<div class="w-full h-full bg-cover bg-center" data-alt="A highly detailed satellite and architectural map view of a large-scale construction site in Berlin. The map features blue technical overlays, grid lines, and a precise red marker pinpointing a specific structural node. The visual style is dark, sleek, and data-driven, similar to a high-end military or engineering CAD interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBmqJE6ux7TS-4o2041uZHsGy0GcpIQlB19gcCqxwGcODpWyf8DnPJHnTI5B6TuqwzIG8VBLbWK5sVZlhBmEdC2dxLPpb7rs1UtBymQoYtq1cXEf_jGmcZtdX5C39vKb_An--D9eSIqveZJKsqrQ4Voc5LYgnWQ3Ws1iJeShhe3WrrO7Ch5E7SDaGo6lhz9Cr9YJHYEYcXiS8fLo6ABpuFTMQSReRElGxKtB_0HqEUzwgrYC_714F05yaac70aUluLNBRZuGmKg3OU')"></div>
+<div class="absolute bottom-2 left-2 right-2 bg-surface-container/90 backdrop-blur p-2 rounded text-web-text-tiny flex justify-between border border-outline-variant/50">
+<span>LAT: 52.5200° N</span>
+<span>LNG: 13.4050° E</span>
+</div>
+</div>
+</div>
+<!-- Assignments & Tags -->
+<div class="bento-card p-6 rounded-xl">
+<h2 class="text-cos-blue font-bold text-web-text-h2 mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">person_add</span>
+                Assignees
+              </h2>
+<div class="space-y-4">
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-low border border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-white text-xs font-bold">MK</div>
+<div>
+<div class="text-web-text-small font-bold text-cos-white">Marcus Kovac</div>
+<div class="text-[10px] text-on-surface-variant">Lead Structural Engineer</div>
+</div>
+</div>
+<button class="material-symbols-outlined text-mobile-danger text-sm">remove_circle</button>
+</div>
+<button class="w-full py-2 border border-dashed border-outline-variant rounded text-web-text-tiny text-on-surface-variant hover:text-cos-blue hover:border-cos-blue transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                  ADD RESPONDENT
+                </button>
+</div>
+</div>
+<!-- Related Assets (AI Powered) -->
+<div class="bento-card p-6 rounded-xl ai-tint">
+<h2 class="text-cos-cyan font-bold text-web-text-h2 mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">insights</span>
+                Similar Drafts
+              </h2>
+<div class="space-y-3">
+<div class="p-3 bg-surface-container-low rounded border border-outline-variant/30 group hover:border-cos-cyan/50 cursor-pointer transition-all">
+<div class="flex justify-between text-web-text-tiny mb-1">
+<span class="text-cos-cyan">94% MATCH</span>
+<span class="text-on-surface-variant">Jan 12</span>
+</div>
+<div class="text-web-text-small font-bold text-cos-white">Beam Stress Fracture #209</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Resolution: Reinforced plate welding</div>
+</div>
+<div class="p-3 bg-surface-container-low rounded border border-outline-variant/30 group hover:border-cos-cyan/50 cursor-pointer transition-all">
+<div class="flex justify-between text-web-text-tiny mb-1">
+<span class="text-cos-cyan">81% MATCH</span>
+<span class="text-on-surface-variant">Dec 28</span>
+</div>
+<div class="text-web-text-small font-bold text-cos-white">Support Pillar B3 Defect</div>
+<div class="text-[10px] text-on-surface-variant mt-1">Resolution: Concrete core replaced</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Status Footer Bar -->
+<footer class="h-10 bg-surface-container-low border-t border-outline-variant flex items-center justify-between px-6 z-40">
+<div class="flex items-center gap-4 text-[11px] font-medium uppercase tracking-wider">
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-sync-active"></span>
+          Draft Autosaved at 14:42:05
+        </div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-1.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">wifi</span>
+          Cloud Sync Stable
+        </div>
+</div>
+<div class="flex items-center gap-6 text-[11px] text-on-surface-variant">
+<span>Environment: Production v2.0.4-alpha</span>
+<span>Node: EUR-CENTRAL-1</span>
+</div>
+</footer>
+</main>
+<script>
+    // Micro-interactions for form controls
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+      el.addEventListener('focus', () => {
+        el.closest('.bento-card')?.classList.add('ring-1', 'ring-cos-blue/20');
+      });
+      el.addEventListener('blur', () => {
+        el.closest('.bento-card')?.classList.remove('ring-1', 'ring-cos-blue/20');
+      });
+    });
+
+    // Simple interaction for the Severity buttons
+    const severityButtons = document.querySelectorAll('.grid.grid-cols-2 button');
+    severityButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        severityButtons.forEach(b => {
+          b.classList.remove('border-2', 'border-mobile-danger', 'bg-mobile-danger/10', 'text-mobile-danger', 'font-bold');
+          b.classList.add('border', 'border-outline-variant', 'bg-surface-container', 'text-on-surface-variant');
+        });
+        if(btn.innerText === 'High') {
+          btn.classList.remove('border', 'border-outline-variant', 'bg-surface-container', 'text-on-surface-variant');
+          btn.classList.add('border-2', 'border-mobile-danger', 'bg-mobile-danger/10', 'text-mobile-danger', 'font-bold');
+        } else {
+          btn.classList.remove('border', 'border-outline-variant', 'bg-surface-container');
+          btn.classList.add('border-2', 'border-cos-blue', 'bg-cos-blue/10', 'text-cos-blue', 'font-bold');
+        }
+      });
+    });
+  </script>
+</body></html>

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Aegis OS | Permit Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#0b1c30",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "outline": "#8d90a0",
+                        "surface-container": "#102034",
+                        "mobile-warning": "#FF9500",
+                        "sync-pending": "#94A3B8",
+                        "surface": "#031427",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-container": "#eeefff",
+                        "on-primary": "#002a78",
+                        "mobile-success": "#00C853",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-surface-variant": "#c3c6d7",
+                        "outline-variant": "#434655",
+                        "cos-white": "#F8FAFC",
+                        "primary-fixed": "#dbe1ff",
+                        "on-surface": "#d3e4fe",
+                        "inverse-on-surface": "#213145",
+                        "cos-cyan": "#06B6D4",
+                        "surface-variant": "#26364a",
+                        "primary-container": "#2563eb",
+                        "cos-navy": "#0B1020",
+                        "secondary-container": "#03b5d3",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-container-high": "#1b2b3f",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-secondary": "#003640",
+                        "surface-container-lowest": "#000f21",
+                        "on-tertiary": "#2b3041",
+                        "tertiary": "#c1c5dc",
+                        "inverse-surface": "#d3e4fe",
+                        "on-error": "#690005",
+                        "on-secondary-container": "#00424e",
+                        "on-background": "#d3e4fe",
+                        "on-tertiary-fixed": "#161b2b",
+                        "mobile-primary": "#0066FF",
+                        "error": "#ffb4ab",
+                        "on-tertiary-container": "#eeefff",
+                        "inverse-primary": "#0053db",
+                        "surface-dim": "#031427",
+                        "dark-surface": "#0F172A",
+                        "mobile-danger": "#FF3B30",
+                        "surface-bright": "#2a3a4f",
+                        "surface-container-highest": "#26364a",
+                        "on-secondary-fixed": "#001f26",
+                        "tertiary-container": "#686c80",
+                        "secondary": "#4cd7f6",
+                        "sync-active": "#FFD60A",
+                        "dark-bg": "#020617",
+                        "background": "#031427",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "cos-blue": "#2563EB",
+                        "secondary-fixed": "#acedff",
+                        "surface-tint": "#b4c5ff",
+                        "primary": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#414658"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-2": "8px",
+                        "web-space-1": "4px",
+                        "web-space-8": "32px",
+                        "web-space-3": "12px",
+                        "web-space-4": "16px",
+                        "mobile-edge": "24px",
+                        "web-base": "4px",
+                        "mobile-touch-target": "52px"
+                    },
+                    "fontFamily": {
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #434655;
+            border-radius: 10px;
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(6,182,212,0.05) 0%, rgba(6,182,212,0.15) 50%, rgba(6,182,212,0.05) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full w-64 flex flex-col z-40 bg-surface-container dark:bg-surface-container border-r border-outline-variant">
+<div class="p-6 flex flex-col gap-1">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined">architecture</span>
+</div>
+<div>
+<h2 class="text-web-text-h2 font-web-text-h2 font-bold text-primary">Project Alpha</h2>
+<p class="text-web-text-small text-on-surface-variant">Phase 4 Financial</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg px-4 py-2 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-web-text-small text-web-text-small">Dashboard</span>
+</a>
+<!-- Active State for Tender/Permit Mgmt -->
+<a class="bg-primary-container text-on-primary-container font-semibold rounded-lg px-4 py-2 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-web-text-small text-web-text-small">Tender Mgmt</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg px-4 py-2 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-web-text-small text-web-text-small">Bid Analysis</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg px-4 py-2 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-web-text-small text-web-text-small">Sales Pipeline</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg px-4 py-2 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-web-text-small text-web-text-small">Draw-Downs</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg px-4 py-2 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-web-text-small text-web-text-small">Insurance</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 flex flex-col gap-1 border-t border-outline-variant/30">
+<button class="bg-primary text-on-primary font-bold py-3 rounded-lg mb-4 text-web-text-small active:scale-95 transition-transform">
+                    Request Draw-Down
+                </button>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg px-4 py-2 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-web-text-small text-web-text-small">Settings</span>
+</a>
+<a class="text-on-surface-variant hover:bg-surface-container-high rounded-lg px-4 py-2 flex items-center gap-3" href="#">
+<span class="material-symbols-outlined">contact_support</span>
+<span class="font-web-text-small text-web-text-small">Support</span>
+</a>
+</div>
+</div>
+</aside>
+<div class="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+<!-- TopNavBar (Shared Component) -->
+<header class="flex justify-between items-center px-web-space-8 w-full h-16 sticky top-0 z-50 bg-surface dark:bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-8">
+<h1 class="text-web-text-h1 font-web-text-h1 font-bold text-cos-blue dark:text-primary tracking-tighter">Aegis OS</h1>
+<nav class="hidden md:flex items-center gap-6 h-16">
+<a class="text-on-surface-variant dark:text-on-surface-variant font-web-text-body text-web-text-body hover:text-primary transition-colors h-full flex items-center border-b-2 border-transparent" href="#">Tenders</a>
+<a class="text-primary dark:text-primary font-web-text-body text-web-text-body border-b-2 border-primary h-full flex items-center" href="#">Bids</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-web-text-body text-web-text-body hover:text-primary transition-colors h-full flex items-center border-b-2 border-transparent" href="#">Pipeline</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-web-text-body text-web-text-body hover:text-primary transition-colors h-full flex items-center border-b-2 border-transparent" href="#">Finance</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-web-text-body text-web-text-body hover:text-primary transition-colors h-full flex items-center border-b-2 border-transparent" href="#">Underwriting</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-[1px] bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-right">
+<p class="text-web-text-small font-semibold">David Chen</p>
+<p class="text-web-text-tiny text-on-surface-variant">Admin Level 4</p>
+</div>
+<img class="w-10 h-10 rounded-full border-2 border-outline-variant object-cover" data-alt="A professional headshot of a middle-aged male administrator with glasses, looking sharp and professional, in a high-tech modern office environment with blurred monitors in the background, blue-toned corporate lighting, cinematic photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGWZm_ybWP4ulwQXI8rfMmJRm-wFidvZ26Rhrx4ji4HZP8xyebkXPaipStVFkyaqWzmS0tvg8zqzSuBQyXxlotQM-TW1Xs13Bsq9_ZuX9ozOoVGY3m1W01ppa-E-exrzMEHFuU6z0lGrcvayfmgN28CLyEjx606R132OBHXgr42IEicyOR-UExONcDbkWQsw3lRWbGgFspJS7-9e6ZV165FM9IkwTBy1uKLnOcRVxjfrQoq5NpIz9m1fpwnsYiRwa9LkOjMmIxMsc"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-web-space-8 bg-surface-container-lowest relative">
+<!-- Page Header -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<p class="text-cos-cyan font-web-text-tiny text-web-text-tiny uppercase tracking-widest mb-1">Operational Control</p>
+<h2 class="text-web-text-display font-web-text-display text-on-surface">Permit Management</h2>
+</div>
+<button class="bg-cos-blue hover:bg-primary-container text-white px-6 py-2 rounded-lg flex items-center gap-2 font-semibold transition-all active:scale-95 shadow-lg shadow-cos-blue/20">
+<span class="material-symbols-outlined">add</span>
+                    New Permit
+                </button>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-web-space-4 mb-web-space-8">
+<!-- AI Predictive Safety Analysis Card -->
+<div class="col-span-12 lg:col-span-8 p-6 rounded-xl border border-cos-cyan/30 bg-surface-container-low relative overflow-hidden ai-shimmer">
+<div class="relative z-10">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="text-web-text-h2 font-web-text-h2 text-cos-cyan">AI Predictive Safety Analysis</h3>
+</div>
+<div class="grid md:grid-cols-3 gap-6">
+<div class="border-l-2 border-cos-cyan pl-4">
+<p class="text-web-text-tiny text-on-surface-variant uppercase mb-1">High Risk Sector</p>
+<p class="text-web-text-body font-bold text-on-surface">Zone C: Structural Welding</p>
+<p class="text-web-text-small text-on-surface-variant mt-2">Elevated thermal activity detected in Sector 4. Urgent review required for Permit #8821.</p>
+</div>
+<div class="border-l-2 border-mobile-warning pl-4">
+<p class="text-web-text-tiny text-on-surface-variant uppercase mb-1">Pending Approvals</p>
+<p class="text-web-text-body font-bold text-on-surface">12 Critical Reviews</p>
+<p class="text-web-text-small text-on-surface-variant mt-2">Auto-reject sequence starts in 4h for 5 high-voltage permits.</p>
+</div>
+<div class="border-l-2 border-mobile-success pl-4">
+<p class="text-web-text-tiny text-on-surface-variant uppercase mb-1">Safety Forecast</p>
+<p class="text-web-text-body font-bold text-on-surface">94% Compliant</p>
+<p class="text-web-text-small text-on-surface-variant mt-2">Overall risk profile is trending down by 12% since last shift.</p>
+</div>
+</div>
+</div>
+<!-- Background texture/element -->
+<div class="absolute right-0 top-0 h-full w-1/3 pointer-events-none opacity-20">
+
+</div>
+</div>
+<!-- Stats Summary -->
+<div class="col-span-12 lg:col-span-4 grid grid-cols-2 gap-4">
+<div class="bg-surface-container border border-outline-variant p-4 rounded-xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-on-surface-variant">check_circle</span>
+<div>
+<p class="text-web-text-display font-bold text-mobile-success">142</p>
+<p class="text-web-text-tiny text-on-surface-variant uppercase">Active Permits</p>
+</div>
+</div>
+<div class="bg-surface-container border border-outline-variant p-4 rounded-xl flex flex-col justify-between">
+<span class="material-symbols-outlined text-on-surface-variant">pending_actions</span>
+<div>
+<p class="text-web-text-display font-bold text-mobile-warning">28</p>
+<p class="text-web-text-tiny text-on-surface-variant uppercase">Pending</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Categories & Filters -->
+<div class="flex items-center gap-4 mb-6">
+<button class="bg-surface-container-highest text-primary-fixed-dim px-4 py-2 rounded-lg text-web-text-small font-semibold border border-primary/20">All Permits</button>
+<button class="hover:bg-surface-container text-on-surface-variant px-4 py-2 rounded-lg text-web-text-small font-medium transition-colors">Work Permits</button>
+<button class="hover:bg-surface-container text-on-surface-variant px-4 py-2 rounded-lg text-web-text-small font-medium transition-colors">Safety Permits</button>
+<button class="hover:bg-surface-container text-on-surface-variant px-4 py-2 rounded-lg text-web-text-small font-medium transition-colors">Drawing Approvals</button>
+<div class="ml-auto flex items-center gap-2 bg-surface-container border border-outline-variant rounded-lg px-3 py-1.5 w-64 focus-within:ring-1 focus-within:ring-primary transition-all">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">search</span>
+<input class="bg-transparent border-none text-web-text-small text-on-surface w-full focus:ring-0 placeholder:text-outline" placeholder="Search contractor or ID..." type="text"/>
+</div>
+</div>
+<!-- Permits List -->
+<div class="bg-surface-container rounded-xl border border-outline-variant overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-outline-variant bg-surface-container-high/50">
+<th class="p-4 text-web-text-tiny text-on-surface-variant uppercase tracking-wider font-semibold">ID &amp; Type</th>
+<th class="p-4 text-web-text-tiny text-on-surface-variant uppercase tracking-wider font-semibold">Contractor / Entity</th>
+<th class="p-4 text-web-text-tiny text-on-surface-variant uppercase tracking-wider font-semibold">Status</th>
+<th class="p-4 text-web-text-tiny text-on-surface-variant uppercase tracking-wider font-semibold">Timeline / Auto-Reject</th>
+<th class="p-4 text-web-text-tiny text-on-surface-variant uppercase tracking-wider font-semibold">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1: Active Work Permit -->
+<tr class="hover:bg-surface-container-high/30 transition-colors group">
+<td class="p-4">
+<div class="flex flex-col">
+<span class="text-web-text-body font-bold text-on-surface">#WP-7729</span>
+<span class="text-web-text-tiny text-on-surface-variant uppercase">Work Permit: Hot Work</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">engineering</span>
+</div>
+<div class="flex flex-col">
+<span class="text-web-text-small font-semibold">Vanguard Steelworks</span>
+<span class="text-web-text-tiny text-on-surface-variant">Project Manager: Sarah J.</span>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="px-2 py-1 bg-mobile-success/10 text-mobile-success text-web-text-tiny font-bold rounded-sm border border-mobile-success/20">ACTIVE</span>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="flex-1 h-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="w-3/4 h-full bg-mobile-success"></div>
+</div>
+<span class="text-web-text-small font-mono">14:22:01</span>
+</div>
+</td>
+<td class="p-4 text-right">
+<button class="p-2 rounded hover:bg-surface-variant text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Pending Safety Permit -->
+<tr class="hover:bg-surface-container-high/30 transition-colors group">
+<td class="p-4">
+<div class="flex flex-col">
+<span class="text-web-text-body font-bold text-on-surface">#SP-1102</span>
+<span class="text-web-text-tiny text-on-surface-variant uppercase">Safety: High Altitude</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">architecture</span>
+</div>
+<div class="flex flex-col">
+<span class="text-web-text-small font-semibold">Skyline Rigging Inc.</span>
+<span class="text-web-text-tiny text-on-surface-variant">Lead Tech: Mike Ross</span>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="px-2 py-1 bg-mobile-warning/10 text-mobile-warning text-web-text-tiny font-bold rounded-sm border border-mobile-warning/20">PENDING</span>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-2 text-mobile-danger font-bold">
+<span class="material-symbols-outlined text-sm">timer</span>
+<span class="text-web-text-small font-mono">01:45:12</span>
+<span class="text-web-text-tiny font-normal text-on-surface-variant">(Auto-Reject)</span>
+</div>
+</td>
+<td class="p-4 text-right">
+<div class="flex gap-2 justify-end">
+<button class="bg-primary/10 hover:bg-primary/20 text-primary-fixed-dim px-3 py-1 rounded text-web-text-tiny font-bold transition-all">REVIEW</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Revoked Drawing -->
+<tr class="hover:bg-surface-container-high/30 transition-colors group">
+<td class="p-4">
+<div class="flex flex-col">
+<span class="text-web-text-body font-bold text-on-surface">#DA-9921</span>
+<span class="text-web-text-tiny text-on-surface-variant uppercase">Drawing: HVAC Layout</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">draw</span>
+</div>
+<div class="flex flex-col">
+<span class="text-web-text-small font-semibold">Apex Engineering</span>
+<span class="text-web-text-tiny text-on-surface-variant">Architect: Elena D.</span>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="px-2 py-1 bg-mobile-danger/10 text-mobile-danger text-web-text-tiny font-bold rounded-sm border border-mobile-danger/20">REVOKED</span>
+</td>
+<td class="p-4 text-on-surface-variant italic">
+<span class="text-web-text-small">Voided: 2023-11-20</span>
+</td>
+<td class="p-4 text-right">
+<button class="p-2 rounded hover:bg-surface-variant text-on-surface-variant">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Expired Work Permit -->
+<tr class="hover:bg-surface-container-high/30 transition-colors group opacity-60">
+<td class="p-4">
+<div class="flex flex-col">
+<span class="text-web-text-body font-bold text-on-surface">#WP-6612</span>
+<span class="text-web-text-tiny text-on-surface-variant uppercase">Work Permit: Excavation</span>
+</div>
+</td>
+<td class="p-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">foundation</span>
+</div>
+<div class="flex flex-col">
+<span class="text-web-text-small font-semibold">TerraForm Group</span>
+<span class="text-web-text-tiny text-on-surface-variant">Foreman: Bill K.</span>
+</div>
+</div>
+</td>
+<td class="p-4">
+<span class="px-2 py-1 bg-surface-variant text-on-surface-variant text-web-text-tiny font-bold rounded-sm border border-outline-variant">EXPIRED</span>
+</td>
+<td class="p-4">
+<span class="text-web-text-small text-on-surface-variant">Ended: 12h ago</span>
+</td>
+<td class="p-4 text-right">
+<button class="p-2 rounded hover:bg-surface-variant text-on-surface-variant">
+<span class="material-symbols-outlined">history</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination / Footer Actions -->
+<div class="mt-6 flex items-center justify-between">
+<p class="text-web-text-small text-on-surface-variant">Showing 1-10 of 184 permits</p>
+<div class="flex gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-on-primary text-web-text-small font-bold">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">3</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+<!-- AI Overlay Elements -->
+<div class="fixed inset-0 bg-cos-navy/80 backdrop-blur-md z-[100] flex items-center justify-center hidden" id="ai-modal">
+<div class="bg-surface-container border border-cos-cyan/50 p-8 rounded-2xl w-[600px] shadow-2xl relative overflow-hidden">
+
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-6">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-cos-cyan text-4xl" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<div>
+<h2 class="text-web-text-h2 text-cos-cyan">AI Assessment Engine</h2>
+<p class="text-web-text-small text-on-surface-variant">Reviewing Permit #SP-1102</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-white" onclick="toggleAI()"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="space-y-4 mb-8">
+<div class="p-4 bg-surface-container-low rounded-lg border-l-4 border-cos-cyan">
+<p class="text-web-text-body text-on-surface leading-relaxed">Structural integrity data from the last 24h shows a 4.2% variance in wind resistance at Section 12. Proceed with caution on high-altitude rigging.</p>
+</div>
+<div class="flex items-center gap-4 text-mobile-success">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="text-web-text-small font-semibold">Contractor certification valid until 2025.</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="flex-1 py-3 bg-cos-blue text-white rounded-lg font-bold">Approve Permit</button>
+<button class="flex-1 py-3 border border-outline-variant text-on-surface-variant rounded-lg font-bold hover:bg-surface-container-high transition-colors">Flag for Manual Review</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+        function toggleAI() {
+            const modal = document.getElementById('ai-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // Add dummy event listeners to buttons
+        document.querySelectorAll('button').forEach(btn => {
+            if(btn.innerText.includes('REVIEW')) {
+                btn.onclick = toggleAI;
+            }
+        });
+    </script>
+</body></html>

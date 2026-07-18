@@ -1,0 +1,356 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SiteOps: Project Horizon - BIM Integration</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for high-density UI */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #031427; }
+        ::-webkit-scrollbar-thumb { background: #26364a; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06B6D4; }
+
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        @keyframes pulse-cyan {
+            0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+        }
+        .animate-pulse-cyan { animation: pulse-cyan 2s infinite; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#26364a",
+                      "inverse-surface": "#d3e4fe",
+                      "cos-white": "#F8FAFC",
+                      "cos-cyan": "#06B6D4",
+                      "on-error": "#690005",
+                      "inverse-on-surface": "#213145",
+                      "primary": "#b4c5ff",
+                      "on-surface-variant": "#c3c6d7",
+                      "error": "#ffb4ab",
+                      "tertiary": "#c1c5dc",
+                      "surface-container-low": "#0b1c30",
+                      "on-background": "#d3e4fe",
+                      "surface": "#031427",
+                      "surface-container": "#102034",
+                      "on-primary-container": "#eeefff",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "surface-container-highest": "#26364a",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "secondary-container": "#03b5d3",
+                      "on-primary-fixed": "#00174b",
+                      "cos-blue": "#2563EB",
+                      "primary-fixed": "#dbe1ff",
+                      "inverse-primary": "#0053db",
+                      "on-primary": "#002a78",
+                      "surface-container-high": "#1b2b3f",
+                      "secondary-fixed": "#acedff",
+                      "background": "#031427",
+                      "tertiary-container": "#686c80",
+                      "surface-bright": "#2a3a4f",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-secondary-container": "#00424e",
+                      "dark-surface": "#0F172A",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "cos-navy": "#0B1020",
+                      "on-secondary": "#003640",
+                      "dark-bg": "#020617",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary": "#2b3041",
+                      "surface-dim": "#031427",
+                      "secondary": "#4cd7f6",
+                      "mobile-success": "#00C853",
+                      "mobile-primary": "#0066FF",
+                      "surface-container-lowest": "#000f21",
+                      "outline-variant": "#434655",
+                      "sync-pending": "#94A3B8",
+                      "mobile-danger": "#FF3B30",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "surface-tint": "#b4c5ff",
+                      "on-secondary-fixed": "#001f26",
+                      "error-container": "#93000a",
+                      "outline": "#8d90a0",
+                      "sync-active": "#FFD60A",
+                      "on-tertiary-container": "#eeefff",
+                      "primary-container": "#2563eb",
+                      "tertiary-fixed": "#dee1f9",
+                      "mobile-warning": "#FF9500",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-surface": "#d3e4fe"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-space-8": "32px",
+                      "web-space-1": "4px",
+                      "mobile-edge": "24px",
+                      "web-base": "4px",
+                      "mobile-touch-target": "52px",
+                      "web-space-2": "8px",
+                      "web-space-4": "16px",
+                      "web-space-3": "12px"
+              },
+              "fontFamily": {
+                      "web-text-h1": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"],
+                      "web-text-small": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"],
+                      "mobile-text-label": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-dark-bg text-on-surface font-mobile-text-body text-mobile-text-body min-h-screen pb-[72px]">
+<!-- Top AppBar (JSON Derived) -->
+<header class="flex justify-between items-center w-full px-mobile-edge h-mobile-touch-target bg-surface-container-low dark:bg-surface-container-lowest sticky top-0 z-[60]">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a site engineer in high-visibility gear, captured in a sharp, corporate photography style. The background features a blurred architectural site with cool blue and cyan lighting. The engineer has a determined expression, embodying the precise and mission-critical nature of the Project Horizon mission." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAip5_O9yXJeU5adnVgeO3pZBckwZS_WpXl9VZ-CiJDvz4XaH0xkZsyPkLdYonGGoqE8OQKNcw4-b8nag5XN_aQTf5kqOV8yhlN8KNJdAGll7MgB7j0z_6vvNygeU-ZwBXDdCleRoU4Y15zjNcljcqv5iprfNLrrOCHJALfEqOmsVUT9UgDgd0Va3i2se1ceMTmSsxBRYSaQr5hfhN8EBOWTtNxKyDXODPMe5ctEDdOVsndSnqqy86dva0E2eiQEzD4PPiYeCOBoPY">
+</div>
+<div class="flex flex-col">
+<span class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-mobile-primary dark:text-primary">SiteOps: Project Horizon</span>
+<span class="text-[14px] font-bold text-on-surface">BIM Integration</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center px-3 py-1 rounded-full bg-mobile-success/10 border border-mobile-success/30">
+<span class="w-2 h-2 rounded-full bg-mobile-success mr-2 animate-pulse"></span>
+<span class="text-[11px] font-bold text-mobile-success uppercase tracking-wider">Live IoT</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-bright p-2 rounded-lg transition-colors">notifications</button>
+</div>
+</header>
+<!-- Project Breadcrumb / Zone -->
+<section class="px-mobile-edge py-4 bg-surface-container border-b border-outline-variant/20">
+<div class="flex flex-col gap-1">
+<h1 class="font-web-text-h1 text-web-text-h1 text-on-surface">Skyline Tower A</h1>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span class="font-mobile-text-label text-mobile-text-label">Level 24 Structural Slab</span>
+</div>
+</div>
+</section>
+<!-- Main Canvas -->
+<main class="relative">
+<!-- 3D Model Viewer Mock -->
+<div class="relative w-full h-[442px] bg-cos-navy overflow-hidden">
+<!-- Simulated 3D Environment -->
+<div class="absolute inset-0 w-full h-full" data-alt="A sophisticated architectural 3D wireframe render of a building's structural structural slab. The perspective is dynamic and technical, showing concrete beams, reinforcement bars, and structural nodes. The lighting is dominated by technical cyan and deep navy tones, creating a high-end BIM environment for a digital twin application. Minimalist UI overlays suggest depth and precision." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCm0nU-rwosj7M36WJbhrSwSYfOSVkKK3dtSPOho0W_ogPxPwaOvlxi7JV8ZsDOAniDYYgO92jJZLiVu87fRBXhyltsa8p-Dw_nlMFD-U5JPfi2kgLitNuQMIMyDjOU4-CM_LrMhtv3fg4E-2-D4JT5Vt49CyMjoqHodyriBAtKwLq5kSQsP8K9khEiJjNZHE9BCfnU5HCtTyMT9NCguUPjRXy05CkseUn6HW1_wYv_nGs-tYTbpVUtlWRz7xQ6ySM4cVLDAar_5HY')"></div>
+<!-- Shaders / Grid Effects -->
+
+<!-- Interactive Pins (Hotspots) -->
+<button class="absolute top-1/4 left-1/3 group" style="z-index: 10;">
+<span class="flex h-4 w-4">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cos-cyan opacity-75"></span>
+<span class="relative inline-flex rounded-full h-4 w-4 bg-cos-cyan border-2 border-white"></span>
+</span>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-32 p-2 glass-panel rounded-xl text-[10px] text-white">
+<p class="font-bold">IoT Sensor S-102</p>
+<p class="text-cos-cyan">Temp: 24°C | Strain: 0.02%</p>
+</div>
+</button>
+<button class="absolute bottom-1/3 right-1/4 group" style="z-index: 10;">
+<span class="flex h-4 w-4">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mobile-warning opacity-75"></span>
+<span class="relative inline-flex rounded-full h-4 w-4 bg-mobile-warning border-2 border-white"></span>
+</span>
+<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-32 p-2 glass-panel rounded-xl text-[10px] text-white">
+<p class="font-bold">Inspection Pt. #4</p>
+<p class="text-mobile-warning">Pending QC Approval</p>
+</div>
+</button>
+<!-- Layer Controls (Overlay) -->
+<div class="absolute bottom-6 left-6 right-6 flex justify-center gap-2 overflow-x-auto no-scrollbar">
+<button class="flex items-center gap-2 px-4 py-2 glass-panel rounded-full text-[12px] font-bold text-cos-cyan border-cos-cyan/50 whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">view_in_ar</span> BIM Model
+                </button>
+<button class="flex items-center gap-2 px-4 py-2 glass-panel rounded-full text-[12px] font-bold text-on-surface-variant whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">visibility</span> AI Vision
+                </button>
+<button class="flex items-center gap-2 px-4 py-2 glass-panel rounded-full text-[12px] font-bold text-on-surface-variant whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">sensors</span> IoT Sensors
+                </button>
+<button class="flex items-center gap-2 px-4 py-2 glass-panel rounded-full text-[12px] font-bold text-on-surface-variant whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]">eco</span> Carbon
+                </button>
+</div>
+</div>
+<!-- Data Panels -->
+<div class="p-mobile-edge space-y-6">
+<!-- Twin State Summary -->
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 bg-surface-container rounded-xl border border-outline-variant/10 flex flex-col gap-2">
+<span class="text-on-surface-variant text-[11px] uppercase tracking-wider font-bold">Confidence Score</span>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-bold text-on-surface">0.95</span>
+<span class="text-mobile-success text-[12px] font-bold mb-1">LIVE</span>
+</div>
+<div class="w-full bg-surface-variant h-1.5 rounded-full mt-1">
+<div class="bg-mobile-success h-full rounded-full" style="width: 95%"></div>
+</div>
+</div>
+<div class="p-4 bg-surface-container rounded-xl border border-outline-variant/10 flex flex-col justify-between">
+<div>
+<span class="text-on-surface-variant text-[11px] uppercase tracking-wider font-bold">Connected</span>
+<p class="text-xl font-bold text-on-surface">14/15 <span class="text-[12px] font-normal text-on-surface-variant">Devices</span></p>
+</div>
+<span class="text-[11px] text-on-surface-variant">Last sync: 2m ago</span>
+</div>
+</div>
+<!-- Divergence Report (AI Module) -->
+<div class="p-5 bg-surface-container-high rounded-xl border-l-4 border-cos-cyan relative overflow-hidden">
+<div class="absolute top-0 right-0 p-3 opacity-10">
+<span class="material-symbols-outlined text-[64px]">psychology</span>
+</div>
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-web-text-h2 text-web-text-h2 text-on-surface mb-1">Divergence Report</h2>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 bg-mobile-warning/20 text-mobile-warning rounded text-[10px] font-bold uppercase">Severity: Medium</span>
+<span class="text-on-surface-variant text-[12px]">Progress Gap: <span class="text-mobile-danger">12% Behind</span></span>
+</div>
+</div>
+</div>
+<div class="p-3 bg-cos-cyan/5 rounded-lg border border-cos-cyan/20">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-cos-cyan mt-1">auto_awesome</span>
+<div>
+<p class="text-[11px] text-cos-cyan uppercase font-bold tracking-widest mb-1">AI Insight</p>
+<p class="text-on-surface text-[14px] leading-relaxed">
+                                Column <span class="font-bold">C-12</span> reinforcement detected via edge-vision but not yet logged in Daily Report. Potential data lag identified.
+                            </p>
+</div>
+</div>
+</div>
+<div class="mt-4 flex gap-2">
+<button class="flex-1 py-3 bg-cos-cyan text-on-primary-container font-bold rounded-lg text-[13px] active:scale-95 transition-transform">
+                        Update Report
+                    </button>
+<button class="px-4 py-3 bg-surface-variant text-on-surface font-bold rounded-lg text-[13px] active:scale-95 transition-transform">
+                        Dismiss
+                    </button>
+</div>
+</div>
+<!-- Detailed Stats Table (Bento Style) -->
+<div class="bg-surface rounded-xl border border-outline-variant/10 overflow-hidden">
+<div class="p-4 border-b border-outline-variant/10 flex justify-between items-center">
+<span class="font-bold text-[13px]">Structural Telemetry</span>
+<span class="material-symbols-outlined text-on-surface-variant">analytics</span>
+</div>
+<div class="divide-y divide-outline-variant/10">
+<div class="p-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">compress</span>
+</div>
+<span class="text-[14px]">Compression Force</span>
+</div>
+<span class="font-bold text-on-surface">12.4 kN/m²</span>
+</div>
+<div class="p-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">water_drop</span>
+</div>
+<span class="text-[14px]">Curing Humidity</span>
+</div>
+<span class="font-bold text-on-surface">68%</span>
+</div>
+<div class="p-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">thermostat</span>
+</div>
+<span class="text-[14px]">Core Temp</span>
+</div>
+<span class="font-bold text-mobile-warning">28.4°C</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Nav Bar (JSON Derived) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 h-[72px] bg-surface dark:bg-dark-surface">
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150 cursor-pointer">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-mobile-text-label text-mobile-text-label">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150 cursor-pointer">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-mobile-text-label text-mobile-text-label">Issues</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-xl px-4 py-1 scale-95 active:scale-90 transition-transform duration-150 cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-mobile-text-label text-mobile-text-label">Tasks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150 cursor-pointer">
+<span class="material-symbols-outlined">description</span>
+<span class="font-mobile-text-label text-mobile-text-label">Reports</span>
+</div>
+</nav>
+<script>
+        // Micro-interactions for pins
+        document.querySelectorAll('button.group').forEach(pin => {
+            pin.addEventListener('click', () => {
+                const tooltip = pin.querySelector('div');
+                tooltip.classList.toggle('hidden');
+            });
+        });
+
+        // Layer selection logic
+        const layerButtons = document.querySelectorAll('.absolute.bottom-6 button');
+        layerButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                layerButtons.forEach(b => {
+                    b.classList.remove('text-cos-cyan', 'border-cos-cyan/50');
+                    b.classList.add('text-on-surface-variant');
+                });
+                btn.classList.add('text-cos-cyan', 'border-cos-cyan/50');
+                btn.classList.remove('text-on-surface-variant');
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quality Control &amp; Audit Center | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .glass-card { background: rgba(16, 32, 52, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(67, 70, 85, 0.5); }
+        .signature-canvas { border: 1px dashed #434655; cursor: crosshair; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    </style>
+<!-- Tailwind Config from Style Guidance -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-lowest": "#000f21",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-background": "#d3e4fe",
+                    "surface": "#031427",
+                    "mobile-success": "#00C853",
+                    "mobile-danger": "#FF3B30",
+                    "secondary-container": "#03b5d3",
+                    "on-error-container": "#ffdad6",
+                    "secondary": "#4cd7f6",
+                    "dark-surface": "#0F172A",
+                    "inverse-on-surface": "#213145",
+                    "surface-container": "#102034",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary": "#b4c5ff",
+                    "cos-blue": "#2563EB",
+                    "sync-active": "#FFD60A",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary": "#002a78",
+                    "on-tertiary": "#2b3041",
+                    "mobile-primary": "#0066FF",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-surface": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "primary-container": "#2563eb",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-secondary": "#003640",
+                    "surface-dim": "#031427",
+                    "cos-cyan": "#06B6D4",
+                    "outline-variant": "#434655",
+                    "tertiary-container": "#686c80",
+                    "surface-variant": "#26364a",
+                    "error": "#ffb4ab",
+                    "on-primary-fixed": "#00174b",
+                    "surface-tint": "#b4c5ff",
+                    "cos-navy": "#0B1020",
+                    "surface-bright": "#2a3a4f",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "cos-white": "#F8FAFC",
+                    "on-primary-container": "#eeefff",
+                    "sync-pending": "#94A3B8",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "dark-bg": "#020617",
+                    "on-tertiary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "outline": "#8d90a0",
+                    "inverse-primary": "#0053db",
+                    "background": "#031427",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "secondary-fixed": "#acedff",
+                    "mobile-warning": "#FF9500",
+                    "surface-container-highest": "#26364a",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-low": "#0b1c30",
+                    "on-secondary-fixed": "#001f26",
+                    "on-tertiary-fixed": "#161b2b",
+                    "error-container": "#93000a"
+            },
+            "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+            "spacing": { "web-space-3": "12px", "web-space-2": "8px", "mobile-touch-target": "52px", "web-space-4": "16px", "web-base": "4px", "web-space-8": "32px", "mobile-edge": "24px" },
+            "fontFamily": {
+                    "web-text-h2": ["Inter Tight"], "mobile-text-body": ["Inter Tight"], "web-text-tiny": ["Inter Tight"], "web-text-display": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"], "web-text-body": ["Inter Tight"], "web-text-small": ["Inter Tight"], "web-text-h1": ["Inter Tight"], "mobile-text-hero": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "web-text-h2": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                    "mobile-text-body": ["17px", { "lineHeight": "24px", "fontWeight": "400" }],
+                    "web-text-tiny": ["11px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                    "web-text-display": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                    "mobile-text-label": ["13px", { "lineHeight": "18px", "fontWeight": "600" }],
+                    "web-text-body": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                    "web-text-small": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                    "web-text-h1": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                    "mobile-text-hero": ["28px", { "lineHeight": "34px", "fontWeight": "700" }]
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-dark-bg text-on-surface overflow-hidden">
+<!-- TopNavBar -->
+<header class="bg-surface-container-low dark:bg-surface-container-low fixed top-0 w-full z-50 h-14 border-b border-outline-variant flex items-center justify-between px-web-space-4 w-full">
+<div class="flex items-center gap-web-space-8">
+<span class="font-web-text-h1 text-web-text-h1 font-bold text-cos-blue tracking-tighter">Construction OS</span>
+<nav class="hidden md:flex gap-web-space-4">
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer active:opacity-80 px-2 py-4" href="#">Dashboard</a>
+<a class="font-web-text-body text-web-text-body text-primary border-b-2 border-primary pb-4 cursor-pointer active:opacity-80 px-2" href="#">Field View</a>
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer active:opacity-80 px-2 py-4" href="#">Reports</a>
+<a class="font-web-text-body text-web-text-body text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer active:opacity-80 px-2 py-4" href="#">BIM</a>
+</nav>
+</div>
+<div class="flex items-center gap-web-space-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-variant border-none rounded-lg pl-9 pr-4 py-1.5 text-web-text-small font-web-text-small w-64 focus:ring-1 focus:ring-cos-blue" placeholder="Search project logs..." type="text"/>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-on-surface">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-on-surface">help_outline</span>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a site engineer wearing a navy blue reflective vest and a white hard hat, with a construction site background slightly out of focus. High-quality lighting, crisp details, professional corporate photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3_DSV-5JnIMrciXC48KrurY5YELFSFq1d6ZQ7_Lk7DYzVtF__CnnUF9UQT5BDSQo-JPtJEKhiee7DYql_dYvjqePUW5Qx8iINOWj3DS3jMXFwWNsbfhA42FIQs7snriVY3LrfQx0rMWyR98yYKxQX1VUMvhtKC-JgVqY6pDHycdZPZ872dkUHIS9dQV0qMNZRUF_dWnCm0UH4ZyALDsyqARlRL5BdoGirO093gMt21GC0L4gtfTQXZHDe-RD0STEhMQBFdzEzTpA"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="bg-surface-container dark:bg-surface-container fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-64 border-r border-outline-variant hidden md:flex flex-col p-web-space-2 gap-y-1">
+<div class="px-web-space-2 py-4 mb-2">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-cos-blue flex items-center justify-center font-bold text-white">PA</div>
+<div>
+<h2 class="font-web-text-h2 text-web-text-h2 text-on-surface leading-tight">Project Alpha</h2>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-widest">Site Admin Hub</p>
+</div>
+</div>
+</div>
+<div class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg font-web-text-small text-web-text-small transition-all" href="#">
+<span class="material-symbols-outlined text-lg">person</span> Profile
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg font-web-text-small text-web-text-small transition-all" href="#">
+<span class="material-symbols-outlined text-lg">map</span> Offline Maps
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container font-semibold rounded-lg font-web-text-small text-web-text-small" href="#">
+<span class="material-symbols-outlined text-lg">precision_manufacturing</span> Equipment Log
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg font-web-text-small text-web-text-small transition-all" href="#">
+<span class="material-symbols-outlined text-lg">inventory_2</span> Material Inventory
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg font-web-text-small text-web-text-small transition-all" href="#">
+<span class="material-symbols-outlined text-lg">groups</span> Team Directory
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg font-web-text-small text-web-text-small transition-all" href="#">
+<span class="material-symbols-outlined text-lg">sync</span> Sync Settings
+            </a>
+</div>
+<button class="mt-4 mb-6 mx-2 bg-cos-blue text-white py-2 rounded font-web-text-small text-web-text-small hover:bg-blue-600 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span> Add Tool
+        </button>
+<div class="border-t border-outline-variant pt-2">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg font-web-text-small text-web-text-small transition-all" href="#">
+<span class="material-symbols-outlined text-lg">contact_support</span> Support
+            </a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant hover:text-on-surface rounded-lg font-web-text-small text-web-text-small transition-all" href="#">
+<span class="material-symbols-outlined text-lg">logout</span> Logout
+            </a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="md:ml-64 mt-14 h-[calc(100vh-3.5rem)] overflow-y-auto bg-surface p-web-space-4 md:p-web-space-8 no-scrollbar">
+<!-- Header -->
+<div class="mb-web-space-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<nav class="flex items-center gap-2 text-web-text-tiny font-web-text-tiny text-on-surface-variant mb-2">
+<span>PROJECT ALPHA</span>
+<span class="material-symbols-outlined text-[12px]">chevron_right</span>
+<span>QUALITY CONTROL</span>
+</nav>
+<h1 class="font-web-text-display text-web-text-display text-on-surface">Quality Control &amp; Audit Center</h1>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container-high border border-outline-variant text-on-surface rounded font-web-text-small text-web-text-small flex items-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-lg">download</span> Export PDF
+                </button>
+<button class="px-6 py-2 bg-cos-blue text-white rounded font-web-text-small text-web-text-small flex items-center gap-2 shadow-lg shadow-blue-900/20 active:scale-95 transition-transform" onclick="submitInspection()">
+<span class="material-symbols-outlined text-lg">send</span> Submit Report
+                </button>
+</div>
+</div>
+<!-- Dashboard Layout: Bento Grid -->
+<div class="grid grid-cols-12 gap-web-space-4" id="qc-workspace">
+<!-- Left Column: Checklists & Navigation -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="glass-card p-4 rounded-xl">
+<h3 class="font-web-text-h2 text-[16px] text-on-surface mb-4 flex items-center justify-between">
+                        Audit Structure
+                        <span class="text-web-text-tiny font-medium text-cos-cyan bg-cos-cyan/10 px-2 py-0.5 rounded">AI ANALYZED</span>
+</h3>
+<div class="space-y-2">
+<div class="flex items-center gap-3 p-2 bg-primary-container/20 border-l-2 border-primary text-primary rounded-r">
+<span class="material-symbols-outlined text-lg">fact_check</span>
+<span class="font-web-text-body text-web-text-body">Structural Integrity</span>
+</div>
+<div class="flex items-center gap-3 p-2 hover:bg-surface-variant rounded transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-lg text-on-surface-variant group-hover:text-on-surface">electrical_services</span>
+<span class="font-web-text-body text-web-text-body text-on-surface-variant group-hover:text-on-surface">Electrical Systems</span>
+</div>
+<div class="flex items-center gap-3 p-2 hover:bg-surface-variant rounded transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-lg text-on-surface-variant group-hover:text-on-surface">plumbing</span>
+<span class="font-web-text-body text-web-text-body text-on-surface-variant group-hover:text-on-surface">HVAC &amp; Plumbing</span>
+</div>
+<div class="flex items-center gap-3 p-2 hover:bg-surface-variant rounded transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-lg text-on-surface-variant group-hover:text-on-surface">health_and_safety</span>
+<span class="font-web-text-body text-web-text-body text-on-surface-variant group-hover:text-on-surface">Safety Compliance</span>
+</div>
+</div>
+</div>
+<div class="glass-card p-4 rounded-xl">
+<h3 class="font-web-text-h2 text-[16px] text-on-surface mb-4">Field Assets</h3>
+<div class="grid grid-cols-2 gap-2">
+<div class="aspect-square rounded bg-surface-container-highest relative group overflow-hidden border border-outline-variant cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="A high-resolution photograph of a concrete foundation with steel reinforcement bars. The photo is taken in broad daylight with sharp focus on the rebar connections. Industrial aesthetic, clean, technical detail for a construction audit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCp6KrbZog51bz3URiU15JVFLetvyekj8M46khDC8m2CEquAXie2mTh-SyquYufEDyEQ-CBTz00VzLCk4AN3q-8KlJW1nBILOkHKpp53HEZC9fTNhDpN2hPn2-3vdTBlMfOnq3mZ9JZXR3H9qu-Ec6lYWRQseTu1M1q7PgHrk99zlBMaYeem-ScnDE1v9hY9LvcQ1YjyPlqV9CU5xwhfTwljCyFWtnE52z41aS3_H5pDZM2SLCxiUjFapVEoHUFC6mayUVGPxJ8Avc"/>
+<div class="absolute bottom-0 left-0 right-0 p-1 bg-cos-navy/80 text-[9px] text-center">IMG_4021.JPG</div>
+</div>
+<div class="aspect-square rounded bg-surface-container-highest relative group overflow-hidden border border-outline-variant cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="Close-up photograph showing a laser level being used on a construction site. The red laser line is visible against a wooden frame. Professional tool photography, high precision, slight bokeh background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpFCFlmBvU2S_DEpyO6A3Y5f6QG4zKHNcgNujHxja2APYUCAhTker7C7wYM_PEiYZg9YSsPKMQYgN-Nlx0mIvgHTC1dsdz9TR5CAePaFaMPemW1cDTqbV-E5urP8kbyHsgk3gSBw0C6gtsOfoYg0IIQ9_GixHYIevOvOCMmXlojsez9MsZw0M_8a4Z9K3EecdSjGANt-nVpvIbNGraPilGQ01GG_2bZHKhd1bKd8PL2QNQU7YDGb7YqcabJjPnfhgyxbNVYJGecos"/>
+<div class="absolute bottom-0 left-0 right-0 p-1 bg-cos-navy/80 text-[9px] text-center">IMG_4022.JPG</div>
+</div>
+<div class="aspect-square rounded bg-surface-container-highest flex flex-col items-center justify-center border border-dashed border-outline-variant hover:bg-surface-variant transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-on-surface-variant">add_a_photo</span>
+<span class="text-[10px] text-on-surface-variant mt-1">UPLOAD</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Center Column: Multi-page Document Viewer -->
+<div class="col-span-12 lg:col-span-6 space-y-4">
+<div class="bg-cos-white rounded-lg shadow-2xl p-web-space-8 text-cos-navy overflow-hidden relative">
+<!-- Page Header Decoration -->
+<div class="absolute top-0 left-0 w-full h-1 bg-cos-blue"></div>
+<div class="flex justify-between items-start mb-8 border-b border-slate-200 pb-4">
+<div>
+<h2 class="text-[20px] font-bold uppercase tracking-tight">Full Inspection Report</h2>
+<p class="text-[11px] text-slate-500 font-medium">DOCUMENT NO: COS-QC-2024-0812</p>
+</div>
+<div class="text-right">
+<div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold mb-1">DRAFT - IN REVIEW</div>
+<p class="text-[11px] text-slate-500">Aug 23, 2024 | 09:42 AM</p>
+</div>
+</div>
+<!-- Inspection Form Content -->
+<div class="space-y-6">
+<section>
+<h4 class="text-[12px] font-bold text-slate-400 border-b border-slate-100 pb-1 mb-3 uppercase tracking-wider">Site Inspection Checklist</h4>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-2 rounded hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded border-2 border-cos-blue flex items-center justify-center text-cos-blue">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[13px] font-medium">Foundation Alignment verified per DWG-A1</span>
+</div>
+<span class="text-[11px] text-slate-400 italic">Inspector: J. Doe</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded hover:bg-slate-50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded border-2 border-cos-blue flex items-center justify-center text-cos-blue">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<span class="text-[13px] font-medium">Rebar spacing and diameter audit</span>
+</div>
+<span class="text-[11px] text-slate-400 italic">Inspector: J. Doe</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded hover:bg-slate-50 transition-colors bg-amber-50/50">
+<div class="flex items-center gap-3">
+<div class="w-5 h-5 rounded border-2 border-amber-500 flex items-center justify-center text-amber-500">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+</div>
+<span class="text-[13px] font-medium">Concrete slump test results (Batch #A9)</span>
+</div>
+<span class="text-[11px] text-amber-600 font-semibold px-2 py-0.5 bg-amber-100 rounded">MARGINAL</span>
+</div>
+</div>
+</section>
+<section>
+<h4 class="text-[12px] font-bold text-slate-400 border-b border-slate-100 pb-1 mb-3 uppercase tracking-wider">QC Inspection Form - Details</h4>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<label class="text-[10px] font-bold text-slate-500">SITE LOCATION</label>
+<div class="text-[13px] border-b border-slate-200 pb-1 font-semibold">Sector 4 - Foundation Grid C1-F9</div>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] font-bold text-slate-500">WEATHER CONDITIONS</label>
+<div class="text-[13px] border-b border-slate-200 pb-1 font-semibold">Clear, 24°C, 15% Humidity</div>
+</div>
+</div>
+<div class="mt-4 space-y-1">
+<label class="text-[10px] font-bold text-slate-500">GENERAL OBSERVATIONS</label>
+<p class="text-[12px] leading-relaxed text-slate-700 italic">
+                                    "Workmanship remains within acceptable tolerances for structural phase. Observed minor oxidation on exposed reinforcement at Grid F3; contractor has been notified to apply protective coating before pour. All safety protocols followed."
+                                </p>
+</div>
+</section>
+<!-- Signature Section -->
+<section class="pt-8 border-t border-slate-200">
+<div class="flex flex-col md:flex-row gap-8">
+<div class="flex-1">
+<label class="text-[10px] font-bold text-slate-500 mb-2 block">SIGNATURE OF INSPECTOR</label>
+<div class="h-24 bg-slate-50 rounded border border-slate-200 relative signature-canvas flex items-center justify-center overflow-hidden">
+<!-- Placeholder for signature -->
+<svg class="w-48 h-16 opacity-30 pointer-events-none" viewbox="0 0 200 60">
+<path d="M10,40 Q30,10 50,40 T90,40 T130,20 T170,40" fill="none" stroke="black" stroke-width="2"></path>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center hover:bg-slate-100/50 transition-colors cursor-pointer group">
+<span class="text-[11px] text-slate-400 group-hover:text-cos-blue">CLICK TO RE-SIGN</span>
+</div>
+</div>
+<p class="text-[11px] font-bold text-slate-800 mt-2">James R. Doe, P.Eng</p>
+<p class="text-[10px] text-slate-400">Chief Quality Inspector</p>
+</div>
+<div class="flex-1">
+<label class="text-[10px] font-bold text-slate-500 mb-2 block">SIGNATURE OF SITE MANAGER</label>
+<div class="h-24 bg-slate-50 rounded border border-slate-200 flex items-center justify-center italic text-slate-300 text-[11px]">
+                                        Awaiting electronic capture...
+                                    </div>
+</div>
+</div>
+</section>
+</div>
+<!-- Page Footer -->
+<div class="mt-12 flex justify-between items-center text-[10px] text-slate-400 font-mono">
+<div>© 2024 CONSTRUCTION OS | SECURE DOC CLOUD</div>
+<div>PAGE 01 / 01</div>
+</div>
+</div>
+</div>
+<!-- Right Column: AI Assistance & Audit Feed -->
+<div class="col-span-12 lg:col-span-3 space-y-4">
+<div class="bg-cos-cyan/5 border border-cos-cyan/20 p-4 rounded-xl relative overflow-hidden">
+<div class="absolute top-0 right-0 p-2 opacity-10">
+<span class="material-symbols-outlined text-4xl text-cos-cyan">auto_awesome</span>
+</div>
+<h3 class="font-web-text-h2 text-[14px] text-cos-cyan mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">psychology</span>
+                        QC Smart Assistant
+                    </h3>
+<p class="text-web-text-small text-on-surface-variant leading-relaxed">
+                        Based on the slump test marginal result, I recommend increasing the vibration time by 15% during the pour to ensure proper consolidation.
+                    </p>
+<button class="mt-4 w-full py-1.5 bg-cos-cyan text-on-secondary rounded text-web-text-tiny font-bold uppercase hover:bg-cyan-400 transition-colors">
+                        APPLY ADJUSTMENT
+                    </button>
+</div>
+<div class="glass-card p-4 rounded-xl">
+<h3 class="font-web-text-h2 text-[16px] text-on-surface mb-4">Real-time Feed</h3>
+<div class="space-y-4">
+<div class="flex gap-3">
+<div class="w-2 h-2 rounded-full bg-mobile-success mt-1.5 shrink-0"></div>
+<div>
+<p class="text-web-text-small font-semibold text-on-surface">Inspection Logged</p>
+<p class="text-web-text-tiny text-on-surface-variant">Grid A1 - Passed Initial Review</p>
+<span class="text-[10px] text-slate-500">2 mins ago</span>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-2 h-2 rounded-full bg-sync-active mt-1.5 shrink-0"></div>
+<div>
+<p class="text-web-text-small font-semibold text-on-surface">Material Sync</p>
+<p class="text-web-text-tiny text-on-surface-variant">Batch #A9 Concrete Data Imported</p>
+<span class="text-[10px] text-slate-500">14 mins ago</span>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-2 h-2 rounded-full bg-mobile-danger mt-1.5 shrink-0"></div>
+<div>
+<p class="text-web-text-small font-semibold text-on-surface">RFI Raised</p>
+<p class="text-web-text-tiny text-on-surface-variant">Clarification on Steel Grade #4</p>
+<span class="text-[10px] text-slate-500">1 hour ago</span>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-card p-4 rounded-xl">
+<h3 class="font-web-text-h2 text-[16px] text-on-surface mb-4">Compliance Score</h3>
+<div class="flex items-center gap-4">
+<div class="relative w-16 h-16 flex items-center justify-center">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-variant" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="6"></circle>
+<circle class="text-cos-blue" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175" stroke-dashoffset="20" stroke-width="6"></circle>
+</svg>
+<span class="absolute text-web-text-tiny font-bold">92%</span>
+</div>
+<div>
+<p class="text-web-text-small font-bold text-on-surface">Excellent</p>
+<p class="text-web-text-tiny text-on-surface-variant">+2.4% from last audit</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Success Modal (Hidden by Default) -->
+<div class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-cos-navy/90 backdrop-blur-md" id="success-state">
+<div class="max-w-md w-full bg-surface-container rounded-2xl p-8 border border-outline-variant shadow-2xl text-center animate-fade-in">
+<div class="w-20 h-20 bg-mobile-success/10 rounded-full flex items-center justify-center mx-auto mb-6">
+<span class="material-symbols-outlined text-5xl text-mobile-success" style="font-variation-settings: 'wght' 700;">check_circle</span>
+</div>
+<h2 class="text-web-text-display font-web-text-display text-on-surface mb-2">Inspection Submitted</h2>
+<p class="text-web-text-body text-on-surface-variant mb-8">
+                    Your quality report <span class="text-primary font-mono">#COS-QC-2024-0812</span> has been securely hashed and uploaded to the project ledger.
+                </p>
+<div class="space-y-3">
+<button class="w-full py-3 bg-primary-container text-white rounded-lg font-bold hover:bg-cos-blue transition-all" onclick="closeModal()">
+                        Return to Center
+                    </button>
+<button class="w-full py-3 bg-surface-variant text-on-surface rounded-lg font-bold hover:bg-surface-container-highest transition-all">
+                        Generate Audit Log
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB for Quick Audit -->
+<button class="fixed bottom-6 right-6 w-14 h-14 bg-mobile-primary text-white rounded-full flex items-center justify-center shadow-xl hover:scale-110 active:scale-90 transition-all z-40 md:hidden">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<script>
+        function submitInspection() {
+            const workspace = document.getElementById('qc-workspace');
+            const successState = document.getElementById('success-state');
+            
+            // Add a small delay for "processing" feel
+            const btn = event.currentTarget;
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin">sync</span> Submitting...`;
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            
+            setTimeout(() => {
+                successState.classList.remove('hidden');
+                btn.innerHTML = `<span class="material-symbols-outlined text-lg">send</span> Submit Report`;
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }, 1200);
+        }
+
+        function closeModal() {
+            document.getElementById('success-state').classList.add('hidden');
+        }
+    </script>
+</body></html>

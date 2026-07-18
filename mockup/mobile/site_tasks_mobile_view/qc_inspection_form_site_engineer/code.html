@@ -1,0 +1,318 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>QC Inspection Form - SiteOps</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+        }
+        .grid-bg {
+            background-image: radial-gradient(circle at 1px 1px, #26364a 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .bento-card {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(67, 70, 85, 0.5);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "mobile-success": "#00C853",
+                      "surface-container-lowest": "#000f21",
+                      "tertiary-fixed": "#dee1f9",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary-fixed": "#001f26",
+                      "cos-blue": "#2563EB",
+                      "mobile-danger": "#FF3B30",
+                      "on-secondary-container": "#00424e",
+                      "tertiary-container": "#686c80",
+                      "on-surface-variant": "#c3c6d7",
+                      "inverse-surface": "#d3e4fe",
+                      "surface-bright": "#2a3a4f",
+                      "surface-container-highest": "#26364a",
+                      "surface-tint": "#b4c5ff",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "mobile-primary": "#0066FF",
+                      "on-primary-container": "#eeefff",
+                      "outline": "#8d90a0",
+                      "error-container": "#93000a",
+                      "primary-fixed": "#dbe1ff",
+                      "on-surface": "#d3e4fe",
+                      "primary": "#b4c5ff",
+                      "surface-variant": "#26364a",
+                      "surface-container-low": "#0b1c30",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-background": "#d3e4fe",
+                      "surface-dim": "#031427",
+                      "on-tertiary": "#2b3041",
+                      "on-primary": "#002a78",
+                      "cos-navy": "#0B1020",
+                      "sync-active": "#FFD60A",
+                      "secondary": "#4cd7f6",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "on-error": "#690005",
+                      "secondary-container": "#03b5d3",
+                      "error": "#ffb4ab",
+                      "dark-surface": "#0F172A",
+                      "sync-pending": "#94A3B8",
+                      "tertiary": "#c1c5dc",
+                      "mobile-warning": "#FF9500",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-tertiary-fixed": "#161b2b",
+                      "surface": "#031427",
+                      "on-primary-fixed": "#00174b",
+                      "background": "#031427",
+                      "on-tertiary-container": "#eeefff",
+                      "cos-cyan": "#06B6D4",
+                      "inverse-primary": "#0053db",
+                      "surface-container": "#102034",
+                      "on-secondary": "#003640",
+                      "primary-container": "#2563eb",
+                      "dark-bg": "#020617",
+                      "surface-container-high": "#1b2b3f",
+                      "outline-variant": "#434655",
+                      "inverse-on-surface": "#213145",
+                      "secondary-fixed": "#acedff",
+                      "cos-white": "#F8FAFC"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "mobile-touch-target": "52px",
+                      "web-space-2": "8px",
+                      "web-space-3": "12px",
+                      "mobile-edge": "24px",
+                      "web-space-8": "32px",
+                      "web-space-1": "4px",
+                      "web-base": "4px",
+                      "web-space-4": "16px"
+              },
+              "fontFamily": {
+                      "web-text-display": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "web-text-small": ["Inter Tight"],
+                      "mobile-text-label": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background dark:bg-dark-bg text-on-surface min-h-screen grid-bg pb-32">
+<!-- Top AppBar (JSON Derived) -->
+<header class="sticky top-0 z-50 bg-surface dark:bg-dark-surface flex justify-between items-center w-full px-mobile-edge h-mobile-touch-target">
+<div class="flex items-center gap-3">
+<button class="material-symbols-outlined text-mobile-primary dark:text-primary transition-colors duration-200 active:opacity-70">arrow_back</button>
+<h1 class="font-mobile-text-hero text-mobile-text-hero text-mobile-primary dark:text-primary">QC Inspection</h1>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-low dark:bg-surface-container-lowest rounded-full">
+<span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-mobile-success">Synced</span>
+</div>
+</header>
+<main class="px-mobile-edge pt-6 space-y-6">
+<!-- Project Header Section -->
+<section class="bento-card p-5 rounded-xl border-l-4 border-mobile-primary">
+<div class="flex justify-between items-start mb-2">
+<div>
+<p class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-wider">Current Project</p>
+<h2 class="font-mobile-text-hero text-mobile-text-hero text-on-surface mt-1">Skyline Tower A</h2>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">location_on</span>
+</div>
+<div class="flex gap-4 mt-4">
+<div class="flex-1 bg-surface-container-low p-3 rounded-lg">
+<p class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase">Floor</p>
+<p class="font-mobile-text-label text-mobile-text-label text-on-surface">Level 24</p>
+</div>
+<div class="flex-1 bg-surface-container-low p-3 rounded-lg">
+<p class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase">Zone</p>
+<p class="font-mobile-text-label text-mobile-text-label text-on-surface">Sector B-12</p>
+</div>
+</div>
+</section>
+<!-- Inspection Subject -->
+<section class="space-y-1">
+<label class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase ml-1">Inspection Subject</label>
+<div class="bg-surface-container p-4 rounded-xl flex items-center justify-between">
+<span class="font-mobile-text-body text-mobile-text-body font-semibold">Rebar Reinforcement - Column C-42</span>
+<span class="material-symbols-outlined text-mobile-primary">inventory</span>
+</div>
+</section>
+<!-- AI Insight Module -->
+<section class="relative overflow-hidden p-4 rounded-xl border border-cos-cyan/30 bg-cos-cyan/5">
+<div class="absolute top-0 left-0 w-1 h-full bg-cos-cyan"></div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-cos-cyan text-lg">auto_awesome</span>
+<h3 class="font-mobile-text-label text-mobile-text-label text-cos-cyan uppercase tracking-wider">AI Quality Check</h3>
+</div>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface leading-snug">
+                Rebar spacing appears <span class="font-bold text-cos-cyan">consistent</span> with DWG-S204 (<span class="underline">98% confidence</span>).
+            </p>
+</section>
+<!-- Checklist Section -->
+<section class="space-y-4">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-widest ml-1">Inspection Criteria</h3>
+<!-- Checklist Item 1 -->
+<div class="bg-surface-container-high p-4 rounded-xl space-y-4">
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface">Rebar size and spacing match drawings</p>
+<div class="grid grid-cols-3 gap-2">
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-mobile-success bg-mobile-success/10 text-mobile-success font-bold">
+<span class="material-symbols-outlined text-base">check</span> PASS
+                    </button>
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-outline-variant text-on-surface-variant font-bold">
+<span class="material-symbols-outlined text-base">close</span> FAIL
+                    </button>
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-outline-variant text-on-surface-variant font-bold">
+<span class="material-symbols-outlined text-base">report</span> COND
+                    </button>
+</div>
+</div>
+<!-- Checklist Item 2 -->
+<div class="bg-surface-container-high p-4 rounded-xl space-y-4">
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface">Proper lap length and staggered joints</p>
+<div class="grid grid-cols-3 gap-2">
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-outline-variant text-on-surface-variant font-bold">
+<span class="material-symbols-outlined text-base">check</span> PASS
+                    </button>
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-mobile-danger bg-mobile-danger/10 text-mobile-danger font-bold">
+<span class="material-symbols-outlined text-base">close</span> FAIL
+                    </button>
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-outline-variant text-on-surface-variant font-bold">
+<span class="material-symbols-outlined text-base">report</span> COND
+                    </button>
+</div>
+</div>
+<!-- Checklist Item 3 -->
+<div class="bg-surface-container-high p-4 rounded-xl space-y-4">
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface">Concrete cover spacers in place</p>
+<div class="grid grid-cols-3 gap-2">
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-outline-variant text-on-surface-variant font-bold">
+<span class="material-symbols-outlined text-base">check</span> PASS
+                    </button>
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-outline-variant text-on-surface-variant font-bold">
+<span class="material-symbols-outlined text-base">close</span> FAIL
+                    </button>
+<button class="h-mobile-touch-target flex items-center justify-center gap-1 rounded-lg border-2 border-mobile-warning bg-mobile-warning/10 text-mobile-warning font-bold">
+<span class="material-symbols-outlined text-base">report</span> COND
+                    </button>
+</div>
+</div>
+</section>
+<!-- Evidence Section -->
+<section class="space-y-4">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-widest ml-1">Visual Evidence</h3>
+<div class="grid grid-cols-3 gap-3 h-32">
+<!-- Attach Photo Action -->
+<button class="flex flex-col items-center justify-center bg-surface-container-highest border-2 border-dashed border-outline-variant rounded-xl text-on-surface-variant transition-colors hover:bg-surface-bright">
+<span class="material-symbols-outlined text-3xl mb-1">add_a_photo</span>
+<span class="text-[10px] font-bold uppercase">Attach</span>
+</button>
+<!-- Existing Photo 1 -->
+<div class="relative group rounded-xl overflow-hidden cursor-pointer">
+<div class="bg-cover bg-center w-full h-full" data-alt="A close-up technical photograph of steel rebar reinforcement mesh at a construction site. The lighting is harsh afternoon sun, casting sharp shadows on the grey concrete below. The rebar is clean, rust-free, and precisely aligned in a grid pattern. High contrast, professional site documentation style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBBYxjjEH6y187p6M8-bcUHa9fXa3XZAdYhFQHgCW3Jkf-gTioAN0nWm0ORmEy-jqvSYeBQiw59kYeBNDBDrht5P2LtE4_Cww-_AuQClAY7aai5IUV53oiZqhHWkzfmhTaRXBCghd3CPdPjxzh-1au_6f18DGXIFbv3iczzl1ZQ8r2Mgj2h-TV6kXh2qlo0TmHDMXqwPezcH60_X-9GWFgZIrzHdK_VeiV1yWrU-5p0P_EacfAiP1LLUo1LV19AyhNLAgEN1JqzhrQ')"></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-1 right-1 bg-mobile-success rounded-full p-0.5">
+<span class="material-symbols-outlined text-[12px] text-white" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+<!-- Existing Photo 2 -->
+<div class="relative group rounded-xl overflow-hidden cursor-pointer">
+<div class="bg-cover bg-center w-full h-full" data-alt="A macro detail shot of a concrete cover spacer, often called a 'chair', holding up a thick steel rebar rod. The setting is a construction formwork ready for pouring. The mood is precise and technical, highlighting the critical structural component. Construction OS industrial aesthetic with cool tones." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB95gixb8h-WQ9Zr4CRx3lEljNAbG7q7PJBbJ-sv8lF6otqhaq6DBZSL4TS7KXGHaWSUdmJUzvYFE4WBttEGRN2hbnKK0wG859F4Wi6M4tUisGuST7eor0GJX4lQA7o4URpv6VprOC31S3J_6p-kjPmR4W7lZoIzYC0oXAK8x75_6r6agzsTn4FMy62x3cxmseYWce9RI98YMV-CYMB6D_-XnsreeN5j07w6DQFcU6jiQLC1BegCmy5mxtpUze6upQtfKAH7lqUWYM')"></div>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+<div class="absolute bottom-1 right-1 bg-sync-active rounded-full p-0.5">
+<span class="material-symbols-outlined text-[12px] text-black" style="font-variation-settings: 'FILL' 1;">sync</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Action Area -->
+<section class="pt-4 pb-8">
+<button class="w-full h-mobile-touch-target bg-mobile-primary text-white rounded-xl font-mobile-text-label uppercase tracking-widest shadow-lg shadow-mobile-primary/20 active:scale-95 transition-all">
+                Submit Inspection
+            </button>
+</section>
+</main>
+<!-- BottomNavBar (JSON Derived) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 h-[72px] bg-surface dark:bg-dark-surface shadow-[0_-4px_24px_rgba(0,0,0,0.5)]">
+<!-- Dashboard -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-mobile-text-label text-mobile-text-label">Dashboard</span>
+</a>
+<!-- Issues -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+<span class="font-mobile-text-label text-mobile-text-label">Issues</span>
+</a>
+<!-- Tasks (Active State - Form is a Task) -->
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-xl px-4 py-1 transition-transform duration-150 active:scale-90 shadow-lg shadow-primary-container/30" href="#">
+<span class="material-symbols-outlined" data-icon="assignment" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-mobile-text-label text-mobile-text-label">Tasks</span>
+</a>
+<!-- Reports -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-mobile-text-label text-mobile-text-label">Reports</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for checklist buttons
+        document.querySelectorAll('button[class*="PASS"], button[class*="FAIL"], button[class*="COND"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const parent = this.parentElement;
+                parent.querySelectorAll('button').forEach(b => {
+                    b.classList.remove('bg-mobile-success/10', 'border-mobile-success', 'text-mobile-success', 'bg-mobile-danger/10', 'border-mobile-danger', 'text-mobile-danger', 'bg-mobile-warning/10', 'border-mobile-warning', 'text-mobile-warning');
+                    b.classList.add('border-outline-variant', 'text-on-surface-variant');
+                });
+                
+                this.classList.remove('border-outline-variant', 'text-on-surface-variant');
+                if(this.textContent.includes('PASS')) {
+                    this.classList.add('bg-mobile-success/10', 'border-mobile-success', 'text-mobile-success');
+                } else if(this.textContent.includes('FAIL')) {
+                    this.classList.add('bg-mobile-danger/10', 'border-mobile-danger', 'text-mobile-danger');
+                } else {
+                    this.classList.add('bg-mobile-warning/10', 'border-mobile-warning', 'text-mobile-warning');
+                }
+            });
+        });
+    </script>
+</body></html>

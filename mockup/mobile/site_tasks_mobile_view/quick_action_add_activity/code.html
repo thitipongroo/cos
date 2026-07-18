@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Add Site Activity | Site Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "outline-variant": "#434655",
+                "on-primary-fixed-variant": "#003ea8",
+                "on-tertiary-fixed": "#161b2b",
+                "on-tertiary-container": "#eeefff",
+                "surface-container-high": "#1b2b3f",
+                "on-background": "#d3e4fe",
+                "on-primary-container": "#eeefff",
+                "surface-variant": "#26364a",
+                "error-container": "#93000a",
+                "surface-tint": "#b4c5ff",
+                "primary-fixed-dim": "#b4c5ff",
+                "secondary-fixed": "#acedff",
+                "on-secondary-fixed": "#001f26",
+                "error": "#ffb4ab",
+                "surface-dim": "#031427",
+                "on-secondary-container": "#00424e",
+                "surface-container-low": "#0b1c30",
+                "mobile-success": "#00C853",
+                "tertiary-fixed": "#dee1f9",
+                "secondary": "#4cd7f6",
+                "cos-white": "#F8FAFC",
+                "on-error": "#690005",
+                "tertiary": "#c1c5dc",
+                "on-primary": "#002a78",
+                "surface": "#031427",
+                "mobile-primary": "#0066FF",
+                "surface-bright": "#2a3a4f",
+                "cos-cyan": "#06B6D4",
+                "surface-container": "#102034",
+                "on-surface-variant": "#c3c6d7",
+                "on-error-container": "#ffdad6",
+                "sync-pending": "#94A3B8",
+                "surface-container-highest": "#26364a",
+                "dark-bg": "#020617",
+                "outline": "#8d90a0",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "secondary-fixed-dim": "#4cd7f6",
+                "background": "#031427",
+                "surface-container-lowest": "#000f21",
+                "on-primary-fixed": "#00174b",
+                "mobile-danger": "#FF3B30",
+                "on-surface": "#d3e4fe",
+                "cos-navy": "#0B1020",
+                "secondary-container": "#03b5d3",
+                "on-tertiary-fixed-variant": "#414658",
+                "sync-active": "#FFD60A",
+                "on-secondary": "#003640",
+                "inverse-on-surface": "#213145",
+                "on-secondary-fixed-variant": "#004e5c",
+                "dark-surface": "#0F172A",
+                "primary-fixed": "#dbe1ff",
+                "mobile-warning": "#FF9500",
+                "primary": "#b4c5ff",
+                "tertiary-container": "#686c80",
+                "primary-container": "#2563eb",
+                "inverse-primary": "#0053db",
+                "on-tertiary": "#2b3041",
+                "inverse-surface": "#d3e4fe",
+                "cos-blue": "#2563EB",
+                "cos-gray": "#94A3B8"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "web-space-3": "12px",
+                "mobile-touch-target": "52px",
+                "mobile-edge": "24px",
+                "web-space-8": "32px",
+                "web-space-1": "4px",
+                "web-base": "4px",
+                "web-space-2": "8px",
+                "web-space-4": "16px"
+            },
+            "fontFamily": {
+                "web-text-h2": ["Inter Tight"],
+                "web-text-small": ["Inter Tight"],
+                "mobile-text-body": ["Inter Tight"],
+                "mobile-text-hero": ["Inter Tight"],
+                "web-text-display": ["Inter Tight"],
+                "mobile-text-label": ["Inter Tight"],
+                "web-text-body": ["Inter Tight"],
+                "web-text-tiny": ["Inter Tight"],
+                "web-text-h1": ["Inter Tight"]
+            },
+            "fontSize": {
+                "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427; /* surface */
+            color: #d3e4fe; /* on-surface */
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Industrial inputs */
+        .industrial-input {
+            background: #102034; /* surface-container */
+            border: 1px solid #434655; /* outline-variant */
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .industrial-input:focus {
+            outline: none;
+            border-color: #2563EB; /* cos-blue */
+            box-shadow: inset 0 0 0 1px #2563EB;
+        }
+
+        /* AI Glassmorphism Effect */
+        .ai-panel {
+            background: rgba(6, 182, 212, 0.05); /* cos-cyan 5% */
+            border-left: 2px solid #06B6D4; /* cos-cyan */
+        }
+
+        /* Active states for segmented chips */
+        .chip-active {
+            background-color: #2563eb; /* primary-container */
+            color: #eeefff; /* on-primary-container */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen">
+<!-- Top AppBar (Mobile Style) -->
+<header class="bg-surface sticky top-0 z-50 flex items-center px-mobile-edge h-mobile-touch-target w-full">
+<button aria-label="Go back" class="mr-web-space-4 flex items-center justify-center w-8 h-8 rounded-lg hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-web-text-h1 text-web-text-h1 font-bold text-primary flex-grow">Add Site Activity</h1>
+<button class="flex items-center justify-center w-10 h-10 rounded-full">
+<span class="material-symbols-outlined text-primary">account_circle</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-mobile-edge pt-web-space-4 pb-32">
+<form class="space-y-web-space-8">
+<!-- Activity Type Section -->
+<section>
+<label class="block font-mobile-text-label text-mobile-text-label text-on-surface-variant mb-web-space-2 uppercase tracking-wider">Activity Type</label>
+<div class="flex gap-web-space-2 overflow-x-auto no-scrollbar py-web-base">
+<button class="flex-shrink-0 px-4 h-9 flex items-center border border-outline-variant rounded-lg font-mobile-text-label text-mobile-text-label chip-active" type="button">
+                        Planned Task
+                    </button>
+<button class="flex-shrink-0 px-4 h-9 flex items-center border border-outline-variant rounded-lg font-mobile-text-label text-mobile-text-label bg-surface-container-high text-on-surface-variant hover:bg-surface-variant transition-colors" type="button">
+                        Urgent Fix
+                    </button>
+<button class="flex-shrink-0 px-4 h-9 flex items-center border border-outline-variant rounded-lg font-mobile-text-label text-mobile-text-label bg-surface-container-high text-on-surface-variant hover:bg-surface-variant transition-colors" type="button">
+                        Unplanned Activity
+                    </button>
+</div>
+</section>
+<!-- Activity Title Section -->
+<section>
+<label class="block font-mobile-text-label text-mobile-text-label text-on-surface-variant mb-web-space-2 uppercase tracking-wider" for="activity-title">Activity Title</label>
+<input class="industrial-input w-full h-12 px-web-space-4 rounded-lg font-mobile-text-body text-mobile-text-body text-on-surface placeholder:text-outline/50" id="activity-title" placeholder="e.g., HVAC Ductwork Inspection" type="text"/>
+</section>
+<!-- Grid: Project Phase & Location -->
+<div class="grid grid-cols-1 gap-web-space-6">
+<section>
+<label class="block font-mobile-text-label text-mobile-text-label text-on-surface-variant mb-web-space-2 uppercase tracking-wider" for="project-phase">Project Phase</label>
+<div class="relative">
+<select class="industrial-input appearance-none w-full h-12 px-web-space-4 rounded-lg font-mobile-text-body text-mobile-text-body text-on-surface bg-surface-container" id="project-phase">
+<option>Phase 2: Superstructure</option>
+<option>Phase 1: Foundation</option>
+<option>Phase 3: MEP Rough-in</option>
+</select>
+<span class="material-symbols-outlined absolute right-web-space-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+</div>
+</section>
+<section>
+<label class="block font-mobile-text-label text-mobile-text-label text-on-surface-variant mb-web-space-2 uppercase tracking-wider" for="location">Location / Sector</label>
+<div class="relative">
+<select class="industrial-input appearance-none w-full h-12 px-web-space-4 rounded-lg font-mobile-text-body text-mobile-text-body text-on-surface bg-surface-container" id="location">
+<option>North Wing - Level 4</option>
+<option>South Lobby</option>
+<option>Basement Storage B2</option>
+</select>
+<span class="material-symbols-outlined absolute right-web-space-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+</div>
+</section>
+</div>
+<!-- Priority Section -->
+<section>
+<label class="block font-mobile-text-label text-mobile-text-label text-on-surface-variant mb-web-space-2 uppercase tracking-wider">Priority Level</label>
+<div class="grid grid-cols-4 gap-web-space-2">
+<button class="h-10 flex flex-col items-center justify-center border border-outline-variant rounded-lg bg-surface-container-high transition-all active:scale-95" type="button">
+<span class="text-web-text-tiny font-bold text-outline-variant">LOW</span>
+<div class="w-full h-1 mt-1 bg-outline-variant opacity-20"></div>
+</button>
+<button class="h-10 flex flex-col items-center justify-center border border-outline-variant rounded-lg bg-surface-container-high transition-all active:scale-95" type="button">
+<span class="text-web-text-tiny font-bold text-mobile-success">MED</span>
+<div class="w-full h-1 mt-1 bg-mobile-success opacity-50"></div>
+</button>
+<button class="h-10 flex flex-col items-center justify-center border border-outline-variant rounded-lg bg-surface-container-high transition-all active:scale-95" type="button">
+<span class="text-web-text-tiny font-bold text-mobile-warning">HIGH</span>
+<div class="w-full h-1 mt-1 bg-mobile-warning opacity-50"></div>
+</button>
+<button class="h-10 flex flex-col items-center justify-center border border-cos-blue/50 rounded-lg bg-surface-container-high transition-all active:scale-95 ring-1 ring-mobile-danger/50" type="button">
+<span class="text-web-text-tiny font-bold text-mobile-danger">CRIT</span>
+<div class="w-full h-1 mt-1 bg-mobile-danger"></div>
+</button>
+</div>
+</section>
+<!-- CORE_AI Assistant Panel -->
+<section class="ai-panel p-web-space-4 rounded-lg flex gap-web-space-4 items-start">
+<div class="flex-shrink-0 mt-1">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<div>
+<h4 class="font-mobile-text-label text-mobile-text-label text-cos-cyan mb-web-space-1">CORE_AI Insight</h4>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant leading-relaxed">
+                        CORE_AI suggests adding 2 extra workers for this urgent fix to avoid delay on the critical path of <span class="text-cos-cyan font-semibold">Phase 2: Superstructure</span>.
+                    </p>
+</div>
+</section>
+<!-- Attachments Section -->
+<section class="grid grid-cols-2 gap-web-space-4">
+<button class="flex items-center justify-center gap-web-space-2 h-14 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low hover:bg-surface-variant transition-colors group" type="button">
+<span class="material-symbols-outlined text-on-surface-variant group-active:scale-90 transition-transform">photo_camera</span>
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant">Attach Photo</span>
+</button>
+<button class="flex items-center justify-center gap-web-space-2 h-14 border-2 border-dashed border-outline-variant rounded-xl bg-surface-container-low hover:bg-surface-variant transition-colors group" type="button">
+<span class="material-symbols-outlined text-mobile-primary group-active:scale-90 transition-transform">mic</span>
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant">Voice Briefing</span>
+</button>
+</section>
+</form>
+</main>
+<!-- Footer CTA -->
+<footer class="fixed bottom-0 left-0 w-full p-mobile-edge bg-surface/95 backdrop-blur-md z-40 border-t border-outline-variant/30">
+<button class="w-full h-mobile-touch-target bg-primary-container text-on-primary-container font-web-text-h2 text-web-text-h2 rounded-lg shadow-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-web-space-3" type="submit">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_task</span>
+            CREATE ACTIVITY
+        </button>
+</footer>
+<!-- Image for Context (Hidden placeholder logic) -->
+<div class="hidden">
+<img class="object-cover" data-alt="A macro shot of a high-tech site engineer's rugged tablet showing a detailed blueprint and task management interface. The environment is a dimly lit, modern construction site at dusk with blue industrial lights reflecting off steel beams. The lighting is cold and clinical, emphasizing the mission-critical nature of the infrastructure project. Cinematic perspective with shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZRJSmdjZMWiM1gkTQKSXrDWxDbklCKkWRLYOQXuy-XH50wTmx_4k0LpSaHgiESyQPGzPhdiARcZhqnYixsqLU6BQZmfLbWZOEpmmee2BvOBOabMK2UjYSoXZt5vdQSDjL6x9R7rkkSDAoyTaSYCgqJLhG5T62q5SvjgCJ7sgwS1M4ofseYQ3hrATQvn_9JUufFRprODecDUSpfsc76hf1X09Mj6ApVWFhua2v2_q7v7sZeWRdql9PP3X53gDKfVhlOK5Q0z6bs-4"/>
+</div>
+<script>
+        // Micro-interactions for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (this.type !== 'submit') {
+                    // Toggle active classes for type chips
+                    const parent = this.parentElement;
+                    if (parent.classList.contains('no-scrollbar')) {
+                        parent.querySelectorAll('button').forEach(b => {
+                            b.classList.remove('chip-active');
+                            b.classList.add('bg-surface-container-high', 'text-on-surface-variant');
+                        });
+                        this.classList.add('chip-active');
+                        this.classList.remove('bg-surface-container-high', 'text-on-surface-variant');
+                    }
+                }
+            });
+        });
+
+        // Form submission animation mock
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Syncing...';
+            submitBtn.classList.add('opacity-80');
+            
+            setTimeout(() => {
+                submitBtn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> ACTIVITY CREATED';
+                submitBtn.classList.remove('bg-primary-container');
+                submitBtn.classList.add('bg-mobile-success');
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            }, 1000);
+        });
+    </script>
+</body></html>

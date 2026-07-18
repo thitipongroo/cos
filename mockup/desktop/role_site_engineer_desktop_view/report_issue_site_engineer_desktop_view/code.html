@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CONSTRUCTION OS | Report Issue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-container": "#03b5d3",
+                    "on-secondary-container": "#00424e",
+                    "on-primary-container": "#eeefff",
+                    "mobile-primary": "#0066FF",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "mobile-warning": "#FF9500",
+                    "sync-pending": "#94A3B8",
+                    "primary-fixed": "#dbe1ff",
+                    "outline-variant": "#434655",
+                    "surface-container-high": "#1b2b3f",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-container-lowest": "#000f21",
+                    "on-tertiary-fixed": "#161b2b",
+                    "secondary": "#4cd7f6",
+                    "surface": "#031427",
+                    "surface-container-low": "#0b1c30",
+                    "on-error": "#690005",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "mobile-success": "#00C853",
+                    "surface-container": "#102034",
+                    "on-background": "#d3e4fe",
+                    "background": "#031427",
+                    "surface-container-highest": "#26364a",
+                    "on-surface-variant": "#c3c6d7",
+                    "inverse-primary": "#0053db",
+                    "on-tertiary": "#2b3041",
+                    "sync-active": "#FFD60A",
+                    "surface-bright": "#2a3a4f",
+                    "cos-cyan": "#06B6D4",
+                    "on-error-container": "#ffdad6",
+                    "on-primary": "#002a78",
+                    "surface-tint": "#b4c5ff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary-fixed": "#001f26",
+                    "secondary-fixed": "#acedff",
+                    "dark-surface": "#0F172A",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-container": "#686c80",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "error": "#ffb4ab",
+                    "surface-variant": "#26364a",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary-fixed": "#dee1f9",
+                    "cos-navy": "#0B1020",
+                    "primary-container": "#2563eb",
+                    "on-secondary": "#003640",
+                    "dark-bg": "#020617",
+                    "cos-blue": "#2563EB",
+                    "error-container": "#93000a",
+                    "primary": "#b4c5ff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "cos-white": "#F8FAFC",
+                    "tertiary": "#c1c5dc",
+                    "mobile-danger": "#FF3B30",
+                    "surface-dim": "#031427",
+                    "on-surface": "#d3e4fe",
+                    "on-primary-fixed": "#00174b",
+                    "outline": "#8d90a0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-8": "32px",
+                    "web-space-1": "4px",
+                    "mobile-touch-target": "52px",
+                    "web-space-3": "12px",
+                    "web-base": "4px",
+                    "web-space-4": "16px",
+                    "mobile-edge": "24px",
+                    "web-space-2": "8px"
+            },
+            "fontFamily": {
+                    "mobile-text-label": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .severity-active-high { @apply bg-mobile-danger text-white border-mobile-danger; }
+        .severity-active-med { @apply bg-mobile-warning text-on-surface border-mobile-warning; }
+        .severity-active-low { @apply bg-mobile-success text-white border-mobile-success; }
+        
+        .ai-glass {
+            background: rgba(6, 182, 212, 0.05);
+            border-left: 2px solid #06B6D4;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface selection:bg-cos-blue/30 overflow-hidden h-screen flex flex-col font-web-text-body text-web-text-body">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full bg-surface border-b border-outline-variant z-50 flex items-center justify-between px-web-space-8 h-16">
+<div class="flex items-center gap-web-space-4">
+<h1 class="font-web-text-display text-web-text-display tracking-tighter text-cos-blue">CONSTRUCTION OS</h1>
+<div class="h-6 w-px bg-outline-variant mx-web-space-2"></div>
+<span class="font-web-text-h2 text-web-text-h2 text-on-surface uppercase tracking-widest opacity-80">Report Issue</span>
+</div>
+<div class="flex items-center gap-web-space-4">
+<div class="flex items-center gap-web-space-2 px-3 py-1 bg-surface-container rounded-full">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="font-web-text-tiny text-web-text-tiny">SITE ACTIVE</span>
+</div>
+<button class="w-10 h-10 rounded-full hover:bg-surface-variant/20 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined text-outline">notifications</span>
+</button>
+<div class="flex items-center gap-3 ml-2 border-l border-outline-variant pl-4">
+<div class="text-right">
+<p class="font-web-text-label text-web-text-label leading-none">James Foreman</p>
+<p class="font-web-text-tiny text-web-text-tiny text-outline">Site Foreman #8829</p>
+</div>
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center font-bold text-on-primary-container">JF</div>
+</div>
+</div>
+</header>
+<div class="flex h-screen pt-16">
+<!-- NavigationDrawer -->
+<aside class="h-full w-64 bg-surface border-r border-outline-variant flex flex-col py-web-space-4 flex-shrink-0">
+<nav class="flex-1 px-web-space-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span>Tasks</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 bg-primary-container text-on-primary-container font-bold rounded-lg shadow-sm" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span>Issues</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Reports</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span>Safety</span>
+</a>
+<div class="pt-4 mt-4 border-t border-outline-variant/30"></div>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span>Daily Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">layers</span>
+<span>BIM Viewer</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">map</span>
+<span>Site Maps</span>
+</a>
+</nav>
+<div class="px-web-space-3 mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-variant/10 rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto no-scrollbar bg-dark-bg p-web-space-8">
+<div class="max-w-6xl mx-auto">
+<!-- Header Actions -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-web-text-display text-web-text-display text-on-surface">New Issue Report</h2>
+<p class="text-on-surface-variant mt-1">Document site defects, rework requirements, or punch list items.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-6 py-2 border border-outline-variant text-on-surface-variant hover:bg-surface-variant/20 rounded-lg transition-colors font-medium">Save as Draft</button>
+<button class="px-8 py-2 bg-cos-blue text-white rounded-lg hover:bg-blue-600 transition-shadow shadow-lg shadow-cos-blue/20 font-bold">Submit Issue</button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-web-space-8">
+<!-- Form Column -->
+<div class="col-span-7 space-y-6">
+<!-- Primary Details -->
+<div class="bg-surface-container rounded-xl p-6 border border-outline-variant/30 space-y-6">
+<div class="space-y-2">
+<label class="text-web-text-small text-outline uppercase tracking-wider font-semibold">Issue Title</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-transparent outline-none transition-all" placeholder="e.g., Concrete Spalling on Column C-12" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-web-text-small text-outline uppercase tracking-wider font-semibold">Issue Type</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-transparent outline-none transition-all">
+<option>Defect</option>
+<option>Rework</option>
+<option>Punch</option>
+<option>General</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3.5 text-outline pointer-events-none">expand_more</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-web-text-small text-outline uppercase tracking-wider font-semibold">Location</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-10 pr-4 py-3 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-transparent outline-none transition-all" placeholder="Search zone (e.g. Block B)" type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-3.5 text-outline">location_on</span>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-web-text-small text-outline uppercase tracking-wider font-semibold">Severity Level</label>
+<div class="flex p-1 bg-surface-container-lowest border border-outline-variant rounded-lg gap-1">
+<button class="flex-1 py-2 text-web-text-small rounded hover:bg-surface-variant/20 transition-all">Low</button>
+<button class="flex-1 py-2 text-web-text-small rounded hover:bg-surface-variant/20 transition-all">Med</button>
+<button class="flex-1 py-2 text-web-text-small rounded bg-mobile-danger text-white font-bold">High</button>
+<button class="flex-1 py-2 text-web-text-small rounded hover:bg-surface-variant/20 transition-all">Critical</button>
+</div>
+</div>
+</div>
+<!-- Description & AI -->
+<div class="bg-surface-container rounded-xl border border-outline-variant/30 overflow-hidden">
+<div class="p-6 space-y-4">
+<div class="flex justify-between items-center">
+<label class="text-web-text-small text-outline uppercase tracking-wider font-semibold">Detailed Description</label>
+<div class="flex gap-2">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cos-cyan/10 text-cos-cyan hover:bg-cos-cyan/20 transition-all text-web-text-tiny font-bold group">
+<span class="material-symbols-outlined text-[18px] group-hover:rotate-12 transition-transform">auto_awesome</span>
+                                            AI SUGGEST
+                                        </button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-mobile-primary/10 text-mobile-primary hover:bg-mobile-primary/20 transition-all text-web-text-tiny font-bold">
+<span class="material-symbols-outlined text-[18px]">mic</span>
+                                            VOICE NOTE
+                                        </button>
+</div>
+</div>
+<textarea class="w-full bg-surface-container-low border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-transparent outline-none transition-all resize-none" placeholder="Describe the issue in detail... (คำอธิบายเพิ่มเติมที่นี่)" rows="6"></textarea>
+</div>
+<!-- AI Module Insight -->
+<div class="ai-glass p-4 mx-6 mb-6">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-cos-cyan">lightbulb</span>
+<div>
+<p class="text-cos-cyan font-bold text-web-text-small leading-tight">AI Analysis</p>
+<p class="text-on-surface-variant text-web-text-small mt-1 italic">Based on similar entries in Block B, this might be related to 'Water Seepage'. Suggest checking the expansion joint sealants.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Media Column -->
+<div class="col-span-5 space-y-6">
+<!-- Evidence Upload -->
+<div class="bg-surface-container rounded-xl border border-outline-variant/30 p-6 space-y-6">
+<div class="flex justify-between items-center">
+<h3 class="text-on-surface font-bold">Evidence Photos</h3>
+<span class="text-outline text-web-text-tiny">3 / 10 PHOTOS</span>
+</div>
+<!-- Upload Zone -->
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:bg-surface-variant/10 transition-all cursor-pointer group">
+<div class="w-12 h-12 rounded-full bg-surface-variant/30 flex items-center justify-center text-outline group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">add_a_photo</span>
+</div>
+<div class="text-center">
+<p class="text-on-surface font-semibold">Drop images or click to capture</p>
+<p class="text-outline text-web-text-small">PNG, JPG up to 10MB each</p>
+</div>
+</div>
+<!-- Photo Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="relative aspect-video rounded-lg overflow-hidden group">
+<div class="w-full h-full bg-cover bg-center" data-alt="A high-resolution industrial close-up photo of cracked concrete on a structural column in a dimly lit construction site. The lighting is cold and clinical, highlighting the texture of the defect. Technical UI overlays show measurements. The overall mood is serious and professional, focused on structural integrity." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAwgAi63STKQI6f4Ut1MPQOs6JOAQerz3IxZL42pKwqSSC50HRo2JocOr8lGa8DRJGfwXqoam3_lxH2JaFsfUP5p-Urt5iwz04vsZn-kSNG3VCWPcWs5R5Py2s-2GygqINyUwIU6Ko2AB7dZpdg15ZfC0TjaS5D6H9aSGRl6R3BEXRdXfxb_GJQ5CoY3eGi8f3-hnfczYuCpcgFsSxxQPRIRcr3e4HD6Gzno3CtCEQYGu1Yfqy0azwnNiJf-43n8HLnt4zR1J2Im80')"></div>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+<button class="p-2 bg-surface rounded-full text-on-surface hover:text-mobile-danger"><span class="material-symbols-outlined">delete</span></button>
+<button class="p-2 bg-surface rounded-full text-on-surface"><span class="material-symbols-outlined">zoom_in</span></button>
+</div>
+<div class="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] text-white">IMG_0293.JPG</div>
+</div>
+<div class="relative aspect-video rounded-lg overflow-hidden group">
+<div class="w-full h-full bg-cover bg-center" data-alt="A wide-angle professional shot of a construction site floor showing puddles of water reflecting neon work lights. The scene is complex with various construction materials in the background. High-contrast dark blue shadows and bright white highlights. The style is modern industrial photography used for engineering reports." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBWF8lMdQ-Wf2MxM91IhG0itN1prca-VOPDw__L2lOSe7XHfqYQ6ehzxYvYbtIHZjFY7teDjJyhMa5w4fHPpHB9iG75sbkIHUaWewCyUji2hCBCsyhKNOe8mCL_y37I1iArmiZfYLrqF2Jm1lMe_poTeP063z9N5DlCy9wYvSgnphLo_pOoHU7VTG5HJGBvJqaUfSXdkZIbPcR_QhwOy2Eg-DP0CDMo9xh0vb5voe4uVK_HdwwbVCgyDwc-_cMzf7XivsK45ed8PSk')"></div>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+<button class="p-2 bg-surface rounded-full text-on-surface hover:text-mobile-danger"><span class="material-symbols-outlined">delete</span></button>
+<button class="p-2 bg-surface rounded-full text-on-surface"><span class="material-symbols-outlined">zoom_in</span></button>
+</div>
+<div class="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] text-white">IMG_0294.JPG</div>
+</div>
+<div class="relative aspect-video rounded-lg overflow-hidden group">
+<div class="w-full h-full bg-cover bg-center" data-alt="A macro photograph of an electrical junction box with messy wiring, highlighting a specific technical failure. The lighting is focused on the wires, creating deep shadows in the background. The aesthetic is clean, technical, and high-contrast, fitting for a sophisticated engineering operating system interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDZDyxRxHalLa8gO8TFl7iUGRncAUkyDHZ_pCsNjnmidw7bbXQY2LYGo7IqidnXzUiiwv7-8qzWCdNx83ZoQVOWiJc4GQVDDmwSHrUbZYA8aZ-kWkFkJjZ9ZHkfd_wIX6N4QXjd6D6p_rW99Z6hnt85zF0uVFfsKxCeS8ipo4XOZPZvVZAxJddxzk-IQWNJXIj6k39f1kmgW2dl5I9auPm_ohFhyEYc7kaFUwPlVGnbI8H7mxpusw7dl1bBd8_fNbNCkGYuuhYvRaQ')"></div>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+<button class="p-2 bg-surface rounded-full text-on-surface hover:text-mobile-danger"><span class="material-symbols-outlined">delete</span></button>
+<button class="p-2 bg-surface rounded-full text-on-surface"><span class="material-symbols-outlined">zoom_in</span></button>
+</div>
+<div class="absolute bottom-2 left-2 bg-black/60 px-2 py-0.5 rounded text-[10px] text-white">IMG_0295.JPG</div>
+</div>
+</div>
+</div>
+<!-- Related Data -->
+<div class="bg-surface-container rounded-xl border border-outline-variant/30 p-6 space-y-4">
+<h3 class="text-on-surface font-bold">System Context</h3>
+<div class="space-y-3">
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-outline text-web-text-small">Assignee</span>
+<span class="text-on-surface font-medium flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-orange-500/20 text-orange-500 flex items-center justify-center text-[10px] font-bold">ME</div>
+                                        Mark Engineer
+                                    </span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-outline-variant/30">
+<span class="text-outline text-web-text-small">Associated Task</span>
+<span class="text-cos-blue font-medium hover:underline cursor-pointer">#TSK-4492 Slab Pouring</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="text-outline text-web-text-small">Due Date</span>
+<span class="text-on-surface font-medium">Oct 24, 2023</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Micro-interaction Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Severity Button Toggling
+            const severityButtons = document.querySelectorAll('.flex.p-1.bg-surface-container-lowest button');
+            severityButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    severityButtons.forEach(b => {
+                        b.classList.remove('bg-mobile-danger', 'text-white', 'font-bold', 'bg-mobile-warning', 'bg-mobile-success');
+                    });
+                    
+                    if (btn.innerText === 'High') {
+                        btn.classList.add('bg-mobile-danger', 'text-white', 'font-bold');
+                    } else if (btn.innerText === 'Med') {
+                        btn.classList.add('bg-mobile-warning', 'text-on-surface', 'font-bold');
+                    } else if (btn.innerText === 'Low') {
+                        btn.classList.add('bg-mobile-success', 'text-white', 'font-bold');
+                    } else {
+                        btn.classList.add('bg-primary-container', 'text-white', 'font-bold');
+                    }
+                });
+            });
+
+            // AI Suggest Animation
+            const aiBtn = document.querySelector('.group.bg-cos-cyan\\/10');
+            aiBtn.addEventListener('click', () => {
+                const textarea = document.querySelector('textarea');
+                textarea.value = "Analyzing inputs...";
+                aiBtn.classList.add('animate-pulse');
+                setTimeout(() => {
+                    textarea.value = "Evidence of concrete spalling observed on the west face of Column C-12, Level 4. Exposed rebar shows signs of surface oxidation. Immediate remediation required to prevent further structural degradation. (พบคราบสนิมที่เหล็กเสริม)";
+                    aiBtn.classList.remove('animate-pulse');
+                }, 1500);
+            });
+        });
+    </script>
+</body></html>

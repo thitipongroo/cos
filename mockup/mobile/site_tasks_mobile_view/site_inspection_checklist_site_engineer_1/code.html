@@ -1,0 +1,326 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>SiteOps: Project Horizon - Inspection Checklist</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "sync-active": "#FFD60A",
+                    "surface-container-low": "#0b1c30",
+                    "dark-surface": "#0F172A",
+                    "on-secondary-container": "#00424e",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-highest": "#26364a",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface": "#031427",
+                    "on-primary": "#002a78",
+                    "surface-dim": "#031427",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "inverse-primary": "#0053db",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-container": "#686c80",
+                    "inverse-on-surface": "#213145",
+                    "surface-bright": "#2a3a4f",
+                    "primary-fixed": "#dbe1ff",
+                    "outline-variant": "#434655",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "background": "#031427",
+                    "secondary-fixed": "#acedff",
+                    "dark-bg": "#020617",
+                    "mobile-danger": "#FF3B30",
+                    "error": "#ffb4ab",
+                    "on-surface": "#d3e4fe",
+                    "cos-white": "#F8FAFC",
+                    "on-tertiary-fixed": "#161b2b",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "cos-blue": "#2563EB",
+                    "primary": "#b4c5ff",
+                    "on-primary-container": "#eeefff",
+                    "mobile-success": "#00C853",
+                    "secondary-container": "#03b5d3",
+                    "primary-container": "#2563eb",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-lowest": "#000f21",
+                    "tertiary": "#c1c5dc",
+                    "on-tertiary": "#2b3041",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-secondary-fixed": "#001f26",
+                    "cos-cyan": "#06B6D4",
+                    "on-background": "#d3e4fe",
+                    "cos-navy": "#0B1020",
+                    "surface-container": "#102034",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-container": "#eeefff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "mobile-warning": "#FF9500",
+                    "mobile-primary": "#0066FF",
+                    "on-error": "#690005",
+                    "secondary": "#4cd7f6",
+                    "surface-container-high": "#1b2b3f",
+                    "on-secondary": "#003640",
+                    "outline": "#8d90a0",
+                    "surface-variant": "#26364a",
+                    "error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-space-4": "16px",
+                    "web-space-3": "12px",
+                    "web-base": "4px",
+                    "web-space-8": "32px",
+                    "mobile-touch-target": "52px",
+                    "mobile-edge": "24px",
+                    "web-space-1": "4px",
+                    "web-space-2": "8px"
+            },
+            "fontFamily": {
+                    "mobile-text-label": ["Inter Tight"],
+                    "web-text-h2": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"],
+                    "mobile-text-body": ["Inter Tight"],
+                    "web-text-body": ["Inter Tight"],
+                    "web-text-small": ["Inter Tight"],
+                    "web-text-display": ["Inter Tight"],
+                    "web-text-h1": ["Inter Tight"],
+                    "web-text-tiny": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for high-density feel */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #031427; }
+        ::-webkit-scrollbar-thumb { background: #1b2b3f; border-radius: 2px; }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .ai-glow {
+            box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-dark-bg text-on-surface antialiased min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-dark-surface flex justify-between items-center w-full px-mobile-edge h-mobile-touch-target fixed top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional close-up portrait of a site engineer wearing a white safety helmet and high-visibility vest. The lighting is bright and natural, reflecting a modern construction site environment with a shallow depth of field. The style is clean, corporate, and minimalist, utilizing the navy and blue tones of the SiteOps brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMkaQSRuWC0_OTGi7sVm39JfoLbm1rBO-wWYxu0uaqhx4B_5HpypL5X_sO72bEkR2HifvTf6XUzzuWWJkzraGClxRXmxQ5BazZ7e-1o_osNC7EhndzRd9caFS0g4iJ3w0NR_VY3ToKMPHWzu5_D9musSCTAYkAypG7fAqENXAypltZkkOGfgE_U5gfpeHUl73BAMH3K650QtwknaVHjn-wyxb1us8HCR5dStlzhle4E-ywrf3bnXyAjn06aXHLY0Udlwn4XPu5b6I">
+</div>
+<h1 class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-mobile-primary dark:text-primary">CONSTRUCTION OS</h1>
+</div>
+<button class="text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-variant p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</header>
+<main class="pt-20 px-mobile-edge max-w-4xl mx-auto">
+<!-- Hero Section -->
+<section class="mb-8">
+<h2 class="font-mobile-text-hero text-mobile-text-hero text-on-surface mb-2">Inspection Checklist</h2>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface-variant">Zone 4: Substructure &amp; Frame Reinforcement</p>
+</section>
+<!-- AI Insight Module -->
+<section class="mb-8 p-4 rounded-xl border-l-4 border-cos-cyan bg-surface-container ai-glow">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<h3 class="font-mobile-text-label text-mobile-text-label text-cos-cyan uppercase tracking-wider">AI Insight: High-Focus Areas</h3>
+</div>
+<p class="font-web-text-body text-web-text-body text-on-surface mb-4">Based on humidity spikes and recent supplier delays, prioritize curing inspection for Section C-12.</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 rounded bg-cos-cyan/10 text-cos-cyan font-web-text-tiny text-web-text-tiny border border-cos-cyan/20">Curing Duration</span>
+<span class="px-3 py-1 rounded bg-cos-cyan/10 text-cos-cyan font-web-text-tiny text-web-text-tiny border border-cos-cyan/20">Moisture Content</span>
+<span class="px-3 py-1 rounded bg-cos-cyan/10 text-cos-cyan font-web-text-tiny text-web-text-tiny border border-cos-cyan/20">Thermal Cracking</span>
+</div>
+</section>
+<!-- Checklist Items -->
+<div class="space-y-4">
+<!-- Item 1: Concrete Pouring -->
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="w-1 h-12 bg-mobile-warning rounded-full"></div>
+<div>
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Concrete Pouring</h4>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Batch #4492 - Sector 3A</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-mobile-warning/20 text-mobile-warning font-web-text-tiny text-web-text-tiny uppercase font-bold border border-mobile-warning/30">Pending</span>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 h-mobile-touch-target bg-surface-bright rounded-lg border border-outline-variant flex items-center justify-center gap-2 text-on-surface active:scale-95 transition-transform" onclick="this.classList.toggle('bg-mobile-primary'); this.classList.toggle('text-white')">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="font-mobile-text-label text-mobile-text-label">Quick Photo</span>
+</button>
+<div class="flex gap-1">
+<button class="w-mobile-touch-target h-mobile-touch-target rounded-lg border border-outline-variant flex items-center justify-center text-mobile-success hover:bg-mobile-success/10" title="Pass">
+<span class="material-symbols-outlined">check_circle</span>
+</button>
+<button class="w-mobile-touch-target h-mobile-touch-target rounded-lg border border-outline-variant flex items-center justify-center text-mobile-danger hover:bg-mobile-danger/10" title="Fail">
+<span class="material-symbols-outlined">cancel</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Item 2: Rebar Placement -->
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="w-1 h-12 bg-mobile-success rounded-full"></div>
+<div>
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Rebar Placement</h4>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Grid Lines F-H / 10-14</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-mobile-success/20 text-mobile-success font-web-text-tiny text-web-text-tiny uppercase font-bold border border-mobile-success/30">Pass</span>
+</div>
+<div class="flex gap-2">
+<div class="relative w-20 h-14 rounded-lg overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A macro shot of steel rebar reinforcement mesh laid out in a grid pattern at a construction site. The lighting is sharp, industrial, and highly detailed, showing the texture of the rusted steel against a concrete foundation. The color palette emphasizes deep navies, grays, and metallic highlights, following the modern SiteOps aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeC-ZxVXJzroIvHiLYikMLQIB8H_ihsGogYnQSTeU_PdRuxOpG_QF6IsmHe6pdzZEwxkTZzhs8iQUtjRI4hm7ABgCIljUZAbwKiGl0DZYcQLS_r3uIONCwPkzfEHPl7JEtl2rBq73j5YR8JnwHj5RJQ9tZf0UulIZ4KtX-Ebc5zSBp37w9s8J0eXqNo0EFDYRQx8Za6IKzsMlOUr-sfHLBUlTK6diRHfInvNy0IO_t-mAKrGWx-al9N9otjUJGWdCXdygDj7NAXn8">
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-xs">done</span>
+</div>
+</div>
+<button class="flex-1 h-mobile-touch-target bg-surface-bright rounded-lg border border-outline-variant flex items-center justify-center gap-2 text-on-surface">
+<span class="material-symbols-outlined">add_a_photo</span>
+<span class="font-mobile-text-label text-mobile-text-label">Add More</span>
+</button>
+</div>
+</div>
+<!-- Item 3: Scaffolding Safety -->
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="w-1 h-12 bg-mobile-danger rounded-full"></div>
+<div>
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Scaffolding Safety</h4>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">North Wing Elevation</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-mobile-danger/20 text-mobile-danger font-web-text-tiny text-web-text-tiny uppercase font-bold border border-mobile-danger/30">Fail</span>
+</div>
+<div class="bg-error-container/20 p-3 rounded-lg border border-mobile-danger/20">
+<p class="font-web-text-small text-web-text-small text-error flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">report</span>
+                        Missing base plates on three vertical standards.
+                    </p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 h-mobile-touch-target bg-mobile-danger text-white rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-lg shadow-mobile-danger/20">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-mobile-text-label text-mobile-text-label">Record Incident</span>
+</button>
+</div>
+</div>
+<!-- Item 4: Formwork Integrity -->
+<div class="bg-surface-container rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-4 opacity-80">
+<div class="flex justify-between items-start">
+<div class="flex gap-3">
+<div class="w-1 h-12 bg-sync-pending rounded-full"></div>
+<div>
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Formwork Integrity</h4>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Column C-14 to C-18</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-sync-pending/20 text-sync-pending font-web-text-tiny text-web-text-tiny uppercase font-bold border border-sync-pending/30">Scheduled</span>
+</div>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="mt-12 mb-8">
+<button class="w-full h-14 bg-mobile-primary text-white rounded-full font-mobile-text-label text-mobile-text-label uppercase tracking-widest flex items-center justify-center gap-3 shadow-xl shadow-mobile-primary/30 active:scale-95 transition-all">
+                Submit Inspection Report
+                <span class="material-symbols-outlined">send</span>
+</button>
+<p class="text-center font-web-text-tiny text-web-text-tiny text-on-surface-variant mt-4 uppercase tracking-tighter">
+                Last synced: 2 minutes ago • Offline mode active
+            </p>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 h-[72px] bg-surface dark:bg-dark-surface shadow-[0_-8px_24px_rgba(0,0,0,0.2)]">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-mobile-text-label text-mobile-text-label">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-mobile-text-label text-mobile-text-label">Issues</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-xl px-4 py-1 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
+<span class="font-mobile-text-label text-mobile-text-label">Tasks</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">description</span>
+<span class="font-mobile-text-label text-mobile-text-label">Reports</span>
+</button>
+</nav>
+<script>
+        // Simple micro-interaction for status toggles
+        document.querySelectorAll('[title="Pass"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const card = this.closest('.bg-surface-container');
+                const statusChip = card.querySelector('.font-web-text-tiny');
+                const accentBar = card.querySelector('.w-1');
+                
+                statusChip.textContent = 'Pass';
+                statusChip.className = 'px-3 py-1 rounded-full bg-mobile-success/20 text-mobile-success font-web-text-tiny text-web-text-tiny uppercase font-bold border border-mobile-success/30';
+                accentBar.className = 'w-1 h-12 bg-mobile-success rounded-full';
+            });
+        });
+
+        document.querySelectorAll('[title="Fail"]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const card = this.closest('.bg-surface-container');
+                const statusChip = card.querySelector('.font-web-text-tiny');
+                const accentBar = card.querySelector('.w-1');
+                
+                statusChip.textContent = 'Fail';
+                statusChip.className = 'px-3 py-1 rounded-full bg-mobile-danger/20 text-mobile-danger font-web-text-tiny text-web-text-tiny uppercase font-bold border border-mobile-danger/30';
+                accentBar.className = 'w-1 h-12 bg-mobile-danger rounded-full';
+            });
+        });
+    </script>
+
+
+</body></html>

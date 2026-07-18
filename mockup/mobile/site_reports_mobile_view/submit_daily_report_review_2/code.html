@@ -1,0 +1,290 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Review &amp; Submit | SiteOps</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#2a3a4f",
+                        "secondary": "#4cd7f6",
+                        "mobile-success": "#00C853",
+                        "primary": "#b4c5ff",
+                        "surface-container-lowest": "#000f21",
+                        "outline-variant": "#434655",
+                        "outline": "#8d90a0",
+                        "cos-cyan": "#06B6D4",
+                        "tertiary-container": "#686c80",
+                        "on-tertiary-container": "#eeefff",
+                        "on-error-container": "#ffdad6",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#00424e",
+                        "on-primary": "#002a78",
+                        "on-background": "#d3e4fe",
+                        "mobile-warning": "#FF9500",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "mobile-danger": "#FF3B30",
+                        "cos-navy": "#0B1020",
+                        "sync-active": "#FFD60A",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-container-low": "#0b1c30",
+                        "secondary-container": "#03b5d3",
+                        "inverse-surface": "#d3e4fe",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "inverse-on-surface": "#213145",
+                        "sync-pending": "#94A3B8",
+                        "surface-container": "#102034",
+                        "surface-tint": "#b4c5ff",
+                        "background": "#031427",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-primary-fixed": "#00174b",
+                        "surface": "#031427",
+                        "inverse-primary": "#0053db",
+                        "surface-container-highest": "#26364a",
+                        "on-secondary": "#003640",
+                        "on-error": "#690005",
+                        "dark-surface": "#0F172A",
+                        "surface-dim": "#031427",
+                        "surface-variant": "#26364a",
+                        "on-primary-container": "#eeefff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "dark-bg": "#020617",
+                        "cos-blue": "#2563EB",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary": "#c1c5dc",
+                        "secondary-fixed": "#acedff",
+                        "cos-white": "#F8FAFC",
+                        "on-tertiary": "#2b3041",
+                        "on-surface": "#d3e4fe",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-secondary-fixed-variant": "#004e5c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-2": "8px",
+                        "web-base": "4px",
+                        "web-space-4": "16px",
+                        "web-space-1": "4px",
+                        "mobile-edge": "24px",
+                        "web-space-3": "12px",
+                        "web-space-8": "32px",
+                        "mobile-touch-target": "52px"
+                    },
+                    "fontFamily": {
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .bento-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bento-card:active {
+            transform: scale(0.98);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="sticky top-0 z-50 bg-surface flex justify-between items-center w-full px-mobile-edge h-mobile-touch-target">
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center w-10 h-10 transition-colors duration-200 active:opacity-70 text-mobile-primary">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-mobile-primary">Review &amp; Submit</h1>
+</div>
+<div class="flex items-center">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female site engineer wearing a modern high-visibility tech vest, looking directly at the camera with a confident expression. The background is a clean, softly blurred architectural office space with minimalist blue lighting tones consistent with a high-end construction management platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJs5w4Dr8-Nu-VQSeenXw-iAKesKXH7dU1z7h732UPXV9ri_CYyiUhD5CIOuH-wHcgN-DLRu9K6eIBGbte3jFq-MP61IuHPUekKkHCfRZnl1adzyXxuRLGdawtjOtoRGZEv04Hn7sgfTZbwKJgNWZqZ8Gy7kQ8snVoFs_qqAAzI6qJUmsWY6z8Ug0UbnpO4awzMCdYDKW_b3Fioo1n1wyvAQRMvZGtO8KdngmXYO_1mzIy8W_1DWcLVYZGgxkqWx4wRNCxEEDkSUA">
+</div>
+</div>
+</header>
+<main class="px-mobile-edge pt-6 space-y-6">
+<!-- Header Info -->
+<div class="space-y-1">
+<p class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-tighter">Report Date</p>
+<h2 class="font-mobile-text-hero text-mobile-text-hero text-on-surface">Oct 24, 2024</h2>
+</div>
+<!-- AI Assistance Module -->
+<div class="p-4 rounded-xl bg-cos-cyan/5 border-l-4 border-cos-cyan flex items-start gap-4">
+<div class="p-2 rounded-lg bg-cos-cyan/20">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="space-y-1">
+<p class="font-mobile-text-label text-mobile-text-label text-cos-cyan uppercase tracking-widest">AI Summary</p>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface leading-snug">
+                    Steady technical progress achieved with concrete pouring operations completed 2 hours ahead of schedule.
+                </p>
+</div>
+</div>
+<!-- Summary Bento Grid -->
+<div class="grid grid-cols-2 gap-3">
+<!-- Manpower Card -->
+<div class="col-span-2 bento-card p-5 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<span class="material-symbols-outlined text-mobile-primary">groups</span>
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant">Manpower</span>
+</div>
+<div class="flex items-end justify-between">
+<div>
+<span class="text-4xl font-bold tracking-tight text-on-surface">42</span>
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant ml-1">Total</span>
+</div>
+<div class="flex gap-2">
+<div class="text-right">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant">Skilled</p>
+<p class="font-bold text-on-surface">12</p>
+</div>
+<div class="text-right border-l border-outline-variant/30 pl-2">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant">Gen</p>
+<p class="font-bold text-on-surface">25</p>
+</div>
+<div class="text-right border-l border-outline-variant/30 pl-2">
+<p class="text-[10px] uppercase tracking-wider text-on-surface-variant">Subs</p>
+<p class="font-bold text-on-surface">5</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Material Card 1 -->
+<div class="bento-card p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+<div class="flex justify-between items-center">
+<span class="material-symbols-outlined text-on-surface-variant">texture</span>
+<span class="font-mobile-text-tiny text-web-text-tiny uppercase text-on-surface-variant">Material</span>
+</div>
+<div>
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface">C30 Concrete</h3>
+<p class="text-2xl font-bold text-mobile-primary">24 <span class="text-sm font-medium text-on-surface-variant uppercase">m³</span></p>
+</div>
+</div>
+<!-- Material Card 2 -->
+<div class="bento-card p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-3">
+<div class="flex justify-between items-center">
+<span class="material-symbols-outlined text-on-surface-variant">format_list_bulleted</span>
+<span class="font-mobile-text-tiny text-web-text-tiny uppercase text-on-surface-variant">Material</span>
+</div>
+<div>
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface">Rebar 12mm</h3>
+<p class="text-2xl font-bold text-mobile-primary">150 <span class="text-sm font-medium text-on-surface-variant uppercase">kg</span></p>
+</div>
+</div>
+<!-- Achievements Card -->
+<div class="col-span-2 bento-card p-5 rounded-xl bg-surface-container-low border border-outline-variant/30 space-y-4">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface">Technical Milestones</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<ul class="space-y-3">
+<li class="flex gap-3">
+<div class="w-1 h-auto bg-mobile-success rounded-full"></div>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface-variant text-sm leading-relaxed">
+                            Primary footing reinforcement inspection passed for Sector B.
+                        </p>
+</li>
+<li class="flex gap-3">
+<div class="w-1 h-auto bg-mobile-success rounded-full"></div>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface-variant text-sm leading-relaxed">
+                            Excavation for lift pit foundation reaching target depth (3.5m).
+                        </p>
+</li>
+</ul>
+</div>
+</div>
+<!-- Verification Prompt -->
+<div class="py-4 border-y border-outline-variant/20">
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="relative flex items-center justify-center">
+<input class="peer h-6 w-6 rounded border-outline-variant bg-surface-container-high text-mobile-primary focus:ring-mobile-primary focus:ring-offset-background transition-all" type="checkbox">
+</div>
+<span class="font-mobile-text-body text-mobile-text-body text-on-surface-variant group-active:text-on-surface transition-colors">
+                    I confirm that the data entered is accurate and reflects today's site activity.
+                </span>
+</label>
+</div>
+</main>
+<!-- Submission Area -->
+<div class="fixed bottom-0 left-0 w-full p-mobile-edge bg-gradient-to-t from-background via-background to-transparent z-40">
+<button class="w-full h-mobile-touch-target bg-cos-blue hover:bg-blue-600 text-white rounded-xl font-mobile-text-label text-mobile-text-label shadow-xl shadow-blue-900/20 active:scale-95 transition-all flex items-center justify-center gap-2">
+            SUBMIT DAILY REPORT
+            <span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<!-- Hidden Navigation Suppression Check (Transactional Screen) -->
+<!-- Navigation shell is hidden as per UX Goal: Focused journey -->
+<script>
+        // Micro-interaction for haptic-like feedback on submit
+        document.querySelector('button.bg-cos-blue').addEventListener('click', function() {
+            const btn = this;
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> UPLOADING...';
+            
+            setTimeout(() => {
+                btn.classList.replace('bg-cos-blue', 'bg-mobile-success');
+                btn.innerHTML = '<span class="material-symbols-outlined">check_circle</span> REPORT SUBMITTED';
+                
+                // Trigger subtle ripple effect or success animation if needed
+                confettiEffect();
+            }, 1800);
+        });
+
+        function confettiEffect() {
+            // Placeholder for success micro-interaction logic
+            console.log('Report Successfully Submitted');
+        }
+    </script>
+</body></html>

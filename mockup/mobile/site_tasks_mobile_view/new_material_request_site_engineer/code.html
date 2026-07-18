@@ -1,0 +1,296 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>New Material Request | Site OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-container-low": "#0b1c30",
+                "surface-container-highest": "#26364a",
+                "cos-cyan": "#06B6D4",
+                "primary-fixed": "#dbe1ff",
+                "surface-tint": "#b4c5ff",
+                "cos-white": "#F8FAFC",
+                "inverse-primary": "#0053db",
+                "outline": "#8d90a0",
+                "secondary-fixed": "#acedff",
+                "on-secondary-fixed": "#001f26",
+                "inverse-surface": "#d3e4fe",
+                "mobile-primary": "#0066FF",
+                "sync-pending": "#94A3B8",
+                "secondary": "#4cd7f6",
+                "outline-variant": "#434655",
+                "dark-bg": "#020617",
+                "tertiary-container": "#686c80",
+                "surface-bright": "#2a3a4f",
+                "on-tertiary-fixed-variant": "#414658",
+                "on-tertiary-fixed": "#161b2b",
+                "on-background": "#d3e4fe",
+                "on-primary": "#002a78",
+                "on-primary-fixed-variant": "#003ea8",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "error-container": "#93000a",
+                "surface-container-lowest": "#000f21",
+                "surface": "#031427",
+                "on-secondary-fixed-variant": "#004e5c",
+                "surface-container-high": "#1b2b3f",
+                "on-tertiary-container": "#eeefff",
+                "surface-dim": "#031427",
+                "secondary-container": "#03b5d3",
+                "tertiary-fixed": "#dee1f9",
+                "surface-variant": "#26364a",
+                "on-error-container": "#ffdad6",
+                "dark-surface": "#0F172A",
+                "cos-navy": "#0B1020",
+                "mobile-success": "#00C853",
+                "secondary-fixed-dim": "#4cd7f6",
+                "error": "#ffb4ab",
+                "on-tertiary": "#2b3041",
+                "on-surface": "#d3e4fe",
+                "primary": "#b4c5ff",
+                "background": "#031427",
+                "on-error": "#690005",
+                "surface-container": "#102034",
+                "inverse-on-surface": "#213145",
+                "on-surface-variant": "#c3c6d7",
+                "on-secondary": "#003640",
+                "mobile-warning": "#FF9500",
+                "primary-fixed-dim": "#b4c5ff",
+                "sync-active": "#FFD60A",
+                "on-secondary-container": "#00424e",
+                "cos-blue": "#2563EB",
+                "on-primary-container": "#eeefff",
+                "mobile-danger": "#FF3B30",
+                "tertiary": "#c1c5dc",
+                "primary-container": "#2563eb",
+                "on-primary-fixed": "#00174b"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "web-base": "4px",
+                "mobile-touch-target": "52px",
+                "web-space-8": "32px",
+                "web-space-2": "8px",
+                "web-space-1": "4px",
+                "web-space-4": "16px",
+                "web-space-3": "12px",
+                "mobile-edge": "24px"
+            },
+            "fontFamily": {
+                "web-text-display": ["Inter Tight"],
+                "mobile-text-label": ["Inter Tight"],
+                "mobile-text-hero": ["Inter Tight"],
+                "web-text-h1": ["Inter Tight"],
+                "web-text-body": ["Inter Tight"],
+                "mobile-text-body": ["Inter Tight"],
+                "web-text-h2": ["Inter Tight"],
+                "web-text-tiny": ["Inter Tight"],
+                "web-text-small": ["Inter Tight"]
+            },
+            "fontSize": {
+                "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for high-density UI */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26364a;
+            border-radius: 2px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center px-mobile-edge w-full sticky top-0 z-50 h-mobile-touch-target bg-surface dark:bg-dark-bg">
+<div class="flex items-center gap-web-space-4">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-150 text-cos-blue">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-web-text-h1 text-web-text-h1 font-bold text-on-background">Material Request</h1>
+</div>
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-150 text-on-surface-variant">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</header>
+<main class="flex-1 px-mobile-edge pb-32 space-y-web-space-4 mt-web-space-4 overflow-y-auto">
+<!-- Project Context Card -->
+<section class="bg-surface-container rounded-xl p-web-space-4 border border-outline-variant/30">
+<div class="flex items-center gap-web-space-3 mb-web-space-2">
+<div class="w-1 h-8 bg-cos-blue rounded-full"></div>
+<div>
+<p class="font-web-text-tiny text-web-text-tiny uppercase tracking-widest text-outline">Project Context</p>
+<h2 class="font-web-text-h2 text-web-text-h2 text-cos-white">Skyline Tower A</h2>
+</div>
+</div>
+<div class="flex items-center gap-web-space-2 mt-web-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<p class="font-mobile-text-body text-mobile-text-body">Sector B-12 • Level 04 Slab</p>
+</div>
+</section>
+<!-- AI Module -->
+<section class="bg-cos-cyan/5 border-l-4 border-cos-cyan rounded-r-xl p-web-space-4">
+<div class="flex items-center gap-web-space-2 mb-web-space-2 text-cos-cyan">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<p class="font-mobile-text-label text-mobile-text-label">AI Quantity Suggestion</p>
+</div>
+<p class="font-web-text-body text-web-text-body text-on-surface">
+                Based on the current 72h schedule for Level 04, I suggest requesting <span class="font-bold text-cos-cyan">45.5 m³</span> of Ready-mix. This leaves 12% BOQ balance for contingencies.
+            </p>
+</section>
+<!-- Main Form -->
+<form class="space-y-web-space-4">
+<!-- Material Search -->
+<div class="space-y-web-space-1">
+<label class="font-web-text-tiny text-web-text-tiny uppercase text-outline ml-1">Material Selection</label>
+<div class="relative">
+<span class="absolute left-web-space-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-mobile-touch-target pl-10 pr-web-space-4 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-cos-blue transition-all" type="text" value="Ready-mix Concrete G30">
+</div>
+</div>
+<!-- BOQ Link -->
+<div class="space-y-web-space-1">
+<label class="font-web-text-tiny text-web-text-tiny uppercase text-outline ml-1">Link to BOQ Line Item</label>
+<div class="relative">
+<select class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-mobile-touch-target px-web-space-4 text-on-surface appearance-none focus:ring-2 focus:ring-cos-blue focus:border-cos-blue transition-all">
+<option>BOQ-4.2.1: Structural Concrete</option>
+<option>BOQ-4.2.2: Blinding Concrete</option>
+<option>BOQ-4.2.3: Specialized Screed</option>
+</select>
+<span class="absolute right-web-space-3 top-1/2 -translate-y-1/2 material-symbols-outlined pointer-events-none text-outline">expand_more</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-web-space-4">
+<!-- Quantity -->
+<div class="space-y-web-space-1">
+<label class="font-web-text-tiny text-web-text-tiny uppercase text-outline ml-1">Quantity</label>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-mobile-touch-target px-web-space-4 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-cos-blue transition-all" type="number" value="45.5">
+</div>
+<!-- Unit (Locked) -->
+<div class="space-y-web-space-1">
+<label class="font-web-text-tiny text-web-text-tiny uppercase text-outline ml-1">Unit</label>
+<div class="w-full bg-surface-container-highest/50 border border-outline-variant/30 rounded-lg h-mobile-touch-target px-web-space-4 text-outline flex items-center">
+<span class="font-web-text-body">m³</span>
+<span class="material-symbols-outlined ml-auto text-web-text-tiny">lock</span>
+</div>
+</div>
+</div>
+<!-- Delivery Date -->
+<div class="space-y-web-space-1">
+<label class="font-web-text-tiny text-web-text-tiny uppercase text-outline ml-1">Requested Delivery Date</label>
+<div class="relative">
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg h-mobile-touch-target px-web-space-4 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-cos-blue transition-all" type="date">
+<span class="absolute right-web-space-3 top-1/2 -translate-y-1/2 material-symbols-outlined pointer-events-none text-outline">calendar_today</span>
+</div>
+</div>
+<!-- Justification & Voice -->
+<div class="space-y-web-space-1">
+<label class="font-web-text-tiny text-web-text-tiny uppercase text-outline ml-1">Justification / Notes</label>
+<div class="relative">
+<textarea class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-web-space-4 text-on-surface focus:ring-2 focus:ring-cos-blue focus:border-cos-blue transition-all resize-none" placeholder="Additional notes for the procurement team..." rows="3"></textarea>
+<button class="absolute bottom-web-space-3 right-web-space-3 w-10 h-10 bg-mobile-primary rounded-full flex items-center justify-center text-white shadow-lg transition-all active:scale-90" onclick="this.classList.toggle('bg-mobile-danger'); this.classList.toggle('animate-pulse')" type="button">
+<span class="material-symbols-outlined">mic</span>
+</button>
+</div>
+</div>
+<!-- Evidence Capture -->
+<div class="space-y-web-space-1">
+<label class="font-web-text-tiny text-web-text-tiny uppercase text-outline ml-1">Evidence Capture</label>
+<div class="relative h-48 w-full rounded-xl overflow-hidden border-2 border-dashed border-outline-variant/50 flex flex-col items-center justify-center group hover:border-cos-blue transition-colors cursor-pointer">
+<div class="absolute inset-0 bg-cover bg-center opacity-40" data-alt="A wide-angle, high-resolution site photograph of a construction pour area at dusk. The scene features reinforcing steel bars laid out in a geometric pattern, ready for concrete. Industrial site lighting creates sharp shadows and high contrast, emphasizing a professional, mission-critical environment. The color palette is dominated by cool blue tones and metallic grays, matching a sophisticated infrastructure management interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAKquD-dbWCFxOQSDCQX9p4t9HLINmso2ZRcZ9R-wAqefGAyjuI6_bDzKCLFx2-fHd-qJzPUi6lNnSWiuOd47tcopLUKoIvO5BF9zdeykkF159g3NVrswy4hkZZNY0nTCc1bT9R1vjjCCyWITBPE9bIDxtLKQbBA_v3w1mBUgb8AbKMW-0jU3e3j_9FHvv85ulHp1anKZHbGFRkODY27ES5hDOn5eJSOqZY9b8_J19R6ojd1StMURNy0H3HvPbB31w7kwMLmv_g81g')"></div>
+<div class="relative z-10 flex flex-col items-center">
+<span class="material-symbols-outlined text-4xl text-cos-blue mb-web-space-1">photo_camera</span>
+<p class="font-mobile-text-label text-on-surface">Add Site Photo</p>
+<p class="font-web-text-tiny text-outline">Area pour verification</p>
+</div>
+</div>
+</div>
+</form>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-[52px] left-0 w-full p-mobile-edge bg-gradient-to-t from-dark-bg to-transparent">
+<button class="w-full h-mobile-touch-target bg-cos-blue text-white rounded-lg font-web-text-h2 flex items-center justify-center gap-web-space-2 shadow-xl active:scale-95 transition-transform">
+<span>Submit Request</span>
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-mobile-touch-target bg-surface-container-low px-web-space-2 border-t border-outline-variant">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-mobile-text-label text-mobile-text-label">Inventory</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">fact_check</span>
+<span class="font-mobile-text-label text-mobile-text-label">Requests</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">sync</span>
+<span class="font-mobile-text-label text-mobile-text-label">Sync</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-mobile-text-label text-mobile-text-label">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for the voice button
+        const voiceBtn = document.querySelector('.bg-mobile-primary');
+        let isRecording = false;
+        
+        if(voiceBtn) {
+            voiceBtn.addEventListener('click', () => {
+                isRecording = !isRecording;
+                if(isRecording) {
+                    console.log('Voice recording started...');
+                    // Logic would go here
+                } else {
+                    console.log('Voice recording stopped.');
+                }
+            });
+        }
+    </script>
+</body></html>

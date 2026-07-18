@@ -1,0 +1,264 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>CORE_OS - Daily Site Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.7);
+            backdrop-filter: blur(8px);
+        }
+        .border-cos {
+            border: 1px solid rgba(141, 144, 160, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#d3e4fe",
+                      "inverse-surface": "#d3e4fe",
+                      "mobile-success": "#00C853",
+                      "surface-container-high": "#1b2b3f",
+                      "cos-blue": "#2563EB",
+                      "primary-fixed": "#dbe1ff",
+                      "surface-tint": "#b4c5ff",
+                      "surface-container": "#102034",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "tertiary-container": "#686c80",
+                      "outline-variant": "#434655",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "primary-container": "#2563eb",
+                      "on-surface": "#d3e4fe",
+                      "on-secondary-container": "#00424e",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-bright": "#2a3a4f",
+                      "outline": "#8d90a0",
+                      "surface-variant": "#26364a",
+                      "sync-pending": "#94A3B8",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "mobile-warning": "#FF9500",
+                      "secondary-fixed": "#acedff",
+                      "on-tertiary": "#2b3041",
+                      "tertiary-fixed": "#dee1f9",
+                      "primary": "#b4c5ff",
+                      "mobile-danger": "#FF3B30",
+                      "cos-navy": "#0B1020",
+                      "secondary": "#4cd7f6",
+                      "cos-white": "#F8FAFC",
+                      "on-primary-fixed": "#00174b",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "background": "#031427",
+                      "tertiary": "#c1c5dc",
+                      "sync-active": "#FFD60A",
+                      "surface": "#031427",
+                      "dark-surface": "#0F172A",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary": "#003640",
+                      "on-error": "#690005",
+                      "on-surface-variant": "#c3c6d7",
+                      "surface-dim": "#031427",
+                      "surface-container-lowest": "#000f21",
+                      "error": "#ffb4ab",
+                      "mobile-primary": "#0066FF",
+                      "inverse-on-surface": "#213145",
+                      "secondary-container": "#03b5d3",
+                      "surface-container-low": "#0b1c30",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "error-container": "#93000a",
+                      "on-tertiary-fixed": "#161b2b",
+                      "dark-bg": "#020617",
+                      "surface-container-highest": "#26364a",
+                      "on-tertiary-container": "#eeefff",
+                      "on-primary": "#002a78",
+                      "on-secondary-fixed": "#001f26",
+                      "inverse-primary": "#0053db",
+                      "on-primary-container": "#eeefff",
+                      "cos-cyan": "#06B6D4"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "mobile-touch-target": "52px",
+                      "web-space-4": "16px",
+                      "web-space-8": "32px",
+                      "web-space-3": "12px",
+                      "web-base": "4px",
+                      "mobile-edge": "24px",
+                      "web-space-2": "8px",
+                      "web-space-1": "4px"
+              },
+              "fontFamily": {
+                      "web-text-body": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "mobile-text-label": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "web-text-small": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-cos-white dark:bg-dark-bg text-on-surface selection:bg-cos-blue/30 overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-dark-bg border-b border-outline-variant dark:border-surface-container-highest flex justify-between items-center px-mobile-edge h-[64px]">
+<div class="flex items-center gap-4">
+<button aria-label="Go back" class="w-10 h-10 flex items-center justify-center rounded-lg active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-cos-blue dark:text-cos-cyan">arrow_back</span>
+</button>
+<h1 class="font-web-text-h2 text-web-text-h2 font-bold tracking-tight text-cos-blue dark:text-cos-cyan uppercase">Daily Site Report</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-success text-[18px]" style="font-variation-settings: 'FILL' 1;">sync</span>
+<span class="font-web-text-tiny text-web-text-tiny text-outline">SYNCED</span>
+</div>
+</header>
+<main class="px-mobile-edge pt-8 pb-32 space-y-8 max-w-md mx-auto">
+<!-- Date Selector Section -->
+<section class="space-y-4">
+<label class="block font-mobile-text-label text-mobile-text-label text-outline uppercase tracking-wider">Report Date</label>
+<div class="relative flex items-center bg-white dark:bg-surface-container border border-outline-variant rounded-xl p-4 shadow-sm active:ring-2 active:ring-cos-blue transition-all cursor-pointer active:bg-cos-cyan/5">
+<div class="flex-1">
+<span class="block font-mobile-text-hero text-mobile-text-hero text-cos-navy dark:text-on-surface">Oct 24, 2023</span>
+<span class="block font-web-text-small text-web-text-small text-outline">Current Shift: 07:00 - 19:00</span>
+</div>
+<button class="material-symbols-outlined text-cos-blue dark:text-cos-cyan p-2">calendar_today</button>
+</div>
+</section>
+<!-- General Site Info Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="font-mobile-text-label text-mobile-text-label text-outline uppercase tracking-wider">General Site Info</h2>
+<span class="px-2 py-1 bg-surface-container-highest rounded text-[10px] font-bold text-on-surface-variant">REQUIRED</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-white dark:bg-surface-container border border-outline-variant rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-2 relative cursor-pointer active:bg-cos-cyan/5 transition-colors">
+<span class="material-symbols-outlined text-mobile-warning">partly_cloudy_day</span>
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface">24°C Sunny</span>
+<span class="font-web-text-tiny text-web-text-tiny text-outline">Weather</span>
+<span class="material-symbols-outlined text-outline text-sm absolute top-2 right-2">edit</span>
+</div>
+<div class="bg-white dark:bg-surface-container border border-outline-variant rounded-xl p-4 flex flex-col items-center justify-center text-center space-y-2 relative cursor-pointer active:bg-cos-cyan/5 transition-colors">
+<span class="material-symbols-outlined text-cos-blue">engineering</span>
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface">Superstructure</span>
+<span class="font-web-text-tiny text-web-text-tiny text-outline">Phase</span>
+<span class="material-symbols-outlined text-outline text-sm absolute top-2 right-2">edit</span>
+</div>
+</div>
+</section>
+<!-- AI Assistant Module -->
+<section class="relative overflow-hidden bg-cos-cyan/5 border-l-4 border-cos-cyan rounded-r-xl p-4 space-y-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-[20px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-mobile-text-label text-mobile-text-label text-cos-cyan">CORE_AI Insight</h3>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex gap-1">
+<div class="w-1.5 h-1.5 bg-cos-cyan rounded-full animate-bounce"></div>
+<div class="w-1.5 h-1.5 bg-cos-cyan rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+<div class="w-1.5 h-1.5 bg-cos-cyan rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+</div>
+<p class="font-web-text-body text-web-text-body text-on-surface-variant italic">Drafting AI Summary based on field logs...</p>
+</div>
+</section>
+<!-- Manpower Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="font-mobile-text-label text-mobile-text-label text-outline uppercase tracking-wider">Manpower</h2>
+<button class="text-mobile-primary font-bold text-sm flex items-center gap-1 active:scale-95 transition-transform"><span class="material-symbols-outlined text-[18px]">manage_accounts</span> MANAGE</button>
+</div>
+<div class="bg-white dark:bg-surface-container border border-outline-variant rounded-xl divide-y divide-outline-variant/30"><div class="p-4 flex justify-between items-center active:bg-cos-cyan/5 transition-colors cursor-pointer"><div class="flex items-center gap-3"><div class="w-2 h-8 bg-cos-blue rounded-full"></div><div><p class="font-web-text-body text-web-text-body text-on-surface">Site Engineers</p><p class="font-web-text-small text-web-text-small text-outline">CORE_OS Internal</p></div></div><div class="flex items-center gap-3"><span class="font-web-text-h2 text-web-text-h2 text-cos-blue">04</span><span class="material-symbols-outlined text-outline text-sm">edit</span></div></div><div class="p-4 flex justify-between items-center active:bg-cos-cyan/5 transition-colors cursor-pointer"><div class="flex items-center gap-3"><div class="w-2 h-8 bg-mobile-warning rounded-full"></div><div><p class="font-web-text-body text-web-text-body text-on-surface">General Labor</p><p class="font-web-text-small text-web-text-small text-outline">Skyline Contracting</p></div></div><div class="flex items-center gap-3"><span class="font-web-text-h2 text-web-text-h2 text-on-surface">12</span><span class="material-symbols-outlined text-outline text-sm">edit</span></div></div></div>
+</section>
+<!-- Material Consumption Section -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="font-mobile-text-label text-mobile-text-label text-outline uppercase tracking-wider">Material Consumption</h2>
+<button class="text-mobile-primary font-bold text-sm flex items-center gap-1 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                    LOG
+                </button>
+</div>
+<div class="w-full h-32 rounded-xl bg-cover bg-center border border-outline-variant overflow-hidden flex items-end p-4" data-alt="A macro close-up of industrial steel reinforcement bars (rebar) stacked on a modern construction site. The lighting is crisp morning light, highlighting the metallic texture and the high-density geometric patterns. The overall aesthetic is clean, technical, and professional, using a cool blue and concrete gray color palette typical of a mission-critical infrastructure platform." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBRms5j0A0doD8VYQRojr7GlWYpIhNRqJnaOSqpRx7twmjEjGqNohADB3bfkjR0O2UI68jF7X_Ty-Zt4x1jdxs93g7OzXfW_clkujvkgujALnx-Ax2wzBl8mK9x8i2NQl3PVZroNKRUOPr_95Y3-agHCOk-_yQPTzNfaTlYrftNfQ64Fkz0W5Rs4Zx98uv9M3-uGe49vRKOtDDZ_JF6aCeQYZPIxxliFMyF6jRgXDo1uStdwcCh2da5I03-6lwCzvsh-nKi1Ba6TjQ')">
+<div class="w-full glass-panel border-cos p-2 rounded-lg flex justify-between items-center">
+<span class="text-cos-white font-web-text-small text-web-text-small">Rebar 16mm (Grade 500)</span>
+<span class="text-cos-white font-bold">2.4 Tons</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar -->
+<div class="fixed bottom-0 left-0 w-full p-4 bg-white dark:bg-surface-container border-t border-outline-variant dark:border-surface-container-highest z-50">
+<button class="w-full h-mobile-touch-target bg-mobile-primary text-cos-white rounded-xl font-mobile-text-label text-mobile-text-label uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-mobile-primary/20 active:scale-95 duration-100 transition-all">
+            Save Draft &amp; Continue
+            <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Voice Note FAB (Specialized Mobile Component) -->
+<button aria-label="Record voice note" class="fixed bottom-24 right-6 w-[64px] h-[64px] bg-mobile-primary rounded-full flex items-center justify-center text-cos-white shadow-xl shadow-mobile-primary/40 active:scale-90 transition-all z-40 border-4 border-cos-white dark:border-dark-bg">
+<span class="material-symbols-outlined text-[32px]">mic</span>
+<div class="absolute inset-0 rounded-full border-2 border-cos-white animate-ping opacity-20"></div>
+</button>
+<script>
+        // Micro-interaction for voice note recording simulation
+        const micBtn = document.querySelector('button[aria-label="Record voice note"]');
+        let isRecording = false;
+
+        micBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isRecording = true;
+            micBtn.classList.add('bg-mobile-danger', 'scale-110');
+            micBtn.querySelector('span').innerText = 'graphic_eq';
+        });
+
+        micBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            isRecording = false;
+            micBtn.classList.remove('bg-mobile-danger', 'scale-110');
+            micBtn.querySelector('span').innerText = 'mic';
+        });
+    </script>
+
+
+
+
+
+
+</body></html>

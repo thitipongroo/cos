@@ -1,0 +1,297 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Inspection Report | SiteOps</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #031427; /* surface */
+            color: #d3e4fe; /* on-surface */
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .ai-glow {
+            box-shadow: inset 0 0 20px rgba(6, 182, 212, 0.05);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "mobile-warning": "#FF9500",
+                      "tertiary-container": "#686c80",
+                      "on-secondary-container": "#00424e",
+                      "error-container": "#93000a",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-surface-variant": "#c3c6d7",
+                      "on-error": "#690005",
+                      "secondary-container": "#03b5d3",
+                      "outline": "#8d90a0",
+                      "on-secondary": "#003640",
+                      "primary-fixed": "#dbe1ff",
+                      "surface-dim": "#031427",
+                      "on-tertiary-container": "#eeefff",
+                      "surface-container-high": "#1b2b3f",
+                      "tertiary": "#c1c5dc",
+                      "surface": "#031427",
+                      "sync-pending": "#94A3B8",
+                      "on-surface": "#d3e4fe",
+                      "primary": "#b4c5ff",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "primary-container": "#2563eb",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "cos-blue": "#2563EB",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "dark-bg": "#020617",
+                      "background": "#031427",
+                      "inverse-surface": "#d3e4fe",
+                      "cos-cyan": "#06B6D4",
+                      "tertiary-fixed": "#dee1f9",
+                      "surface-container-lowest": "#000f21",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#213145",
+                      "cos-white": "#F8FAFC",
+                      "on-primary-fixed": "#00174b",
+                      "surface-tint": "#b4c5ff",
+                      "surface-variant": "#26364a",
+                      "secondary-fixed": "#acedff",
+                      "cos-navy": "#0B1020",
+                      "secondary": "#4cd7f6",
+                      "surface-bright": "#2a3a4f",
+                      "surface-container": "#102034",
+                      "on-primary-container": "#eeefff",
+                      "sync-active": "#FFD60A",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-secondary-fixed": "#001f26",
+                      "on-primary": "#002a78",
+                      "surface-container-highest": "#26364a",
+                      "inverse-primary": "#0053db",
+                      "mobile-danger": "#FF3B30",
+                      "mobile-success": "#00C853",
+                      "mobile-primary": "#0066FF"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-space-1": "4px",
+                      "web-space-3": "12px",
+                      "web-space-2": "8px",
+                      "web-space-4": "16px",
+                      "mobile-touch-target": "52px",
+                      "web-space-8": "32px",
+                      "web-base": "4px",
+                      "mobile-edge": "24px"
+              },
+              "fontFamily": {
+                      "web-text-small": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "mobile-text-label": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen pb-[80px]">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-dark-surface fixed top-0 w-full z-50 flex justify-between items-center px-mobile-edge h-mobile-touch-target">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional close-up portrait of a site engineer wearing a white hard hat and safety vest. The background shows a modern construction site with structural steel beams and a clear blue sky. High-contrast, sharp technical photography with a clean industrial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuASCa-T7xH43IJEzZE2foXoIp96SDjQKA-gMTVhEldXVoLoHFPFFVpaYsNp_rYg1s2M3oqAN8SqT0rxfBeDe3KvGiynBDGLHV1_dxGRJgE34OEr5UPq3-twoMQbDG35vI2J6pXK-qjZLXsvXxaGpybcH80oExp2GYxceh-9-ll0Vp6ah_qUfcBEJ9ydEjbJFITXsKqOuyQi5X4MQocvVBYpUl8gwF09Y6nm5ofU4tjOGED1IJ8QIeCT4TlxDR8c1hRP_MEQ3CSUzuY">
+</div>
+<div class="flex flex-col">
+<span class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-mobile-primary dark:text-primary">Site Engineer</span>
+<span class="text-[11px] leading-tight text-on-surface-variant font-medium">Skyline Tower A</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:bg-surface-bright p-2 rounded-full transition-colors">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:bg-surface-bright p-2 rounded-full transition-colors">more_vert</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="mt-[60px] px-mobile-edge pt-4 space-y-6">
+<!-- Header Section -->
+<section class="space-y-1">
+<h1 class="font-mobile-text-hero text-mobile-text-hero text-on-surface tracking-tight">Inspection Report</h1>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface-variant">24 Oct 2026 • Structural Audit</p>
+</section>
+<!-- Summary Card: Bento Style -->
+<section class="grid grid-cols-2 gap-3">
+<div class="col-span-2 bg-surface-container-high rounded-xl p-5 border-l-4 border-mobile-success">
+<div class="flex justify-between items-start">
+<div>
+<p class="text-web-text-tiny uppercase tracking-wider text-on-surface-variant mb-1">Final Status</p>
+<h2 class="font-mobile-text-hero text-mobile-text-hero text-mobile-success">PASSED</h2>
+</div>
+<span class="material-symbols-outlined text-mobile-success text-4xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="bg-surface-container rounded-xl p-4">
+<p class="text-web-text-tiny uppercase tracking-wider text-on-surface-variant mb-1">Trade</p>
+<p class="font-mobile-text-label text-mobile-text-label text-on-surface">Structural Steel</p>
+</div>
+<div class="bg-surface-container rounded-xl p-4 border border-cos-cyan/20 ai-glow">
+<p class="text-web-text-tiny uppercase tracking-wider text-cos-cyan mb-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                    Compliance
+                </p>
+<p class="font-mobile-text-label text-mobile-text-label text-on-surface">100% Score</p>
+</div>
+</section>
+<!-- AI Insights Module -->
+<section class="bg-cos-cyan/5 border-l-2 border-cos-cyan rounded-r-lg p-4 space-y-2">
+<div class="flex items-center gap-2 text-cos-cyan">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="text-web-text-tiny font-bold uppercase tracking-widest">AI Analysis Engine</span>
+</div>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface leading-snug">
+                Image verification confirms <span class="font-bold text-cos-cyan">BIM model v4.2</span> alignment. All spatial tolerances validated against digital twin metadata.
+            </p>
+</section>
+<!-- Checklist Section -->
+<section class="space-y-4">
+<div class="flex justify-between items-end px-1">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface">Verification Items</h3>
+<span class="text-web-text-tiny text-on-surface-variant">4 of 4 Verified</span>
+</div>
+<!-- Item 1 -->
+<div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 flex items-start gap-4 transition-transform active:scale-[0.98]">
+<div class="w-10 h-10 rounded-lg bg-mobile-success/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">architecture</span>
+</div>
+<div class="flex-grow space-y-1">
+<div class="flex justify-between items-center">
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Rebar Spacing</h4>
+<span class="text-[10px] font-bold text-mobile-success uppercase">Pass</span>
+</div>
+<p class="text-web-text-body text-on-surface-variant italic">"Measured 150mm on-center as per spec."</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 flex items-start gap-4 transition-transform active:scale-[0.98]">
+<div class="w-10 h-10 rounded-lg bg-mobile-success/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">build</span>
+</div>
+<div class="flex-grow space-y-1">
+<div class="flex justify-between items-center">
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Bolt Torque</h4>
+<span class="text-[10px] font-bold text-mobile-success uppercase">Pass</span>
+</div>
+<p class="text-web-text-body text-on-surface-variant italic">"All M24 bolts torqued to 450Nm."</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 flex items-start gap-4 transition-transform active:scale-[0.98]">
+<div class="w-10 h-10 rounded-lg bg-mobile-success/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">precision_manufacturing</span>
+</div>
+<div class="flex-grow space-y-1">
+<div class="flex justify-between items-center">
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Weld Quality</h4>
+<span class="text-[10px] font-bold text-mobile-success uppercase">Pass</span>
+</div>
+<p class="text-web-text-body text-on-surface-variant italic">"Visual inspection and UT testing confirmed."</p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 flex items-start gap-4 transition-transform active:scale-[0.98]">
+<div class="w-10 h-10 rounded-lg bg-mobile-success/10 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">straighten</span>
+</div>
+<div class="flex-grow space-y-1">
+<div class="flex justify-between items-center">
+<h4 class="font-mobile-text-label text-mobile-text-label text-on-surface">Column Alignment</h4>
+<span class="text-[10px] font-bold text-mobile-success uppercase">Pass</span>
+</div>
+<p class="text-web-text-body text-on-surface-variant italic">"Within +/- 2mm tolerance."</p>
+</div>
+</div>
+</section>
+<!-- Media Attachment Preview -->
+<section class="space-y-3 pb-8">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface px-1">Evidence Photos</h3>
+<div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+<div class="w-32 h-32 rounded-lg flex-shrink-0 overflow-hidden relative border border-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="A macro photograph of high-quality structural steel welds on a heavy I-beam. The metal has a cool blue industrial tint, with clean, overlapping weld patterns visible. Harsh construction site lighting creates sharp highlights and shadows. Dark mode aesthetic, professional engineering documentation style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ8qogmDAgOHPkGRekZ3KjERWLKLa_Qx-_OSIBbeRARpiH0MT-ZkWeeDZF2ugbUJcYV-mnqLUxiERGe-Rbo3gpxWraQwHdl9uEbPurUo1CyAa8zMGUXGxWb3fhl3Xs_NOApgQXUSmkuLjkUuyjdnlERBRj1FmjJ_5nY50HegN_dYD1IadarhA53dUKsgjME4cBxS4tKQmfGDY44kI585jiU1zmJbtR1xzJN6Qc4DZgQd7FOLTwXlDkiBJCy6fknCDPpg_9Pm8RN50">
+<div class="absolute bottom-1 right-1 bg-black/60 rounded px-1.5 py-0.5 text-[8px] text-white">WLD-01</div>
+</div>
+<div class="w-32 h-32 rounded-lg flex-shrink-0 overflow-hidden relative border border-outline-variant/20">
+<img class="w-full h-full object-cover" data-alt="Technical wide shot of a structural column connection at a high-rise construction site. The scene features massive steel plates and bolts, with the city skyline blurred in the background under a twilight sky. Monochromatic navy and gray tones with sharp focus on the engineering details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDo63ENJGoRaFB5AMo7xklLLm42TIDlEDi1MR12IgjcQYkl0NWpkb-JguJSMR-bgz2DhaYRB4LyMYoOO1GcuMBg-d8Nw6npiCs8cLLezna6b7uN2ewdIVTbQzDpWFkXXzFiqnsZYvibWU-gwWWlxxUcvYIT8CXB_VGgTHPM_KhghmnHLVJgPvQBZj6-T8YxP-ygacK5l_m8fbTkzQWv_QyQpB3AQwLm2vAXchs5WZdr7WluBKaFdLoP2JOcNI2QGEgXHdWt4yWDgw">
+<div class="absolute bottom-1 right-1 bg-black/60 rounded px-1.5 py-0.5 text-[8px] text-white">ALN-04</div>
+</div>
+<div class="w-32 h-32 rounded-lg flex-shrink-0 bg-surface-container flex items-center justify-center border border-dashed border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">add_a_photo</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 h-[72px] bg-surface dark:bg-dark-surface shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+<!-- Dashboard (Active) -->
+<button class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-xl px-4 py-1 scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-mobile-text-label text-mobile-text-label mt-0.5">Dashboard</span>
+</button>
+<!-- Issues -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined">warning</span>
+<span class="font-mobile-text-label text-mobile-text-label mt-0.5">Issues</span>
+</button>
+<!-- Tasks -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-mobile-text-label text-mobile-text-label mt-0.5">Tasks</span>
+</button>
+<!-- Reports -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150">
+<span class="material-symbols-outlined">description</span>
+<span class="font-mobile-text-label text-mobile-text-label mt-0.5">Reports</span>
+</button>
+</nav>
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('button, .bg-surface-container-low').forEach(el => {
+            el.addEventListener('touchstart', () => {
+                el.style.opacity = '0.8';
+            });
+            el.addEventListener('touchend', () => {
+                el.style.opacity = '1';
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Update Task Progress | Site OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#b4c5ff",
+            "sync-pending": "#94A3B8",
+            "on-tertiary": "#2b3041",
+            "on-primary-container": "#eeefff",
+            "secondary": "#4cd7f6",
+            "tertiary-fixed": "#dee1f9",
+            "secondary-container": "#03b5d3",
+            "inverse-surface": "#d3e4fe",
+            "on-tertiary-container": "#eeefff",
+            "surface-container-low": "#0b1c30",
+            "sync-active": "#FFD60A",
+            "primary-container": "#2563eb",
+            "primary-fixed-dim": "#b4c5ff",
+            "on-secondary-container": "#00424e",
+            "inverse-primary": "#0053db",
+            "on-error-container": "#ffdad6",
+            "on-surface": "#d3e4fe",
+            "mobile-success": "#00C853",
+            "on-tertiary-fixed-variant": "#414658",
+            "background": "#031427",
+            "surface-dim": "#031427",
+            "cos-white": "#F8FAFC",
+            "on-surface-variant": "#c3c6d7",
+            "tertiary": "#c1c5dc",
+            "dark-surface": "#0F172A",
+            "mobile-primary": "#0066FF",
+            "cos-navy": "#0B1020",
+            "mobile-danger": "#FF3B30",
+            "cos-cyan": "#06B6D4",
+            "outline-variant": "#434655",
+            "surface-container-highest": "#26364a",
+            "on-primary": "#002a78",
+            "surface": "#031427",
+            "mobile-warning": "#FF9500",
+            "primary-fixed": "#dbe1ff",
+            "outline": "#8d90a0",
+            "on-primary-fixed-variant": "#003ea8",
+            "dark-bg": "#020617",
+            "on-error": "#690005",
+            "inverse-on-surface": "#213145",
+            "surface-variant": "#26364a",
+            "tertiary-container": "#686c80",
+            "surface-container-lowest": "#000f21",
+            "on-secondary-fixed-variant": "#004e5c",
+            "tertiary-fixed-dim": "#c1c5dc",
+            "on-tertiary-fixed": "#161b2b",
+            "surface-tint": "#b4c5ff",
+            "on-secondary-fixed": "#001f26",
+            "error-container": "#93000a",
+            "surface-container-high": "#1b2b3f",
+            "on-secondary": "#003640",
+            "secondary-fixed": "#acedff",
+            "on-background": "#d3e4fe",
+            "surface-bright": "#2a3a4f",
+            "on-primary-fixed": "#00174b",
+            "secondary-fixed-dim": "#4cd7f6",
+            "surface-container": "#102034",
+            "cos-blue": "#2563EB",
+            "error": "#ffb4ab"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "web-space-4": "16px",
+            "web-space-3": "12px",
+            "web-space-8": "32px",
+            "web-base": "4px",
+            "mobile-touch-target": "52px",
+            "web-space-2": "8px",
+            "web-space-1": "4px",
+            "mobile-edge": "24px"
+          },
+          "fontFamily": {
+            "mobile-text-hero": ["Inter Tight"],
+            "mobile-text-label": ["Inter Tight"],
+            "web-text-tiny": ["Inter Tight"],
+            "web-text-small": ["Inter Tight"],
+            "web-text-h1": ["Inter Tight"],
+            "web-text-h2": ["Inter Tight"],
+            "web-text-body": ["Inter Tight"],
+            "mobile-text-body": ["Inter Tight"],
+            "web-text-display": ["Inter Tight"]
+          },
+          "fontSize": {
+            "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+            "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+            "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+            "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #031427;
+      color: #d3e4fe;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Inter Tight', sans-serif;
+    }
+
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      background: #b4c5ff;
+      cursor: pointer;
+      border-radius: 50%;
+      border: 4px solid #2563eb;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+    }
+
+    .custom-slider::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      background: #b4c5ff;
+      cursor: pointer;
+      border-radius: 50%;
+      border: 4px solid #2563eb;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .glass-card {
+      background: rgba(16, 32, 52, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(67, 70, 85, 0.5);
+    }
+
+    .active-chip {
+      background-color: #2563eb;
+      color: #eeefff;
+      border-color: #2563eb;
+    }
+
+    @keyframes pulse-cyan {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .ai-pulse {
+      animation: pulse-cyan 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="dark overflow-x-hidden selection:bg-primary-container selection:text-white">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center px-mobile-edge h-mobile-touch-target bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline-variant">
+<button class="flex items-center justify-center w-10 h-10 -ml-2 text-primary dark:text-primary-fixed-dim hover:bg-surface-container-highest transition-colors rounded-full active:opacity-70 active:scale-95">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="ml-2 font-web-text-h1 text-web-text-h1 font-bold text-primary dark:text-primary-fixed-dim">Update Task Progress</h1>
+<div class="flex-grow"></div>
+<button class="flex items-center justify-center w-10 h-10 text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-full">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</header>
+<main class="mt-[52px] pb-[100px] px-mobile-edge pt-6 space-y-6 max-w-2xl mx-auto">
+<!-- Task Header -->
+<section class="space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-web-text-tiny font-web-text-tiny uppercase tracking-wider text-on-surface-variant">Task ID: CON-402</span>
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container-highest border border-outline-variant">
+<span class="material-symbols-outlined text-[14px] text-mobile-success" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-web-text-tiny font-web-text-tiny text-on-surface">QC Pass</span>
+</div>
+</div>
+<h2 class="font-mobile-text-hero text-mobile-text-hero text-cos-white">Level 3 Slab Pouring</h2>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span class="font-mobile-text-label text-mobile-text-label">Sector B, Residential Tower</span>
+</div>
+</section>
+<!-- Progress Adjuster (Mission Critical Interaction) -->
+<section class="glass-card rounded-xl p-6 space-y-6">
+<div class="flex items-end justify-between">
+<label class="font-mobile-text-label text-mobile-text-label text-on-surface-variant">Current Progress</label>
+<div class="flex items-baseline gap-1">
+<span class="text-web-text-display font-web-text-display text-primary" id="progress-val">65</span>
+<span class="text-web-text-h1 font-web-text-h1 text-primary-fixed-dim">%</span>
+</div>
+</div>
+<div class="relative h-12 flex items-center">
+<input class="custom-slider w-full h-2 bg-surface-container-highest rounded-lg appearance-none cursor-pointer" id="progress-slider" max="100" min="0" oninput="document.getElementById('progress-val').innerText = this.value" type="range" value="65">
+</div>
+<!-- AI Assistance Module -->
+<div class="bg-cos-cyan/5 border-l-4 border-cos-cyan p-4 rounded-r-lg flex gap-3 items-start">
+<span class="material-symbols-outlined text-cos-cyan ai-pulse" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<div class="space-y-1">
+<h4 class="font-mobile-text-label text-mobile-text-label text-cos-cyan">AI Logic Suggestion</h4>
+<p class="font-web-text-small text-web-text-small text-on-surface-variant">Based on 25 workers logged today and concrete delivery schedule, <strong class="text-secondary">70% progress</strong> is expected by EOD.</p>
+</div>
+</div>
+</section>
+<!-- Status Chips -->
+<section class="space-y-3">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-widest">Update Status</h3>
+<div class="flex flex-wrap gap-3">
+<button class="flex items-center gap-2 px-4 h-10 rounded-full border border-outline-variant bg-surface-container font-mobile-text-label text-mobile-text-label text-on-surface active-chip transition-all">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+          In Progress
+        </button>
+<button class="flex items-center gap-2 px-4 h-10 rounded-full border border-outline-variant bg-surface-container font-mobile-text-label text-mobile-text-label text-on-surface hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[20px]">block</span>
+          Blocked
+        </button>
+<button class="flex items-center gap-2 px-4 h-10 rounded-full border border-outline-variant bg-surface-container font-mobile-text-label text-mobile-text-label text-on-surface hover:bg-surface-container-high transition-all">
+<span class="material-symbols-outlined text-[20px]">done_all</span>
+          Completed
+        </button>
+</div>
+</section>
+<!-- Site Notes -->
+<section class="space-y-3">
+<div class="flex justify-between items-center">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-widest">Site Notes</h3>
+<button class="flex items-center gap-1 text-mobile-primary bg-mobile-primary/10 px-3 py-1 rounded-full">
+<span class="material-symbols-outlined text-[18px]">mic</span>
+<span class="text-web-text-tiny font-bold">VOICE</span>
+</button>
+</div>
+<textarea class="w-full bg-surface-container-low border border-outline-variant rounded-lg p-4 text-web-text-body font-web-text-body focus:ring-2 focus:ring-primary-container focus:border-transparent outline-none min-h-[120px] transition-all" placeholder="Record field observations, weather conditions, or blockers..."></textarea>
+</section>
+<!-- Evidence Capture -->
+<section class="space-y-3">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-widest">Evidence Capture (2-3 Photos)</h3>
+<div class="grid grid-cols-3 gap-3">
+<div class="relative aspect-square rounded-lg overflow-hidden border border-outline-variant group">
+<div class="w-full h-full bg-cover bg-center" data-alt="A high-contrast industrial site photograph showing a fresh concrete slab being poured on a skyscraper construction site. The lighting is dramatic, late afternoon sun casting long shadows across the rebar. The style is professional architectural photography with a cool blue and gray color palette." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBAuOaT6zPZqiHghyLeT1TalH7hlmZ1tlnpfUaiwkl-5v8XSHyMOJWgZ-VPG1stOYTZdJVgI8AWs5JoP7OushXRdkXIOx-CbA0znEhePZJ_zE3h5Ra2vj9Lx818fK8ow8flSm-K8_EOlr5OrGTvzRH6ME8YV6I8CNQMyY0WLW24dbbqfMA4CC5T0QNLJSydpOpccZrzZcxRq9WTSqlmrkQ3f6UilYPSXnEtZD37xX0UaaYqojxxtMqgmCwr1YLRe2-A37zO9kMIHLc')"></div>
+<button class="absolute top-1 right-1 w-6 h-6 bg-mobile-danger text-white rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+<div class="relative aspect-square rounded-lg overflow-hidden border border-outline-variant group">
+<div class="w-full h-full bg-cover bg-center" data-alt="A detailed close-up of high-tensile steel reinforcement bars prepared for a concrete pour. The image captures the texture of the rusty steel against the dark background of the construction site. Sharp focus and cinematic lighting emphasize the industrial strength and technical precision of the engineering work." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC1FIOp5BTkTZkbmhyxK6vNMxmAlbNCFIlXryRuiPVqBDXLNyBYWbPQjV9Z9YEztwnpE80tWZhGvI5PhSd-HhEU8tDyMi6M9Xp3K-soMExMxXMcVcF3HtSE_joUQ77L-Rq-l2buTK5ZmJZqSkWbiAc1JL3ZTNQpq7GzVpzlk6RyQpy6xr6LMIm1Cu-fwIu8iegWeMHDyWshxZPYbJTTOKF1wobpAtG0-xnv3Hb0MbIxq_-nNzeza1ak-uKzMXoQ6-x-1Ae0mOq82Gc')"></div>
+<button class="absolute top-1 right-1 w-6 h-6 bg-mobile-danger text-white rounded-full flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-[14px]">close</span>
+</button>
+</div>
+<button class="aspect-square rounded-lg border-2 border-dashed border-outline-variant flex flex-col items-center justify-center gap-1 hover:bg-surface-container transition-colors active:scale-95">
+<span class="material-symbols-outlined text-primary text-[32px]">add_a_photo</span>
+<span class="text-web-text-tiny font-web-text-tiny text-on-surface-variant">Add Media</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar (Fixed) -->
+<footer class="fixed bottom-0 left-0 w-full p-mobile-edge bg-surface/80 backdrop-blur-md border-t border-outline-variant/30 flex gap-3">
+<button class="flex-1 h-mobile-touch-target bg-primary-container text-on-primary-container rounded-lg font-mobile-text-label text-mobile-text-label flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">save</span>
+      Save Progress
+    </button>
+</footer>
+<script>
+    // Simple state handling for chips
+    const chipButtons = document.querySelectorAll('button.font-mobile-text-label');
+    chipButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        // Only target the status chips
+        if (btn.innerText.includes('Progress') || btn.innerText.includes('Blocked') || btn.innerText.includes('Completed')) {
+          chipButtons.forEach(b => b.classList.remove('active-chip'));
+          btn.classList.add('active-chip');
+        }
+      });
+    });
+
+    // Handle tactile feedback for slider
+    const slider = document.getElementById('progress-slider');
+    slider.addEventListener('touchstart', () => {
+      slider.style.boxShadow = '0 0 20px rgba(37, 99, 235, 0.3)';
+    });
+    slider.addEventListener('touchend', () => {
+      slider.style.boxShadow = 'none';
+    });
+  </script>
+</body></html>
