@@ -4,7 +4,7 @@
 
 import { eq } from 'drizzle-orm';
 import { db } from './database';
-import { localPhotos } from './schema';
+import { localPhotos, localPhotoAnnotations } from './schema';
 import type { PendingPhoto, PhotoRepository } from '../sync/PhotoUploadQueue';
 
 export const photoRepo: PhotoRepository = {
@@ -53,4 +53,22 @@ export async function findLocalPhotoByServerFileId(serverFileId: string): Promis
     .from(localPhotos)
     .where(eq(localPhotos.serverFileId, serverFileId));
   return rows[0]?.id ?? null;
+}
+
+/**
+ * Delete a photo and its annotation from the device.
+ *
+ * Local-only by construction — the caller gates on `canDeletePhoto()`, which admits only photos whose
+ * bytes never reached the server (see src/lib/photoGallery.ts for why). Nothing is enqueued: there is
+ * no DELETE in `SyncOperation`, and no server row exists to remove.
+ *
+ * The annotation row goes first so a failure between the two statements leaves an annotation-less
+ * photo (recoverable, the user can simply delete again) rather than an annotation orphaned from the
+ * photo it describes. expo-sqlite has no cross-statement transaction in this codebase's Drizzle setup.
+ */
+export async function deletePhotoLocal(localPhotoId: string): Promise<void> {
+  await db
+    .delete(localPhotoAnnotations)
+    .where(eq(localPhotoAnnotations.localPhotoId, localPhotoId));
+  await db.delete(localPhotos).where(eq(localPhotos.id, localPhotoId));
 }

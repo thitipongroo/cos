@@ -260,7 +260,12 @@
       "tapToAnnotate": "แตะเพื่อวาดทับ",
       "annotated": "วาดแล้ว",
       "pending": "รออัปโหลด",
-      "uploaded": "อัปโหลดแล้ว"
+      "uploaded": "อัปโหลดแล้ว",
+      "delete": "ลบ",
+      "deleteConfirmTitle": "ลบรูปนี้?",
+      "deleteConfirmBody": "รูปนี้และลายเส้นที่วาดไว้จะถูกลบออกจากเครื่อง ไม่สามารถกู้คืนได้",
+      "deleteConfirmCancel": "ยกเลิก",
+      "deleteConfirmOk": "ลบ"
     }
   },
   "pm": {

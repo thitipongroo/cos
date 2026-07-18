@@ -260,7 +260,12 @@
       "tapToAnnotate": "Tap to annotate",
       "annotated": "Annotated",
       "pending": "Pending upload",
-      "uploaded": "Uploaded"
+      "uploaded": "Uploaded",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete photo?",
+      "deleteConfirmBody": "This photo and any markup on it will be removed from this device. This cannot be undone.",
+      "deleteConfirmCancel": "Cancel",
+      "deleteConfirmOk": "Delete"
     }
   },
   "pm": {

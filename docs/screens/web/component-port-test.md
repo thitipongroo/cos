@@ -5,6 +5,15 @@ last_updated: '2026-07-05'
 
 # Web Component Port — Browser-Compat Test Checklist
 
+> **Historical record — `figma/` no longer exists.** This checklist was written and run against the
+> Figma mockup tree, which was deleted on 2026-07-18 once every component it fed had been ported
+> (see [ADR-056](../../architecture/adr/056-photo-annotation.md) → Consequences → Neutral). Every
+> `figma/mockup/...` path below is preserved as written and is retrievable from git history —
+> `git show 03adfb6:<path>`. The port itself is complete: `ImageWithFallback`, `LoadingState`,
+> `LocationDisplay`, and `VoiceInput` now live in `apps/web/src/components/`, while
+> `AdvancedPhotoCapture` and `PhotoAnnotation` were reassigned to mobile-only by product-owner
+> decision on 2026-07-17 and ship as `apps/mobile/src/components/`.
+>
 > Part of [`docs/screens/`](../README.md). Verification checklist for porting the six
 > **feature components** from the Figma mockup (`figma/mockup/`) into the web app
 > (`apps/web`). Every case below is tied to a browser API read directly from the mockup

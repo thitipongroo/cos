@@ -175,7 +175,17 @@ round at sub-pixel scale.
 
 ### Neutral
 
-- `figma/` must be kept until both mockup components are ported; it is the only source for them.
+- `PhotoAnnotation` → `apps/mobile/src/components/PhotoAnnotation.tsx`
+  (redesigned on Skia, not a line-for-line port — see Context), and `AdvancedPhotoCapture`'s gallery
+  grid, delete affordance, and annotation entry point → `apps/mobile/src/components/PhotoCapture.tsx`.
+  The four web components the same mockup fed (`ImageWithFallback`, `LoadingState`, `LocationDisplay`,
+  `VoiceInput`) are in `apps/web/src/components/`; `MobileInput`/`NumberPicker`/`IconPicker` were
+  cancelled outright (`context/00_master_construction_os.md`, reconciliation note). `figma/` was
+  therefore deleted — it is not in the pnpm workspace, CI, tsconfig, or Makefile, and its 101 files
+  remain retrievable from git history (added in `040058f`, `03adfb6`).
+  One deliberate divergence: the mockup deletes any photo unconditionally, but the shipped component
+  offers delete only for photos that never reached the server, because `DELETE /files/{file_id}` is
+  Tenant Admin only (spec §14) and `SyncOperation` has no `DELETE`. See `src/lib/photoGallery.ts`.
 - Expo pins Skia per SDK (2.6.2 on SDK 56), so the version moves on SDK upgrades, not on demand.
 
 ## Notes for implementers
@@ -193,4 +203,7 @@ round at sub-pixel scale.
 - [17-offline-mobile-sync §17.5](../../specifications/17-offline-mobile-sync.md) —
   conflict rules per entity
 - [ADR-055](055-universal-loading-component.md) — same per-platform component pattern
-- `figma/mockup/src/app/components/camera/` — the reference implementations being replaced
+- `figma/mockup/src/app/components/camera/` — the reference implementations being replaced.
+  **Deleted 2026-07-18** once the port completed (see Consequences → Neutral); read them at
+  `git show 03adfb6:figma/mockup/src/app/components/camera/AdvancedPhotoCapture.tsx` (and
+  `PhotoAnnotation.tsx` alongside it).

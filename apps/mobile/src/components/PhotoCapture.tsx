@@ -7,7 +7,7 @@
 // is last, and an annotation whose photo never uploads stays local; accepted evidence-gap risk).
 
 import { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { eq } from 'drizzle-orm';
 import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
@@ -15,7 +15,9 @@ import { db, newLocalId, pendingPhotoCount } from '../db/database';
 import type { PhotoEntityType } from '../db/database';
 import { localPhotos, localPhotoAnnotations, type Photo } from '../db/schema';
 import { getAnnotation, upsertAnnotation } from '../db/annotationRepo';
+import { deletePhotoLocal } from '../db/photoRepo';
 import { photoQueueStatus } from '../sync/photoQueueLimit';
+import { canDeletePhoto, GALLERY_COLUMNS } from '../lib/photoGallery';
 import { PhotoAnnotation, type AnnotationStroke } from './PhotoAnnotation';
 import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
@@ -102,6 +104,20 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
     setAnnotating(null);
   };
 
+  // Deleting destroys local-only work (the photo and any markup), so it is confirmed first. Alert is
+  // the platform's own dialog, not an app modal — §32.7's "no modal-on-modal" rule is about stacking
+  // custom modals, and <PhotoCapture /> is mounted on plain screens (deliveries/inspections/issues).
+  const confirmDelete = (photo: Photo): void => {
+    Alert.alert(t('photos.gallery.deleteConfirmTitle'), t('photos.gallery.deleteConfirmBody'), [
+      { text: t('photos.gallery.deleteConfirmCancel'), style: 'cancel' },
+      {
+        text: t('photos.gallery.deleteConfirmOk'),
+        style: 'destructive',
+        onPress: () => void deletePhotoLocal(photo.id),
+      },
+    ]);
+  };
+
   // Full-screen annotator over the whole capture UI while marking up.
   if (annotating) {
     return (
@@ -134,15 +150,27 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
           {t('photos.gallery.empty')}
         </Text>
       ) : (
-        <ScrollView horizontal testID="photo-gallery" contentContainerStyle={styles.grid}>
+        <View testID="photo-gallery" style={styles.grid}>
           {photos.map((photo) => (
-            <TouchableOpacity
-              key={photo.id}
-              testID={`gallery-photo-${photo.id}`}
-              style={styles.card}
-              onPress={() => void openAnnotate(photo)}
-            >
-              <Image source={{ uri: photo.localPath }} style={styles.thumb} />
+            <View key={photo.id} style={styles.card}>
+              <TouchableOpacity
+                testID={`gallery-photo-${photo.id}`}
+                onPress={() => void openAnnotate(photo)}
+              >
+                <Image source={{ uri: photo.localPath }} style={styles.thumb} />
+              </TouchableOpacity>
+              {/* Only photos whose bytes never reached the server can be removed here — see
+                  canDeletePhoto(). An uploaded file is Tenant Admin territory (spec §14). */}
+              {canDeletePhoto(photo.uploadStatus) ? (
+                <TouchableOpacity
+                  testID={`gallery-delete-${photo.id}`}
+                  style={styles.deleteButton}
+                  accessibilityLabel={t('photos.gallery.delete')}
+                  onPress={() => confirmDelete(photo)}
+                >
+                  <Text style={styles.deleteButtonText}>✕</Text>
+                </TouchableOpacity>
+              ) : null}
               <Text style={styles.cardLabel}>
                 {photo.uploadStatus === 'UPLOADED'
                   ? t('photos.gallery.uploaded')
@@ -153,9 +181,9 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
                   ? t('photos.gallery.annotated')
                   : t('photos.gallery.tapToAnnotate')}
               </Text>
-            </TouchableOpacity>
+            </View>
           ))}
-        </ScrollView>
+        </View>
       )}
 
       {count > 0 ? (
@@ -166,6 +194,9 @@ export function PhotoCapture({ entityType, entityId, onCaptured }: PhotoCaptureP
     </View>
   );
 }
+
+/** Half-gutter each side of a card, so adjacent cards sit spacing.xs apart. */
+const GUTTER = spacing.xs / 2;
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
@@ -193,9 +224,36 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: typography.caption.fontSize,
   },
-  grid: { gap: spacing.sm, paddingVertical: spacing.xs },
-  card: { width: 96, gap: 2 },
-  thumb: { width: 96, height: 96, borderRadius: 8, backgroundColor: colors.surface },
+  // Three across (GALLERY_COLUMNS), matching the mockup's grid-cols-3. Cards size by percentage so
+  // the grid holds on any handset width. Gutters come from per-card padding, NOT a container `gap`:
+  // three 33.3% cards already consume the full row, so a gap on top of that overflows it.
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingVertical: spacing.xs,
+  },
+  card: {
+    width: `${100 / GALLERY_COLUMNS}%`,
+    flexGrow: 0,
+    flexShrink: 0,
+    paddingHorizontal: GUTTER,
+    paddingBottom: spacing.xs,
+    gap: 2,
+  },
+  thumb: { width: '100%', aspectRatio: 1, borderRadius: 8, backgroundColor: colors.surface },
+  // Positioned against the card's padding box, which starts at the thumbnail's top-left corner.
+  deleteButton: {
+    position: 'absolute',
+    top: 4,
+    right: GUTTER + 4,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButtonText: { color: colors.bg, fontFamily: fontFamily.semibold, fontSize: 14 },
   cardLabel: {
     color: colors.textSecondary,
     fontFamily: fontFamily.medium,
