@@ -1,10 +1,5 @@
 'use client';
 
-// Web port of figma/mockup VoiceInput. Replaces the mockup's browser Web Speech API with the COS
-// AI transcription service (in-tenant, spec 21.4 Layer A): records audio via MediaRecorder, uploads
-// it to the File Service, then POSTs /ai/transcribe (Kong → ai-gateway). Re-themed to §32.7; all
-// copy via i18n; Thai is the default language. Until STT_PROVIDER=faster_whisper is deployed the
-// endpoint answers 503 and the component shows an "unavailable" message (graceful).
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { ApiError, useApi, useUpload } from '../../lib/api/client';
@@ -95,6 +90,10 @@ export function VoiceInput({ onTranscript, language = 'th' }: VoiceInputProps) {
       recorderRef.current = recorder;
       setStatus('recording');
     } catch {
+      // NOT automatable in headless Chromium — verified 2026-07-05, don't retry it. Playwright's
+      // headless Chromium never denies the microphone: getUserMedia resolves even with permissions
+      // cleared, so this catch never runs and the error banner never appears. Exercising the
+      // mic-denied path needs a real browser with a real permission prompt.
       setError(t('voice.micDenied'));
       setStatus('idle');
     }

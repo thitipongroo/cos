@@ -11,10 +11,7 @@
 
 §32.7 has always specified `<PhotoCapture />` as "Camera + gallery grid, inline annotation, offline
 queue". The shipped `apps/mobile/src/components/PhotoCapture.tsx` has the camera and the offline
-queue and neither the gallery grid nor any annotation. `apps/web` has no photo component at all. The
-only reference implementations are two React-DOM components in the `figma/mockup/` tree
-(`AdvancedPhotoCapture`, `PhotoAnnotation`) that `docs/screens/web/component-port-test.md` planned to
-port and never did.
+queue and neither the gallery grid nor any annotation. `apps/web` has no photo component at all.
 
 The mockup `PhotoAnnotation` is built entirely on browser Canvas 2D: `getImageData`/`putImageData`
 for undo, `toBlob` to save, `drawImage`/`fillText` to render. React Native has none of these, so
@@ -203,7 +200,3 @@ round at sub-pixel scale.
 - [17-offline-mobile-sync §17.5](../../specifications/17-offline-mobile-sync.md) —
   conflict rules per entity
 - [ADR-055](055-universal-loading-component.md) — same per-platform component pattern
-- `figma/mockup/src/app/components/camera/` — the reference implementations being replaced.
-  **Deleted 2026-07-18** once the port completed (see Consequences → Neutral); read them at
-  `git show 03adfb6:figma/mockup/src/app/components/camera/AdvancedPhotoCapture.tsx` (and
-  `PhotoAnnotation.tsx` alongside it).

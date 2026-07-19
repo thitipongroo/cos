@@ -1,9 +1,5 @@
 'use client';
 
-// Ported from figma/mockup/src/app/components/figma/ImageWithFallback.tsx (zero design tokens).
-// Renders a raw <img> so the onError fallback works — next/image cannot intercept the error the
-// same way. (apps/web's eslint config does not register @next/next/no-img-element.)
-//
 // SSR adaptation (added for apps/web, verified needed): under Next the <img> is server-rendered,
 // so a decode error can fire BEFORE hydration attaches onError — the mockup (Vite, client-only)
 // never hits this. The useEffect below detects an already-failed image on mount and falls back,

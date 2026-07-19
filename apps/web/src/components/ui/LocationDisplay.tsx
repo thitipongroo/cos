@@ -1,9 +1,5 @@
 'use client';
 
-// Web port of figma/mockup LocationDisplay. Replaces the mockup's direct Nominatim call (external,
-// forbidden User-Agent) with the in-tenant backend endpoint GET /api/v1/geo/reverse (→ self-host
-// Nominatim). Geolocation stays client-side (navigator.geolocation, HTTPS/secure-context only).
-// Re-themed to §32.7; all copy via i18n.
 import { useEffect, useState } from 'react';
 import { ApiError, useApi } from '../../lib/api/client';
 import { useI18n } from '../../i18n';

@@ -12,11 +12,17 @@ import { VoiceInput } from '../../../components/ui/VoiceInput';
 import { LocationDisplay } from '../../../components/ui/LocationDisplay';
 
 /**
- * Dev/test-only preview harness. Mounts the ported components with the data-testid contract from
- * tests/e2e/specs/component-port.spec.ts so the same Playwright spec runs against apps/web (re-theme
- * regression catch). Only the deterministically-portable components are here — ImageWithFallback and
- * LoadingState. LocationDisplay/VoiceInput are not yet ported (blocked on Nominatim replacement +
- * i18n), so their testids are intentionally absent; run the spec filtered to those two components.
+ * Dev-only visual preview of the four components ported out of the Figma mockup. The page 404s in
+ * production (see page.tsx); it exists so the ported components can be eyeballed in one place —
+ * particularly the §32.7 re-theme and dark mode, which no unit test asserts.
+ *
+ * A Playwright spec (tests/e2e/specs/component-port.spec.ts) and a browser-compat checklist
+ * (docs/screens/web/component-port-test.md) once drove this page. Both were deleted on 2026-07-18:
+ * the spec skipped unless COMPONENT_PREVIEW_URL was set and this route 404s under a production
+ * build, so it could only run against a local `next dev`; the checklist had gone 13 days with all
+ * 21 boxes unticked. Recover either from git history if the port is ever revisited. The findings
+ * worth keeping now live next to the code they describe — see the SSR note in ImageWithFallback and
+ * the headless-microphone note in VoiceInput. The `data-testid`s below are kept as stable hooks.
  */
 export function PreviewClient() {
   const [fired, setFired] = useState(false);

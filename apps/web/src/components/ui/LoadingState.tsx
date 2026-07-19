@@ -1,17 +1,4 @@
 // Loading UI for apps/web.
-//
-// <LoadingState /> is the specified component (§32.7 "Loading State"; ADR-055) — layout from
-// mockup/desktop/universal_loading_component_desktop_view, prop-for-prop identical to
-// apps/mobile/src/components/LoadingState.tsx apart from the `table` variant (web) vs `list`
-// (mobile). Prefer it for new code.
-//
-// SkeletonCard / LoadingSpinner / EmptyState predate it (ported from
-// figma/mockup/src/app/components/mobile/LoadingState.tsx, re-themed to the §32.7 web tokens) and
-// are kept because dev/component-preview consumes them — ADR-055 chose additive over breaking.
-//
-// Decisions live in src/lib/loadingState.ts so they are covered by the QM-1 100% gate; these are
-// presentational shells (apps/web's jest lane is logic-only — no jsdom, no testing-library; React
-// rendering is Playwright's territory, §30.5).
 
 import {
   formatPercent,
