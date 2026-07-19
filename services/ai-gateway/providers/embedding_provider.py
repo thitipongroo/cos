@@ -1,8 +1,11 @@
-"""Embedding providers (§22.7 Embedding Provider).
+"""Query-side embedding provider for the AI Gateway (§22.7 Embedding Provider).
 
-Decision: OpenAI ``text-embedding-3-small`` (1536 dimensions) via the ``EmbeddingProvider``
-interface. The stub remains for environments with no API key — the factory returns it so callers
-degrade to a 503 rather than crash.
+The gateway embeds the RAG *query* at retrieval time (PgVectorBackend.search calls
+``embedding_provider.embed([query])``). Same model and contract as the ingestion side in
+ai-embedding-worker — duplicated here because the two services are separate Python packages with no
+shared module, the same reason the Go workers each carry their own coskafka copy.
+
+MOCK-VERIFIED ONLY: no provisioned OPENAI_API_KEY, so the real OpenAI path has never run.
 """
 
 from __future__ import annotations
@@ -10,8 +13,6 @@ from __future__ import annotations
 import os
 from abc import ABC, abstractmethod
 
-# text-embedding-3-small output dimension (§22.7). The document_embeddings.embedding column is
-# VECTOR(1536); a provider returning any other width would break the insert, so this is a contract.
 EMBEDDING_DIMENSIONS = 1536
 EMBEDDING_MODEL = "text-embedding-3-small"
 
@@ -35,20 +36,13 @@ class StubEmbeddingProvider(EmbeddingProvider):
 
 
 class OpenAIEmbeddingProvider(EmbeddingProvider):
-    """OpenAI ``text-embedding-3-small`` (§22.7).
-
-    NOT verified end to end: this codebase has no provisioned OPENAI_API_KEY (`.env` ships
-    ``REPLACE_ME``), so every test that exercises this class injects a fake OpenAI client. The real
-    network path has never run.
-    """
+    """OpenAI text-embedding-3-small (§22.7). Client injectable for tests; lazy OpenAI import."""
 
     def __init__(self, client=None, model: str = EMBEDDING_MODEL) -> None:
         self._model = model
         if client is not None:
             self._client = client
         else:
-            # Imported lazily so the module loads (and the stub path works) even when the openai
-            # package or an API key is absent.
             from openai import AsyncOpenAI
 
             self._client = AsyncOpenAI()
@@ -57,15 +51,12 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
         if not texts:
             return []
         response = await self._client.embeddings.create(model=self._model, input=texts)
-        # OpenAI returns items in request order (documented), but sort by index defensively so a
-        # future batching change cannot silently misalign a chunk with its vector.
         ordered = sorted(response.data, key=lambda item: item.index)
         vectors = [item.embedding for item in ordered]
         for vector in vectors:
             if len(vector) != EMBEDDING_DIMENSIONS:
                 raise ValueError(
-                    f"embedding width {len(vector)} != expected {EMBEDDING_DIMENSIONS} "
-                    f"— model {self._model} does not match the VECTOR(1536) column"
+                    f"embedding width {len(vector)} != expected {EMBEDDING_DIMENSIONS}"
                 )
         return vectors
 
@@ -75,11 +66,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 
 
 def build_embedding_provider() -> EmbeddingProvider:
-    """Return the real provider when an API key is configured, otherwise the stub.
-
-    ``REPLACE_ME`` is treated as absent: it is the placeholder shipped in ``.env`` and must never be
-    mistaken for a real credential.
-    """
+    """Real provider when a key is configured, else the stub. REPLACE_ME counts as absent."""
     key = os.environ.get("OPENAI_API_KEY", "").strip()
     if key and key != "REPLACE_ME":
         return OpenAIEmbeddingProvider()

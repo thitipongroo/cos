@@ -30,6 +30,7 @@ volumes:
   vault_data:
   pgbouncer_config:
   keycloak_data:
+  emqx_data:
 
 networks:
   cos-network:
@@ -98,6 +99,27 @@ services:
       - redis_data:/data
     healthcheck:
       test: ['CMD', 'redis-cli', '--pass', '${REDIS_PASSWORD:-cos_redis_password}', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cos-network
+
+  # ─── EMQX (MQTT 5.0 broker for IoT telemetry — Phase 24, §33.3) ──────────
+  # Open-source edition (Apache-2.0). IoT devices publish to cos/v1/devices/{id}/telemetry; the
+  # iot-ingestion-worker subscribes and bridges to Kafka. `full` profile — only needed for the
+  # Digital Twin write path, not core local dev.
+  emqx:
+    image: emqx/emqx:5.8
+    container_name: cos-emqx
+    profiles: ['full']
+    ports:
+      - '${MQTT_PORT:-1883}:1883' # MQTT
+      - '${EMQX_DASHBOARD_PORT:-18083}:18083' # dashboard
+    volumes:
+      - emqx_data:/opt/emqx/data
+    healthcheck:
+      test: ['CMD', '/opt/emqx/bin/emqx', 'ctl', 'status']
       interval: 10s
       timeout: 5s
       retries: 5

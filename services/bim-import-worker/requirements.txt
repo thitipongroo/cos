@@ -1,0 +1,4 @@
+# BIM (IFC4) import worker (§33.3). ifcopenshell parses .ifc models; asyncpg registers TwinEntities.
+# NOTE: ifcopenshell is a large native library — the real parse path is not exercised in CI here.
+ifcopenshell>=0.8
+asyncpg>=0.29

@@ -14,15 +14,24 @@ from pydantic import BaseModel
 
 import flags
 from otel import configure_telemetry
-from providers.llm_provider import Message, StubLLMProvider
+from providers.llm_provider import Message, build_llm_provider
 from rag.retrieval import HybridRetriever
 from reports.pipeline import generate_report
 from templates.loader import render_template
+from digital_twin.router import router as digital_twin_router
 
 app = FastAPI(title="COS AI Gateway", version="0.2.0")
 configure_telemetry(app)
 
-_provider = StubLLMProvider()
+# Phase 24 Digital Twin API (§33.3 — the Digital Twin Service runs inside the AI Gateway). The
+# router 503s when the DB pool is unconfigured, matching the RAG/LLM posture, so mounting it is safe
+# even in a stage that has not provisioned TimescaleDB.
+app.include_router(digital_twin_router)
+
+# Real provider when OPENAI_API_KEY is configured, else the stub (→ 503). Same posture as before,
+# but factory-selected rather than hardcoded, so a provisioned key activates the real path with no
+# code change (§22.7).
+_provider = build_llm_provider()
 _db_pool = None  # injected at startup in production
 # Injected at startup in production (keyword=OpenSearch + vector=pgvector backends). Stage-1 leaves
 # it None — the /rag/query endpoint then returns 503, consistent with the StubLLMProvider posture.
@@ -60,6 +69,51 @@ class RAGQueryRequest(BaseModel):
 class RAGQueryResponse(BaseModel):
     answer: str
     sources: list[dict]
+
+
+@app.on_event("startup")
+async def _wire_rag() -> None:
+    """Build the real RAG retriever when the backends are configured (§22.7). Guarded and non-fatal:
+    an unconfigured or unreachable backend leaves _retriever = None and /rag/query keeps its 503
+    posture rather than crashing the gateway."""
+    global _retriever
+    if _retriever is not None:
+        return  # a test injected one
+    try:
+        from rag.wiring import build_retriever
+
+        _retriever = await build_retriever()
+    except Exception:  # noqa: BLE001 — startup must not fail because RAG deps are absent
+        _usage_logger.warning("RAG retriever wiring skipped (backends unavailable)")
+        _retriever = None
+
+
+@app.on_event("startup")
+async def _wire_digital_twin() -> None:
+    """Launch the Digital Twin telemetry consumer (§33.3 write path) when Kafka + a DB pool are
+    available. Fire-and-forget background task; guarded so a missing broker leaves the twin API's
+    read side working and does not crash the gateway.
+
+    KNOWN GAP: kafka_handler.start_telemetry_consumer decodes JSON, but the bus is Confluent Avro
+    (the wire format the Go workers decode). Until a Python Avro decoder is wired here, this consumer
+    would not decode real events — the same seam flagged for the RAG ingestion consumer.
+    """
+    if os.environ.get("DIGITAL_TWIN_CONSUMER_ENABLED", "").lower() not in ("1", "true"):
+        return  # opt-in: off by default until the Avro decoder + a real broker are in place
+    try:
+        import redis.asyncio as aioredis
+
+        from digital_twin.kafka_handler import start_telemetry_consumer
+
+        if _db_pool is None:
+            _usage_logger.warning("digital twin consumer skipped — DB pool not configured")
+            return
+        redis_client = await aioredis.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"))
+        import asyncio
+
+        asyncio.create_task(start_telemetry_consumer(db_pool=_db_pool, redis_client=redis_client))
+    except Exception:  # noqa: BLE001
+        _usage_logger.warning("digital twin consumer wiring skipped (deps unavailable)")
 
 
 @app.get("/health/live")

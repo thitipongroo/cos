@@ -6,3 +6,10 @@ opentelemetry-sdk==1.43.0
 opentelemetry-instrumentation-fastapi==0.64b0
 httpx==0.28.1
 python-dotenv==1.2.2
+
+# ─── Embedding + storage (§22.3, §22.7 Embedding Provider) ────────────────────
+# OpenAI text-embedding-3-small (1536-dim); asyncpg to write document_embeddings; aiokafka to
+# consume file.uploaded for ingestion.
+openai>=1.0
+asyncpg>=0.29
+aiokafka>=0.11

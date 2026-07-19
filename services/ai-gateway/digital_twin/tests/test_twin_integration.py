@@ -12,6 +12,11 @@ from uuid import uuid4, UUID
 from digital_twin.models import StateSource
 from digital_twin.sync_service import handle_iot_telemetry_event, compute_confidence
 
+# Production tenant_id / project_id are always UUIDs — the handler and divergence report
+# cast them via UUID(...) / ::uuid, so the mocks must use real UUIDs, not "tenant-1"/"proj-1".
+TENANT_ID = "11111111-1111-1111-1111-111111111111"
+PROJECT_ID = "22222222-2222-2222-2222-222222222222"
+
 
 # ─── handle_iot_telemetry_event ───────────────────────────────────────────────
 
@@ -38,7 +43,7 @@ class TestHandleIoTTelemetryEvent:
 
         event = {
             "equipment_id": "equip-001",
-            "tenant_id": "tenant-1",
+            "tenant_id": TENANT_ID,
             "fuel_level": 0.75,
             "lat": 13.75,
             "lng": 100.5,
@@ -58,7 +63,7 @@ class TestHandleIoTTelemetryEvent:
         db = AsyncMock()
         db.fetchrow.return_value = None  # no entity found for physical_ref
 
-        event = {"equipment_id": "unknown-device", "tenant_id": "tenant-1"}
+        event = {"equipment_id": "unknown-device", "tenant_id": TENANT_ID}
         result = await handle_iot_telemetry_event(event, db_pool=db, redis_client=mock_redis)
 
         assert result is None
@@ -75,7 +80,7 @@ class TestHandleIoTTelemetryEvent:
 
         event = {
             "equipment_id": "equip-001",
-            "tenant_id": "tenant-1",
+            "tenant_id": TENANT_ID,
             "speed": 5.0,
         }
 
@@ -84,7 +89,7 @@ class TestHandleIoTTelemetryEvent:
         mock_redis.setex.assert_called_once()
         call_args = mock_redis.setex.call_args
         assert call_args[0][1] == 300  # 5-minute TTL
-        assert "twin:state:tenant-1" in call_args[0][0]
+        assert f"twin:state:{TENANT_ID}" in call_args[0][0]
 
     @pytest.mark.asyncio
     async def test_strips_event_metadata_from_attributes(self, mock_db, mock_redis):
@@ -92,7 +97,7 @@ class TestHandleIoTTelemetryEvent:
 
         event = {
             "equipment_id": "equip-001",
-            "tenant_id": "tenant-1",
+            "tenant_id": TENANT_ID,
             "event_type": "equipment.telemetry.updated.v1",
             "event_version": "1.0",
             "occurred_at": "2026-06-08T00:00:00Z",
@@ -132,9 +137,9 @@ class TestEndToEndTwinFlow:
         # Latest state: fuel_level 0.2 (low)
         db.fetchrow.return_value = {"attributes": json.dumps({"fuel_level": 0.2})}
 
-        report = await generate_divergence_report("proj-1", "tenant-1", db_pool=db)
+        report = await generate_divergence_report(PROJECT_ID, TENANT_ID, db_pool=db)
 
-        assert report.project_id == UUID("00000000-0000-0000-0000-000000000000") or True
+        assert report.project_id == UUID(PROJECT_ID)
         # Divergences may be empty (planned_state is {} until BIM integration)
         assert isinstance(report.divergences, list)
         assert report.risk_level in {"LOW", "MEDIUM", "HIGH", "CRITICAL"}

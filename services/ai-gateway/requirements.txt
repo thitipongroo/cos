@@ -28,3 +28,15 @@ jinja2>=3.1
 # RAG keyword-retrieval backend (BM25 over the tenant's OpenSearch embeddings index).
 # [async] pulls aiohttp so the AsyncOpenSearch client is available (used by OpenSearchKeywordBackend).
 opensearch-py[async]>=2.6
+
+# ─── AI providers (§22.7) ────────────────────────────────────────────────────
+# LLM: OpenAI GPT-4o primary; Anthropic Claude cloud fallback; Ollama on-prem via OpenAI-compatible API.
+openai>=1.0
+anthropic>=0.40
+# RAG chain + reranking (§22.7 LangChain Configuration, RAG-001, Cross-Encoder Reranking).
+langchain>=0.3
+langchain-openai>=0.2
+langchain-community>=0.3
+# Cross-encoder reranker. NOTE: pulls torch (large) — reranker is a conditional stage (§22.7 trigger
+# p95 relevance < 0.7), but the model must be present for the stage to activate.
+sentence-transformers>=3.0
