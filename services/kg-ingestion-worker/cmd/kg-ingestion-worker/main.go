@@ -35,7 +35,11 @@ func main() {
 	neo4jURI := getEnv("NEO4J_URI", "bolt://localhost:7687")
 	neo4jUser := getEnv("NEO4J_USERNAME", "neo4j")
 	neo4jPass := getEnv("NEO4J_PASSWORD", "")
-	kafkaBrokers := strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ",")
+	consumerCfg := consumer.Config{
+		Brokers:     strings.Split(getEnv("KAFKA_BROKERS", "localhost:9092"), ","),
+		RegistryURL: getEnv("SCHEMA_REGISTRY_URL", "http://localhost:8081"),
+		RedisURL:    getEnv("REDIS_URL", ""),
+	}
 	port := getEnv("PORT", "8090")
 
 	driver, err := neo4j.NewDriverWithContext(neo4jURI, neo4j.BasicAuth(neo4jUser, neo4jPass, ""))
@@ -56,7 +60,7 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if err := consumer.StartConsumerGroupWithRegex(ctx, kafkaBrokers, driver, resetOffset); err != nil {
+			if err := consumer.Start(ctx, consumerCfg, driver, resetOffset); err != nil {
 				if ctx.Err() == nil {
 					log.Printf("consumer exited: %v", err)
 				}

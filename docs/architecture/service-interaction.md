@@ -1,6 +1,6 @@
 # Construction OS — Service Interaction Diagram
 
-> Verified against the codebase on 2026-07-18. Where this file names a concrete route, module, or
+> Verified against the codebase on 2026-07-20. Where this file names a concrete route, module, or
 > topic it was read from source, not from a plan. The authoritative registries live in code and win
 > any disagreement: `packages/@cos/shared/src/kafka/topic-catalog.ts` for events and topics,
 > `backend/src/modules/` for the module list, `services/` for the service list.
@@ -47,72 +47,77 @@
 │  Domains: construction · site · procurement · finance · equipment ·         │
 │           workforce · identity · file      (platform.* is NOT tenant-scoped │
 │           — it shares the `platform.events` topic)                          │
-│  Schema Registry (RecordNameStrategy) · DLQ {tenant_id}.{domain}.dlq        │
+│  Schema Registry (RecordNameStrategy) · DLQ {tenant_id}.dlq (one per tenant)│
 └──────┬────────────────┬────────────────┬────────────────┬───────────────────┘
        │                │                │                │
        ▼                ▼                ▼                ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌─────────────────────┐
-│ notification │ │ finance      │ │ KG Ingestion │ │ Analytics Worker    │
-│ .consumer    │ │ .consumer    │ │ Worker (Go)  │ │ (Go, sarama)        │
-│ (NestJS)     │ │ (NestJS)     │ │ → Neo4j      │ │ carbon consumer NOT │
-│              │ │              │ │              │ │ WIRED — see Gaps    │
-└──────────────┘ └──────────────┘ └──────────────┘ └─────────────────────┘
+┌──────────────┐ ┌──────────────┐ ┌───────────────┐ ┌────────────────────┐
+│ notification │ │ finance      │ │ KG Ingestion  │ │ Analytics Worker   │
+│ .consumer    │ │ .consumer    │ │ Worker        │ │ (Go, franz-go)     │
+│ (NestJS)     │ │ (NestJS)     │ │ (Go,franz-go) │ │ carbon consumer    │
+│              │ │              │ │ → Neo4j       │ │ → ClickHouse       │
+└──────────────┘ └──────────────┘ └───────────────┘ └────────────────────┘
 
-  ClickHouse is fed by its own Kafka table engine
-  (infrastructure/clickhouse/initdb.d/02-kafka-tables.sql), NOT by the Analytics Worker.
+  Both Go workers subscribe per-tenant topics by regex (franz-go kgo.ConsumeRegex); sarama could
+  not — it has no pattern subscription. ClickHouse is written by BOTH the Analytics Worker's carbon
+  consumer AND its own Kafka table engine (infrastructure/clickhouse/initdb.d/02-kafka-tables.sql).
 ```
 
 ## Data Store Ownership
 
-| Store                                           | Owner Service                                                                                           | Purpose                                                                                    |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| PostgreSQL (shared DB)                          | NestJS monolith                                                                                         | All domain entities; RLS tenant isolation                                                  |
-| PostgreSQL (dedicated DB per enterprise tenant) | NestJS monolith (routed via `dedicated_db_url`)                                                         | Enterprise tenant isolation                                                                |
-| ClickHouse                                      | **written by** its own Kafka table engine; **read by** NestJS `analytics` module (`@clickhouse/client`) | OLAP; time-series dashboards; API usage metering                                           |
-| Neo4j                                           | KG Ingestion Worker (`neo4j-go-driver/v5`)                                                              | Construction knowledge graph; entity relationships                                         |
-| MinIO                                           | File Service (`minio` client)                                                                           | Binary object storage; `cos-{tenant_id}` buckets; `cos-quarantine-{tenant_id}`             |
-| Redis                                           | AI Gateway (`redis>=8.0`) + NestJS (`ioredis`)                                                          | LLM response cache; session cache; **rate-limit store** (`nestjs-throttler-storage-redis`) |
-| pgvector (PostgreSQL extension)                 | AI Gateway (`asyncpg`, `rag/backends.py`)                                                               | 1536-dim embeddings for semantic search                                                    |
-| OpenSearch                                      | File Service (`@opensearch-project/opensearch`) + AI Gateway (`opensearch-py[async]`)                   | File full-text index; BM25 keyword retrieval over the tenant's embeddings index (RAG)      |
+| Store                                           | Owner Service                                                                                                                                                                  | Purpose                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| PostgreSQL (shared DB)                          | NestJS monolith                                                                                                                                                                | All domain entities; RLS tenant isolation                                                  |
+| PostgreSQL (dedicated DB per enterprise tenant) | NestJS monolith (routed via `dedicated_db_url`)                                                                                                                                | Enterprise tenant isolation                                                                |
+| ClickHouse                                      | **written by** the Analytics Worker carbon consumer (`ClickHouse/clickhouse-go/v2`) + its own Kafka table engine; **read by** NestJS `analytics` module (`@clickhouse/client`) | OLAP; time-series dashboards; API usage metering; carbon analytics                         |
+| Neo4j                                           | KG Ingestion Worker (`neo4j-go-driver/v5`)                                                                                                                                     | Construction knowledge graph; entity relationships                                         |
+| MinIO                                           | File Service (`minio` client)                                                                                                                                                  | Binary object storage; `cos-{tenant_id}` buckets; `cos-quarantine-{tenant_id}`             |
+| Redis                                           | AI Gateway (`redis>=8.0`) + NestJS (`ioredis`)                                                                                                                                 | LLM response cache; session cache; **rate-limit store** (`nestjs-throttler-storage-redis`) |
+| pgvector (PostgreSQL extension)                 | AI Gateway (`asyncpg`, `rag/backends.py`)                                                                                                                                      | 1536-dim embeddings for semantic search                                                    |
+| OpenSearch                                      | File Service (`@opensearch-project/opensearch`) + AI Gateway (`opensearch-py[async]`)                                                                                          | File full-text index; BM25 keyword retrieval over the tenant's embeddings index (RAG)      |
 
-Two claims that were in this table and are **not** true of the running system — corrected above, kept
-here so the drift is not silently re-introduced:
+One claim that was in this table and is still **not** true of the running system — corrected above,
+kept here so the drift is not silently re-introduced:
 
-- **ClickHouse is not owned by the Analytics Worker.** `services/analytics-worker` has no ClickHouse
-  driver in `go.mod` and its `main.go` never opens a connection — see the Phase 24 note below.
 - **pgvector is not owned by the AI Embedding Worker.** That service has no database client at all
   (no psycopg/asyncpg/SQLAlchemy in `requirements.txt`); it is a stateless embed-and-return API. The
   vectors are written and queried by the AI Gateway.
+
+(A second correction here — "ClickHouse is not written by the Analytics Worker" — no longer applies:
+as of the 2026-07-20 carbon wiring the worker holds a `clickhouse-go/v2` connection and inserts.)
 
 ## Kafka Topic → Consumer Mapping
 
 Event names below are CloudEvents `type` values. The Kafka topic that carries them is the
 tenant-prefixed form (`{tenant_id}.{type}`) — see the Runtime Topology box.
 
-| Domain            | Producer (backend module) | Consumer(s)                                         |
-| ----------------- | ------------------------- | --------------------------------------------------- |
-| `construction.*`  | project, boq              | KG Ingestion                                        |
-| `site.*`          | site-ops                  | notification.consumer, KG Ingestion                 |
-| `procurement.*`   | procurement               | notification.consumer, KG Ingestion                 |
-| `finance.*`       | finance                   | notification.consumer, finance.consumer, KG Ing     |
-| `equipment.*`     | equipment                 | — (no consumer today)                               |
-| `workforce.*`     | workforce                 | — (ClickHouse Kafka engine only)                    |
-| `identity.*`      | tenant                    | — (no consumer today)                               |
-| `platform.*`      | platform-webhook / tenant | — shared `platform.events`, not tenant-scoped       |
-| `file.document.*` | File Service              | notification.consumer (quarantine → SYSTEM_ADMIN)   |
-| `carbon.*`        | — (nothing emits it yet)  | Analytics Worker — **code exists but is not wired** |
+| Domain            | Producer (backend module) | Consumer(s)                                                |
+| ----------------- | ------------------------- | ---------------------------------------------------------- |
+| `construction.*`  | project, boq              | KG Ingestion                                               |
+| `site.*`          | site-ops                  | notification.consumer, KG Ingestion                        |
+| `procurement.*`   | procurement               | notification.consumer, KG Ingestion                        |
+| `finance.*`       | finance                   | notification.consumer, finance.consumer, KG Ing            |
+| `equipment.*`     | equipment                 | — (no consumer today)                                      |
+| `workforce.*`     | workforce                 | — (ClickHouse Kafka engine only)                           |
+| `identity.*`      | tenant                    | — (no consumer today)                                      |
+| `platform.*`      | platform-webhook / tenant | — shared `platform.events`, not tenant-scoped              |
+| `file.document.*` | File Service              | notification.consumer (quarantine → SYSTEM_ADMIN)          |
+| `carbon.*`        | site-ops                  | Analytics Worker → ClickHouse (`analytics.carbon_records`) |
 
-### Known gaps (verified 2026-07-18, do not read this diagram as "all of it works")
+### Known gaps (verified 2026-07-20, do not read this diagram as "all of it works")
 
-- **Phase 24 carbon analytics is inert.** `services/analytics-worker/internal/carbon/consumer.go` is
-  written and unit-tested, but `cmd/analytics-worker/main.go` never constructs it, `go.mod` carries
-  no ClickHouse driver, **no module emits `carbon.record.created.v1`**, and the table it inserts into
-  (`carbon_analytics.carbon_records`) is not in `infrastructure/clickhouse/initdb.d/`. Three pieces
-  are missing, not one — spec §33.3/§33.4 describes the intended design.
-- **Semantic search / RAG cannot run.** `services/ai-embedding-worker` ships only
-  `StubEmbeddingProvider`, whose `embed()` raises `NotImplementedError("real embedding provider not
-configured")`. The 1536 dimension is that stub's declared constant for the model the spec names
-  (`text-embedding-3-small`, §22.5), not a value produced by a working pipeline.
+- **Phase 24 carbon analytics — WIRED (2026-07-20).** site-ops resolves a consumed material against
+  the master and emits `carbon.record.created.v1` (Scope 3) via the outbox; analytics-worker consumes
+  it over franz-go regex and inserts into `analytics.carbon_records`. Proven end-to-end against a real
+  broker, Schema Registry, Postgres and ClickHouse. This gap is closed.
+- **Phase 24 digital twin — scaffolded, NOT wired.** `services/ai-gateway/digital_twin/` (router,
+  divergence, kafka_handler, sync_service) is not imported by `ai-gateway/main.py`, and migration
+  `20260608000007_digital_twin` (`twin_entities`, `twin_states`) is applied but has no producer: the
+  IoT-ingestion and BIM-import workers that would emit `twin.*` events do not exist as services.
+  Scheduled for a full build (§33.2 build sequence steps 1–6).
+- **AI / RAG layer — stubbed by design.** Both `StubEmbeddingProvider` and `StubLLMProvider` are in
+  place; `/rag/query` returns 503 deliberately. §22.5 names `text-embedding-3-small`; nothing produces
+  real vectors yet. Scheduled for a full build (§22).
 
 **Source of truth — do not maintain a copy of the event list here.** The catalogue is
 `EVENT_AVSC_MAP` in [`packages/@cos/shared/src/kafka/topic-catalog.ts`](../../packages/@cos/shared/src/kafka/topic-catalog.ts),

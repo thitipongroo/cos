@@ -4,12 +4,23 @@ const sendMock = jest.fn().mockResolvedValue({ topicName: 'test', partition: 0 }
 const connectMock = jest.fn().mockResolvedValue(undefined);
 const disconnectMock = jest.fn().mockResolvedValue(undefined);
 
+// Topics are created on first publish (auto.create.topics.enable is false on every real broker),
+// so the producer now drives an admin client as well.
+const adminConnectMock = jest.fn().mockResolvedValue(undefined);
+const adminDisconnectMock = jest.fn().mockResolvedValue(undefined);
+const createTopicsMock = jest.fn().mockResolvedValue(true);
+
 jest.mock('kafkajs', () => ({
   Kafka: jest.fn().mockImplementation(() => ({
     producer: jest.fn().mockReturnValue({
       connect: connectMock,
       disconnect: disconnectMock,
       send: sendMock,
+    }),
+    admin: jest.fn().mockReturnValue({
+      connect: adminConnectMock,
+      disconnect: adminDisconnectMock,
+      createTopics: createTopicsMock,
     }),
   })),
   CompressionTypes: { GZIP: 2 },
@@ -214,5 +225,98 @@ describe('EVENT_AVSC_MAP completeness — regression for Phase 5/6/7 shorthand e
         payload: {},
       }),
     ).resolves.not.toThrow();
+  });
+});
+
+// Topics are created on first publish instead of eagerly at tenant onboarding — eager provisioning
+// made the topic count scale with customer headcount (55 topics / 495 partition replicas per
+// tenant) rather than with actual usage.
+describe('KafkaProducer topic creation', () => {
+  let producer: KafkaProducer;
+
+  const event = (tenantId: string, eventType = 'construction.project.created.v1') => ({
+    event_type: eventType,
+    event_version: '1.0',
+    tenant_id: tenantId,
+    actor_id: 'user-1',
+    occurred_at: new Date().toISOString(),
+    correlation_id: 'corr-1',
+    payload: {},
+  });
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    producer = new KafkaProducer();
+    await producer.connect();
+  });
+
+  afterEach(async () => {
+    await producer.disconnect();
+  });
+
+  it('creates the tenant topic on first publish', async () => {
+    await producer.publish(event('tenant-1'));
+
+    expect(createTopicsMock).toHaveBeenCalledTimes(1);
+    const arg = createTopicsMock.mock.calls[0][0] as { topics: Array<{ topic: string }> };
+    expect(arg.topics[0].topic).toBe('tenant-1.construction.project.created.v1');
+  });
+
+  // The cache is what keeps this to one admin round-trip per topic rather than one per message.
+  it('does not re-create a topic it has already seen', async () => {
+    await producer.publish(event('tenant-1'));
+    await producer.publish(event('tenant-1'));
+    await producer.publish(event('tenant-1'));
+
+    expect(createTopicsMock).toHaveBeenCalledTimes(1);
+    expect(sendMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('creates a separate topic per tenant and per event type', async () => {
+    await producer.publish(event('tenant-1'));
+    await producer.publish(event('tenant-2'));
+    await producer.publish(event('tenant-1', 'finance.payment.processed.v1'));
+
+    const created = createTopicsMock.mock.calls.map(
+      (c) => (c[0] as { topics: Array<{ topic: string }> }).topics[0].topic,
+    );
+    expect(created).toEqual([
+      'tenant-1.construction.project.created.v1',
+      'tenant-2.construction.project.created.v1',
+      'tenant-1.finance.payment.processed.v1',
+    ]);
+  });
+
+  // createTopics resolving false means the topic already existed — a second service won the race.
+  // That is success, not failure, and must not stop the publish.
+  it('publishes normally when the topic already exists', async () => {
+    createTopicsMock.mockResolvedValueOnce(false);
+
+    await expect(producer.publish(event('tenant-1'))).resolves.not.toThrow();
+    expect(sendMock).toHaveBeenCalledTimes(1);
+  });
+
+  // Failure is surfaced, not swallowed: publishing to a topic that does not exist would fail
+  // anyway, and the outbox poller is what retries.
+  it('propagates a topic-creation failure instead of publishing blindly', async () => {
+    createTopicsMock.mockRejectedValueOnce(new Error('broker unavailable'));
+
+    await expect(producer.publish(event('tenant-1'))).rejects.toThrow('broker unavailable');
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it('disconnects the admin client even when creation fails', async () => {
+    createTopicsMock.mockRejectedValueOnce(new Error('broker unavailable'));
+
+    await expect(producer.publish(event('tenant-1'))).rejects.toThrow();
+    expect(adminDisconnectMock).toHaveBeenCalled();
+  });
+
+  // Platform events go to the shared platform.events topic, so they must not mint a tenant topic.
+  it('routes platform events to the shared topic', async () => {
+    await producer.publish(event('tenant-1', 'platform.enterprise.contract_signed.v1'));
+
+    const arg = createTopicsMock.mock.calls[0][0] as { topics: Array<{ topic: string }> };
+    expect(arg.topics[0].topic).toBe('platform.events');
   });
 });

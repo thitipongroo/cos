@@ -309,17 +309,47 @@ jobs:
     needs: [lint, type-check, build, unit-tests, integration-tests, isolation-tests, contract-tests]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
+      # Build context differs per service and is NOT uniform — passing one context for all of them
+      # is what broke this job. Two groups, verified by running `docker build` locally on 2026-07-19:
+      #
+      #   context: .        pnpm workspace members. Their Dockerfiles COPY root-relative paths
+      #                     (`COPY packages/@cos/...`, `COPY apps/web/package.json`) because they must
+      #                     install and build the @cos/* workspace packages they import.
+      #   context: <svc>    self-contained services. Their Dockerfiles COPY service-relative paths
+      #                     (`COPY go.mod`, `COPY requirements.txt`) — the same context
+      #                     docker-compose.yml passes.
+      #
+      # With the previous uniform `context: .`, the four self-contained services failed on
+      # `"/go.mod": not found` / `"/requirements.txt": not found`.
       matrix:
-        service:
-          - backend
-          - services/file-service
-          - services/ai-gateway
-          - services/analytics-worker
-          - services/kg-ingestion-worker
-          - services/ai-embedding-worker
-          - services/ai-ocr-pipeline
-          - services/ai-transcription-pipeline
-          - apps/web
+        include:
+          - service: backend
+            context: .
+            file: backend/Dockerfile
+          - service: services/file-service
+            context: .
+            file: services/file-service/Dockerfile
+          - service: apps/web
+            context: .
+            file: apps/web/Dockerfile
+          - service: services/ai-gateway
+            context: services/ai-gateway
+            file: Dockerfile
+          - service: services/analytics-worker
+            context: services/analytics-worker
+            file: Dockerfile
+          - service: services/kg-ingestion-worker
+            context: services/kg-ingestion-worker
+            file: Dockerfile
+          - service: services/ai-embedding-worker
+            context: services/ai-embedding-worker
+            file: Dockerfile
+          - service: services/ai-ocr-pipeline
+            context: services/ai-ocr-pipeline
+            file: Dockerfile
+          - service: services/ai-transcription-pipeline
+            context: services/ai-transcription-pipeline
+            file: Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -329,8 +359,8 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

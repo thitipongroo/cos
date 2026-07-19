@@ -17,7 +17,12 @@ import { Client as OpenSearchClient } from '@opensearch-project/opensearch';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { SiteOpsRepository } from './site-ops.repository';
-import type { IssueRow, SiteReportRow, InspectionRow } from './site-ops.repository';
+import type {
+  IssueRow,
+  SiteReportRow,
+  InspectionRow,
+  MaterialConsumptionRow,
+} from './site-ops.repository';
 import { resolveReportConflict, resolveIssueConflict } from './conflict-handler';
 import type { ConflictStatus } from './conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
@@ -487,7 +492,12 @@ export class SiteOpsService {
       throw new NotFoundException({ code: 'COS-SITE-005', message: 'Site report not found' });
     }
     const consumptionId = randomUUID();
-    const materialId = randomUUID();
+    // Resolve the typed name against the tenant's material master so the consumption carries a real
+    // material id wherever possible (Phase 24 needs it to price carbon). The mobile app is
+    // offline-first and has no master-data cache, so an unknown name is expected, not an error —
+    // fall back to the historical random id and let the consumption through unchanged.
+    const masterMaterialId = await this.repo.findMaterialIdByName(dto.material_name);
+    const materialId = masterMaterialId ?? randomUUID();
     const row = await this.repo.insertMaterialConsumption({
       consumption_id: consumptionId,
       project_id: report.project_id,
@@ -517,7 +527,66 @@ export class SiteOpsService {
       tenant_id: this.tenantId,
       trace_id: this.correlationId,
     });
+    if (masterMaterialId) {
+      await this.recordEmbodiedCarbon(row, masterMaterialId);
+    }
     return row;
+  }
+
+  /**
+   * Phase 24 (§33.4) — embodied carbon (GHG Protocol Scope 3) for one material consumption.
+   *
+   * Deliberately silent when there is nothing to price: §33.4 says the platform ships no factor
+   * database, so a tenant that has loaded none simply produces no carbon records. Consumption
+   * logging must never fail because carbon accounting is unconfigured.
+   *
+   * The factor value and its source are copied onto the record rather than joined at read time —
+   * a tenant may revise a factor later and an emitted record must stay reproducible for audit.
+   */
+  private async recordEmbodiedCarbon(
+    row: MaterialConsumptionRow,
+    materialId: string,
+  ): Promise<void> {
+    const factor = await this.repo.findCarbonFactor(materialId);
+    if (!factor) return;
+
+    const record = await this.repo.insertCarbonRecord({
+      carbon_record_id: randomUUID(),
+      project_id: row.project_id,
+      consumption_id: row.consumption_id,
+      material_id: materialId,
+      quantity_consumed: row.quantity,
+      unit: row.unit,
+      carbon_factor: factor.carbon_factor,
+      carbon_factor_source: factor.source,
+    });
+    // Null means the unique index on consumption_id rejected a duplicate — a replay. Do not
+    // re-emit, or the analytics store would double-count the project's footprint.
+    if (!record) return;
+
+    await this.emitEvent('carbon.record.created.v1', {
+      carbon_record_id: record.carbon_record_id,
+      project_id: record.project_id,
+      consumption_id: record.consumption_id,
+      material_id: record.material_id,
+      quantity_consumed: record.quantity_consumed,
+      unit: record.unit,
+      carbon_factor: record.carbon_factor,
+      carbon_factor_source: record.carbon_factor_source,
+      carbon_kgco2e: record.carbon_kgco2e,
+      // §33.4 GHG Protocol: embodied carbon in materials (EN 15804 modules A1–A3) is Scope 3.
+      // Scope 1 (on-site fuel) and Scope 2 (grid electricity) come from equipment/workforce
+      // telemetry, not from material consumption, so this producer only ever emits Scope 3.
+      ghg_scope: 'SCOPE_3',
+      recorded_at: new Date(record.recorded_at).toISOString(),
+    });
+    logger.info({
+      event: 'carbon.record.created',
+      carbon_record_id: record.carbon_record_id,
+      consumption_id: record.consumption_id,
+      tenant_id: this.tenantId,
+      trace_id: this.correlationId,
+    });
   }
 
   async resolveConflict(conflictId: string) {

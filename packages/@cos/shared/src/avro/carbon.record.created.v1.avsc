@@ -2,7 +2,7 @@
   "type": "record",
   "name": "CarbonRecordCreatedEvent",
   "namespace": "com.constructionos.events.carbon",
-  "doc": "carbon.record.created.v1 — Phase 24 / CarbonCalculationEngine (Phase 6 EP). Source: spec §33.3",
+  "doc": "carbon.record.created.v1 — Phase 24 / CarbonCalculationEngine (Phase 6 EP). Source: spec §33.3. Monetary-grade quantities travel as strings, not double: these are audited emissions figures that spec §33.4 requires to stay reproducible, and IEEE-754 cannot represent values like 26.2500 exactly. Same convention as finance.*/procurement.* amount fields. double remains correct elsewhere for measurements (GPS lat/lng, confidence scores).",
   "fields": [
     { "name": "event_id",       "type": "string" },
     { "name": "event_type",     "type": "string" },
@@ -21,11 +21,11 @@
         { "name": "project_id",           "type": "string" },
         { "name": "consumption_id",       "type": "string" },
         { "name": "material_id",          "type": "string" },
-        { "name": "quantity_consumed",    "type": "double" },
+        { "name": "quantity_consumed",    "type": "string", "doc": "DECIMAL(10,4) as string — see note below" },
         { "name": "unit",                 "type": "string" },
-        { "name": "carbon_factor",        "type": "double" },
-        { "name": "carbon_factor_source", "type": "string" },
-        { "name": "carbon_kgco2e",        "type": "double" },
+        { "name": "carbon_factor",        "type": "string", "doc": "DECIMAL(10,6) as string — kgCO2e per declared unit" },
+        { "name": "carbon_factor_source", "type": "string", "doc": "EPD reference; MUST be recorded (spec 33.4 audit trail)" },
+        { "name": "carbon_kgco2e",        "type": "string", "doc": "DECIMAL(19,4) as string — quantity_consumed x carbon_factor" },
         { "name": "ghg_scope",            "type": { "type": "enum", "name": "GHGScope", "symbols": ["SCOPE_1", "SCOPE_2", "SCOPE_3"] } },
         { "name": "recorded_at",          "type": "string" }
       ]

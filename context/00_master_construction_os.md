@@ -2835,10 +2835,17 @@ Kafka Configuration:
                 e.g. tenant_abc.construction.project.created.v1, tenant_abc.procurement.po.created.v1
                 CloudEvents type / event_type (no tenant prefix): {domain}.{entity}.{action}.v{N}
                 Platform events (platform.*): shared "platform.events" topic, not tenant-scoped (§15.7)
-                DLQ: {tenant_id}.{domain}.dlq
-  Topic provisioning: explicit (producers use allowAutoTopicCreation:false); per-tenant topic set
-                created idempotently at onboarding — SMB Phase 2, Enterprise Phase 25 workflow,
-                local dev via seed (source: spec §7.3 Topic provisioning)
+                DLQ: {tenant_id}.dlq — ONE per tenant, not per domain. The §7.3 guarantee is
+                about tenants; a DLQ per domain multiplied every tenant's topic count by ten.
+                Originating domain stays readable from the dlq.original_topic header.
+  Topic provisioning: explicit — producers use allowAutoTopicCreation:false AND
+                auto.create.topics.enable is false on every real broker, so Kafka never creates a
+                topic implicitly. Topics are created ON FIRST PUBLISH by KafkaProducer, and a
+                tenant's DLQ on first failure. Do NOT provision the catalogue at onboarding: that
+                made topic count scale with customer headcount (46 topics / 414 replicas per
+                tenant at RF=3) instead of usage. Exception: enterprise tenants get a dedicated
+                namespace/cluster and stay eagerly provisioned (Phase 25 workflow).
+                (source: spec §7.3 Topic provisioning)
   Consumer subscription: shared group {service}.shared subscribes per-tenant topics via RegExp
                 (^[^.]+\.{event_type}$) + validates tenant_id header before processing (§7.3)
   Default retention: 7 days

@@ -88,6 +88,21 @@ export interface MaterialConsumptionRow {
   created_at: Date;
 }
 
+/** site_ops.carbon_records — embodied carbon derived from a material consumption (§33.4). */
+export interface CarbonRecordRow {
+  carbon_record_id: string;
+  tenant_id: string;
+  project_id: string;
+  consumption_id: string;
+  material_id: string;
+  quantity_consumed: string; // DECIMAL as string
+  unit: string;
+  carbon_factor: string; // DECIMAL as string
+  carbon_factor_source: string;
+  carbon_kgco2e: string; // DECIMAL as string
+  recorded_at: Date;
+}
+
 export interface ConflictRecordRow {
   conflict_id: string;
   tenant_id: string;
@@ -548,5 +563,81 @@ export class SiteOpsRepository {
       `,
     );
     return rows[0]!;
+  }
+
+  // ── Carbon analytics (Phase 24 — spec §33.4) ───────────────────────────
+
+  /**
+   * Resolve a free-text material name against the tenant's material master.
+   *
+   * The consumption endpoint accepts a name typed on site (the mobile app is offline-first and has
+   * no master-data cache), so a name may legitimately not exist yet. Returns null in that case —
+   * the caller still records the consumption and simply skips carbon.
+   * Matches `procurement.materials`' own UNIQUE (tenant_id, name).
+   */
+  async findMaterialIdByName(name: string): Promise<string | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ material_id: string }>>`
+        SELECT material_id
+        FROM procurement.materials
+        WHERE tenant_id = ${this.tenantId}::uuid AND name = ${name} AND is_active = true
+      `,
+    );
+    return rows[0]?.material_id ?? null;
+  }
+
+  /** The tenant's emission factor for a material, or null when none has been loaded (§33.4). */
+  async findCarbonFactor(
+    materialId: string,
+  ): Promise<{ carbon_factor: string; source: string } | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ carbon_factor: string; source: string }>>`
+        SELECT carbon_factor, source
+        FROM site_ops.carbon_factors
+        WHERE tenant_id = ${this.tenantId}::uuid AND material_id = ${materialId}::uuid
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  /**
+   * Insert a carbon record for a consumption.
+   *
+   * ON CONFLICT DO NOTHING against the unique index on consumption_id: a replayed
+   * site.material.consumed event must not double-count a project's footprint. Returns null when the
+   * record already existed, so the caller can skip re-emitting carbon.record.created.v1.
+   */
+  async insertCarbonRecord(params: {
+    carbon_record_id: string;
+    project_id: string;
+    consumption_id: string;
+    material_id: string;
+    quantity_consumed: string;
+    unit: string;
+    carbon_factor: string;
+    carbon_factor_source: string;
+  }): Promise<CarbonRecordRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<CarbonRecordRow[]>`
+        INSERT INTO site_ops.carbon_records
+          (carbon_record_id, tenant_id, project_id, consumption_id, material_id,
+           quantity_consumed, unit, carbon_factor, carbon_factor_source, carbon_kgco2e)
+        VALUES
+          (${params.carbon_record_id}::uuid, ${this.tenantId}::uuid,
+           ${params.project_id}::uuid, ${params.consumption_id}::uuid,
+           ${params.material_id}::uuid,
+           ${params.quantity_consumed}::decimal, ${params.unit},
+           ${params.carbon_factor}::decimal, ${params.carbon_factor_source},
+           -- kgCO₂e = quantity × factor (§33.4), evaluated in Postgres' numeric domain so the
+           -- stored DECIMAL(19,4) carries no binary-float drift into audited emissions data.
+           ${params.quantity_consumed}::decimal * ${params.carbon_factor}::decimal)
+        ON CONFLICT (consumption_id) DO NOTHING
+        RETURNING *
+      `,
+    );
+    return rows[0] ?? null;
   }
 }

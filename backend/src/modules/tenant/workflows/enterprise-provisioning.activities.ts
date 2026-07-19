@@ -214,6 +214,11 @@ export async function verifyRoutingActivity(params: RdsWithEndpointParams): Prom
 }
 
 // ── Provision per-tenant Kafka topics (§7.3) ───────────────────────────────
+//
+// Eager provisioning is retained HERE and only here. An enterprise tenant gets a dedicated MSK
+// namespace or cluster (§7.3), so its topic count is bounded by one tenant's catalogue rather than
+// by customer count — the arithmetic that forced the shared tier onto create-on-first-publish does
+// not apply. Standard tenants are provisioned lazily by KafkaProducer instead; see tenant.service.
 
 export async function provisionKafkaTopicsActivity(params: RdsActivityParams): Promise<void> {
   const provisioner = new KafkaTopicProvisioner();

@@ -64,6 +64,9 @@ const mockRepo = {
   listConflictRecords: jest.fn(),
   resolveConflictRecord: jest.fn(),
   insertMaterialConsumption: jest.fn(),
+  findMaterialIdByName: jest.fn(),
+  findCarbonFactor: jest.fn(),
+  insertCarbonRecord: jest.fn(),
 };
 
 const MOCK_REQUEST = {
@@ -862,6 +865,102 @@ describe('createMaterialConsumption', () => {
     };
     const result = await service.createMaterialConsumption('report-uuid-001', dto as never);
     expect(result.task_id).toBe('task-uuid-001');
+  });
+
+  // ── Phase 24 embodied carbon (§33.4) ────────────────────────────────────────────────────────
+  describe('embodied carbon', () => {
+    const dto = {
+      material_name: 'Steel rod',
+      task_id: undefined,
+      quantity: '10',
+      unit: 'pcs',
+      consumed_at: '2026-06-11',
+    };
+
+    const carbonPublish = () => {
+      const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+      const producer = KafkaProducer.mock.results[0]?.value as { publish: jest.Mock };
+      return producer.publish.mock.calls.find(
+        (c) => (c[0] as { event_type: string }).event_type === 'carbon.record.created.v1',
+      );
+    };
+
+    beforeEach(() => {
+      mockRepo.findReportById.mockResolvedValue(makeReport());
+      mockRepo.insertMaterialConsumption.mockResolvedValue(materialRow);
+    });
+
+    it('skips carbon when the typed material name is not in the master (mobile free-text)', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue(null);
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      expect(mockRepo.findCarbonFactor).not.toHaveBeenCalled();
+      expect(mockRepo.insertCarbonRecord).not.toHaveBeenCalled();
+      expect(carbonPublish()).toBeUndefined();
+    });
+
+    it('skips carbon when the tenant has loaded no factor for the material (§33.4 opt-in)', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue('mat-master-001');
+      mockRepo.findCarbonFactor.mockResolvedValue(null);
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      expect(mockRepo.insertCarbonRecord).not.toHaveBeenCalled();
+      expect(carbonPublish()).toBeUndefined();
+    });
+
+    it('records carbon and emits Scope 3 with the factor source when a factor exists', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue('mat-master-001');
+      mockRepo.findCarbonFactor.mockResolvedValue({
+        carbon_factor: '2.500000',
+        source: 'EPD-2023-001',
+      });
+      mockRepo.insertCarbonRecord.mockResolvedValue({
+        carbon_record_id: 'carbon-uuid-001',
+        tenant_id: 'tenant-uuid-1',
+        project_id: 'proj-uuid-001',
+        consumption_id: 'cons-uuid-001',
+        material_id: 'mat-master-001',
+        quantity_consumed: '10.0000',
+        unit: 'pcs',
+        carbon_factor: '2.500000',
+        carbon_factor_source: 'EPD-2023-001',
+        carbon_kgco2e: '25.0000',
+        recorded_at: '2026-06-11T00:00:00Z',
+      });
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      // The consumption carries the resolved master id, not a fresh random one.
+      expect(mockRepo.insertMaterialConsumption).toHaveBeenCalledWith(
+        expect.objectContaining({ material_id: 'mat-master-001' }),
+      );
+      const call = carbonPublish();
+      expect(call).toBeDefined();
+      expect((call![0] as { payload: Record<string, unknown> }).payload).toEqual(
+        expect.objectContaining({
+          carbon_record_id: 'carbon-uuid-001',
+          carbon_kgco2e: '25.0000',
+          carbon_factor_source: 'EPD-2023-001',
+          ghg_scope: 'SCOPE_3',
+        }),
+      );
+    });
+
+    it('does not re-emit when the record already existed (replayed consumption)', async () => {
+      mockRepo.findMaterialIdByName.mockResolvedValue('mat-master-001');
+      mockRepo.findCarbonFactor.mockResolvedValue({
+        carbon_factor: '2.500000',
+        source: 'EPD-2023-001',
+      });
+      // ON CONFLICT DO NOTHING returned no row — the footprint must not be counted twice.
+      mockRepo.insertCarbonRecord.mockResolvedValue(null);
+
+      await service.createMaterialConsumption('report-uuid-001', dto as never);
+
+      expect(carbonPublish()).toBeUndefined();
+    });
   });
 
   it('throws NotFoundException when report not found', async () => {

@@ -83,10 +83,21 @@ describe('topic-catalog', () => {
   });
 
   describe('dlqTopicFor', () => {
-    it('derives {tenant_id}.{domain}.dlq from a per-tenant topic', () => {
-      expect(dlqTopicFor('tenant-1.construction.project.created.v1')).toBe(
-        'tenant-1.construction.dlq',
-      );
+    it('derives {tenant_id}.dlq from a per-tenant topic', () => {
+      expect(dlqTopicFor('tenant-1.construction.project.created.v1')).toBe('tenant-1.dlq');
+    });
+
+    // One DLQ per tenant, not per tenant-and-domain: every domain of a tenant lands in the same
+    // DLQ, which is what keeps the per-tenant topic count from being multiplied by the domain count.
+    it('routes every domain of a tenant to that tenant single DLQ', () => {
+      expect(dlqTopicFor('tenant-1.finance.payment.processed.v1')).toBe('tenant-1.dlq');
+      expect(dlqTopicFor('tenant-1.site.issue.created.v1')).toBe('tenant-1.dlq');
+    });
+
+    // The §7.3 guarantee that survives the collapse.
+    it('never routes one tenant failures into another tenant DLQ', () => {
+      expect(dlqTopicFor('tenant-a.site.issue.created.v1')).toBe('tenant-a.dlq');
+      expect(dlqTopicFor('tenant-b.site.issue.created.v1')).toBe('tenant-b.dlq');
     });
 
     it('maps the shared platform.events topic to platform.dlq', () => {

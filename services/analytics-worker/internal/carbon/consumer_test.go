@@ -1,4 +1,8 @@
-// Unit tests for Carbon consumer — Phase 24
+// Unit tests for the carbon handler — Phase 24.
+//
+// Wire-format concerns (Confluent framing, Avro decode, union unwrapping, the §7.3 tenant guard,
+// idempotency, retry and DLQ) are tested in internal/coskafka against a golden fixture produced by
+// the real TypeScript producer. This file covers only what is carbon-specific.
 package carbon
 
 import (
@@ -6,59 +10,69 @@ import (
 	"testing"
 )
 
-func TestCarbonRecordEvent_Unmarshal(t *testing.T) {
-	raw := `{
-		"event_type":           "carbon.record.created.v1",
-		"tenant_id":            "t1",
-		"project_id":           "p1",
-		"carbon_record_id":     "cr1",
-		"consumption_id":       "c1",
-		"material_id":          "m1",
-		"quantity_consumed":    10.5,
-		"unit":                 "kg",
-		"carbon_factor":        2.5,
-		"carbon_factor_source": "EPD-2023-001",
-		"carbon_kgco2e":        26.25,
-		"ghg_scope":            "SCOPE_3",
-		"recorded_at":          "2026-06-08T00:00:00Z"
-	}`
-
-	var event CarbonRecordEvent
-	if err := json.Unmarshal([]byte(raw), &event); err != nil {
-		t.Fatalf("unmarshal failed: %v", err)
-	}
-
-	if event.CarbonKgco2e != 26.25 {
-		t.Errorf("expected carbon_kgco2e=26.25, got %f", event.CarbonKgco2e)
-	}
-	if event.GHGScope != "SCOPE_3" {
-		t.Errorf("expected ghg_scope=SCOPE_3, got %s", event.GHGScope)
-	}
-}
-
-func TestCarbonRecordEvent_CarbonKgco2eCalculation(t *testing.T) {
-	tests := []struct {
-		quantity float64
-		factor   float64
-		want     float64
-	}{
-		{10.0, 2.5, 25.0},
-		{0.0, 5.0, 0.0},
-		{100.0, 0.001, 0.1},
-	}
-
-	for _, tt := range tests {
-		got := tt.quantity * tt.factor
-		if abs(got-tt.want) > 1e-9 {
-			t.Errorf("quantity=%f × factor=%f: expected %f got %f",
-				tt.quantity, tt.factor, tt.want, got)
+func TestResolveScope(t *testing.T) {
+	for _, tc := range []struct{ name, in, want string }{
+		{"blank defaults to embodied-materials Scope 3", "", "SCOPE_3"},
+		{"explicit Scope 3 passes through", "SCOPE_3", "SCOPE_3"},
+		{"a future Scope 1 producer is not rewritten", "SCOPE_1", "SCOPE_1"},
+		{"a future Scope 2 producer is not rewritten", "SCOPE_2", "SCOPE_2"},
+	} {
+		if got := resolveScope(tc.in); got != tc.want {
+			t.Errorf("%s: resolveScope(%q) = %q, want %q", tc.name, tc.in, got, tc.want)
 		}
 	}
 }
 
-func abs(v float64) float64 {
-	if v < 0 {
-		return -v
+// Decimals stay strings end to end. Parsing them into float64 would make 26.2500 unrepresentable
+// exactly and silently alter audited emissions data — carbon.record.created.v1.avsc declares these
+// fields `string` for exactly this reason.
+func TestCarbonRecordPayload_DecimalsKeepExactText(t *testing.T) {
+	raw := `{
+		"carbon_record_id":     "33333333-3333-3333-3333-333333333333",
+		"project_id":           "44444444-4444-4444-4444-444444444444",
+		"consumption_id":       "55555555-5555-5555-5555-555555555555",
+		"material_id":          "66666666-6666-6666-6666-666666666666",
+		"quantity_consumed":    "10.5000",
+		"unit":                 "kg",
+		"carbon_factor":        "2.500000",
+		"carbon_factor_source": "EPD-2023-001",
+		"carbon_kgco2e":        "26.2500",
+		"ghg_scope":            "SCOPE_3",
+		"recorded_at":          "2026-07-19T00:00:00Z"
+	}`
+
+	var payload CarbonRecordPayload
+	if err := json.Unmarshal([]byte(raw), &payload); err != nil {
+		t.Fatalf("unmarshal payload: %v", err)
 	}
-	return v
+
+	for _, tc := range []struct{ field, got, want string }{
+		{"quantity_consumed", payload.QuantityConsumed, "10.5000"},
+		{"carbon_factor", payload.CarbonFactor, "2.500000"},
+		{"carbon_kgco2e", payload.CarbonKgco2e, "26.2500"},
+		{"carbon_factor_source", payload.CarbonFactorSource, "EPD-2023-001"},
+	} {
+		if tc.got != tc.want {
+			t.Errorf("%s: trailing precision lost — got %q want %q", tc.field, tc.got, tc.want)
+		}
+	}
+}
+
+// A bare event name never matches a real topic — topics carry a tenant prefix (§7.3).
+func TestTopicRegex_MatchesTenantScopedTopicsOnly(t *testing.T) {
+	if TopicRegex[0] != '^' {
+		t.Fatalf("sarama only treats a topic string as a pattern when it starts with ^, got %q", TopicRegex)
+	}
+	const want = `^[^.]+\.carbon\.record\.created\.v1$`
+	if TopicRegex != want {
+		t.Errorf("TopicRegex = %q, want %q", TopicRegex, want)
+	}
+}
+
+// §7.3 consumer group naming: shared tier is {service_name}.shared.
+func TestConsumerGroup_FollowsSpecNaming(t *testing.T) {
+	const want = "analytics-worker.shared"
+	if ConsumerGroup != want {
+		t.Errorf("ConsumerGroup = %q, want %q (spec §7.3 shared-tier convention)", ConsumerGroup, want)
+	}
 }

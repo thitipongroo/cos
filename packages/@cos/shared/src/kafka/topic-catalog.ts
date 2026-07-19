@@ -123,11 +123,19 @@ export function tenantTopicPattern(eventType: string): RegExp {
   return new RegExp(`^[^.]+\\.${escaped}$`);
 }
 
-/** DLQ topic for a failed message's original topic — `{tenant_id}.{domain}.dlq` (§7.3). */
+/**
+ * DLQ topic for a failed message's original topic — `{tenant_id}.dlq` (§7.3).
+ *
+ * One DLQ per tenant, not one per tenant-and-domain. The §7.3 guarantee is about tenants —
+ * "DLQ for tenant A cannot receive messages from tenant B" — and a single tenant-scoped DLQ
+ * satisfies it exactly, while a DLQ per domain multiplied the per-tenant topic count by ten for a
+ * separation the spec never asked for. The failed message keeps its `dlq.original_topic` header,
+ * so the domain it came from is still recoverable when triaging.
+ */
 export function dlqTopicFor(originalTopic: string): string {
   if (originalTopic === PLATFORM_EVENTS_TOPIC || isPlatformEvent(originalTopic)) {
     return PLATFORM_DLQ_TOPIC;
   }
-  const [tenantId, domain] = originalTopic.split('.');
-  return `${tenantId}.${domain}.dlq`;
+  const [tenantId] = originalTopic.split('.');
+  return `${tenantId}.dlq`;
 }

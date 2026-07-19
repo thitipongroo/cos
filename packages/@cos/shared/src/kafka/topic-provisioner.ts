@@ -11,7 +11,6 @@ import { createLogger } from '@cos/logger';
 import {
   CANONICAL_EVENT_TYPES,
   isPlatformEvent,
-  domainOf,
   PLATFORM_EVENTS_TOPIC,
   PLATFORM_DLQ_TOPIC,
 } from './topic-catalog';
@@ -29,12 +28,17 @@ const TENANT_EVENT_TYPES: readonly string[] = CANONICAL_EVENT_TYPES.filter(
   (et) => !isPlatformEvent(et),
 );
 
-/** Distinct domains across tenant event types — one DLQ topic each (§7.3). */
-const TENANT_DOMAINS: readonly string[] = [...new Set(TENANT_EVENT_TYPES.map(domainOf))];
-
-/** The full per-tenant topic set (domain event topics + per-domain DLQ topics), un-prefixed. */
+/**
+ * The full per-tenant topic set (event topics + the tenant's single DLQ), un-prefixed.
+ *
+ * NOT called during onboarding any more — topics are created on first publish (see
+ * KafkaProducer.ensureTopic). This remains for explicit, operator-driven re-provisioning of a
+ * tenant's complete topic set, e.g. after a cluster rebuild.
+ *
+ * One DLQ per tenant, not per domain: see dlqTopicFor in topic-catalog.ts for why.
+ */
 export function tenantTopicSuffixes(): string[] {
-  return [...TENANT_EVENT_TYPES, ...TENANT_DOMAINS.map((d) => `${d}.dlq`)];
+  return [...TENANT_EVENT_TYPES, 'dlq'];
 }
 
 export interface ProvisionerOptions {

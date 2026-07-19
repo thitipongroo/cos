@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { Tenant } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
-import { KafkaProducer, KafkaTopicProvisioner } from '@cos/shared';
+import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -66,10 +66,12 @@ export class TenantService implements OnModuleDestroy {
       return created!;
     });
 
-    // Provision the tenant's per-tenant Kafka topic set (spec §7.3) before any of the
-    // tenant's events are produced. Idempotent; non-fatal so onboarding is not blocked
-    // by a transient Kafka outage (topics can be re-provisioned by re-running onboarding).
-    await this.provisionTenantTopics(tenant.tenantId);
+    // Kafka topics are NOT provisioned here. KafkaProducer creates each per-tenant topic on the
+    // first event that needs it (§7.3), so a tenant costs topics in proportion to what it actually
+    // uses. Provisioning the whole catalogue at signup created 46 topics — 138 partitions, 414
+    // replicas at RF=3 — for every tenant regardless of usage, making broker capacity scale with
+    // customer count rather than traffic. KafkaTopicProvisioner still exists for operator-driven
+    // re-provisioning (e.g. rebuilding a cluster).
 
     logger.info(
       { tenantCode: dto.tenantCode, keycloakRealm },
@@ -203,19 +205,6 @@ export class TenantService implements OnModuleDestroy {
     return this.prisma.$queryRaw<Tenant[]>`
       SELECT * FROM platform.tenants ORDER BY created_at DESC
     `;
-  }
-
-  private async provisionTenantTopics(tenantId: string): Promise<void> {
-    const provisioner = new KafkaTopicProvisioner();
-    try {
-      await provisioner.connect();
-      await provisioner.provisionTenant(tenantId);
-      logger.info({ tenantId }, 'tenant kafka topics provisioned');
-    } catch (err) {
-      logger.error({ tenantId, err }, 'kafka.topic.provision.failed');
-    } finally {
-      await provisioner.disconnect().catch(() => undefined);
-    }
   }
 
   private async publishEvent<T>(eventType: string, payload: T): Promise<void> {

@@ -378,6 +378,75 @@ describe('SiteOpsRepository', () => {
     expect(result.consumption_id).toBe('cons-uuid-001');
   });
 
+  // ── Carbon analytics (Phase 24 — spec §33.4) ────────────────────────────────
+
+  it('findMaterialIdByName returns the master material id when the name resolves', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ material_id: 'mat-master-001' }]);
+    const result = await repo.findMaterialIdByName('Steel rod');
+    expect(result).toBe('mat-master-001');
+  });
+
+  it('findMaterialIdByName returns null for a name not in the master (mobile free-text)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.findMaterialIdByName('Sttel rodd');
+    expect(result).toBeNull();
+  });
+
+  it('findCarbonFactor returns the tenant factor and its audit source', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ carbon_factor: '2.500000', source: 'EPD-2023-001' }]);
+    const result = await repo.findCarbonFactor('mat-master-001');
+    expect(result).toEqual({ carbon_factor: '2.500000', source: 'EPD-2023-001' });
+  });
+
+  it('findCarbonFactor returns null when the tenant has loaded no factor (§33.4 opt-in)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.findCarbonFactor('mat-master-001');
+    expect(result).toBeNull();
+  });
+
+  it('insertCarbonRecord returns the inserted row', async () => {
+    const carbonRow = {
+      carbon_record_id: 'carbon-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      project_id: 'proj-uuid-001',
+      consumption_id: 'cons-uuid-001',
+      material_id: 'mat-master-001',
+      quantity_consumed: '10.0000',
+      unit: 'pcs',
+      carbon_factor: '2.500000',
+      carbon_factor_source: 'EPD-2023-001',
+      carbon_kgco2e: '25.0000',
+      recorded_at: '2026-06-11T00:00:00Z',
+    };
+    mockPrisma.$queryRaw.mockResolvedValue([carbonRow]);
+    const result = await repo.insertCarbonRecord({
+      carbon_record_id: 'carbon-uuid-001',
+      project_id: 'proj-uuid-001',
+      consumption_id: 'cons-uuid-001',
+      material_id: 'mat-master-001',
+      quantity_consumed: '10.0000',
+      unit: 'pcs',
+      carbon_factor: '2.500000',
+      carbon_factor_source: 'EPD-2023-001',
+    });
+    expect(result?.carbon_kgco2e).toBe('25.0000');
+  });
+
+  it('insertCarbonRecord returns null when ON CONFLICT DO NOTHING suppressed a replay', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    const result = await repo.insertCarbonRecord({
+      carbon_record_id: 'carbon-uuid-002',
+      project_id: 'proj-uuid-001',
+      consumption_id: 'cons-uuid-001',
+      material_id: 'mat-master-001',
+      quantity_consumed: '10.0000',
+      unit: 'pcs',
+      carbon_factor: '2.500000',
+      carbon_factor_source: 'EPD-2023-001',
+    });
+    expect(result).toBeNull();
+  });
+
   // ── Inspections list/detail/update (ADR-025) ────────────────────────────────
 
   it('findInspections returns rows and total (filters applied)', async () => {

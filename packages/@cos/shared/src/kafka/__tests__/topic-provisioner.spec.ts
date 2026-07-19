@@ -23,12 +23,14 @@ describe('KafkaTopicProvisioner', () => {
   });
 
   describe('tenantTopicSuffixes', () => {
-    it('contains only non-platform event types plus one dlq per domain', () => {
+    it('contains only non-platform event types plus exactly one dlq', () => {
       const suffixes = tenantTopicSuffixes();
       expect(suffixes.some((s) => isPlatformEvent(s))).toBe(false);
       expect(suffixes).toContain('construction.project.created.v1');
-      expect(suffixes).toContain('construction.dlq');
-      expect(suffixes.filter((s) => s.endsWith('.dlq')).length).toBeGreaterThan(0);
+      expect(suffixes).toContain('dlq');
+      // One DLQ per tenant, not per domain — the collapse that stops the per-tenant topic count
+      // being multiplied by the number of domains.
+      expect(suffixes.filter((s) => s.endsWith('dlq'))).toEqual(['dlq']);
     });
   });
 
@@ -43,7 +45,9 @@ describe('KafkaTopicProvisioner', () => {
       const created = adminMock.createTopics.mock.calls[0][0].topics as Array<{ topic: string }>;
       expect(created.every((t) => t.topic.startsWith('t-123.'))).toBe(true);
       expect(created.map((t) => t.topic)).toContain('t-123.construction.project.created.v1');
-      expect(created.map((t) => t.topic)).toContain('t-123.construction.dlq');
+      expect(created.map((t) => t.topic)).toContain('t-123.dlq');
+      // Exactly one DLQ for the whole tenant.
+      expect(created.map((t) => t.topic).filter((t) => t.endsWith('.dlq'))).toEqual(['t-123.dlq']);
     });
 
     it('rejects an empty tenantId', async () => {

@@ -20,10 +20,22 @@ export interface ProduceOptions {
   spanId?: string;
 }
 
+/**
+ * Partition/replication settings for topics created on first publish. Same env vars the
+ * provisioner reads, so a topic created lazily is shaped identically to a pre-provisioned one.
+ */
+const TOPIC_PARTITIONS = parseInt(process.env['KAFKA_TOPIC_PARTITIONS'] ?? '3', 10);
+const TOPIC_REPLICATION_FACTOR = parseInt(process.env['KAFKA_TOPIC_REPLICATION_FACTOR'] ?? '1', 10);
+
 export class KafkaProducer {
   private readonly kafka: Kafka;
   private producer: Producer | null = null;
   private readonly schemaIds = new Map<string, number>();
+  /**
+   * Topics this process has already created or confirmed. Bounds the admin round-trip to once per
+   * topic per process, not once per message.
+   */
+  private readonly knownTopics = new Set<string>();
 
   constructor() {
     this.kafka = new Kafka({
@@ -69,6 +81,7 @@ export class KafkaProducer {
     // Per-tenant topic name (§7.3): {tenant_id}.{event_type}; platform events use the
     // shared platform.events topic. The event_type (CloudEvents `type`) keeps no prefix.
     const topic = topicForEvent(envelope.event_type, envelope.tenant_id);
+    await this.ensureTopic(topic);
     const schemaId = await this.getOrRegisterSchema(envelope.event_type);
     const encoded = await encodeAvro(schemaId, envelope);
 
@@ -99,6 +112,42 @@ export class KafkaProducer {
       },
       'Kafka event published',
     );
+  }
+
+  /**
+   * Create the topic if this process has not already seen it.
+   *
+   * Topics are created on first publish rather than eagerly at tenant onboarding: provisioning the
+   * whole catalogue per tenant made the topic count scale with customer headcount instead of actual
+   * usage (55 topics / 495 partition replicas per tenant, most of them never written to). Kafka
+   * cannot do this for us — `auto.create.topics.enable` is false on both the MSK and Kubernetes
+   * brokers, and the producer sets `allowAutoTopicCreation: false` — so it happens here.
+   *
+   * createTopics is idempotent: KafkaJS resolves false when the topic already exists, so two
+   * services publishing a tenant's first event concurrently is safe. Failure is NOT swallowed —
+   * publishing to a topic that does not exist would fail anyway, and the outbox poller retries.
+   */
+  private async ensureTopic(topic: string): Promise<void> {
+    if (this.knownTopics.has(topic)) return;
+
+    const admin = this.kafka.admin();
+    try {
+      await admin.connect();
+      const created = await admin.createTopics({
+        topics: [
+          {
+            topic,
+            numPartitions: TOPIC_PARTITIONS,
+            replicationFactor: TOPIC_REPLICATION_FACTOR,
+          },
+        ],
+        waitForLeaders: true,
+      });
+      if (created) logger.info({ topic }, 'Kafka topic created on first publish');
+    } finally {
+      await admin.disconnect();
+    }
+    this.knownTopics.add(topic);
   }
 
   private async getOrRegisterSchema(eventType: string): Promise<number> {
