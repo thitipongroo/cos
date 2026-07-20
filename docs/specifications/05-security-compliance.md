@@ -186,10 +186,23 @@ DPO appointment mandatory for data-intensive companies. Vietnam new law effectiv
   training records — issued as W3C Verifiable Credentials (VCs)
 - **Architecture:** DID Documents stored in platform identity service; VC issuance via
   `CredentialService.issue(subjectDid, credentialType, claims)`
-- **Scope:** DID / VC integration is an opt-in Enterprise module; core authentication
-  remains Keycloak OAuth2/OIDC (§5.4)
+- **Scope:** **Promoted to MVP (ADR-067, 2026-07-20)** as a prerequisite of client contract signing
+  (ADR-058) — was previously an opt-in Enterprise module. Core authentication remains Keycloak
+  OAuth2/OIDC (§5.4); DID/VC is an additive credentialing capability, not an auth replacement.
 - **Self-sovereign identity:** Tenant admins may issue VCs to workers; third-party
   verification is cryptographic — no platform call required at verify time
+
+**Design (ADR-067) — separate roles:**
+
+- **Issuer (persistent):** per-tenant `did:web`; issuer Ed25519 key in Vault / AWS Secrets Manager
+  (ADR-013), rotated per §5.2. Issues `LicenceVC` / `EquipmentCertVC` / `TrainingRecordVC`.
+- **Contract signer (ephemeral):** ephemeral `did:key` per signing — sign the SHA-256 document hash,
+  discard the private key; the `ContractSignatureVC` embeds the public key (offline-verifiable).
+- **VC format:** W3C VC Data Integrity, `Ed25519Signature2020` (JSON-LD).
+- **Revocation:** W3C Bitstring Status List (Status List 2021) — worker VCs revocable; ephemeral
+  contract signatures are point-in-time (non-revocable).
+- **Storage:** `credentials` schema (`did_documents`, `verifiable_credentials`, `revocation_status_lists`),
+  RLS by `tenant_id`.
 
 ---
 

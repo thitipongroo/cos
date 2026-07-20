@@ -1009,9 +1009,10 @@ AVAILABLE / RESERVED / LEASED / SOLD (spec 28 §28.9 resources).
 
 ### 15.13 Enterprise / ecosystem opt-in surfaces
 
-- **DID / Verifiable Credentials module (spec 05 §5.3 BG-001)** — opt-in Enterprise:
-  tenant admins issue VCs to workers (contractor licence, equipment certification,
-  safety-training records); third parties verify cryptographically.
+- **DID / Verifiable Credentials module (spec 05 §5.3 BG-001)** — **`[MVP]` (promoted, ADR-067)** as the
+  prerequisite for contract signing (ADR-058). Tenant admins issue VCs to workers (contractor licence,
+  equipment certification, safety-training records) via a persistent per-tenant `did:web` issuer; the
+  contract signer uses an ephemeral `did:key`; third parties verify cryptographically (offline). See §5.3.
 - **Industry data-sharing opt-in (spec 09 §9.6 INT-002)** — explicit consent flow:
   Tier 1 contribute aggregate metrics → unlock industry benchmark reports; Tier 2
   contribute detailed data → unlock AI premium scoring; withdrawal any time (past
