@@ -1,0 +1,40 @@
+# Normalise line endings so files that are executed or parsed on Linux never carry CRLF.
+#
+# Why: the repo stores LF, but a Windows checkout (core.autocrlf=true) writes CRLF into the working
+# tree. Copying those files to a Linux host made every POC script die with
+#   /usr/bin/env: 'bash\r': No such file or directory
+# and made line-anchored regexes silently fail to match. See
+# infrastructure/onprem/validation-2026-07-20.md.
+
+# Default: let git decide for text, and keep LF in the repo.
+* text=auto eol=lf
+
+# Anything executed by a shell or a container MUST be LF, on every platform.
+*.sh            text eol=lf
+*.bash          text eol=lf
+Dockerfile      text eol=lf
+*.Dockerfile    text eol=lf
+.dockerignore   text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+
+# Windows-only scripts keep CRLF.
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+*.ps1           text eol=crlf
+
+# Binary assets — never touch.
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.gif           binary
+*.ico           binary
+*.pdf           binary
+*.zip           binary
+*.gz            binary
+*.zst           binary
+*.tar           binary
+*.vhdx          binary
+*.avsc          text eol=lf
+*.keystore      binary
+*.jks           binary

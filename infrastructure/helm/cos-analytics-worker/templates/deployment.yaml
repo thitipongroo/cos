@@ -19,6 +19,8 @@ spec:
         runAsNonRoot: true
         runAsUser: 65534
         fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: analytics-worker
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

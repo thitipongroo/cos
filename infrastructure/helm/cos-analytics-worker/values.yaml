@@ -43,13 +43,13 @@ affinity:
           topologyKey: kubernetes.io/hostname
 livenessProbe:
   httpGet:
-    path: /healthz
+    path: /health/live
     port: 8080
   initialDelaySeconds: 10
   periodSeconds: 10
 readinessProbe:
   httpGet:
-    path: /healthz
+    path: /health/live
     port: 8080
   initialDelaySeconds: 5
   periodSeconds: 5

@@ -78,8 +78,8 @@ Storage:
 
 Tools:
 
-- Kubernetes (cloud: AWS EKS; on-premise self-managed: **k3s** default / **RKE2** for
-  CIS-/FIPS-regulated tenants; dev: k3s — k3d for macOS/Windows)
+- Kubernetes (cloud: AWS EKS; on-premise self-managed: **RKE2** with `profile: cis` for all
+  production clusters — ADR-039 revised 2026-07-20; dev: k3s — k3d for macOS/Windows)
 - Docker
 - Terraform
 - Apache Kafka

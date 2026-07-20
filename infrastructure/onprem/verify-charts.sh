@@ -31,10 +31,19 @@ for chart in "$HELM_DIR"/*/; do
   name="$(basename "$chart")"
   echo "--- $name ---"
   helm lint "$chart" | tail -1 || fail=1
-  if helm template "$name" "$chart" 2>/dev/null | kubectl apply --dry-run=server -f - >/dev/null; then
-    echo "  ✅ accepted by API server (dry-run)"
+  # Capture BOTH streams: a Deployment that violates PodSecurity is still "created" on a server
+  # dry-run — PSS is enforced at *Pod* admission, so the only signal here is a warning on stderr.
+  # Treating exit 0 as PASS reported all 8 charts green on RKE2 `profile: cis` while no pod could
+  # ever start (missing seccompProfile). Fail on the warning too.
+  out="$(helm template "$name" "$chart" 2>/dev/null | kubectl apply --dry-run=server -f - 2>&1)"; rc=$?
+  if [[ $rc -ne 0 ]]; then
+    echo "  ❌ server dry-run FAILED for $name"; echo "$out" | tail -3 | sed 's/^/       /'; fail=1
+  elif grep -qi "violate PodSecurity" <<<"$out"; then
+    echo "  ❌ $name admitted as a Deployment but its PODS would be REJECTED by PodSecurity:"
+    grep -oiE "must set [^)]*" <<<"$out" | sort -u | sed 's/^/       /'
+    fail=1
   else
-    echo "  ❌ server dry-run FAILED for $name"; fail=1
+    echo "  ✅ accepted by API server (dry-run, no PodSecurity violation)"
   fi
 done
 

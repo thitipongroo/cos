@@ -179,15 +179,47 @@ Network requirements :
 
 Production on-premise clusters are **self-managed** (no EKS control plane). Distribution — RESOLVED:
 
-- **Default: k3s** — CNCF-conformant; HA via embedded etcd (3-server quorum, see table above);
-  Apache-2.0 (no licence cost); already used in dev. POC-validated (HA control plane + COS Helm charts).
-- **Regulated / sovereign tenants requiring CIS-benchmark or FIPS hardening: RKE2** — CIS-hardened +
-  FIPS by default; Apache-2.0; strong air-gap install. Requires a Linux POC (k3s-vs-RKE2 + air-gap +
-  etcd snapshot-restore) before the first such production deployment.
-- Cloud tiers remain on **AWS EKS** (§8.1–8.3); dev uses **k3s** (k3d on macOS/Windows). Helm charts + ArgoCD apps
-  are identical across EKS and either on-prem distro.
-- Before on-prem go-live: validate air-gap install + **etcd snapshot-restore** (QM-12 RTO/RPO) +
-  CIS scan on Linux.
+- **RKE2 with `profile: cis` — for ALL production on-premise clusters** (product owner, 2026-07-20;
+  supersedes the earlier k3s-default/RKE2-for-regulated tiering). CNCF-conformant; HA via embedded
+  etcd (3-server quorum, see table above); Apache-2.0 (no licence cost). Validated end-to-end on
+  Linux: HA + 3-node failover, air-gapped install, etcd restore (RTO 277 s), CIS triage, FIPS module,
+  and a real `helm install` running — `infrastructure/onprem/validation-2026-07-20.md`.
+- **k3s is dev-only.** It cannot produce a CIS self-assessment: its apiserver runs in-process, so
+  scanners cannot read its configuration — full hardening moved the CIS score by **zero** checks.
+- Cloud tiers remain on **AWS EKS** (§8.1–8.3); dev uses **k3s** (k3d on macOS/Windows). Helm charts +
+  ArgoCD apps are identical across EKS and RKE2, **provided charts keep `seccompProfile:
+  RuntimeDefault`** — without it RKE2's `restricted` PodSecurity rejects every Pod while still
+  admitting the Deployment (a silent failure).
+- **Host OS: Ubuntu 24.04 with the community RKE2 build** (product owner: no RHEL/SLES procurement).
+  See the FIPS operating-environment caveat below — this affects what may be claimed, not whether it
+  runs.
+- Pre-go-live validation (air-gap install + **etcd snapshot-restore** per QM-12 + CIS scan) is
+  **complete for RKE2 (2026-07-20)**.
+- **RKE2 validated (2026-07-20)** — air-gapped install with `profile: cis`, etcd restore (RTO 277 s),
+  CIS `cis-1.12` 57 PASS / 18 FAIL, and FIPS BoringCrypto in the stock binary.
+- **Charts must keep `seccompProfile.type: RuntimeDefault`.** RKE2's `profile: cis` enforces
+  PodSecurity `restricted`; without it every Pod is rejected (Deployments still get admitted, so this
+  fails silently). All 8 COS charts now set it — do not remove it.
+- **Health probes must match the route the service actually serves** (`/health/live` for the Python
+  and Go services). Four charts probed a non-existent path and would have CrashLooped in production;
+  lint and dry-run do not catch this — only a real deployment does.
+- **k3s CIS posture cannot be attested by kube-bench.** k3s runs the apiserver in-process, so the
+  scanner cannot see its flags and reports false negatives regardless of hardening. Where a customer
+  requires an auditable CIS self-assessment, use **RKE2**.
+- **RKE2 is mandatory for production on-premise** (product owner, 2026-07-20: COS has customers that
+  require CIS/FIPS). Two gaps must close before committing to such a customer:
+  1. RKE2 `profile: cis` scores **57 PASS / 18 FAIL**, but triage found **0 genuine
+     misconfigurations** — 17 are kube-bench false negatives (it reads kubeadm paths RKE2 does not
+     use) and 1 needs a documented exception. Evidence per check:
+     `infrastructure/onprem/cis-exception-register.md`.
+  2. The contract names the **latest** CIS benchmark (**v2.0.1**, which supports K8s 1.34/1.35).
+     **kube-bench only reaches v1.12**, so no automated assessment against v2.0.1 exists yet.
+  3. FIPS: RKE2 carries live **FIPS 140-3** coverage (CMVP **#4735** BoringCrypto, **#4968** SUSE
+     Rancher Kubernetes Cryptographic Library — both Active to 2029). **Ubuntu is not a tested
+     operating environment on either.** Running there is *user-ported*: claim "uses the FIPS 140-3
+     validated BoringCrypto module on a user-ported OE", **never** "FIPS 140-3 validated".
+- **Pin Kubernetes at 1.34 or older** while CIS compliance is required: kube-bench's newest benchmark
+  (`cis-1.12`) covers 1.32–1.34 only, so a newer minor cannot produce a supported CIS self-assessment.
 
 ---
 

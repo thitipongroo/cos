@@ -12,16 +12,21 @@ set -euo pipefail
 : "${RKE2_VERSION:?pin RKE2_VERSION, e.g. v1.31.4+rke2r1 — do not guess; pick from rke2 releases}"
 : "${CLUSTER_TOKEN:?set CLUSTER_TOKEN to a shared secret used by all 3 servers}"
 
-# CIS profile prerequisites (RKE2 hardening guide) — VERIFY against the pinned version's docs:
-#  - etcd user must exist; RKE2 applies a CIS sysctl drop-in. The installer + profile handle most,
-#    but confirm host prep per the hardening guide for your version.
+# CIS profile prerequisites (RKE2 hardening guide). VERIFIED on v1.34.9+rke2r1, Ubuntu 24.04:
+# without the sysctl step below, rke2-server exits with
+#   "invalid kernel parameter value kernel.panic_on_oops=0 - expected 1 / vm.overcommit_memory=0 -
+#    expected 1 / kernel.panic=0 - expected 10"
+# The etcd user must also exist before the profile starts etcd.
 if ! id etcd &>/dev/null; then useradd -r -c "etcd user" -s /sbin/nologin -M etcd || true; fi
 
 mkdir -p /etc/rancher/rke2
 {
   echo "token: ${CLUSTER_TOKEN}"
   echo "profile: cis"          # VERIFY exact CIS profile string for your version (e.g. cis, cis-1.23)
-  echo "write-kubeconfig-mode: \"0644\""
+  # CIS 1.1.13 requires the admin kubeconfig to be 0600. 0644 (a common POC convenience so a
+  # non-root user can run kubectl) is the ONE genuine CIS failure this POC found — everything else
+  # kube-bench flagged was a false negative. Override only if you accept that finding.
+  echo "write-kubeconfig-mode: \"${KUBECONFIG_MODE:-0600}\""
   if [[ "$ROLE" == "join" ]]; then
     : "${FIRST_SERVER:?set FIRST_SERVER=<node1-ip>}"
     echo "server: https://${FIRST_SERVER}:9345"
@@ -29,6 +34,18 @@ mkdir -p /etc/rancher/rke2
 } > /etc/rancher/rke2/config.yaml
 
 curl -sfL https://get.rke2.io | INSTALL_RKE2_VERSION="$RKE2_VERSION" sh -
+
+# The installer ships the CIS sysctl values RKE2 refuses to start without under `profile: cis`.
+# It does NOT apply them for you — copy the drop-in and reload before starting the service.
+CIS_SYSCTL=/usr/local/share/rke2/rke2-cis-sysctl.conf
+if [[ -f "$CIS_SYSCTL" ]]; then
+  cp "$CIS_SYSCTL" /etc/sysctl.d/60-rke2-cis.conf
+  systemctl restart systemd-sysctl
+  echo "applied CIS sysctl drop-in: $(tr '\n' ' ' < /etc/sysctl.d/60-rke2-cis.conf)"
+else
+  echo "WARNING: $CIS_SYSCTL not found — profile: cis will fail if the kernel params are unset" >&2
+fi
+
 systemctl enable --now rke2-server.service
 
 echo "=== RKE2 server starting. kubectl: /var/lib/rancher/rke2/bin/kubectl ==="
