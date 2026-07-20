@@ -43,9 +43,14 @@ is an additional credentialing capability, not an auth replacement.
 
 ### Design (all decided; standard defaults flagged ⚑ for confirmation at build-plan approval)
 
-- **Issuer (persistent):** per-tenant `did:web` (e.g. `did:web:{tenant-domain}`); issuer Ed25519 key pair
-  held in Vault / AWS Secrets Manager (ADR-013), rotated per §5.2 (⚑ default 180-day rotation with
-  overlapping keys). Used to issue `LicenceVC` / `EquipmentCertVC` / `TrainingRecordVC`.
+- **Issuer (persistent):** per-tenant `did:web` (e.g. `did:web:{tenant-domain}`); the issuer Ed25519
+  **private key is AES-256-GCM encrypted (ADR-035) and stored at rest in
+  `credentials.did_documents.encrypted_private_key`** — the AES master key is env-injected
+  (`APP_SECRET_ENCRYPTION_KEY`, sourced from AWS SM / Vault, ADR-013), rotated per §5.2 (⚑ 180-day).
+  **Correction (verified during CS-3):** the repo has **no runtime Vault/SM client** for per-tenant dynamic
+  secrets (secrets are env-injected and static), so a per-tenant issuer key generated at onboarding is
+  encrypted-at-rest per ADR-035 — the same pattern as TOTP MFA seeds — **not** written to a Vault path.
+  Used to issue `LicenceVC` / `EquipmentCertVC` / `TrainingRecordVC`.
 - **Signer (contract signing, ephemeral):** an **ephemeral `did:key`** generated per signing; the signature
   is a VC (Ed25519Signature2020) over the **SHA-256 hash of the signed document**, bound to that ephemeral
   `did:key`. The private key is discarded after signing; the VC embeds the public key, so it stays
@@ -60,6 +65,24 @@ is an additional credentialing capability, not an auth replacement.
   `verify(vc)` + `revoke(vcId)` + `resolveDid(did)`.
 - **Verification:** offline cryptographic (verifier checks the Data Integrity proof + Status List); no
   platform round-trip, per BG-001.
+
+### Service placement (updated 2026-07-20)
+
+CredentialService is a **separate ESM microservice** at `services/credential-service/` (Fastify + raw `pg`,
+like `file-service`), **not** a backend NestJS module. The backend calls it over REST (same pattern as
+`file-service`). Reason (verified during CS-2): the `@digitalbazaar` W3C DID/VC stack is **ESM-only** and
+does not load in the backend's Jest/CommonJS test runner (`SyntaxError: Unexpected token 'export'`; no
+`transformIgnorePatterns` configured, and changing the shared config risks the 133 green suites). A
+dedicated ESM service (`"type": "module"`) runs the stack natively and isolates the security-critical
+crypto surface. It is the **first ESM service** in the repo.
+
+- **Crypto dependencies** (`@digitalbazaar/*`, `jsonld`) live in `services/credential-service/`, not the
+  backend (the backend added them during CS-0 and they are moved here).
+- **Tests:** Jest in ESM mode (`node --experimental-vm-modules`, `extensionsToTreatAsEsm`, ts-jest
+  `useESM`) to keep the QM-1 100% coverage gate on the same tool. ⚑ This establishes the repo's first
+  ESM-service test pattern — confirm at review.
+- The `credentials` schema (CS-1, migration `20260720000002`) stays in the shared Postgres; the service
+  connects with `SET LOCAL app.current_tenant_id` RLS, same as every domain service.
 
 ### Build order
 
@@ -88,6 +111,24 @@ CredentialService **first** (this ADR), then contract signing (ADR-058) is re-ba
 ### Neutral
 
 - Keycloak OIDC auth is unchanged; DID/VC is additive.
+
+### Implementation status (CS-9, verified 2026-07-21)
+
+- **did:web resolution added.** The document loader now routes `did:` URLs to the did:key driver
+  (offline) or the did:web driver (`createDidResolver`, `vc-service.ts`); before CS-9 only did:key
+  resolved, so worker/issuer VC verification was non-functional. The dispatch is unit-tested to the
+  QM-1 100% gate; the real HTTPS resolution path is covered by integration.
+- **did:web mandates HTTPS.** `@digitalbazaar/did-method-web@1.0.1` builds an `https://` origin and
+  rejects `http:` (`assertions.js`). Plain-HTTP verification is therefore impossible; the integration
+  test (`did-web-verify.integration.spec.ts`) stubs **only** the transport (`@digitalbazaar/http-client`)
+  to serve the issuer DID document, exercising the real driver + real Ed25519 crypto. Deployment must
+  serve `/tenants/:id/did.json` over TLS (already noted below as a DNS/deployment dependency).
+- **Real-DB RLS proof.** `rls-isolation.integration.spec.ts` runs the `credentials` migration on a
+  Testcontainers Postgres 16 as the non-superuser `app_user` and asserts tenant B cannot read or revoke
+  tenant A's issuer/VC rows. Integration specs run via `pnpm test:integration` (separate ESM Jest config,
+  coverage not collected); the unit run stays offline + 100%.
+- **Crypto test vectors.** `crypto-vectors.spec.ts` locks Ed25519 (RFC 8032) key derivation + signature
+  bytes for a fixed seed, tamper rejection, and a full issue→verify round-trip.
 
 ## References
 

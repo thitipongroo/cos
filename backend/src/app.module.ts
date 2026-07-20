@@ -27,6 +27,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { WorkforceModule } from './modules/workforce/workforce.module';
 import { SyncModule } from './modules/sync/sync.module';
+import { CredentialsModule } from './modules/credentials/credentials.module';
 import { FeatureFlagsModule } from './shared/feature-flags/feature-flags.module';
 import { FeatureFlagGuard } from './shared/feature-flags/feature-flag.guard';
 import { AuditInterceptor } from './shared/interceptors/audit.interceptor';
@@ -81,6 +82,7 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     ComplianceModule,
     WorkforceModule, // Phase 22 — now wired (required for self check-in /workers/me, option A)
     SyncModule, // Finding 2 — generic offline sync API (/sync/delta, /sync/push, /sync/resolve)
+    CredentialsModule, // ADR-067 — REST client for the CredentialService (W3C DID/VC) microservice
     // Remaining modules added per phase:
     // Phase 8: (Kafka/event infra wired into all modules)
     // Phase 9: (FileService is a separate deployable)

@@ -565,7 +565,8 @@ modeled separately in [22-ai-architecture §22 AI Security](22-ai-architecture.m
 
 Public REST API (`/api/v1`) · Authentication (SMS OTP + JWT / Keycloak OIDC) · CRM webhook ·
 File upload (file-service) · Mobile offline sync (`/sync/delta`, `/sync/push`) · IoT ingestion
-(EMQX MQTT → Kafka) · Vendor/contractor portals (magic-link).
+(EMQX MQTT → Kafka) · Vendor/contractor portals (magic-link) · CredentialService (W3C DID/VC —
+public `did:web` resolution + internal issue/verify/revoke, ADR-067).
 
 ### 5.9.1 Public API `/api/v1`
 
@@ -629,6 +630,36 @@ File upload (file-service) · Mobile offline sync (`/sync/delta`, `/sync/push`) 
 | S      | Guess/replay link             | Single-use, time-boxed magic link (HMAC-signed); scoped to one vendor (§5.4.3) |
 | I      | Enumerate other vendors' RFQs | Link scoped to `rfq_vendor`; RLS on read                                       |
 
+### 5.9.8 CredentialService (W3C DID/VC — `did:web` + issue/verify/revoke)
+
+Surfaces: **public** `GET /tenants/:id/did.json` (unauthenticated — third-party verifiers resolve the
+issuer DID document) and **internal** `POST /credentials/issue|verify` + `POST /credentials/:vcId/revoke`
+(reached by the backend over the mesh; the auth plugin trusts Kong/mesh-forwarded `x-tenant-id` /
+`x-user-id` / `x-user-role`, ADR-067 option A). Data classification RESTRICTED (issuer keys + credentials).
+
+| STRIDE | Threat                                                                                                          | Mitigation                                                                                                                                                                                                                                                             |
+| ------ | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S      | Forged caller on issue/verify/revoke                                                                          | Auth plugin requires `x-tenant-id` (401 `MISSING_TENANT_HEADER`); reachable only via the internal mesh — mTLS zero-trust (§5.4, Istio); not edge-exposed for issue/revoke. **[verify]** Kong/mesh strips client-supplied `x-tenant-id/x-user-id/x-user-role` so only the trusted gateway sets them — the header-trust model depends entirely on this |
+| S      | Impersonate a tenant issuer                                                                                    | Issuer Ed25519 private key AES-256-GCM encrypted at rest (ADR-035), decrypted only in-process to sign; `did:web` resolves to the tenant's own `/tenants/:id/did.json`; contract signer is an ephemeral `did:key` (no reusable identity)                                 |
+| T      | Tamper a VC (transit / at rest)                                                                               | Ed25519Signature2020 Data Integrity proof — any mutation fails verification (CS-9 tamper test); TLS in transit                                                                                                                                                          |
+| T      | MITM / swap the served issuer public key in `did.json`                                                        | `did:web` mandated over HTTPS (`did-method-web` rejects `http:`, CS-9). **[verify]** `/tenants/:id/did.json` is TLS-terminated + integrity-protected at the edge                                                                                                        |
+| T      | Tamper issuer key / VC rows at rest                                                                           | RLS by `tenant_id`; AES-256-GCM auth tag detects ciphertext tampering; `app_user` has no `DELETE` grant (soft-delete, §11.4)                                                                                                                                            |
+| R      | Deny having issued / revoked a credential                                                                     | VCs persisted with `issuer_did` + `issued_at`. An immutable audit row is written in the **same tenant transaction** as the change (`credentials.audit_log` — app_user has SELECT+INSERT only, no UPDATE/DELETE; RLS-isolated + immutability proven on real DB, CS-10) → no un-audited state change (satisfies QM-4 immutable audit) |
+| I      | **Cross-tenant read of issuer keys / VCs** (top risk, RESTRICTED)                                             | RLS on every `credentials.*` table via `app.current_tenant_id`; proven by the CS-9 isolation test (tenant B cannot read or revoke tenant A)                                                                                                                             |
+| I      | Issuer private-key leakage                                                                                    | Encrypted at rest (AES-256-GCM, ADR-035); master key env-injected from SM/Vault (§5.2); never returned by any route. **[verify]** plaintext or ciphertext key material never written to logs/traces                                                                     |
+| I      | Internal error / stack leakage                                                                                | Fixed error envelopes (`buildError`) — no stack traces or internal detail returned                                                                                                                                                                                      |
+| D      | **SSRF / DoS via `verify`** — an attacker-supplied VC with `issuer: did:web:evil.example` makes the service fetch an arbitrary host | did:web resolution is bounded to the configured platform issuer domain (`allowList`) with a 5 s fetch timeout — an out-of-allowList issuer is blocked before any request leaves the process (CS-10; proven by integration test). Satisfies QM-4 OWASP SSRF hardening |
+| D      | Crypto/CPU flood on issue/verify + public `did.json` flood                                                    | **[verify]** Kong rate limiting (§5.5) covers credential-service routes incl. the unauthenticated `did.json`; issuance is `TENANT_ADMIN`-gated (limits blast radius). No in-service limiter today                                                                        |
+| E      | Non-admin issues/revokes worker credentials                                                                  | RBAC in-route: worker VC types + revoke require `x-user-role = TENANT_ADMIN` (403 otherwise) — built + tested (CS-8b)                                                                                                                                                    |
+| E      | Trigger contract-signature issuance without authorization                                                    | Contract signing is fine-grained-authorized by the backend (ADR-067 option A). **[verify]** the backend enforces who may initiate signing before calling the service                                                                                                    |
+| E      | Tenant A revokes tenant B's VC                                                                                | RLS scopes the `UPDATE` — a foreign revoke affects 0 rows (CS-9 revoke-isolation test)                                                                                                                                                                                  |
+
+**Resolved in CS-10:** immutable audit on issue/revoke (`credentials.audit_log`) and the did:web
+`allowList` + fetch-timeout SSRF guard — both QM-4-mandatory, both covered by tests.
+
+**Open [verify] before enterprise GA** (owner: Security Lead): edge strips client-supplied identity
+headers; TLS on `did.json`; no key material in logs; Kong rate limiting on credential-service routes.
+
 ### Cross-cutting controls
 
 Zero-trust + mTLS (Istio) for cross-boundary calls · secrets in Vault / AWS Secrets Manager
@@ -640,7 +671,7 @@ Zero-trust + mTLS (Istio) for cross-boundary calls · secrets in Vault / AWS Sec
 - [ ] A STRIDE row exists for every external surface before it ships
 - [ ] All **[GAP]** / **[verify]** items resolved before enterprise GA (owner: Security Lead)
 - [ ] Isolation tests prove no cross-tenant read on API + sync + file + IoT paths
-- [ ] Annual penetration test covers all 7 surfaces
+- [ ] Annual penetration test covers all 8 surfaces
 
 ---
 
