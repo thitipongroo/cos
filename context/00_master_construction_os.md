@@ -2637,6 +2637,9 @@ IMPORTANT SCOPE CLARIFICATION:
   - AR Client Billing (§11/§15): create → approve (Finance → PM ≤ limit → Executive) → paid
   - AR Receipts (client payments; settle billing to PAID) + Contracts + Customers (§11)
   - Cash Flow Forecast — deterministic 13-week direct method (ADR-024; §09 AI forecast deferred)
+  - Client contract signing (e-signature) — bilateral PKI/VC via CredentialService (§5.4); contractor
+    authorized-role signs directly + client signs via magic-link (ADR-030); contract document uploaded OR
+    generated in-app; status → signed when both signatures verify → emit ContractSigned (ADR-058; §11 ContractSignature)
 
 Financial Precision: follow FINANCIAL PRECISION SPEC section above.
 
@@ -2723,6 +2726,11 @@ APIs (canonical prefix /api/v1/finance/*; spec §14 Financial APIs; AIP-132; see
   GET  /api/v1/finance/customers                       — list customers
   POST /api/v1/finance/contracts                       — create a contract (client-/vendor-side, §11)
   GET  /api/v1/finance/contracts                       — list contracts (tenant-wide; ?project_id=)
+  POST /api/v1/finance/contracts/:id/document          — attach contract doc (upload|generate) (ADR-058)
+  POST /api/v1/finance/contracts/:id/sign              — contractor-side PKI/VC signature (ADR-058)
+  POST /api/v1/finance/contracts/:id/sign-links        — issue client magic-link to sign (ADR-058)
+  POST /api/v1/finance/contracts/sign/:token           — external client signs via magic-link (tenant-mw excluded)
+  GET  /api/v1/finance/contracts/:id/signatures        — signature audit trail (ADR-058)
   POST /api/v1/finance/billing                         — create AR client billing (DRAFT)
   GET  /api/v1/finance/billing                         — list AR billings (tenant-wide; ?project_id=&status=)
   GET  /api/v1/finance/billing/:billingId              — get a single AR billing
@@ -2739,6 +2747,11 @@ Generate:
 - Decimal.js used for all calculations
 - DTOs with validation
 - OpenAPI 3.1 spec
+- Client contract signing (ADR-058): ContractSignature migration (§11) + Contract.signed_document_id;
+  endpoints /contracts/:id/document|sign|sign-links + /contracts/sign/:token (magic-link, tenant-mw
+  excluded, ADR-030) + /contracts/:id/signatures; PKI/VC via CredentialService (§5.4); document upload OR
+  in-app generation; signed when both INTERNAL+CLIENT signatures verify → emit ContractSigned (§16);
+  signature rows + document hash to WORM audit (§9); data classification RESTRICTED
 - Unit tests: aggregation accuracy, Kafka consumer handlers
 - Integration tests: full budget lifecycle + procurement event consumption
 - Kafka event producers:

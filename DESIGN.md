@@ -497,8 +497,16 @@ onboarding is a strategic goal (no account required to answer an RFQ — spec 27
 - Inspection result: pass / fail / conditional (+ issue_severity when fail/conditional)
 - Incident: severity low/medium/high/critical; status open/in_progress/resolved/closed
 - Permit: pending / active / expired / revoked (types: work_permit / safety_permit /
-  drawing_approval / entry_permit)
+  drawing_approval / entry_permit / building_permit / license) — building_permit + license `[MVP+]`
+  (ADR-064) add `issuing_authority`; `project_id` nullable for a company licence
 - CRM lifecycle: **Lead → (qualify) → Opportunity → (win) → Customer** (spec 11 §11.3)
+- `[MVP+]` Variation Order (ADR-059): DRAFT / SUBMITTED / APPROVED / REJECTED — APPROVED auto-adjusts
+  `contract_value` + budget + BOQ delta; Claim: SUBMITTED / UNDER_REVIEW / ACCEPTED / REJECTED
+  (ACCEPTED → converts to VO)
+- `[MVP+]` Bond (ADR-063): ISSUED / ACTIVE / RELEASED / EXPIRED / CALLED — expiry alert before `expiry_date`
+- `[MVP+]` ProjectRisk (ADR-065): OPEN / MITIGATING / CLOSED / ACCEPTED; score = likelihood × impact (1–25)
+- Contract signing `[MVP]` (ADR-058): bilateral ContractSignature INTERNAL + CLIENT (magic-link, PKI/VC);
+  Contract reaches `signed` only when both signatures verify
 
 ### 9.2 Task completion gates (spec 11 §11.2 — design the blocking/warning UI)
 
@@ -693,6 +701,7 @@ on the **low-end-device + slow-network cohort** (spec 31 §31.6).
 | Tag     | Phase                                            | Timeline (spec 28)  |
 | ------- | ------------------------------------------------ | ------------------- |
 | `[MVP]` | Phase 1 — Internal Operations                    | Year 1              |
+| `[MVP+]`| Post-MVP construction extensions (ADR-057..066)  | context/04 Ph 2/5   |
 | `[P2]`  | Phase 2 — External Collaboration                 | Year 1–2            |
 | `[P3]`  | Phase 3 — Marketplace Economy                    | Year 2–3            |
 | `[P4]`  | Phase 4 — Financial Infrastructure               | Year 3–5            |
@@ -707,7 +716,7 @@ daily site reports · cost tracking · workforce (check-in/out, timesheet, manpo
 safety (incidents, checklists, work permits, deterministic compliance view) · QC
 (inspection forms pass/fail/conditional + photos) · mobile field app · role dashboards ·
 AI report assistant (Layer A) · vendor portal · basic CRM · notifications · tenant
-admin + SYSTEM_ADMIN panel.
+admin + SYSTEM_ADMIN panel · client contract signing (e-signature, bilateral PKI/VC — ADR-058).
 
 ### 15.3 Post-MVP extensions of core modules
 
@@ -747,6 +756,27 @@ MVP deterministic compliance view — outputs are flags/predictions, advisory-on
 exists, adapter post-MVP based on field adoption) · embedded BI / custom report builder
 (Apache Superset evaluation, spec 09 §9.5) · AI translation (post-MVP Layer A,
 spec 22 §22.2).
+
+**`[MVP+]` Construction full-flow extensions (ADR-057..066 — designed post-MVP; execution in context/04):**
+Design is authoritative in each ADR + spec (§11 schema / §14 API / §06 RBAC / §16 events / §20 UX). Screens:
+
+- **Variation Order / Claims** `[MVP+]` — `/finance/contracts/{id}/variations`, `/finance/claims`; VO
+  submit → approve (AR chain) surfaces auto-adjust to `contract_value` + budget + BOQ delta; claim → VO
+  (ADR-059).
+- **Inventory / Warehouse (WMS)** `[MVP+]` — `/procurement/{warehouses,inventory,grn}` + stock-movement
+  ledger; GRN from a delivery; low-stock (reorder) view; moving-average value (ADR-060).
+- **ราคากลาง central pricing** `[MVP+]` — `/admin/central-prices` (SYSTEM_ADMIN import + API-sync status);
+  BOQ editor shows `reference_price` + variance + auto-populate; project BOQ-vs-ราคากลาง view (ADR-061).
+- **e-GP tender / bid** `[MVP+]` — extends the Preconstruction nav above: e-GP tender feed (sync/manual),
+  BOQ-priced bid prep (ราคากลาง), award import → `main_contract` (ADR-062).
+- **Bank guarantees / bonds** `[MVP+]` — `/finance/bonds`; bond register (type / bank / amount / expiry /
+  status) with expiry alerts (ADR-063).
+- **Building permit & licence** `[MVP+]` — `/compliance/permits`; building permit (อ.1/อ.6) + company
+  licence share the Permit register (§9.1 enum extended) + expiry alerts (ADR-064).
+- **Project risk register** `[MVP+]` — `/projects/{id}/risks`; likelihood×impact heat map;
+  raise / mitigate / close; AI-suggested triage (ADR-065).
+- **Site instruction / minutes / correspondence** `[MVP+]` — `/projects/{id}/communications`; unified
+  record by type + action-item tracker (ADR-066).
 
 ### 15.4 Layer B — Analytical AI screens (spec 22 §22.2, §22.4, §22.7; 21 §21.4)
 
@@ -1045,7 +1075,7 @@ delivery timeline) · deliveries · vendors (+scoring).
 
 **Finance:** payments approval queue · project budget + lines · invoices
 (verify/approve/dispute) · variance report · billing (AR) + receipts · contracts ·
-customers · 13-week cash-flow forecast.
+customers · 13-week cash-flow forecast · contract signing (e-sign, ADR-058).
 
 **Site (SE/SW):** daily report create/review · task list + progress update · issues
 (+quick create with photo) · inspections (+approve/re-inspect) · conflict resolution ·
@@ -1076,6 +1106,13 @@ note record · AI report draft review · incidents tab (Safety) · reports+mater
 conversion · drawing viewer · workforce shift optimization · productivity analytics ·
 AI safety-vision compliance detection · SMS channel preference · custom report builder
 (embedded BI) · AI translation.
+
+**`[MVP+]` Construction full-flow extensions (§15.3, ADR-057..066):** variation orders / claims
+(`/finance/contracts/{id}/variations`, `/finance/claims`) · bonds register (`/finance/bonds`) ·
+warehouses / inventory / GRN + stock-movement ledger (`/procurement/*`) · ราคากลาง central prices
+(`/admin/central-prices` + BOQ variance) · e-GP tender / bid (`/preconstruction/*`) · building permit &
+licence (`/compliance/permits`) · project risk register (`/projects/{id}/risks`) · communications /
+doc-control (`/projects/{id}/communications`).
 
 **`[post-MVP]` Layer B AI (§15.4):** delay prediction view (probability, critical-path
 risk, mitigation) · cost anomaly detection · budget overrun prediction · procurement
@@ -1146,3 +1183,5 @@ subscription management.
 | V2 Infrastructure / V3 Real Estate screen specs   | `28-ecosystem-expansion.md` §28.8–28.9                                 |
 | Data-sharing opt-in, benchmark ownership          | `09-data-architecture.md` §9.6                                         |
 | DID / Verifiable Credentials module               | `05-security-compliance.md` §5.3 (BG-001)                              |
+| `[MVP]` contract signing (e-sign)                 | ADR-058 + `11/14/06/16/20`                                             |
+| `[MVP+]` construction full-flow extensions        | ADR-057..066 + `docs/specifications/` + `context/04` (Ph 2/5)         |

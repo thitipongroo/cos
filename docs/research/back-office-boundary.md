@@ -54,9 +54,9 @@ flowchart TB
     G1["Full scheduling: Gantt / CPM / baseline / S-curve (post-MVP)"]
     G2["Document / Drawing management (post-MVP)"]
     G3["Contractor & Customer portals (Phase 2)"]
-    G4["Variation Order / Change Order / Claims (⚠️ ไม่มีในสเปก)"]
-    G5["Inventory / Warehouse เต็ม — WMS (gap)"]
-    G6["ราคากลาง / e-GP integration (⚠️ ไม่มีในสเปก)"]
+    G4["Variation Order / Change Order / Claims (✅ designed ADR-059 · post-MVP)"]
+    G5["Inventory / Warehouse — WMS (✅ designed ADR-060 · post-MVP)"]
+    G6["ราคากลาง / e-GP integration (✅ designed ADR-061/062 · post-MVP)"]
     G7["BI/Analytics Layer B + Autonomous Layer C (post-MVP)"]
   end
 
@@ -154,7 +154,7 @@ cost + billing** band; the **statutory accounting** and **payroll/HR** bands are
 
 | System | Status | Evidence |
 | --- | --- | --- |
-| Preconstruction: tender & bid, feasibility, land acquisition | post-MVP | 📊 `20-ux-flow.md` §20.7.12c; §01 §1.2 |
+| Preconstruction: tender & bid, feasibility, land acquisition | post-MVP — **tender & bid now designed (ADR-062)**; feasibility / land still roadmap | 📊 `20-ux-flow.md` §20.7.12c; §01 §1.2 |
 | Full scheduling: Gantt / CPM / baseline / S-curve | core has task dates + `DEPENDS_ON` only; full engine post-MVP | 📊 `11-database-schema.md:309-322`; critical-path risk = AI Layer B (`21.4`, `22`) |
 | Document / Drawing management (version, format-convert, viewer) | post-MVP | 📊 `13-product-architecture.md:51`; `03-system-design.md:60` |
 | Contractor portal + Customer portal | Phase 2 | 📊 `28-ecosystem-expansion.md:81-82,232-233` |
@@ -193,13 +193,27 @@ Stages behind explicit prerequisites**, for two grounded reasons:
    - **Autonomous AI agents (Layer C)** depend on Layer A→B maturity + accumulated tenant data; post-MVP
      (📊 `21.4`, `22`).
 
-### 🅒 Not in the spec at all — genuine gaps (a decision is required to add) ⚠️
+### 🅒 Genuine gaps — decision made, now DESIGNED post-MVP (ADR-059..066)
 
-| System | Note |
+> **Status update (2026-07-20):** these were "not in the spec at all" when this doc was first written. The
+> product owner has since decided to add them; each is now **fully designed** (ADR + `docs/specifications/`
+> schema §11 / API §14 / RBAC §06 / events §16 / UX §20) and recorded as post-MVP execution commands in
+> `context/04` (workflow gaps → Phase 2, integrations → Phase 5). They remain **post-MVP (designed, not
+> built)**. The original scan found the first three; a follow-up scan surfaced four more (rows 4–7).
+
+| System | Status |
 | --- | --- |
-| Variation Order / Change Order / Claims | Contract entity exists (main/sub/supply + retention + milestone) but **no VO/claims workflow** — grep-negative · ⚠️ UNSPECIFIED → escalate |
-| Inventory / Warehouse full (stock movement, GRN, multi-warehouse) | material consumption + `reorder_level` field exist; no WMS |
-| ราคากลาง / e-GP integration | confirmed absent from all specs (also flagged in competitive / disruption docs) |
+| Variation Order / Change Order / Claims | ✅ **Designed — ADR-059** (`VariationOrder` + `Claim`, finance; auto-adjust contract/budget/BOQ; AR chain) |
+| Inventory / Warehouse full (stock movement, GRN, multi-warehouse) | ✅ **Designed — ADR-060** (`Warehouse`+`StockMovement`+`GRN`, procurement; moving average) |
+| ราคากลาง / e-GP integration | ✅ **Designed — ADR-061 (ราคากลาง) + ADR-062 (e-GP)** (platform catalog + Tender/Bid; adapter + manual) |
+| Bank guarantees / bonds | ✅ **Designed — ADR-063** (`Bond`, finance; full lifecycle + expiry alert) |
+| Building permit & license | ✅ **Designed — ADR-064** (extends `Permit`: +building_permit/license +authority +expiry alert) |
+| Project risk register | ✅ **Designed — ADR-065** (`ProjectRisk`, projects; 5×5 scoring + AI-suggested feed) |
+| Site instruction / meeting minutes / correspondence | ✅ **Designed — ADR-066** (`CommunicationRecord`+`ActionItem`, projects) |
+
+⚠️ **Still open (build-time, flagged in the ADRs):** ราคากลาง / e-GP **public-API availability is
+unverified** (manual path is the guaranteed baseline; adapter is a stub seam); the risk register's
+AI-suggested feed depends on Layer B. These are implementation decisions, not spec gaps.
 
 > **Why Accounting/HR are NOT repeated in 🅒:** the question scoped them out ("นอกจาก Accounting และ HR"),
 > and they are **not silent gaps** — the spec addresses them explicitly (see §2): full **GL/accounting is
@@ -208,20 +222,22 @@ Stages behind explicit prerequisites**, for two grounded reasons:
 
 ### 4.1 Highest-impact gaps for a construction full flow (📋 ranking — corrected against spec)
 
-The ranking below is **judgment**, not spec. One precision fix vs my earlier phrasing: the commercial
-**pre-contract funnel (CRM lead → opportunity → contract) IS in MVP** — only the formal **tender / bid /
-estimating** sub-flow is post-MVP. So the "head of flow" is partially present, not absent.
+The ranking below is **judgment**, not spec. The commercial **pre-contract funnel (CRM lead → opportunity
+→ contract) IS in MVP**; the formal **tender / bid / estimating** sub-flow was post-MVP and is now
+**designed (ADR-062, e-GP)**.
 
-1. **Head — Preconstruction (tender / bid / estimating).** CRM basic exists, but formal bidding is
-   post-MVP (🅐). Big deal for Thai contractors who win work by tender. **No spec change needed** —
-   already on the documented roadmap; it is a build-sequencing decision.
-2. **Mid — Variation Order / Change Order / Claims.** Real projects always have scope changes, but this
-   is **not in the spec** (🅒). **Requires a product-owner spec decision to add** (escalate).
-3. **Cross-cutting — Document/Drawing control + full Scheduling (Gantt/CPM).** Both post-MVP (🅐) —
-   **no spec revision needed**, only build sequencing.
+1. **Head — Preconstruction (tender / bid / estimating).** CRM basic exists; formal bidding is now
+   **designed post-MVP (ADR-062)** — `Tender` / `Bid` in the crm/Preconstruction area, won → main_contract.
+2. **Mid — Variation Order / Change Order / Claims.** Real projects always have scope changes; the biggest
+   true gap — now **designed post-MVP (ADR-059)**, decision made.
+3. **Cross-cutting — Document/Drawing control + full Scheduling (Gantt/CPM).** Still post-MVP (🅐) —
+   **no spec revision needed**, only build sequencing (these were *not* part of the ADR-059..066 design pass).
 
-**Net:** only the 🅒 items (Variation Order/Claims, ราคากลาง/e-GP) require **changing the current spec**
-(a decision). The 🅐 items are already spec'd as future — they need scheduling, not spec edits.
+**Net (updated 2026-07-20):** all seven 🅒 gaps have been **added to the spec** (designed, ADR-059..066) and
+recorded as post-MVP execution commands in `context/04` (workflow → Phase 2, integrations → Phase 5).
+Nothing on the gap list now needs a *spec decision* — the remaining work is **build sequencing** plus the
+build-time items flagged above (ราคากลาง / e-GP API availability, Layer-B AI feed). The 🅐 items remain
+spec'd-as-future.
 
 ---
 
