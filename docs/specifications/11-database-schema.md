@@ -259,6 +259,46 @@ Projects :
 - estimated_completion_date — nullable DATE; entered by PM manually (PATCH /api/v1/projects/:id); used as input for
   AI delay risk detection (falls back to end_date when null)
 
+ProjectRisk (projects schema — risk register, post-MVP, ADR-065) :
+
+- risk_id
+- tenant_id
+- project_id (FK → Projects)
+- title
+- description
+- category (ENUM: SAFETY / FINANCIAL / SCHEDULE / TECHNICAL / EXTERNAL / OTHER)
+- likelihood (1–5)
+- impact (1–5)
+- risk_score (= likelihood × impact — 1–25 heat-map band)
+- mitigation
+- owner (user_id)
+- status (ENUM: OPEN / MITIGATING / CLOSED / ACCEPTED)
+- source (ENUM: MANUAL / AI_SUGGESTED — Layer B AI delay-risk may create AI_SUGGESTED for human triage)
+- created_by, created_at
+
+CommunicationRecord (projects schema — document-control, post-MVP, ADR-066) :
+
+- record_id
+- tenant_id
+- project_id (FK → Projects)
+- record_type (ENUM: SITE_INSTRUCTION / MEETING_MINUTES / CORRESPONDENCE)
+- title
+- body
+- record_date
+- linked_task_id (nullable — related RFI/task)
+- created_by, created_at
+
+ActionItem (projects schema — minutes action items, post-MVP, ADR-066) :
+
+- action_id
+- tenant_id
+- record_id (FK → CommunicationRecord)
+- description
+- owner (user_id)
+- due_date
+- status (ENUM: OPEN / DONE)
+- created_at
+
 Building :
 
 - building_id
@@ -340,6 +380,31 @@ BOQ :
 - unit
 - unit_cost
 - estimated_total
+- variation_order_id (nullable FK → VariationOrder — post-change BOQ lines, ADR-059)
+- central_price_id (nullable FK → platform.central_price_catalog — ราคากลาง reference, ADR-061)
+- reference_price (DECIMAL(19,4) nullable — snapshot of ราคากลาง central price at line creation, ADR-061)
+- price_variance (DECIMAL(19,4) nullable — unit_cost − reference_price, ADR-061)
+
+Note (ราคากลาง, ADR-061) : `reference_price` is looked up from `platform.central_price_catalog` by item
+code. Two modes — (a) reference_price + variance shown against the entered `unit_cost`; (b) auto-populate
+`unit_cost` from the central price (editable). The catalog is platform-shared (SYSTEM_ADMIN-managed).
+
+central_price_catalog (platform schema — ราคากลาง shared reference, post-MVP, ADR-061) :
+
+- price_id
+- code (item/material code)
+- description
+- unit
+- central_price (DECIMAL(19,4))
+- currency_code
+- effective_period (year/version)
+- source (ENUM: MANUAL_IMPORT / GOV_API)
+- source_ref
+- published_at, is_active
+
+Note : cross-tenant shared (platform schema, RLS-exempt); ingested via SYSTEM_ADMIN file import OR a
+`CentralPriceAdapter` (Strategy pattern, §13.3) against กรมบัญชีกลาง/e-GP when available (⚠️ API availability
+to verify at integration). Tenants read-only.
 
 Procurement — Purchase Request (PR) :
 
@@ -460,10 +525,50 @@ Inventory :
 - tenant_id
 - project_id
 - material_id
+- warehouse_id (FK → Warehouse — WMS, ADR-060)
 - quantity_on_hand
 - unit
 - reorder_level
+- average_unit_cost (DECIMAL(19,4) — moving average, ADR-060)
+- stock_value (DECIMAL(19,4) — quantity_on_hand × average_unit_cost, ADR-060)
 - last_updated
+
+Warehouse (procurement schema — WMS, post-MVP, ADR-060) :
+
+- warehouse_id
+- tenant_id
+- project_id (nullable — site store vs central)
+- name
+- location
+- is_active
+
+StockMovement (procurement schema — stock ledger, post-MVP, ADR-060) :
+
+- movement_id
+- tenant_id
+- warehouse_id (FK → Warehouse)
+- material_id
+- movement_type (ENUM: RECEIPT / ISSUE / TRANSFER / ADJUSTMENT)
+- quantity (signed)
+- unit_cost (DECIMAL(19,4) — at movement)
+- source_type (ENUM: GRN / CONSUMPTION / TRANSFER / MANUAL)
+- source_id
+- moved_at, moved_by
+
+GoodsReceiptNote (procurement schema — GRN, post-MVP, ADR-060) :
+
+- grn_id
+- tenant_id
+- po_id (FK → Procurement — Purchase Order)
+- delivery_id (FK → Procurement — Delivery)
+- warehouse_id (FK → Warehouse)
+- received_by, received_at, status
+- GRN lines: material_id, qty_received, unit
+
+Note : A GRN creates `StockMovement(RECEIPT)` → increments `Inventory.quantity_on_hand` and recomputes the
+moving average `new_avg = (old_qty·old_avg + recv_qty·recv_cost)/(old_qty + recv_qty)`. GRN is **stock-only**
+— no cost transaction; cost recognition stays PO → COMMITTED, vendor invoice → ACTUAL (Phase 7). Material
+Consumption emits `StockMovement(ISSUE, CONSUMPTION)`.
 
 Material Consumption :
 
@@ -642,12 +747,83 @@ Contract :
 - vendor_id (nullable — FK → Vendor; populated for subcontract / supply_agreement contracts)
 - status (draft / signed / active / terminated) — `signed` is the state the `ContractSigned` event
   (16-enterprise-event-flow §16.2) announces; billing milestones and retention run against `active`
+- signed_document_id (nullable — FK → File; the attached/generated contract document that is signed, ADR-058)
 
 Note : Contract covers both client-side and vendor-side agreements.
 main_contract = contractor ↔ client/owner — customer_id populated, vendor_id null;
 contract_value on main_contract is the basis for retention percentage calculation
 (see Financials — Retention) and billing milestone tracking (see Financials — Billing).
 subcontract / supply_agreement = contractor ↔ vendor — vendor_id populated, customer_id null.
+
+ContractSignature (finance schema — client contract signing, ADR-058) :
+
+- signature_id
+- tenant_id
+- contract_id (FK → Contract)
+- signer_party (ENUM: INTERNAL / CLIENT) — INTERNAL = contractor-side authorized role; CLIENT = external client
+- signer_identity (user_id for INTERNAL; captured name + email/phone for CLIENT)
+- credential_ref (VC / DID reference returned by CredentialService — §5.4; PKI/digital-certificate signature)
+- document_hash (SHA-256 of `Contract.signed_document_id` content at signing time)
+- signed_at
+- ip_address
+- magic_link_token_id (nullable — populated for CLIENT; single-use token per ADR-030 pattern)
+- verification_status (ENUM: VERIFIED / PENDING / FAILED)
+
+Note : `Contract.status = signed` is reached only when BOTH a valid INTERNAL and a valid CLIENT signature
+exist and verify; the transition emits `ContractSigned` (§16.2). Signature rows + document hash are written
+to the immutable/WORM audit log (§9). Data classification: RESTRICTED (contains signatory identity).
+
+VariationOrder (finance schema — change management, post-MVP, ADR-059) :
+
+- vo_id
+- tenant_id
+- contract_id (FK → Contract)
+- project_id
+- vo_number
+- title
+- description
+- vo_value (DECIMAL(19,4) — signed change to the contract: + addition / − omission)
+- currency_code
+- status (ENUM: DRAFT / SUBMITTED / APPROVED / REJECTED)
+- source_claim_id (nullable FK → Claim — set when the VO originated from an accepted claim)
+- approved_by, approved_at, created_by, created_at
+
+Note : On `APPROVED`, in one transaction — `Contract.contract_value += vo_value`;
+`project_budgets.allocated_amount += vo_value`; create BOQ delta lines tagged `variation_order_id`;
+emit `VariationOrderApproved` (§16). Approval reuses the AR chain (PM ≤ limit → Executive, ADR-024).
+`boq_items` gains `variation_order_id` (nullable FK → VariationOrder) so BOQ reflects post-change scope
+while preserving the original baseline.
+
+Claim (finance schema — contractor claim, post-MVP, ADR-059) :
+
+- claim_id
+- tenant_id
+- contract_id (FK → Contract)
+- project_id
+- claim_type (ENUM: TIME / COST / BOTH)
+- description
+- claimed_amount (DECIMAL(19,4) nullable), claimed_days (INT nullable)
+- status (ENUM: SUBMITTED / UNDER_REVIEW / ACCEPTED / REJECTED)
+- converted_vo_id (nullable FK → VariationOrder — set on ACCEPTED; a claim converts to a VO)
+- created_by, created_at
+
+Bond (finance schema — bank guarantees, post-MVP, ADR-063) :
+
+- bond_id
+- tenant_id
+- contract_id (nullable FK → Contract)
+- tender_id (nullable FK → Tender — for bid bonds)
+- bond_type (ENUM: BID / PERFORMANCE / ADVANCE / RETENTION / WARRANTY)
+- issuer_bank
+- bond_number
+- amount (DECIMAL(19,4))
+- currency_code
+- issue_date, expiry_date
+- status (ENUM: ISSUED / ACTIVE / RELEASED / EXPIRED / CALLED)
+- created_by, created_at
+
+Note (ADR-063) : a scheduled check emits `BondExpiring` before `expiry_date` → Notification service (§19)
+alerts Finance/PM. `CALLED` records a bond drawn by the beneficiary. Bonds are recorded, not bank-issued.
 
 CRM — Lead :
 
@@ -781,7 +957,8 @@ Permit :
 - permit_id
 - tenant_id
 - project_id
-- permit_type (work_permit / safety_permit / drawing_approval / entry_permit)
+- permit_type (work_permit / safety_permit / drawing_approval / entry_permit / building_permit / license)
+- issuing_authority (nullable — municipality / กรมโยธาธิการ for building permits; licensing body for licences, ADR-064)
 - permit_number
 - issued_by
 - valid_from
@@ -790,6 +967,11 @@ Permit :
 - linked_task_id (optional — links permit to a specific task)
 - created_by
 - created_at
+
+Note (ADR-064) : `project_id` is nullable for company licences (tenant-level, not project-scoped). A
+scheduled check emits `PermitExpiring` before `valid_until` → Notification service (§19) alerts PM / Tenant
+Admin (same pattern as `BondExpiring`, ADR-063). Building permits (อ.1 / อ.6) and company licences share
+this register with the existing site/safety permits.
 
 Assets :
 
@@ -802,6 +984,35 @@ Assets :
 - maintenance_status
 
 ---
+
+Tender (crm schema — e-GP / Preconstruction, post-MVP, ADR-062) :
+
+- tender_id
+- tenant_id
+- egp_ref (e-GP project number — nullable for manual)
+- title
+- agency
+- budget_amount (DECIMAL(19,4))
+- announcement_date
+- submission_deadline
+- source (ENUM: EGP_API / MANUAL)
+- status (ENUM: WATCHING / PREPARING / SUBMITTED / WON / LOST)
+- created_by, created_at
+
+Bid (crm schema — e-GP / Preconstruction, post-MVP, ADR-062) :
+
+- bid_id
+- tenant_id
+- tender_id (FK → Tender)
+- bid_amount (DECIMAL(19,4))
+- boq_snapshot_ref (BOQ used to price the bid; lines carry `reference_price` from ราคากลาง, ADR-061)
+- status (ENUM: DRAFT / SUBMITTED)
+- submitted_at
+- result (ENUM: WON / LOST — nullable)
+
+Note (ADR-062) : ingested via `EgpAdapter` (Strategy pattern, §13.3) OR manual entry (⚠️ e-GP API
+availability unverified). A `WON` result emits `TenderWon` → the Finance service creates a `main_contract`
+(customer = government agency) via the event (no cross-schema write).
 
 ## 11.3 CRM Entity Lifecycle
 

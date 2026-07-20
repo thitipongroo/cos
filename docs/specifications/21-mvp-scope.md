@@ -56,6 +56,12 @@ Modules :
 - Dashboard
 - AI report assistant
 - Vendor Portal (external self-service: RFQ, quotation, PO status, invoice) — MVP
+- Client contract signing (e-signature workflow) — MVP. Adds the actual signing capability on top of the
+  existing `Contract` entity + `signed` status (11-database-schema). **Mechanism decided (ADR-058):**
+  bilateral PKI/VC signing via `CredentialService` (§5.4) — contractor authorized-role signs directly, the
+  client signs via magic-link (ADR-030 pattern); the contract document is uploaded **or** generated in-app;
+  `signed` is reached when both signatures verify. Built on the `finance` service. See §11
+  (`ContractSignature`), §14 (`/finance/contracts/{id}/sign…`), §06 (Contract signing row), §16 events.
 
 Note on Workforce Management in MVP :
 
@@ -96,6 +102,27 @@ Modules :
 - Advanced digital twin
 - Autonomous AI agents
 - Full ERP replacement
+
+### Construction full-flow scope — documented future (post-MVP)
+
+Accepted as future scope by the product owner (2026-07-20, **ADR-057**) after the scope-boundary review in
+`docs/research/back-office-boundary.md`. Each item was confirmed **absent from the entire spec** (verified,
+not inferred). Listed at **capability level only** — internal design (schema, API, RBAC, events, UX) is
+defined when each item's phase begins, per the §20.7.12c convention; do not stub before that decision.
+
+| Capability | What it adds | Confirmed current state |
+| --- | --- | --- |
+| Variation Order / Change Order / Claims | Manage approved changes to contract scope/price, linked to Contract + BOQ + budget | **Designed — ADR-059** (`VariationOrder` + `Claim` in finance); still post-MVP |
+| Inventory / Warehouse (WMS) | Stock movement, GRN vs PO delivery, multi-warehouse, material valuation | **Designed — ADR-060** (Warehouse + StockMovement + GRN, procurement; moving average); still post-MVP |
+| ราคากลาง (Comptroller-General central pricing) | Reference-price source feeding BOQ line items | **Designed — ADR-061** (`platform.central_price_catalog` + BOQ `reference_price`; import + API adapter); still post-MVP |
+| e-GP (Electronic Government Procurement) integration | Public-tender data / bidding for government work | **Designed — ADR-062** (`Tender` + `Bid` in crm/Preconstruction; adapter + manual; won → Contract); still post-MVP |
+| Bank guarantees / bonds | Bid / performance / retention / advance bonds, linked to Contract + e-GP | **Designed — ADR-063** (`Bond` in finance; full lifecycle + expiry alert); still post-MVP |
+| Building permit & license management | Track construction permits/licences by status & expiry | **Designed — ADR-064** (extends `Permit`: +building_permit/license +issuing_authority +expiry alert); still post-MVP |
+| Project risk register | Structured project risk log (distinct from AI delay-risk forecasting) | **Designed — ADR-065** (`ProjectRisk` in projects; 5×5 scoring + AI-suggested feed); still post-MVP |
+| Site instruction / meeting minutes / correspondence log | Document-control records | **Designed — ADR-066** (`CommunicationRecord` + `ActionItem` in projects); still post-MVP |
+
+> **Note — client contract signing is MVP, not here.** The signing capability (e-signature) is placed in
+> MVP scope (§21.2 Included); its mechanism is decided in ADR-058 (bilateral PKI/VC + client magic-link).
 
 ---
 

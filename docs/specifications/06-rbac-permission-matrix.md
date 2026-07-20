@@ -98,11 +98,16 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 | Tasks                      | R         | RW   | RW            | R           | —       | R      | —         | FULL         |
 | Site reports               | R         | RW   | RW            | R           | R       | R      | —         | FULL         |
 | Inspections / QC           | R         | RW   | RW            | —           | —       | RW     | —         | FULL         |
+| Risk register              | R         | RW   | RW            | —           | —       | —      | —         | FULL         |
+| Communications / doc-control | R       | RW   | RW            | R           | R       | R      | R         | FULL         |
 | Safety checklists          | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
 | Safety incidents           | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
 | Workforce attendance       | R         | RW   | RW            | —           | R       | —      | —         | FULL         |
 | Equipment                  | R         | RW   | R             | R           | R       | —      | —         | FULL         |
 | Permits                    | R         | RW   | R             | —           | —       | RW     | —         | FULL         |
+
+> **Permits row scope (ADR-064):** the same row now also covers `building_permit` and company `license`
+> (PM = RW, Tenant Admin = FULL) — no new row; building permits & licences share the existing Permit register.
 
 ### Procurement Modules
 
@@ -115,7 +120,13 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 | Deliveries           | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
 | Vendor Invoices (AP) | A         | R   | —             | RW          | RWD     | —      | —         | FULL         |
 | Inventory            | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
+| Warehouses (WMS)     | R         | R   | R             | RWD         | R       | —      | —         | FULL         |
+| Goods receipt / stock moves | R  | R   | RW            | RWD         | R       | —      | —         | FULL         |
 | Vendor management    | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
+
+> **ราคากลาง central-price catalog (ADR-061):** `platform.central_price_catalog` is **platform-managed** —
+> `SYSTEM_ADMIN` imports / syncs it (file import or the `CentralPriceAdapter` API); **all tenant roles are
+> read-only**. It is not a tenant-role module, so it carries no per-role RW cell here.
 
 ### Financial Modules
 
@@ -128,8 +139,17 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 | AR Receipts         | R         | R   | —             | —           | RW      | —      | —         | FULL         |
 | Payments            | A         | —   | —             | —           | RW      | —      | —         | FULL         |
 | Contracts           | R         | RW  | —             | R           | R       | —      | —         | FULL         |
+| Contract signing    | A         | A   | —             | —           | R       | —      | —         | FULL         |
+| Variation Orders    | A         | RW  | —             | —           | R       | —      | —         | FULL         |
+| Claims              | A         | RW  | —             | —           | R       | —      | —         | FULL         |
+| Bonds / guarantees  | R         | RW  | —             | —           | RW      | —      | —         | FULL         |
 | Financial reports   | R         | R   | —             | —           | FULL    | —      | —         | FULL         |
 | Cash flow forecast  | R         | R   | —             | —           | FULL    | —      | —         | FULL         |
+
+> **Contract signing (ADR-058):** `A` here = attach the contract document, apply the contractor-side
+> PKI/VC signature, and issue the client magic-link. The **external client** is authorized solely by the
+> single-use magic-link token (ADR-030 pattern) — **not** a platform role; no new role is introduced.
+> `signed` is reached only when both the contractor (INTERNAL) and client (CLIENT) signatures verify.
 
 ### Asset Management
 
@@ -148,6 +168,8 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 | Opportunities | R         | —   | —             | —           | R       | —      | RWD       | FULL         |
 | Contacts      | R         | —   | —             | —           | —       | —      | RWD       | FULL         |
 | Customers     | R         | R   | —             | —           | R       | —      | RWD       | FULL         |
+| Tenders (e-GP)| A         | RW  | —             | —           | R       | —      | RW        | FULL         |
+| Bids          | A         | RW  | —             | —           | R       | —      | RW        | FULL         |
 
 ### Intelligence Layer
 

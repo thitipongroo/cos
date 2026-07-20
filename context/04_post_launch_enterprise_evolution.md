@@ -338,6 +338,85 @@ Exit criteria (Phase 2 is complete when):
 
 ---
 
+### Post-MVP designed extensions (ADR-057 scope) — internal workflow gaps
+
+> These six capabilities are **already designed** — authoritative design lives in the ADRs and
+> `docs/specifications/` (schema §11, API §14, RBAC §06, events §16, UX §20). Each command below is the
+> execution wrapper; do NOT re-derive the design — implement per its ADR. All carry `AWAITING_DECISION`
+> until promoted. Integration gaps (ราคากลาง, e-GP) live in Phase 5, not here.
+
+#### Variation Order / Change Order / Claims Command (post-MVP — ADR-059)
+
+```text
+Build Variation Order & Claims per ADR-059 (Finance service).
+Objective: manage approved changes to contract scope/price + contractor claims.
+Generate: VariationOrder + Claim entities (§11); /finance/{contracts/{id}/variations,claims,...} (§14);
+  approve reuses AR chain (PM ≤ limit → Executive); on APPROVED auto-adjust contract_value +
+  project_budgets.allocated + BOQ delta lines; events VariationOrderApproved / ClaimAccepted (§16).
+AWAITING_DECISION: none open — design fixed in ADR-059.
+Exit: VO approve adjusts contract/budget/BOQ in one transaction; claim ACCEPTED converts to VO.
+```
+
+#### Inventory / Warehouse (WMS) Command (post-MVP — ADR-060)
+
+```text
+Build full WMS per ADR-060 — this IS the design for the "inventory tracking + warehouse movement" items
+already listed in this phase's Generate.
+Objective: stock movement ledger + GRN + multi-warehouse + moving-average valuation (procurement schema).
+Generate: Warehouse + StockMovement + GoodsReceiptNote entities + extend Inventory (§11);
+  /procurement/{warehouses,inventory,grn,stock-movements} (§14); GRN is stock-only (cost stays
+  PO→COMMITTED / invoice→ACTUAL); events GoodsReceived / StockIssued / StockTransferred / StockAdjusted.
+AWAITING_DECISION: none open — design fixed in ADR-060.
+Exit: GRN increments stock + recomputes moving average; no double-count against cost recognition.
+```
+
+#### Bank Guarantees / Bonds Command (post-MVP — ADR-063)
+
+```text
+Build bond register per ADR-063 (Finance service).
+Objective: record bid/performance/advance/retention/warranty bonds with full lifecycle + expiry alerts.
+Generate: Bond entity (§11); /finance/bonds (§14); status ISSUED→ACTIVE→RELEASED/EXPIRED/CALLED;
+  BondExpiring → Notification (§19); link Contract + Tender/Bid.
+AWAITING_DECISION: none open. Note: bonds are recorded, not bank-issued (no LG e-issuance).
+Exit: expiry alerts fire before valid_until; CALLED records a drawn bond.
+```
+
+#### Building Permit & License Command (post-MVP — ADR-064)
+
+```text
+Extend the Permit entity per ADR-064 (do NOT create a new entity).
+Objective: track building permits (อ.1/อ.6) + company licences by status & expiry.
+Generate: extend permit_type (+building_permit, +license) + issuing_authority; project_id nullable
+  (company licence = tenant-level); /permits (§14); PermitExpiring → Notification (§19).
+AWAITING_DECISION: none open. No e-submission to the permitting authority (records only).
+Exit: building permits & licences share the Permit register with site/safety permits; expiry alerts fire.
+```
+
+#### Project Risk Register Command (post-MVP — ADR-065)
+
+```text
+Build risk register per ADR-065 (Project service).
+Objective: structured human-owned risk log (distinct from AI delay-risk forecasting).
+Generate: ProjectRisk entity (§11); /projects/{id}/risks (§14); likelihood×impact (1–25) scoring;
+  source MANUAL | AI_SUGGESTED (Layer B may create AI_SUGGESTED for triage); events RiskRaised /
+  RiskStatusChanged (§16).
+AWAITING_DECISION: AI-suggested feed depends on Layer B being deployed (post-MVP).
+Exit: risks scored + owned; AI-suggested risks are human-triaged, not auto-accepted.
+```
+
+#### Site Instruction / Minutes / Correspondence Command (post-MVP — ADR-066)
+
+```text
+Build document-control register per ADR-066 (Project service).
+Objective: unified record for site instructions / meeting minutes / correspondence + trackable action items.
+Generate: CommunicationRecord + ActionItem entities (§11); /projects/{id}/communications (+ /actions) (§14);
+  record_type enum; linked_task_id ties to RFI/task; events CommunicationRecorded / ActionItem* (§16).
+AWAITING_DECISION: none open. Not a full DMS (versioned drawings) — that is the separate Document-management gap.
+Exit: minutes carry action items tracked to DONE; records filter by type.
+```
+
+---
+
 ## PHASE 3 — DATA PLATFORM EVOLUTION
 
 ```text
@@ -555,6 +634,44 @@ Exit criteria (Phase 5 is complete when):
 
 **Effort estimate:** Large (8–12 weeks, 4–6 engineers + security review)
 **Blocks:** Phase 7 (ecosystem flows use Phase 5 APIs as foundation).
+
+---
+
+### Post-MVP designed extensions (ADR-057 scope) — external integrations
+
+> These two capabilities are **already designed** (ADR-061/062 + `docs/specifications/`). They sit in
+> Phase 5 (external API / integration middleware) per the boundary rule "external API → Phase 5". Both use
+> the adapter Strategy pattern (§13.3), same shape as the ERP connector already listed in this phase.
+> Do NOT re-derive the design — implement per the ADR. Both carry `AWAITING_DECISION`.
+
+#### ราคากลาง Central Pricing Command (post-MVP — ADR-061)
+
+```text
+Build ราคากลาง central-price integration per ADR-061 (BOQ service + platform catalog).
+Objective: feed BOQ line pricing from the Comptroller-General central prices (public-works estimating).
+Generate: platform.central_price_catalog (shared, RLS-exempt) + boq_items.{central_price_id,
+  reference_price, price_variance} (§11); /admin/central-prices/import + /central-prices +
+  /boq/projects/{id}/price-variance (§14); ingest via SYSTEM_ADMIN file import OR CentralPriceAdapter
+  (Strategy §13.3); BOQ modes: reference+variance AND auto-populate (editable); event
+  CentralPriceCatalogUpdated (§16).
+AWAITING_DECISION: กรมบัญชีกลาง/e-GP public-API availability + auth is UNVERIFIED — until confirmed only
+  the manual-import path is guaranteed; the adapter is a stub seam. Item-code mapping is a build concern.
+Exit: a BOQ line shows/uses the central reference price; catalog is one shared national dataset.
+```
+
+#### e-GP Public Procurement Command (post-MVP — ADR-062)
+
+```text
+Build e-GP integration per ADR-062 (Preconstruction = CRM-service extension).
+Objective: read tender feed + submit bid + import award for Thai government work.
+Generate: Tender + Bid entities (crm schema) (§11); /preconstruction/{tenders,bids,...} (§14);
+  ingest via EgpAdapter (Strategy §13.3) OR manual entry; bid priced from BOQ + ราคากลาง reference;
+  a WON result emits TenderWon → Finance creates main_contract; events TenderImported/Won/Lost,
+  BidSubmitted (§16).
+AWAITING_DECISION: e-GP public-API availability + government credentials UNVERIFIED — manual path is the
+  guaranteed baseline; the adapter is a stub seam. e-GP document/format conformance is a build concern.
+Exit: a government tender can be tracked → bid → award → main_contract, via adapter or manual.
+```
 
 ---
 

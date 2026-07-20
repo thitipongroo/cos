@@ -163,6 +163,8 @@ Not visible to tenant users.
 - Route: `/admin` (protected — SYSTEM_ADMIN role required)
 - Authentication: same Keycloak JWT flow as the main application
 - All actions are logged to `platform.audit_logs`
+- `/admin/central-prices` — ราคากลาง catalog: import (CSV/Excel) + API-sync status + browse (ADR-061).
+  Tenant-facing: the BOQ editor surfaces `reference_price` / variance + a project BOQ-vs-ราคากลาง view.
 
 ### 20.4.1 Tenant List
 
@@ -421,6 +423,8 @@ Source: §20.2 PM; master Phase 10 PM nav; Phases 3, 5, 6, 14.
 | `/projects/{id}/procurement` | Procurement status | RFQ/PO status (read), delivery tracking                               | Phase 5 (read)                                                  |
 | `/projects/{id}/finance`     | Budget variance    | Budget vs actual vs committed (read)                                  | Phase 7 (read)                                                  |
 | `/projects/{id}/site`        | Site summary       | Site report summary, issue triage                                     | Phase 6                                                         |
+| `/projects/{id}/risks`       | Risk register      | Likelihood×impact heat map; raise/mitigate/close; AI-suggested triage | §14, ADR-065                                                    |
+| `/projects/{id}/communications` | Doc-control     | Site instructions / meeting minutes / correspondence + action-item tracker | §14, ADR-066                                              |
 | `/analytics/pm/{projectId}`  | PM dashboard       | Manpower trend, issues by severity, inspection rate, procurement KPIs | `GET /api/v1/analytics/pm/{projectId}` (Phase 14 — implemented) |
 
 ### 20.7.3 Procurement Officer / Procurement Manager (`PROCUREMENT_OFFICER`, `PROC_MANAGER`)
@@ -435,6 +439,9 @@ Source: §20.2 Procurement Officer; master Phase 10 Procurement nav; Phase 5.
 | `/procurement/orders`     | Purchase orders      | PO list + approval chain + delivery timeline                                 | Phase 5 PO workflow  |
 | `/procurement/deliveries` | Deliveries           | Record/receive deliveries                                                    | Phase 5              |
 | `/procurement/vendors`    | Vendors              | Vendor master, vendor scoring                                                | Phase 5              |
+| `/procurement/warehouses` | Warehouses           | Warehouse list (site store / central)                                        | §14, ADR-060         |
+| `/procurement/inventory`  | Inventory            | Stock-on-hand by warehouse/material; low-stock (reorder) view                | §14, ADR-060         |
+| `/procurement/grn`        | Goods receipt        | Receive against deliveries (GRN); stock-movement ledger                      | §14, ADR-060         |
 
 ### 20.7.4 Finance (`FINANCE`)
 
@@ -446,6 +453,12 @@ Source: §20.2 Finance; master Phase 10 FINANCE nav; Phase 7.
 | `/finance/budget/{projectId}` | Budget          | Budget vs actual vs committed; budget lines       | Phase 7                                |
 | `/finance/invoices`           | Invoices        | Invoice list/detail; verify/approve/dispute       | Phase 5/7 invoice flow                 |
 | `/finance/reports/variance`   | Variance report | Budget variance across projects                   | `GET /api/v1/finance/reports/variance` |
+| `/finance/contracts`          | Contracts       | Contract list; create; open detail                | §14 `finance/contracts`                |
+| `/finance/contracts/{id}`     | Contract detail | Attach/generate document · contractor sign (PKI/VC) · issue client magic-link · signature audit | §14, ADR-058 |
+| `/finance/contracts/{id}/variations` | Variation Orders | VO list/detail; create/submit/approve; BOQ + budget delta | §14, ADR-059 |
+| `/finance/claims`             | Claims          | Claim list/detail; submit/accept (→ VO)/reject    | §14, ADR-059                           |
+| `/finance/bonds`              | Bonds           | Bank-guarantee register (type/bank/amount/expiry/status) + expiry alerts | §14, ADR-063        |
+| `/compliance/permits`         | Permits & licences | Permit/licence register (building permit + company licence) + expiry alerts | §14, ADR-064   |
 
 ### 20.7.5 Site Engineer (`SITE_ENGINEER`)
 
@@ -542,8 +555,8 @@ backend remains a CRM Service extension per §01 §1.2.
 | ------------------------------ | ------------------- | ----------------------------- | -------- |
 | `/preconstruction/feasibility` | Feasibility studies | Feasibility study capability  | §01 §1.2 |
 | `/preconstruction/land`        | Land acquisition    | Land acquisition capability   | §01 §1.2 |
-| `/preconstruction/tenders`     | Tenders             | Tender management capability  | §01 §1.2 |
-| `/preconstruction/bids`        | Contractor bids     | Contractor bidding capability | §01 §1.2 |
+| `/preconstruction/tenders`     | Tenders             | e-GP tender feed (sync/manual) + status; award import → Contract | §01 §1.2, ADR-062 |
+| `/preconstruction/bids`        | Contractor bids     | BOQ-priced bid prep (ราคากลาง) + submit (adapter/manual)        | §01 §1.2, ADR-062 |
 
 > Detailed screen contents for both sections are elaborated in `DESIGN.md` §15.3 /
 > §15.10; capability-level scope only is defined here until each phase begins.
