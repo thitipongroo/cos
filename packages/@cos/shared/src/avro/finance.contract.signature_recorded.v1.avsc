@@ -1,0 +1,26 @@
+{
+  "type": "record",
+  "name": "ContractSignatureRecordedEvent",
+  "namespace": "com.constructionos.events.finance",
+  "doc": "finance.contract.signature_recorded.v1 — ADR-058 CT-3/CT-5 (a party signature was recorded)",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "ContractSignatureRecordedPayload",
+      "fields": [
+        { "name": "contract_id",         "type": "string" },
+        { "name": "signature_id",        "type": "string" },
+        { "name": "signer_party",        "type": "string" },
+        { "name": "verification_status", "type": "string" }
+      ]
+    }}
+  ]
+}

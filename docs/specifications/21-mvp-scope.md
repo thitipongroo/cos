@@ -56,12 +56,18 @@ Modules :
 - Dashboard
 - AI report assistant
 - Vendor Portal (external self-service: RFQ, quotation, PO status, invoice) — MVP
+- CredentialService (W3C DID/VC) — MVP. **Promoted from Enterprise-opt-in to MVP (ADR-067)** as the
+  prerequisite for client contract signing. Issuer = persistent per-tenant `did:web` (Ed25519 key in Vault,
+  ADR-013) for `LicenceVC`/`EquipmentCertVC`/`TrainingRecordVC`; contract signer = ephemeral `did:key`;
+  VC = `Ed25519Signature2020` (JSON-LD Data Integrity); revocation = Status List 2021; offline verification
+  (§5.3, BG-001). **Built before contract signing.**
 - Client contract signing (e-signature workflow) — MVP. Adds the actual signing capability on top of the
-  existing `Contract` entity + `signed` status (11-database-schema). **Mechanism decided (ADR-058):**
-  bilateral PKI/VC signing via `CredentialService` (§5.4) — contractor authorized-role signs directly, the
-  client signs via magic-link (ADR-030 pattern); the contract document is uploaded **or** generated in-app;
-  `signed` is reached when both signatures verify. Built on the `finance` service. See §11
-  (`ContractSignature`), §14 (`/finance/contracts/{id}/sign…`), §06 (Contract signing row), §16 events.
+  existing `Contract` entity + `signed` status (11-database-schema). **Mechanism (ADR-058, re-based onto
+  ADR-067):** contractor authorized-role signs directly + client signs via magic-link (ADR-030); each
+  signature = a `ContractSignatureVC` from an **ephemeral `did:key`** over the SHA-256 document hash
+  (CredentialService); the contract document is uploaded **or** generated in-app; `signed` is reached when
+  both signatures verify. Built on the `finance` service. See §11 (`ContractSignature`), §14
+  (`/finance/contracts/{id}/sign…`), §06 (Contract signing row), §16 events.
 
 Note on Workforce Management in MVP :
 

@@ -331,6 +331,7 @@ describe('FinanceRepository', () => {
       contract_value: '1000000.0000',
       customer_id: 'cust-1',
       vendor_id: null,
+      terms: 'Net 30; retention 5%',
     });
     expect(r.contract_id).toBe('con-1');
   });
@@ -349,6 +350,110 @@ describe('FinanceRepository', () => {
     expect((await repo.findContractById('con-1'))?.contract_id).toBe('con-1');
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
     expect(await repo.findContractById('missing')).toBeNull();
+  });
+
+  it('updateContractStatus executes the update (ADR-058 CT-7)', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    await repo.updateContractStatus('con-1', 'SIGNED');
+    expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+  });
+
+  it('attachSignedDocument binds the document and returns the row', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...contractRow, signed_document_id: 'file-1' }]);
+    const r = await repo.attachSignedDocument('con-1', 'file-1');
+    expect(r.signed_document_id).toBe('file-1');
+  });
+
+  it('replaceBoqSnapshot deletes then re-inserts each line (ADR-058 CT-2c-2)', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    await repo.replaceBoqSnapshot('ver-1', 'proj-1', [
+      {
+        item_code: 'A-1',
+        description: 'Concrete',
+        unit: 'm3',
+        quantity: '10.0000',
+        unit_cost: '2500.0000',
+        estimated_total: '25000.0000',
+      },
+      {
+        item_code: null,
+        description: 'Steel',
+        unit: 'kg',
+        quantity: '5.0000',
+        unit_cost: '30.0000',
+        estimated_total: '150.0000',
+      },
+    ]);
+    // 1 DELETE + 2 INSERTs
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(3);
+  });
+
+  it('findBoqSnapshotByProject returns the latest version lines (ADR-058 CT-2c-3)', async () => {
+    const rows = [
+      {
+        item_code: 'A-1',
+        description: 'Concrete',
+        unit: 'm3',
+        quantity: '10.0000',
+        unit_cost: '2500.0000',
+        estimated_total: '25000.0000',
+      },
+    ];
+    mockPrisma.$queryRaw.mockResolvedValue(rows);
+    expect(await repo.findBoqSnapshotByProject('proj-1')).toHaveLength(1);
+  });
+
+  it('recordContractSignature inserts and returns the signature (ADR-058 CT-3)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([
+      { signature_id: 'sig-1', verification_status: 'VERIFIED' },
+    ]);
+    const r = await repo.recordContractSignature({
+      contract_id: 'con-1',
+      signer_party: 'INTERNAL',
+      signer_identity: { userId: 'u-1' },
+      credential_ref: 'vc-1',
+      document_hash: 'a'.repeat(64),
+      ip_address: '203.0.113.5',
+      verification_status: 'VERIFIED',
+    });
+    expect(r.signature_id).toBe('sig-1');
+  });
+
+  it('createSignToken inserts a token row (with + without client info) (ADR-058 CT-4)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ token_id: 'tk-1' }]);
+    const withInfo = await repo.createSignToken({
+      contract_id: 'con-1',
+      token_hash: 'h'.repeat(64),
+      invited_name: 'ACME',
+      invited_email: 'a@acme.com',
+      expires_at: new Date('2026-08-01'),
+    });
+    expect(withInfo.token_id).toBe('tk-1');
+    // null branches for invited_name/email
+    const noInfo = await repo.createSignToken({
+      contract_id: 'con-1',
+      token_hash: 'h'.repeat(64),
+      expires_at: new Date(),
+    });
+    expect(noInfo.token_id).toBe('tk-1');
+  });
+
+  it('findActiveSignToken returns an unused token then null (ADR-058 CT-5)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ token_id: 'tk-1', contract_id: 'con-1' }]);
+    expect((await repo.findActiveSignToken('h'.repeat(64)))?.token_id).toBe('tk-1');
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await repo.findActiveSignToken('h'.repeat(64))).toBeNull();
+  });
+
+  it('markSignTokenUsed executes the update (ADR-058 CT-5)', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    await repo.markSignTokenUsed('tk-1');
+    expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+  });
+
+  it('listContractSignatures returns the trail (ADR-058 CT-6)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ signature_id: 'sig-1' }, { signature_id: 'sig-2' }]);
+    expect(await repo.listContractSignatures('con-1')).toHaveLength(2);
   });
 
   it('listContracts with and without project filter', async () => {

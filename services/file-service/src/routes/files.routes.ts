@@ -6,6 +6,7 @@
 // GET    /api/v1/files
 // GET    /api/v1/files/by-entity/:entityType/:entityId
 
+import { createHash } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
 import { validateFile, readMultipartBuffer } from '../middleware/validation';
@@ -58,6 +59,9 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
     const isArchive = mimeType === 'application/zip';
 
     // Persist metadata (PENDING_SCAN)
+    // SHA-256 of the content — the cryptographic anchor for document signing (ADR-058 CT-3).
+    const sha256 = createHash('sha256').update(buffer).digest('hex');
+
     const row = await app.db.insertFile({
       fileId,
       tenantId: request.tenantId,
@@ -68,6 +72,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       fileSizeBytes: size,
       uploadedBy: request.userId,
       isArchive,
+      sha256,
     });
 
     if (entityType && entityId) {
@@ -128,6 +133,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       file_size_bytes: row.file_size_bytes.toString(),
       file_status: row.file_status,
       uploaded_at: row.uploaded_at.toISOString(),
+      sha256: row.sha256,
     });
   });
 
@@ -170,6 +176,7 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
       uploaded_by: file.uploaded_by,
       uploaded_at: file.uploaded_at.toISOString(),
       deleted_at: file.deleted_at?.toISOString() ?? null,
+      sha256: file.sha256,
     });
   });
 

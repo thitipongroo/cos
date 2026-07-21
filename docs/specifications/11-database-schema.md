@@ -72,6 +72,7 @@ single tenant-isolation policy — a second permissive policy would OR-widen acc
 | `site_ops`            | Site Operations                          | NOT NULL  |                                                                          |
 | `finance`             | Finance                                  | NOT NULL  |                                                                          |
 | `files`               | File Service                             | NOT NULL  |                                                                          |
+| `credentials`         | CredentialService (DID/VC, ADR-067)      | NOT NULL  | RLS by tenant_id; RESTRICTED — see §11.6                                 |
 | `notifications`       | Notification Service                     | NOT NULL  | `notification_templates` has nullable tenant_id (null = system template) |
 | `equipment`           | Equipment Service                        | NOT NULL  |                                                                          |
 | `workforce`           | Workforce Service                        | NOT NULL  |                                                                          |
@@ -1164,6 +1165,68 @@ a mismatch means someone else edited the same photo offline, so the write is fla
 §11.0 template applies to all three tables.
 
 ---
+
+## 11.6 Credentials Schema (`credentials`)
+
+The `credentials` schema backs CredentialService (W3C DID/VC — ADR-067, spec §5.3 BG-001), the MVP
+prerequisite for client contract signing (ADR-058) and BG-001 worker/equipment/training credentials.
+Tenant-scoped (RLS by `tenant_id`); data classification **RESTRICTED**. Created by migration
+`20260720000002_credentials` (raw SQL, like the other domain schemas — not Prisma-modelled).
+
+**Roles (ADR-067):** ISSUER = persistent per-tenant `did:web` (Ed25519 key in Vault/AWS SM, ADR-013 — only
+`key_ref` is stored here, never the private key); SIGNER (contract signing) = ephemeral `did:key` (no
+stored key). VC format = `Ed25519Signature2020` (JSON-LD Data Integrity); revocation = W3C Status List 2021.
+
+`did_documents` :
+
+- did_document_id (PK)
+- tenant_id
+- did (VARCHAR — `did:web:…` issuer / `did:key:…` signer; UNIQUE per tenant)
+- method (ENUM: WEB / KEY)
+- did_role (ENUM: ISSUER / SIGNER)
+- did_document (JSONB — resolved DID Document)
+- encrypted_private_key (nullable TEXT — AES-256-GCM ciphertext of the issuer private key, ADR-035; master
+  key via env `APP_SECRET_ENCRYPTION_KEY` from SM/Vault; NULL for an ephemeral signer)
+- status (ENUM: ACTIVE / ROTATED / REVOKED)
+- created_at
+
+`revocation_status_lists` (W3C Status List 2021) :
+
+- status_list_id (PK)
+- tenant_id
+- purpose (ENUM: REVOCATION)
+- status_list_credential (JSONB — signed StatusList VC)
+- encoded_list (TEXT — base64url gzip bitstring)
+- capacity, next_index, version
+- created_at, updated_at
+
+`verifiable_credentials` :
+
+- vc_id (PK)
+- tenant_id
+- credential_type (ENUM: LICENCE / EQUIPMENT_CERT / TRAINING_RECORD / CONTRACT_SIGNATURE)
+- issuer_did, subject_did
+- credential (JSONB — signed VC, Ed25519Signature2020)
+- document_hash (VARCHAR nullable — SHA-256 hex; set for CONTRACT_SIGNATURE)
+- status (ENUM: ACTIVE / REVOKED / EXPIRED)
+- status_list_id (FK → revocation_status_lists, nullable), status_list_index (nullable — bit position)
+- issued_at, expires_at (nullable), created_at
+
+Note : worker VCs are revocable (occupy a status-list bit); ephemeral contract-signature VCs are
+point-in-time (non-revocable). Verification is offline/cryptographic (BG-001 — no platform call).
+
+`audit_log` (immutable — QM-4; §5.9.8) :
+
+- audit_id (PK)
+- tenant_id
+- actor_id (x-user-id of the caller)
+- action (CREDENTIAL_ISSUED / CREDENTIAL_REVOKED)
+- resource_type ('verifiable_credential'), resource_id (vc_id, nullable)
+- metadata (JSONB, nullable)
+- occurred_at
+
+Note : written in the same tenant transaction as the issue/revoke it records (no un-audited change);
+`app_user` is granted SELECT + INSERT only (no UPDATE/DELETE) — append-only. RLS by tenant_id.
 
 ## References
 

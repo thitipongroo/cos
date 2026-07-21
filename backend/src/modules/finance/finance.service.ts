@@ -10,6 +10,8 @@ import {
   NotFoundException,
   UnprocessableEntityException,
   ForbiddenException,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
@@ -18,6 +20,10 @@ import { Decimal, sumDecimals } from '@cos/financial';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { FinanceRepository } from './finance.repository';
+import { FileServiceClient } from '../files/file-service-client.service';
+import { CredentialClientService } from '../credentials/credential-client.service';
+import { ContractSignLinkService } from './contract-sign-link.service';
+import { buildContractPdf } from './contract-document.util';
 import type {
   ProjectBudgetRow,
   BudgetLineRow,
@@ -28,6 +34,9 @@ import type {
   BillingRow,
   ArReceiptRow,
   CashflowDueRow,
+  BoqSnapshotItem,
+  ContractSignatureRow,
+  SignerParty,
 } from './finance.repository';
 import type { CreateBudgetDto } from './dto/create-budget.dto';
 import type { AddBudgetLineDto } from './dto/add-budget-line.dto';
@@ -37,6 +46,9 @@ import type {
   CreateContractDto,
   CreateBillingDto,
   RecordArReceiptDto,
+  AttachContractDocumentDto,
+  IssueSignLinkDto,
+  ClientSignDto,
 } from './dto/ar-billing.dto';
 
 const logger = createLogger('finance-service');
@@ -75,6 +87,9 @@ export class FinanceService {
 
   constructor(
     private readonly repo: FinanceRepository,
+    private readonly fileClient: FileServiceClient,
+    private readonly credentialClient: CredentialClientService,
+    private readonly signLink: ContractSignLinkService,
     @Inject(REQUEST)
     private readonly request: Request & { tenantId?: string; user?: { user_id?: string } },
   ) {
@@ -391,11 +406,218 @@ export class FinanceService {
       contract_value: dto.contract_value ? new Decimal(dto.contract_value).toFixed(4) : null,
       customer_id: dto.customer_id ?? null,
       vendor_id: dto.vendor_id ?? null,
+      terms: dto.terms ?? null,
     });
   }
 
   async listContracts(project_id?: string): Promise<ContractRow[]> {
     return this.repo.listContracts(project_id);
+  }
+
+  /** Signature audit trail for a contract (ADR-058 CT-6). */
+  async listContractSignatures(contract_id: string): Promise<ContractSignatureRow[]> {
+    return this.repo.listContractSignatures(contract_id);
+  }
+
+  /**
+   * Contractor-side signature (ADR-058 CT-3). An authorized role signs the attached document directly:
+   * the document's SHA-256 (from File Service) is bound to an ephemeral did:key Verifiable Credential by
+   * CredentialService; the VC is verified and the signature recorded. The status→signed transition (when
+   * both INTERNAL + CLIENT signatures verify) is handled separately (CT-7).
+   */
+  async signContract(contract_id: string, ip: string): Promise<ContractSignatureRow> {
+    const contract = await this.repo.findContractById(contract_id);
+    if (!contract) {
+      throw new NotFoundException(`Contract ${contract_id} not found`);
+    }
+    if (!contract.signed_document_id) {
+      throw new BadRequestException(`Contract ${contract_id} has no document to sign`);
+    }
+    const file = await this.fileClient.getFileMetadata(contract.signed_document_id);
+    if (!file?.sha256) {
+      throw new BadRequestException(`Document hash unavailable for contract ${contract_id}`);
+    }
+
+    const issued = await this.credentialClient.issue({
+      credentialType: 'CONTRACT_SIGNATURE',
+      subjectId: `urn:cos:user:${this.userId}`,
+      documentHash: file.sha256,
+      claims: { signerParty: 'INTERNAL' },
+    });
+    const verified = await this.credentialClient.verify(issued.credential);
+
+    const signature = await this.repo.recordContractSignature({
+      contract_id,
+      signer_party: 'INTERNAL',
+      signer_identity: { userId: this.userId },
+      credential_ref: issued.vcId,
+      document_hash: file.sha256,
+      ip_address: ip,
+      verification_status: verified.verified ? 'VERIFIED' : 'FAILED',
+    });
+    await this.emitEvent('finance.contract.signature_recorded.v1', {
+      contract_id,
+      signature_id: signature.signature_id,
+      signer_party: 'INTERNAL',
+      verification_status: signature.verification_status,
+    });
+    await this.maybeTransitionToSigned(contract);
+    return signature;
+  }
+
+  /**
+   * Issue a single-use client magic-link to sign a contract (ADR-058 CT-4). Requires an attached
+   * document. Only the token hash is persisted; the raw token goes into the returned URL.
+   */
+  async issueSignLink(
+    contract_id: string,
+    dto: IssueSignLinkDto,
+  ): Promise<{ url: string; expires_at: string }> {
+    const contract = await this.repo.findContractById(contract_id);
+    if (!contract) {
+      throw new NotFoundException(`Contract ${contract_id} not found`);
+    }
+    if (!contract.signed_document_id) {
+      throw new BadRequestException(`Contract ${contract_id} has no document to sign`);
+    }
+    const issued = await this.signLink.issue(this.tenantId, contract_id);
+    await this.repo.createSignToken({
+      contract_id,
+      token_hash: issued.tokenHash,
+      invited_name: dto.client_name ?? null,
+      invited_email: dto.client_email ?? null,
+      expires_at: issued.expiresAt,
+    });
+    const base = process.env['CONTRACT_SIGN_URL_BASE'] ?? 'https://app.cos.local';
+    return {
+      url: `${base}/contracts/sign/${issued.token}`,
+      expires_at: issued.expiresAt.toISOString(),
+    };
+  }
+
+  /**
+   * External client signature via a single-use magic-link (ADR-058 CT-5). The tenant context was set by
+   * ContractSignTokenGuard; here we consume the token (single-use), bind the document hash to a client VC,
+   * record the CLIENT signature, and mark the token used.
+   */
+  async signContractAsClient(
+    token: string,
+    dto: ClientSignDto,
+    ip: string,
+  ): Promise<ContractSignatureRow> {
+    const tokenRow = await this.repo.findActiveSignToken(await this.signLink.hashToken(token));
+    if (!tokenRow) {
+      throw new UnauthorizedException('Invalid or already-used sign link');
+    }
+    const contract = await this.repo.findContractById(tokenRow.contract_id);
+    if (!contract?.signed_document_id) {
+      throw new BadRequestException('Contract has no document to sign');
+    }
+    const file = await this.fileClient.getFileMetadata(contract.signed_document_id);
+    if (!file?.sha256) {
+      throw new BadRequestException('Document hash unavailable');
+    }
+
+    const issued = await this.credentialClient.issue({
+      credentialType: 'CONTRACT_SIGNATURE',
+      subjectId: `urn:cos:contract-client:${tokenRow.token_id}`,
+      documentHash: file.sha256,
+      claims: { signerParty: 'CLIENT' },
+    });
+    const verified = await this.credentialClient.verify(issued.credential);
+
+    const signature = await this.repo.recordContractSignature({
+      contract_id: tokenRow.contract_id,
+      signer_party: 'CLIENT',
+      signer_identity: { name: dto.client_name ?? null, email: dto.client_email ?? null },
+      credential_ref: issued.vcId,
+      document_hash: file.sha256,
+      ip_address: ip,
+      magic_link_token_id: tokenRow.token_id,
+      verification_status: verified.verified ? 'VERIFIED' : 'FAILED',
+    });
+    await this.repo.markSignTokenUsed(tokenRow.token_id);
+    await this.emitEvent('finance.contract.signature_recorded.v1', {
+      contract_id: tokenRow.contract_id,
+      signature_id: signature.signature_id,
+      signer_party: 'CLIENT',
+      verification_status: signature.verification_status,
+    });
+    await this.maybeTransitionToSigned(contract);
+    return signature;
+  }
+
+  /** Transition a contract to SIGNED once both a VERIFIED INTERNAL and a VERIFIED CLIENT signature exist
+   * (ADR-058 CT-7), emitting finance.contract.signed.v1 on the transition. */
+  private async maybeTransitionToSigned(contract: ContractRow): Promise<void> {
+    if (contract.status === 'SIGNED') {
+      return;
+    }
+    const signatures = await this.repo.listContractSignatures(contract.contract_id);
+    const verifiedBy = (party: SignerParty): boolean =>
+      signatures.some((s) => s.signer_party === party && s.verification_status === 'VERIFIED');
+    if (verifiedBy('INTERNAL') && verifiedBy('CLIENT')) {
+      await this.repo.updateContractStatus(contract.contract_id, 'SIGNED');
+      await this.emitEvent('finance.contract.signed.v1', {
+        contract_id: contract.contract_id,
+        project_id: contract.project_id,
+      });
+    }
+  }
+
+  /**
+   * Materialize an approved BOQ version's itemized lines (ADR-058 CT-2c-2), consumed from
+   * construction.boq.items_published.v1, for later contract-document generation.
+   */
+  async handleBoqItemsPublished(event: {
+    version_id: string;
+    project_id: string;
+    tenant_id: string;
+    items: BoqSnapshotItem[];
+  }): Promise<void> {
+    await this.repo.replaceBoqSnapshot(event.version_id, event.project_id, event.items);
+  }
+
+  /**
+   * Attach a contract document (ADR-058 CT-2). Upload mode references a file already uploaded to the
+   * File Service; the file is validated to exist for the tenant before it is bound to the contract.
+   * (Generate mode — in-app PDF from Contract + BOQ + terms — is pending a template, CT-2c.)
+   */
+  async attachDocument(contract_id: string, dto: AttachContractDocumentDto): Promise<ContractRow> {
+    const contract = await this.repo.findContractById(contract_id);
+    if (!contract) {
+      throw new NotFoundException(`Contract ${contract_id} not found`);
+    }
+
+    let fileId: string;
+    if (dto.mode === 'generate') {
+      // Generate the PDF in-app from Contract + the latest materialized BOQ snapshot + terms, then store
+      // it in the File Service (ADR-058 CT-2c-3).
+      const items = await this.repo.findBoqSnapshotByProject(contract.project_id);
+      const pdf = await buildContractPdf({ contract, items });
+      const uploaded = await this.fileClient.upload({
+        buffer: pdf,
+        filename: `contract-${contract_id}.pdf`,
+        contentType: 'application/pdf',
+        entityType: 'contract',
+        entityId: contract_id,
+      });
+      fileId = uploaded.file_id;
+    } else {
+      const file = await this.fileClient.getFileMetadata(dto.file_id!);
+      if (!file) {
+        throw new BadRequestException(`Document file ${dto.file_id} not found`);
+      }
+      fileId = dto.file_id!;
+    }
+
+    const updated = await this.repo.attachSignedDocument(contract_id, fileId);
+    await this.emitEvent('finance.contract.document_attached.v1', {
+      contract_id,
+      project_id: contract.project_id,
+      document_id: fileId,
+    });
+    return updated;
   }
 
   // ── Client Billing (AR — §11, §15) ──────────────────────────────────────────

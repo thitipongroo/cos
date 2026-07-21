@@ -4,7 +4,12 @@ Date: 2026-07-20
 
 ## Status
 
-Accepted
+Accepted — **re-based onto ADR-067 (2026-07-20).** Implementation-planning verification found
+`CredentialService` was not built and was spec'd as post-MVP/Enterprise, so PKI/VC could not be built as
+stated. Per ADR-067, CredentialService (W3C DID/VC) is promoted to MVP and built **first**; contract
+signing then consumes it. The signer uses an **ephemeral `did:key` per signing** (not a persistent key);
+the persistent issuer capability serves worker/equipment/training VCs. All other decisions in this ADR
+stand (bilateral, Finance service, upload-or-generate, magic-link client, direct contractor authority).
 
 ## Context
 
@@ -74,8 +79,18 @@ New entity **`ContractSignature`** (in the `finance` schema):
 
 ### Events (§15/§16)
 
-- Reuse **`ContractSigned`** when the contract becomes fully signed.
+- Emit a `ContractSigned` event when the contract becomes fully signed.
 - Add `ContractDocumentAttached` and `ContractSignatureRecorded` for the intermediate steps.
+
+**Correction (CT-7, verified 2026-07-21):** the "reuse `ContractSigned`" premise was wrong — the only
+existing event is `platform.enterprise.contract_signed.v1` (`EnterpriseContractSignedEvent`), which is the
+**enterprise tenant-provisioning** domain (§34/§15.7), not finance contract signing. §16.2 lists
+`ContractSigned` under CRM but no schema existed. So three **new finance-domain** events were created and
+registered in the topic-catalog: `finance.contract.document_attached.v1` (attach, CT-2),
+`finance.contract.signature_recorded.v1` (each signature, CT-3/CT-5), and `finance.contract.signed.v1`
+(the draft→signed transition, emitted when both a VERIFIED INTERNAL and a VERIFIED CLIENT signature exist).
+Contract status is a free `VARCHAR` (`DRAFT`→`SIGNED`→`ACTIVE`→`TERMINATED`); new contracts now default to
+`DRAFT`. `signed→active`/`terminated` remain existing/manual states — not driven by signing.
 
 ### RBAC (§6)
 

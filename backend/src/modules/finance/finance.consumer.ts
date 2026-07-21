@@ -9,6 +9,7 @@ import { KafkaConsumer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import type { BaseEventEnvelope } from '@cos/types';
 import { FinanceService } from './finance.service';
+import type { BoqSnapshotItem } from './finance.repository';
 
 const logger = createLogger('finance-consumer');
 
@@ -18,6 +19,7 @@ const SUBSCRIBED_EVENT_TYPES = [
   'procurement.po.created.v1',
   'procurement.invoice.received.v1',
   'procurement.po.status_changed.v1',
+  'construction.boq.items_published.v1',
 ];
 
 @Injectable()
@@ -67,6 +69,20 @@ export class FinanceConsumer implements OnModuleInit, OnModuleDestroy {
           tenant_id: event.tenant_id,
           from_status: event.payload['from_status'] as string,
           to_status: event.payload['to_status'] as string,
+        });
+      },
+    );
+
+    this.kafka.on<Record<string, unknown>>(
+      'construction.boq.items_published.v1',
+      async (event: BaseEventEnvelope<Record<string, unknown>>) => {
+        logger.info({ event_type: event.event_type, tenant_id: event.tenant_id }, 'event received');
+        const svc = await this.resolveSvc(event.tenant_id);
+        await svc.handleBoqItemsPublished({
+          version_id: event.payload['version_id'] as string,
+          project_id: event.payload['project_id'] as string,
+          tenant_id: event.tenant_id,
+          items: event.payload['items'] as BoqSnapshotItem[],
         });
       },
     );

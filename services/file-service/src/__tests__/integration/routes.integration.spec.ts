@@ -33,6 +33,7 @@ const FILE_ROW = {
   uploaded_at: new Date('2026-01-01'),
   deleted_at: null,
   quarantined_at: null,
+  sha256: 'b'.repeat(64),
 };
 
 const QUARANTINED_ROW = {
@@ -115,7 +116,7 @@ const AUTH_HEADERS = { 'x-tenant-id': TENANT, 'x-user-id': USER };
 describe('Files routes (integration)', () => {
   describe('POST /api/v1/files/upload', () => {
     it('201 — uploads a valid image and returns file metadata', async () => {
-      const { app } = await buildTestApp();
+      const { app, mocks } = await buildTestApp();
       const form = new FormData();
       form.append('file', Buffer.from('fake-image-data'), {
         filename: 'photo.jpg',
@@ -133,6 +134,11 @@ describe('Files routes (integration)', () => {
       const body = JSON.parse(res.body);
       expect(body.mime_type).toBe('image/jpeg');
       expect(body.file_status).toBe('PENDING_SCAN');
+      expect(body.sha256).toBe('b'.repeat(64)); // returned from the persisted row
+      // The content SHA-256 is computed from the uploaded bytes and threaded to insertFile (ADR-058 CT-3).
+      expect(mocks.db.insertFile).toHaveBeenCalledWith(
+        expect.objectContaining({ sha256: expect.stringMatching(/^[a-f0-9]{64}$/) }),
+      );
     });
 
     it('201 — a ZIP upload starts the async extraction workflow (is_archive)', async () => {

@@ -32,6 +32,11 @@ export function clsUserId(): string {
   return clsGet(CLS_USER_ID) ?? '';
 }
 
+/** User role (CosRole) from CLS, or '' when no context. */
+export function clsUserRole(): string {
+  return clsGet(CLS_USER_ROLE) ?? '';
+}
+
 /** Dedicated DB URL from CLS (enterprise tenants), or undefined. */
 export function clsDedicatedDbUrl(): string | undefined {
   return clsGet(CLS_DEDICATED_DB_URL);
