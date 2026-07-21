@@ -25,12 +25,13 @@ export class DbService {
     uploadedBy: string;
     isArchive?: boolean;
     parentFileId?: string | null;
+    sha256?: string | null;
   }): Promise<StoredFileRow> {
     const { rows } = await this.pool.query<StoredFileRow>(
       `INSERT INTO files.files
          (file_id, tenant_id, original_filename, stored_key, bucket_name,
-          mime_type, file_size_bytes, uploaded_by, is_archive, parent_file_id, category)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+          mime_type, file_size_bytes, uploaded_by, is_archive, parent_file_id, category, sha256)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING *`,
       [
         params.fileId,
@@ -44,6 +45,7 @@ export class DbService {
         params.isArchive ?? false,
         params.parentFileId ?? null,
         categoryFor(params.mimeType),
+        params.sha256 ?? null,
       ],
     );
     return rows[0]!;

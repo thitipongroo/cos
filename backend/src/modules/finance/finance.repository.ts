@@ -95,6 +95,48 @@ export interface ContractRow {
   customer_id: string | null;
   vendor_id: string | null;
   status: string;
+  signed_document_id: string | null;
+  terms: string | null;
+  created_at: Date;
+}
+
+/** One materialized BOQ line (ADR-058 CT-2c-2) — carried by construction.boq.items_published.v1. */
+export interface BoqSnapshotItem {
+  item_code: string | null;
+  description: string;
+  unit: string;
+  quantity: string;
+  unit_cost: string;
+  estimated_total: string;
+}
+
+export type SignerParty = 'INTERNAL' | 'CLIENT';
+export type SignatureVerificationStatus = 'VERIFIED' | 'PENDING' | 'FAILED';
+
+export interface ContractSignatureRow {
+  signature_id: string;
+  tenant_id: string;
+  contract_id: string;
+  signer_party: SignerParty;
+  signer_identity: unknown;
+  credential_ref: string | null;
+  document_hash: string;
+  signed_at: Date;
+  ip_address: string | null;
+  magic_link_token_id: string | null;
+  verification_status: SignatureVerificationStatus;
+  created_at: Date;
+}
+
+export interface ContractSignTokenRow {
+  token_id: string;
+  tenant_id: string;
+  contract_id: string;
+  token_hash: string;
+  invited_name: string | null;
+  invited_email: string | null;
+  expires_at: Date;
+  used_at: Date | null;
   created_at: Date;
 }
 
@@ -485,17 +527,19 @@ export class FinanceRepository {
     contract_value?: string | null;
     customer_id?: string | null;
     vendor_id?: string | null;
+    terms?: string | null;
   }): Promise<ContractRow> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ContractRow[]>`
         INSERT INTO finance.contracts
-          (tenant_id, project_id, contract_type, contract_value, customer_id, vendor_id)
+          (tenant_id, project_id, contract_type, contract_value, customer_id, vendor_id, terms)
         VALUES
           (${this.tenantId}::uuid, ${params.project_id}::uuid,
            ${params.contract_type}::finance."ContractType",
            ${params.contract_value ?? null}::decimal,
-           ${params.customer_id ?? null}::uuid, ${params.vendor_id ?? null}::uuid)
+           ${params.customer_id ?? null}::uuid, ${params.vendor_id ?? null}::uuid,
+           ${params.terms ?? null}::text)
         RETURNING *
       `,
     );
@@ -523,6 +567,171 @@ export class FinanceRepository {
         ORDER BY created_at DESC
       `,
     );
+  }
+
+  /** Update a contract's lifecycle status (ADR-058 CT-7). */
+  async updateContractStatus(contract_id: string, status: string): Promise<void> {
+    await this.db.run(
+      (tx) =>
+        tx.$executeRaw`
+        UPDATE finance.contracts SET status = ${status}
+         WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+  }
+
+  /** Bind an attached/generated document (File Service file_id) to a contract (ADR-058 CT-2). */
+  async attachSignedDocument(
+    contract_id: string,
+    signed_document_id: string,
+  ): Promise<ContractRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractRow[]>`
+        UPDATE finance.contracts
+           SET signed_document_id = ${signed_document_id}::uuid
+         WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /**
+   * Replace the materialized BOQ line snapshot for a version (ADR-058 CT-2c-2). DELETE + re-INSERT in one
+   * tenant transaction → idempotent on event re-delivery. Materializes construction.boq.items_published.v1
+   * so contract-document generation reads the itemized schedule without a cross-schema BOQ read.
+   */
+  /** Record a contract signature (ADR-058 CT-3/CT-5). Binds a signer + document hash + VC reference. */
+  async recordContractSignature(params: {
+    contract_id: string;
+    signer_party: SignerParty;
+    signer_identity: Record<string, unknown>;
+    credential_ref: string;
+    document_hash: string;
+    ip_address: string;
+    verification_status: SignatureVerificationStatus;
+    magic_link_token_id?: string | null;
+  }): Promise<ContractSignatureRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignatureRow[]>`
+        INSERT INTO finance.contract_signatures
+          (tenant_id, contract_id, signer_party, signer_identity, credential_ref,
+           document_hash, ip_address, magic_link_token_id, verification_status)
+        VALUES
+          (${this.tenantId}::uuid, ${params.contract_id}::uuid,
+           ${params.signer_party}::finance."SignerParty",
+           ${JSON.stringify(params.signer_identity)}::jsonb, ${params.credential_ref},
+           ${params.document_hash}, ${params.ip_address}::inet,
+           ${params.magic_link_token_id ?? null}::uuid,
+           ${params.verification_status}::finance."SignatureVerificationStatus")
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /** All signatures recorded against a contract, oldest first (ADR-058 CT-6 audit trail). */
+  async listContractSignatures(contract_id: string): Promise<ContractSignatureRow[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignatureRow[]>`
+        SELECT * FROM finance.contract_signatures
+         WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+         ORDER BY signed_at
+      `,
+    );
+  }
+
+  /** Find a still-usable sign-link token by its hash (ADR-058 CT-5) — unused + unexpired. */
+  async findActiveSignToken(token_hash: string): Promise<ContractSignTokenRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignTokenRow[]>`
+        SELECT * FROM finance.contract_sign_tokens
+         WHERE tenant_id = ${this.tenantId}::uuid AND token_hash = ${token_hash}
+           AND used_at IS NULL AND expires_at > now()
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
+  /** Mark a sign-link token consumed (single-use, ADR-058 CT-5). */
+  async markSignTokenUsed(token_id: string): Promise<void> {
+    await this.db.run(
+      (tx) =>
+        tx.$executeRaw`
+        UPDATE finance.contract_sign_tokens SET used_at = now()
+         WHERE token_id = ${token_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+  }
+
+  /** Persist an issued client sign-link token (ADR-058 CT-4). Only the token_hash is stored. */
+  async createSignToken(params: {
+    contract_id: string;
+    token_hash: string;
+    invited_name?: string | null;
+    invited_email?: string | null;
+    expires_at: Date;
+  }): Promise<ContractSignTokenRow> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<ContractSignTokenRow[]>`
+        INSERT INTO finance.contract_sign_tokens
+          (tenant_id, contract_id, token_hash, invited_name, invited_email, expires_at)
+        VALUES
+          (${this.tenantId}::uuid, ${params.contract_id}::uuid, ${params.token_hash},
+           ${params.invited_name ?? null}, ${params.invited_email ?? null}, ${params.expires_at})
+        RETURNING *
+      `,
+    );
+    return rows[0]!;
+  }
+
+  /** The materialized BOQ lines of the latest approved version for a project (ADR-058 CT-2c-3). */
+  async findBoqSnapshotByProject(project_id: string): Promise<BoqSnapshotItem[]> {
+    return this.db.run(
+      (tx) =>
+        tx.$queryRaw<BoqSnapshotItem[]>`
+        SELECT item_code, description, unit,
+               quantity::text AS quantity, unit_cost::text AS unit_cost, estimated_total::text AS estimated_total
+          FROM finance.boq_line_snapshots
+         WHERE tenant_id = ${this.tenantId}::uuid
+           AND version_id = (
+             SELECT version_id FROM finance.boq_line_snapshots
+              WHERE tenant_id = ${this.tenantId}::uuid AND project_id = ${project_id}::uuid
+              ORDER BY materialized_at DESC LIMIT 1
+           )
+         ORDER BY line_no
+      `,
+    );
+  }
+
+  async replaceBoqSnapshot(
+    version_id: string,
+    project_id: string,
+    items: BoqSnapshotItem[],
+  ): Promise<void> {
+    await this.db.run(async (tx) => {
+      await tx.$executeRaw`
+        DELETE FROM finance.boq_line_snapshots
+        WHERE tenant_id = ${this.tenantId}::uuid AND version_id = ${version_id}::uuid
+      `;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i]!;
+        await tx.$executeRaw`
+          INSERT INTO finance.boq_line_snapshots
+            (tenant_id, version_id, project_id, line_no,
+             item_code, description, unit, quantity, unit_cost, estimated_total)
+          VALUES
+            (${this.tenantId}::uuid, ${version_id}::uuid, ${project_id}::uuid, ${i + 1},
+             ${it.item_code}, ${it.description}, ${it.unit},
+             ${it.quantity}::decimal, ${it.unit_cost}::decimal, ${it.estimated_total}::decimal)
+        `;
+      }
+    });
   }
 
   // ── billings (AR — §11) ───────────────────────────────────────────────────

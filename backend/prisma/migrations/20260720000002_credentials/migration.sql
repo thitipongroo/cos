@@ -89,7 +89,7 @@ CREATE INDEX idx_vc_document_hash ON credentials.verifiable_credentials (documen
 CREATE TABLE credentials.audit_log (
   audit_id      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id     UUID        NOT NULL,
-  actor_id      UUID        NOT NULL,                 -- x-user-id of the caller (platform user)
+  actor_id      TEXT        NOT NULL,                 -- x-user-id: a platform user UUID, or a non-user actor URN (e.g. external contract-signing client, ADR-058 CT-5)
   action        VARCHAR(64) NOT NULL,                 -- CREDENTIAL_ISSUED | CREDENTIAL_REVOKED
   resource_type VARCHAR(64) NOT NULL,                 -- 'verifiable_credential'
   resource_id   UUID,                                 -- vc_id

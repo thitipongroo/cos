@@ -6,11 +6,12 @@ import { TenantModule } from '../tenant/tenant.module';
 import { AnnotationController } from './annotation.controller';
 import { AnnotationService } from './annotation.service';
 import { AnnotationRepository } from './annotation.repository';
+import { FileServiceClient } from './file-service-client.service';
 
 @Module({
   imports: [TenantModule],
   controllers: [AnnotationController],
-  providers: [AnnotationService, AnnotationRepository],
-  exports: [AnnotationService],
+  providers: [AnnotationService, AnnotationRepository, FileServiceClient],
+  exports: [AnnotationService, FileServiceClient],
 })
 export class FilesModule {}

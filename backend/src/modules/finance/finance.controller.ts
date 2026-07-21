@@ -13,6 +13,7 @@ import {
   ParseUUIDPipe,
   Body,
   Query,
+  Ip,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -33,6 +34,8 @@ import {
   CreateBillingDto,
   ApproveBillingDto,
   RecordArReceiptDto,
+  AttachContractDocumentDto,
+  IssueSignLinkDto,
 } from './dto/ar-billing.dto';
 
 const READ_ROLES = [
@@ -57,6 +60,12 @@ const BILLING_APPROVE_ROLES = [
 ] as const;
 const PAYMENT_APPROVE_ROLES = [CosRole.FINANCE, CosRole.TENANT_ADMIN] as const;
 const CONTRACT_WRITE_ROLES = [CosRole.PROJECT_MANAGER, CosRole.TENANT_ADMIN] as const;
+// ADR-058 §RBAC: attach-document / sign / issue-link — an authorized role signs directly (no chain).
+const CONTRACT_SIGN_ROLES = [
+  CosRole.TENANT_ADMIN,
+  CosRole.EXECUTIVE,
+  CosRole.PROJECT_MANAGER,
+] as const;
 const CUSTOMER_WRITE_ROLES = [
   CosRole.FINANCE,
   CosRole.PROJECT_MANAGER,
@@ -212,6 +221,45 @@ export class FinanceController {
   @ApiQuery({ name: 'project_id', required: false, type: String })
   listContracts(@Query('project_id') project_id?: string) {
     return this.svc.listContracts(project_id);
+  }
+
+  // POST /api/v1/finance/contracts/:id/document — attach the contract document (ADR-058 CT-2)
+  @Post('finance/contracts/:id/document')
+  @Roles(...CONTRACT_SIGN_ROLES)
+  @ApiOperation({ summary: 'Attach a document to a contract (upload mode — File Service file_id)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  attachContractDocument(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AttachContractDocumentDto,
+  ) {
+    return this.svc.attachDocument(id, dto);
+  }
+
+  // POST /api/v1/finance/contracts/:id/sign — contractor-side signature (ADR-058 CT-3)
+  @Post('finance/contracts/:id/sign')
+  @Roles(...CONTRACT_SIGN_ROLES)
+  @ApiOperation({ summary: 'Contractor-side signature (PKI/VC, binds the document SHA-256)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  signContract(@Param('id', ParseUUIDPipe) id: string, @Ip() ip: string) {
+    return this.svc.signContract(id, ip);
+  }
+
+  // POST /api/v1/finance/contracts/:id/sign-links — issue a client magic-link to sign (ADR-058 CT-4)
+  @Post('finance/contracts/:id/sign-links')
+  @Roles(...CONTRACT_SIGN_ROLES)
+  @ApiOperation({ summary: 'Issue a single-use client magic-link to sign the contract' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  issueContractSignLink(@Param('id', ParseUUIDPipe) id: string, @Body() dto: IssueSignLinkDto) {
+    return this.svc.issueSignLink(id, dto);
+  }
+
+  // GET /api/v1/finance/contracts/:id/signatures — signature audit trail (ADR-058 CT-6)
+  @Get('finance/contracts/:id/signatures')
+  @Roles(...BILLING_READ_ROLES)
+  @ApiOperation({ summary: 'Signature audit trail for a contract' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  listContractSignatures(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.listContractSignatures(id);
   }
 
   // ── Client Billing (AR — §11, §14, §15) ─────────────────────────────────────

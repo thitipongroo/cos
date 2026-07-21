@@ -25,6 +25,7 @@ const FILE_ROW = {
   uploaded_at: new Date(),
   deleted_at: null,
   quarantined_at: null,
+  sha256: null,
 };
 
 describe('DbService', () => {
@@ -47,13 +48,14 @@ describe('DbService', () => {
         mimeType: 'image/jpeg',
         fileSizeBytes: 1024,
         uploadedBy: 'uid-1',
+        sha256: 'a'.repeat(64),
       });
       expect(result.file_id).toBe('fid-1');
       expect(mockQuery).toHaveBeenCalledTimes(1);
-      // defaults: is_archive=false, parent_file_id=null
+      // defaults: is_archive=false, parent_file_id=null; sha256 threaded through
       expect(mockQuery).toHaveBeenCalledWith(
         expect.any(String),
-        expect.arrayContaining([false, null]),
+        expect.arrayContaining([false, null, 'a'.repeat(64)]),
       );
     });
 

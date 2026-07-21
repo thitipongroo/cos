@@ -176,6 +176,26 @@ export class BoqService {
       approved_by: this.userId,
     });
 
+    // Publish the full itemized line set of the approved version so downstream services can materialize
+    // it (finance contract-document generation, ADR-058 CT-2c-2). Snapshot on approval — a contract is
+    // generated against an approved BOQ, so per-version snapshots are the natural grain.
+    const items = await this.repo.findItemsByVersion(version_id);
+    await this.publishEvent('construction.boq.items_published.v1', {
+      version_id,
+      project_id,
+      version_number: version.version_number,
+      total_estimated_amount: finalTotal,
+      total_estimated_currency: version.total_estimated_currency,
+      items: items.map((i) => ({
+        item_code: i.item_code,
+        description: i.description,
+        unit: i.unit,
+        quantity: i.quantity,
+        unit_cost: i.unit_cost,
+        estimated_total: i.estimated_total,
+      })),
+    });
+
     return approved!;
   }
 

@@ -23,7 +23,7 @@ importers:
     devDependencies:
       '@pact-foundation/pact':
         specifier: ^17.0.0
-        version: 17.0.0
+        version: 17.0.0(debug@4.4.3)
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1
@@ -135,13 +135,13 @@ importers:
         version: 0.28.1
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       tailwindcss:
         specifier: ^4.3.2
         version: 4.3.2
       ts-jest:
         specifier: ^29.4.11
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -159,7 +159,7 @@ importers:
         version: 1.20.0
       '@confluentinc/schemaregistry':
         specifier: ^1.0.0
-        version: 1.9.0(@azure/core-client@1.10.1)
+        version: 1.9.0(@azure/core-client@1.10.1)(debug@4.4.3)
       '@cos/config':
         specifier: workspace:*
         version: link:../packages/@cos/config
@@ -304,6 +304,9 @@ importers:
       passport-jwt:
         specifier: ^4.0.0
         version: 4.0.1
+      pdf-lib:
+        specifier: ^1.17.1
+        version: 1.17.1
       pg:
         specifier: 8.22.0
         version: 8.22.0
@@ -413,10 +416,10 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -438,13 +441,13 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       prisma:
         specifier: ^5.13.0
         version: 5.22.0
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -469,10 +472,10 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -491,10 +494,10 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -522,13 +525,13 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       reflect-metadata:
         specifier: ^0.2.0
         version: 0.2.2
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -565,13 +568,13 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       testcontainers:
         specifier: ^10.9.0
         version: 10.28.0
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -614,10 +617,10 @@ importers:
         version: 8.20.0
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       ts-jest:
         specifier: ^29.1.4
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -651,10 +654,10 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -688,10 +691,10 @@ importers:
         version: 20.19.43
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       ts-jest:
         specifier: ^29.1.0
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -761,13 +764,13 @@ importers:
         version: 8.20.0
       jest:
         specifier: ^30.4.2
-        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3))
+        version: 30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3))
       testcontainers:
         specifier: ^10.28.0
         version: 10.28.0
       ts-jest:
         specifier: ^29.1.4
-        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
+        version: 29.4.11(@babel/core@7.29.7)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.7))(jest-util@30.4.1)(jest@30.4.2(@types/node@20.19.43)(ts-node@10.9.2(@swc/core@1.15.40)(@types/node@20.19.43)(typescript@6.0.3)))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -3260,6 +3263,12 @@ packages:
 
   '@paulirish/trace_engine@0.0.53':
     resolution: {integrity: sha512-PUl/vlfo08Oj804VI5nDPeSk9vyslnBlVzDDwFt8SUVxY8+KdGMkra/vrXjEEHe8gb7+RqVTfOIlGw0nyrEelA==}
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    resolution: {integrity: sha512-hU30BK9IUN/su0Mn9VdlVKsWBS6GyhVfqjwl1FjZN4TxP6cCw0jP2w7V3Hf5uX7M0AZJ16vey9yE0ny7Sa59ZA==}
+
+  '@pdf-lib/upng@1.0.1':
+    resolution: {integrity: sha512-dQK2FUMQtowVP00mtIksrlZhdFXQZPC+taih1q4CvPZ5vqdxR/LKBaFg0oAfzd1GlHZXXSPdQfzQnt+ViGvEIQ==}
 
   '@pinojs/redact@0.4.0':
     resolution: {integrity: sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg==}
@@ -7902,6 +7911,9 @@ packages:
   package-json-from-dist@1.0.1:
     resolution: {integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==}
 
+  pako@1.0.11:
+    resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
+
   pako@2.2.0:
     resolution: {integrity: sha512-zJq6RP/5q+TO2OpFV3FHzlPnFjmkb7Nc99a5SNjJE+uu/PkpChs+NIZSSzbBoD+6kjiISXjfYdwj1ZRQ81dz/w==}
 
@@ -7981,6 +7993,9 @@ packages:
 
   pause@0.0.1:
     resolution: {integrity: sha512-KG8UEiEVkR3wGEb4m5yZkVCzigAD+cVEJck2CzYZO37ZGJfctvVptVO192MwrtPhzONn6go8ylnOdMhKqi4nfg==}
+
+  pdf-lib@1.17.1:
+    resolution: {integrity: sha512-V/mpyJAoTsN4cnP31vc0wfNA1+p20evqqnap0KLoRUN0Yk/p3wN52DOEsL4oBFcLdb76hlpKPtzJIgo67j/XLw==}
 
   pend@1.2.0:
     resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
@@ -10511,7 +10526,7 @@ snapshots:
   '@colors/colors@1.5.0':
     optional: true
 
-  '@confluentinc/schemaregistry@1.9.0(@azure/core-client@1.10.1)':
+  '@confluentinc/schemaregistry@1.9.0(@azure/core-client@1.10.1)(debug@4.4.3)':
     dependencies:
       '@aws-sdk/client-kms': 3.1057.0
       '@aws-sdk/credential-providers': 3.1057.0
@@ -10531,7 +10546,7 @@ snapshots:
       async-mutex: 0.5.0
       avsc: 5.7.9
       axios: 1.18.0(debug@4.4.3)
-      axios-retry: 4.5.0(axios@1.18.0)
+      axios-retry: 4.5.0(axios@1.18.0(debug@4.4.3))
       json-stringify-deterministic: 1.0.13
       jsonata: 2.2.1
       lru-cache: 10.4.3
@@ -12838,17 +12853,17 @@ snapshots:
       '@pact-foundation/pact-core-linux-x64-musl': 19.2.0
       '@pact-foundation/pact-core-windows-x64': 19.2.0
 
-  '@pact-foundation/pact@17.0.0':
+  '@pact-foundation/pact@17.0.0(debug@4.4.3)':
     dependencies:
       '@pact-foundation/pact-core': 19.2.0
       '@scarf/scarf': 1.4.0
-      axios: 1.18.1
+      axios: 1.18.1(debug@4.4.3)
       body-parser: 2.3.0
       chalk: 4.1.2
       express: 5.2.1
       graphql: 16.14.2
       graphql-tag: 2.12.7(graphql@16.14.2)
-      http-proxy: 1.18.1
+      http-proxy: 1.18.1(debug@4.4.3)
       https-proxy-agent: 7.0.6
       js-base64: 3.8.0
       lodash: 4.18.1
@@ -12870,6 +12885,14 @@ snapshots:
     dependencies:
       legacy-javascript: 0.0.1
       third-party-web: 0.29.2
+
+  '@pdf-lib/standard-fonts@1.0.0':
+    dependencies:
+      pako: 1.0.11
+
+  '@pdf-lib/upng@1.0.1':
+    dependencies:
+      pako: 1.0.11
 
   '@pinojs/redact@0.4.0': {}
 
@@ -14652,7 +14675,7 @@ snapshots:
 
   axe-core@4.12.1: {}
 
-  axios-retry@4.5.0(axios@1.18.0):
+  axios-retry@4.5.0(axios@1.18.0(debug@4.4.3)):
     dependencies:
       axios: 1.18.0(debug@4.4.3)
       is-retry-allowed: 2.2.0
@@ -14667,7 +14690,7 @@ snapshots:
       - debug
       - supports-color
 
-  axios@1.18.1:
+  axios@1.18.1(debug@4.4.3):
     dependencies:
       follow-redirects: 1.16.0(debug@4.4.3)
       form-data: 4.0.6
@@ -16338,7 +16361,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  http-proxy@1.18.1:
+  http-proxy@1.18.1(debug@4.4.3):
     dependencies:
       eventemitter3: 4.0.7
       follow-redirects: 1.16.0(debug@4.4.3)
@@ -18176,6 +18199,8 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
+  pako@1.0.11: {}
+
   pako@2.2.0: {}
 
   parent-module@1.0.1:
@@ -18247,6 +18272,13 @@ snapshots:
   pathe@2.0.3: {}
 
   pause@0.0.1: {}
+
+  pdf-lib@1.17.1:
+    dependencies:
+      '@pdf-lib/standard-fonts': 1.0.0
+      '@pdf-lib/upng': 1.0.1
+      pako: 1.0.11
+      tslib: 1.14.1
 
   pend@1.2.0: {}
 

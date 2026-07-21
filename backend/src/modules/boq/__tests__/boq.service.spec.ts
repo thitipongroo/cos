@@ -375,6 +375,18 @@ describe('BoqService', () => {
       expect(mockRepo.approveVersion).toHaveBeenCalledWith(
         expect.objectContaining({ version_id: 'version-uuid-002', approved_by: 'user-uuid-001' }),
       );
+
+      // ADR-058 CT-2c-2: approval also publishes the full itemized line set for downstream materialization.
+      const kafkaMock = (
+        service as unknown as {
+          kafka: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+        }
+      ).kafka;
+      const itemsEvent = kafkaMock.publish.mock.calls
+        .map((c) => c[0] as { event_type: string; payload: { items: unknown[] } })
+        .find((e) => e.event_type === 'construction.boq.items_published.v1');
+      expect(itemsEvent).toBeDefined();
+      expect(itemsEvent!.payload.items).toHaveLength(1);
     });
   });
 

@@ -46,6 +46,7 @@ export interface StoredFileRow {
   extracted_at: Date | null;
   parent_file_id: string | null;
   category: string | null;
+  sha256: string | null;
   legal_hold: boolean;
   legal_hold_reason: string | null;
   legal_hold_by: string | null;

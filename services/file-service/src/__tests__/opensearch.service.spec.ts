@@ -15,6 +15,7 @@ jest.mock('@opensearch-project/opensearch', () => ({
 const config = { opensearch: { host: 'http://localhost:9200' } } as FileServiceConfig;
 
 const FILE_ROW: StoredFileRow = {
+  sha256: null,
   file_id: 'fid-1',
   tenant_id: 'tid-1',
   original_filename: 'test.jpg',

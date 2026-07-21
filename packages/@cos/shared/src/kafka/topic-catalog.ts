@@ -30,6 +30,7 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'construction.boq.version_approved.v1': 'construction.boq.version_approved.v1.avsc',
   'construction.boq.created.v1': 'construction.boq.created.v1.avsc',
   'construction.boq.updated.v1': 'construction.boq.updated.v1.avsc',
+  'construction.boq.items_published.v1': 'construction.boq.items_published.v1.avsc',
   'construction.task.completed.v1': 'construction.task.completed.v1.avsc',
   'construction.delay.detected.v1': 'construction.delay.detected.v1.avsc',
   // Procurement
@@ -59,6 +60,9 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'finance.cashflow_risk.detected.v1': 'finance.cashflow_risk.detected.v1.avsc',
   'finance.billing.approved.v1': 'finance.billing.approved.v1.avsc',
   'finance.ar_receipt.recorded.v1': 'finance.ar_receipt.recorded.v1.avsc',
+  'finance.contract.document_attached.v1': 'finance.contract.document_attached.v1.avsc',
+  'finance.contract.signature_recorded.v1': 'finance.contract.signature_recorded.v1.avsc',
+  'finance.contract.signed.v1': 'finance.contract.signed.v1.avsc',
   // Workforce
   'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
   // Identity
