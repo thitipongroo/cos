@@ -541,6 +541,9 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       FILE_SERVICE_PORT: '3002'
+      # Names the service in logs/traces and on the Prometheus scrape endpoint (:9464, opened by
+      # initTracing in main.ts — the port prometheus.yml has always scraped).
+      OTEL_SERVICE_NAME: file-service
       DATABASE_URL: postgresql://${POSTGRES_USER:-cos}:${POSTGRES_PASSWORD:-cos_dev_password}@pgbouncer:5432/${POSTGRES_DB:-construction_os}
       KAFKA_BROKERS: kafka:9092
       TEMPORAL_ADDRESS: temporal:7233
@@ -581,6 +584,55 @@ services:
       - cos-network
 
   # ─── AI Gateway (FastAPI) ─────────────────────────────────────────────────
+  # ─── CredentialService (W3C DID/VC — ADR-067) ─────────────────────────────
+  credential-service:
+    build:
+      context: .
+      dockerfile: services/credential-service/Dockerfile
+    container_name: cos-credential-service
+    profiles: ['apps']
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: '3009'
+      # Names the service in every structured log line (src/logger.ts); without it logs claim
+      # "cos-backend", the default inherited from @cos/logger's configuration.
+      OTEL_SERVICE_NAME: credential-service
+      # MUST be the non-superuser app_user role: every credentials.* table is protected only by RLS
+      # (SET LOCAL app.current_tenant_id), and a superuser bypasses RLS entirely — connecting as `cos`
+      # would silently remove cross-tenant isolation. Same role the backend uses via APP_DATABASE_URL.
+      DATABASE_URL: postgresql://app_user:app_user_dev_password@pgbouncer:5432/${POSTGRES_DB:-construction_os}
+      # Baked into every tenant DID (did:web:{domain}:tenants:{id}) and into every VC issued, so a
+      # deployed environment MUST set the real domain (Helm values do; see .env.example). The local
+      # default only keeps `docker compose config` working — did:web mandates HTTPS, so DIDs minted
+      # against it are unresolvable by design and stay throwaway.
+      DID_WEB_BASE_DOMAIN: ${DID_WEB_BASE_DOMAIN:-credentials.localhost}
+      # Encrypts the issuer Ed25519 private key at rest (AES-256-GCM, ADR-035). The service falls back
+      # to a fixed dev key when unset outside production — never do that in a deployed environment.
+      APP_SECRET_ENCRYPTION_KEY: ${APP_SECRET_ENCRYPTION_KEY:-}
+    ports:
+      - '${CREDENTIAL_SERVICE_PORT:-3009}:3009'
+    depends_on:
+      postgres: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
+    healthcheck:
+      # 127.0.0.1 (not localhost) — see backend healthcheck note (IPv6 ::1 refused).
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3009/health || exit 1']
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    develop:
+      watch:
+        - path: ./services/credential-service/src
+          action: rebuild
+        - path: ./services/credential-service/package.json
+          action: rebuild
+    networks:
+      - cos-network
+
   ai-gateway:
     build:
       # Root context: the image bakes in repo-root ai/prompts (see the Dockerfile header). The

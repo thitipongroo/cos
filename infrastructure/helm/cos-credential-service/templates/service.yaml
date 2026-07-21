@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  # Kong and the backend both address this service by name — the backend defaults to
+  # http://credential-service:3009 (CREDENTIAL_SERVICE_URL), so the name is fixed, not templated.
+  name: credential-service
+  labels: {{ include "cos-credential-service.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector: {{ include "cos-credential-service.selectorLabels" . | nindent 4 }}

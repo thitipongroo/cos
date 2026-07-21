@@ -5,6 +5,28 @@ import { createList, decodeList, createCredential } from '@digitalbazaar/vc-stat
 
 export const DEFAULT_STATUS_LIST_LENGTH = 131072; // 16 KB bitstring
 
+/**
+ * Where a tenant's status-list credential is published, mirroring the did:web layout
+ * (`/tenants/{tenantId}/did.json`). This URL is embedded in every revocable VC's `credentialStatus`,
+ * so it must be reconstructable from (baseDomain, tenantId, statusListId) alone — never stored.
+ */
+export function statusListUrl(baseDomain: string, tenantId: string, statusListId: string): string {
+  if (!baseDomain) throw new Error('baseDomain is required to build a status list URL');
+  return `https://${baseDomain}/tenants/${tenantId}/status-lists/${statusListId}`;
+}
+
+/** Parse a status-list URL back to its id — returns null if it is not one of ours. */
+export function parseStatusListUrl(
+  url: string,
+  baseDomain: string,
+  tenantId: string,
+): string | null {
+  const prefix = `https://${baseDomain}/tenants/${tenantId}/status-lists/`;
+  if (!baseDomain || !url.startsWith(prefix)) return null;
+  const id = url.slice(prefix.length);
+  return id.length > 0 && !id.includes('/') ? id : null;
+}
+
 /** Create a fresh, all-valid encoded status list. */
 export async function createEmptyEncodedList(
   length: number = DEFAULT_STATUS_LIST_LENGTH,

@@ -569,15 +569,17 @@ export class FinanceRepository {
     );
   }
 
-  /** Update a contract's lifecycle status (ADR-058 CT-7). */
-  async updateContractStatus(contract_id: string, status: string): Promise<void> {
-    await this.db.run(
+  /** Update a contract's lifecycle status; returns the updated row. */
+  async updateContractStatus(contract_id: string, status: string): Promise<ContractRow> {
+    const rows = await this.db.run(
       (tx) =>
-        tx.$executeRaw`
+        tx.$queryRaw<ContractRow[]>`
         UPDATE finance.contracts SET status = ${status}
          WHERE contract_id = ${contract_id}::uuid AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
       `,
     );
+    return rows[0]!;
   }
 
   /** Bind an attached/generated document (File Service file_id) to a contract (ADR-058 CT-2). */

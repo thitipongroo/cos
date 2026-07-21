@@ -1,0 +1,11 @@
+replicaCount: 2
+image:
+  repository: ''
+  tag: 'staging'
+env:
+  NODE_ENV: 'staging'
+  # Single-label form, matching cos-backend's `api-staging.construction-os.io`: the existing
+  # `*.construction-os.io` wildcard certificate does NOT cover a second label
+  # (credentials.staging.…), and did:web is HTTPS-only — an uncovered host makes every staging
+  # credential unverifiable.
+  DID_WEB_BASE_DOMAIN: 'credentials-staging.construction-os.io'

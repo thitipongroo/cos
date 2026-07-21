@@ -657,6 +657,55 @@ describe('emitEvent error handling', () => {
       expect(await service.listContractSignatures('con-1')).toHaveLength(1);
     });
 
+    describe('activate / terminate lifecycle', () => {
+      it('activates a SIGNED contract', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'SIGNED' });
+        mockRepo.updateContractStatus.mockResolvedValue({ contract_id: 'con-1', status: 'ACTIVE' });
+        const r = await service.activateContract('con-1');
+        expect(r.status).toBe('ACTIVE');
+        expect(mockRepo.updateContractStatus).toHaveBeenCalledWith('con-1', 'ACTIVE');
+      });
+
+      it('404s activating an unknown contract', async () => {
+        mockRepo.findContractById.mockResolvedValue(null);
+        await expect(service.activateContract('missing')).rejects.toBeInstanceOf(NotFoundException);
+      });
+
+      it('400s activating a contract that is not SIGNED', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'DRAFT' });
+        await expect(service.activateContract('con-1')).rejects.toBeInstanceOf(BadRequestException);
+        expect(mockRepo.updateContractStatus).not.toHaveBeenCalled();
+      });
+
+      it('terminates a SIGNED contract and an ACTIVE contract', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'SIGNED' });
+        mockRepo.updateContractStatus.mockResolvedValue({
+          contract_id: 'con-1',
+          status: 'TERMINATED',
+        });
+        expect((await service.terminateContract('con-1')).status).toBe('TERMINATED');
+
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'ACTIVE' });
+        expect((await service.terminateContract('con-1')).status).toBe('TERMINATED');
+        expect(mockRepo.updateContractStatus).toHaveBeenCalledWith('con-1', 'TERMINATED');
+      });
+
+      it('404s terminating an unknown contract', async () => {
+        mockRepo.findContractById.mockResolvedValue(null);
+        await expect(service.terminateContract('missing')).rejects.toBeInstanceOf(
+          NotFoundException,
+        );
+      });
+
+      it('400s terminating a DRAFT contract', async () => {
+        mockRepo.findContractById.mockResolvedValue({ contract_id: 'con-1', status: 'DRAFT' });
+        await expect(service.terminateContract('con-1')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+        expect(mockRepo.updateContractStatus).not.toHaveBeenCalled();
+      });
+    });
+
     it('handleBoqItemsPublished materializes the line snapshot (ADR-058 CT-2c-2)', async () => {
       const items = [
         {

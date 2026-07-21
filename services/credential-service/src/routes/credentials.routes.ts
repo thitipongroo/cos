@@ -15,9 +15,22 @@ import {
   saveVerifiableCredential,
   revokeVerifiableCredential,
   writeAuditLog,
+  getStatusListById,
 } from '../credential-repository.js';
+import {
+  allocateStatusEntry,
+  revokeStatusEntry,
+  createDbStatusChecker,
+  type StatusListEntry,
+  type StatusListSigner,
+} from '../status-list-service.js';
 import { CREDENTIAL_TYPES } from '../credential-context.js';
 import { buildError } from '../errors.js';
+import { createLogger } from '../logger.js';
+
+// QM-8 structured logging. Only ids, enums and booleans — see logger.ts for what must never be logged.
+// pino's messageKey is `event`, so the message argument becomes the event name.
+const logger = createLogger('credential-service.routes');
 
 export async function credentialRoutes(app: FastifyInstance): Promise<void> {
   // Public did:web resolution — third parties resolve the issuer DID document (BG-001).
@@ -37,8 +50,25 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(400).send(buildError('INVALID_REQUEST', request.traceId));
     }
     // Bound did:web resolution to this platform's issuer domain (SSRF guard, §5.9.8).
-    const result = await verifyCredential(body.credential, [app.config.issuer.didWebBaseDomain]);
-    return { verified: result.verified };
+    const baseDomain = app.config.issuer.didWebBaseDomain;
+    // ADR-067 §Verification = Data Integrity proof AND Status List. The checker reads the bit from
+    // this tenant's stored list, so `verified` already accounts for revocation; `revoked` is returned
+    // separately so a caller can tell "forged" from "was valid, now revoked".
+    const result = await verifyCredential(
+      body.credential,
+      [baseDomain],
+      createDbStatusChecker(app.pool, request.tenantId, baseDomain),
+    );
+    logger.info(
+      {
+        tenantId: request.tenantId,
+        traceId: request.traceId,
+        verified: result.verified,
+        revoked: result.revoked,
+      },
+      'credential.verified',
+    );
+    return { verified: result.verified, revoked: result.revoked };
   });
 
   // Issue a VC. CONTRACT_SIGNATURE = ephemeral did:key signer; worker types = persistent did:web issuer
@@ -60,6 +90,8 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
     ) {
       return reply.status(400).send(buildError('INVALID_REQUEST', request.traceId));
     }
+    // Hoisted: TypeScript drops the `!body.subjectId` narrowing inside the transaction callback.
+    const subjectId = body.subjectId;
     const credentialType = body.credentialType as keyof typeof CREDENTIAL_TYPES;
     const vcType = CREDENTIAL_TYPES[credentialType];
     const isContractSig = credentialType === 'CONTRACT_SIGNATURE';
@@ -67,8 +99,13 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(403).send(buildError('FORBIDDEN', request.traceId));
     }
     const issuanceDate = new Date().toISOString();
+    const baseDomain = app.config.issuer.didWebBaseDomain;
     let credential: unknown;
-    let issuerDid: string;
+    let issuerDid = '';
+    // Worker credentials are revocable → they claim a Status List bit and carry `credentialStatus`
+    // (ADR-067). Contract-signature VCs are point-in-time and stay non-revocable.
+    let signer: StatusListSigner | null = null;
+    let statusEntry: StatusListEntry | null = null;
     if (isContractSig) {
       const { suite, did } = await buildDidKeySuite(await generateEphemeralSignerKey());
       issuerDid = did;
@@ -79,41 +116,57 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
       credential = await issueCredential({
         suite,
         issuerDid: did,
-        subjectId: body.subjectId,
+        subjectId,
         issuanceDate,
         types: [vcType],
         claims,
       });
     } else {
-      const issuer = await getOrProvisionIssuer(
-        app.pool,
-        request.tenantId,
-        app.config.issuer.didWebBaseDomain,
-      );
+      const issuer = await getOrProvisionIssuer(app.pool, request.tenantId, baseDomain);
       const { suite } = await buildDidWebSuite({
         did: issuer.did,
         publicKeyMultibase: issuer.publicKeyMultibase,
         privateKeyMultibase: decryptIssuerPrivateKey(issuer.encryptedPrivateKey),
       });
       issuerDid = issuer.did;
-      credential = await issueCredential({
-        suite,
-        issuerDid,
-        subjectId: body.subjectId,
-        issuanceDate,
-        types: [vcType],
-        claims: body.claims ?? {},
-        allowedIssuerDomains: [app.config.issuer.didWebBaseDomain],
-      });
+      signer = { did: issuer.did, suite, allowedIssuerDomains: [baseDomain] };
     }
     const vcId = await withTenant(app.pool, request.tenantId, async (client) => {
+      // Allocate the bit and sign inside the same transaction as the VC row: a claimed index can
+      // never be orphaned by a later failure, and no two VCs can share one.
+      if (signer) {
+        statusEntry = await allocateStatusEntry(client, request.tenantId, baseDomain, signer);
+        const url = statusEntry.statusListCredentialUrl;
+        credential = await issueCredential({
+          suite: signer.suite,
+          issuerDid,
+          subjectId,
+          issuanceDate,
+          types: [vcType],
+          claims: body.claims ?? {},
+          allowedIssuerDomains: [baseDomain],
+          credentialStatus: {
+            id: `${url}#${statusEntry.statusListIndex}`,
+            type: 'StatusList2021Entry',
+            statusPurpose: 'revocation',
+            statusListIndex: String(statusEntry.statusListIndex),
+            statusListCredential: url,
+          },
+        });
+      }
       const id = await saveVerifiableCredential(client, {
         tenantId: request.tenantId,
         credentialType,
         issuerDid,
-        subjectDid: body.subjectId,
+        subjectDid: subjectId,
         credential,
         documentHash: body.documentHash,
+        ...(statusEntry
+          ? {
+              statusListId: statusEntry.statusListId,
+              statusListIndex: statusEntry.statusListIndex,
+            }
+          : {}),
       });
       // Immutable audit in the same tx — no un-audited issuance (QM-4, §5.9.8).
       await writeAuditLog(client, {
@@ -126,6 +179,17 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
       });
       return id;
     });
+    logger.info(
+      {
+        tenantId: request.tenantId,
+        userId: request.userId,
+        traceId: request.traceId,
+        vcId,
+        credentialType,
+        revocable: statusEntry !== null,
+      },
+      'credential.issued',
+    );
     return reply.status(201).send({ vcId, credential });
   });
 
@@ -135,22 +199,73 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(403).send(buildError('FORBIDDEN', request.traceId));
     }
     const { vcId } = request.params as { vcId: string };
-    const revoked = await withTenant(app.pool, request.tenantId, async (client) => {
-      const ok = await revokeVerifiableCredential(client, request.tenantId, vcId);
-      if (ok) {
-        await writeAuditLog(client, {
+    const baseDomain = app.config.issuer.didWebBaseDomain;
+    // The issuer signs the republished status list, so resolve it before opening the transaction.
+    const issuer = await getOrProvisionIssuer(app.pool, request.tenantId, baseDomain);
+    const { suite } = await buildDidWebSuite({
+      did: issuer.did,
+      publicKeyMultibase: issuer.publicKeyMultibase,
+      privateKeyMultibase: decryptIssuerPrivateKey(issuer.encryptedPrivateKey),
+    });
+    const entry = await withTenant(app.pool, request.tenantId, async (client) => {
+      const revokedEntry = await revokeVerifiableCredential(client, request.tenantId, vcId);
+      if (!revokedEntry) return null;
+      // Flip the published bit in the same transaction — the DB status and the published list can
+      // never disagree (ADR-067 §Revocation).
+      if (revokedEntry.statusListId !== null && revokedEntry.statusListIndex !== null) {
+        await revokeStatusEntry(client, {
           tenantId: request.tenantId,
-          actorId: request.userId,
-          action: 'CREDENTIAL_REVOKED',
-          resourceType: 'verifiable_credential',
-          resourceId: vcId,
+          baseDomain,
+          statusListId: revokedEntry.statusListId,
+          statusListIndex: revokedEntry.statusListIndex,
+          signer: { did: issuer.did, suite, allowedIssuerDomains: [baseDomain] },
         });
       }
-      return ok;
+      await writeAuditLog(client, {
+        tenantId: request.tenantId,
+        actorId: request.userId,
+        action: 'CREDENTIAL_REVOKED',
+        resourceType: 'verifiable_credential',
+        resourceId: vcId,
+        metadata: { statusListId: revokedEntry.statusListId },
+      });
+      return revokedEntry;
     });
-    if (!revoked) {
+    if (!entry) {
       return reply.status(404).send(buildError('VC_NOT_FOUND', request.traceId));
     }
+    logger.info(
+      {
+        tenantId: request.tenantId,
+        userId: request.userId,
+        traceId: request.traceId,
+        vcId,
+        statusListId: entry.statusListId,
+        published: entry.statusListId !== null,
+      },
+      'credential.revoked',
+    );
     return { revoked: true };
   });
+
+  // Public Status List 2021 publication (CS-6). An offline verifier fetches this URL — it is embedded
+  // in every revocable worker VC's `credentialStatus` — and reads the revocation bit itself. Public by
+  // design, like did.json: the payload is a signed credential holding an opaque compressed bitstring,
+  // no subject identifiers (§5.9.8 Information Disclosure).
+  app.get(
+    '/tenants/:tenantId/status-lists/:statusListId',
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { tenantId, statusListId } = request.params as {
+        tenantId: string;
+        statusListId: string;
+      };
+      const list = await withTenant(app.pool, tenantId, (client) =>
+        getStatusListById(client, tenantId, statusListId),
+      );
+      if (!list) {
+        return reply.status(404).send(buildError('STATUS_LIST_NOT_FOUND', request.traceId));
+      }
+      return list.statusListCredential;
+    },
+  );
 }

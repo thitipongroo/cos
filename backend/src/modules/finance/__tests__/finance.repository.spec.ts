@@ -352,10 +352,10 @@ describe('FinanceRepository', () => {
     expect(await repo.findContractById('missing')).toBeNull();
   });
 
-  it('updateContractStatus executes the update (ADR-058 CT-7)', async () => {
-    mockPrisma.$executeRaw.mockResolvedValue(1);
-    await repo.updateContractStatus('con-1', 'SIGNED');
-    expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+  it('updateContractStatus updates and returns the row', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ ...contractRow, status: 'ACTIVE' }]);
+    const r = await repo.updateContractStatus('con-1', 'ACTIVE');
+    expect(r.status).toBe('ACTIVE');
   });
 
   it('attachSignedDocument binds the document and returns the row', async () => {

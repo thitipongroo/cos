@@ -728,6 +728,9 @@ importers:
       '@digitalbazaar/vc-status-list':
         specifier: ^8.0.1
         version: 8.0.1
+      '@digitalbazaar/vc-status-list-context':
+        specifier: ^3.1.1
+        version: 3.1.1
       '@fastify/cors':
         specifier: ^11.2.0
         version: 11.2.0
@@ -746,6 +749,9 @@ importers:
       pg:
         specifier: ^8.11.5
         version: 8.22.0
+      pino:
+        specifier: ^9.14.0
+        version: 9.14.0
     devDependencies:
       '@digitalbazaar/http-client':
         specifier: ^4.3.0
@@ -786,6 +792,9 @@ importers:
       '@cos/shared':
         specifier: workspace:*
         version: link:../../packages/@cos/shared
+      '@cos/tracing':
+        specifier: workspace:*
+        version: link:../../packages/@cos/tracing
       '@cos/types':
         specifier: workspace:*
         version: link:../../packages/@cos/types

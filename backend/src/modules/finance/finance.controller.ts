@@ -262,6 +262,24 @@ export class FinanceController {
     return this.svc.listContractSignatures(id);
   }
 
+  // POST /api/v1/finance/contracts/:id/activate — put a signed contract into force (ADR-058 CT-8)
+  @Post('finance/contracts/:id/activate')
+  @Roles(...CONTRACT_WRITE_ROLES)
+  @ApiOperation({ summary: 'Activate a fully-signed contract (SIGNED → ACTIVE)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  activateContract(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.activateContract(id);
+  }
+
+  // POST /api/v1/finance/contracts/:id/terminate — end a live contract (ADR-058 CT-8)
+  @Post('finance/contracts/:id/terminate')
+  @Roles(...CONTRACT_WRITE_ROLES)
+  @ApiOperation({ summary: 'Terminate a contract (SIGNED | ACTIVE → TERMINATED)' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  terminateContract(@Param('id', ParseUUIDPipe) id: string) {
+    return this.svc.terminateContract(id);
+  }
+
   // ── Client Billing (AR — §11, §14, §15) ─────────────────────────────────────
 
   // POST /api/v1/finance/billing  (create AR billing — DRAFT)

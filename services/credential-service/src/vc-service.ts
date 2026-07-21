@@ -8,6 +8,7 @@ import { Ed25519VerificationKey2020 } from '@digitalbazaar/ed25519-verification-
 import * as didKey from '@digitalbazaar/did-method-key';
 import * as didWeb from '@digitalbazaar/did-method-web';
 import { securityLoader } from '@digitalbazaar/security-document-loader';
+import statusListContext from '@digitalbazaar/vc-status-list-context';
 import { COS_CREDENTIALS_CONTEXT_URL, COS_CREDENTIALS_CONTEXT } from './credential-context.js';
 import { ISSUER_KEY_FRAGMENT } from './did-web.js';
 
@@ -64,6 +65,10 @@ export function createDocumentLoader(allowedIssuerDomains: string[] = []) {
   const handler = createDidResolver(didKeyDriver(), didWebDriver(allowedIssuerDomains));
   loader.setProtocolHandler({ protocol: 'did', handler });
   loader.addStatic(COS_CREDENTIALS_CONTEXT_URL, COS_CREDENTIALS_CONTEXT);
+  // StatusList2021 terms (credentialStatus / StatusList2021Credential) are NOT in securityLoader —
+  // without this, signing a revocable VC or the status-list credential itself fails JSON-LD safe mode.
+  // Served from the official context package, statically → still no outbound fetch (CS-6).
+  loader.addStatic(statusListContext.CONTEXT_URL_V1, statusListContext.CONTEXT_V1);
   return loader.build();
 }
 
@@ -126,6 +131,16 @@ export interface IssueParams {
   types?: string[]; // extra VC types (must be defined in the COS context)
   claims?: Record<string, unknown>; // extra subject claims (must be defined in the COS context)
   allowedIssuerDomains?: string[]; // bounds did:web resolution (SSRF guard, §5.9.8)
+  credentialStatus?: StatusList2021Entry; // revocable worker VCs only (CS-6)
+}
+
+/** W3C StatusList2021Entry — the `credentialStatus` of a revocable VC. */
+export interface StatusList2021Entry {
+  id: string;
+  type: 'StatusList2021Entry';
+  statusPurpose: 'revocation';
+  statusListIndex: string; // W3C: a string, even though it is an integer position
+  statusListCredential: string; // URL the status-list credential is published at
 }
 
 /** A signed VC (the fields callers/tests read; @digitalbazaar returns an untyped object). */
@@ -142,31 +157,81 @@ export interface SignedCredential {
 /** Issue a signed VC. Custom types/claims resolve via the COS credentials @context (CS-7). */
 export async function issueCredential(params: IssueParams): Promise<SignedCredential> {
   const credential = {
-    '@context': ['https://www.w3.org/2018/credentials/v1', COS_CREDENTIALS_CONTEXT_URL],
+    '@context': [
+      'https://www.w3.org/2018/credentials/v1',
+      COS_CREDENTIALS_CONTEXT_URL,
+      // Only revocable VCs carry the StatusList2021 terms — an unused context term would otherwise
+      // appear in every ephemeral contract-signature VC.
+      ...(params.credentialStatus ? [statusListContext.CONTEXT_URL_V1 as string] : []),
+    ],
     type: ['VerifiableCredential', ...(params.types ?? [])],
     issuer: params.issuerDid,
     issuanceDate: params.issuanceDate,
     credentialSubject: { id: params.subjectId, ...(params.claims ?? {}) },
+    ...(params.credentialStatus ? { credentialStatus: params.credentialStatus } : {}),
   };
+  return signCredential({
+    credential,
+    suite: params.suite,
+    allowedIssuerDomains: params.allowedIssuerDomains,
+  });
+}
+
+/**
+ * Sign an already-assembled credential document. Used for the StatusList2021Credential (CS-6), whose
+ * body is produced by @digitalbazaar/vc-status-list rather than assembled here.
+ */
+export async function signCredential(params: {
+  credential: unknown;
+  suite: unknown;
+  allowedIssuerDomains?: string[];
+}): Promise<SignedCredential> {
   const documentLoader = createDocumentLoader(params.allowedIssuerDomains ?? []);
-  return (await vc.issue({ credential, suite: params.suite, documentLoader })) as SignedCredential;
+  return (await vc.issue({
+    credential: params.credential,
+    suite: params.suite,
+    documentLoader,
+  })) as SignedCredential;
 }
 
 export interface VerifyResult {
   verified: boolean;
+  revoked: boolean;
   error?: unknown;
 }
 
-/** Verify a signed VC (offline, cryptographic — BG-001). `allowedIssuerDomains` bounds did:web
- * resolution to platform issuers (SSRF guard, §5.9.8). */
+/** What a status checker reports back; extra fields flow through to `result.statusResult`. */
+export interface StatusCheckResult {
+  verified: boolean;
+  revoked: boolean;
+  error?: unknown;
+}
+
+/** @digitalbazaar/vc `checkStatus` hook — see status-list-service.createDbStatusChecker. */
+export type StatusChecker = (options: { credential: unknown }) => Promise<StatusCheckResult>;
+
+/**
+ * Verify a signed VC: Data Integrity proof **and** revocation status (ADR-067 §Verification).
+ * `allowedIssuerDomains` bounds did:web resolution to platform issuers (SSRF guard, §5.9.8).
+ *
+ * `checkStatus` is not optional in practice — @digitalbazaar/vc refuses to verify any credential
+ * carrying `credentialStatus` without one, so a revocable worker VC fails verification unless the
+ * caller supplies the checker.
+ */
 export async function verifyCredential(
   signedVc: unknown,
   allowedIssuerDomains: string[] = [],
+  checkStatus?: StatusChecker,
 ): Promise<VerifyResult> {
   const result = await vc.verifyCredential({
     credential: signedVc,
     suite: new Ed25519Signature2020(),
     documentLoader: createDocumentLoader(allowedIssuerDomains),
+    ...(checkStatus ? { checkStatus } : {}),
   });
-  return { verified: result.verified, error: result.error };
+  return {
+    verified: result.verified,
+    revoked: result.statusResult?.revoked === true,
+    error: result.error,
+  };
 }

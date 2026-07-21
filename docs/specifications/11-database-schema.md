@@ -1200,6 +1200,15 @@ stored key). VC format = `Ed25519Signature2020` (JSON-LD Data Integrity); revoca
 - capacity, next_index, version
 - created_at, updated_at
 
+Lifecycle (CS-6): one list per tenant, provisioned lazily on the first revocable issuance and signed by
+that tenant's `did:web` issuer. Each worker VC claims `next_index` atomically (conditional
+`UPDATE … RETURNING`) in the same transaction as the VC row, and carries the position as a W3C
+`StatusList2021Entry` `credentialStatus`. Revoking flips the bit, re-signs the credential and bumps
+`version`, in the same transaction as `verifiable_credentials.status = REVOKED`. A new list is
+provisioned once `next_index` reaches `capacity`. Published unauthenticated at
+`https://{issuerDomain}/tenants/{tenant_id}/status-lists/{status_list_id}` — the URL embedded in every
+revocable VC — mirroring the `did.json` layout (§5.9.8).
+
 `verifiable_credentials` :
 
 - vc_id (PK)

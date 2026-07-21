@@ -81,13 +81,15 @@ describe('credentials RLS isolation (integration — Testcontainers)', () => {
     const revokedByB = await withTenant(infra.appPool, TENANT_B, (c) =>
       revokeVerifiableCredential(c, TENANT_B, vcIdA),
     );
-    expect(revokedByB).toBe(false);
+    expect(revokedByB).toBeNull();
 
     // A can revoke its own VC.
     const revokedByA = await withTenant(infra.appPool, TENANT_A, (c) =>
       revokeVerifiableCredential(c, TENANT_A, vcIdA),
     );
-    expect(revokedByA).toBe(true);
+    // Seeded straight through the repository, so it holds no status-list position — allocating one is
+    // the issue route's job (covered by status-list.integration.spec.ts). This spec is about RLS.
+    expect(revokedByA).toEqual({ statusListId: null, statusListIndex: null });
   });
 
   it('isolates the audit log per tenant and enforces immutability (no UPDATE/DELETE)', async () => {
