@@ -801,15 +801,25 @@ services:
       IMPORT_STYLE: address
       NOMINATIM_PASSWORD: ${NOMINATIM_PASSWORD:-cos_nominatim_password}
     ports:
-      - '${NOMINATIM_PORT:-8081}:8080'
+      # 8082, NOT 8081: schema-registry already publishes 8081 (its Confluent-conventional port)
+      # and both services are in the 'full' profile, so `docker compose --profile full up` raced —
+      # nominatim won and schema-registry died with "port is already allocated". Schema Registry is
+      # required infrastructure (QM-9), so nominatim is the one that moves.
+      - '${NOMINATIM_PORT:-8082}:8080'
     volumes:
       - nominatim_data:/var/lib/postgresql
     shm_size: 1gb
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:8080/status || exit 1']
+      # curl, NOT wget: the mediagis/nominatim image ships curl at /usr/bin/curl but has no wget,
+      # so the previous `wget -qO-` probe failed with "wget: not found" on every attempt and the
+      # container could never report healthy no matter what the service was doing. Same class of
+      # bug as the schema-registry probe below — verify the tool exists in the image before using it.
+      test: ['CMD-SHELL', 'curl -fsS http://localhost:8080/status || exit 1']
       interval: 30s
       timeout: 10s
       retries: 5
+      # Importing the Thailand OSM extract takes far longer than a minute on first boot; until it
+      # finishes the HTTP port is not listening, which is a legitimate "not ready yet", not a failure.
       start_period: 60s
     networks:
       - cos-network
