@@ -420,6 +420,38 @@ export class FinanceService {
   }
 
   /**
+   * Put a fully-signed contract into force (signed → ACTIVE).
+   * "downstream" of signing without naming a trigger, so it is a deliberate authorized action: billing
+   * milestones and retention run against ACTIVE, which may start later than the signature date.
+   */
+  async activateContract(contract_id: string): Promise<ContractRow> {
+    const contract = await this.repo.findContractById(contract_id);
+    if (!contract) {
+      throw new NotFoundException(`Contract ${contract_id} not found`);
+    }
+    if (contract.status !== 'SIGNED') {
+      throw new BadRequestException(
+        `Contract ${contract_id} must be SIGNED to activate (current: ${contract.status})`,
+      );
+    }
+    return this.repo.updateContractStatus(contract_id, 'ACTIVE');
+  }
+
+  /** End a live contract (SIGNED or ACTIVE → TERMINATED, ADR-058 CT-8). */
+  async terminateContract(contract_id: string): Promise<ContractRow> {
+    const contract = await this.repo.findContractById(contract_id);
+    if (!contract) {
+      throw new NotFoundException(`Contract ${contract_id} not found`);
+    }
+    if (contract.status !== 'SIGNED' && contract.status !== 'ACTIVE') {
+      throw new BadRequestException(
+        `Only a SIGNED or ACTIVE contract can be terminated (current: ${contract.status})`,
+      );
+    }
+    return this.repo.updateContractStatus(contract_id, 'TERMINATED');
+  }
+
+  /**
    * Contractor-side signature (ADR-058 CT-3). An authorized role signs the attached document directly:
    * the document's SHA-256 (from File Service) is bound to an ephemeral did:key Verifiable Credential by
    * CredentialService; the VC is verified and the signature recorded. The status→signed transition (when

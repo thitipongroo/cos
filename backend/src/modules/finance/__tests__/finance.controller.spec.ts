@@ -22,6 +22,8 @@ const mockSvc = {
   signContract: jest.fn(),
   issueSignLink: jest.fn(),
   listContractSignatures: jest.fn(),
+  activateContract: jest.fn(),
+  terminateContract: jest.fn(),
   createBilling: jest.fn(),
   listBillings: jest.fn(),
   getBilling: jest.fn(),
@@ -162,6 +164,16 @@ describe('FinanceController', () => {
   it('listContractSignatures delegates to svc.listContractSignatures', () => {
     ctrl.listContractSignatures('con-1');
     expect(mockSvc.listContractSignatures).toHaveBeenCalledWith('con-1');
+  });
+
+  it('activateContract delegates to svc.activateContract', () => {
+    ctrl.activateContract('con-1');
+    expect(mockSvc.activateContract).toHaveBeenCalledWith('con-1');
+  });
+
+  it('terminateContract delegates to svc.terminateContract', () => {
+    ctrl.terminateContract('con-1');
+    expect(mockSvc.terminateContract).toHaveBeenCalledWith('con-1');
   });
 
   it('createBilling delegates to svc.createBilling', () => {

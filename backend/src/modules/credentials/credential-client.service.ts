@@ -38,7 +38,11 @@ export interface IssueCredentialResult {
 }
 
 export interface VerifyCredentialResult {
+  /** Proof AND revocation status together (ADR-067 §Verification) — a revoked VC is never verified. */
   verified: boolean;
+  /** Distinguishes "was valid, now revoked" from "bad proof". Always false for contract signatures,
+   *  which are point-in-time and occupy no status-list bit. */
+  revoked: boolean;
 }
 
 export interface RevokeCredentialResult {

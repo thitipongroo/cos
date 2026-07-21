@@ -5,6 +5,7 @@ import {
   getIssuer,
   saveVerifiableCredential,
   revokeVerifiableCredential,
+  writeAuditLog,
 } from '../credential-repository.js';
 
 function clientReturning(result: unknown) {
@@ -86,12 +87,47 @@ describe('credential-repository (CS-8)', () => {
     expect(params[5]).toBeNull();
   });
 
-  it('revokeVerifiableCredential returns true when a row was revoked, false otherwise', async () => {
-    const revoked = clientReturning({ rowCount: 1 });
-    expect(await revokeVerifiableCredential(revoked.client, 't1', 'vc-1')).toBe(true);
-    const none = clientReturning({ rowCount: 0 });
-    expect(await revokeVerifiableCredential(none.client, 't1', 'vc-9')).toBe(false);
-    const nullish = clientReturning({ rowCount: null });
-    expect(await revokeVerifiableCredential(nullish.client, 't1', 'vc-9')).toBe(false);
+  it('revokeVerifiableCredential returns the status-list position, or null when nothing was revoked', async () => {
+    const revocable = clientReturning({
+      rows: [{ status_list_id: 'sl-1', status_list_index: 4 }],
+    });
+    expect(await revokeVerifiableCredential(revocable.client, 't1', 'vc-1')).toEqual({
+      statusListId: 'sl-1',
+      statusListIndex: 4,
+    });
+    // A CONTRACT_SIGNATURE VC occupies no bit — revoked in the DB, nothing to publish.
+    const pointInTime = clientReturning({
+      rows: [{ status_list_id: null, status_list_index: null }],
+    });
+    expect(await revokeVerifiableCredential(pointInTime.client, 't1', 'vc-2')).toEqual({
+      statusListId: null,
+      statusListIndex: null,
+    });
+    const none = clientReturning({ rows: [] });
+    expect(await revokeVerifiableCredential(none.client, 't1', 'vc-9')).toBeNull();
+  });
+
+  it('writeAuditLog serialises metadata, and stores NULL when there is none', async () => {
+    const withMeta = clientReturning({ rows: [] });
+    await writeAuditLog(withMeta.client, {
+      tenantId: 't1',
+      actorId: 'u1',
+      action: 'CREDENTIAL_REVOKED',
+      resourceType: 'verifiable_credential',
+      resourceId: 'vc-1',
+      metadata: { statusListId: 'sl-1' },
+    });
+    expect((withMeta.query.mock.calls[0] as unknown as [string, unknown[]])[1][5]).toBe(
+      '{"statusListId":"sl-1"}',
+    );
+    const noMeta = clientReturning({ rows: [] });
+    await writeAuditLog(noMeta.client, {
+      tenantId: 't1',
+      actorId: 'u1',
+      action: 'CREDENTIAL_ISSUED',
+      resourceType: 'verifiable_credential',
+      resourceId: 'vc-2',
+    });
+    expect((noMeta.query.mock.calls[0] as unknown as [string, unknown[]])[1][5]).toBeNull();
   });
 });

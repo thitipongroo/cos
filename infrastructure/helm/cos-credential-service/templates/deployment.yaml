@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "cos-credential-service.fullname" . }}
+  labels: {{ include "cos-credential-service.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {{ include "cos-credential-service.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{ include "cos-credential-service.selectorLabels" . | nindent 8 }}
+      annotations:
+        # The service exposes no metrics endpoint today (no OTel/prom-client) — scraping would only
+        # produce a dead target. Flip to "true" with a metricsPort when instrumentation lands.
+        prometheus.io/scrape: "false"
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: credential-service
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          env:
+            {{- range $k, $v := .Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          envFrom: {{ toYaml .Values.envFrom | nindent 12 }}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          livenessProbe: {{ toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe: {{ toYaml .Values.readinessProbe | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}

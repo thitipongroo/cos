@@ -90,7 +90,15 @@ registered in the topic-catalog: `finance.contract.document_attached.v1` (attach
 `finance.contract.signature_recorded.v1` (each signature, CT-3/CT-5), and `finance.contract.signed.v1`
 (the draft→signed transition, emitted when both a VERIFIED INTERNAL and a VERIFIED CLIENT signature exist).
 Contract status is a free `VARCHAR` (`DRAFT`→`SIGNED`→`ACTIVE`→`TERMINATED`); new contracts now default to
-`DRAFT`. `signed→active`/`terminated` remain existing/manual states — not driven by signing.
+`DRAFT`.
+
+**`signed→active` / `terminated` (CT-8, 2026-07-21):** this ADR calls the move to `active` "downstream" of
+`ContractSigned` and its semantics "unchanged", but names no trigger — and no consumer existed, so a signed
+contract could never reach `ACTIVE` (where billing milestones + retention run, §11). Product-owner decision:
+make both explicit authorized actions rather than infer a rule — `POST /contracts/{id}/activate`
+(guard: must be `SIGNED`) and `POST /contracts/{id}/terminate` (guard: `SIGNED` or `ACTIVE`), both
+`PROJECT_MANAGER`/`TENANT_ADMIN` (contract-write authority, consistent with `createContract`). No new events
+were added for these transitions — §16.2 defines none.
 
 ### RBAC (§6)
 
@@ -111,6 +119,12 @@ Contract status is a free `VARCHAR` (`DRAFT`→`SIGNED`→`ACTIVE`→`TERMINATED
   the exact client-DID issuance flow (ephemeral vs persistent) is an implementation detail to settle in build.
 - **Legal validity under Thai ETA / ETDA is a compliance follow-up** — this ADR fixes the technical
   mechanism, not a legal opinion; in-country counsel (per §28 legal-review pattern) confirms admissibility.
+  The engineering half of that follow-up is now closed: `docs/compliance/thai-eta-signature-briefing.md`
+  describes exactly what the mechanism retains and proves, states the seven properties most likely to
+  decide the opinion (chief among them that client identity assurance rests on an emailed single-use
+  link, with no ID or OTP check), and lists the questions counsel must answer plus the remedies
+  available if the answer requires them. Engaging counsel is a product-owner action; the gate is before
+  the first tenant signs a client contract in production.
 - In-app **document generation** adds a contract-template capability (templating from Contract + BOQ) — a
   build task, not yet templated.
 

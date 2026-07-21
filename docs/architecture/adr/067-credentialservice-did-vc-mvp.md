@@ -101,8 +101,9 @@ CredentialService **first** (this ADR), then contract signing (ADR-058) is re-ba
 
 - **Large, security-critical crypto build** — requires a STRIDE review (§5.9), key-management hardening,
   and test vectors; it is a hard blocker in front of contract signing (serialises the two).
-- ⚑ Revocation (Status List 2021), ⚑ storage schema, and ⚑ key-rotation policy are proposed as W3C /
-  §5.2 standard defaults — confirm or override at build-plan approval.
+- ⚑ Revocation (Status List 2021) and ⚑ storage schema are **built and verified** (CS-6, see
+  implementation status below); ⚑ key-rotation policy is still a proposed §5.2 standard default —
+  confirm or override at build-plan approval.
 - `did:web` requires a resolvable per-tenant domain/well-known path — a deployment/DNS dependency to
   confirm for on-prem tenants.
 - ADR-058 must be updated to re-base contract signing onto CredentialService (signer = **ephemeral
@@ -129,6 +130,69 @@ CredentialService **first** (this ADR), then contract signing (ADR-058) is re-ba
   coverage not collected); the unit run stays offline + 100%.
 - **Crypto test vectors.** `crypto-vectors.spec.ts` locks Ed25519 (RFC 8032) key derivation + signature
   bytes for a fixed seed, tamper rejection, and a full issue→verify round-trip.
+
+### Implementation status (CS-6 — revocation wired, verified 2026-07-21)
+
+- **Status List 2021 is now live end-to-end**, closing the gap where `status-list.ts` and
+  `revocation_status_lists` existed but nothing used them: issued VCs carried no `credentialStatus`, so
+  offline revocation checking did not work. Worker VCs now claim a bit at issuance, revocation flips and
+  re-signs it, and both commit in the transaction that changes the VC row.
+- **`credentialStatus` needs its JSON-LD context registered offline.** `@digitalbazaar/security-document-loader`
+  does **not** ship `https://w3id.org/vc/status-list/2021/v1`; without it, signing a revocable VC or the
+  list credential fails JSON-LD safe mode. Served statically from `@digitalbazaar/vc-status-list-context`
+  (added as a direct dependency, Rule 26) — still no outbound fetch at issue or verify time.
+- **`checkStatus` is mandatory, not optional.** `@digitalbazaar/vc` refuses to verify any credential
+  carrying `credentialStatus` unless a `checkStatus` function is supplied, so revocable VCs would have
+  failed verification outright. `verify` now supplies a checker that reads the bit from the caller
+  tenant's own row — no fetch of the attacker-supplied `statusListCredential` URL, so no second SSRF
+  path — and fails closed on any status entry it cannot resolve to one of our lists.
+- **Verify semantics.** Per §Verification above, verification = proof **and** status: the endpoint
+  returns `{ verified, revoked }`, and a revoked credential is never `verified`. `revoked` is reported
+  separately so a caller can tell "was valid, now revoked" from "bad proof".
+- **New public surface.** The signed list is published unauthenticated at
+  `/tenants/:tenantId/status-lists/:statusListId` (mirroring `did.json`; both added to the auth plugin's
+  public-path allowlist). STRIDE rows added in §5.9.8 — herd privacy, tamper/rollback, spoofed status
+  list, cross-tenant read.
+- **Coverage.** Unit 100/100/100/100 (79 tests); `status-list.integration.spec.ts` proves
+  issue → publish → verify(true) → revoke → verify(revoked) plus per-tenant RLS on a real Postgres.
+
+### Implementation status (DP-1..DP-6 — deployment wiring, verified 2026-07-21)
+
+The service was fully built and tested but had **no deployment artifacts whatsoever** — no Dockerfile,
+docker-compose entry, Helm chart, Kong route, TLS certificate, DNS record or CI job. It could not run
+in any environment, and three of the four open §5.9.8 `[verify]` items were unverifiable for that
+reason. Now wired end to end:
+
+- **Public host resolved** (the "deployment/DNS dependency to confirm" noted above):
+  `credentials.construction-os.io` (staging `credentials-staging.construction-os.io`). Single-label
+  form deliberately — the existing `*.construction-os.io` wildcard certificate does not cover a second
+  label, and did:web is HTTPS-only, so an uncovered host would make every credential unverifiable.
+- **Edge:** a Kong service exposing _only_ the two unauthenticated GETs (regex-anchored), with
+  IP rate limiting and `request-transformer.remove` stripping client-supplied identity headers.
+  issue/verify/revoke are deliberately unrouted — mesh-only. Validated with `kong config parse` (3.9).
+- **TLS/DNS:** cert-manager `cos-credentials-tls` + a Cloudflare CNAME, behind `ssl = strict` /
+  TLS 1.3.
+- **Runtime:** Dockerfile (root context, port 3009, non-root, read-only rootfs), a Helm chart mirroring
+  cos-file-service minus the metrics port (the service exposes none), an ArgoCD Application, and an
+  ExternalSecret. Image build + container run verified: `/health` 200, public path not 401,
+  authenticated path 401 without headers, container log empty.
+- **RLS invariant made explicit:** the service's `DATABASE_URL` is fed from `APP_DATABASE_URL`
+  (`app_user`), never the privileged `cos` role — a superuser connection silently bypasses every RLS
+  policy the credentials schema depends on. Compose uses `app_user` for the same reason.
+- **CI:** unit + coverage, Testcontainers integration, docker build, security scan, ECR push and the
+  GitOps tag bump now include the service (previously none did).
+
+**DP-8 — structured logging.** The service previously emitted nothing at all, leaving issuance and
+revocation invisible outside the audit table. It now logs `credential.issued` / `.revoked` /
+`.verified` with tenant, actor and trace ids. It uses a local pino instance rather than `@cos/logger`:
+that package is CommonJS and `tsconfig.base.json` maps `@cos/*` to source, so importing it from this
+ESM service would force `rootDir: "../.."` on the package and change the emitted dist layout (and the
+Dockerfile entrypoint). The pino options mirror `@cos/logger` exactly, so the log shape is unchanged
+across services. `logging.spec.ts` pins what may be logged — an allowlist of id/enum/boolean fields —
+and asserts no proof, key material, claim or credential body reaches a log line.
+
+Still open: metrics and traces. No Prometheus scrape job was added because there is no metrics endpoint
+to scrape (the same reason the existing `file-service:9464` target can never come up — see §5.9.8).
 
 ## References
 

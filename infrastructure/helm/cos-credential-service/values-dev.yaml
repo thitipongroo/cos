@@ -1,0 +1,12 @@
+replicaCount: 1
+image:
+  repository: 'cos-credential-service'
+  tag: 'dev'
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+env:
+  NODE_ENV: 'development'
+  # Dev DIDs are throwaway: did:web mandates HTTPS, so a local host is unresolvable by design.
+  DID_WEB_BASE_DOMAIN: 'credentials.localhost'

@@ -8,6 +8,7 @@ const ERRORS = {
   ISSUER_NOT_FOUND: 'No issuer DID document exists for this tenant',
   VC_NOT_FOUND: 'Verifiable credential not found or already revoked',
   INVALID_REQUEST: 'Invalid request body',
+  STATUS_LIST_NOT_FOUND: 'No status list exists at this URL',
 } as const;
 
 export type ErrorKey = keyof typeof ERRORS;

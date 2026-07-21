@@ -8,5 +8,6 @@ declare module '@digitalbazaar/did-method-key';
 declare module '@digitalbazaar/did-method-web';
 declare module '@digitalbazaar/did-io';
 declare module '@digitalbazaar/vc-status-list';
+declare module '@digitalbazaar/vc-status-list-context';
 declare module '@digitalbazaar/security-document-loader';
 declare module 'jsonld';

@@ -15,6 +15,7 @@
   "dependencies": {
     "@cos/logger": "workspace:*",
     "@cos/shared": "workspace:*",
+    "@cos/tracing": "workspace:*",
     "@cos/types": "workspace:*",
     "@fastify/cors": "^11.2.0",
     "@fastify/helmet": "^13.0.2",

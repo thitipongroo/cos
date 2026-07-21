@@ -87,6 +87,47 @@ services:
           redis_port: 6379
           fault_tolerant: true
           error_code: 429
+      # ── Identity forwarding (§5.9.4) ──────────────────────────────────────
+      # file-service's auth plugin trusts x-tenant-id / x-user-id / x-user-role as "Kong-forwarded
+      # verified claims" (services/file-service/src/plugins/auth.ts) — but nothing here ever set
+      # them. The route was therefore both broken (mobile/web send only a Bearer token, so every
+      # upload 401'd) and unsafe (a client that supplied the headers itself would have been believed,
+      # i.e. acted as any tenant). Two plugins close both halves:
+      #   1. remove — drop whatever the client sent, unconditionally.
+      #   2. post-function — re-add them from the JWT the `jwt` plugin already verified.
+      # post-function runs late in the access phase, so the token is available and its signature has
+      # already been checked; a request that fails `jwt` never reaches it.
+      - name: request-transformer
+        config:
+          remove:
+            headers:
+              - x-tenant-id
+              - x-user-id
+              - x-user-role
+      - name: post-function
+        config:
+          access:
+            # Claim names are authoritative per spec §5.4.1 / backend JwtPayload: `user_id` is the
+            # platform user UUID and is deliberately NOT `sub` (that is the Keycloak user id).
+            # Values are matched with a strict [%w_%-]+ class so a hostile claim cannot inject a
+            # CR/LF or a quote into the header — a non-matching claim yields "", and the service's
+            # auth plugin then 401s. Fail closed. Uses only sandbox-safe Lua (no `require`), so no
+            # cluster-wide `untrusted_lua_sandbox_requires` relaxation is needed.
+            - |
+              local token = kong.ctx.shared.authenticated_jwt_token
+              if not token then return end
+              local b64 = token:match("^[^.]+%.([^.]+)%.")
+              if not b64 then return end
+              b64 = b64:gsub("-", "+"):gsub("_", "/")
+              local pad = #b64 % 4
+              if pad > 0 then b64 = b64 .. string.rep("=", 4 - pad) end
+              local payload = ngx.decode_base64(b64) or ""
+              local function claim(name)
+                return payload:match('"' .. name .. '"%s*:%s*"([%w_%-]+)"') or ""
+              end
+              kong.service.request.set_header("x-tenant-id", claim("tenant_id"))
+              kong.service.request.set_header("x-user-id", claim("user_id"))
+              kong.service.request.set_header("x-user-role", claim("role"))
 
   # ── AI gateway ────────────────────────────────────────────────────────────
   - name: ai-gateway
@@ -110,6 +151,47 @@ services:
           redis_port: 6379
           fault_tolerant: true
           error_code: 429
+
+  # ── CredentialService: public W3C DID/VC resolution only (ADR-067, §5.9.8) ──
+  # Own host, not a path under api.*: only the two unauthenticated GETs a third-party verifier needs
+  # are edge-exposed. issue / verify / revoke stay internal-mesh only and are deliberately absent here —
+  # they must never be reachable from the internet.
+  #
+  # did:web mandates HTTPS, so this host must stay TLS-terminated (cert-manager `cos-credentials-tls`).
+  # The DID and status-list URLs are baked into every credential already issued, so the host and both
+  # path shapes are effectively permanent — DID_WEB_BASE_DOMAIN must match this host exactly.
+  - name: credential-service
+    url: http://credential-service.cos.svc.cluster.local:3009
+    routes:
+      - name: credential-public-did
+        hosts: ['credentials.construction-os.io']
+        # Kong 3.x: `~` marks a regex path. Anchored so nothing else on the service is exposed.
+        paths:
+          - '~/tenants/[^/]+/did\.json$'
+          - '~/tenants/[^/]+/status-lists/[^/]+$'
+        strip_path: false
+        methods: [GET, OPTIONS]
+    plugins:
+      # No jwt plugin: a third-party verifier holds no platform identity (BG-001).
+      - name: request-transformer
+        config:
+          remove:
+            # §5.9.8 (S): the service's auth plugin trusts these headers as gateway-set. Strip anything
+            # a client supplies so a public request can never present itself as an authenticated one.
+            headers:
+              - x-tenant-id
+              - x-user-id
+              - x-user-role
+      - name: rate-limiting
+        config:
+          minute: 60
+          policy: redis
+          redis_host: redis.cos.svc.cluster.local
+          redis_port: 6379
+          limit_by: ip # unauthenticated — no consumer to key on
+          fault_tolerant: true
+          error_code: 429
+          error_message: 'Rate limit exceeded'
 
   # ── Health endpoints: no auth, relaxed rate limit ─────────────────────────
   - name: backend-health

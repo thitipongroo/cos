@@ -190,6 +190,16 @@ jobs:
       - name: Unit tests + coverage — @cos/config
         working-directory: packages/@cos/config
         run: pnpm run test:cov
+      # Both Fastify services enforce the same 100% lines/branches gate in their own jest.config.js.
+      # Neither run needs Docker: file-service's `integration` specs are mock-based, and
+      # credential-service's Testcontainers suites live in the separate integration job below.
+      - name: Unit tests + coverage — file-service
+        working-directory: services/file-service
+        run: pnpm run test:cov
+      # ESM service — jest runs under --experimental-vm-modules (see its package.json scripts).
+      - name: Unit tests + coverage — credential-service (QM-1 crypto/DID-VC)
+        working-directory: services/credential-service
+        run: pnpm run test:cov
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -205,6 +215,8 @@ jobs:
             packages/@cos/logger/coverage/
             packages/@cos/tracing/coverage/
             packages/@cos/config/coverage/
+            services/file-service/coverage/
+            services/credential-service/coverage/
 
   # ─── Step 3b: Mobile Tests (apps/mobile — standalone Expo/RN workspace) ──────
   # apps/mobile is EXCLUDED from the repo-root pnpm workspace (React Native + Metro
@@ -334,6 +346,11 @@ jobs:
       - name: Run integration tests
         working-directory: backend
         run: pnpm run test:integration
+      # Testcontainers Postgres + the credentials migration: RLS isolation, did:web verification and
+      # the Status List revocation loop (ADR-067 CS-9/CS-6).
+      - name: Run integration tests — credential-service
+        working-directory: services/credential-service
+        run: pnpm run test:integration
 
   # ─── Step 4b: Multi-tenant Isolation Tests ──────────────────────────────────
   # Source: spec §30.6 — Cross-tenant data access is a Critical Security Defect; blocks PR merge
@@ -415,6 +432,11 @@ jobs:
           - service: services/file-service
             context: .
             file: services/file-service/Dockerfile
+          # Root context: pnpm workspace member — the frozen install needs every workspace
+          # package.json present (see its Dockerfile header).
+          - service: services/credential-service
+            context: .
+            file: services/credential-service/Dockerfile
           - service: apps/web
             context: .
             file: apps/web/Dockerfile
@@ -539,6 +561,11 @@ jobs:
           - service: services/file-service
             context: .
             file: services/file-service/Dockerfile
+          # Root context: pnpm workspace member — the frozen install needs every workspace
+          # package.json present (see its Dockerfile header).
+          - service: services/credential-service
+            context: .
+            file: services/credential-service/Dockerfile
           - service: apps/web
             context: .
             file: apps/web/Dockerfile
@@ -604,6 +631,7 @@ jobs:
         service:
           - backend
           - services/file-service
+          - services/credential-service
           - services/ai-gateway
           - services/analytics-worker
           - services/kg-ingestion-worker
@@ -650,7 +678,7 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          for SERVICE in backend services/file-service services/ai-gateway services/analytics-worker services/kg-ingestion-worker services/ai-embedding-worker services/ai-ocr-pipeline apps/web; do
+          for SERVICE in backend services/file-service services/credential-service services/ai-gateway services/analytics-worker services/kg-ingestion-worker services/ai-embedding-worker services/ai-ocr-pipeline apps/web; do
             NAME="cos-$(basename ${SERVICE})"
             FILE="infrastructure/helm/${NAME}/values-prod.yaml"
             sed -i "s|  tag: '.*'|  tag: '${IMAGE_TAG}'|" "${FILE}"

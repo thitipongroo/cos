@@ -1,0 +1,19 @@
+replicaCount: 3
+image:
+  repository: ''
+  tag: 'latest'
+resources:
+  requests:
+    cpu: '300m'
+    memory: '384Mi'
+  limits:
+    cpu: '1000m'
+    memory: '1Gi'
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 12
+podDisruptionBudget:
+  minAvailable: 2
+env:
+  NODE_ENV: 'production'
+  DID_WEB_BASE_DOMAIN: 'credentials.construction-os.io'

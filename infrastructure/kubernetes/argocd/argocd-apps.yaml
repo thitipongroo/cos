@@ -91,6 +91,38 @@ spec:
         factor: 2
 
 ---
+# ─── CredentialService (W3C DID/VC — ADR-067) ─────────────────────────────────
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-credential-service
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/helm/cos-credential-service
+    helm:
+      valueFiles:
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cos
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2
+
+---
 # ─── AI Gateway ───────────────────────────────────────────────────────────────
 apiVersion: argoproj.io/v1alpha1
 kind: Application
