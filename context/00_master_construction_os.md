@@ -1419,8 +1419,20 @@ backend/prisma/           — Database schema and migrations
   migrations/             — Prisma migration files (per tenant schema)
 
 ai/
-  prompts/                — Prompt templates (versioned)
-  chains/                 — LangChain chain definitions
+  prompts/                — Prompt templates (versioned). Repo-root, and BAKED INTO the ai-gateway
+                            image (its Dockerfile builds from the repo-root context and COPYs this
+                            directory to /app/ai/prompts). A service-scoped build context cannot
+                            reach it, and the image then dies at import with
+                            "Could not locate ai/prompts" — compose hid that behind a bind mount
+                            while the Helm chart had no equivalent.
+  chains/                 — DEPRECATED as a chain-config location; kept empty. LangChain chain
+                            definitions are service-local: services/ai-gateway/ai/chains/*.yaml,
+                            resolved via providers.langchain_config.CHAINS_DIR (override:
+                            AI_CHAINS_DIR). Two divergent rag.yaml files on different schemas existed
+                            here and there — retrieval.py read the repo-root one via a parents[3]
+                            walk that IndexErrors inside the container, while langchain_config.py
+                            read the service-local one. Product-owner decision 2026-07-21:
+                            service-local is canonical; the repo-root copy was merged in and deleted.
   (AI output evaluation — it is operationalized via MLflow / Evidently AI on a monthly cadence; see docs/specifications/30-testing-strategy.md §30.11)
 
 docs/
@@ -1436,7 +1448,10 @@ scripts/
 Tooling:
 
 - Node.js runtime: 24.x (root `package.json` `engines.node` `>=24.0.0`; Docker images use `node:24-alpine`)
-- Package manager: pnpm 11.9.x with workspace protocol (root `package.json` pins `packageManager: pnpm@11.9.0`; `engines.pnpm` `>=11.0.0`)
+- Package manager: pnpm — latest stable 11.x with workspace protocol. Do NOT pin a fixed patch
+  version in this spec: root `package.json` `packageManager` carries whatever 11.x release the repo
+  is currently on (Corepack pins the exact build for reproducibility), and `engines.pnpm` stays
+  `>=11.0.0`. Only the major line (11) is normative — a patch/minor bump is not a spec deviation.
 - Monorepo orchestration: Turborepo 2.x
 - TypeScript: 6.x (strict mode, no implicit any)
 - Linting: ESLint 10.x flat config (root `eslint.config.mjs`)
@@ -1456,7 +1471,15 @@ Generate:
     packages/@cos/: shared, database, rbac, validation, logger, tracing, financial,
                     types, config
     Each README must contain: purpose, public API, dependencies, configuration, usage example (QM-11)
-- root pnpm-workspace.yaml with all packages listed
+- root pnpm-workspace.yaml listing every workspace member: `apps/*`, `backend`, `services/*`,
+  `packages/@cos/*`.
+  **Mobile workspace exception (mirrors the tsconfig exception below):** `apps/mobile` is explicitly
+  EXCLUDED via `!apps/mobile`. React Native + Expo + Metro + CocoaPods assume a flat (hoisted)
+  `node_modules`, which pnpm's isolated linker breaks — Metro cannot resolve transitive
+  `expo-*` / `@react-native/*` packages. `apps/mobile` installs standalone with
+  `node-linker=hoisted` (`apps/mobile/.npmrc`) via `pnpm install --ignore-workspace`, consuming
+  `@cos/types` as a `file:` dependency. Nothing in turbo/CI references `@cos/mobile`; mobile lint,
+  type-check and tests run as their own CI job. This exclusion is REQUIRED, not a deviation.
 - turbo.json with build, test, lint, dev pipelines
 - root tsconfig.base.json (strict, paths for @cos/* packages)
 - per-service tsconfig.json extending base
@@ -3452,7 +3475,9 @@ AI Services (FastAPI — all in ai/ directory):
          Chunking strategy:
            - Documents: recursive character splitter, chunk_size=500, overlap=100
            - Site reports: treat each report as one chunk (typically <500 tokens)
-         Chain config: stored in ai/chains/ as YAML per chain type
+         Chain config: stored in services/ai-gateway/ai/chains/ as YAML per chain type
+                       (service-local — resolved via providers.langchain_config.CHAINS_DIR,
+                        override AI_CHAINS_DIR; NOT repo-root ai/chains/ — PO decision 2026-07-21)
          Interface: LangChainProviderConfig.buildChain(chainType, tenantId): Chain
    API: POST /api/v1/ai/completions  { template_name, variables, model_hint? }
         POST /api/v1/rag/query       { query, tenant_id, entity_types?, top_k? }

@@ -583,8 +583,11 @@ services:
   # ─── AI Gateway (FastAPI) ─────────────────────────────────────────────────
   ai-gateway:
     build:
-      context: ./services/ai-gateway
-      dockerfile: Dockerfile
+      # Root context: the image bakes in repo-root ai/prompts (see the Dockerfile header). The
+      # PROMPTS_DIR env + bind mount below are now a dev convenience — edit a prompt and restart
+      # without rebuilding — not the thing that makes the service start.
+      context: .
+      dockerfile: services/ai-gateway/Dockerfile
     container_name: cos-ai-gateway
     profiles: ['apps']
     env_file:

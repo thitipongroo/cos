@@ -239,6 +239,81 @@ jobs:
         working-directory: apps/mobile
         run: pnpm run test:cov
 
+  # ─── Step 3c: Go Worker Tests ───────────────────────────────────────────────
+  # These suites existed but nothing ran them: CI's only `pytest`/`go test` invocation was
+  # `pytest mlops/tests/`, so 13 Go test files across three workers were never executed on any PR.
+  # (`govulncheck` below is a vulnerability scan, not a test run.) QM-1 requires them in CI.
+  go-tests:
+    name: Go Tests — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - services/analytics-worker
+          - services/kg-ingestion-worker
+          - services/iot-ingestion-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.service }}/go.mod
+          cache-dependency-path: ${{ matrix.service }}/go.sum
+      - name: go test
+        working-directory: ${{ matrix.service }}
+        run: go test ./... -race
+
+  # ─── Step 3d: Python Service Tests ──────────────────────────────────────────
+  # Same gap as go-tests: 24 pytest files across five services never ran in CI.
+  #
+  # COVERAGE GATE IS LIVE. Each service's pytest.ini carries `--cov --cov-fail-under=99` (QM-1);
+  # all five are at 100% line coverage as of 2026-07-21. The gate lives in pytest.ini rather than
+  # here so a local `pytest` run enforces exactly what CI does.
+  #
+  # The measured baselines that led here were NOT the ones first reported: counting `tests/` in the
+  # coverage source badly distorted them (ai-gateway read 36% when it was 70%, ai-embedding-worker
+  # 30% when it was 77%). Each service has a `.coveragerc` that omits `tests/` — do not drop it, or
+  # the numbers silently inflate again.
+  python-tests:
+    name: Python Tests — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - services/ai-gateway
+          - services/ai-embedding-worker
+          - services/ai-ocr-pipeline
+          - services/ai-transcription-pipeline
+          - services/bim-import-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: |
+          python -m pip install --upgrade pip
+          # requirements-dev.txt already `-r requirements.txt`; not every service ships one.
+          if [ -f requirements-dev.txt ]; then
+            pip install -r requirements-dev.txt
+          else
+            pip install -r requirements.txt
+          fi
+          pip install pytest pytest-asyncio
+      - name: pytest
+        working-directory: ${{ matrix.service }}
+        # ai-gateway resolves prompt templates relative to the repo checkout here (no container
+        # flattening), so no PROMPTS_DIR is needed. OTel is disabled so the exporter does not spend
+        # the job retrying a collector that is not running.
+        env:
+          OTEL_SDK_DISABLED: 'true'
+        # No path argument: each service's pytest.ini `testpaths` is authoritative. Hardcoding
+        # `tests` here silently skipped services/ai-gateway/digital_twin/tests/ — three suites that
+        # pass and cover 64 statements the report counted as untested.
+        run: python -m pytest -q
+
   # ─── Step 4a: Integration Tests ─────────────────────────────────────────────
   # Source: spec §30.4 — Testcontainers (PostgreSQL, Redis) per test run; blocks PR merge
   integration-tests:
@@ -306,7 +381,18 @@ jobs:
   build-docker:
     name: Build Docker — ${{ matrix.service }}
     runs-on: ubuntu-latest
-    needs: [lint, type-check, build, unit-tests, integration-tests, isolation-tests, contract-tests]
+    needs:
+      [
+        lint,
+        type-check,
+        build,
+        unit-tests,
+        integration-tests,
+        isolation-tests,
+        contract-tests,
+        go-tests,
+        python-tests,
+      ]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
       # Build context differs per service and is NOT uniform — passing one context for all of them
@@ -332,9 +418,11 @@ jobs:
           - service: apps/web
             context: .
             file: apps/web/Dockerfile
+          # ai-gateway is NOT self-contained: it needs repo-root ai/prompts baked in (see its
+          # Dockerfile header), so it builds from the root context like backend/file-service/web.
           - service: services/ai-gateway
-            context: services/ai-gateway
-            file: Dockerfile
+            context: .
+            file: services/ai-gateway/Dockerfile
           - service: services/analytics-worker
             context: services/analytics-worker
             file: Dockerfile
@@ -438,17 +526,40 @@ jobs:
     needs: [build-docker]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
+      # Must mirror build-docker's context/file pairs exactly. This job used a uniform `context: .`
+      # with `file: <service>/Dockerfile`, which is the arrangement build-docker had already been
+      # fixed away from: the five self-contained services COPY `requirements.txt` / `go.mod` from
+      # their own directory, so a root context fails with `"/requirements.txt": not found`. Since the
+      # job only runs on main/staging, the breakage never showed up on a PR.
       matrix:
-        service:
-          - backend
-          - services/file-service
-          - services/ai-gateway
-          - services/analytics-worker
-          - services/kg-ingestion-worker
-          - services/ai-embedding-worker
-          - services/ai-ocr-pipeline
-          - services/ai-transcription-pipeline
-          - apps/web
+        include:
+          - service: backend
+            context: .
+            file: backend/Dockerfile
+          - service: services/file-service
+            context: .
+            file: services/file-service/Dockerfile
+          - service: apps/web
+            context: .
+            file: apps/web/Dockerfile
+          - service: services/ai-gateway
+            context: .
+            file: services/ai-gateway/Dockerfile
+          - service: services/analytics-worker
+            context: services/analytics-worker
+            file: Dockerfile
+          - service: services/kg-ingestion-worker
+            context: services/kg-ingestion-worker
+            file: Dockerfile
+          - service: services/ai-embedding-worker
+            context: services/ai-embedding-worker
+            file: Dockerfile
+          - service: services/ai-ocr-pipeline
+            context: services/ai-ocr-pipeline
+            file: Dockerfile
+          - service: services/ai-transcription-pipeline
+            context: services/ai-transcription-pipeline
+            file: Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -458,8 +569,8 @@ jobs:
       - name: Rebuild image from GHA cache
         uses: docker/build-push-action@v5
         with:
-          context: .
-          file: ${{ matrix.service }}/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
           push: false
           cache-from: type=gha
           tags: ${{ steps.name.outputs.short }}:${{ github.sha }}

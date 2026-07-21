@@ -37,6 +37,18 @@ anthropic>=0.40
 langchain>=0.3
 langchain-openai>=0.2
 langchain-community>=0.3
-# Cross-encoder reranker. NOTE: pulls torch (large) — reranker is a conditional stage (§22.7 trigger
-# p95 relevance < 0.7), but the model must be present for the stage to activate.
-sentence-transformers>=3.0
+# Cross-encoder reranker (§22.7 Cross-Encoder Reranking / RAG-001) — DEPENDENCY DELIBERATELY OMITTED.
+#
+# `sentence-transformers` pulls the default PyPI torch wheel, which is the CUDA build: it added
+# ~4.5 GB to this image (nvidia 2.7 GB + torch 1.1 GB + triton 0.7 GB) and took the image to 8.8 GB.
+# Nothing imports it today: `SentenceTransformerReranking` is never constructed in application code
+# (rag/retrieval.py does not call a reranker yet), its `from sentence_transformers import CrossEncoder`
+# is lazy inside `_ensure_model()`, and the tests inject a fake model. So the whole CUDA stack shipped
+# on every build, to every environment, for a code path with zero callers — and the deployment target
+# (ai-pool = t3.2xlarge, no GPU; no Helm chart requests nvidia.com/gpu) could not have used it anyway.
+#
+# TO ACTIVATE the reranker stage (§22.7 trigger: RAG p95 relevance < 0.7 over a 7-day window), add it
+# back CPU-only — do NOT restore the bare requirement, or the CUDA stack returns:
+#   --extra-index-url https://download.pytorch.org/whl/cpu
+#   sentence-transformers>=3.0
+# Revisit the CPU pin only if a GPU node pool is actually introduced (§18 "GPU inference pools").

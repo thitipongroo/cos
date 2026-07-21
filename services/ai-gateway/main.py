@@ -7,6 +7,7 @@ Source: context/00_master_construction_os.md §Phase 11–12, §Phase 15
 import logging
 import math
 import os
+from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -20,7 +21,21 @@ from reports.pipeline import generate_report
 from templates.loader import render_template
 from digital_twin.router import router as digital_twin_router
 
-app = FastAPI(title="COS AI Gateway", version="0.2.0")
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Startup wiring. Replaces the deprecated `@app.on_event("startup")` decorators.
+
+    `on_event` emits a DeprecationWarning, and pytest.ini sets `filterwarnings = error`, so merely
+    importing this module aborted collection of every test file that touches it — three files failed
+    for that reason alone. Both handlers stay individually guarded, so the gateway still starts when
+    RAG backends or Kafka are unavailable.
+    """
+    await _wire_rag()
+    await _wire_digital_twin()
+    yield
+
+
+app = FastAPI(title="COS AI Gateway", version="0.2.0", lifespan=_lifespan)
 configure_telemetry(app)
 
 # Phase 24 Digital Twin API (§33.3 — the Digital Twin Service runs inside the AI Gateway). The
@@ -71,7 +86,6 @@ class RAGQueryResponse(BaseModel):
     sources: list[dict]
 
 
-@app.on_event("startup")
 async def _wire_rag() -> None:
     """Build the real RAG retriever when the backends are configured (§22.7). Guarded and non-fatal:
     an unconfigured or unreachable backend leaves _retriever = None and /rag/query keeps its 503
@@ -88,7 +102,6 @@ async def _wire_rag() -> None:
         _retriever = None
 
 
-@app.on_event("startup")
 async def _wire_digital_twin() -> None:
     """Launch the Digital Twin telemetry consumer (§33.3 write path) when Kafka + a DB pool are
     available. Fire-and-forget background task; guarded so a missing broker leaves the twin API's

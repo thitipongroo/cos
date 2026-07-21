@@ -29,6 +29,18 @@ retrieval:
     method: rrf # Reciprocal Rank Fusion — combines by rank position, no score normalization
     rank_constant: 60 # library default; tune only if a benchmark dictates (§22.7 RAG-001)
   final_top_k: 5 # §22.7 RAG-001 "top-k = 5 context assembly"
+  max_context_tokens: 4000 # §22.7 "Context assembly: top-k=5 chunks, max context 4000 tokens"
+
+chunking:
+  # §22.7 Chunking strategy. No code reads this block yet — ai-embedding-worker/utils/chunking.py
+  # carries the same numbers as Python defaults — but it is the spec-traceable source of truth and
+  # is kept so the values live in one declared place rather than only in code.
+  documents:
+    strategy: recursive_character
+    chunk_size: 500
+    chunk_overlap: 100
+  site_reports:
+    strategy: single_chunk # each report treated as one chunk (<500 tokens)
 
 rerank:
   # §22.7 Cross-Encoder Reranking — conditional stage.

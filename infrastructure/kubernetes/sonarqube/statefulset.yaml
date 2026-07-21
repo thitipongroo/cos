@@ -1,0 +1,172 @@
+# SonarQube Community Edition — SAST + code quality gate (QM-4, spec §30.10 / §30.12)
+# Namespace: cos
+# Backend store: PostgreSQL on the existing RDS instance, dedicated `sonarqube` database
+#                (connection via sealed-secret) — same pattern as infrastructure/kubernetes/mlflow.
+# CLOUD: AWS — replace storage class / RDS host for GCP/on-prem
+#
+# ⚠️ NODE PREREQUISITE — READ infrastructure/kubernetes/sonarqube/README.md BEFORE DEPLOYING.
+# SonarQube embeds Elasticsearch, which refuses to start unless the NODE has
+# `vm.max_map_count >= 262144`. That sysctl is set at node provisioning (EKS launch template /
+# RKE2 node config), NOT by a privileged initContainer: PodSecurity `restricted` under RKE2
+# `profile:cis` (ADR-039) rejects privileged containers, and context.md records that such
+# rejections happen SILENTLY — the Deployment is admitted while the Pod never is.
+# Product-owner decision 2026-07-21.
+#
+# StatefulSet rather than Deployment because SonarQube keeps its Elasticsearch index and installed
+# plugins on disk; the volumeClaimTemplates shape mirrors infrastructure/kubernetes/kafka.
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sonarqube
+  namespace: cos
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sonarqube
+  namespace: cos
+  labels:
+    app: sonarqube
+spec:
+  serviceName: sonarqube
+  # Community Edition is single-node — it does not support horizontal scaling. More than one
+  # replica would corrupt the shared index rather than distribute load.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+    spec:
+      serviceAccountName: sonarqube
+      securityContext:
+        runAsNonRoot: true
+        # The official sonarqube image ships its filesystem owned by uid/gid 1000.
+        runAsUser: 1000
+        fsGroup: 1000
+        # DO NOT REMOVE — RKE2 profile:cis enforces PodSecurity `restricted`, which rejects Pods
+        # without a seccompProfile. The rejection is silent at the Deployment/StatefulSet level
+        # (context.md §Phase 17: found only by a real deploy, not by lint or dry-run).
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: sonarqube
+          image: sonarqube:10.6.0-community
+          ports:
+            - containerPort: 9000
+              name: http
+          env:
+            - name: SONAR_JDBC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-secrets
+                  key: jdbc_url
+            - name: SONAR_JDBC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-secrets
+                  key: jdbc_username
+            - name: SONAR_JDBC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sonarqube-secrets
+                  key: jdbc_password
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: [ALL]
+          # /api/system/status returns {"status":"UP"} only once the embedded Elasticsearch and the
+          # database migration have both finished — a plain / or /health would report ready while
+          # SonarQube was still migrating, and the first scanner call would fail.
+          startupProbe:
+            httpGet:
+              path: /api/system/status
+              port: 9000
+            # First boot runs the DB migration; give it up to 10 minutes before restarting.
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 40
+          livenessProbe:
+            httpGet:
+              path: /api/system/status
+              port: 9000
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/system/status
+              port: 9000
+            periodSeconds: 15
+          volumeMounts:
+            - name: sonarqube-data
+              mountPath: /opt/sonarqube/data
+            - name: sonarqube-extensions
+              mountPath: /opt/sonarqube/extensions
+  volumeClaimTemplates:
+    # storageClassName intentionally omitted — the cluster default is used, matching
+    # infrastructure/kubernetes/kafka/kafka-statefulset.yaml.
+    - metadata:
+        name: sonarqube-data
+      spec:
+        accessModes: ['ReadWriteOnce']
+        resources:
+          requests:
+            storage: 10Gi
+    - metadata:
+        name: sonarqube-extensions
+      spec:
+        accessModes: ['ReadWriteOnce']
+        resources:
+          requests:
+            storage: 10Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube
+  namespace: cos
+spec:
+  selector:
+    app: sonarqube
+  ports:
+    - name: http
+      port: 9000
+      targetPort: 9000
+  # ClusterIP: reached by the CI scanner over the cluster network / a port-forward. No Ingress is
+  # defined here — exposing SonarQube publicly is a separate decision (it holds source code).
+  type: ClusterIP
+
+---
+# Sealed secret placeholder — replace with actual sealed values from kubeseal (QM-4: Kubernetes
+# Secrets that live in git are committed only as SealedSecret).
+# Required keys:
+#   jdbc_url      jdbc:postgresql://<rds-host>:5432/sonarqube
+#   jdbc_username sonarqube
+#   jdbc_password <generated>
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: sonarqube-secrets
+  namespace: cos
+spec:
+  encryptedData:
+    jdbc_url: 'REPLACE_WITH_SEALED_VALUE'
+    jdbc_username: 'REPLACE_WITH_SEALED_VALUE'
+    jdbc_password: 'REPLACE_WITH_SEALED_VALUE'
+  template:
+    metadata:
+      name: sonarqube-secrets
+      namespace: cos

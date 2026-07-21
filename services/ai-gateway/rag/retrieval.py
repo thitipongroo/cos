@@ -158,14 +158,29 @@ class HybridRetriever:
 
 
 def load_rag_config() -> dict:
-    """Load ai/chains/rag.yaml (retrieval block). Falls back to defaults if the file is absent."""
-    config_path = Path(__file__).resolve().parents[3] / "ai" / "chains" / "rag.yaml"
+    """Load ai/chains/rag.yaml (retrieval block). Falls back to defaults if the file is absent.
+
+    Resolution goes through `providers.langchain_config.CHAINS_DIR`, which is the single canonical
+    location for chain config (service-local `ai/chains/`, overridable via `AI_CHAINS_DIR`).
+
+    This previously walked `parents[3]` to a SECOND rag.yaml at the repo root — a fixed-depth walk
+    that assumes the monorepo layout. In the container the service is flattened to /app, so
+    `parents[3]` raised IndexError; on a developer host it silently read a different, staler file
+    than `langchain_config.load_chain_config()` did, so the two config readers disagreed. Product
+    owner decision: the service-local copy is canonical, and the repo-root duplicate is removed.
+    """
+    from providers.langchain_config import CHAINS_DIR
+
+    config_path = CHAINS_DIR / "rag.yaml"
     if not config_path.exists():
         return {"top_k": _DEFAULT_TOP_K, "max_context_tokens": _DEFAULT_MAX_CONTEXT_TOKENS}
     config = yaml.safe_load(config_path.read_text())
     retrieval = config.get("retrieval", {})
     return {
-        "top_k": retrieval.get("top_k", _DEFAULT_TOP_K),
+        # `final_top_k` is the canonical key (the answer count after fusion); `retrieval.vector.top_k`
+        # / `retrieval.keyword.top_k` are the much larger per-backend candidate counts and must NOT be
+        # read here. `top_k` is the legacy flat key from the removed repo-root config.
+        "top_k": retrieval.get("final_top_k", retrieval.get("top_k", _DEFAULT_TOP_K)),
         "max_context_tokens": retrieval.get("max_context_tokens", _DEFAULT_MAX_CONTEXT_TOKENS),
     }
 

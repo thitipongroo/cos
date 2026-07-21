@@ -9,6 +9,15 @@ build
 out
 coverage
 
+# coverage.py data/report artifacts (Python services). `coverage` above only matches a path named
+# exactly that, so the dotfile data file and the generated reports were NOT ignored — running
+# `pytest --cov` in any service left a committable SQLite file behind. `.coveragerc` is CONFIG and
+# stays tracked, so it must not be caught by these patterns.
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
 # Expo local state/cache (apps/mobile) — regenerated per machine, must not be committed (expo-doctor)
 .expo/
 
@@ -96,5 +105,21 @@ cos-audit/*
 !cos-audit/.gitkeep
 
 # Stryker mutation testing artifacts (QM-1)
-.stryker-tmp/
-reports/mutation/
+# Leading-slash-free patterns that contain a slash are anchored to this file's directory, so a bare
+# `reports/mutation/` only ignored the repo root. Mutation runs are per-package
+# (`pnpm --filter @cos/financial test:mutation` → packages/@cos/financial/reports/mutation/), so the
+# pattern must match at any depth or every run leaves an untracked ~250 KB HTML report behind.
+**/.stryker-tmp/
+**/reports/mutation/
+
+# Terraform working state. `terraform init` downloads provider binaries into .terraform/ (hundreds
+# of MB) and plan/apply write tfstate — none of it belongs in git, and none of it was ignored, so a
+# single `terraform init` left committable artifacts behind.
+# .terraform.lock.hcl is deliberately NOT ignored: HashiCorp's guidance is to commit the provider
+# lock file so every environment resolves identical provider versions.
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+override.tf
+override_*.tf

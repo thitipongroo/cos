@@ -1,0 +1,19 @@
+# Coverage config for ai-ocr-pipeline (QM-1: 99% line coverage for Python services).
+#
+# `source = .` with `tests` omitted is deliberate: measuring the test files themselves inflates the
+# number, because they are 100% covered by definition. Mirrors services/ai-transcription-pipeline.
+[run]
+source = .
+omit =
+    tests/*
+    */site-packages/*
+
+[report]
+exclude_lines =
+    # coverage.py's default, restated because setting exclude_lines replaces it
+    pragma: no cover
+    # CLI entrypoints: the module body is tested by calling main() directly
+    if __name__ == .__main__.:
+    # abstract method bodies carry no logic
+    ^\s*\.\.\.$
+    @abstractmethod

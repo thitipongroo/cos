@@ -10,6 +10,13 @@ switch on.
 VERIFICATION NOTE: the real model load pulls torch (~GBs) and is not exercised in the lightweight
 test env. The ranking logic (pairing, sorting, order stability) is verified with an injected fake
 model; the actual CrossEncoder.predict path has not run here.
+
+DEPENDENCY NOTE: ``sentence-transformers`` is NOT installed in the ai-gateway image. It is omitted on
+purpose — the default PyPI torch wheel is the CUDA build and added ~4.5 GB for a stage that nothing
+calls yet. Constructing ``SentenceTransformerReranking`` without injecting a ``model`` therefore
+raises ``ImportError`` at ``_ensure_model()``, not at import time, so the rest of this module (and the
+``Document`` / ``RankedDocument`` contracts) stays usable. Re-add the dependency CPU-only when the
+§22.7 trigger fires — see the instructions in ``services/ai-gateway/requirements.txt``.
 """
 
 from __future__ import annotations

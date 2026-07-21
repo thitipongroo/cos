@@ -3,7 +3,30 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from eval.wer import evaluate_corpus, whitespace_tokenize, word_error_rate
+from eval.wer import _levenshtein, evaluate_corpus, whitespace_tokenize, word_error_rate
+
+
+class TestLevenshteinEmptyEdges:
+    """The two early-return guards in _levenshtein.
+
+    `word_error_rate` short-circuits an empty reference before it ever calls `_levenshtein`, so the
+    `n == 0` guard is unreachable through the public API and is exercised directly here — it is a
+    pure function, and leaving the branch untested would mean the distance matrix has an untested
+    boundary. The `m == 0` guard IS reachable publicly, so it is asserted both ways.
+    """
+
+    def test_empty_reference_costs_one_insertion_per_hypothesis_token(self):
+        assert _levenshtein([], ["a", "b", "c"]) == 3
+
+    def test_both_empty_is_zero_distance(self):
+        assert _levenshtein([], []) == 0
+
+    def test_empty_hypothesis_costs_one_deletion_per_reference_token(self):
+        assert _levenshtein(["a", "b"], []) == 2
+
+    def test_empty_hypothesis_via_public_api_is_total_loss(self):
+        # Every reference word deleted → WER 1.0 (2 deletions / 2 reference words).
+        assert word_error_rate(["a", "b"], []) == 1.0
 
 
 class TestWordErrorRate:

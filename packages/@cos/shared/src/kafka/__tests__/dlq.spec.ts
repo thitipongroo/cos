@@ -68,6 +68,30 @@ describe('DlqPublisher', () => {
     expect(headers['dlq.retry_count']).toBe('3');
   });
 
+  it('creates a tenant DLQ once, then reuses it for later failures', async () => {
+    // ensureTopic memoizes in knownTopics: the DLQ is created on the tenant's FIRST failure, and
+    // every later failure must go straight to send() — an admin round-trip per failed message
+    // would put broker latency on the path that exists to preserve messages.
+    const failure = {
+      originalTopic: 'tenant-1.construction.project.created.v1',
+      originalValue: Buffer.from('data'),
+      reason: 'HANDLER_ERROR',
+      failedAt: '2026-05-31T00:00:00Z',
+      retryCount: 3,
+    };
+
+    await publisher.publish(failure);
+    // Second failure on the same tenant — a different source topic still maps to tenant-1.dlq.
+    await publisher.publish({ ...failure, originalTopic: 'tenant-1.site.report.created.v1' });
+
+    expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(sendMock.mock.calls[0][0].topic).toBe('tenant-1.dlq');
+    expect(sendMock.mock.calls[1][0].topic).toBe('tenant-1.dlq');
+    // The admin client is driven exactly once, on the first failure only.
+    expect(createTopicsMock).toHaveBeenCalledTimes(1);
+    expect(adminConnectMock).toHaveBeenCalledTimes(1);
+  });
+
   it('throws when publish called before connect', async () => {
     const unconnected = new DlqPublisher();
     await expect(

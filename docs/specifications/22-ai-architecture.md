@@ -431,7 +431,7 @@ highest field-level accuracy on complex / variable documents in invoice-extracti
 | ---------- | ------------------------------------------------------------------------------------------------------------- |
 | Library    | `langchain>=0.3`, `langchain-openai>=0.2`                                                                     |
 | Chain type | RAG chain: retrievers (pgvector + OpenSearch) → RRF fusion → cross-encoder reranker → LLM (see §22.7 RAG-001) |
-| Config     | Chain config stored in `ai/chains/` as YAML per chain type                                                    |
+| Config     | Chain config stored in `services/ai-gateway/ai/chains/` as YAML per chain type — service-local, resolved via `providers.langchain_config.CHAINS_DIR` (override `AI_CHAINS_DIR`). NOT repo-root `ai/chains/`: that copy diverged onto a second schema and broke inside the container (PO decision 2026-07-21) |
 | Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain`                                              |
 
 ---
@@ -458,7 +458,7 @@ highest field-level accuracy on complex / variable documents in invoice-extracti
   position alone (no score normalization) and rewards documents both retrievers agree on.
 - **Pipeline:** BM25 (OpenSearch) + vector (pgvector) → RRF merge → cross-encoder reranker (§22.7
   Cross-Encoder Reranking) → top-k = 5 context assembly.
-- **Tuning:** RRF rank constant is tunable in chain config (`ai/chains/`) — use the retriever library's
+- **Tuning:** RRF rank constant is tunable in chain config (`services/ai-gateway/ai/chains/`) — use the retriever library's
   documented default unless benchmark dictates otherwise.
 
 **Industry precedent (2026):** most production hybrid-RAG systems fuse BM25 + vector with RRF, optionally
