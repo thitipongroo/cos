@@ -188,7 +188,7 @@ Production on-premise clusters are **self-managed** (no EKS control plane). Dist
   scanners cannot read its configuration — full hardening moved the CIS score by **zero** checks.
 - Cloud tiers remain on **AWS EKS** (§8.1–8.3); dev uses **k3s** (k3d on macOS/Windows). Helm charts +
   ArgoCD apps are identical across EKS and RKE2, **provided charts keep `seccompProfile:
-  RuntimeDefault`** — without it RKE2's `restricted` PodSecurity rejects every Pod while still
+RuntimeDefault`** — without it RKE2's `restricted` PodSecurity rejects every Pod while still
   admitting the Deployment (a silent failure).
 - **Host OS: Ubuntu 24.04 with the community RKE2 build** (product owner: no RHEL/SLES procurement).
   See the FIPS operating-environment caveat below — this affects what may be claimed, not whether it
@@ -216,7 +216,7 @@ Production on-premise clusters are **self-managed** (no EKS control plane). Dist
      **kube-bench only reaches v1.12**, so no automated assessment against v2.0.1 exists yet.
   3. FIPS: RKE2 carries live **FIPS 140-3** coverage (CMVP **#4735** BoringCrypto, **#4968** SUSE
      Rancher Kubernetes Cryptographic Library — both Active to 2029). **Ubuntu is not a tested
-     operating environment on either.** Running there is *user-ported*: claim "uses the FIPS 140-3
+     operating environment on either.** Running there is _user-ported_: claim "uses the FIPS 140-3
      validated BoringCrypto module on a user-ported OE", **never** "FIPS 140-3 validated".
 - **Pin Kubernetes at 1.34 or older** while CIS compliance is required: kube-bench's newest benchmark
   (`cis-1.12`) covers 1.32–1.34 only, so a newer minor cannot produce a supported CIS self-assessment.

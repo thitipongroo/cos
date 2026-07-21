@@ -12,27 +12,27 @@ install, CIS hardening, full etcd snapshot-restore, and a k3s-vs-RKE2 head-to-he
 
 ## ⚠️ Deviations from spec — read before using these numbers
 
-| Deviation | Detail | Effect on the result |
-| --- | --- | --- |
-| **Node sizing** | `§8.5` requires **3 × 16 vCPU / 64 GB / 500 GB NVMe**. Actual: **3 × 4 vCPU / 4 GB / 40 GB** (host has 16 cores / 31.8 GB total — spec sizing is physically impossible here). PO accepted this trade-off. | Functional results (does it install / fail over / restore / harden) are valid. **Capacity and timing numbers are NOT production-representative** — see RTO note below. |
-| **Version choice** | First run used the *latest* (`v1.36.2`). Re-run on `v1.34.9` because **no CIS benchmark covers K8s 1.36** (kube-bench's newest is `cis-1.12`, targeting 1.32–1.34). | Version pinned to keep rubric 4 auditable. See "CIS tooling" finding. |
-| **RKE2 coverage** | All rubric items were run on RKE2, including the node-loss drill on a full 3-node cluster. RKE2's etcd restore started from a genuine quorum loss on a **2-node** cluster (node3 had been repurposed at that moment), not a clean 3-node failure. | Restore timing is from a 2-node recovery; the failover drill is a full 3-node measurement. |
-| **No image registry** | The environment has no registry, so images were side-loaded into each node's containerd with `ctr images import` and installed with `pullPolicy: Never`. | A real registry pull path (auth, TLS, mirrors) was never exercised. |
-| **Node-failure simulation** | Node "failure" was Hyper-V `Stop-VM -TurnOff` (hard power cut). | Realistic, but it corrupted containerd's image store on the restarted node once (`exec format error`), needing an image re-pull. Production should drain nodes gracefully. |
+| Deviation                   | Detail                                                                                                                                                                                                                                            | Effect on the result                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Node sizing**             | `§8.5` requires **3 × 16 vCPU / 64 GB / 500 GB NVMe**. Actual: **3 × 4 vCPU / 4 GB / 40 GB** (host has 16 cores / 31.8 GB total — spec sizing is physically impossible here). PO accepted this trade-off.                                         | Functional results (does it install / fail over / restore / harden) are valid. **Capacity and timing numbers are NOT production-representative** — see RTO note below.     |
+| **Version choice**          | First run used the _latest_ (`v1.36.2`). Re-run on `v1.34.9` because **no CIS benchmark covers K8s 1.36** (kube-bench's newest is `cis-1.12`, targeting 1.32–1.34).                                                                               | Version pinned to keep rubric 4 auditable. See "CIS tooling" finding.                                                                                                      |
+| **RKE2 coverage**           | All rubric items were run on RKE2, including the node-loss drill on a full 3-node cluster. RKE2's etcd restore started from a genuine quorum loss on a **2-node** cluster (node3 had been repurposed at that moment), not a clean 3-node failure. | Restore timing is from a 2-node recovery; the failover drill is a full 3-node measurement.                                                                                 |
+| **No image registry**       | The environment has no registry, so images were side-loaded into each node's containerd with `ctr images import` and installed with `pullPolicy: Never`.                                                                                          | A real registry pull path (auth, TLS, mirrors) was never exercised.                                                                                                        |
+| **Node-failure simulation** | Node "failure" was Hyper-V `Stop-VM -TurnOff` (hard power cut).                                                                                                                                                                                   | Realistic, but it corrupted containerd's image store on the restarted node once (`exec format error`), needing an image re-pull. Production should drain nodes gracefully. |
 
 ## Rubric scoring (ADR-039)
 
-| # | Criterion | k3s `v1.34.9+k3s1` | RKE2 `v1.34.9+rke2r1` (`profile: cis`) | Notes |
-| --- | --- | --- | --- | --- |
-| 1 | CNCF conformance + **COS Helm charts** | ✅ **PASS** — all 8 charts lint + server dry-run accepted; nginx 3/3 spread across nodes; `helm install` deployed | ✅ **PASS after the chart fix** — all 8 clean of PodSecurity violations; real apply creates Pods | initially FAILED; see blocker below |
-| 2 | HA control plane (3-node etcd) | ✅ **PASS** — full drill | ✅ **PASS** — full drill (see below) | both survived 1-of-3 loss |
-| 3 | **Air-gap install** | ✅ **PASS** — verified with egress blocked | ✅ **PASS** — `profile: cis`, egress blocked, images from tarball | RKE2 uses `INSTALL_RKE2_ARTIFACT_PATH`, not `SKIP_DOWNLOAD` |
-| 4 | **CIS hardening** (`cis-1.12`) | 8 PASS / 61 FAIL / 62 WARN — **identical hardened or not** | **57 PASS / 18 FAIL** / 56 WARN | ⚠️ **not a like-for-like comparison** — see "CIS scores are not measuring k3s" |
-| 5 | **etcd snapshot-restore** | ✅ **PASS** — RTO **90 s** | ✅ **PASS** — RTO **277 s** from real quorum loss | QM-12 target 30 min |
-| 6 | Operational simplicity | k3s installs + reaches Ready in ~1 min/node | RKE2 slower (~10 min first node); **needs host sysctl prep** or it refuses to start | see script fix |
-| 7 | License / cost | Apache-2.0 free | Apache-2.0 free | unchanged |
-| 8 | In-house familiarity | high (dev) | low | unchanged |
-| — | **FIPS** (RKE2) | n/a | ✅ **default binary is BoringCrypto** | see finding |
+| #   | Criterion                              | k3s `v1.34.9+k3s1`                                                                                                | RKE2 `v1.34.9+rke2r1` (`profile: cis`)                                                           | Notes                                                                          |
+| --- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| 1   | CNCF conformance + **COS Helm charts** | ✅ **PASS** — all 8 charts lint + server dry-run accepted; nginx 3/3 spread across nodes; `helm install` deployed | ✅ **PASS after the chart fix** — all 8 clean of PodSecurity violations; real apply creates Pods | initially FAILED; see blocker below                                            |
+| 2   | HA control plane (3-node etcd)         | ✅ **PASS** — full drill                                                                                          | ✅ **PASS** — full drill (see below)                                                             | both survived 1-of-3 loss                                                      |
+| 3   | **Air-gap install**                    | ✅ **PASS** — verified with egress blocked                                                                        | ✅ **PASS** — `profile: cis`, egress blocked, images from tarball                                | RKE2 uses `INSTALL_RKE2_ARTIFACT_PATH`, not `SKIP_DOWNLOAD`                    |
+| 4   | **CIS hardening** (`cis-1.12`)         | 8 PASS / 61 FAIL / 62 WARN — **identical hardened or not**                                                        | **57 PASS / 18 FAIL** / 56 WARN                                                                  | ⚠️ **not a like-for-like comparison** — see "CIS scores are not measuring k3s" |
+| 5   | **etcd snapshot-restore**              | ✅ **PASS** — RTO **90 s**                                                                                        | ✅ **PASS** — RTO **277 s** from real quorum loss                                                | QM-12 target 30 min                                                            |
+| 6   | Operational simplicity                 | k3s installs + reaches Ready in ~1 min/node                                                                       | RKE2 slower (~10 min first node); **needs host sysctl prep** or it refuses to start              | see script fix                                                                 |
+| 7   | License / cost                         | Apache-2.0 free                                                                                                   | Apache-2.0 free                                                                                  | unchanged                                                                      |
+| 8   | In-house familiarity                   | high (dev)                                                                                                        | low                                                                                              | unchanged                                                                      |
+| —   | **FIPS** (RKE2)                        | n/a                                                                                                               | ✅ **default binary is BoringCrypto**                                                            | see finding                                                                    |
 
 ## 🚩 BLOCKER (FOUND, THEN FIXED THE SAME DAY) — COS Helm charts on CIS-hardened RKE2
 
@@ -82,11 +82,11 @@ architecture, not a security gap.** Evidence, in order:
 3. **Yet the scores did not move by a single check.** Hardened k3s scores **exactly** the same as
    default k3s: `cis-1.12` → 8/61/62, `k3s-cis-1.7` → 41/22/53/15.
 4. **kube-bench reports false negatives.** It marks `1.2.15 Ensure that the admission control plugin
-   NodeRestriction is set` as **FAIL** on a cluster where that plugin is provably loaded.
-5. **Mechanism:** k3s runs the apiserver *in-process*. `/proc/<k3s-pid>/cmdline` contains **no**
+NodeRestriction is set` as **FAIL** on a cluster where that plugin is provably loaded.
+5. **Mechanism:** k3s runs the apiserver _in-process_. `/proc/<k3s-pid>/cmdline` contains **no**
    apiserver flags, and there are no static pod manifests. kube-bench detects configuration by
    reading process command lines and `/etc/kubernetes/manifests` — on k3s it finds neither, so it
-   reports FAIL regardless of the real configuration. RKE2 scores well largely because it *does* lay
+   reports FAIL regardless of the real configuration. RKE2 scores well largely because it _does_ lay
    out kubeadm-style static pods that kube-bench can read.
 
 **Consequences:**
@@ -102,13 +102,13 @@ architecture, not a security gap.** Evidence, in order:
 
 ## Findings that changed the POC scripts
 
-1. **`02-cos-conformance.sh` gives a false PASS.** `kubectl apply --dry-run=server` on a *Deployment*
+1. **`02-cos-conformance.sh` gives a false PASS.** `kubectl apply --dry-run=server` on a _Deployment_
    only emits a PodSecurity **Warning** — it still reports "created". PSS is enforced at **Pod**
    admission. The script reported all 8 charts ✅ on RKE2 while no pod could ever start. Fixed to
    fail on `would violate PodSecurity`.
 2. **`01-rke2-ha-install.sh` was missing the CIS sysctl step.** `profile: cis` makes rke2-server exit:
    `invalid kernel parameter value kernel.panic_on_oops=0 - expected 1 / vm.overcommit_memory=0 -
-   expected 1 / kernel.panic=0 - expected 10`. RKE2 ships `/usr/local/share/rke2/rke2-cis-sysctl.conf`
+expected 1 / kernel.panic=0 - expected 10`. RKE2 ships `/usr/local/share/rke2/rke2-cis-sysctl.conf`
    but does **not** apply it. Fixed: copy to `/etc/sysctl.d/` + `systemctl restart systemd-sysctl`.
 3. **README §FIPS was wrong.** It said FIPS "requires the FIPS-specific RKE2 build/channel, not the
    default binary." The stock release binary reports:
@@ -127,20 +127,21 @@ architecture, not a security gap.** Evidence, in order:
    Container ai-embedding-worker failed liveness probe, will be restarted
    ```
 
-   | chart | probed | service serves | |
-   | --- | --- | --- | --- |
-   | `cos-ai-embedding-worker` | `/health` | `/health/live` | ❌ fixed |
-   | `cos-ai-gateway` | `/health` | `/health/live` | ❌ fixed |
-   | `cos-ai-ocr-pipeline` | `/health` | `/health/live` | ❌ fixed |
-   | `cos-analytics-worker` | `/healthz` | `/health/live` (`main.go:78`) | ❌ fixed |
-   | `cos-backend` | `/health/live` | `/health/live` | ✅ |
-   | `cos-file-service` | `/health/live` | **route not found in the repo** | ⚠️ unverified |
-   | `cos-web` | `/api/health` | **route not found in the repo** | ⚠️ unverified |
-   | `cos-kg-ingestion-worker` | — | — | no probes defined |
+   | chart                     | probed         | service serves                  |                   |
+   | ------------------------- | -------------- | ------------------------------- | ----------------- |
+   | `cos-ai-embedding-worker` | `/health`      | `/health/live`                  | ❌ fixed          |
+   | `cos-ai-gateway`          | `/health`      | `/health/live`                  | ❌ fixed          |
+   | `cos-ai-ocr-pipeline`     | `/health`      | `/health/live`                  | ❌ fixed          |
+   | `cos-analytics-worker`    | `/healthz`     | `/health/live` (`main.go:78`)   | ❌ fixed          |
+   | `cos-backend`             | `/health/live` | `/health/live`                  | ✅                |
+   | `cos-file-service`        | `/health/live` | **route not found in the repo** | ⚠️ unverified     |
+   | `cos-web`                 | `/api/health`  | **route not found in the repo** | ⚠️ unverified     |
+   | `cos-kg-ingestion-worker` | —              | —                               | no probes defined |
 
    After the fix: `STATUS: deployed`, Pod **1/1 Running, 0 restarts**, and `/health/live` returns
    `200 {"status":"ok","service":"ai-embedding-worker"}`. The two unverified charts were left alone —
    their health routes could not be located, so changing them would be guesswork.
+
 6. **The k3s CIS hardening guide, followed verbatim, produces a cluster that will not boot.** It
    instructs `enable-admission-plugins=NodeRestriction,EventRateLimit` but its example admission file
    configures only PodSecurity, so the apiserver exits with
@@ -150,7 +151,7 @@ architecture, not a security gap.** Evidence, in order:
    (K8s 1.32–1.34); distro-tailored ones are far older (`k3s-cis-1.7` → k3s 1.25–1.27,
    `rke2-cis-1.6` → rke2 1.25–1.27, and it produced no output at all on 1.34.9). **Shipping a K8s
    newer than 1.34 means no supported CIS self-assessment** — material for regulated tenants.
-8. **Generic CIS is misleading for k3s.** `cis-1.12` scored k3s 8/61/62 on *both* 1.36.2 and 1.34.9 —
+8. **Generic CIS is misleading for k3s.** `cis-1.12` scored k3s 8/61/62 on _both_ 1.36.2 and 1.34.9 —
    identical, so the FAILs are not a version artifact. See the section above for the mechanism.
 9. **`*.sh` needed `.gitattributes`.** The repo stores LF (`i/lf`) but a Windows checkout produced CRLF
    (`w/crlf`) and every script died with `/usr/bin/env: 'bash\r': No such file or directory`. It also
@@ -194,7 +195,7 @@ Running + 2 Completed, `crictl images` populated from the tarball, egress still 
 - **Default (k3s) confirmed for production on-prem?** **Yes** for rubrics 1, 2, 3, 5, 6, 7, 8 — all
   verified on Linux. Rubric 4 is **unmeasurable** for k3s: hardening was applied and proven live, yet
   the CIS score did not change by a single check because kube-bench cannot read k3s's in-process
-  apiserver configuration. k3s is not shown to be *insecure*; it is shown to be *unattestable*.
+  apiserver configuration. k3s is not shown to be _insecure_; it is shown to be _unattestable_.
 - **RKE2 confirmed for CIS/FIPS-regulated tenants?** **Yes.** Every rubric item verified: conformance
   (after the chart fixes), full 3-node failover, air-gapped install with `profile: cis`, etcd restore
   (RTO 277 s), FIPS BoringCrypto in the stock binary, and a hardening posture evidenced by behaviour

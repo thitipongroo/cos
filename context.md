@@ -259,9 +259,9 @@ Before starting any implementation task:
     scaffolding in `apps/web`.
   - Coverage thresholds are enforced where they are measured — jest 100/100 (QM-1) and pytest
     `--cov-fail-under=99` per Python service — not by a separate quality-gate server.
-  Why not SonarQube: its **Community** edition has no branch or pull-request analysis, so a
-  "before merge, on new code" gate is impossible on it, and no taint analysis either; those start at
-  Developer Edition (paid). See ADR-068 for the full comparison and the air-gapped caveat.
+    Why not SonarQube: its **Community** edition has no branch or pull-request analysis, so a
+    "before merge, on new code" gate is impossible on it, and no taint analysis either; those start at
+    Developer Edition (paid). See ADR-068 for the full comparison and the air-gapped caveat.
 - Dependency vulnerability scan in CI (`npm audit --audit-level=high` / `pip-audit`) — no HIGH/CRITICAL unresolved
 - Rate limiting required on all public-facing endpoints (see QM-7)
 - CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/security/cors-policy.md`

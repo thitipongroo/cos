@@ -44,12 +44,12 @@ plugin — SQL injection, XSS patterns"; no such plugin is installed (`eslint.co
 
 Replace SonarQube with three tools, each doing one job:
 
-| Tool | Role | Blocking? |
-| ---- | ---- | --------- |
-| **CodeQL** (`.github/workflows/codeql.yml`) | Semantic SAST with cross-file taint analysis over JS/TS, Python, Go | Yes |
-| **Semgrep CE** — `.semgrep/` project rules | Encodes the `context.md` §Never prohibitions as executable policy | Yes |
-| **Semgrep CE** — registry rulesets | OWASP/security-audit packs, reported to code scanning | No — advisory |
-| **jscpd** (`.jscpd.json`) | Duplication, as a ratchet | Yes |
+| Tool                                        | Role                                                                | Blocking?     |
+| ------------------------------------------- | ------------------------------------------------------------------- | ------------- |
+| **CodeQL** (`.github/workflows/codeql.yml`) | Semantic SAST with cross-file taint analysis over JS/TS, Python, Go | Yes           |
+| **Semgrep CE** — `.semgrep/` project rules  | Encodes the `context.md` §Never prohibitions as executable policy   | Yes           |
+| **Semgrep CE** — registry rulesets          | OWASP/security-audit packs, reported to code scanning               | No — advisory |
+| **jscpd** (`.jscpd.json`)                   | Duplication, as a ratchet                                           | Yes           |
 
 Coverage thresholds stay where they are measured — jest 100/100 and pytest `--cov-fail-under=99`
 per Python service — rather than being re-aggregated by a quality-gate server.
@@ -69,7 +69,7 @@ CodeQL and Semgrep do real PR analysis, which SonarQube CE cannot.
 **Operational cost.** SonarQube needs a PostgreSQL database, an embedded Elasticsearch, two
 persistent volumes and a node-level `vm.max_map_count` sysctl — and the conventional way to set that
 sysctl (a privileged `initContainer`) is rejected by PodSecurity `restricted` under RKE2
-`profile:cis` (ADR-039), *silently*, as recorded in `context.md` §Phase 17. CodeQL and Semgrep need
+`profile:cis` (ADR-039), _silently_, as recorded in `context.md` §Phase 17. CodeQL and Semgrep need
 no server, so this gate works today rather than waiting on an EKS cluster that has not been
 provisioned.
 
@@ -140,7 +140,7 @@ are now Semgrep rules in `.semgrep/`. No off-the-shelf ruleset contains them.
   for the Prisma raw-SQL call node with a regex evaluated only inside that node's range, so prose
   cannot trigger it and the reported line is the statement itself. Note the residual limitation:
   Semgrep cannot bind a template literal containing interpolation to a metavariable, so the SQL text
-  is still matched textually — the semantic part is the *scope*, not the SQL parse.
+  is still matched textually — the semantic part is the _scope_, not the SQL parse.
 - **It found one real defect, now fixed:** `packages/@cos/shared/src/kafka/outbox.ts` wrote
   `INSERT INTO outbox_events` unqualified while `OutboxPoller` read and updated
   `platform.outbox_events`. Nothing in the application sets `search_path`, and the old

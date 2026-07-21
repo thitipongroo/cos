@@ -427,12 +427,12 @@ highest field-level accuracy on complex / variable documents in invoice-extracti
 
 **Decision:** LangChain Python SDK (`langchain` + `langchain-openai`) configured with the LLMProvider wrapper.
 
-| Attribute  | Value                                                                                                         |
-| ---------- | ------------------------------------------------------------------------------------------------------------- |
-| Library    | `langchain>=0.3`, `langchain-openai>=0.2`                                                                     |
-| Chain type | RAG chain: retrievers (pgvector + OpenSearch) → RRF fusion → cross-encoder reranker → LLM (see §22.7 RAG-001) |
+| Attribute  | Value                                                                                                                                                                                                                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Library    | `langchain>=0.3`, `langchain-openai>=0.2`                                                                                                                                                                                                                                                                    |
+| Chain type | RAG chain: retrievers (pgvector + OpenSearch) → RRF fusion → cross-encoder reranker → LLM (see §22.7 RAG-001)                                                                                                                                                                                                |
 | Config     | Chain config stored in `services/ai-gateway/ai/chains/` as YAML per chain type — service-local, resolved via `providers.langchain_config.CHAINS_DIR` (override `AI_CHAINS_DIR`). NOT repo-root `ai/chains/`: that copy diverged onto a second schema and broke inside the container (PO decision 2026-07-21) |
-| Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain`                                              |
+| Interface  | `LangChainProviderConfig.buildChain(chainType, tenantId): Chain`                                                                                                                                                                                                                                             |
 
 ---
 

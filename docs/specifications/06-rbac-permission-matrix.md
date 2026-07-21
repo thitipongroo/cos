@@ -90,39 +90,39 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 
 ### Construction Modules
 
-| Module                     | Executive | PM   | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| -------------------------- | --------- | ---- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
-| Project (create/configure) | RW        | RW   | —             | —           | —       | —      | —         | FULL         |
-| Project (view)             | FULL      | FULL | R             | R           | R       | R      | R         | FULL         |
-| BOQ                        | R         | RW   | R             | R           | R       | —      | —         | FULL         |
-| Tasks                      | R         | RW   | RW            | R           | —       | R      | —         | FULL         |
-| Site reports               | R         | RW   | RW            | R           | R       | R      | —         | FULL         |
-| Inspections / QC           | R         | RW   | RW            | —           | —       | RW     | —         | FULL         |
-| Risk register              | R         | RW   | RW            | —           | —       | —      | —         | FULL         |
-| Communications / doc-control | R       | RW   | RW            | R           | R       | R      | R         | FULL         |
-| Safety checklists          | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
-| Safety incidents           | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
-| Workforce attendance       | R         | RW   | RW            | —           | R       | —      | —         | FULL         |
-| Equipment                  | R         | RW   | R             | R           | R       | —      | —         | FULL         |
-| Permits                    | R         | RW   | R             | —           | —       | RW     | —         | FULL         |
+| Module                       | Executive | PM   | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| ---------------------------- | --------- | ---- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Project (create/configure)   | RW        | RW   | —             | —           | —       | —      | —         | FULL         |
+| Project (view)               | FULL      | FULL | R             | R           | R       | R      | R         | FULL         |
+| BOQ                          | R         | RW   | R             | R           | R       | —      | —         | FULL         |
+| Tasks                        | R         | RW   | RW            | R           | —       | R      | —         | FULL         |
+| Site reports                 | R         | RW   | RW            | R           | R       | R      | —         | FULL         |
+| Inspections / QC             | R         | RW   | RW            | —           | —       | RW     | —         | FULL         |
+| Risk register                | R         | RW   | RW            | —           | —       | —      | —         | FULL         |
+| Communications / doc-control | R         | RW   | RW            | R           | R       | R      | R         | FULL         |
+| Safety checklists            | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
+| Safety incidents             | R         | R    | RW            | —           | —       | RWD    | —         | FULL         |
+| Workforce attendance         | R         | RW   | RW            | —           | R       | —      | —         | FULL         |
+| Equipment                    | R         | RW   | R             | R           | R       | —      | —         | FULL         |
+| Permits                      | R         | RW   | R             | —           | —       | RW     | —         | FULL         |
 
 > **Permits row scope (ADR-064):** the same row now also covers `building_permit` and company `license`
 > (PM = RW, Tenant Admin = FULL) — no new row; building permits & licences share the existing Permit register.
 
 ### Procurement Modules
 
-| Module               | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| -------------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
-| Purchase requests    | R         | RW  | RW            | RWD         | R       | —      | —         | FULL         |
-| RFQ                  | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
-| Vendor quotations    | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
-| Purchase orders      | A         | A   | —             | RW          | A       | —      | —         | FULL         |
-| Deliveries           | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
-| Vendor Invoices (AP) | A         | R   | —             | RW          | RWD     | —      | —         | FULL         |
-| Inventory            | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
-| Warehouses (WMS)     | R         | R   | R             | RWD         | R       | —      | —         | FULL         |
-| Goods receipt / stock moves | R  | R   | RW            | RWD         | R       | —      | —         | FULL         |
-| Vendor management    | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
+| Module                      | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| --------------------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Purchase requests           | R         | RW  | RW            | RWD         | R       | —      | —         | FULL         |
+| RFQ                         | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
+| Vendor quotations           | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
+| Purchase orders             | A         | A   | —             | RW          | A       | —      | —         | FULL         |
+| Deliveries                  | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
+| Vendor Invoices (AP)        | A         | R   | —             | RW          | RWD     | —      | —         | FULL         |
+| Inventory                   | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
+| Warehouses (WMS)            | R         | R   | R             | RWD         | R       | —      | —         | FULL         |
+| Goods receipt / stock moves | R         | R   | RW            | RWD         | R       | —      | —         | FULL         |
+| Vendor management           | R         | R   | —             | RWD         | R       | —      | —         | FULL         |
 
 > **ราคากลาง central-price catalog (ADR-061):** `platform.central_price_catalog` is **platform-managed** —
 > `SYSTEM_ADMIN` imports / syncs it (file import or the `CentralPriceAdapter` API); **all tenant roles are
@@ -162,14 +162,14 @@ Security controls (RBAC/ABAC) are defined in 05-security-compliance section 5.2.
 
 ### CRM Modules
 
-| Module        | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
-| ------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
-| Leads         | R         | —   | —             | —           | —       | —      | RWD       | FULL         |
-| Opportunities | R         | —   | —             | —           | R       | —      | RWD       | FULL         |
-| Contacts      | R         | —   | —             | —           | —       | —      | RWD       | FULL         |
-| Customers     | R         | R   | —             | —           | R       | —      | RWD       | FULL         |
-| Tenders (e-GP)| A         | RW  | —             | —           | R       | —      | RW        | FULL         |
-| Bids          | A         | RW  | —             | —           | R       | —      | RW        | FULL         |
+| Module         | Executive | PM  | Site Engineer | Procurement | Finance | Safety | CRM/Sales | Tenant Admin |
+| -------------- | --------- | --- | ------------- | ----------- | ------- | ------ | --------- | ------------ |
+| Leads          | R         | —   | —             | —           | —       | —      | RWD       | FULL         |
+| Opportunities  | R         | —   | —             | —           | R       | —      | RWD       | FULL         |
+| Contacts       | R         | —   | —             | —           | —       | —      | RWD       | FULL         |
+| Customers      | R         | R   | —             | —           | R       | —      | RWD       | FULL         |
+| Tenders (e-GP) | A         | RW  | —             | —           | R       | —      | RW        | FULL         |
+| Bids           | A         | RW  | —             | —           | R       | —      | RW        | FULL         |
 
 ### Intelligence Layer
 

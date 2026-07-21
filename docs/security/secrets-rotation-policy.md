@@ -8,21 +8,21 @@
 
 ## Rotation schedule by secret type
 
-| Secret                                                  | Environment     | Rotation interval    | Method                                                                                                   | Responsible   |
-| ------------------------------------------------------- | --------------- | -------------------- | -------------------------------------------------------------------------------------------------------- | ------------- |
-| PostgreSQL credentials                                  | Cloud (AWS EKS) | 24 hours (automatic) | AWS SM Lambda rotation function                                                                          | AWS SM        |
-| PostgreSQL credentials                                  | On-premise      | 24 hours (automatic) | Vault DB secrets engine (dynamic)                                                                        | Vault         |
-| Redis password                                          | All             | 90 days (manual)     | Update SM/Vault secret → rolling pod restart                                                             | Engineering   |
-| Keycloak admin password                                 | All             | 90 days (manual)     | Keycloak admin console + SM/Vault update                                                                 | Engineering   |
-| Keycloak client secret (`cos-backend`)                  | All             | 180 days             | Keycloak admin console + SM/Vault update                                                                 | Engineering   |
-| JWT signing keys (Path A — HS256)                       | All             | 180 days             | Rotate JWT_SECRET → rolling restart (tokens invalidated)                                                 | Engineering   |
-| App secret encryption key (`APP_SECRET_ENCRYPTION_KEY`) | All             | 180 days             | Decrypt-with-old + re-encrypt-with-new all stored secrets, then SM/Vault update (see procedure; ADR-035) | Engineering   |
-| Keycloak RS256 keypair (Path B)                         | All             | 180 days             | Keycloak JWKS rotation (zero-downtime — overlap period 7 days)                                           | Keycloak auto |
-| AWS SNS credentials (OTP)                               | Cloud           | 90 days              | AWS IAM role rotation (prefer IAM role over long-lived keys)                                             | AWS IAM       |
-| MinIO access/secret keys                                | All             | 90 days (manual)     | Update SM/Vault → rolling restart                                                                        | Engineering   |
-| OpenAI API key                                          | All             | 90 days (manual)     | OpenAI dashboard + SM/Vault update                                                                       | Engineering   |
-| kg-ingestion-worker admin token (`KG_ADMIN_TOKEN`)      | All             | 90 days (manual)     | Update SM/Vault → rolling restart. Guards POST /admin/rebuild, which replays the whole topic; the worker fails closed if unset (ADR-069)                                                        | Engineering   |
-| — (no SAST token required)                              | CI              | n/a                  | CodeQL and Semgrep CE run on the built-in `GITHUB_TOKEN`; no long-lived scanner credential exists (ADR-068) | Engineering   |
+| Secret                                                  | Environment     | Rotation interval    | Method                                                                                                                                   | Responsible   |
+| ------------------------------------------------------- | --------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| PostgreSQL credentials                                  | Cloud (AWS EKS) | 24 hours (automatic) | AWS SM Lambda rotation function                                                                                                          | AWS SM        |
+| PostgreSQL credentials                                  | On-premise      | 24 hours (automatic) | Vault DB secrets engine (dynamic)                                                                                                        | Vault         |
+| Redis password                                          | All             | 90 days (manual)     | Update SM/Vault secret → rolling pod restart                                                                                             | Engineering   |
+| Keycloak admin password                                 | All             | 90 days (manual)     | Keycloak admin console + SM/Vault update                                                                                                 | Engineering   |
+| Keycloak client secret (`cos-backend`)                  | All             | 180 days             | Keycloak admin console + SM/Vault update                                                                                                 | Engineering   |
+| JWT signing keys (Path A — HS256)                       | All             | 180 days             | Rotate JWT_SECRET → rolling restart (tokens invalidated)                                                                                 | Engineering   |
+| App secret encryption key (`APP_SECRET_ENCRYPTION_KEY`) | All             | 180 days             | Decrypt-with-old + re-encrypt-with-new all stored secrets, then SM/Vault update (see procedure; ADR-035)                                 | Engineering   |
+| Keycloak RS256 keypair (Path B)                         | All             | 180 days             | Keycloak JWKS rotation (zero-downtime — overlap period 7 days)                                                                           | Keycloak auto |
+| AWS SNS credentials (OTP)                               | Cloud           | 90 days              | AWS IAM role rotation (prefer IAM role over long-lived keys)                                                                             | AWS IAM       |
+| MinIO access/secret keys                                | All             | 90 days (manual)     | Update SM/Vault → rolling restart                                                                                                        | Engineering   |
+| OpenAI API key                                          | All             | 90 days (manual)     | OpenAI dashboard + SM/Vault update                                                                                                       | Engineering   |
+| kg-ingestion-worker admin token (`KG_ADMIN_TOKEN`)      | All             | 90 days (manual)     | Update SM/Vault → rolling restart. Guards POST /admin/rebuild, which replays the whole topic; the worker fails closed if unset (ADR-069) | Engineering   |
+| — (no SAST token required)                              | CI              | n/a                  | CodeQL and Semgrep CE run on the built-in `GITHUB_TOKEN`; no long-lived scanner credential exists (ADR-068)                              | Engineering   |
 
 ---
 

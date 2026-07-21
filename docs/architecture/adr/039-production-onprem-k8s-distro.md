@@ -109,7 +109,7 @@ timing/capacity numbers are not production-representative.
     can read, while k3s does not. **FIPS needs no special build** — the stock binary reports
     `go1.25.11 X:boringcrypto`.
   - **Full 3-node node-loss drill passed:** node hard-stopped → `NotReady` in 30 s → API `/readyz`
-    `ok` on 2/3 quorum → scaled up *while degraded* → self-healed in 302 s → rejoined immediately.
+    `ok` on 2/3 quorum → scaled up _while degraded_ → self-healed in 302 s → rejoined immediately.
   - **A real `helm install` with a real image runs**: Pod `1/1`, 0 restarts, health endpoint `200`.
   - **Air-gapped install verified** with `profile: cis` and egress provably blocked (images loaded
     from `rke2-images.linux-amd64.tar.zst` via `INSTALL_RKE2_ARTIFACT_PATH`).
@@ -158,19 +158,19 @@ This turns two POC caveats into **blocking work before such a customer can be co
      benchmark-version gap below.
 2. **FIPS 140-3 — certificates verified 2026-07-20; the host OS is the problem.**
    The contract names **140-3**. RKE2 does have live 140-3 coverage:
-   - **NIST CMVP #4735** — *BoringCrypto*, Google LLC, FIPS **140-3** Level 1, **Active**,
+   - **NIST CMVP #4735** — _BoringCrypto_, Google LLC, FIPS **140-3** Level 1, **Active**,
      validated 2024-07-23, sunset 2029-07-22.
-   - **NIST CMVP #4968** — *SUSE Rancher Kubernetes Cryptographic Library* v2.0, FIPS **140-3**
+   - **NIST CMVP #4968** — _SUSE Rancher Kubernetes Cryptographic Library_ v2.0, FIPS **140-3**
      Level 1, **Active**, validated 2025-02-20 (updated 2026-05-05), sunset 2029-07-22.
-   - A **Corsec attestation letter dated 2025-05-15** states *"Rancher Government Solutions RKE2
+   - A **Corsec attestation letter dated 2025-05-15** states _"Rancher Government Solutions RKE2
      **1.33+** … is utilizing the Google BoringCrypto module … validated against FIPS 140-3 Level 1
-     … certificate #4735."* Our pinned **v1.34.9 is within `1.33+`**.
+     … certificate #4735."_ Our pinned **v1.34.9 is within `1.33+`**.
 
    **Two gaps remain, and both are blocking:**
    - **The host OS is outside both validated boundaries.** Neither certificate lists **Ubuntu** among
      its tested operating environments. #4968 covers RHEL 7.6/7.9/8.8/9.0, SLE Micro 5.3 and
      SLES 15SP4/15SP5; #4735 covers Android, Debian 5.17.11 on GCP, and Google Prodimage. The entire
-     POC ran on **Ubuntu 24.04**. Running on an untested OE is at best *vendor-affirmed*, which many
+     POC ran on **Ubuntu 24.04**. Running on an untested OE is at best _vendor-affirmed_, which many
      auditors reject. **Rebuild on RHEL or SLES/SLE Micro before presenting any FIPS evidence.**
    - **The attestation names "Rancher Government Solutions RKE2", not the community build.** Whether
      the community binary from `get.rke2.io` (what this POC installed, and which does report
@@ -190,8 +190,8 @@ This turns two POC caveats into **blocking work before such a customer can be co
      deployment is therefore **user-ported**: the cryptography is the validated BoringCrypto module,
      but the platform combination carries no CMVP or vendor statement.
    - **Do not represent this to a customer as "FIPS 140-3 validated".** The defensible claim is:
-     *"uses the FIPS 140-3 validated BoringCrypto module (CMVP #4735), operated on a user-ported
-     operating environment not listed on the certificate."* Whether that satisfies the contract is
+     _"uses the FIPS 140-3 validated BoringCrypto module (CMVP #4735), operated on a user-ported
+     operating environment not listed on the certificate."_ Whether that satisfies the contract is
      the customer's auditor's call, and it should be raised with them **before** signing.
    - Two questions to SUSE/Rancher would materially improve this position and cost nothing:
      (a) is Ubuntu 24.04 a vendor-affirmed OE for these certificates? (b) does the Corsec attestation
@@ -199,8 +199,8 @@ This turns two POC caveats into **blocking work before such a customer can be co
 
 3. **The contracted CIS benchmark version cannot be assessed with the tooling used.** The customer
    asked for the **latest** CIS Kubernetes Benchmark. CIS currently publishes **v2.0.1**, which
-   supports Kubernetes **v1.34 and v1.35** — so the pinned 1.34.9 is *compatible with what was asked
-   for*. The obstacle is the scanner: **kube-bench tops out at `cis-1.12`** and has no v2.0 target at
+   supports Kubernetes **v1.34 and v1.35** — so the pinned 1.34.9 is _compatible with what was asked
+   for_. The obstacle is the scanner: **kube-bench tops out at `cis-1.12`** and has no v2.0 target at
    all. Everything measured in this POC is therefore **v1.12, not v2.0.1**. Closing this needs either
    a manual assessment against v2.0.1 or tooling that supports it (CIS ships automated assessment
    content to SecureSuite members; its Kubernetes coverage was **not** verified here).

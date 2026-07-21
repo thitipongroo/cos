@@ -95,21 +95,21 @@ cost + billing** band; the **statutory accounting** and **payroll/HR** bands are
 
 ### 2A. Accounting / Finance back-office
 
-| Function (📋 needed for full flow) | COS today | Evidence / status |
-| --- | --- | --- |
-| Procurement PR→RFQ→PO→delivery | ✅ | 📊 Phase 5 |
-| Project budget vs actual + cost transactions | ✅ | 📊 Phase 7 |
-| AR — client billing (invoice→approve→paid) | ✅ | 📊 Phase 7 |
-| AP — vendor invoice + payment status | ✅ | 📊 Phase 7 / ontology §AP |
-| WHT (หัก ณ ที่จ่าย) **calculation** | ~ | 📊 rate table + `wht_certificate_ref` via Avalara hook (§13) — **calc only** |
-| Cash-flow forecast / dashboards | ✅ (reporting) | 📊 `09-data-architecture` cash-flow forecast; `20-ux-flow` Exec/Finance |
-| **General Ledger / บัญชีแยกประเภท** | ❌ | 📊 Phase 7 explicitly excludes; ⚠️ UNSPECIFIED → **escalate** |
-| **Chart of accounts / double-entry** | ❌ | 📊 Phase 7 explicitly excludes; ⚠️ escalate |
-| **Company financial statements (P&L / งบดุล) + period close** | ❌ | 📊 only *project-level* summary; company statements not specced |
-| **VAT / e-Tax invoice (ใบกำกับภาษี)** | ❌ | 📊 only WHT rules exist; no VAT/e-Tax module found |
-| **WHT filing (ภ.ง.ด.3/53) + หนังสือรับรองหัก ณ ที่จ่าย** | ❌ | 📊 calc yes (§13), submission/certificate output not specced |
-| **Bank reconciliation / treasury / actual disbursement** | ❌ | 📊 payment *status* only; no bank-rec / cash execution |
-| **Fixed assets + depreciation (สินทรัพย์ถาวร/ค่าเสื่อม)** | ❌ | 📊 no depreciation accounting found (asset/warranty tracking ≠ depreciation) |
+| Function (📋 needed for full flow)                            | COS today      | Evidence / status                                                            |
+| ------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
+| Procurement PR→RFQ→PO→delivery                                | ✅             | 📊 Phase 5                                                                   |
+| Project budget vs actual + cost transactions                  | ✅             | 📊 Phase 7                                                                   |
+| AR — client billing (invoice→approve→paid)                    | ✅             | 📊 Phase 7                                                                   |
+| AP — vendor invoice + payment status                          | ✅             | 📊 Phase 7 / ontology §AP                                                    |
+| WHT (หัก ณ ที่จ่าย) **calculation**                           | ~              | 📊 rate table + `wht_certificate_ref` via Avalara hook (§13) — **calc only** |
+| Cash-flow forecast / dashboards                               | ✅ (reporting) | 📊 `09-data-architecture` cash-flow forecast; `20-ux-flow` Exec/Finance      |
+| **General Ledger / บัญชีแยกประเภท**                           | ❌             | 📊 Phase 7 explicitly excludes; ⚠️ UNSPECIFIED → **escalate**                |
+| **Chart of accounts / double-entry**                          | ❌             | 📊 Phase 7 explicitly excludes; ⚠️ escalate                                  |
+| **Company financial statements (P&L / งบดุล) + period close** | ❌             | 📊 only _project-level_ summary; company statements not specced              |
+| **VAT / e-Tax invoice (ใบกำกับภาษี)**                         | ❌             | 📊 only WHT rules exist; no VAT/e-Tax module found                           |
+| **WHT filing (ภ.ง.ด.3/53) + หนังสือรับรองหัก ณ ที่จ่าย**      | ❌             | 📊 calc yes (§13), submission/certificate output not specced                 |
+| **Bank reconciliation / treasury / actual disbursement**      | ❌             | 📊 payment _status_ only; no bank-rec / cash execution                       |
+| **Fixed assets + depreciation (สินทรัพย์ถาวร/ค่าเสื่อม)**     | ❌             | 📊 no depreciation accounting found (asset/warranty tracking ≠ depreciation) |
 
 > Full statutory GL/accounting eventually appears only far downstream in **V3-5 Financial (GL/AP/AR, NOI)**
 > under the real-estate ecosystem expansion (📊 `28-ecosystem-expansion.md:537`) — **not** part of the core
@@ -117,22 +117,22 @@ cost + billing** band; the **statutory accounting** and **payroll/HR** bands are
 
 ### 2B. HR / People back-office
 
-| Function (📋 needed for full flow) | COS today | Evidence / status |
-| --- | --- | --- |
-| Site attendance (check-in/out) + timesheet | ✅ | 📊 MVP Workforce — `21-mvp-scope.md:52,69` |
-| Manpower count for daily reports | ✅ | 📊 MVP Workforce |
-| **Payroll (เงินเดือน) calculation + payslip** | ❌ | 📊 **deferred** — `01_build_priority_execution.md:847` |
-| **Social security (ประกันสังคม) / ภ.ง.ด.1 / กองทุนสำรองเลี้ยงชีพ** | ❌ | not specced (part of payroll, deferred) |
-| **HRIS: employee master lifecycle** | ❌ | not specced (only `Employee` master for site linkage) |
-| **Recruiting / onboarding / offboarding** | ❌ | not specced |
-| **Leave management (ลางาน) / benefits / สวัสดิการ** | ❌ | not specced |
-| **Performance / training** | ❌ | not specced |
+| Function (📋 needed for full flow)                                 | COS today | Evidence / status                                      |
+| ------------------------------------------------------------------ | --------- | ------------------------------------------------------ |
+| Site attendance (check-in/out) + timesheet                         | ✅        | 📊 MVP Workforce — `21-mvp-scope.md:52,69`             |
+| Manpower count for daily reports                                   | ✅        | 📊 MVP Workforce                                       |
+| **Payroll (เงินเดือน) calculation + payslip**                      | ❌        | 📊 **deferred** — `01_build_priority_execution.md:847` |
+| **Social security (ประกันสังคม) / ภ.ง.ด.1 / กองทุนสำรองเลี้ยงชีพ** | ❌        | not specced (part of payroll, deferred)                |
+| **HRIS: employee master lifecycle**                                | ❌        | not specced (only `Employee` master for site linkage)  |
+| **Recruiting / onboarding / offboarding**                          | ❌        | not specced                                            |
+| **Leave management (ลางาน) / benefits / สวัสดิการ**                | ❌        | not specced                                            |
+| **Performance / training**                                         | ❌        | not specced                                            |
 
 ---
 
 ## 3. Direct answer
 
-- **For the construction *operational* full flow** (ขาย → โครงการ → BOQ → จัดซื้อ → หน้างาน → ต้นทุน →
+- **For the construction _operational_ full flow** (ขาย → โครงการ → BOQ → จัดซื้อ → หน้างาน → ต้นทุน →
   วางบิล/เจ้าหนี้ → สถานะจ่ายเงิน) — **COS is enough; you do NOT need to build Accounting/HR inside it.**
 - **For the whole-company back office** — you still need a **statutory Accounting/ERP** system (GL, งบการเงิน,
   ภาษี/e-Tax, bank rec) and a **Payroll/HR** system. COS's design intent is to **feed** those systems at
@@ -152,18 +152,18 @@ cost + billing** band; the **statutory accounting** and **payroll/HR** bands are
 
 ### 🅐 On the roadmap, not yet built (post-MVP / deferred)
 
-| System | Status | Evidence |
-| --- | --- | --- |
-| Preconstruction: tender & bid, feasibility, land acquisition | post-MVP — **tender & bid now designed (ADR-062)**; feasibility / land still roadmap | 📊 `20-ux-flow.md` §20.7.12c; §01 §1.2 |
-| Full scheduling: Gantt / CPM / baseline / S-curve | core has task dates + `DEPENDS_ON` only; full engine post-MVP | 📊 `11-database-schema.md:309-322`; critical-path risk = AI Layer B (`21.4`, `22`) |
-| Document / Drawing management (version, format-convert, viewer) | post-MVP | 📊 `13-product-architecture.md:51`; `03-system-design.md:60` |
-| Contractor portal + Customer portal | Phase 2 | 📊 `28-ecosystem-expansion.md:81-82,232-233` |
-| BI / Analytics deep (AI Layer B) + Autonomous agents (Layer C) | post-MVP | 📊 `21.4`, `22` |
-| CRM advanced (kanban, dashboards, proposal) + CRM mobile | post-MVP | 📊 `21.6` |
-| Workforce advanced (shift optimization, productivity analytics) | post-MVP | 📊 `21.2` |
-| Safety AI (video/photo compliance detection) | post-MVP | 📊 `21.2` |
-| Facility Mgmt / O&M work orders (preventive/corrective maintenance) | V2-3 | 📊 `28-ecosystem-expansion.md:374` |
-| ERP integration live (SAP/Oracle/Dynamics) | stub until a tenant with that ERP onboards | 📊 `13.3` |
+| System                                                              | Status                                                                               | Evidence                                                                           |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| Preconstruction: tender & bid, feasibility, land acquisition        | post-MVP — **tender & bid now designed (ADR-062)**; feasibility / land still roadmap | 📊 `20-ux-flow.md` §20.7.12c; §01 §1.2                                             |
+| Full scheduling: Gantt / CPM / baseline / S-curve                   | core has task dates + `DEPENDS_ON` only; full engine post-MVP                        | 📊 `11-database-schema.md:309-322`; critical-path risk = AI Layer B (`21.4`, `22`) |
+| Document / Drawing management (version, format-convert, viewer)     | post-MVP                                                                             | 📊 `13-product-architecture.md:51`; `03-system-design.md:60`                       |
+| Contractor portal + Customer portal                                 | Phase 2                                                                              | 📊 `28-ecosystem-expansion.md:81-82,232-233`                                       |
+| BI / Analytics deep (AI Layer B) + Autonomous agents (Layer C)      | post-MVP                                                                             | 📊 `21.4`, `22`                                                                    |
+| CRM advanced (kanban, dashboards, proposal) + CRM mobile            | post-MVP                                                                             | 📊 `21.6`                                                                          |
+| Workforce advanced (shift optimization, productivity analytics)     | post-MVP                                                                             | 📊 `21.2`                                                                          |
+| Safety AI (video/photo compliance detection)                        | post-MVP                                                                             | 📊 `21.2`                                                                          |
+| Facility Mgmt / O&M work orders (preventive/corrective maintenance) | V2-3                                                                                 | 📊 `28-ecosystem-expansion.md:374`                                                 |
+| ERP integration live (SAP/Oracle/Dynamics)                          | stub until a tenant with that ERP onboards                                           | 📊 `13.3`                                                                          |
 
 ### 🅑 Excluded initially — and WHY (answer to "ทำไมถึงตัด")
 
@@ -171,20 +171,20 @@ Spec list: **Full BIM · IoT · Advanced digital twin · Full ERP replacement ·
 (📊 `21-mvp-scope.md` "Excluded Initially"). They are **not rejected — they are sequenced to later
 Stages behind explicit prerequisites**, for two grounded reasons:
 
-1. **MVP is scoped to immediate ROI.** 📊 §21.1: MVP solves *"Project cost + procurement + site
-   visibility, because this creates immediate ROI."* The excluded items do not serve that first ROI loop.
+1. **MVP is scoped to immediate ROI.** 📊 §21.1: MVP solves _"Project cost + procurement + site
+   visibility, because this creates immediate ROI."_ The excluded items do not serve that first ROI loop.
 2. **Each excluded item has hard prerequisites / triggers not yet met** (so building it in MVP is
    impossible or premature):
    - **Advanced digital twin → Phase 24 / Stage 5.** 📊 `33-digital-twin-iot.md:86` mandatory
      prerequisites: Phase 13 Knowledge Graph + Phase 21 Equipment + Phase 23 MLOps + BIM IFC parser +
-     IoT provisioned + **sustainable revenue base**; planning gate needs *dominant market position +
-     IoT hardware partner contracted + devices certified + ≥12 months runway* (`33:452-462`). None exist
+     IoT provisioned + **sustainable revenue base**; planning gate needs _dominant market position +
+     IoT hardware partner contracted + devices certified + ≥12 months runway_ (`33:452-462`). None exist
      at MVP.
-   - **IoT → trigger-activated.** 📊 fires only *"when equipment has an IoT sensor attached"*; needs a
+   - **IoT → trigger-activated.** 📊 fires only _"when equipment has an IoT sensor attached"_; needs a
      contracted hardware partner; platform RESOLVED (EMQX) but activation deferred
      (`context/00_master_construction_os.md:4784,4825-4828`). No sensors → nothing to ingest.
    - **Full BIM → phased in, not dropped.** 📊 IFC parser lands in Phase 3 (project-structure import)
-     and Phase 4 (BIM→BOQ auto-population); only *Full* BIM (viewer/clash/model mgmt) is post-MVP
+     and Phase 4 (BIM→BOQ auto-population); only _Full_ BIM (viewer/clash/model mgmt) is post-MVP
      (`context:1990,2114`).
    - **Full ERP replacement → architectural choice, not timing.** COS deliberately **integrates** via
      the ERP adapter Strategy pattern and does **not** replace the ledger (📊 `13.3`; Phase 7 forbids
@@ -201,15 +201,15 @@ Stages behind explicit prerequisites**, for two grounded reasons:
 > `context/04` (workflow gaps → Phase 2, integrations → Phase 5). They remain **post-MVP (designed, not
 > built)**. The original scan found the first three; a follow-up scan surfaced four more (rows 4–7).
 
-| System | Status |
-| --- | --- |
-| Variation Order / Change Order / Claims | ✅ **Designed — ADR-059** (`VariationOrder` + `Claim`, finance; auto-adjust contract/budget/BOQ; AR chain) |
-| Inventory / Warehouse full (stock movement, GRN, multi-warehouse) | ✅ **Designed — ADR-060** (`Warehouse`+`StockMovement`+`GRN`, procurement; moving average) |
-| ราคากลาง / e-GP integration | ✅ **Designed — ADR-061 (ราคากลาง) + ADR-062 (e-GP)** (platform catalog + Tender/Bid; adapter + manual) |
-| Bank guarantees / bonds | ✅ **Designed — ADR-063** (`Bond`, finance; full lifecycle + expiry alert) |
-| Building permit & license | ✅ **Designed — ADR-064** (extends `Permit`: +building_permit/license +authority +expiry alert) |
-| Project risk register | ✅ **Designed — ADR-065** (`ProjectRisk`, projects; 5×5 scoring + AI-suggested feed) |
-| Site instruction / meeting minutes / correspondence | ✅ **Designed — ADR-066** (`CommunicationRecord`+`ActionItem`, projects) |
+| System                                                            | Status                                                                                                     |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Variation Order / Change Order / Claims                           | ✅ **Designed — ADR-059** (`VariationOrder` + `Claim`, finance; auto-adjust contract/budget/BOQ; AR chain) |
+| Inventory / Warehouse full (stock movement, GRN, multi-warehouse) | ✅ **Designed — ADR-060** (`Warehouse`+`StockMovement`+`GRN`, procurement; moving average)                 |
+| ราคากลาง / e-GP integration                                       | ✅ **Designed — ADR-061 (ราคากลาง) + ADR-062 (e-GP)** (platform catalog + Tender/Bid; adapter + manual)    |
+| Bank guarantees / bonds                                           | ✅ **Designed — ADR-063** (`Bond`, finance; full lifecycle + expiry alert)                                 |
+| Building permit & license                                         | ✅ **Designed — ADR-064** (extends `Permit`: +building_permit/license +authority +expiry alert)            |
+| Project risk register                                             | ✅ **Designed — ADR-065** (`ProjectRisk`, projects; 5×5 scoring + AI-suggested feed)                       |
+| Site instruction / meeting minutes / correspondence               | ✅ **Designed — ADR-066** (`CommunicationRecord`+`ActionItem`, projects)                                   |
 
 ⚠️ **Still open (build-time, flagged in the ADRs):** ราคากลาง / e-GP **public-API availability is
 unverified** (manual path is the guaranteed baseline; adapter is a stub seam); the risk register's
@@ -231,11 +231,11 @@ The ranking below is **judgment**, not spec. The commercial **pre-contract funne
 2. **Mid — Variation Order / Change Order / Claims.** Real projects always have scope changes; the biggest
    true gap — now **designed post-MVP (ADR-059)**, decision made.
 3. **Cross-cutting — Document/Drawing control + full Scheduling (Gantt/CPM).** Still post-MVP (🅐) —
-   **no spec revision needed**, only build sequencing (these were *not* part of the ADR-059..066 design pass).
+   **no spec revision needed**, only build sequencing (these were _not_ part of the ADR-059..066 design pass).
 
 **Net (updated 2026-07-20):** all seven 🅒 gaps have been **added to the spec** (designed, ADR-059..066) and
 recorded as post-MVP execution commands in `context/04` (workflow → Phase 2, integrations → Phase 5).
-Nothing on the gap list now needs a *spec decision* — the remaining work is **build sequencing** plus the
+Nothing on the gap list now needs a _spec decision_ — the remaining work is **build sequencing** plus the
 build-time items flagged above (ราคากลาง / e-GP API availability, Layer-B AI feed). The 🅐 items remain
 spec'd-as-future.
 

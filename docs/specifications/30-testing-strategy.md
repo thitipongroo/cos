@@ -329,7 +329,7 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
   where CodeQL cannot run.
 - **jscpd** — duplication, run in the CI lint job against the ratchet in `.jscpd.json`.
 - **npm audit / pip-audit / govulncheck / Trivy** — dependency and container scanning (SCA). Note
-  these scan *dependencies*, not first-party code; CodeQL and Semgrep are what read code we wrote.
+  these scan _dependencies_, not first-party code; CodeQL and Semgrep are what read code we wrote.
 
 > Replaced SonarQube (ADR-068). SonarQube **Community** Build has no branch or pull-request
 > analysis, so the "before merge, on new code" gate this section requires is not achievable on it,
@@ -428,29 +428,29 @@ unit tests. Integration tests against a real Redis are covered in the e2e test s
 
 CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.9:
 
-| Gate                                      | Trigger               | Blocks                                |
-| ----------------------------------------- | --------------------- | ------------------------------------- |
-| Lint + type check                         | Every PR              | PR merge                              |
-| YAML lint (yamllint)                      | Every PR              | PR merge                              |
-| SQL lint (sqlfluff, PostgreSQL)           | Every PR              | PR merge                              |
-| Markdown lint (markdownlint, changed .md) | Every PR              | PR merge                              |
-| Build (`turbo run build`)                 | Every PR              | PR merge                              |
-| Unit tests                                | Every PR              | PR merge                              |
-| Unit coverage 100% lines + 100% branches  | Every PR              | PR merge                              |
-| Integration tests                         | Every PR              | PR merge                              |
-| Temporal workflow tests (serial)          | Every PR              | PR merge — own jest config            |
-| Multi-tenant isolation tests              | Every PR              | PR merge                              |
-| API contract tests (Pact)                 | Every PR              | PR merge                              |
-| Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)              |
-| Security SAST (CodeQL)                    | Every PR              | PR merge                              |
-| Security SAST (Semgrep — project rules)   | Every PR              | PR merge                              |
-| Security SAST (Semgrep — registry rules)  | Every PR              | Alert only (code scanning)            |
-| Duplication (jscpd, ratchet)              | Every PR              | PR merge                              |
-| Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2                     |
-| E2E tests (Playwright)                    | Merge to `staging`    | Production promotion                  |
-| E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion                  |
-| Load tests (k6)                           | Weekly scheduled      | Alert only (not blocking)             |
-| DAST (OWASP ZAP)                          | Weekly scheduled      | Alert only (not blocking)             |
+| Gate                                      | Trigger               | Blocks                     |
+| ----------------------------------------- | --------------------- | -------------------------- |
+| Lint + type check                         | Every PR              | PR merge                   |
+| YAML lint (yamllint)                      | Every PR              | PR merge                   |
+| SQL lint (sqlfluff, PostgreSQL)           | Every PR              | PR merge                   |
+| Markdown lint (markdownlint, changed .md) | Every PR              | PR merge                   |
+| Build (`turbo run build`)                 | Every PR              | PR merge                   |
+| Unit tests                                | Every PR              | PR merge                   |
+| Unit coverage 100% lines + 100% branches  | Every PR              | PR merge                   |
+| Integration tests                         | Every PR              | PR merge                   |
+| Temporal workflow tests (serial)          | Every PR              | PR merge — own jest config |
+| Multi-tenant isolation tests              | Every PR              | PR merge                   |
+| API contract tests (Pact)                 | Every PR              | PR merge                   |
+| Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)   |
+| Security SAST (CodeQL)                    | Every PR              | PR merge                   |
+| Security SAST (Semgrep — project rules)   | Every PR              | PR merge                   |
+| Security SAST (Semgrep — registry rules)  | Every PR              | Alert only (code scanning) |
+| Duplication (jscpd, ratchet)              | Every PR              | PR merge                   |
+| Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2          |
+| E2E tests (Playwright)                    | Merge to `staging`    | Production promotion       |
+| E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion       |
+| Load tests (k6)                           | Weekly scheduled      | Alert only (not blocking)  |
+| DAST (OWASP ZAP)                          | Weekly scheduled      | Alert only (not blocking)  |
 
 ---
 

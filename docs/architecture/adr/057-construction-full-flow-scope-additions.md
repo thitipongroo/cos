@@ -31,16 +31,16 @@ Add the following nine capabilities to the spec. **Eight are documented post-MVP
 
 ### Post-MVP — documented future scope (capability-level; internals deferred to phase start)
 
-| # | Capability | What it adds | Confirmed current state |
-| --- | --- | --- | --- |
-| 1 | Variation Order / Change Order / Claims | Manage approved changes to contract scope/price, linked to Contract + BOQ + budget | Contract entity exists; **no VO/claims workflow** (grep-negative) |
-| 2 | Inventory / Warehouse (WMS) | Stock movement, GRN vs PO delivery, multi-warehouse, material valuation | material consumption + `reorder_level` exist; **no WMS** |
-| 3 | ราคากลาง (Comptroller-General central pricing) | Reference-price source feeding BOQ line items | **not in spec** |
-| 4 | e-GP (Electronic Government Procurement) integration | Public-tender data / bidding for government work | **not in spec** |
-| 5 | Bank guarantees / bonds | Bid / performance / retention / advance bonds, linked to Contract + e-GP | **not in spec** |
-| 6 | Building permit & license management | Track construction permits/licences by status & expiry | **not in spec** |
-| 7 | Project risk register | Structured project risk log (distinct from AI delay-risk forecasting) | only AI delay-risk exists; **no register** |
-| 8 | Site instruction / meeting minutes / correspondence log | Document-control records | RFI exists as a `Task` (`work_type: rfi`); **no site-instruction/minutes module** |
+| #   | Capability                                              | What it adds                                                                       | Confirmed current state                                                           |
+| --- | ------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1   | Variation Order / Change Order / Claims                 | Manage approved changes to contract scope/price, linked to Contract + BOQ + budget | Contract entity exists; **no VO/claims workflow** (grep-negative)                 |
+| 2   | Inventory / Warehouse (WMS)                             | Stock movement, GRN vs PO delivery, multi-warehouse, material valuation            | material consumption + `reorder_level` exist; **no WMS**                          |
+| 3   | ราคากลาง (Comptroller-General central pricing)          | Reference-price source feeding BOQ line items                                      | **not in spec**                                                                   |
+| 4   | e-GP (Electronic Government Procurement) integration    | Public-tender data / bidding for government work                                   | **not in spec**                                                                   |
+| 5   | Bank guarantees / bonds                                 | Bid / performance / retention / advance bonds, linked to Contract + e-GP           | **not in spec**                                                                   |
+| 6   | Building permit & license management                    | Track construction permits/licences by status & expiry                             | **not in spec**                                                                   |
+| 7   | Project risk register                                   | Structured project risk log (distinct from AI delay-risk forecasting)              | only AI delay-risk exists; **no register**                                        |
+| 8   | Site instruction / meeting minutes / correspondence log | Document-control records                                                           | RFI exists as a `Task` (`work_type: rfi`); **no site-instruction/minutes module** |
 
 ### MVP — client contract signing
 

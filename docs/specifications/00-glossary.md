@@ -183,18 +183,18 @@ Capabilities accepted into the spec as future scope (product-owner decision 2026
 Definitions are provided for reference; internal design is defined when each item's phase begins.
 Exception: **client contract signing** is MVP scope (mechanism pending) — see `21-mvp-scope` §21.2.
 
-| Term | Thai | Definition |
-| --------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| **Variation Order (VO)**    | ใบแก้ไขงาน / สัญญาเพิ่มเติม     | An approved change to a contract's scope, price, or duration, tracked against Contract + BOQ + budget. Post-MVP.    |
-| **Claim**                   | การเรียกร้อง                   | A contractor's request for additional time or cost arising from changed conditions. Post-MVP.                       |
-| **ราคากลาง**                 | ราคากลาง                       | The Comptroller General's Department central reference prices used for public-works cost estimation; a post-MVP BOQ price source. |
-| **e-GP**                    | ระบบจัดซื้อจัดจ้างภาครัฐ        | Electronic Government Procurement (กรมบัญชีกลาง) — the Thai public-sector tendering system; a post-MVP integration. |
-| **Bank Guarantee / Bond**   | หนังสือค้ำประกัน               | A bank-issued guarantee securing a contractual obligation (bid / performance / retention / advance). Post-MVP.      |
-| **GRN (Goods Receipt Note)**| ใบรับสินค้า                    | A record confirming materials received against a PO delivery; part of the post-MVP inventory/warehouse (WMS) scope. |
-| **Project Risk Register**   | ทะเบียนความเสี่ยงโครงการ        | A structured log of identified project risks with likelihood, impact, and mitigation (distinct from AI delay-risk). Post-MVP. |
-| **Site Instruction**        | คำสั่งงานหน้างาน               | A formal instruction issued to the contractor on site; part of post-MVP document-control (with meeting minutes / correspondence log). |
-| **Building Permit**         | ใบอนุญาตก่อสร้าง               | A government authorisation to construct; tracked by status and expiry in the post-MVP permit & license capability.  |
-| **Client contract signing** | การลงนามสัญญาลูกค้า            | MVP capability adding an e-signature workflow on top of the existing Contract `signed` status; bilateral PKI/VC signing via CredentialService + client magic-link (ADR-058). |
+| Term                         | Thai                        | Definition                                                                                                                                                                   |
+| ---------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Variation Order (VO)**     | ใบแก้ไขงาน / สัญญาเพิ่มเติม | An approved change to a contract's scope, price, or duration, tracked against Contract + BOQ + budget. Post-MVP.                                                             |
+| **Claim**                    | การเรียกร้อง                | A contractor's request for additional time or cost arising from changed conditions. Post-MVP.                                                                                |
+| **ราคากลาง**                 | ราคากลาง                    | The Comptroller General's Department central reference prices used for public-works cost estimation; a post-MVP BOQ price source.                                            |
+| **e-GP**                     | ระบบจัดซื้อจัดจ้างภาครัฐ    | Electronic Government Procurement (กรมบัญชีกลาง) — the Thai public-sector tendering system; a post-MVP integration.                                                          |
+| **Bank Guarantee / Bond**    | หนังสือค้ำประกัน            | A bank-issued guarantee securing a contractual obligation (bid / performance / retention / advance). Post-MVP.                                                               |
+| **GRN (Goods Receipt Note)** | ใบรับสินค้า                 | A record confirming materials received against a PO delivery; part of the post-MVP inventory/warehouse (WMS) scope.                                                          |
+| **Project Risk Register**    | ทะเบียนความเสี่ยงโครงการ    | A structured log of identified project risks with likelihood, impact, and mitigation (distinct from AI delay-risk). Post-MVP.                                                |
+| **Site Instruction**         | คำสั่งงานหน้างาน            | A formal instruction issued to the contractor on site; part of post-MVP document-control (with meeting minutes / correspondence log).                                        |
+| **Building Permit**          | ใบอนุญาตก่อสร้าง            | A government authorisation to construct; tracked by status and expiry in the post-MVP permit & license capability.                                                           |
+| **Client contract signing**  | การลงนามสัญญาลูกค้า         | MVP capability adding an e-signature workflow on top of the existing Contract `signed` status; bilateral PKI/VC signing via CredentialService + client magic-link (ADR-058). |
 
 ---
 

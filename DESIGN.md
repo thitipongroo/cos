@@ -698,16 +698,16 @@ on the **low-end-device + slow-network cohort** (spec 31 §31.6).
 
 ### 15.1 Phase tags (spec 28 §28.2, 32 §32.1, 18 §18.3)
 
-| Tag     | Phase                                            | Timeline (spec 28)  |
-| ------- | ------------------------------------------------ | ------------------- |
-| `[MVP]` | Phase 1 — Internal Operations                    | Year 1              |
-| `[MVP+]`| Post-MVP construction extensions (ADR-057..066)  | context/04 Ph 2/5   |
-| `[P2]`  | Phase 2 — External Collaboration                 | Year 1–2            |
-| `[P3]`  | Phase 3 — Marketplace Economy                    | Year 2–3            |
-| `[P4]`  | Phase 4 — Financial Infrastructure               | Year 3–5            |
-| `[P5]`  | Phase 5 — Smart Infrastructure (IoT/Twin, Ph 24) | Year 5+             |
-| `[V2]`  | Vertical 2 — Infrastructure (civil/roads)        | Post-P4 + 18 months |
-| `[V3]`  | Vertical 3 — Real Estate                         | Post-V2 + 18 months |
+| Tag      | Phase                                            | Timeline (spec 28)  |
+| -------- | ------------------------------------------------ | ------------------- |
+| `[MVP]`  | Phase 1 — Internal Operations                    | Year 1              |
+| `[MVP+]` | Post-MVP construction extensions (ADR-057..066)  | context/04 Ph 2/5   |
+| `[P2]`   | Phase 2 — External Collaboration                 | Year 1–2            |
+| `[P3]`   | Phase 3 — Marketplace Economy                    | Year 2–3            |
+| `[P4]`   | Phase 4 — Financial Infrastructure               | Year 3–5            |
+| `[P5]`   | Phase 5 — Smart Infrastructure (IoT/Twin, Ph 24) | Year 5+             |
+| `[V2]`   | Vertical 2 — Infrastructure (civil/roads)        | Post-P4 + 18 months |
+| `[V3]`   | Vertical 3 — Real Estate                         | Post-V2 + 18 months |
 
 ### 15.2 `[MVP]` baseline (spec 21 §21.2 — already specified in §5–§11)
 
@@ -1185,4 +1185,4 @@ subscription management.
 | Data-sharing opt-in, benchmark ownership          | `09-data-architecture.md` §9.6                                         |
 | DID / Verifiable Credentials module               | `05-security-compliance.md` §5.3 (BG-001)                              |
 | `[MVP]` contract signing (e-sign)                 | ADR-058 + `11/14/06/16/20`                                             |
-| `[MVP+]` construction full-flow extensions        | ADR-057..066 + `docs/specifications/` + `context/04` (Ph 2/5)         |
+| `[MVP+]` construction full-flow extensions        | ADR-057..066 + `docs/specifications/` + `context/04` (Ph 2/5)          |
