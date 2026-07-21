@@ -448,8 +448,28 @@ class TestPromptsDirResolution:
         orphan.write_text("", encoding="utf-8")
         monkeypatch.setattr(loader, "__file__", str(orphan))
 
-        with pytest.raises(FileNotFoundError, match="set the PROMPTS_DIR env var"):
+        with pytest.raises(FileNotFoundError, match="set PROMPTS_DIR"):
             loader._resolve_prompts_dir()
+
+    def test_an_empty_ai_prompts_dir_does_not_shadow_the_real_one(self, monkeypatch, tmp_path):
+        """Regression: the walk used to stop at the first `ai/prompts` *directory*, so an empty one
+        nearer the file won over the populated one above it. Every render then 404'd at request
+        time instead of failing loudly at startup — which is exactly how a stray empty
+        services/ai-gateway/ai/prompts, left behind by a container build, broke eight tests."""
+        import templates.loader as loader
+
+        monkeypatch.delenv("PROMPTS_DIR", raising=False)
+        real = tmp_path / "ai" / "prompts"
+        real.mkdir(parents=True)
+        (real / "some-template-v1.j2").write_text("hi", encoding="utf-8")
+        decoy = tmp_path / "svc" / "ai" / "prompts"
+        decoy.mkdir(parents=True)
+        stub = tmp_path / "svc" / "templates" / "loader.py"
+        stub.parent.mkdir(parents=True)
+        stub.write_text("", encoding="utf-8")
+        monkeypatch.setattr(loader, "__file__", str(stub))
+
+        assert loader._resolve_prompts_dir() == real
 
 
 class TestOpenAIEmbeddingDimensions:

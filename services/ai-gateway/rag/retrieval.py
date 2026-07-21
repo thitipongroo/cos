@@ -16,7 +16,6 @@ Source: context/00_master_construction_os.md §Phase 11; docs/specifications/22-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Protocol, Sequence
 
 import yaml

@@ -25,7 +25,15 @@ export interface VendorRequest extends Request {
   vendorInvitationId?: string;
 }
 
-const RFQ_TOKEN_PATTERN = /\/vendor\/rfq\/([^/]+)/;
+// Anchored to the two routes that are genuinely Tier-1: GET /api/v1/vendor/rfq/:token and
+// POST /api/v1/vendor/rfq/:token/quotation. The previous pattern was unanchored, so it matched
+// `/vendor/rfq/<token>` anywhere in the path — which meant a caller chose which authentication tier
+// ran by shaping the URL. Nothing exploitable followed from it today, because every Tier-2 route
+// under /api/v1/vendor is a fixed literal path and a crafted URL 404s before any handler runs. But
+// the safety came from the route table, not from this check, and it would evaporate the day someone
+// adds a wildcard or parameterised route under /vendor.
+// Found by CodeQL js/user-controlled-bypass.
+const RFQ_TOKEN_PATTERN = /^\/api\/v1\/vendor\/rfq\/([^/]+)(?:\/quotation)?\/?$/;
 
 @Injectable()
 export class VendorAuthMiddleware implements NestMiddleware {

@@ -1,12 +1,9 @@
 """Unit tests for RAG retrieval logic — provider-agnostic, no real API call."""
 import sys
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import pytest
-from providers.llm_provider import StubLLMProvider, Message
 
 
 def _load_chain_config() -> dict:

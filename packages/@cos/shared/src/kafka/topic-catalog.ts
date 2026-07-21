@@ -123,7 +123,14 @@ export function subjectForEvent(eventType: string): string {
  * tenant_id is a UUID (no dots), so `[^.]+` matches exactly the tenant prefix segment.
  */
 export function tenantTopicPattern(eventType: string): RegExp {
-  const escaped = eventType.replace(/[.]/g, '\\.');
+  // Escape every regex metacharacter, not just the dot. The previous version replaced `.` alone, so
+  // any other metacharacter in eventType survived into `new RegExp` and changed what the
+  // subscription matched — `*`, `+` and `{n,m}` are the dangerous ones, because a shared-cluster
+  // consumer subscribing by pattern would silently widen or narrow its topic set. Every caller
+  // today passes a catalog constant, so this is hardening rather than a live bug; but the signature
+  // takes a plain string and nothing enforces that.
+  // Found by CodeQL js/incomplete-sanitization.
+  const escaped = eventType.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`^[^.]+\\.${escaped}$`);
 }
 

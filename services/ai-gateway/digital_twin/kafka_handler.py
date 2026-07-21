@@ -7,12 +7,9 @@ Source: spec §Phase 24 Kafka consumer/producer items
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import os
-from datetime import datetime, timezone
-from typing import AsyncGenerator
 
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
 

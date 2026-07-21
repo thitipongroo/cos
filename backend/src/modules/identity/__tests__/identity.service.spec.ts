@@ -112,6 +112,39 @@ describe('IdentityService', () => {
     });
   });
 
+  // The realm is pulled out of an UNVERIFIED token — refresh and logout are unauthenticated, and
+  // extractRealmFromToken base64-decodes the payload without checking a signature. It is then
+  // interpolated into the Keycloak URL by KeycloakAdminService, so `iss` is a request-forgery
+  // primitive unless the extracted realm is constrained. Found by CodeQL js/request-forgery.
+  describe('realm extracted from an untrusted token', () => {
+    it.each([
+      ['parent-directory traversal', '..'],
+      ['embedded traversal', '..%2f..%2fadmin'],
+      ['a path segment with a slash-ish escape', 'realm%2fadmin'],
+      ['an absolute URL', 'http:'],
+      ['a query-string smuggle', 'realm?x=1'],
+      ['a fragment smuggle', 'realm#x'],
+      ['a space', 'my realm'],
+    ])('rejects %s', async (_label, realm) => {
+      const token = buildJwt({ iss: `http://localhost:8090/realms/${realm}` });
+
+      await expect(service.refreshAccessToken(token)).rejects.toThrow(UnauthorizedException);
+      expect(keycloakAdmin.refreshToken).not.toHaveBeenCalled();
+    });
+
+    it.each([['construction-os'], ['tenant-acme'], ['tenant_1'], ['tenant.eu']])(
+      'accepts the realm name %s',
+      async (realm) => {
+        keycloakAdmin.refreshToken.mockResolvedValue(mockKeycloakResponse);
+        const token = buildJwt({ iss: `http://localhost:8090/realms/${realm}` });
+
+        await service.refreshAccessToken(token);
+
+        expect(keycloakAdmin.refreshToken).toHaveBeenCalledWith(token, realm);
+      },
+    );
+  });
+
   describe('logout', () => {
     it('revokes refresh token at Keycloak', async () => {
       const refreshToken = buildJwt({ iss: 'http://localhost:8090/realms/tenant-acme' });

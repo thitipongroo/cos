@@ -765,8 +765,9 @@ services:
   # ─── Analytics Worker (Go) — internal only (health-only until Phase 24) ───
   analytics-worker:
     build:
-      context: ./services/analytics-worker
-      dockerfile: Dockerfile
+      # Root context: this service `replace`s the shared coslib module at libs/go (ADR-069).
+      context: .
+      dockerfile: services/analytics-worker/Dockerfile
     container_name: cos-analytics-worker
     profiles: ['apps']
     env_file:
@@ -791,8 +792,9 @@ services:
   # ─── KG Ingestion Worker (Go) — internal only (Kafka → Neo4j) ─────────────
   kg-ingestion-worker:
     build:
-      context: ./services/kg-ingestion-worker
-      dockerfile: Dockerfile
+      # Root context: this service `replace`s the shared coslib module at libs/go (ADR-069).
+      context: .
+      dockerfile: services/kg-ingestion-worker/Dockerfile
     container_name: cos-kg-ingestion-worker
     profiles: ['apps']
     env_file:

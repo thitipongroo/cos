@@ -110,7 +110,18 @@ function extractRealmFromToken(token: string): string {
       iss?: string;
     };
     const match = (payload.iss ?? '').match(/\/realms\/([^/]+)$/);
-    if (match?.[1]) return match[1];
+    // Charset-restricted, and `..` rejected explicitly.
+    //
+    // This realm is interpolated straight into the Keycloak URL by KeycloakAdminService, and the
+    // token it comes from is NOT verified first — the payload is base64-decoded and parsed, so
+    // `iss` is entirely attacker-controlled on the unauthenticated refresh and logout paths. The
+    // `[^/]+` capture above stops a literal slash, but it happily returned `..`, which the URL
+    // then normalised away: `${baseUrl}/realms/../protocol/...` reaches a different path on the
+    // Keycloak host. Keycloak realm names are `[A-Za-z0-9._-]` (this deployment uses
+    // `construction-os`), so constraining the charset costs nothing real.
+    // Found by CodeQL js/request-forgery.
+    const realm = match?.[1];
+    if (realm && realm !== '..' && /^[A-Za-z0-9._-]+$/.test(realm)) return realm;
   } catch {
     // fall through
   }

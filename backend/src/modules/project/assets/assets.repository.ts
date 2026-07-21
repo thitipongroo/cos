@@ -6,6 +6,7 @@ import type { Request } from 'express';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import type { CreateAssetDto } from './dto/create-asset.dto';
 import type { UpdateAssetDto } from './dto/update-asset.dto';
+import { decodeCursor, encodeCursor } from '../../../shared/pagination/cursor';
 
 export interface AssetRow {
   asset_id: string;
@@ -23,20 +24,6 @@ export interface AssetRow {
 export interface ListAssetsOptions {
   cursor?: string;
   limit: number;
-}
-
-function encodeCursor(id: string, createdAt: Date): string {
-  return Buffer.from(`${id}:${createdAt.toISOString()}`).toString('base64');
-}
-
-function decodeCursor(cursor: string): { id: string; createdAt: string } | null {
-  const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-  const colonIdx = decoded.indexOf(':');
-  if (colonIdx === -1) return null;
-  const id = decoded.slice(0, colonIdx);
-  const createdAt = decoded.slice(colonIdx + 1);
-  if (!id || !createdAt) return null;
-  return { id, createdAt };
 }
 
 @Injectable({ scope: Scope.REQUEST })

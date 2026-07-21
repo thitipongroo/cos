@@ -3,12 +3,9 @@
 // Registered with the Temporal worker (worker.ts).
 // Workflows (rfq.workflow.ts) call these via proxyActivities — determinism preserved.
 
-import { PrismaClient } from '@prisma/client';
-import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
-import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 
-import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
+import { publishEvent, withTenantTx } from './activity-helpers';
 
 const logger = createLogger('rfq-activities');
 
@@ -19,49 +16,6 @@ export interface RfqActivityParams {
   rfq_id: string;
   tenant_id: string;
   correlation_id: string;
-}
-
-async function withTenantTx<T>(
-  tenantId: string,
-  fn: (prisma: PrismaClient) => Promise<T>,
-): Promise<T> {
-  const dbUrl = await getDbUrlForTenant(tenantId);
-  const prisma = createPrismaClient(dbUrl);
-  try {
-    return await prisma.$transaction(async (tx) => {
-      await (tx as PrismaClient).$executeRawUnsafe(
-        `SET LOCAL app.current_tenant_id = '${tenantId}'`,
-      );
-      return fn(tx as PrismaClient);
-    });
-  } finally {
-    await prisma.$disconnect();
-  }
-}
-
-async function publishEvent<T>(
-  event_type: string,
-  payload: T,
-  tenant_id: string,
-  correlation_id: string,
-): Promise<void> {
-  const kafka = new KafkaProducer();
-  try {
-    await kafka.connect();
-    await kafka.publish({
-      event_type,
-      event_version: '1.0',
-      tenant_id,
-      actor_id: 'system',
-      occurred_at: new Date().toISOString(),
-      correlation_id,
-      payload,
-    });
-  } catch (err) {
-    logger.error({ event_type, err, correlation_id }, 'kafka.publish.failed');
-  } finally {
-    await kafka.disconnect();
-  }
 }
 
 export async function updateRfqStatus(
@@ -81,6 +35,7 @@ export async function updateRfqStatus(
   );
 
   await publishEvent(
+    logger,
     'procurement.rfq.status_changed.v1',
     { rfq_id: params.rfq_id, from_status, to_status },
     params.tenant_id,
@@ -100,6 +55,7 @@ export async function markQuotationsEvaluated(params: RfqActivityParams): Promis
   logger.info({ rfq_id: params.rfq_id, correlation_id: params.correlation_id }, 'rfq.evaluated');
 
   await publishEvent(
+    logger,
     'procurement.rfq.status_changed.v1',
     { rfq_id: params.rfq_id, from_status: 'CLOSED', to_status: 'EVALUATED' },
     params.tenant_id,

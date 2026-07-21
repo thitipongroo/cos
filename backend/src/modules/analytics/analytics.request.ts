@@ -16,8 +16,14 @@ export function resolveTenantId(req: TenantRequest, queryTenantId?: string): str
   return req.tenantId ?? queryTenantId ?? '';
 }
 
-export function resolveDateRange(dateRange?: string): string {
-  if (dateRange && dateRange.includes(',')) return dateRange;
+export function resolveDateRange(dateRange?: unknown): string {
+  // `unknown`, not `string`. A query parameter arrives as an array whenever the caller repeats it
+  // (`?dateRange=a&dateRange=b`), and the declared TypeScript type does not check that at runtime.
+  // Array.prototype.includes exists too, so the old `dateRange.includes(',')` guard passed an array
+  // straight through as if it were a range. The ClickHouse queries bind their dates as typed
+  // parameters ({startDate:Date}), so this was never SQL injection — but it did reach the cache key
+  // and the driver as a non-string. Found by CodeQL js/type-confusion-through-parameter-tampering.
+  if (typeof dateRange === 'string' && dateRange.includes(',')) return dateRange;
   const end = new Date();
   const start = new Date(end.getTime() - 90 * 24 * 60 * 60 * 1000);
   const fmt = (d: Date): string => d.toISOString().slice(0, 10);

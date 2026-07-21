@@ -61,7 +61,7 @@ Required keys — each is one AWS SM secret named `cos/production/<KEY>`, groupe
   `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
 - `cos-ai-gateway-secrets`: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`
 - `cos-analytics-worker-secrets`: `CLICKHOUSE_URL`, `CLICKHOUSE_PASSWORD`
-- `cos-kg-ingestion-worker-secrets`: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`
+- `cos-kg-ingestion-worker-secrets`: `NEO4J_URI`, `NEO4J_USERNAME`, `NEO4J_PASSWORD`, `KG_ADMIN_TOKEN`
 - `cos-web-secrets`: `NEXTAUTH_SECRET`, `KEYCLOAK_WEB_CLIENT_SECRET`
 
 > `cos-ai-embedding-worker` and `cos-ai-ocr-pipeline` read no secrets today; their chart `envFrom` is

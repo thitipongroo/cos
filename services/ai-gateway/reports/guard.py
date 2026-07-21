@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 MIN_WORDS = 50
 MAX_WORDS = 500

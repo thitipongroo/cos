@@ -1,0 +1,43 @@
+{{- if .Values.networkPolicy.enabled }}
+# Ingress policy for analytics-worker. See the companion policy in cos-kg-ingestion-worker for the
+# full reasoning; the difference that matters here is the second rule.
+#
+# OFF BY DEFAULT (networkPolicy.enabled): schema-validated, never enforced in a live cluster.
+#
+# This chart uses httpGet liveness and readiness probes, so kubelet must be able to open a TCP
+# connection to the pod's http port. Probe traffic originates from the node, not from a pod, and
+# whether a default-deny implicitly permits it depends on the CNI — it is not something to assume.
+# networkPolicy.nodeCIDRs exists for the clusters where it must be stated explicitly; leaving it
+# empty emits no node rule at all, which is correct only if the CNI already exempts probes. Confirm
+# on the target cluster, because the failure mode is a pod that is restarted forever.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "cos-analytics-worker.fullname" . }}
+  labels: {{ include "cos-analytics-worker.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels: {{ include "cos-analytics-worker.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    # Prometheus scrapes :9464 (infrastructure/monitoring/prometheus/prometheus.yml).
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ .Values.networkPolicy.prometheusPodLabel }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.service.metricsPort }}
+{{- with .Values.networkPolicy.nodeCIDRs }}
+    # Kubelet httpGet probes against the http port.
+    - from:
+        {{- range . }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        - protocol: TCP
+          port: {{ $.Values.service.port }}
+{{- end }}
+{{- end }}

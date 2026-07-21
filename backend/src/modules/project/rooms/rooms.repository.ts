@@ -6,6 +6,7 @@ import type { Request } from 'express';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import type { CreateRoomDto } from './dto/create-room.dto';
 import type { UpdateRoomDto } from './dto/update-room.dto';
+import { decodeCursor, encodeCursor } from '../../../shared/pagination/cursor';
 
 export interface RoomRow {
   room_id: string;
@@ -22,20 +23,6 @@ export interface RoomRow {
 export interface ListRoomsOptions {
   cursor?: string;
   limit: number;
-}
-
-function encodeCursor(id: string, createdAt: Date): string {
-  return Buffer.from(`${id}:${createdAt.toISOString()}`).toString('base64');
-}
-
-function decodeCursor(cursor: string): { id: string; createdAt: string } | null {
-  const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-  const colonIdx = decoded.indexOf(':');
-  if (colonIdx === -1) return null;
-  const id = decoded.slice(0, colonIdx);
-  const createdAt = decoded.slice(colonIdx + 1);
-  if (!id || !createdAt) return null;
-  return { id, createdAt };
 }
 
 @Injectable({ scope: Scope.REQUEST })

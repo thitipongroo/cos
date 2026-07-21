@@ -33,3 +33,21 @@ describe('resolveDateRange', () => {
     expect(resolveDateRange('2026-01-01')).toMatch(/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/);
   });
 });
+
+describe('resolveDateRange with a tampered parameter type', () => {
+  // A repeated query parameter (?dateRange=a&dateRange=b) arrives as an array. Array has its own
+  // .includes, so the old string-typed guard let it through untouched. CodeQL
+  // js/type-confusion-through-parameter-tampering.
+  it.each([
+    ['an array that contains a comma', [',']],
+    ['an array of ranges', ['2026-01-01,2026-06-30', '2026-07-01,2026-12-31']],
+    ['an object', { toString: () => '2026-01-01,2026-06-30' }],
+    ['a number', 20260101],
+    ['null', null],
+  ])('falls back to the 90-day default for %s', (_label, tampered) => {
+    const result = resolveDateRange(tampered as unknown);
+
+    expect(typeof result).toBe('string');
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2},\d{4}-\d{2}-\d{2}$/);
+  });
+});

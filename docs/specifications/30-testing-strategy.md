@@ -320,12 +320,24 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
 
 ### SAST (Static Analysis)
 
-- **SonarQube** — code quality and security vulnerability scanning on every PR
-  > ⏸ **DEFERRED:** SonarQube CI gate deferred pending EKS server setup.
-  > Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim.
-  > Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
-- **ESLint security plugin** — SQL injection, XSS patterns
-- **npm audit / pip-audit** — dependency vulnerability scanning in CI
+- **CodeQL** — semantic SAST with cross-file taint analysis, on every PR. Languages: JS/TS, Python,
+  Go (`.github/workflows/codeql.yml`). Free on this public repository; a private repository would
+  require a GitHub Code Security licence per active committer. Cannot run air-gapped.
+- **Semgrep CE** — pattern SAST (`.github/workflows/semgrep.yml`). Two tiers: project-policy rules in
+  `.semgrep/` **block the merge**; registry security rulesets are advisory and reported to code
+  scanning. Runs fully offline, so it is the scanner available to on-premise/air-gapped deployments
+  where CodeQL cannot run.
+- **jscpd** — duplication, run in the CI lint job against the ratchet in `.jscpd.json`.
+- **npm audit / pip-audit / govulncheck / Trivy** — dependency and container scanning (SCA). Note
+  these scan *dependencies*, not first-party code; CodeQL and Semgrep are what read code we wrote.
+
+> Replaced SonarQube (ADR-068). SonarQube **Community** Build has no branch or pull-request
+> analysis, so the "before merge, on new code" gate this section requires is not achievable on it,
+> and it has no taint analysis; both start at Developer Edition (paid).
+>
+> ⚠️ An earlier version of this list also claimed an **ESLint security plugin** covering SQL
+> injection and XSS. No such plugin was ever installed — `eslint.config.mjs` carries only
+> `@typescript-eslint`. It is listed here as a gap, not a control.
 
 ### DAST (Dynamic Analysis)
 
@@ -430,7 +442,10 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | Multi-tenant isolation tests              | Every PR              | PR merge                              |
 | API contract tests (Pact)                 | Every PR              | PR merge                              |
 | Dependency audit (pnpm/govulncheck/pip)   | Every PR              | PR merge (High/Critical)              |
-| Security SAST (SonarQube)                 | Every PR              | PR merge (High severity) — ⏸ DEFERRED |
+| Security SAST (CodeQL)                    | Every PR              | PR merge                              |
+| Security SAST (Semgrep — project rules)   | Every PR              | PR merge                              |
+| Security SAST (Semgrep — registry rules)  | Every PR              | Alert only (code scanning)            |
+| Duplication (jscpd, ratchet)              | Every PR              | PR merge                              |
 | Smoke tests (ArgoCD PostSync wave 1)      | Post-deploy (staging) | Blocks E2E wave 2                     |
 | E2E tests (Playwright)                    | Merge to `staging`    | Production promotion                  |
 | E2E tests (Detox — React Native mobile)   | Merge to `staging`    | Production promotion                  |
@@ -448,7 +463,9 @@ CI pipeline (GitHub Actions) enforces these gates per `04-tech-stack` section 4.
 | [Pact]       | Pact Contract Testing Documentation                                | [docs.pact.io](https://docs.pact.io/)                                    |
 | [k6]         | k6 Load Testing Documentation                                      | [k6.io/docs](https://k6.io/docs/)                                        |
 | [Playwright] | Playwright End-to-End Testing Documentation                        | [playwright.dev/docs/intro](https://playwright.dev/docs/intro)           |
-| [SonarQube]  | SonarQube Static Analysis Documentation                            | [docs.sonarqube.org](https://docs.sonarqube.org/)                        |
+| [CodeQL]     | CodeQL Documentation                                               | [codeql.github.com/docs](https://codeql.github.com/docs/)                |
+| [Semgrep]    | Semgrep Documentation                                              | [semgrep.dev/docs](https://semgrep.dev/docs/)                            |
+| [jscpd]      | jscpd — Copy/Paste Detector                                        | [github.com/kucherenko/jscpd](https://github.com/kucherenko/jscpd)       |
 | [OWASP-ZAP]  | OWASP ZAP Dynamic Application Security Testing                     | [zaproxy.org/docs](https://www.zaproxy.org/docs/)                        |
 | [Jest]       | Jest JavaScript Testing Framework                                  | [jestjs.io/docs/getting-started](https://jestjs.io/docs/getting-started) |
 

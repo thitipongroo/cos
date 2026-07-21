@@ -19,7 +19,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/construction-os/kg-ingestion-worker/internal/coskafka"
+	"github.com/construction-os/coslib/coskafka"
 	"github.com/construction-os/kg-ingestion-worker/internal/graph"
 	"github.com/construction-os/kg-ingestion-worker/internal/mapper"
 	"github.com/construction-os/kg-ingestion-worker/internal/model"

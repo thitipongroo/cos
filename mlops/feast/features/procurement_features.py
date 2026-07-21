@@ -6,7 +6,7 @@ Offline source: PostgreSQL view (feast_offline.procurement_feature_source)
 """
 
 from datetime import timedelta
-from feast import Entity, FeatureView, Field
+from feast import FeatureView, Field
 from feast.types import Float64, Int64
 from feast.infra.offline_stores.contrib.postgres_offline_store.postgres_source import PostgreSQLSource
 

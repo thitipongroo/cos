@@ -5,12 +5,11 @@ All external I/O (PostgreSQL, Redis) mocked at the boundary.
 
 import json
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 from uuid import uuid4, UUID
 
 from digital_twin.models import StateSource
-from digital_twin.sync_service import handle_iot_telemetry_event, compute_confidence
+from digital_twin.sync_service import handle_iot_telemetry_event
 
 # Production tenant_id / project_id are always UUIDs — the handler and divergence report
 # cast them via UUID(...) / ::uuid, so the mocks must use real UUIDs, not "tenant-1"/"proj-1".

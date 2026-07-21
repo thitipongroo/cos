@@ -176,3 +176,56 @@ describe('OutboxPoller start/stop', () => {
     expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('outbox SQL is schema-qualified', () => {
+  // Regression guard. OutboxPublisher.write() used to `INSERT INTO outbox_events` unqualified while
+  // OutboxPoller reads `platform.outbox_events`. Nothing sets search_path, and the old
+  // public.outbox_events was moved to the `projects` schema by 20260605000004 — so writer and reader
+  // could address different tables: events inserted, never polled, no error raised.
+  //
+  // Local mocks on purpose. The module-scope prismaMock is mutated by an earlier describe
+  // (`$queryRaw.mockResolvedValue([])`), and jest.clearAllMocks() does not restore an overwritten
+  // implementation, so a shared mock makes this suite depend on execution order.
+  const sqlOf = (mock: jest.Mock, call = 0): string =>
+    (mock.mock.calls[call][0] as string[]).join('?');
+
+  const envelope = {
+    event_type: 'construction.project.created.v1',
+    tenant_id: 'tenant-1',
+    actor_id: 'user-1',
+    occurred_at: new Date().toISOString(),
+    correlation_id: 'corr-1',
+    event_version: '1.0',
+    payload: { project_id: 'p-1' },
+  };
+
+  it('OutboxPublisher writes to platform.outbox_events', async () => {
+    const tx = { $executeRaw: jest.fn().mockResolvedValue(undefined) };
+
+    await OutboxPublisher.write(tx as never, envelope as never);
+
+    const sql = sqlOf(tx.$executeRaw);
+    expect(sql).toContain('INSERT INTO platform.outbox_events');
+    // The bug this guards against is the absence of the qualifier, not its presence elsewhere.
+    expect(sql).not.toMatch(/INSERT\s+INTO\s+outbox_events/);
+  });
+
+  it('poller reads and updates the same qualified table the publisher writes', async () => {
+    const queryRaw = jest
+      .fn()
+      .mockResolvedValue([
+        { id: 'outbox-evt-1', event_type: envelope.event_type, payload: envelope },
+      ]);
+    const executeRaw = jest.fn().mockResolvedValue(undefined);
+    const producer = { publish: jest.fn().mockResolvedValue(undefined) };
+
+    const poller = new OutboxPoller(
+      { $queryRaw: queryRaw, $executeRaw: executeRaw } as never,
+      producer as never,
+    );
+    await (poller as unknown as { poll: () => Promise<void> }).poll();
+
+    expect(sqlOf(queryRaw)).toContain('FROM platform.outbox_events');
+    expect(sqlOf(executeRaw)).toContain('UPDATE platform.outbox_events');
+  });
+});

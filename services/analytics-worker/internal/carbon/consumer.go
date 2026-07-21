@@ -3,7 +3,7 @@
 // Produces: INSERT to ClickHouse (analytics.carbon_records)
 // GHG Protocol Scope 3 (embodied carbon, EN 15804 modules A1–A3); Source: spec §33.3, §33.4
 //
-// Decoding, the §7.3 tenant guard, idempotency, retry and DLQ all live in internal/coskafka; this
+// Decoding, the §7.3 tenant guard, idempotency, retry and DLQ all live in the shared coskafka module (libs/go/coskafka); this
 // file is only the carbon-specific handler and its ClickHouse write.
 package carbon
 
@@ -16,7 +16,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/construction-os/analytics-worker/internal/coskafka"
+	"github.com/construction-os/coslib/coskafka"
 )
 
 const (

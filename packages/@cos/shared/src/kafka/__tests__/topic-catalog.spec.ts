@@ -82,6 +82,43 @@ describe('topic-catalog', () => {
     });
   });
 
+  describe('tenantTopicPattern escapes regex metacharacters', () => {
+    // The event type is interpolated into `new RegExp`. Escaping only `.` left every other
+    // metacharacter live, so an event type containing one matched a different set of topics than it
+    // names — a shared-cluster consumer would silently subscribe to the wrong thing.
+    // CodeQL js/incomplete-sanitization.
+    it.each([
+      ['a quantifier', 'a+b'],
+      ['a wildcard', 'a*b'],
+      ['an alternation', 'a|b'],
+      ['a group', 'a(b)c'],
+      ['a character class', 'a[bc]d'],
+      ['a repetition range', 'a{1,2}b'],
+      ['an anchor', 'a$b'],
+      ['a backslash', 'a\\b'],
+    ])('treats %s as a literal', (_label, eventType) => {
+      const pattern = tenantTopicPattern(eventType);
+
+      expect(pattern.test(`tenant-1.${eventType}`)).toBe(true);
+    });
+
+    it('does not let a quantifier widen the match', () => {
+      // Unescaped, /^[^.]+\.a+b$/ would also match "tenant-1.aaab".
+      const pattern = tenantTopicPattern('a+b');
+
+      expect(pattern.test('tenant-1.aaab')).toBe(false);
+      expect(pattern.test('tenant-1.a+b')).toBe(true);
+    });
+
+    it('does not let an alternation broaden the match', () => {
+      const pattern = tenantTopicPattern('alpha|beta');
+
+      expect(pattern.test('tenant-1.alpha')).toBe(false);
+      expect(pattern.test('tenant-1.beta')).toBe(false);
+      expect(pattern.test('tenant-1.alpha|beta')).toBe(true);
+    });
+  });
+
   describe('dlqTopicFor', () => {
     it('derives {tenant_id}.dlq from a per-tenant topic', () => {
       expect(dlqTopicFor('tenant-1.construction.project.created.v1')).toBe('tenant-1.dlq');

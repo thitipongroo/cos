@@ -238,8 +238,30 @@ Before starting any implementation task:
   - **On-premise deployments**: Cloudflare WAF is NOT applicable — Kong Gateway provides rate limiting; customer-provided WAF MUST meet OWASP CRS paranoia level 2 minimum (see spec §08-enterprise-deployment §8.7)
 - **Data encryption at rest** — algorithm: **AES-256** minimum on all persistent storage (source: spec §5.2); all S3 buckets + RDS/Aurora: SSE-KMS with **customer-managed key (CMK)**; all ElastiCache nodes: AWS-managed key (`at_rest_encryption_enabled`); one CMK per storage-type per env with alias `cos/{env}/rds|s3|elasticache`; **annual KMS rotation**; key policy grants use to the app service role + SYSTEM_ADMIN only; CMK definitions in `infrastructure/terraform/aws/kms.tf` (source: spec §5.2.1). On-prem = Vault Transit envelope encryption.
 - **Penetration testing** — external pentest required before Stage 1→2 and Stage 2→3 transitions; findings tracked in `docs/security/pentest-findings.md`; all HIGH/CRITICAL findings resolved before advancing stage
-- SAST and code quality scan must pass in CI via **SonarQube** before merge — spec §30.10 and §30.12 mandate SonarQube; SonarQube Community Edition self-hosted on EKS; quality gate thresholds: 0 new bugs, 0 new vulnerabilities, 100% line coverage, 100% branch coverage, 0% duplication on new code; command: `sonar-scanner -Dsonar.projectKey=construction-os -Dsonar.sources=. -Dsonar.host.url=$SONAR_HOST_URL`
-  **⏸ DEFERRED:** SonarQube CI gate deferred pending EKS server setup. Trivy container scan + `pnpm audit` + `pip-audit` + `govulncheck` cover security scanning in interim. Must be operational before Phase 19 automated check #4 runs (Stage 1→2 gate).
+- SAST and code quality scan must pass in CI before merge — **CodeQL + Semgrep CE + jscpd** (ADR-068;
+  spec §30.10, §30.12). Replaced SonarQube, which was specified but never deployed:
+  - **CodeQL** (`.github/workflows/codeql.yml`) — semantic/taint SAST over JS-TS, Python and Go.
+    Free because this repository is public; on a private repository it needs a GitHub Code Security
+    licence billed per active committer. **Cannot run air-gapped** — it requires GitHub.
+  - **Semgrep CE** (`.github/workflows/semgrep.yml`, rules in `.semgrep/`) — project-policy rules
+    (BLOCKING) encoding the §Never prohibitions below, plus registry security rulesets (advisory,
+    reported to code scanning). Runs fully offline, which is what covers on-premise/air-gapped.
+  - **ruff** (`ruff check services mlops`, CI lint job, BLOCKING) — Python lint. Nothing linted
+    Python before 2026-07-21, which is how 39 unused imports accumulated; the default E+F set
+    was measured against this tree and passes clean. Runs offline (ADR-068).
+  - **jscpd** (`.jscpd.json`, run in the CI lint job) — duplication. Threshold is a **ratchet at 1.3%**
+    against a measured baseline of 1.12% (2026-07-21), not 0%: jscpd has no "new code" concept and
+    the repo already carries duplication. ADR-069 removed the three largest clusters — the Go
+    workers' copied `internal/coskafka` and `internal/otel` (23.01% of Go lines → **0.00%**, now the
+    shared module `libs/go`), the budget grid rendered by two routes (tsx 2.18% → 1.33%), and the
+    cursor codec copied into seven `modules/project/` repositories (typescript 1.50% → 1.20%).
+    Total went 2.80% → 1.12%. What is left is NestJS controller/service boilerplate and list-page
+    scaffolding in `apps/web`.
+  - Coverage thresholds are enforced where they are measured — jest 100/100 (QM-1) and pytest
+    `--cov-fail-under=99` per Python service — not by a separate quality-gate server.
+  Why not SonarQube: its **Community** edition has no branch or pull-request analysis, so a
+  "before merge, on new code" gate is impossible on it, and no taint analysis either; those start at
+  Developer Edition (paid). See ADR-068 for the full comparison and the air-gapped caveat.
 - Dependency vulnerability scan in CI (`npm audit --audit-level=high` / `pip-audit`) — no HIGH/CRITICAL unresolved
 - Rate limiting required on all public-facing endpoints (see QM-7)
 - CORS policy must be explicit — never use `*` in production; allowed origins defined in `docs/security/cors-policy.md`
@@ -628,13 +650,12 @@ npm audit --audit-level=high
 # 3. Python dependency vulnerability check
 pip-audit --requirement ai/requirements.txt
 
-# 4. SAST + code quality scan
-sonar-scanner \
-  -Dsonar.projectKey=construction-os \
-  -Dsonar.sources=. \
-  -Dsonar.host.url=$SONAR_HOST_URL \
-  -Dsonar.login=$SONAR_TOKEN
-# Quality gate must be GREEN (0 bugs, 0 vulnerabilities, 100% line coverage, 100% branch coverage)
+# 4. SAST + code quality scan (ADR-068 — replaced SonarQube)
+#    All three already run in CI on every PR; this is re-verification, not a separate gate.
+semgrep --config .semgrep/ --error          # project policy rules (blocking)
+pnpm exec jscpd backend/src packages apps/web/src services   # duplication ratchet (.jscpd.json)
+gh api repos/:owner/:repo/code-scanning/alerts --jq '[.[]|select(.state=="open")]|length'
+# Pass = semgrep exit 0, jscpd exit 0, and 0 open CodeQL/Semgrep code-scanning alerts
 
 # 5. OpenAPI spec freshness
 ./scripts/readiness/check-openapi-freshness.sh

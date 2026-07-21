@@ -47,8 +47,17 @@ module.exports = function withPodfileFixes(config) {
 
       // (3) build React Native from source (not the Release prebuilt) so Debug links — see header.
       const propsPath = path.join(cfg.modRequest.platformProjectRoot, 'Podfile.properties.json');
-      if (fs.existsSync(propsPath)) {
-        const props = JSON.parse(fs.readFileSync(propsPath, 'utf8'));
+      // Read first and handle ENOENT, rather than existsSync-then-read: between those two calls the
+      // file can disappear, and the read then throws from inside a config plugin, where a missing
+      // file surfaces as what looks like an Expo bug. CodeQL js/file-system-race.
+      let raw = null;
+      try {
+        raw = fs.readFileSync(propsPath, 'utf8');
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err;
+      }
+      if (raw !== null) {
+        const props = JSON.parse(raw);
         props['EXPO_USE_PRECOMPILED_MODULES'] = 'false';
         fs.writeFileSync(propsPath, `${JSON.stringify(props, null, 2)}\n`);
       }

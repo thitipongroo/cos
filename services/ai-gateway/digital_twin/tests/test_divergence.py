@@ -2,7 +2,6 @@
 Unit tests: divergence calculation and state merge logic — Phase 24
 """
 
-import pytest
 from uuid import uuid4
 from datetime import datetime, timezone
 

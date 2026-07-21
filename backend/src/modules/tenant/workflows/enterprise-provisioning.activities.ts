@@ -154,9 +154,43 @@ export async function notifyAwaitingApprovalActivity(params: RdsActivityParams):
   }
 }
 
+// tenant_id is a UUID everywhere it is stored; anything else must never reach a shell command.
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function assertUuid(value: string, field: string): void {
+  if (!UUID_PATTERN.test(value)) {
+    throw new Error(`${field} must be a UUID`);
+  }
+}
+
+// The two connection URLs below are interpolated into a shell command (the `|` between pg_dump and
+// psql means execSync goes through /bin/sh). They come from configuration rather than from a
+// request, but a generated password is not a safe string: Secrets Manager will happily hand back
+// one containing a backtick or `$(`, and that would execute. Postgres URLs have no legitimate use
+// for shell metacharacters, so reject them rather than hope.
+// Found by CodeQL js/indirect-command-line-injection.
+const SHELL_METACHARACTERS = /[`$\\"'|;&<>(){}\s]/;
+
+export function assertShellSafeDbUrl(value: string, field: string): void {
+  if (!value.startsWith('postgres://') && !value.startsWith('postgresql://')) {
+    throw new Error(`${field} must be a postgres:// URL`);
+  }
+  if (SHELL_METACHARACTERS.test(value)) {
+    throw new Error(`${field} contains characters that are unsafe in a shell command`);
+  }
+}
+
 // ── Activity 4: migrateDataActivity ───────────────────────────────────────
 
 export async function migrateDataActivity(params: RdsWithEndpointParams): Promise<void> {
+  // Validate before anything reaches a shell. This activity interpolates tenantId into a `pg_dump
+  // ... --where="tenant_id='...'" | psql ...` command, which runs through /bin/sh because of the
+  // pipe — so a tenantId carrying a quote or `$(...)` was arbitrary command execution with the
+  // database credentials in the same string. Every tenant_id in this system is a UUID, so the
+  // constraint costs nothing. The same pattern already guards app.current_tenant_id in
+  // TenantPrismaService. Found by CodeQL js/indirect-command-line-injection.
+  assertUuid(params.tenantId, 'tenantId');
+
   const { execSync } = await import('child_process');
   const sharedDbUrl = DATABASE_URL;
   const dedicatedDbUrl = buildDbUrl(params.rdsEndpoint);
@@ -179,6 +213,8 @@ export async function migrateDataActivity(params: RdsWithEndpointParams): Promis
   }
 
   logger.info({ tenantId: params.tenantId }, 'migrate_data.starting');
+  assertShellSafeDbUrl(sharedDbUrl, 'DATABASE_URL');
+  assertShellSafeDbUrl(dedicatedDbUrl, 'dedicatedDbUrl');
   // pg_dump tenant-scoped data and restore to dedicated DB
   execSync(
     `pg_dump "${sharedDbUrl}" --schema=projects --schema=boq --schema=procurement ` +

@@ -8,7 +8,6 @@ This is the verifiable slice of the Digital Twin wiring — independent of the F
 anomaly and of Kafka/Avro (the consumer transport is a separate, unverified seam).
 """
 
-import json
 import os
 import sys
 import uuid

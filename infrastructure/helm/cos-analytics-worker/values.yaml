@@ -24,11 +24,24 @@ podDisruptionBudget:
   enabled: true
   minAvailable: 1
 env:
+  # PORT must match service.port / the `http` containerPort. Without it the worker falls back
+  # to its own hardcoded default and nothing reaches it: the Service targetPort resolves to a
+  # port no one listens on. ADR-069.
+  PORT: '8080'
   OTEL_SERVICE_NAME: 'analytics-worker'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
 envFrom:
   - secretRef:
       name: cos-analytics-worker-secrets
+networkPolicy:
+  # Off by default: these rules are schema-valid but have never been enforced in a live cluster.
+  # Read templates/networkpolicy.yaml before turning this on — the caveats are specific.
+  enabled: false
+  # Pod label selector for the Prometheus that scrapes :9464.
+  prometheusPodLabel: 'prometheus'
+  # Node CIDRs allowed to reach the http port for kubelet httpGet probes. Empty emits no node rule,
+  # which is correct only where the CNI already exempts probe traffic. Cluster-specific by nature.
+  nodeCIDRs: []
 serviceAccount:
   create: true
   name: 'cos-analytics-worker'

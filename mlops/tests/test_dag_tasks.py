@@ -3,7 +3,6 @@ Unit tests: Airflow DAG task functions (Phase 23)
 Tests use mocked data sources — no real PostgreSQL / MinIO / Feast calls.
 """
 
-import io
 import pytest
 from datetime import date
 from unittest.mock import MagicMock, patch
@@ -51,7 +50,6 @@ class TestExportToParquet:
         assert "site_reports/dt=2026-06-08" in call_kwargs["Key"]
 
     def test_export_returns_zero_when_no_rows(self, monkeypatch):
-        import pandas as pd
 
         mock_conn = MagicMock()
         mock_s3 = MagicMock()

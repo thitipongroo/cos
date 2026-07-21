@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
@@ -14,10 +15,11 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
+	cosOtel "github.com/construction-os/coslib/cosotel"
 	"github.com/construction-os/kg-ingestion-worker/internal/consumer"
 	"github.com/construction-os/kg-ingestion-worker/internal/graph"
-	cosOtel "github.com/construction-os/kg-ingestion-worker/internal/otel"
 	neo4j "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -25,12 +27,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	otelShutdown, err := cosOtel.Configure(ctx)
-	if err != nil {
-		log.Printf("otel init warning (non-fatal): %v", err)
-	} else {
-		defer func() { _ = otelShutdown(context.Background()) }()
-	}
+	// Traces (OTLP push) and metrics (Prometheus on :9464) — both non-fatal, see cosotel.Start.
+	defer cosOtel.Start(ctx, "kg-ingestion-worker")()
 
 	neo4jURI := getEnv("NEO4J_URI", "bolt://localhost:7687")
 	neo4jUser := getEnv("NEO4J_USERNAME", "neo4j")
@@ -72,9 +70,24 @@ func main() {
 
 	// admin rebuild handler — POST /admin/rebuild
 	// replays all events from the beginning per spec §Phase 13 Full rebuild
+	//
+	// Authenticated, and fail-closed when KG_ADMIN_TOKEN is unset. Until this guard the endpoint
+	// took an unauthenticated POST from anything that could reach the pod, and nothing stopped that:
+	// spec §5.4 leans on Istio mTLS for service-to-service trust, but no Istio manifest exists in
+	// infrastructure/, and the repository's only NetworkPolicy selects
+	// `cos.io/cloudflare-protected: 'true'`, a label no chart sets — so there is no default-deny
+	// either. A queued rebuild replays the whole topic from the oldest offset.
+	adminToken := getEnv("KG_ADMIN_TOKEN", "")
+	if adminToken == "" {
+		log.Print("KG_ADMIN_TOKEN is unset — POST /admin/rebuild will refuse every request")
+	}
 	http.HandleFunc("/admin/rebuild", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if !adminAuthorized(adminToken, r.Header.Get("Authorization")) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
 		select {
@@ -91,9 +104,25 @@ func main() {
 		fmt.Fprintf(w, `{"status":"ok"}`)
 	})
 
+	// Explicit server, not http.ListenAndServe: the package-level helper has no timeouts at all,
+	// so a client that opens a connection and never finishes its request headers holds a goroutine
+	// indefinitely (Slowloris). ReadHeaderTimeout is the one that closes that specific hole.
+	// Flagged by gosec G114 (CWE-676). The Semgrep registry packs flag this same line, but for a
+	// different reason (go.lang.security.audit.net.use-tls — plaintext HTTP); no rule in p/golang
+	// covers the missing timeout. CodeQL has not been run against this repository yet, so nothing
+	// is claimed about it here.
+	//
+	// Note what this change did NOT fix: the port still serves plaintext. Switching from
+	// http.ListenAndServe to srv.ListenAndServe also stops the use-tls rule matching, because its
+	// pattern is the package-level helper — so that finding is now invisible to Semgrep without
+	// having been addressed.
+	srv := &http.Server{
+		Addr:              ":" + port,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
 	go func() {
 		log.Printf("kg-ingestion-worker listening on :%s", port)
-		if err := http.ListenAndServe(":"+port, nil); err != nil {
+		if err := srv.ListenAndServe(); err != nil {
 			log.Fatalf("http server: %v", err)
 		}
 	}()
@@ -123,4 +152,21 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// adminAuthorized reports whether header carries the expected bearer token.
+//
+// Fail-closed: an empty expected token authorises nothing, so a deployment that forgets to set
+// KG_ADMIN_TOKEN disables the endpoint rather than leaving it open. The comparison is
+// constant-time — a byte-wise == on a secret leaks its prefix to a timing oracle.
+func adminAuthorized(expected, header string) bool {
+	if expected == "" {
+		return false
+	}
+	const prefix = "Bearer "
+	if !strings.HasPrefix(header, prefix) {
+		return false
+	}
+	got := strings.TrimPrefix(header, prefix)
+	return subtle.ConstantTimeCompare([]byte(got), []byte(expected)) == 1
 }

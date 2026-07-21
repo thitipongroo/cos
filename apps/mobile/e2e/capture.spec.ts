@@ -3,7 +3,7 @@
 // booted-simulator screen straight to docs/screens/ios/. Not a functional test — a documentation
 // generator. Run explicitly: `detox test -c ios.sim.release e2e/capture.spec.ts`.
 import { by, device, element } from 'detox';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -39,7 +39,14 @@ const ROUTES = [
 ];
 
 function shot(name: string): void {
-  execSync(`xcrun simctl io booted screenshot "${OUT}/${name}.png"`, { stdio: 'ignore' });
+  // execFileSync, not execSync: no shell, so nothing in the path can be interpreted as a command.
+  // The screenshot paths are built from env vars (G1_OUT / G1_N) and interpolated straight into
+  // the command line before this. That is developer tooling rather than shipped code, but passing
+  // an argv array instead of a string removes the class outright and costs nothing.
+  // Found by CodeQL js/shell-command-injection-from-environment and js/indirect-command-line-injection.
+  execFileSync('xcrun', ['simctl', 'io', 'booted', 'screenshot', `${OUT}/${name}.png`], {
+    stdio: 'ignore',
+  });
 }
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));

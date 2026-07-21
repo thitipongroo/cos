@@ -104,52 +104,6 @@ resource "aws_iam_openid_connect_provider" "main" {
   tags            = var.tags
 }
 
-# ─── Node launch template: kernel sysctls ─────────────────────────────────────
-# vm.max_map_count is raised for the Elasticsearch engine embedded in SonarQube
-# (infrastructure/kubernetes/sonarqube). Elasticsearch refuses to start below 262144.
-#
-# It is set HERE, on the node, rather than by a privileged initContainer in the workload: PodSecurity
-# `restricted` — which RKE2 profile:cis enforces on production on-prem clusters (ADR-039) — rejects
-# privileged containers, and context.md §Phase 17 records that such rejections are SILENT (the
-# workload object is admitted, the Pod is not). A node-level sysctl behaves identically on EKS and
-# on-prem; the initContainer approach would work on one and quietly fail on the other.
-# Product-owner decision 2026-07-21. On-prem equivalent: infrastructure/kubernetes/sonarqube/README.md
-#
-# NOTE: attaching a launch template to an existing node group replaces its nodes. Harmless today —
-# no cluster has been provisioned yet — but plan a drain window if this module is ever changed
-# against a live cluster.
-resource "aws_launch_template" "nodes" {
-  name_prefix = "${var.cluster_name}-node-"
-
-  # MIME multipart is required: EKS appends its own bootstrap part to user_data, and a bare shell
-  # script would be discarded rather than merged.
-  user_data = base64encode(<<-EOT
-    MIME-Version: 1.0
-    Content-Type: multipart/mixed; boundary="==COS=="
-
-    --==COS==
-    Content-Type: text/x-shellscript; charset="us-ascii"
-
-    #!/bin/bash
-    echo 'vm.max_map_count=262144' > /etc/sysctl.d/99-cos-elasticsearch.conf
-    sysctl --system
-
-    --==COS==--
-  EOT
-  )
-
-  tag_specifications {
-    resource_type = "instance"
-    tags          = var.tags
-  }
-
-  tags = var.tags
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
 # ─── Managed Node Group ───────────────────────────────────────────────────────
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
@@ -157,11 +111,6 @@ resource "aws_eks_node_group" "main" {
   node_role_arn   = aws_iam_role.nodes.arn
   subnet_ids      = var.private_subnet_ids
   instance_types  = var.node_instance_types
-
-  launch_template {
-    id      = aws_launch_template.nodes.id
-    version = aws_launch_template.nodes.latest_version
-  }
 
   scaling_config {
     desired_size = var.node_desired_size

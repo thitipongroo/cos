@@ -52,8 +52,14 @@ export class OutboxPublisher {
     const eventId = event.event_id ?? randomUUID();
     const envelope = { ...event, event_id: eventId };
 
+    // MUST stay schema-qualified. This INSERT was unqualified while OutboxPoller below reads and
+    // updates `platform.outbox_events`, so writer and reader did not necessarily address the same
+    // table: nothing in the application sets search_path, and `public.outbox_events` was moved to
+    // the `projects` schema by 20260605000004_db_refactor_global_schemas. The failure mode is the
+    // bad kind — events accepted into a table the poller never reads, so they are never published
+    // and nothing errors. (QM-4 / spec §11.0 rule 2; found by the Semgrep SQL audit, ADR-068.)
     await (tx as unknown as OutboxPrismaClient).$executeRaw`
-      INSERT INTO outbox_events (id, event_type, payload, published)
+      INSERT INTO platform.outbox_events (id, event_type, payload, published)
       VALUES (${eventId}::uuid, ${envelope.event_type}, ${JSON.stringify(envelope)}::jsonb, false)
     `;
   }

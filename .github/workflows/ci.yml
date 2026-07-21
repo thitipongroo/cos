@@ -42,12 +42,26 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install yamllint + sqlfluff
-        run: pip install yamllint==1.38.0 sqlfluff==4.2.2
+      - name: Install yamllint + sqlfluff + ruff
+        run: pip install yamllint==1.38.0 sqlfluff==4.2.2 ruff==0.15.22
       - name: yamllint
         run: yamllint .
       - name: sqlfluff
         run: sqlfluff lint .
+      # Python lint. Nothing linted Python before this: the repo had no ruff, flake8 or pylint in
+      # CI, which is how 39 unused imports and a mid-file import accumulated unnoticed (ADR-069).
+      # Ruff's default E+F set was measured against this tree and now passes clean, so it runs as a
+      # blocking gate rather than advisory. It needs no network at run time, which matters for the
+      # air-gapped target (ADR-039).
+      - name: ruff (Python lint)
+        run: ruff check services mlops
+      # Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-068). Threshold
+      # and measured baseline live in .jscpd.json; it is a ratchet against regression, not 0%.
+      - name: jscpd (duplication)
+        # `libs` is in the list because the shared Go module lives there (ADR-069); without it
+        # code moved out of services/ would silently leave the duplication gate's scope.
+        run: pnpm exec jscpd backend/src packages apps/web/src services libs
+
       # markdownlint runs on CHANGED Markdown files only — a repo-wide gate is not feasible
       # (~101k pre-existing violations). The large legacy reference trees (docs/specifications/,
       # context/, context.md) carry that backlog, and mockup/ is a design-tool export that is never
@@ -253,6 +267,9 @@ jobs:
           - services/analytics-worker
           - services/kg-ingestion-worker
           - services/iot-ingestion-worker
+          # coslib — its own go.mod, so it needs its own matrix entry or its tests
+          # (the decoder / DLQ / idempotency suites) run nowhere. ADR-069.
+          - libs/go
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -423,12 +440,16 @@ jobs:
           - service: services/ai-gateway
             context: .
             file: services/ai-gateway/Dockerfile
+          # analytics-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-069), which sits outside a service-scoped context.
           - service: services/analytics-worker
-            context: services/analytics-worker
-            file: Dockerfile
+            context: .
+            file: services/analytics-worker/Dockerfile
+          # kg-ingestion-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-069), which sits outside a service-scoped context.
           - service: services/kg-ingestion-worker
-            context: services/kg-ingestion-worker
-            file: Dockerfile
+            context: .
+            file: services/kg-ingestion-worker/Dockerfile
           - service: services/ai-embedding-worker
             context: services/ai-embedding-worker
             file: Dockerfile
@@ -545,12 +566,16 @@ jobs:
           - service: services/ai-gateway
             context: .
             file: services/ai-gateway/Dockerfile
+          # analytics-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-069), which sits outside a service-scoped context.
           - service: services/analytics-worker
-            context: services/analytics-worker
-            file: Dockerfile
+            context: .
+            file: services/analytics-worker/Dockerfile
+          # kg-ingestion-worker is NOT self-contained: it `replace`s the shared coslib module at
+          # libs/go (ADR-069), which sits outside a service-scoped context.
           - service: services/kg-ingestion-worker
-            context: services/kg-ingestion-worker
-            file: Dockerfile
+            context: .
+            file: services/kg-ingestion-worker/Dockerfile
           - service: services/ai-embedding-worker
             context: services/ai-embedding-worker
             file: Dockerfile

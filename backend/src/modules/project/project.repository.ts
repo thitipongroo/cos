@@ -12,6 +12,7 @@ import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
 import type { ProjectStatus } from './project.state-machine';
 import type { CosRole } from '@cos/types';
+import { decodeCursor, encodeCursor } from '../../shared/pagination/cursor';
 
 export interface ProjectRow {
   project_id: string;
@@ -58,24 +59,6 @@ export interface ListProjectsOptions {
   type?: string;
   cursor?: string; // encoded: base64(project_id:created_at)
   limit: number;
-}
-
-function encodeCursor(projectId: string, createdAt: Date): string {
-  return Buffer.from(`${projectId}:${createdAt.toISOString()}`).toString('base64');
-}
-
-function decodeCursor(cursor: string): { projectId: string; createdAt: string } | null {
-  try {
-    const decoded = Buffer.from(cursor, 'base64').toString('utf-8');
-    const colonIdx = decoded.indexOf(':');
-    if (colonIdx === -1) return null;
-    const projectId = decoded.slice(0, colonIdx);
-    const createdAt = decoded.slice(colonIdx + 1);
-    if (!projectId || !createdAt) return null;
-    return { projectId, createdAt };
-  } catch /* istanbul ignore next */ {
-    return null;
-  }
 }
 
 @Injectable({ scope: Scope.REQUEST })
@@ -136,7 +119,7 @@ export class ProjectRepository {
           WHERE tenant_id = ${this.tenantId}::uuid
             AND status = ${opts.status}::"ProjectStatus"
             AND project_type = ${opts.type}::"ProjectType"
-            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.projectId}::uuid)
+            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.id}::uuid)
           ORDER BY created_at DESC, project_id DESC
           LIMIT ${limit + 1}
         `;
@@ -146,7 +129,7 @@ export class ProjectRepository {
           SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND status = ${opts.status}::"ProjectStatus"
-            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.projectId}::uuid)
+            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.id}::uuid)
           ORDER BY created_at DESC, project_id DESC
           LIMIT ${limit + 1}
         `;
@@ -156,7 +139,7 @@ export class ProjectRepository {
           SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
             AND project_type = ${opts.type}::"ProjectType"
-            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.projectId}::uuid)
+            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.id}::uuid)
           ORDER BY created_at DESC, project_id DESC
           LIMIT ${limit + 1}
         `;
@@ -193,7 +176,7 @@ export class ProjectRepository {
         return await tx.$queryRaw<ProjectRow[]>`
           SELECT * FROM projects.projects
           WHERE tenant_id = ${this.tenantId}::uuid
-            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.projectId}::uuid)
+            AND (created_at, project_id) < (${parsed.createdAt}::timestamptz, ${parsed.id}::uuid)
           ORDER BY created_at DESC, project_id DESC
           LIMIT ${limit + 1}
         `;

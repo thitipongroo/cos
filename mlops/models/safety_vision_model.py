@@ -7,7 +7,7 @@ DO NOT activate before data threshold is met.
 """
 
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 

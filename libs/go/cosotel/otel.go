@@ -1,7 +1,16 @@
-// Package otel provides OpenTelemetry SDK setup for kg-ingestion-worker.
+// Package cosotel provides OpenTelemetry SDK setup shared by the Go workers.
 // Call Configure() once at startup before processing any Kafka messages.
 // Sampling: 1% baseline (OTEL_SAMPLING_RATIO env), 100% for errors via Collector tail-sampling.
-package otel
+//
+// Extracted from services/{analytics,kg-ingestion}-worker/internal/otel on 2026-07-21 (ADR-069).
+// The two copies differed in exactly one behavioural respect — the fallback service name — which is
+// now a Configure() parameter. kg-ingestion-worker additionally carried a package-level `shutdownFn`
+// that was assigned and never read; it is dropped rather than carried forward.
+//
+// Named cosotel, not otel: the original package was `package otel` while also importing
+// go.opentelemetry.io/otel. That compiles, but every reference to `otel.` in the file is the import,
+// not the package being defined, which is a trap for the next reader.
+package cosotel
 
 import (
 	"context"
@@ -17,12 +26,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-var shutdownFn func(context.Context) error
-
 // Configure initialises the OTel trace provider and sets the global tracer.
 // Returns a shutdown function that must be deferred by the caller.
-func Configure(ctx context.Context) (func(context.Context) error, error) {
-	serviceName := getenv("OTEL_SERVICE_NAME", "kg-ingestion-worker")
+//
+// defaultServiceName is the fallback used when OTEL_SERVICE_NAME is unset — it is a parameter
+// because it is the one thing that legitimately differs between callers. Passing "" is allowed and
+// simply leaves the resource without a meaningful service.name; callers should pass their own name.
+func Configure(ctx context.Context, defaultServiceName string) (func(context.Context) error, error) {
+	serviceName := getenv("OTEL_SERVICE_NAME", defaultServiceName)
 	serviceVersion := getenv("SERVICE_VERSION", "0.0.0")
 	otlpEndpoint := getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
 
@@ -56,11 +67,9 @@ func Configure(ctx context.Context) (func(context.Context) error, error) {
 		propagation.Baggage{},
 	))
 
-	shutdown := func(ctx context.Context) error {
+	return func(ctx context.Context) error {
 		return tp.Shutdown(ctx)
-	}
-	shutdownFn = shutdown
-	return shutdown, nil
+	}, nil
 }
 
 // Tracer returns a named tracer from the global provider.

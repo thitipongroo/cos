@@ -23,6 +23,9 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
+            # `http` must exist: templates/service.yaml routes service.port to targetPort http.
+            - name: http
+              containerPort: {{ .Values.service.port }}
             - name: metrics
               containerPort: {{ .Values.service.metricsPort }}
           env:

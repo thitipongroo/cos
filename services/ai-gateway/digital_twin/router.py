@@ -11,7 +11,6 @@ Source: spec §Phase 24 query interface
 
 from __future__ import annotations
 
-import json
 import os
 from datetime import datetime, timezone
 from typing import Any
@@ -19,8 +18,8 @@ from uuid import UUID
 
 import asyncpg
 import redis.asyncio as aioredis
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
 
 from .divergence import generate_divergence_report
 from .models import (
@@ -28,9 +27,7 @@ from .models import (
     EntityType,
     TwinEntity,
     TwinSnapshot,
-    StateSource,
 )
-from .sync_service import get_current_state
 
 router = APIRouter(prefix="/api/v1/twin", tags=["Digital Twin"])
 
@@ -143,13 +140,6 @@ async def list_entities(
 
 
 # ─── POST /api/v1/twin/projects/{projectId}/entities ─────────────────────────
-
-class _RegisterEntityRequest:
-    pass
-
-
-from pydantic import BaseModel
-
 
 class RegisterEntityRequest(BaseModel):
     entity_type: EntityType

@@ -5,8 +5,6 @@ All external I/O mocked at the boundary.
 """
 
 import pytest
-from datetime import datetime
-from unittest.mock import MagicMock, patch
 from airflow.models import DagBag
 
 

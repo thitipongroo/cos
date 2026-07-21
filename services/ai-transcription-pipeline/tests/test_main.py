@@ -21,6 +21,7 @@ import importlib
 
 import main as main_module
 import pytest
+from pydantic import ValidationError
 from fastapi import HTTPException
 from main import TranscribeRequest, liveness, transcribe
 from providers.transcription_provider import (
@@ -75,7 +76,7 @@ class _OkProvider:
 
 
 def _request(**overrides) -> TranscribeRequest:
-    payload = {"file_id": "f-1", "tenant_id": "t-1"}
+    payload = {"file_id": "11111111-1111-4111-8111-111111111111", "tenant_id": "t-1"}
     payload.update(overrides)
     return TranscribeRequest(**payload)
 
@@ -123,7 +124,7 @@ class TestTranscribeEndpoint:
 
         resp = await transcribe(_request(language="th"))
 
-        assert resp.file_id == "f-1"
+        assert resp.file_id == "11111111-1111-4111-8111-111111111111"
         assert resp.transcript == "สวัสดี"
         assert resp.language == "th"
         assert resp.duration_seconds == 1.25
@@ -151,10 +152,10 @@ class TestTranscribeEndpoint:
             _FakeResponse(200, content=b"bytes"),
         ]
 
-        await transcribe(_request(file_id="f-9"))
+        await transcribe(_request(file_id="99999999-9999-4999-8999-999999999999"))
 
         assert fake_http.requested_urls[0] == (
-            "http://files.internal:9000/api/v1/files/f-9/signed-url"
+            "http://files.internal:9000/api/v1/files/99999999-9999-4999-8999-999999999999/signed-url"
         )
         assert fake_http.requested_urls[1] == "https://storage.example/a.m4a"
 
@@ -176,10 +177,10 @@ class TestTranscribeEndpoint:
         fake_http.responses = [_FakeResponse(404)]
 
         with pytest.raises(HTTPException) as exc:
-            await transcribe(_request(file_id="missing"))
+            await transcribe(_request(file_id="00000000-0000-4000-8000-000000000000"))
 
         assert exc.value.status_code == 404
-        assert "missing" in exc.value.detail
+        assert "00000000-0000-4000-8000-000000000000" in exc.value.detail
 
     @pytest.mark.asyncio
     async def test_502_when_storage_download_fails(self, fake_http):
@@ -225,3 +226,32 @@ class TestModuleImport:
         monkeypatch.setenv("STT_PROVIDER", "stub")
         reloaded = importlib.reload(main_module)
         assert isinstance(reloaded._provider, StubTranscriptionProvider)
+
+
+class TestFileIdIsAUuid:
+    """file_id is interpolated into the file-service URL, so its type is the whole defence.
+
+    While it was `str`, a caller could send "../.." and reach a different endpoint on file-service
+    entirely — CodeQL py/partial-ssrf, which neither bandit nor the Semgrep packs reported. Typing
+    it as UUID makes the interpolation safe by construction, and these cases hold that shut.
+    """
+
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            "../../admin",
+            "..%2f..%2fadmin",
+            "f-1",
+            "",
+            "http://evil.example/x",
+            "11111111-1111-4111-8111-111111111111/../../admin",
+        ],
+    )
+    def test_rejects_anything_that_is_not_a_uuid(self, bad):
+        with pytest.raises(ValidationError):
+            TranscribeRequest(file_id=bad, tenant_id="t-1")
+
+    def test_accepts_a_uuid_and_stringifies_to_it(self):
+        req = TranscribeRequest(file_id="11111111-1111-4111-8111-111111111111", tenant_id="t-1")
+
+        assert str(req.file_id) == "11111111-1111-4111-8111-111111111111"

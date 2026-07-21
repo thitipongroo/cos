@@ -1,7 +1,7 @@
 // Unit tests for the carbon handler — Phase 24.
 //
 // Wire-format concerns (Confluent framing, Avro decode, union unwrapping, the §7.3 tenant guard,
-// idempotency, retry and DLQ) are tested in internal/coskafka against a golden fixture produced by
+// idempotency, retry and DLQ) are tested in the shared coskafka module (libs/go/coskafka) against a golden fixture produced by
 // the real TypeScript producer. This file covers only what is carbon-specific.
 package carbon
 

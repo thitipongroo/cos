@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import main as main_module
 import pytest
+from pydantic import ValidationError
 from fastapi import HTTPException
 from main import OCRRequest, liveness, ocr_process
 from ocr_pipeline import OCROutput
@@ -76,7 +77,7 @@ def captured_ocr(monkeypatch):
 
 
 def _request(**overrides) -> OCRRequest:
-    payload = {"file_id": "f-1", "tenant_id": "t-1"}
+    payload = {"file_id": "11111111-1111-4111-8111-111111111111", "tenant_id": "t-1"}
     payload.update(overrides)
     return OCRRequest(**payload)
 
@@ -103,7 +104,7 @@ class TestOcrProcess:
 
         resp = await ocr_process(_request())
 
-        assert resp.file_id == "f-1"
+        assert resp.file_id == "11111111-1111-4111-8111-111111111111"
         assert resp.extracted_text == "ใบส่งของ"
         assert resp.confidence_score == 0.93
 
@@ -114,9 +115,9 @@ class TestOcrProcess:
             _FakeResponse(200, content=b"%PDF-bytes"),
         ]
 
-        await ocr_process(_request(file_id="f-7"))
+        await ocr_process(_request(file_id="77777777-7777-4777-8777-777777777777"))
 
-        assert captured_ocr == [("f-7", b"%PDF-bytes", "application/pdf")]
+        assert captured_ocr == [("77777777-7777-4777-8777-777777777777", b"%PDF-bytes", "application/pdf")]
 
     @pytest.mark.asyncio
     async def test_mime_type_defaults_when_file_service_omits_it(self, fake_http, captured_ocr):
@@ -138,10 +139,10 @@ class TestOcrProcess:
             _FakeResponse(200, content=b"png"),
         ]
 
-        await ocr_process(_request(file_id="f-9"))
+        await ocr_process(_request(file_id="99999999-9999-4999-8999-999999999999"))
 
         assert fake_http.requested_urls == [
-            "http://files.internal:9000/api/v1/files/f-9/signed-url",
+            "http://files.internal:9000/api/v1/files/99999999-9999-4999-8999-999999999999/signed-url",
             "https://storage.example/a.png",
         ]
 
@@ -162,10 +163,10 @@ class TestOcrProcess:
         fake_http.responses = [_FakeResponse(404)]
 
         with pytest.raises(HTTPException) as exc:
-            await ocr_process(_request(file_id="missing"))
+            await ocr_process(_request(file_id="00000000-0000-4000-8000-000000000000"))
 
         assert exc.value.status_code == 404
-        assert "missing" in exc.value.detail
+        assert "00000000-0000-4000-8000-000000000000" in exc.value.detail
 
     @pytest.mark.asyncio
     async def test_502_when_storage_download_fails(self, fake_http):
@@ -213,3 +214,32 @@ class TestRouting:
         routes = {getattr(r, "path", None) for r in main_module.app.routes}
         assert "/api/v1/ocr/process" in routes
         assert "/health/live" in routes
+
+
+class TestFileIdIsAUuid:
+    """file_id is interpolated into the file-service URL, so its type is the whole defence.
+
+    While it was `str`, a caller could send "../.." and reach a different endpoint on file-service
+    entirely — CodeQL py/partial-ssrf, which neither bandit nor the Semgrep packs reported. Typing
+    it as UUID makes the interpolation safe by construction, and these cases hold that shut.
+    """
+
+    @pytest.mark.parametrize(
+        "bad",
+        [
+            "../../admin",
+            "..%2f..%2fadmin",
+            "f-1",
+            "",
+            "http://evil.example/x",
+            "11111111-1111-4111-8111-111111111111/../../admin",
+        ],
+    )
+    def test_rejects_anything_that_is_not_a_uuid(self, bad):
+        with pytest.raises(ValidationError):
+            OCRRequest(file_id=bad, tenant_id="t-1")
+
+    def test_accepts_a_uuid_and_stringifies_to_it(self):
+        req = OCRRequest(file_id="11111111-1111-4111-8111-111111111111", tenant_id="t-1")
+
+        assert str(req.file_id) == "11111111-1111-4111-8111-111111111111"

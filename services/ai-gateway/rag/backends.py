@@ -11,7 +11,7 @@ injected EmbeddingProvider — OpenAI text-embedding-3-small in production; a de
 test embedder in the integration test (so retrieval is provable without any external call).
 
 Text-source note: the pgvector table must expose the chunk text on a column (default
-`chunk_text`). document_embeddings (§22.3) stores only the vector + source refs, so a
+`chunk_text`). ai.document_embeddings (§22.3) stores only the vector + source refs, so a
 deployment either adds a text column to the vector store or points this backend at a table
 that carries it (`table=`/`text_column=` are configurable). This is the one retrieval detail
 the spec leaves to implementation; it is surfaced here rather than guessed silently.
@@ -89,7 +89,13 @@ class PgVectorBackend:
         self,
         pool,
         embedding_provider: EmbeddingProvider,
-        table: str = "document_embeddings",
+        # Schema-qualified, and it must stay that way. ai-embedding-worker writes to
+        # `ai.document_embeddings` (created by 20260720000001_document_embeddings) while this
+        # reader used the bare name; nothing in the application, the DSN, or any ALTER ROLE sets
+        # search_path, so the query resolved against the default path and would not find the table
+        # at all. The unit tests mock the connection pool, so nothing caught it.
+        # (QM-4 / spec §11.0 rule 2 — the same defect class as the outbox INSERT, ADR-068.)
+        table: str = "ai.document_embeddings",
         id_column: str = "id",
         text_column: str = "chunk_text",
         embedding_column: str = "embedding",
