@@ -1476,9 +1476,10 @@ Generate:
   **Mobile workspace exception (mirrors the tsconfig exception below):** `apps/mobile` is explicitly
   EXCLUDED via `!apps/mobile`. React Native + Expo + Metro + CocoaPods assume a flat (hoisted)
   `node_modules`, which pnpm's isolated linker breaks — Metro cannot resolve transitive
-  `expo-*` / `@react-native/*` packages. `apps/mobile` installs standalone with
-  `node-linker=hoisted` (`apps/mobile/.npmrc`) via `pnpm install --ignore-workspace`, consuming
-  `@cos/types` as a `file:` dependency. Nothing in turbo/CI references `@cos/mobile`; mobile lint,
+  `expo-*` / `@react-native/*` packages. `apps/mobile` installs standalone as its OWN pnpm workspace:
+  `apps/mobile/pnpm-workspace.yaml` sets `nodeLinker: hoisted` (pnpm 10/11 reads the linker setting
+  there, NOT `apps/mobile/.npmrc` — which only documents this) — run `cd apps/mobile && pnpm install`,
+  consuming `@cos/types` as a `file:` dependency. Nothing in turbo/CI references `@cos/mobile`; mobile lint,
   type-check and tests run as their own CI job. This exclusion is REQUIRED, not a deviation.
 - turbo.json with build, test, lint, dev pipelines
 - root tsconfig.base.json (strict, paths for @cos/* packages)
