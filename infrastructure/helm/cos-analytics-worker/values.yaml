@@ -28,14 +28,12 @@ podDisruptionBudget:
   enabled: true
   minAvailable: 1
 env:
-  # PORT must match service.port / the `http` containerPort. Without it the worker falls back
-  # to its own hardcoded default and nothing reaches it: the Service targetPort resolves to a
-  # port no one listens on. ADR-069.
-  PORT: '8080'
+  # PORT must match service.port / the `http` containerPort and the probes below. Without it the
+  # worker falls back to its own hardcoded default and nothing reaches it: the Service targetPort
+  # resolves to a port no one listens on. Pinned so the listen port cannot drift. ADR-069.
+  PORT: '8090'
   OTEL_SERVICE_NAME: 'analytics-worker'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
-  # Pinned so the listen port cannot drift from service.port / the probes below.
-  PORT: '8090'
   # Served by internal/metrics; this is the port prometheus.yml scrapes and service.metricsPort
   # declares. Pinned for the same reason as PORT.
   PROMETHEUS_PORT: '9464'

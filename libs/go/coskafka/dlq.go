@@ -7,8 +7,6 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
-
-	"github.com/construction-os/analytics-worker/internal/metrics"
 )
 
 // Shared platform topics (§15.7) — platform events are not tenant-scoped.
@@ -101,6 +99,6 @@ func (p *DLQPublisher) Publish(
 	// Counted only after the synchronous produce succeeds — a failed write is not a produced
 	// message. event_type is "dlq": the original event type is unknown here (decoding it may be
 	// exactly what failed), and inventing one would put a wrong label on a real counter.
-	metrics.MessagesProduced.WithLabelValues(topic, "dlq").Inc()
+	MessagesProduced.WithLabelValues(topic, "dlq").Inc()
 	return nil
 }

@@ -1,4 +1,4 @@
-// Package metrics serves this worker's Prometheus endpoint.
+// Package metrics serves this worker's Prometheus endpoint on :9464.
 //
 // WHY THIS EXISTS: prometheus.yml has always scraped analytics-worker:9464 and the Helm chart
 // declares a 9464 containerPort and annotates the pod for scraping — but nothing ever opened that
@@ -6,16 +6,9 @@
 // indistinguishable from the permanently-down scrape. Same defect file-service fixed in
 // src/plugins/metrics.ts; this is the Go equivalent.
 //
-// Metric names, help text and label sets match packages/@cos/shared/src/kafka/metrics.ts exactly,
-// so one Grafana panel and the existing alert rules cover the TypeScript and Go consumers alike.
-//
-// DELIBERATELY NOT EMITTED HERE:
-//   - kafka_consumer_lag  — requires querying group offsets via the admin API, not something the
-//     consume loop knows. The TypeScript side publishes it.
-//   - kafka_dlq_depth     — a gauge of how many messages are SITTING in a DLQ topic. A producer
-//     only knows how many it wrote, which is a different number; reporting one as the other would
-//     make the KafkaDLQNonEmpty alert lie. DLQ writes show up as kafka_messages_produced_total on
-//     the .dlq topic instead.
+// The Kafka counters exposed here are defined in coslib/coskafka (shared with kg-ingestion-worker
+// and incremented by the shared consume/DLQ path); this package owns the registry, the Go runtime
+// collectors and the HTTP exposition.
 package metrics
 
 import (
@@ -25,6 +18,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/construction-os/coslib/coskafka"
 )
 
 // DefaultPort is the port prometheus.yml scrapes and the Helm chart declares.
@@ -34,18 +29,12 @@ const DefaultPort = "9464"
 // runtime collectors, with no globals leaking in from dependencies.
 var registry = prometheus.NewRegistry()
 
+// Re-exported from coslib/coskafka so this package's exposition — and its tests — refer to the same
+// CounterVec the shared consume/DLQ path increments. The counters cannot live here: coskafka is a
+// shared module and Go forbids it from importing this service's internal/ package.
 var (
-	// MessagesConsumed counts records that completed the pipeline successfully.
-	MessagesConsumed = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "kafka_messages_consumed_total",
-		Help: "Total Kafka messages successfully consumed",
-	}, []string{"topic", "consumer_group", "event_type"})
-
-	// MessagesProduced counts records this worker wrote — today that is DLQ writes.
-	MessagesProduced = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Name: "kafka_messages_produced_total",
-		Help: "Total Kafka messages successfully produced",
-	}, []string{"topic", "event_type"})
+	MessagesConsumed = coskafka.MessagesConsumed
+	MessagesProduced = coskafka.MessagesProduced
 )
 
 func init() {

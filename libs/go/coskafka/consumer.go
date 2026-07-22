@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
-
-	"github.com/construction-os/kg-ingestion-worker/internal/metrics"
 )
 
 // Retry policy — identical to MAX_RETRIES / RETRY_DELAYS_MS in @cos/shared/src/kafka/consumer.ts.
@@ -155,7 +153,7 @@ func (c *Consumer) Handle(ctx context.Context, record *kgo.Record) {
 			// Counted here, not at fetch time: "consumed" means the record completed the pipeline.
 			// Records that end in the DLQ are counted by kafka_messages_produced_total instead, so
 			// the two never double-count the same record.
-			metrics.MessagesConsumed.WithLabelValues(record.Topic, c.group, envelope.EventType).Inc()
+			MessagesConsumed.WithLabelValues(record.Topic, c.group, envelope.EventType).Inc()
 			return
 		}
 		c.logger.Warn("handler failed",
