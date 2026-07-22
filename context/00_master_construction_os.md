@@ -3910,9 +3910,18 @@ ClickHouse Strategy:
   Data ingestion: Kafka → ClickHouse via Kafka engine tables (native integration)
   Materialized views: pre-aggregate metrics at ingestion time
     (NOT query-time aggregation — ensures P95 SLA is met)
-  Table engine: ReplacingMergeTree for fact tables, AggregatingMergeTree for aggs
-  Partitioning: by toYYYYMM(event_date) for all fact tables
-  TTL: raw events retained 2 years, aggregated tables indefinite
+  Table engine: AggregatingMergeTree for the daily aggregate tables (the Gold layer). ClickHouse holds
+    pre-aggregated metrics only — there is no raw-event "fact" table here. Raw/cold retention lives in the
+    S3 + Apache Iceberg Data Lake (Path 2 — Debezium CDC → Kafka Connect S3 Sink, built in Phase 17),
+    which back-feeds ClickHouse cold storage. (ReplacingMergeTree is used only for carbon_records, Phase 24.)
+    This is the medallion split: Iceberg lake = Bronze/raw, ClickHouse = Gold/aggregates.
+  Partitioning: by toYYYYMM(event_date) for all aggregate tables
+  TTL: ClickHouse aggregate tables are indefinite (no TTL). Raw-event retention (2 yr operational, 10 yr
+    cold) is provided by PostgreSQL (source of truth, 2 yr rolling) + the Iceberg Data Lake (Phase 17),
+    NOT by a ClickHouse raw table. Interim (Phase 14–16): raw events persist only for the Kafka retention
+    window, so rebuilding a materialized view or backfilling a new metric is limited until the Data Lake
+    lands — a new metric aggregates from go-live forward, and PostgreSQL remains the authoritative rebuild
+    source via event re-emission.
 
 ClickHouse Tables (analytics schema):
   project_cost_daily (AggregatingMergeTree):
