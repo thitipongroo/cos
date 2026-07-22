@@ -56,8 +56,8 @@ export class TenantService implements OnModuleDestroy {
     // Create tenant record (ADR-008: shared DB + tenant_id, no per-tenant schema)
     const tenant = await this.prisma.$transaction(async (tx) => {
       const [created] = await tx.$queryRaw<Tenant[]>`
-        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url)
-        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ?? null})
+        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region)
+        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ?? null}, ${dto.dataRegion ?? 'ap-southeast-1'})
         RETURNING *
       `;
 

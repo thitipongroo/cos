@@ -63,6 +63,9 @@ model Tenant {
   isActive       Boolean  @default(true) @map("is_active")
   // NULL = shared DB (STARTER/PROFESSIONAL); non-NULL = dedicated DB URL (ENTERPRISE per spec §7.1)
   dedicatedDbUrl String?  @map("dedicated_db_url") @db.VarChar(500)
+  // Data-residency region (§5.6): Thai -> ap-southeast-7, EU -> eu-west-1, default -> ap-southeast-1.
+  // Assigned at provisioning, immutable after first data write; consumers resolve it via tenant_id.
+  dataRegion     String   @default("ap-southeast-1") @map("data_region") @db.VarChar(20)
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 

@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsIn,
   IsOptional,
   IsString,
   IsUrl,
@@ -36,4 +37,15 @@ export class CreateTenantDto {
   @IsUrl({ protocols: ['postgresql', 'postgres'], require_tld: false })
   @MaxLength(500)
   dedicatedDbUrl?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Data-residency region (§5.6), assigned at provisioning and immutable after first data write. ' +
+      'Thai tenants -> ap-southeast-7, EU -> eu-west-1, default -> ap-southeast-1.',
+    enum: ['ap-southeast-7', 'ap-southeast-1', 'eu-west-1'],
+    example: 'ap-southeast-1',
+  })
+  @IsOptional()
+  @IsIn(['ap-southeast-7', 'ap-southeast-1', 'eu-west-1'])
+  dataRegion?: string;
 }

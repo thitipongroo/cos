@@ -159,6 +159,55 @@ describe('TenantService', () => {
       expect(result).toBeDefined();
     });
 
+    it('defaults data_region to ap-southeast-1 when not provided (§5.6)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([mockTenant]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+
+      // data_region is the 6th INSERT value (tenant_code, tenant_name, keycloak_realm, plan_type,
+      // dedicated_db_url, data_region) -> tagged-template arg index 6; the `?? 'ap-southeast-1'` default.
+      expect(capturedInsertArgs[6]).toBe('ap-southeast-1');
+    });
+
+    it('sets the explicit data_region in the INSERT when provided (§5.6)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([{ ...mockTenant, data_region: 'ap-southeast-7' }]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      await service.createTenant(
+        {
+          tenantCode: 'thai_co',
+          tenantName: 'Thai Construction',
+          planType: 'STARTER' as never,
+          dataRegion: 'ap-southeast-7',
+        },
+        'admin-1',
+      );
+
+      expect(capturedInsertArgs[6]).toBe('ap-southeast-7');
+    });
+
     it('throws BadRequestException when dedicatedDbUrl has invalid prefix', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
       await expect(
