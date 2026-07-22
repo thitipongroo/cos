@@ -1,5 +1,7 @@
 // Unit tests for the per-tenant topic/subject derivation helpers — spec §7.3, §15.6/15.7, §32.4.
 
+import { readdirSync } from 'fs';
+import { join } from 'path';
 import {
   EVENT_AVSC_MAP,
   CANONICAL_EVENT_TYPES,
@@ -24,6 +26,19 @@ describe('topic-catalog', () => {
       for (const et of CANONICAL_EVENT_TYPES) {
         expect(et).toMatch(/^[a-z]+\.[a-z_]+\.[a-z_]+\.v\d+$/);
       }
+    });
+
+    // Regression guard for the Phase 21/22 class of bug: an event's Avro schema file and its emit
+    // call exist, but the developer forgot the EVENT_AVSC_MAP entry — so KafkaProducer throws "No
+    // Avro schema registered" at publish time and the event is silently dropped. Any .avsc file in
+    // avro/ (except the shared base envelope) MUST be registered.
+    it('has no orphaned event Avro schema (every avro/*.avsc is in EVENT_AVSC_MAP)', () => {
+      const EXEMPT = new Set(['base-event-envelope.avsc']); // shared envelope, not an event type
+      const mapped = new Set(Object.values(EVENT_AVSC_MAP));
+      const orphans = readdirSync(join(__dirname, '..', '..', 'avro'))
+        .filter((f) => f.endsWith('.avsc') && !EXEMPT.has(f))
+        .filter((f) => !mapped.has(f));
+      expect(orphans).toEqual([]);
     });
   });
 
