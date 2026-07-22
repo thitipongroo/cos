@@ -211,6 +211,11 @@ describe('EVENT_AVSC_MAP completeness — regression for Phase 5/6/7 shorthand e
     // Platform — previously missing
     'platform.enterprise.contract_signed.v1',
     'platform.enterprise.db_provisioned.v1',
+    // Equipment (Phase 21) — avsc files existed but were never registered in EVENT_AVSC_MAP,
+    // so every emit failed getOrRegisterSchema and was silently dropped (regression guard).
+    'equipment.unit.assigned.v1',
+    'equipment.unit.returned.v1',
+    'equipment.unit.maintenance_scheduled.v1',
   ];
 
   it.each(requiredEventTypes)('resolves without throwing for %s', async (eventType) => {
