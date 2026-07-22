@@ -21,6 +21,7 @@ const baseRow = {
   budget_currency: 'THB',
   start_date: '2026-06-01',
   end_date: '2027-12-31',
+  estimated_completion_date: null,
   on_hold_reason: null,
   on_hold_at: null,
   cancellation_reason: null,
@@ -212,6 +213,19 @@ describe('ProjectRepository', () => {
       // All fields undefined → ?? null branches taken for all
       const result = await repo.update(PROJECT_ID, {});
       expect(result.project_id).toBe(PROJECT_ID);
+    });
+
+    it('interpolates PM-entered estimated_completion_date into the UPDATE (§11.2)', async () => {
+      // Capture the tagged-template call so we can assert the value reaches the query.
+      const txMock = { $queryRaw: jest.fn().mockResolvedValue([baseRow]) };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+      await repo.update(PROJECT_ID, { estimated_completion_date: '2027-11-15' });
+      // Interpolated values follow the strings array in a tagged template.
+      const values = txMock.$queryRaw.mock.calls[0]!.slice(1);
+      expect(values).toContain('2027-11-15');
     });
   });
 

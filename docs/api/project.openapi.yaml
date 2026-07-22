@@ -97,6 +97,11 @@ components:
           type: string
           format: date
           nullable: true
+        estimated_completion_date:
+          type: string
+          format: date
+          nullable: true
+          description: 'PM-entered projected completion; feeds AI delay-risk, falls back to end_date when null'
         on_hold_reason:
           type: string
           nullable: true
@@ -170,6 +175,10 @@ components:
         end_date:
           type: string
           format: date
+        estimated_completion_date:
+          type: string
+          format: date
+          description: 'PM-entered projected completion; feeds AI delay-risk, falls back to end_date when null'
 
     TransitionProjectRequest:
       type: object
