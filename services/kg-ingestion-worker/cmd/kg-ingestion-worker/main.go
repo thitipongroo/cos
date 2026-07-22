@@ -17,10 +17,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/construction-os/coslib/cosmetrics"
 	cosOtel "github.com/construction-os/coslib/cosotel"
 	"github.com/construction-os/kg-ingestion-worker/internal/consumer"
 	"github.com/construction-os/kg-ingestion-worker/internal/graph"
-	"github.com/construction-os/kg-ingestion-worker/internal/metrics"
 	neo4j "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -107,10 +107,10 @@ func main() {
 
 	// Prometheus scrape endpoint. prometheus.yml has always listed kg-ingestion-worker:9464 as a
 	// target and the Helm chart declares the containerPort — until now nothing served it.
-	metricsPort := metrics.Port()
+	metricsPort := cosmetrics.Port()
 	go func() {
 		mux := http.NewServeMux()
-		mux.Handle("/metrics", metrics.Handler())
+		mux.Handle("/metrics", cosmetrics.Handler())
 		log.Printf("kg-ingestion-worker metrics listening on :%s", metricsPort)
 		if err := http.ListenAndServe(":"+metricsPort, mux); err != nil {
 			log.Fatalf("metrics server: %v", err)

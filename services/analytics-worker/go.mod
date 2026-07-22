@@ -26,7 +26,6 @@ require (
 require (
 	github.com/ClickHouse/ch-go v0.73.0 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
-	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/construction-os/coslib v0.0.0
@@ -39,7 +38,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/linkedin/goavro/v2 v2.15.0 // indirect
-	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/paulmach/orb v0.13.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
 	github.com/santhosh-tekuri/jsonschema/v5 v5.0.0 // indirect

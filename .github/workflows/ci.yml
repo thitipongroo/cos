@@ -445,18 +445,12 @@ jobs:
       ]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
-      # Build context differs per service and is NOT uniform — passing one context for all of them
-      # is what broke this job. Two groups, verified by running `docker build` locally on 2026-07-19:
-      #
-      #   context: .        pnpm workspace members. Their Dockerfiles COPY root-relative paths
-      #                     (`COPY packages/@cos/...`, `COPY apps/web/package.json`) because they must
-      #                     install and build the @cos/* workspace packages they import.
-      #   context: <svc>    self-contained services. Their Dockerfiles COPY service-relative paths
-      #                     (`COPY go.mod`, `COPY requirements.txt`) — the same context
-      #                     docker-compose.yml passes.
-      #
-      # With the previous uniform `context: .`, the four self-contained services failed on
-      # `"/go.mod": not found` / `"/requirements.txt": not found`.
+      # Every service builds from the repo ROOT context (context: .) with an explicit
+      # `file: <service>/Dockerfile`. Each COPYs at least one path OUTSIDE its own directory: pnpm
+      # workspace members install the @cos/* packages they import; the Go workers `replace` libs/go;
+      # the Python workers install libs/python/cosmetrics (ADR-069); ai-gateway also bakes in repo-root
+      # ai/prompts. Verified by running `docker build` locally. A service-scoped context breaks those
+      # COPYs with `"/<path>": not found`.
       matrix:
         include:
           - service: backend
@@ -488,15 +482,17 @@ jobs:
           - service: services/kg-ingestion-worker
             context: .
             file: services/kg-ingestion-worker/Dockerfile
+          # The ai-*-pipeline / ai-embedding-worker services are NOT self-contained: requirements.txt
+          # installs the shared libs/python/cosmetrics (ADR-069), outside a service-scoped context.
           - service: services/ai-embedding-worker
-            context: services/ai-embedding-worker
-            file: Dockerfile
+            context: .
+            file: services/ai-embedding-worker/Dockerfile
           - service: services/ai-ocr-pipeline
-            context: services/ai-ocr-pipeline
-            file: Dockerfile
+            context: .
+            file: services/ai-ocr-pipeline/Dockerfile
           - service: services/ai-transcription-pipeline
-            context: services/ai-transcription-pipeline
-            file: Dockerfile
+            context: .
+            file: services/ai-transcription-pipeline/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
@@ -585,11 +581,9 @@ jobs:
     needs: [build-docker]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
-      # Must mirror build-docker's context/file pairs exactly. This job used a uniform `context: .`
-      # with `file: <service>/Dockerfile`, which is the arrangement build-docker had already been
-      # fixed away from: the five self-contained services COPY `requirements.txt` / `go.mod` from
-      # their own directory, so a root context fails with `"/requirements.txt": not found`. Since the
-      # job only runs on main/staging, the breakage never showed up on a PR.
+      # Must mirror build-docker's context/file pairs exactly: every service builds from the repo ROOT
+      # context (context: .) with `file: <service>/Dockerfile`, because each COPYs a path outside its
+      # own directory (@cos/* workspace packages, libs/go, libs/python/cosmetrics, or ai/prompts).
       matrix:
         include:
           - service: backend
@@ -619,15 +613,17 @@ jobs:
           - service: services/kg-ingestion-worker
             context: .
             file: services/kg-ingestion-worker/Dockerfile
+          # The ai-*-pipeline / ai-embedding-worker services are NOT self-contained: requirements.txt
+          # installs the shared libs/python/cosmetrics (ADR-069), outside a service-scoped context.
           - service: services/ai-embedding-worker
-            context: services/ai-embedding-worker
-            file: Dockerfile
+            context: .
+            file: services/ai-embedding-worker/Dockerfile
           - service: services/ai-ocr-pipeline
-            context: services/ai-ocr-pipeline
-            file: Dockerfile
+            context: .
+            file: services/ai-ocr-pipeline/Dockerfile
           - service: services/ai-transcription-pipeline
-            context: services/ai-transcription-pipeline
-            file: Dockerfile
+            context: .
+            file: services/ai-transcription-pipeline/Dockerfile
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3

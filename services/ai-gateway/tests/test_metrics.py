@@ -27,7 +27,7 @@ def test_port_reads_env(monkeypatch):
 
 def test_start_metrics_server_binds_the_scrape_port(monkeypatch):
     monkeypatch.delenv("PROMETHEUS_PORT", raising=False)
-    with patch("metrics._start_http_server") as started:
+    with patch("cosmetrics._start_http_server") as started:
         metrics.start_metrics_server()
     started.assert_called_once()
     assert started.call_args.args[0] == 9464

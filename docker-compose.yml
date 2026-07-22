@@ -683,8 +683,10 @@ services:
   # ─── AI Embedding Worker (FastAPI) ────────────────────────────────────────
   ai-embedding-worker:
     build:
-      context: ./services/ai-embedding-worker
-      dockerfile: Dockerfile
+      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-069),
+      # which a service-scoped context cannot reach.
+      context: .
+      dockerfile: services/ai-embedding-worker/Dockerfile
     container_name: cos-ai-embedding-worker
     profiles: ['apps']
     env_file:
@@ -716,8 +718,10 @@ services:
   # ─── AI OCR Pipeline (FastAPI) ────────────────────────────────────────────
   ai-ocr-pipeline:
     build:
-      context: ./services/ai-ocr-pipeline
-      dockerfile: Dockerfile
+      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-069),
+      # which a service-scoped context cannot reach.
+      context: .
+      dockerfile: services/ai-ocr-pipeline/Dockerfile
     container_name: cos-ai-ocr-pipeline
     profiles: ['apps']
     env_file:
@@ -752,8 +756,10 @@ services:
   # ─── AI Transcription Pipeline (FastAPI) — internal; ai-gateway is the client entry ───
   ai-transcription-pipeline:
     build:
-      context: ./services/ai-transcription-pipeline
-      dockerfile: Dockerfile
+      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-069),
+      # which a service-scoped context cannot reach.
+      context: .
+      dockerfile: services/ai-transcription-pipeline/Dockerfile
     container_name: cos-ai-transcription-pipeline
     profiles: ['apps']
     env_file:

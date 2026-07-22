@@ -1,15 +1,14 @@
-// Package metrics serves this worker's Prometheus endpoint on :9464.
+// Package cosmetrics is the shared Prometheus :9464 exposition for the Go workers.
 //
-// WHY THIS EXISTS: prometheus.yml has always scraped analytics-worker:9464 and the Helm chart
-// declares a 9464 containerPort and annotates the pod for scraping — but nothing ever opened that
-// port or emitted a metric, so the target could never come up and a real outage was
-// indistinguishable from the permanently-down scrape. Same defect file-service fixed in
-// src/plugins/metrics.ts; this is the Go equivalent.
+// WHY THIS EXISTS: prometheus.yml scrapes each worker on :9464 and the Helm charts declare a 9464
+// containerPort, but a worker that opens no port and emits no metric is a permanently-down target,
+// indistinguishable from a real outage. This package is the one implementation of that endpoint,
+// shared by analytics-worker and kg-ingestion-worker (ADR-069: shared code lives in coslib, not
+// copied per service — the two internal/metrics copies this replaced were a jscpd clone).
 //
-// The Kafka counters exposed here are defined in coslib/coskafka (shared with kg-ingestion-worker
-// and incremented by the shared consume/DLQ path); this package owns the registry, the Go runtime
-// collectors and the HTTP exposition.
-package metrics
+// It exposes the shared Kafka pipeline counters (defined in and incremented by coskafka) plus the Go
+// runtime collectors, so an idle scrape still returns real process data instead of an empty body.
+package cosmetrics
 
 import (
 	"net/http"
@@ -22,23 +21,15 @@ import (
 	"github.com/construction-os/coslib/coskafka"
 )
 
-// DefaultPort is the port prometheus.yml scrapes and the Helm chart declares.
+// DefaultPort is the port prometheus.yml scrapes and the Helm charts declare.
 const DefaultPort = "9464"
 
 // A dedicated registry (not the default one) keeps the exposition to these metrics plus the Go
 // runtime collectors, with no globals leaking in from dependencies.
 var registry = prometheus.NewRegistry()
 
-// Re-exported from coslib/coskafka so this package's exposition — and its tests — refer to the same
-// CounterVec the shared consume/DLQ path increments. The counters cannot live here: coskafka is a
-// shared module and Go forbids it from importing this service's internal/ package.
-var (
-	MessagesConsumed = coskafka.MessagesConsumed
-	MessagesProduced = coskafka.MessagesProduced
-)
-
 func init() {
-	registry.MustRegister(MessagesConsumed, MessagesProduced)
+	registry.MustRegister(coskafka.MessagesConsumed, coskafka.MessagesProduced)
 	// The Kafka counters are label-partitioned, so they expose no series until the first message
 	// flows. Without the runtime collectors a scrape of an idle worker returns an EMPTY body —
 	// technically a healthy target, but one that proves nothing and leaves every panel blank.

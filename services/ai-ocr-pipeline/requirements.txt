@@ -22,3 +22,7 @@ Pillow==12.3.0
 
 # Prometheus exposition for the :9464 scrape target (§31.3, QM-8) — see metrics.py.
 prometheus-client>=0.21
+# Shared :9464 endpoint implementation behind metrics.py (ADR-069). Non-editable local path so pip
+# bakes it into the venv (the runtime image needs no libs/python copy); the relative path resolves
+# from the service dir in CI and from /app/services/<svc> in the Docker root-context build.
+../../libs/python/cosmetrics

@@ -4,7 +4,6 @@ go 1.26.5
 
 require (
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.4
-	github.com/prometheus/client_golang v1.24.0
 	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go/modules/neo4j v0.42.0
 )
@@ -12,6 +11,7 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/prometheus/client_golang v1.24.0 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.0 // indirect
 	github.com/prometheus/otlptranslator v1.0.0 // indirect

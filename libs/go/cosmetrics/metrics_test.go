@@ -1,10 +1,12 @@
-package metrics
+package cosmetrics
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/construction-os/coslib/coskafka"
 )
 
 func scrape(t *testing.T) string {
@@ -18,10 +20,10 @@ func scrape(t *testing.T) string {
 }
 
 // The names and label sets must match packages/@cos/shared/src/kafka/metrics.ts, or the shared
-// Grafana panels and the alert rules silently skip this worker.
+// Grafana panels and the alert rules silently skip these workers.
 func TestExposesTheSharedKafkaMetricNames(t *testing.T) {
-	MessagesConsumed.WithLabelValues("t.a.b.v1", "svc.shared", "a.b.v1").Inc()
-	MessagesProduced.WithLabelValues("t.dlq", "dlq").Inc()
+	coskafka.MessagesConsumed.WithLabelValues("t.a.b.v1", "svc.shared", "a.b.v1").Inc()
+	coskafka.MessagesProduced.WithLabelValues("t.dlq", "dlq").Inc()
 
 	body := scrape(t)
 	for _, want := range []string{
@@ -57,7 +59,7 @@ func TestPortDefaultsToTheScrapedPort(t *testing.T) {
 	if got := Port(); got != DefaultPort {
 		t.Errorf("Port() = %q, want %q", got, DefaultPort)
 	}
-	// prometheus.yml scrapes :9464 and the Helm chart declares that containerPort.
+	// prometheus.yml scrapes :9464 and the Helm charts declare that containerPort.
 	if DefaultPort != "9464" {
 		t.Errorf("DefaultPort = %q, but prometheus.yml scrapes 9464", DefaultPort)
 	}
