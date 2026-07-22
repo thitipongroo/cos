@@ -65,8 +65,10 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'finance.contract.document_attached.v1': 'finance.contract.document_attached.v1.avsc',
   'finance.contract.signature_recorded.v1': 'finance.contract.signature_recorded.v1.avsc',
   'finance.contract.signed.v1': 'finance.contract.signed.v1.avsc',
-  // Workforce
+  // Workforce (Phase 22)
   'workforce.checkin.created.v1': 'workforce.checkin.created.v1.avsc',
+  'workforce.checkout.created.v1': 'workforce.checkout.created.v1.avsc',
+  'workforce.timesheet.approved.v1': 'workforce.timesheet.approved.v1.avsc',
   // Equipment (Phase 21)
   'equipment.unit.assigned.v1': 'equipment.unit.assigned.v1.avsc',
   'equipment.unit.returned.v1': 'equipment.unit.returned.v1.avsc',

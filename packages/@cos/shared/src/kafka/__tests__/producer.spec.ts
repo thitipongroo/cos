@@ -216,6 +216,11 @@ describe('EVENT_AVSC_MAP completeness — regression for Phase 5/6/7 shorthand e
     'equipment.unit.assigned.v1',
     'equipment.unit.returned.v1',
     'equipment.unit.maintenance_scheduled.v1',
+    // Workforce (Phase 22) — checkin was registered but checkout + timesheet.approved were not,
+    // so those two emits were silently dropped (same regression as equipment).
+    'workforce.checkin.created.v1',
+    'workforce.checkout.created.v1',
+    'workforce.timesheet.approved.v1',
   ];
 
   it.each(requiredEventTypes)('resolves without throwing for %s', async (eventType) => {
