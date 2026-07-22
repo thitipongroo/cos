@@ -12,6 +12,7 @@ import type {
   assignDedicatedDbActivity,
   notifyAwaitingApprovalActivity,
   compensateAssignDedicatedDbActivity,
+  compensateCreateRdsActivity,
   migrateDataActivity,
   verifyRoutingActivity,
   provisionKafkaTopicsActivity,
@@ -24,6 +25,7 @@ const acts = proxyActivities<{
   assignDedicatedDbActivity: typeof assignDedicatedDbActivity;
   notifyAwaitingApprovalActivity: typeof notifyAwaitingApprovalActivity;
   compensateAssignDedicatedDbActivity: typeof compensateAssignDedicatedDbActivity;
+  compensateCreateRdsActivity: typeof compensateCreateRdsActivity;
   migrateDataActivity: typeof migrateDataActivity;
   verifyRoutingActivity: typeof verifyRoutingActivity;
   provisionKafkaTopicsActivity: typeof provisionKafkaTopicsActivity;
@@ -88,7 +90,10 @@ export async function enterpriseProvisioningWorkflow(
       tenantId: params.tenantId,
     });
     state = 'ABORTING';
+    // Compensate in reverse order (§Phase 25 compensation table): unassign the dedicated DB, then
+    // delete the RDS instance so an aborted provisioning leaves no orphaned instance running.
     await acts.compensateAssignDedicatedDbActivity({ tenantId: params.tenantId });
+    await acts.compensateCreateRdsActivity({ tenantId: params.tenantId });
     state = 'ABORTED';
     return;
   }

@@ -17,6 +17,7 @@ const mockRunMigrations = jest.fn().mockResolvedValue(undefined);
 const mockAssignDedicatedDb = jest.fn().mockResolvedValue(undefined);
 const mockNotifyAwaitingApproval = jest.fn().mockResolvedValue(undefined);
 const mockCompensateAssignDedicatedDb = jest.fn().mockResolvedValue(undefined);
+const mockCompensateCreateRds = jest.fn().mockResolvedValue(undefined);
 const mockMigrateData = jest.fn().mockResolvedValue(undefined);
 const mockVerifyRouting = jest.fn().mockResolvedValue(undefined);
 const mockProvisionKafkaTopics = jest.fn().mockResolvedValue(undefined);
@@ -28,6 +29,7 @@ const mockActivities = {
   assignDedicatedDbActivity: mockAssignDedicatedDb,
   notifyAwaitingApprovalActivity: mockNotifyAwaitingApproval,
   compensateAssignDedicatedDbActivity: mockCompensateAssignDedicatedDb,
+  compensateCreateRdsActivity: mockCompensateCreateRds,
   migrateDataActivity: mockMigrateData,
   verifyRoutingActivity: mockVerifyRouting,
   provisionKafkaTopicsActivity: mockProvisionKafkaTopics,
@@ -109,6 +111,7 @@ describe('EnterpriseProvisioningWorkflow', () => {
 
       // Compensation must NOT run on happy path
       expect(mockCompensateAssignDedicatedDb).not.toHaveBeenCalled();
+      expect(mockCompensateCreateRds).not.toHaveBeenCalled();
     });
   });
 
@@ -134,8 +137,11 @@ describe('EnterpriseProvisioningWorkflow', () => {
       expect(mockProvisionKafkaTopics).not.toHaveBeenCalled();
       expect(mockEmitProvisionedEvent).not.toHaveBeenCalled();
 
-      // Compensation must run
+      // Compensation must run — unassign the dedicated DB, then delete the orphaned RDS instance.
       expect(mockCompensateAssignDedicatedDb).toHaveBeenCalledWith({
+        tenantId: baseParams.tenantId,
+      });
+      expect(mockCompensateCreateRds).toHaveBeenCalledWith({
         tenantId: baseParams.tenantId,
       });
     });

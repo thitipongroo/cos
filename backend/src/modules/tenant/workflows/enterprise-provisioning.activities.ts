@@ -16,6 +16,16 @@ export interface RdsWithEndpointParams {
   rdsEndpoint: string;
 }
 
+/**
+ * RDS instance identifier for a tenant. MUST be identical between createRdsActivity and its
+ * compensation (compensateCreateRdsActivity) — otherwise the rollback deletes the wrong instance or
+ * none at all. Extracted so the two never drift.
+ */
+function dbIdentifierFor(tenantCode: string): string {
+  const env = process.env['NODE_ENV'] ?? 'prod';
+  return `cos-tenant-${tenantCode.replace(/_/g, '-')}-${env}`;
+}
+
 // ── Activity 1: createRdsActivity ─────────────────────────────────────────
 
 export async function createRdsActivity(
@@ -25,7 +35,7 @@ export async function createRdsActivity(
 
   const tenantCode = await getPlatformTenantCode(params.tenantId);
   const env = process.env['NODE_ENV'] ?? 'prod';
-  const dbIdentifier = `cos-tenant-${tenantCode.replace(/_/g, '-')}-${env}`;
+  const dbIdentifier = dbIdentifierFor(tenantCode);
 
   const client = new RDSClient({ region: process.env['AWS_REGION'] ?? 'ap-southeast-1' });
 
@@ -115,6 +125,29 @@ export async function compensateAssignDedicatedDbActivity(
   } finally {
     await prisma.$disconnect();
   }
+}
+
+// ── Compensation: compensateCreateRdsActivity (spec §Phase 25 — createRds → DeleteDBInstance) ───────
+
+/**
+ * Roll back createRdsActivity by deleting the tenant's RDS instance. Fired on SYSTEM_ADMIN abort (and
+ * available for saga rollback on a later-activity failure) so an aborted provisioning does not leave
+ * an orphaned instance running. SkipFinalSnapshot: the DB was never put into service.
+ */
+export async function compensateCreateRdsActivity(params: RdsActivityParams): Promise<void> {
+  const { RDSClient, DeleteDBInstanceCommand } = await import('@aws-sdk/client-rds');
+  const tenantCode = await getPlatformTenantCode(params.tenantId);
+  const dbIdentifier = dbIdentifierFor(tenantCode);
+
+  const client = new RDSClient({ region: process.env['AWS_REGION'] ?? 'ap-southeast-1' });
+  await client.send(
+    new DeleteDBInstanceCommand({
+      DBInstanceIdentifier: dbIdentifier,
+      SkipFinalSnapshot: true,
+      DeleteAutomatedBackups: true,
+    }),
+  );
+  logger.warn({ tenantId: params.tenantId, dbIdentifier }, 'rds.instance.compensated_deleted');
 }
 
 // ── Human gate: notifyAwaitingApprovalActivity ─────────────────────────────
