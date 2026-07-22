@@ -3738,12 +3738,16 @@ Neo4j Sync Strategy (authoritative):
     - Graph is for traversal and relationship queries only
 
   Consumer groups for kg-ingestion-worker:
-    kg-consumer-group: subscribes to all cross-service events
+    kg-ingestion-worker.shared: subscribes to all cross-service events (§7.3 shared-tier convention
+      {service_name}.shared; supersedes the earlier literal name "kg-consumer-group")
     Topics consumed (regex): ^[^.]+\.(construction|procurement|site|finance)\..*
       (cross-tenant wildcard — all tenant-scoped topics for these domains;
        see docs/specifications/07-multi-tenant-architecture §7.3 and
        docs/specifications/15-event-driven-workflow §15.6)
-  Go Kafka client: github.com/IBM/sarama (pure Go; see docs/specifications/32-implementation-specifications)
+  Go Kafka client: github.com/twmb/franz-go v1.21.5 via the shared coskafka pipeline (kgo.ConsumeRegex).
+    sarama was replaced — it has no regex topic subscription (which the pattern above requires) and it
+    json.Unmarshal'd Avro-framed bytes; both broke against a real broker. The analytics-worker uses the
+    same franz-go/coskafka path. See docs/specifications/32-implementation-specifications
 
   Conflict handling: last-event-wins (graph is derived, not authoritative)
   Replay: on kg-worker restart, replay from last committed offset
@@ -3820,6 +3824,13 @@ Neo4j Node Labels and Properties:
     structure_type: String (enum: column/beam/slab/wall)
     material_type:  String
 
+  NOTE — Building/Floor/Room/Structure are NOT ingested into the KG (PO decision 2026-07-05).
+    They are backing/reference data and emit no Kafka events (see
+    backend/src/modules/project/{buildings,floors,rooms,structures}/*.service.ts). KG sync is
+    event-driven only (Neo4j Sync Strategy above — NOT CDC/batch), so with no events these four
+    labels cannot be materialised in Neo4j; they are intentionally absent from the mapper and the
+    constraints (8 event-backed labels only). Retained here to document the intended graph model.
+
 Relationships:
   (:Project)-[:HAS_MATERIAL]->(:Material)
   (:Material)-[:SUPPLIED_BY]->(:Vendor)
@@ -3835,6 +3846,8 @@ Relationships:
   (:Building)-[:CONTAINS_STRUCTURE]->(:Structure) — 1:N
   (:Task)-[:LOCATED_IN]->(:Floor)                — N:1 (task room-assignment; offline-cached per 17 §17.4)
   (:Task)-[:LOCATED_IN]->(:Room)                 — N:1
+  (The five relationships above all touch Building/Floor/Room/Structure and are therefore NOT
+   materialised in the KG — see the physical-hierarchy NOTE under Node Labels; PO 2026-07-05.)
 
   Note: DEPENDS_ON and USES relationships for Tasks derive from BOQ item hierarchy
         (task_id = boq_item_id; BOQ parent-child = DEPENDS_ON)

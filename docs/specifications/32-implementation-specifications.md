@@ -155,17 +155,17 @@ Never implement a Stage N+1 feature during Stage N work.
 
 The platform deploys as distinct units. Do **not** merge runtimes or split prematurely.
 
-| Deployable                                            | Runtime             | Contents                                                                                               |
-| ----------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------ |
-| Main Application (`backend/`)                         | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce     |
-| File Service (`services/file-service/`)               | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                    |
-| AI Gateway (`services/ai-gateway/`)                   | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                       |
-| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python)    | Embedding generation                                                                                   |
-| AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                         |
-| Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                                 |
-| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion — Kafka client: `github.com/IBM/sarama` (pure Go; consumer group: `kg-consumer-group`) |
-| Web App (`apps/web/`)                                 | Next.js + Serwist   | Tablet/laptop browser — online + offline unified                                                       |
-| Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                                  |
+| Deployable                                            | Runtime             | Contents                                                                                                                                   |
+| ----------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Main Application (`backend/`)                         | NestJS (monolith)   | identity, tenant, project, boq, procurement, site-ops, finance, notification, equipment, workforce                                         |
+| File Service (`services/file-service/`)               | Fastify             | Multipart upload I/O (extracted for I/O throughput)                                                                                        |
+| AI Gateway (`services/ai-gateway/`)                   | FastAPI (Python)    | LLM routing, RAG, token tracking                                                                                                           |
+| AI Embedding Worker (`services/ai-embedding-worker/`) | FastAPI (Python)    | Embedding generation                                                                                                                       |
+| AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                                                             |
+| Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                                                                     |
+| KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion — Kafka client: `github.com/twmb/franz-go` via coskafka (`kgo.ConsumeRegex`; consumer group: `kg-ingestion-worker.shared`) |
+| Web App (`apps/web/`)                                 | Next.js + Serwist   | Tablet/laptop browser — online + offline unified                                                                                           |
+| Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                                                                      |
 
 ### Service Extraction Rules
 

@@ -81,13 +81,13 @@ Risk legend: 🟢 in-range/same-major · 🟡 same-major minor/patch · 🔴 ≥
 
 ### Go (services)
 
-| Module                              | Pinned                           | Latest | Risk                         |
-| ----------------------------------- | -------------------------------- | ------ | ---------------------------- |
-| github.com/stretchr/testify         | 1.11.1                           | 1.11.1 | ✅ current                   |
-| github.com/IBM/sarama               | 1.43.3 (kg) / 1.50.2 (analytics) | 1.50.3 | 🟡 (align both)              |
-| go.opentelemetry.io/otel            | 1.43.0                           | 1.44.0 | 🟡                           |
-| github.com/neo4j/neo4j-go-driver/v5 | 5.24.0                           | 5.28.4 | 🟡                           |
-| go toolchain (go.mod directive)     | 1.25.11                          | 1.26.4 | 🔴 (needs Go 1.26 toolchain) |
+| Module                              | Pinned                  | Latest | Risk                               |
+| ----------------------------------- | ----------------------- | ------ | ---------------------------------- |
+| github.com/stretchr/testify         | 1.11.1                  | 1.11.1 | ✅ current                         |
+| github.com/twmb/franz-go (coskafka) | 1.21.5 (kg + analytics) | verify | 🟢 migrated off sarama (regex sub) |
+| go.opentelemetry.io/otel            | 1.43.0                  | 1.44.0 | 🟡                                 |
+| github.com/neo4j/neo4j-go-driver/v5 | 5.24.0                  | 5.28.4 | 🟡                                 |
+| go toolchain (go.mod directive)     | 1.25.11                 | 1.26.4 | 🔴 (needs Go 1.26 toolchain)       |
 
 ### Docker images
 
@@ -121,7 +121,7 @@ semver-compatible / same-major; refresh lockfile; run existing test suites.
 - Python minors: fastapi, uvicorn, pydantic, pydantic-settings, opentelemetry-sdk, httpx,
   python-dotenv (embedding/ocr); floor bumps: asyncpg, aiokafka, jinja2
 - Python watch-list: redis-py (`>=5.0` resolves to 8.0.1 — a major for the lib; pin + test)
-- Go minors: sarama (align kg = analytics = 1.50.3), otel 1.44.0, neo4j-driver 5.28.4
+- Go minors: otel 1.44.0, neo4j-driver 5.28.4 (sarama removed — both Go workers now use franz-go via coskafka)
 - Infra same-major image bumps: vault 1.16→1.21, temporal auto-setup 1.24→1.29.7 (image tag;
   the temporal server GitHub release 1.31.1 does NOT map to an auto-setup image tag — verify the
   actual Docker Hub tag before bumping), ui 2.26→2.51.1
