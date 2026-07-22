@@ -6,12 +6,24 @@ import os
 from uuid import UUID
 
 import httpx
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
+import metrics
+
 from ocr_pipeline import process_file
 
-app = FastAPI(title="COS AI OCR Pipeline", version="0.1.0")
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Start the Prometheus exporter on :9464 (§31.3, QM-8 — see metrics.py)."""
+    metrics.start_metrics_server()
+    yield
+
+
+app = FastAPI(title="COS AI OCR Pipeline", version="0.1.0", lifespan=_lifespan)
+metrics.install(app)
 
 
 class OCRRequest(BaseModel):

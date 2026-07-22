@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+
+	"github.com/construction-os/kg-ingestion-worker/internal/metrics"
 )
 
 // Retry policy — identical to MAX_RETRIES / RETRY_DELAYS_MS in @cos/shared/src/kafka/consumer.ts.
@@ -34,6 +36,9 @@ type Consumer struct {
 	idempotency *Idempotency
 	handler     Handler
 	logger      *slog.Logger
+	// group is captured in Run so consumed-message metrics carry the consumer_group label the
+	// TypeScript metrics (and the Grafana panels built on them) use.
+	group string
 }
 
 // NewConsumer wires the pipeline. dlq and idempotency may be nil, which degrades that stage only —
@@ -61,6 +66,7 @@ func NewConsumer(
 // of more frequent metadata loads, and franz-go's own docs warn that "when consuming via regex,
 // every metadata request loads *all* topics".
 func (c *Consumer) Run(ctx context.Context, brokers []string, group string, topicRegex string) error {
+	c.group = group
 	client, err := kgo.NewClient(
 		kgo.SeedBrokers(brokers...),
 		kgo.ConsumerGroup(group),
@@ -146,6 +152,10 @@ func (c *Consumer) Handle(ctx context.Context, record *kgo.Record) {
 	var lastErr error
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		if lastErr = c.handler(ctx, &envelope); lastErr == nil {
+			// Counted here, not at fetch time: "consumed" means the record completed the pipeline.
+			// Records that end in the DLQ are counted by kafka_messages_produced_total instead, so
+			// the two never double-count the same record.
+			metrics.MessagesConsumed.WithLabelValues(record.Topic, c.group, envelope.EventType).Inc()
 			return
 		}
 		c.logger.Warn("handler failed",

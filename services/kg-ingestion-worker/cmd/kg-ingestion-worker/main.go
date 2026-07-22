@@ -20,6 +20,7 @@ import (
 	cosOtel "github.com/construction-os/coslib/cosotel"
 	"github.com/construction-os/kg-ingestion-worker/internal/consumer"
 	"github.com/construction-os/kg-ingestion-worker/internal/graph"
+	"github.com/construction-os/kg-ingestion-worker/internal/metrics"
 	neo4j "github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -38,7 +39,7 @@ func main() {
 		RegistryURL: getEnv("SCHEMA_REGISTRY_URL", "http://localhost:8081"),
 		RedisURL:    getEnv("REDIS_URL", ""),
 	}
-	port := getEnv("PORT", "8090")
+	port := getEnv("PORT", defaultHTTPPort)
 
 	driver, err := neo4j.NewDriverWithContext(neo4jURI, neo4j.BasicAuth(neo4jUser, neo4jPass, ""))
 	if err != nil {
@@ -104,6 +105,18 @@ func main() {
 		fmt.Fprintf(w, `{"status":"ok"}`)
 	})
 
+	// Prometheus scrape endpoint. prometheus.yml has always listed kg-ingestion-worker:9464 as a
+	// target and the Helm chart declares the containerPort — until now nothing served it.
+	metricsPort := metrics.Port()
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", metrics.Handler())
+		log.Printf("kg-ingestion-worker metrics listening on :%s", metricsPort)
+		if err := http.ListenAndServe(":"+metricsPort, mux); err != nil {
+			log.Fatalf("metrics server: %v", err)
+		}
+	}()
+
 	// Explicit server, not http.ListenAndServe: the package-level helper has no timeouts at all,
 	// so a client that opens a connection and never finishes its request headers holds a goroutine
 	// indefinitely (Slowloris). ReadHeaderTimeout is the one that closes that specific hole.
@@ -146,6 +159,15 @@ func main() {
 	cancel()
 	wg.Wait()
 }
+
+// defaultHTTPPort is the liveness port when PORT is unset.
+//
+// MUST equal the Dockerfile's EXPOSE and the Helm chart's containerPort/probe port. The chart used
+// to probe `pgrep kg-ingestion-worker` instead — but the Dockerfile builds the binary as `worker`
+// (go build -o worker; CMD ["./worker"]), so pgrep matched no process, both probes exited 1, and the
+// pod could only CrashLoopBackOff. This service does serve GET /health/live on this port, so the
+// chart now probes that (ADR-039: only a real deploy catches this, lint and dry-run do not).
+const defaultHTTPPort = "8090"
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {

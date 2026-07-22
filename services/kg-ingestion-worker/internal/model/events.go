@@ -72,11 +72,11 @@ type DeliveryReceivedPayload struct {
 
 // VendorInvoiceApprovedPayload — procurement.vendor_invoice.approved.v1 (event #13)
 type VendorInvoiceApprovedPayload struct {
-	InvoiceID  string `json:"invoice_id"`
-	POID       string `json:"po_id"`
-	ProjectID  string `json:"project_id"`
-	VendorID   string `json:"vendor_id"`
-	Amount     struct {
+	InvoiceID string `json:"invoice_id"`
+	POID      string `json:"po_id"`
+	ProjectID string `json:"project_id"`
+	VendorID  string `json:"vendor_id"`
+	Amount    struct {
 		Amount       string `json:"amount"`
 		CurrencyCode string `json:"currency_code"`
 	} `json:"amount"`

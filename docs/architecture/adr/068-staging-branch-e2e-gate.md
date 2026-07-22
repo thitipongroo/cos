@@ -1,4 +1,4 @@
-# ADR-048: Staging branch as the E2E gate before production
+# ADR-068: Staging branch as the E2E gate before production
 
 **Date:** 2026-07-04
 **Status:** Accepted

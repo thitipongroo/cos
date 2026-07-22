@@ -21,11 +21,32 @@ import (
 	cosOtel "github.com/construction-os/coslib/cosotel"
 )
 
+// defaultHTTPPort is the liveness port when PORT is unset.
+//
+// MUST equal the Dockerfile's EXPOSE, the docker-compose healthcheck, and the Helm chart's
+// containerPort/probe port. It was 8091 while every one of those said 8090 or 8080: the Helm chart
+// probed httpGet /health/live on 8080 and never set PORT, so on a real cluster the probe hit a
+// closed port and the pod could only ever CrashLoopBackOff. Compose masked it by setting PORT=8090.
+// Keeping the code default equal to the deployed port means a missing PORT env degrades to
+// "correct" instead of "dead" (ADR-039: lint and dry-run do not catch this — only a real deploy).
+const defaultHTTPPort = "8090"
+
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
 		return v
 	}
 	return fallback
+}
+
+// healthHandler serves the liveness endpoint the Kubernetes probe and the compose healthcheck call.
+// Extracted from main so the contract (path, status, body) is unit-testable.
+func healthHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health/live", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"status":"ok","service":"analytics-worker"}`)
+	})
+	return mux
 }
 
 // openClickHouse dials the OLAP store the carbon consumer writes to.

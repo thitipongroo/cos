@@ -68,7 +68,7 @@ func TestIngest_ProjectCreated_NodeExists(t *testing.T) {
 
 	runEvent(t, ctx, driver, envelope("construction.project.created.v1", "ev-1", "t-1", map[string]any{
 		"project_id": "proj-001", "project_name": "Tower A", "project_type": "COMMERCIAL",
-		"budget": map[string]any{"amount": "1000000", "currency_code": "THB"},
+		"budget":     map[string]any{"amount": "1000000", "currency_code": "THB"},
 		"start_date": "2026-01-01", "end_date": "2027-01-01",
 	}))
 
@@ -103,7 +103,7 @@ func TestIngest_DelayDetected_NodeAndRelationshipExist(t *testing.T) {
 	// Seed project first so MATCH in IMPACTS op succeeds
 	runEvent(t, ctx, driver, envelope("construction.project.created.v1", "ev-p", "t-1", map[string]any{
 		"project_id": "proj-001", "project_name": "Tower A", "project_type": "COMMERCIAL",
-		"budget": map[string]any{"amount": "1000000", "currency_code": "THB"},
+		"budget":     map[string]any{"amount": "1000000", "currency_code": "THB"},
 		"start_date": "2026-01-01", "end_date": "2027-01-01",
 	}))
 
@@ -143,7 +143,7 @@ func TestIngest_DeliveryReceived_DeliveredByRelationshipExists(t *testing.T) {
 
 	runEvent(t, ctx, driver, envelope("construction.project.created.v1", "ev-p2", "t-1", map[string]any{
 		"project_id": "proj-002", "project_name": "Bridge B", "project_type": "INFRASTRUCTURE",
-		"budget": map[string]any{"amount": "5000000", "currency_code": "THB"},
+		"budget":     map[string]any{"amount": "5000000", "currency_code": "THB"},
 		"start_date": "2026-02-01", "end_date": "2027-02-01",
 	}))
 
@@ -185,14 +185,14 @@ func TestIngest_TenantIsolation_NodesNotSharedAcrossTenants(t *testing.T) {
 	// Create project for tenant t-1
 	runEvent(t, ctx, driver, envelope("construction.project.created.v1", "ev-t1", "t-1", map[string]any{
 		"project_id": "proj-shared-id", "project_name": "Tenant1 Project", "project_type": "COMMERCIAL",
-		"budget": map[string]any{"amount": "1000", "currency_code": "THB"},
+		"budget":     map[string]any{"amount": "1000", "currency_code": "THB"},
 		"start_date": "2026-01-01", "end_date": "2026-12-31",
 	}))
 
 	// Create project with same project_id for tenant t-2
 	runEvent(t, ctx, driver, envelope("construction.project.created.v1", "ev-t2", "t-2", map[string]any{
 		"project_id": "proj-shared-id", "project_name": "Tenant2 Project", "project_type": "RESIDENTIAL",
-		"budget": map[string]any{"amount": "2000", "currency_code": "THB"},
+		"budget":     map[string]any{"amount": "2000", "currency_code": "THB"},
 		"start_date": "2026-01-01", "end_date": "2026-12-31",
 	}))
 
@@ -228,7 +228,7 @@ func TestIngest_Constraints_IdempotentOnDuplicateMerge(t *testing.T) {
 
 	ev := envelope("construction.project.created.v1", "ev-dup", "t-1", map[string]any{
 		"project_id": "proj-dup", "project_name": "First Name", "project_type": "COMMERCIAL",
-		"budget": map[string]any{"amount": "1000", "currency_code": "THB"},
+		"budget":     map[string]any{"amount": "1000", "currency_code": "THB"},
 		"start_date": "2026-01-01", "end_date": "2026-12-31",
 	})
 	runEvent(t, ctx, driver, ev)
@@ -236,7 +236,7 @@ func TestIngest_Constraints_IdempotentOnDuplicateMerge(t *testing.T) {
 	// Second event with same project_id — MERGE must update, not create duplicate
 	ev2 := envelope("construction.project.created.v1", "ev-dup2", "t-1", map[string]any{
 		"project_id": "proj-dup", "project_name": "Updated Name", "project_type": "COMMERCIAL",
-		"budget": map[string]any{"amount": "9999", "currency_code": "THB"},
+		"budget":     map[string]any{"amount": "9999", "currency_code": "THB"},
 		"start_date": "2026-01-01", "end_date": "2026-12-31",
 	})
 	runEvent(t, ctx, driver, ev2)

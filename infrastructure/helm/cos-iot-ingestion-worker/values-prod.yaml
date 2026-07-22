@@ -1,0 +1,12 @@
+# replicaCount stays 1 in every environment — see values.yaml (fixed MQTT ClientID). Scaling this
+# worker out needs a per-pod ClientID + MQTT shared subscription first.
+resources:
+  requests:
+    cpu: '500m'
+    memory: '256Mi'
+  limits:
+    cpu: '2000m'
+    memory: '512Mi'
+env:
+  # Production brokers run RF=3 (master §Phase 8 "Replication factor: 3 (production)").
+  KAFKA_TOPIC_REPLICATION_FACTOR: '3'

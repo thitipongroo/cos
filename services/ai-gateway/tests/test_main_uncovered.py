@@ -96,11 +96,19 @@ class TestLifespan:
 
         monkeypatch.setattr(main_module, "_wire_rag", fake_rag)
         monkeypatch.setattr(main_module, "_wire_digital_twin", fake_twin)
+        # The lifespan also opens the Prometheus exporter on :9464. Stubbed here so the suite never
+        # binds a real socket — otherwise a second entry into the lifespan, a parallel test run, or
+        # a CI runner that already has 9464 taken fails with EADDRINUSE.
+        started = []
+        monkeypatch.setattr(
+            main_module.metrics, "start_metrics_server", lambda: started.append(True)
+        )
 
         async with _lifespan(main_module.app):
             pass
 
         assert called == ["rag", "twin"]
+        assert started == [True]
 
 
 class TestWireRag:

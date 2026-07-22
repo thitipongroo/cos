@@ -23,7 +23,11 @@ module.exports = {
   // api/auth/idb/pwa subtrees predate this runner and are covered by Playwright, not unit tests —
   // pulling them into the 100% gate would fail the build without adding a single assertion. Add a
   // module here in the same PR that adds its spec.
-  collectCoverageFrom: ['src/lib/loadingState.ts'],
+  collectCoverageFrom: [
+    'src/lib/loadingState.ts',
+    // Kubernetes probe endpoints — a regression here silently disables liveness/readiness.
+    'src/app/health/**/route.ts',
+  ],
   coveragePathIgnorePatterns: ['/node_modules/', '\\.spec\\.ts$'],
   coverageThreshold: {
     global: { lines: 100, branches: 100 },

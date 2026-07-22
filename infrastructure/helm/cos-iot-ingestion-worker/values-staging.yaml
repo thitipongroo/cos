@@ -1,0 +1,4 @@
+# replicaCount stays 1 in every environment — see values.yaml (fixed MQTT ClientID).
+# Staging points at the staging EMQX/Kafka; credentials come from cos-iot-ingestion-worker-secrets.
+env:
+  KAFKA_TOPIC_REPLICATION_FACTOR: '1'

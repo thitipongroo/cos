@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 import flags
+import metrics
 from otel import configure_telemetry
 from providers.llm_provider import Message, build_llm_provider
 from rag.retrieval import HybridRetriever
@@ -30,6 +31,7 @@ async def _lifespan(_app: FastAPI):
     for that reason alone. Both handlers stay individually guarded, so the gateway still starts when
     RAG backends or Kafka are unavailable.
     """
+    metrics.start_metrics_server()
     await _wire_rag()
     await _wire_digital_twin()
     yield
@@ -37,6 +39,7 @@ async def _lifespan(_app: FastAPI):
 
 app = FastAPI(title="COS AI Gateway", version="0.2.0", lifespan=_lifespan)
 configure_telemetry(app)
+metrics.install(app)
 
 # Phase 24 Digital Twin API (§33.3 — the Digital Twin Service runs inside the AI Gateway). The
 # router 503s when the DB pool is unconfigured, matching the RAG/LLM posture, so mounting it is safe

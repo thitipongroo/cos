@@ -26,6 +26,8 @@ podDisruptionBudget:
 env:
   OTEL_SERVICE_NAME: 'ai-gateway'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # Served by metrics.py; matches service.metricsPort and the prometheus.yml scrape target.
+  PROMETHEUS_PORT: '9464'
 envFrom:
   - secretRef:
       name: cos-ai-gateway-secrets

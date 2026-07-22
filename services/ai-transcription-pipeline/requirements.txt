@@ -11,3 +11,6 @@ python-dotenv==1.2.2
 # install so unit tests / CI run without model weights (mirrors ai-embedding-worker, which ships
 # only the stub provider). Add to the deploy image when enabling STT_PROVIDER=faster_whisper:
 #   faster-whisper==1.1.1
+
+# Prometheus exposition for the :9464 scrape target (§31.3, QM-8) — see metrics.py.
+prometheus-client>=0.21

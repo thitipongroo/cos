@@ -52,10 +52,10 @@ type InspectionResult struct {
 
 // SupplyChainResult is a row returned by the supply-chain query.
 type SupplyChainResult struct {
-	MaterialID   string `json:"material_id"`
-	Description  string `json:"description"`
-	VendorID     string `json:"vendor_id"`
-	VendorName   string `json:"vendor_name"`
+	MaterialID  string `json:"material_id"`
+	Description string `json:"description"`
+	VendorID    string `json:"vendor_id"`
+	VendorName  string `json:"vendor_name"`
 }
 
 // ProjectResult is a row returned by the vendor-projects query.

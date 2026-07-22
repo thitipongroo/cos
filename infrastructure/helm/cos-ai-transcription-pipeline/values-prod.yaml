@@ -1,0 +1,15 @@
+replicaCount: 3
+resources:
+  # Still the stub-provider envelope (see values.yaml). Enabling STT_PROVIDER=faster_whisper in
+  # production requires re-sizing from a measured model footprint first.
+  requests:
+    cpu: '1000m'
+    memory: '2Gi'
+  limits:
+    cpu: '4000m'
+    memory: '4Gi'
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 10
+podDisruptionBudget:
+  minAvailable: 2

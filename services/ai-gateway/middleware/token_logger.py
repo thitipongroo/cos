@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import asyncpg
 
+import metrics
+
 
 @dataclass
 class UsageRecord:
@@ -39,6 +41,11 @@ async def log_usage(db_pool: asyncpg.Pool, record: UsageRecord) -> None:
         record.completion_tokens,
         record.total_tokens,
         record.latency_ms,
+    )
+    # §31.3 AI metrics. Emitted after the insert so a metric never claims a call the usage table
+    # does not have — the two always agree.
+    metrics.record_llm_usage(
+        record.tenant_id, record.model_used, record.total_tokens, record.latency_ms
     )
 
 

@@ -59,16 +59,21 @@ affinity:
               app.kubernetes.io/name: cos-web
           topologyKey: kubernetes.io/hostname
 
+# /health/live + /health/ready are served by src/app/health/*/route.ts and are excluded from the
+# auth matcher in src/middleware.ts. This probed /api/health — a route that does not exist — and
+# next-auth answered 307 to the sign-in page; Kubernetes counts 2xx/3xx as success, so the probe
+# passed unconditionally and a wedged pod would never be restarted. ADR-039 listed these as
+# UNVERIFIED. Guarded by src/app/health/__tests__/health-routes.spec.ts.
 livenessProbe:
   httpGet:
-    path: /api/health
+    path: /health/live
     port: 3000
   initialDelaySeconds: 30
   periodSeconds: 10
 
 readinessProbe:
   httpGet:
-    path: /api/health
+    path: /health/ready
     port: 3000
   initialDelaySeconds: 15
   periodSeconds: 5

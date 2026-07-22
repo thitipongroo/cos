@@ -12,6 +12,11 @@ export default authMiddleware;
 
 export const config = {
   matcher: [
-    '/((?!login|dev/component-preview|api/auth|offline|manifest.json|sw.js|workbox-|icons/|flags/|_next/static|_next/image|favicon.ico).*)',
+    // `health` MUST stay in this exclusion list. The Kubernetes liveness/readiness probes call
+    // /health/live and /health/ready unauthenticated; if this middleware catches them it answers
+    // 307 → /api/auth/signin, and Kubernetes counts 2xx/3xx as success — the probe would pass
+    // forever and a wedged pod would never be restarted. Removing `health` here silently disables
+    // both probes. Guarded by src/app/health/__tests__/health-routes.spec.ts.
+    '/((?!login|health|dev/component-preview|api/auth|offline|manifest.json|sw.js|workbox-|icons/|flags/|_next/static|_next/image|favicon.ico).*)',
   ],
 };

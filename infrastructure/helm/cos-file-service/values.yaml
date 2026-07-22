@@ -6,8 +6,12 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP
-  port: 3001
+  # 3002 — the port the service listens on (FILE_SERVICE_PORT default in src/config.ts), the
+  # Dockerfile's EXPOSE, and the docker-compose healthcheck. This said 3001 (which is apps/web's
+  # port, not file-service's) while nothing set FILE_SERVICE_PORT, so both probes below hit a closed
+  # port and the pod could only CrashLoopBackOff. ADR-039 listed this chart's probes as UNVERIFIED.
+  port: 3002
+  # Genuine: src/plugins/metrics.ts serves Prometheus on PROMETHEUS_PORT (9464).
   metricsPort: 9464
 
 resources:
@@ -33,6 +37,10 @@ env:
   NODE_ENV: 'production'
   OTEL_SERVICE_NAME: 'file-service'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # NOTE: the variable is FILE_SERVICE_PORT, not PORT (src/config.ts). Pinned so the listen port
+  # cannot drift from service.port and the probes below.
+  FILE_SERVICE_PORT: '3002'
+  PROMETHEUS_PORT: '9464'
 
 envFrom:
   - secretRef:
@@ -54,16 +62,18 @@ affinity:
               app.kubernetes.io/name: cos-file-service
           topologyKey: kubernetes.io/hostname
 
+# Both paths are served by src/main.ts (/health/live, /health/ready). Ports must equal
+# service.port and FILE_SERVICE_PORT above.
 livenessProbe:
   httpGet:
     path: /health/live
-    port: 3001
+    port: 3002
   initialDelaySeconds: 20
   periodSeconds: 10
 
 readinessProbe:
   httpGet:
     path: /health/ready
-    port: 3001
+    port: 3002
   initialDelaySeconds: 10
   periodSeconds: 5

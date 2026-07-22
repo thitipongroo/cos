@@ -4,8 +4,10 @@ image:
   tag: 'latest'
   pullPolicy: IfNotPresent
 service:
-  type: ClusterIP
-  port: 8080
+  # 8090 — the port the binary listens on (cmd/kg-ingestion-worker: defaultHTTPPort) and the
+  # Dockerfile's EXPOSE. This said 8080, and the Deployment declared no `http` containerPort at all,
+  # so the Service's `targetPort: http` resolved to nothing.
+  port: 8090
   metricsPort: 9464
 resources:
   requests:
@@ -30,6 +32,11 @@ env:
   PORT: '8080'
   OTEL_SERVICE_NAME: 'kg-ingestion-worker'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # Pinned so the listen port cannot drift from service.port and the probes below.
+  PORT: '8090'
+  # Served by internal/metrics; this is the port prometheus.yml scrapes and service.metricsPort
+  # declares. Pinned for the same reason as PORT.
+  PROMETHEUS_PORT: '9464'
 envFrom:
   - secretRef:
       name: cos-kg-ingestion-worker-secrets
@@ -51,13 +58,20 @@ affinity:
             matchLabels:
               app.kubernetes.io/name: cos-kg-ingestion-worker
           topologyKey: kubernetes.io/hostname
+# WAS: exec `pgrep kg-ingestion-worker`. The Dockerfile builds the binary as `worker`
+# (go build -o worker; CMD ["./worker"]), so pgrep matched no process and BOTH probes exited 1 —
+# the pod could only CrashLoopBackOff. The service serves GET /health/live
+# (cmd/kg-ingestion-worker/main.go), so probe that instead, like every sibling chart.
+# Guarded by cmd/kg-ingestion-worker/main_test.go.
 livenessProbe:
-  exec:
-    command: ['/bin/sh', '-c', 'pgrep kg-ingestion-worker']
+  httpGet:
+    path: /health/live
+    port: 8090
   initialDelaySeconds: 10
   periodSeconds: 15
 readinessProbe:
-  exec:
-    command: ['/bin/sh', '-c', 'pgrep kg-ingestion-worker']
+  httpGet:
+    path: /health/live
+    port: 8090
   initialDelaySeconds: 5
   periodSeconds: 10

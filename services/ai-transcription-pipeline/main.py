@@ -8,8 +8,12 @@ import os
 from uuid import UUID
 
 import httpx
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+import metrics
 
 from providers.transcription_provider import (
     FasterWhisperProvider,
@@ -17,7 +21,15 @@ from providers.transcription_provider import (
     TranscriptionProvider,
 )
 
-app = FastAPI(title="COS AI Transcription Pipeline", version="0.1.0")
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Start the Prometheus exporter on :9464 (§31.3, QM-8 — see metrics.py)."""
+    metrics.start_metrics_server()
+    yield
+
+
+app = FastAPI(title="COS AI Transcription Pipeline", version="0.1.0", lifespan=_lifespan)
+metrics.install(app)
 
 
 def _select_provider() -> TranscriptionProvider:

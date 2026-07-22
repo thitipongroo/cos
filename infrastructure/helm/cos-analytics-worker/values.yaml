@@ -5,7 +5,11 @@ image:
   pullPolicy: IfNotPresent
 service:
   type: ClusterIP
-  port: 8080
+  # 8090 — the port the binary listens on (cmd/analytics-worker: defaultHTTPPort), the Dockerfile's
+  # EXPOSE, and the docker-compose healthcheck. This said 8080 while the binary defaulted to 8091 and
+  # the chart never set PORT, so the liveness probe below hit a closed port and the pod could only
+  # CrashLoopBackOff. main_test.go now fails if these drift apart again.
+  port: 8090
   metricsPort: 9464
 resources:
   requests:
@@ -30,6 +34,11 @@ env:
   PORT: '8080'
   OTEL_SERVICE_NAME: 'analytics-worker'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'
+  # Pinned so the listen port cannot drift from service.port / the probes below.
+  PORT: '8090'
+  # Served by internal/metrics; this is the port prometheus.yml scrapes and service.metricsPort
+  # declares. Pinned for the same reason as PORT.
+  PROMETHEUS_PORT: '9464'
 envFrom:
   - secretRef:
       name: cos-analytics-worker-secrets
@@ -54,15 +63,16 @@ affinity:
             matchLabels:
               app.kubernetes.io/name: cos-analytics-worker
           topologyKey: kubernetes.io/hostname
+# Port must equal service.port and the PORT env above (main_test.go enforces this).
 livenessProbe:
   httpGet:
     path: /health/live
-    port: 8080
+    port: 8090
   initialDelaySeconds: 10
   periodSeconds: 10
 readinessProbe:
   httpGet:
     path: /health/live
-    port: 8080
+    port: 8090
   initialDelaySeconds: 5
   periodSeconds: 5
