@@ -48,4 +48,19 @@ export class CreateTenantDto {
   @IsOptional()
   @IsIn(['ap-southeast-7', 'ap-southeast-1', 'eu-west-1'])
   dataRegion?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6). ' +
+      'Defaults from data_region when omitted (ap-southeast-7 -> Asia/Bangkok, ' +
+      'ap-southeast-1 -> Asia/Singapore, eu-west-1 -> Europe/Dublin).',
+    example: 'Asia/Bangkok',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+$/, {
+    message: 'timezone must be an IANA zone name, e.g. Asia/Bangkok',
+  })
+  @MaxLength(40)
+  timezone?: string;
 }

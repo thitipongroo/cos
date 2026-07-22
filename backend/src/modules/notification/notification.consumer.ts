@@ -23,6 +23,9 @@ const SUBSCRIBED_EVENT_TYPES = [
   'site.report.created.v1',
   'procurement.invoice.received.v1',
   'file.document.quarantined.v1',
+  // §19.3/§19.4 — consumed so they are notified AND armed for escalation (safety 30m, AI-risk 24h)
+  'safety.incident.created.v1',
+  'ai.risk_prediction.generated.v1',
 ];
 
 @Injectable()

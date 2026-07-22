@@ -70,6 +70,13 @@ components:
             Optional. Data-residency region (§5.6), assigned at provisioning and immutable after the
             first data write. Thai tenants -> ap-southeast-7, EU -> eu-west-1, default -> ap-southeast-1.
           example: ap-southeast-1
+        timezone:
+          type: string
+          default: Asia/Bangkok
+          description: |
+            Optional. IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
+            Defaults from data_region when omitted.
+          example: Asia/Bangkok
 
     TenantResponse:
       type: object
@@ -96,6 +103,10 @@ components:
           enum: [ap-southeast-7, ap-southeast-1, eu-west-1]
           description: Data-residency region for the tenant (§5.6).
           example: ap-southeast-1
+        timezone:
+          type: string
+          description: IANA timezone for notification quiet hours + digest schedules (§19.3/§19.6).
+          example: Asia/Bangkok
         createdAt:
           type: string
           format: date-time

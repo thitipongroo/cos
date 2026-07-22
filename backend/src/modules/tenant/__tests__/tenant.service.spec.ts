@@ -29,7 +29,7 @@ jest.mock('@temporalio/client', () => ({
   Client: jest.fn(),
 }));
 
-import { TenantService } from '../tenant.service';
+import { TenantService, defaultTimezoneForRegion } from '../tenant.service';
 import { PrismaClient } from '@prisma/client';
 import { KafkaTopicProvisioner } from '@cos/shared';
 import { Connection, Client } from '@temporalio/client';
@@ -206,6 +206,65 @@ describe('TenantService', () => {
       );
 
       expect(capturedInsertArgs[6]).toBe('ap-southeast-7');
+    });
+
+    it('defaultTimezoneForRegion maps regions and falls back to Asia/Bangkok', () => {
+      expect(defaultTimezoneForRegion('ap-southeast-7')).toBe('Asia/Bangkok');
+      expect(defaultTimezoneForRegion('ap-southeast-1')).toBe('Asia/Singapore');
+      expect(defaultTimezoneForRegion('eu-west-1')).toBe('Europe/Dublin');
+      expect(defaultTimezoneForRegion('unknown-region')).toBe('Asia/Bangkok');
+    });
+
+    it('defaults timezone from data_region when not provided (§19.3/§19.6)', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([mockTenant]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      // Thai region -> Asia/Bangkok; timezone is the 7th INSERT value -> tagged-template arg index 7.
+      await service.createTenant(
+        {
+          tenantCode: 'thai_co',
+          tenantName: 'Thai Construction',
+          planType: 'STARTER' as never,
+          dataRegion: 'ap-southeast-7',
+        },
+        'admin-1',
+      );
+      expect(capturedInsertArgs[7]).toBe('Asia/Bangkok');
+    });
+
+    it('sets the explicit timezone in the INSERT when provided', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]); // no existing
+      let capturedInsertArgs: unknown[] = [];
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const txQueryRaw = jest.fn().mockImplementation((...args: unknown[]) => {
+            capturedInsertArgs = args;
+            return Promise.resolve([mockTenant]);
+          });
+          return fn({ $queryRaw: txQueryRaw, $executeRawUnsafe: jest.fn() });
+        },
+      );
+
+      await service.createTenant(
+        {
+          tenantCode: 'eu_co',
+          tenantName: 'EU Construction',
+          planType: 'STARTER' as never,
+          dataRegion: 'ap-southeast-1',
+          timezone: 'Europe/Paris',
+        },
+        'admin-1',
+      );
+      expect(capturedInsertArgs[7]).toBe('Europe/Paris');
     });
 
     it('throws BadRequestException when dedicatedDbUrl has invalid prefix', async () => {

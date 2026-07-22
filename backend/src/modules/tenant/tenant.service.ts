@@ -19,6 +19,20 @@ import { CreateTenantDto } from './dto/create-tenant.dto';
 
 const logger = createLogger('tenant-service');
 
+/**
+ * Default IANA timezone for a data-residency region (Phase 20 §19.3/§19.6). Used to seed
+ * `tenants.timezone` at provisioning; a tenant may override it afterwards (PO 2026-07-23).
+ */
+const REGION_TIMEZONE: Record<string, string> = {
+  'ap-southeast-7': 'Asia/Bangkok',
+  'ap-southeast-1': 'Asia/Singapore',
+  'eu-west-1': 'Europe/Dublin',
+};
+
+export function defaultTimezoneForRegion(dataRegion: string): string {
+  return REGION_TIMEZONE[dataRegion] ?? 'Asia/Bangkok';
+}
+
 @Injectable()
 export class TenantService implements OnModuleDestroy {
   // Platform PrismaClient — NOT TenantPrismaService (this operates cross-tenant)
@@ -56,8 +70,8 @@ export class TenantService implements OnModuleDestroy {
     // Create tenant record (ADR-008: shared DB + tenant_id, no per-tenant schema)
     const tenant = await this.prisma.$transaction(async (tx) => {
       const [created] = await tx.$queryRaw<Tenant[]>`
-        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region)
-        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ?? null}, ${dto.dataRegion ?? 'ap-southeast-1'})
+        INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region, timezone)
+        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ?? null}, ${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')})
         RETURNING *
       `;
 

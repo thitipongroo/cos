@@ -2,6 +2,13 @@
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
+jest.mock('@cos/shared', () => ({
+  KafkaProducer: jest.fn().mockImplementation(() => ({
+    connect: jest.fn().mockResolvedValue(undefined),
+    publish: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+  })),
+}));
 
 import {
   NotFoundException,
@@ -64,6 +71,40 @@ describe('incidents', () => {
     expect(mockRepo.createIncident).toHaveBeenCalledWith(
       expect.objectContaining({ reported_by: 'user-1', task_id: null }),
     );
+  });
+
+  it('createIncident emits safety.incident.created.v1 (§19.3 escalation source)', async () => {
+    mockRepo.createIncident.mockResolvedValue({ incident_id: 'inc-1', project_id: 'p1' });
+    await service.createIncident({
+      project_id: 'p1',
+      incident_type: 'fall',
+      severity: 'CRITICAL',
+    } as never);
+    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const instance = KafkaProducer.mock.results[KafkaProducer.mock.results.length - 1]?.value as {
+      publish: jest.Mock;
+    };
+    expect(instance.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event_type: 'safety.incident.created.v1',
+        payload: expect.objectContaining({ incident_id: 'inc-1', severity: 'CRITICAL' }),
+      }),
+    );
+  });
+
+  it('createIncident still succeeds when the Kafka publish fails (error swallowed)', async () => {
+    mockRepo.createIncident.mockResolvedValue({ incident_id: 'inc-2', project_id: 'p1' });
+    const { KafkaProducer } = jest.requireMock('@cos/shared') as { KafkaProducer: jest.Mock };
+    const instance = KafkaProducer.mock.results[KafkaProducer.mock.results.length - 1]?.value as {
+      publish: jest.Mock;
+    };
+    instance.publish.mockRejectedValueOnce(new Error('kafka down'));
+    const result = await service.createIncident({
+      project_id: 'p1',
+      incident_type: 'fall',
+      severity: 'HIGH',
+    } as never);
+    expect(result.incident_id).toBe('inc-2');
   });
 
   it('listIncidents returns envelope', async () => {

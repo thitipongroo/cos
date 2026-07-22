@@ -6,6 +6,8 @@ import { NotificationRepository } from './notification.repository';
 import { NotificationPrismaService } from './notification-prisma.service';
 import { NotificationSseService } from './notification.sse.service';
 import { NotificationConsumer } from './notification.consumer';
+import { NotificationEscalationService } from './notification.escalation.service';
+import { NotificationDigestService } from './notification.digest.service';
 import { ExpoPushAdapter } from './adapters/expo-push.adapter';
 import { SendGridAdapter } from './adapters/sendgrid.adapter';
 import { LineMessagingAdapter } from './adapters/line-messaging.adapter';
@@ -21,6 +23,8 @@ import { LineMessagingAdapter } from './adapters/line-messaging.adapter';
     LineMessagingAdapter,
     NotificationService,
     NotificationConsumer,
+    NotificationEscalationService,
+    NotificationDigestService,
   ],
   exports: [NotificationService],
 })

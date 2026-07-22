@@ -5,7 +5,7 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-import { NotificationService } from '../notification.service';
+import { NotificationService, isWithinQuietHours } from '../notification.service';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -23,6 +23,8 @@ const mockRepo = {
   upsertPreference: jest.fn(),
   upsertDeviceToken: jest.fn(),
   findDeviceTokens: jest.fn(),
+  getTenantTimezone: jest.fn(),
+  getUserQuietHours: jest.fn(),
 };
 
 const mockSse = { push: jest.fn() };
@@ -50,6 +52,9 @@ beforeEach(() => {
   jest.resetAllMocks();
   // Default: no device tokens unless overridden per test
   mockRepo.findDeviceTokens.mockResolvedValue([]);
+  // Default quiet-hours window is empty (start==end → never quiet) so push tests are time-independent.
+  mockRepo.getTenantTimezone.mockResolvedValue('Asia/Bangkok');
+  mockRepo.getUserQuietHours.mockResolvedValue({ start: '00:00:00', end: '00:00:00' });
   svc = new NotificationService(
     mockRepo as never,
     mockSse as never,
@@ -600,5 +605,132 @@ describe('registerDeviceToken', () => {
       platform: 'IOS',
     });
     expect(result.token_id).toBe('t1');
+  });
+});
+
+// ── quiet hours (§19.6) ───────────────────────────────────────────────────────
+
+describe('isWithinQuietHours', () => {
+  // 2026-01-01T16:00:00Z = 23:00 Asia/Bangkok (UTC+7) → inside 22:00–07:00 overnight window.
+  const at23Bkk = new Date('2026-01-01T16:00:00Z');
+  // 2026-01-01T05:00:00Z = 12:00 Asia/Bangkok → outside the overnight window.
+  const at12Bkk = new Date('2026-01-01T05:00:00Z');
+
+  it('overnight window: quiet at 23:00, awake at 12:00', () => {
+    expect(isWithinQuietHours(at23Bkk, 'Asia/Bangkok', '22:00:00', '07:00:00')).toBe(true);
+    expect(isWithinQuietHours(at12Bkk, 'Asia/Bangkok', '22:00:00', '07:00:00')).toBe(false);
+  });
+
+  it('same-day window: quiet inside, awake outside', () => {
+    expect(isWithinQuietHours(at12Bkk, 'Asia/Bangkok', '09:00:00', '17:00:00')).toBe(true);
+    expect(isWithinQuietHours(at23Bkk, 'Asia/Bangkok', '09:00:00', '17:00:00')).toBe(false);
+  });
+
+  it('empty window (start==end) is never quiet', () => {
+    expect(isWithinQuietHours(at23Bkk, 'Asia/Bangkok', '00:00:00', '00:00:00')).toBe(false);
+  });
+});
+
+describe('quiet-hours push suppression', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-01-01T16:00:00Z')); // 23:00 Bangkok
+    mockRepo.getUserQuietHours.mockResolvedValue({ start: '22:00:00', end: '07:00:00' });
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
+    mockRepo.isChannelEnabled.mockImplementation((_t: string, _u: string, _e: string, ch: string) =>
+      Promise.resolve(ch === 'IN_APP'),
+    );
+    mockRepo.findTemplate.mockResolvedValue({
+      template_id: 't1',
+      tenant_id: null,
+      event_type: 'x',
+      channel: 'IN_APP',
+      subject_template: 'S',
+      body_template: 'B',
+      is_active: true,
+    });
+    mockRepo.findDeviceTokens.mockResolvedValue([
+      { token_id: 'tok1', user_id: 'u1', push_token: 'ExponentPushToken[abc]', platform: 'IOS' },
+    ]);
+    mockRepo.markSent.mockResolvedValue(undefined);
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('suppresses push for a non-critical event during quiet hours (SSE still fires)', async () => {
+    mockRepo.createNotification.mockResolvedValue({
+      ...notifRow,
+      event_type: 'site.inspection.failed.v1',
+    });
+    await svc.handleEvent({
+      event_type: 'site.inspection.failed.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'a',
+      payload: {},
+    });
+    expect(mockPush.send).not.toHaveBeenCalled();
+    expect(mockSse.push).toHaveBeenCalled();
+    expect(mockRepo.markSent).toHaveBeenCalled();
+  });
+
+  it('still pushes a critical safety event during quiet hours', async () => {
+    mockRepo.createNotification.mockResolvedValue({
+      ...notifRow,
+      event_type: 'safety.incident.created.v1',
+    });
+    mockPush.send.mockResolvedValue(undefined);
+    await svc.handleEvent({
+      event_type: 'safety.incident.created.v1',
+      tenant_id: 'tenant-001',
+      actor_id: 'a',
+      payload: {},
+    });
+    expect(mockPush.send).toHaveBeenCalled();
+  });
+});
+
+// ── escalation delivery (§19.3) ───────────────────────────────────────────────
+
+describe('escalate', () => {
+  it('creates an IN_APP notice + SSE + email for each role user', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'pm1', email: 'pm@b.com' }]);
+    mockRepo.createNotification.mockResolvedValue({ ...notifRow, recipient_id: 'pm1' });
+    mockRepo.markSent.mockResolvedValue(undefined);
+    mockEmail.send.mockResolvedValue(undefined);
+
+    await svc.escalate('tenant-001', ['PROJECT_MANAGER'], 'Escalation', 'Body');
+
+    expect(mockRepo.findUsersByRole).toHaveBeenCalledWith('tenant-001', ['PROJECT_MANAGER']);
+    expect(mockSse.push).toHaveBeenCalledWith('pm1', expect.any(Object));
+    expect(mockRepo.markSent).toHaveBeenCalled();
+    expect(mockEmail.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'pm@b.com', subject: 'Escalation' }),
+    );
+  });
+
+  it('skips email when the user has no address', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'pm1', email: '' }]);
+    mockRepo.createNotification.mockResolvedValue({ ...notifRow, recipient_id: 'pm1' });
+    mockRepo.markSent.mockResolvedValue(undefined);
+
+    await svc.escalate('tenant-001', ['PROJECT_MANAGER'], 'Escalation', 'Body');
+    expect(mockEmail.send).not.toHaveBeenCalled();
+  });
+});
+
+// ── digest delivery (§19.3) ───────────────────────────────────────────────────
+
+describe('deliverDigest', () => {
+  it('emails role users who have an address', async () => {
+    mockRepo.findUsersByRole.mockResolvedValue([
+      { user_id: 'pm1', email: 'pm@b.com' },
+      { user_id: 'pm2', email: '' },
+    ]);
+    mockEmail.send.mockResolvedValue(undefined);
+
+    await svc.deliverDigest('tenant-001', ['PROJECT_MANAGER'], 'Daily site summary', 'Body');
+
+    expect(mockEmail.send).toHaveBeenCalledTimes(1);
+    expect(mockEmail.send).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'pm@b.com', subject: 'Daily site summary' }),
+    );
   });
 });

@@ -52,6 +52,8 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'site.issue.status_changed.v1': 'site.issue.status_changed.v1.avsc',
   'site.material.consumed.v1': 'site.material.consumed.v1.avsc',
   'site.conflict.flagged.v1': 'site.conflict.flagged.v1.avsc',
+  // Safety (Phase 6) — consumed by Notification Service for §19.3 escalation
+  'safety.incident.created.v1': 'safety.incident.created.v1.avsc',
   // Finance
   'finance.budget.created.v1': 'finance.budget.created.v1.avsc',
   'finance.budget.exceeded.v1': 'finance.budget.exceeded.v1.avsc',

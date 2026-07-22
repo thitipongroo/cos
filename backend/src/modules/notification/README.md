@@ -8,7 +8,9 @@ Centralised notification hub (Phase 20).
 All other services emit Kafka events; this module consumes them and delivers to the correct channels.
 No service sends notifications directly — all routing goes through here.
 
-**Status:** Module scaffolded. Full implementation in Phase 20.
+**Status:** Implemented (Phase 20). Multi-channel delivery (SSE in-app, Expo push, SendGrid email,
+LINE), Kafka consumer routing, templates, per-user preferences, quiet hours (§19.6), escalation
+timeouts (§19.3), and scheduled digests (§19.3). SMS is post-MVP (enum only, no adapter — §19.2).
 
 ## Channels
 

@@ -40,6 +40,24 @@ export interface PreferenceRow {
   event_type: string;
   channel: string;
   is_enabled: boolean;
+  quiet_hours_start: string;
+  quiet_hours_end: string;
+}
+
+/** Per-user quiet-hours window (§19.6). TIME columns come back as 'HH:MM:SS' strings. */
+export interface QuietHours {
+  start: string;
+  end: string;
+}
+
+/** A notification eligible for escalation (§19.3). */
+export interface EscalationCandidate {
+  notification_id: string;
+  tenant_id: string;
+  recipient_id: string;
+  event_type: string;
+  subject: string | null;
+  body: string;
 }
 
 export interface DeviceTokenRow {
@@ -298,6 +316,87 @@ export class NotificationRepository implements OnModuleDestroy {
         SELECT * FROM notifications.notification_device_tokens
         WHERE tenant_id = ${tenantId}::uuid
           AND user_id   = ${userId}::uuid
+      `,
+    );
+  }
+
+  // ── quiet hours + tenant timezone (§19.6) ──────────────────────────────────
+
+  /** Tenant IANA timezone (platform.tenants) — resolves "now" for quiet-hour comparison. */
+  async getTenantTimezone(tenantId: string): Promise<string> {
+    const rows = await this.platformPrisma.$transaction(
+      (tx) =>
+        tx.$queryRaw<[{ timezone: string }?]>`
+        SELECT timezone FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid LIMIT 1
+      `,
+    );
+    return rows[0]?.timezone ?? 'Asia/Bangkok';
+  }
+
+  /**
+   * The user's quiet-hours window (§19.6). Stored per preference row; a user's window is uniform
+   * across rows, so the first row wins. Falls back to the spec default 22:00–07:00 when unset.
+   */
+  async getUserQuietHours(tenantId: string, userId: string): Promise<QuietHours> {
+    const rows = await this.db.run(
+      tenantId,
+      (tx) =>
+        tx.$queryRaw<Array<{ quiet_hours_start: string; quiet_hours_end: string }>>`
+        SELECT quiet_hours_start, quiet_hours_end
+        FROM notifications.notification_preferences
+        WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+        LIMIT 1
+      `,
+    );
+    const row = rows[0];
+    return {
+      start: row?.quiet_hours_start ?? '22:00:00',
+      end: row?.quiet_hours_end ?? '07:00:00',
+    };
+  }
+
+  // ── escalation (§19.3) — cross-tenant sweep on the shared DB ────────────────
+
+  /**
+   * Unacknowledged immediate notifications of `eventType` older than `olderThanSeconds` that have not
+   * yet been escalated. Cross-tenant sweep (system job) on the shared DB — covers SMB/mid-market; the
+   * `notifications` schema has no RLS (tenant_id is a plain column filter).
+   */
+  async findEscalationCandidates(
+    eventType: string,
+    olderThanSeconds: number,
+  ): Promise<EscalationCandidate[]> {
+    return this.platformPrisma.$transaction(
+      (tx) =>
+        tx.$queryRaw<EscalationCandidate[]>`
+        SELECT notification_id, tenant_id, recipient_id, event_type, subject, body
+        FROM notifications.notifications
+        WHERE event_type   = ${eventType}
+          AND status       = 'SENT'
+          AND read_at      IS NULL
+          AND escalated_at IS NULL
+          AND created_at   < now() - (${olderThanSeconds}::int * interval '1 second')
+      `,
+    );
+  }
+
+  /** All active tenants + their IANA timezone — the digest scheduler gates on tenant-local time. */
+  async listActiveTenants(): Promise<Array<{ tenant_id: string; timezone: string }>> {
+    return this.platformPrisma.$transaction(
+      (tx) =>
+        tx.$queryRaw<Array<{ tenant_id: string; timezone: string }>>`
+        SELECT tenant_id, timezone FROM platform.tenants WHERE is_active = true
+      `,
+    );
+  }
+
+  /** Idempotency marker — the escalation sweep escalates a notification exactly once. */
+  async markEscalated(notificationId: string): Promise<void> {
+    await this.platformPrisma.$transaction(
+      (tx) =>
+        tx.$executeRaw`
+        UPDATE notifications.notifications SET escalated_at = now()
+        WHERE notification_id = ${notificationId}::uuid
       `,
     );
   }

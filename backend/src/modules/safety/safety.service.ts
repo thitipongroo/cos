@@ -13,8 +13,10 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
+import { randomUUID } from 'crypto';
+import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
-import { clsUserId } from '../../shared/context/cls-context';
+import { clsUserId, clsTenantId } from '../../shared/context/cls-context';
 import { SafetyRepository } from './safety.repository';
 import type { IncidentRow, PermitRow, ComplianceSummaryRow } from './safety.repository';
 import type { CreateIncidentDto, CreatePermitDto } from './dto/safety.dto';
@@ -32,10 +34,19 @@ export class SafetyService {
     return (this.request as { userId?: string }).userId || clsUserId();
   }
 
+  private get tenantId(): string {
+    return (this.request as { tenantId?: string }).tenantId || clsTenantId();
+  }
+
+  private readonly correlationId: string;
+  private readonly kafka = new KafkaProducer();
+
   constructor(
     private readonly repo: SafetyRepository,
-    @Inject(REQUEST) private readonly request: { userId?: string },
-  ) {}
+    @Inject(REQUEST) private readonly request: { userId?: string; correlationId?: string },
+  ) {
+    this.correlationId = request.correlationId ?? randomUUID();
+  }
 
   // ── Incidents ───────────────────────────────────────────────────────────────
 
@@ -50,7 +61,44 @@ export class SafetyService {
       longitude: dto.longitude ?? null,
     });
     logger.info({ incident_id: incident.incident_id, severity: dto.severity }, 'incident.reported');
+
+    // Emit safety.incident.created.v1 (§19.3) — the Notification Service consumes this to notify the
+    // Safety Officer + PM and to arm the 30-minute unacknowledged-escalation timer.
+    await this.emitEvent('safety.incident.created.v1', {
+      incident_id: incident.incident_id,
+      project_id: incident.project_id,
+      incident_type: dto.incident_type,
+      severity: dto.severity,
+      task_id: dto.task_id ?? null,
+      reported_by: this.userId,
+    });
     return incident;
+  }
+
+  private async emitEvent(eventType: string, payload: Record<string, unknown>): Promise<void> {
+    try {
+      await this.kafka.connect();
+      await this.kafka.publish({
+        event_type: eventType,
+        event_version: '1.0',
+        tenant_id: this.tenantId,
+        actor_id: this.userId,
+        occurred_at: new Date().toISOString(),
+        correlation_id: this.correlationId,
+        payload,
+      });
+    } catch (err) {
+      /* istanbul ignore next -- String(err) fallback is defensive */
+      const errMsg = err instanceof Error ? err.message : String(err);
+      logger.warn({
+        event: 'kafka.publish.failed',
+        event_type: eventType,
+        tenant_id: this.tenantId,
+        error: errMsg,
+      });
+    } finally {
+      await this.kafka.disconnect().catch(/* istanbul ignore next */ () => undefined);
+    }
   }
 
   async listIncidents(params: {

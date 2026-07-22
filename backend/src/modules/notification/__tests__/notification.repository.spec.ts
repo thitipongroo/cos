@@ -19,6 +19,7 @@ const mockRun = jest.fn();
 const mockDb = { run: mockRun };
 
 const mockPlatformQueryRaw = jest.fn();
+const mockPlatformExecuteRaw = jest.fn();
 const mockPrismaTransaction = jest.fn();
 
 let repo: NotificationRepository;
@@ -28,8 +29,9 @@ beforeEach(() => {
   // Re-establish db.run implementation after resetAllMocks clears it
   mockRun.mockImplementation((_tenantId: string, fn: (tx: typeof mockTx) => unknown) => fn(mockTx));
   // Re-establish platformPrisma.$transaction after resetAllMocks clears it
-  mockPrismaTransaction.mockImplementation((fn: (tx: { $queryRaw: jest.Mock }) => unknown) =>
-    fn({ $queryRaw: mockPlatformQueryRaw }),
+  mockPrismaTransaction.mockImplementation(
+    (fn: (tx: { $queryRaw: jest.Mock; $executeRaw: jest.Mock }) => unknown) =>
+      fn({ $queryRaw: mockPlatformQueryRaw, $executeRaw: mockPlatformExecuteRaw }),
   );
   (PrismaClient as jest.Mock).mockImplementation(() => ({
     $transaction: mockPrismaTransaction,
@@ -375,5 +377,63 @@ describe('NotificationRepository onModuleDestroy', () => {
       (repo as unknown as { platformPrisma: { $disconnect: jest.Mock } }).platformPrisma
         .$disconnect,
     ).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── quiet hours + timezone (§19.6) ────────────────────────────────────────────
+
+describe('getTenantTimezone', () => {
+  it('returns the tenant timezone', async () => {
+    mockPlatformQueryRaw.mockResolvedValueOnce([{ timezone: 'Asia/Singapore' }]);
+    expect(await repo.getTenantTimezone('tenant-001')).toBe('Asia/Singapore');
+  });
+  it('falls back to Asia/Bangkok when the tenant row is missing', async () => {
+    mockPlatformQueryRaw.mockResolvedValueOnce([]);
+    expect(await repo.getTenantTimezone('tenant-001')).toBe('Asia/Bangkok');
+  });
+});
+
+describe('getUserQuietHours', () => {
+  it('returns the stored window', async () => {
+    mockQueryRaw.mockResolvedValueOnce([
+      { quiet_hours_start: '23:00:00', quiet_hours_end: '06:00:00' },
+    ]);
+    expect(await repo.getUserQuietHours('tenant-001', 'user-001')).toEqual({
+      start: '23:00:00',
+      end: '06:00:00',
+    });
+  });
+  it('defaults to 22:00–07:00 when no preference row exists', async () => {
+    mockQueryRaw.mockResolvedValueOnce([]);
+    expect(await repo.getUserQuietHours('tenant-001', 'user-001')).toEqual({
+      start: '22:00:00',
+      end: '07:00:00',
+    });
+  });
+});
+
+// ── escalation + digest sweeps (§19.3) ────────────────────────────────────────
+
+describe('findEscalationCandidates', () => {
+  it('returns unacknowledged candidates', async () => {
+    const rows = [{ notification_id: 'n1', tenant_id: 't1' }];
+    mockPlatformQueryRaw.mockResolvedValueOnce(rows);
+    expect(await repo.findEscalationCandidates('safety.incident.created.v1', 1800)).toEqual(rows);
+  });
+});
+
+describe('markEscalated', () => {
+  it('stamps escalated_at via the platform executeRaw', async () => {
+    mockPlatformExecuteRaw.mockResolvedValueOnce(1);
+    await repo.markEscalated('n1');
+    expect(mockPlatformExecuteRaw).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('listActiveTenants', () => {
+  it('returns active tenants with their timezone', async () => {
+    const rows = [{ tenant_id: 't1', timezone: 'Asia/Bangkok' }];
+    mockPlatformQueryRaw.mockResolvedValueOnce(rows);
+    expect(await repo.listActiveTenants()).toEqual(rows);
   });
 });

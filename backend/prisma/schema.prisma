@@ -66,6 +66,9 @@ model Tenant {
   // Data-residency region (§5.6): Thai -> ap-southeast-7, EU -> eu-west-1, default -> ap-southeast-1.
   // Assigned at provisioning, immutable after first data write; consumers resolve it via tenant_id.
   dataRegion     String   @default("ap-southeast-1") @map("data_region") @db.VarChar(20)
+  // IANA timezone (Phase 20 §19.3/§19.6): notification quiet hours + digest schedules evaluate in this
+  // zone. Defaulted from data_region at provisioning; a tenant may override it independently (PO 2026-07-23).
+  timezone       String   @default("Asia/Bangkok") @map("timezone") @db.VarChar(40)
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
