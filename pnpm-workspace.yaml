@@ -29,6 +29,10 @@ overrides:
   'tmp@<0.2.6': '^0.2.7'
   '@remix-run/server-runtime@<2.17.5': '2.17.5'
   'turbo-stream@<3.0.0': '^3.2.0'
+  # Newly-disclosed transitive advisories — patched versions exist, no major upgrade needed:
+  '@opentelemetry/propagator-jaeger@<2.9.0': '^2.9.0' # GHSA-45rx-2jwx-cxfr — DoS via malformed Jaeger header (via @opentelemetry/sdk-node)
+  'fast-uri@>=3.0.0 <3.1.4': '^3.1.4' # GHSA-4c8g-83qw-93j6 + GHSA-v2hh-gcrm-f6hx — host confusion (via ajv / @confluentinc/schemaregistry)
+  'sharp@<0.35.0': '^0.35.0' # GHSA-f88m-g3jw-g9cj — inherited libvips CVEs (via next / @serwist/turbopack)
 
 auditConfig:
   ignoreCves:

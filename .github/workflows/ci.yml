@@ -551,8 +551,12 @@ jobs:
           pip install pip-audit
           status=0
           for req in services/*/requirements.txt; do
-            echo "::group::pip-audit — $req"
-            pip-audit -r "$req" || status=1
+            svc="$(dirname "$req")"
+            echo "::group::pip-audit — $svc"
+            # Run from the service dir so a local path dep (../../libs/python/cosmetrics, ADR-069)
+            # resolves — pip-audit rejects it as an "Invalid requirement" from the repo root, and
+            # once resolved it is skipped gracefully (not on PyPI). Real PyPI deps are still audited.
+            ( cd "$svc" && pip-audit -r requirements.txt ) || status=1
             echo "::endgroup::"
           done
           exit $status
