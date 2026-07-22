@@ -2,7 +2,7 @@
 //
 // Topics are created explicitly (producers run with allowAutoTopicCreation: false). The full
 // canonical event catalogue is materialised per tenant as `{tenant_id}.{event_type}` topics,
-// plus one `{tenant_id}.{domain}.dlq` per domain. Platform events share a single
+// plus one `{tenant_id}.dlq` per tenant (not per domain, §7.3). Platform events share a single
 // `platform.events` topic (and `platform.dlq`). createTopics is idempotent — topics that
 // already exist are skipped, so provisioning can run on every tenant onboarding safely.
 

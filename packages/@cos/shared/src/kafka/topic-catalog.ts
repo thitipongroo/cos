@@ -6,7 +6,7 @@
 //   - CloudEvents `type` / event_type : {domain}.{entity}.{action}.{version}      (no tenant prefix)
 //   - Kafka topic name (per-tenant)    : {tenant_id}.{domain}.{entity}.{action}.{version}
 //   - Platform events ({platform.*})   : shared `platform.events` topic, NOT tenant-scoped (§15.7)
-//   - DLQ topic                        : {tenant_id}.{domain}.dlq  (tenant-scoped, §7.3)
+//   - DLQ topic                        : {tenant_id}.dlq  (ONE per tenant, not per domain, §7.3)
 //   - Schema Registry subject          : canonical event_type (RecordNameStrategy) — one schema
 //                                        per event, shared across all tenants (§32.4 resolution).
 
