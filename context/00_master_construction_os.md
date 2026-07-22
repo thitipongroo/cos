@@ -5043,7 +5043,13 @@ Feature Store (Feast):
     procurement_features: avg_delivery_delay, rfq_to_po_days, overdue_invoice_count
     site_features:        manpower_7d_avg, inspection_fail_rate, report_submission_rate
   Online store: Redis (for real-time inference)
-  Offline store: ClickHouse (for training)
+  Offline store: PostgreSQL — Feast `postgres` contrib store (feast_offline schema on the existing RDS).
+    NOT ClickHouse: both ClickHouse and PostgreSQL are Feast community/contrib offline stores (neither is
+    a stable core store — core = BigQuery/Snowflake/Redshift/Dask), and ClickHouse's own guidance is that
+    a Feast "literal store" underutilises ClickHouse (it recommends Featureform for a virtual store).
+    PostgreSQL reuses the existing RDS and is the more widely-used contrib path. Training features that
+    originate in ClickHouse analytics (cost_history etc.) are bridged into feast_offline by the
+    dag-update-feature-store Airflow DAG. (Decision 2026-07-23 — see feature_store.yaml.)
 
 Airflow DAGs (generate stubs for all):
   dag-export-training-data:    daily export from PostgreSQL/ClickHouse → MinIO (parquet)
