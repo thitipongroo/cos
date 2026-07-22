@@ -191,6 +191,18 @@ describe('SyncService', () => {
         BadRequestException,
       );
     });
+
+    // Financial records are ONLINE-REQUIRED (spec §17.4) — never offline-writable. The push switch
+    // has no case for them, so they fall through to the default rejection: financial data can never
+    // enter the sync queue and thus is never auto-merged, auto-overwritten, or silently discarded.
+    it('rejects financial entity_types — online-required, never offline-synced (§17.4)', async () => {
+      const { svc } = harness();
+      for (const financial of ['payment', 'invoice', 'budget', 'po']) {
+        await expect(svc.push(push({ entity_type: financial }))).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      }
+    });
   });
 
   describe('delta', () => {

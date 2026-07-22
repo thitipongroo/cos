@@ -2412,19 +2412,17 @@ Offline Conflict Resolution Strategy (authoritative):
     Implementation: compare client progress_percent vs server progress_percent; apply max(client, server)
     Conflict flag: none — Max-wins resolves silently (no human review required)
 
-  Financial entities (BOQ line items, payment approvals, budget entries, invoice records):
-    Strategy: NO_AUTO_RESOLUTION — financial data must never be auto-merged or auto-overwritten
-    Rationale: financial integrity requires human review of all concurrent-edit conflicts
-    Implementation:
-      - Offline WRITE operations on financial entities are held in sync_queue with status PENDING
-      - Before applying: server checks for concurrent server-side modification since client's last sync
-      - If conflict detected → set status CONFLICT_FLAGGED; push notification to FINANCE
-        or PROJECT_MANAGER for manual resolution
-      - NEVER auto-merge, auto-overwrite, or silently discard financial data
-      - Conflict must be resolved manually by FINANCE or PROJECT_MANAGER before payload
-        is applied to server state
-    Entities covered: BOQ line items, payment_approvals, budget_entries, invoice_records
-    Note: this rule was added to QM-9 (context.md v3.1.0 GAP-2) — authoritative source is here
+  Financial entities — ONLINE-REQUIRED, not offline-writable (spec §17.4):
+    Entities: POs, vendor invoices / AR / AP, payments, budget-line mutations.
+    (BOQ line items are read-only cache per §17.4 — also never offline-mutated.)
+    Rule: financial records require server-side validation before any mutation (dual-write
+          risk); the mobile client never queues them offline (§17.4 online-required scope).
+    Enforcement: the sync push endpoint (POST /sync/push, POST /sync/resolve) has NO case for a
+          financial entity_type — any such write falls through to the default and is rejected
+          with BadRequestException. Financial data therefore never enters the sync queue and is
+          never auto-merged, auto-overwritten, or silently discarded.
+    Source of truth: spec §17.4 (Entity Offline Scope). The §17.5 conflict table has no financial
+          row because financial entities are never synced offline.
 
   Sync Protocol:
     Client sends: { entity_type, entity_id, client_version, payload, client_submitted_at }
