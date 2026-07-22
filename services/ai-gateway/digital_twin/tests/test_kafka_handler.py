@@ -155,13 +155,17 @@ class TestConsumerConfiguration:
         assert deserialize(json.dumps({"เครื่องจักร": 1}).encode("utf-8")) == {"เครื่องจักร": 1}
 
     @pytest.mark.asyncio
-    async def test_producer_serializer_emits_json_utf8(self, fake_kafka, handled):
+    async def test_producer_sends_raw_bytes_no_serializer(self, fake_kafka, handled):
         _, producer_cls = fake_kafka
 
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
-        serialize = producer_cls.instances[0].kwargs["value_serializer"]
-        assert json.loads(serialize({"a": 1}).decode("utf-8")) == {"a": 1}
+        # Envelopes are encoded via the injectable seam and sent as raw bytes — no value_serializer.
+        assert "value_serializer" not in producer_cls.instances[0].kwargs
+
+    def test_default_json_encode_produces_a_json_envelope(self):
+        raw = kafka_handler._json_encode("twin.state.updated.v1", {"event_type": "twin.state.updated.v1"})
+        assert json.loads(raw.decode("utf-8"))["event_type"] == "twin.state.updated.v1"
 
 
 class TestLifecycle:
@@ -186,7 +190,8 @@ class TestTelemetryProcessing:
 
         sent = producer_cls.instances[0].sent
         assert len(sent) == 2
-        assert {topic for topic, _ in sent} == {kafka_handler._TWIN_STATE_TOPIC}
+        expected_topic = "22222222-2222-2222-2222-222222222222.twin.state.updated.v1"
+        assert {topic for topic, _ in sent} == {expected_topic}
 
     @pytest.mark.asyncio
     async def test_event_payload_carries_the_twin_state_fields(self, fake_kafka, handled):
@@ -196,10 +201,14 @@ class TestTelemetryProcessing:
         await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
 
         _, value = producer_cls.instances[0].sent[0]
-        assert value["entity_id"] == "11111111-1111-1111-1111-111111111111"
-        assert value["tenant_id"] == "22222222-2222-2222-2222-222222222222"
-        assert value["confidence"] == 0.95
-        assert value["attributes"] == {"fuel_level": 42}
+        envelope = json.loads(value.decode("utf-8"))
+        assert envelope["event_type"] == "twin.state.updated.v1"
+        payload = envelope["payload"]
+        assert payload["entity_id"] == "11111111-1111-1111-1111-111111111111"
+        assert payload["tenant_id"] == "22222222-2222-2222-2222-222222222222"
+        assert payload["confidence"] == 0.95
+        # Notification event, not a data carrier — attribute detail stays in twin_states (§Phase 24).
+        assert "attributes" not in payload
 
     @pytest.mark.asyncio
     async def test_passes_db_pool_and_redis_through_to_the_sync_service(self, fake_kafka, handled):
@@ -272,9 +281,10 @@ class TestPublishDivergenceDetected:
         await kafka_handler.publish_divergence_detected(event, producer=producer)
 
         topic, value = producer.sent[0]
-        assert topic == kafka_handler._TWIN_DIVERGENCE_TOPIC
-        assert value["risk_level"] == "HIGH"
-        assert value["divergence_count"] == 4
+        assert topic == "22222222-2222-2222-2222-222222222222.twin.divergence.detected.v1"
+        payload = json.loads(value.decode("utf-8"))["payload"]
+        assert payload["risk_level"] == "HIGH"
+        assert payload["divergence_count"] == 4
 
     @pytest.mark.asyncio
     async def test_payload_is_json_serialisable(self):
@@ -291,4 +301,5 @@ class TestPublishDivergenceDetected:
 
         await kafka_handler.publish_divergence_detected(event, producer=producer)
 
-        json.dumps(producer.sent[0][1])  # raises TypeError if a raw datetime survived
+        # value is already JSON-encoded bytes; decoding must yield a clean envelope (no datetime/UUID).
+        json.loads(producer.sent[0][1].decode("utf-8"))

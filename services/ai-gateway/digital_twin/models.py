@@ -79,8 +79,9 @@ class DivergenceReport(BaseModel):
 
 
 class TwinStateEvent(BaseModel):
-    """Emitted on Kafka topic twin.state.updated."""
-    event_type: str = "twin.state.updated"
+    """Twin state fields (event_type twin.state.updated.v1). The kafka_handler emits the CloudEvents
+    envelope + avsc payload directly; `attributes` are persisted to twin_states, not on the wire."""
+    event_type: str = "twin.state.updated.v1"
     entity_id: UUID
     project_id: UUID
     tenant_id: UUID
@@ -91,8 +92,8 @@ class TwinStateEvent(BaseModel):
 
 
 class TwinDivergenceEvent(BaseModel):
-    """Emitted on Kafka topic twin.divergence.detected."""
-    event_type: str = "twin.divergence.detected"
+    """Emitted on Kafka event twin.divergence.detected.v1 (topic {tenant_id}.twin.divergence.detected.v1)."""
+    event_type: str = "twin.divergence.detected.v1"
     project_id: UUID
     tenant_id: UUID
     generated_at: datetime
