@@ -1,7 +1,7 @@
 ---
-title: "ADR-005 — ClickHouse for OLAP Analytics"
+title: 'ADR-005 — ClickHouse for OLAP Analytics'
 status: Accepted
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 ---
@@ -14,7 +14,8 @@ authors:
 
 ## Context
 
-Construction OS generates high-volume operational data that needs executive-level analytics (dashboard SLA: P95 < 3s for 100 concurrent users):
+Construction OS generates high-volume operational data that needs executive-level
+analytics (dashboard SLA: P95 < 3s for 100 concurrent users):
 
 - Project cost variance trends
 - Procurement spend analysis
@@ -55,14 +56,30 @@ Options considered:
 
 ---
 
+## Implementation notes
+
+Consolidated from the former ADR-019 (ClickHouse as analytics and time-series store,
+2026-06-09) when the duplicate was merged on 2026-07-23:
+
+- **Deployment:** Docker container / Kubernetes — config in `infrastructure/clickhouse/`
+- **Ingestion:** Kafka → ClickHouse Kafka Engine → Materialized Views pipeline
+- **Retention:** 90 days hot (ClickHouse local) + 365 days cold (S3 / MinIO via ClickHouse
+  S3 integration)
+- **Access:** read-only HTTP endpoint consumed by `backend/src/modules/analytics/` and Grafana
+- **Also serves time-series / API metering:** per-tenant request counts and latency
+  percentiles (p50/p95/p99), AI token usage — p99 queries execute in <100ms at projected volume
+- **Multi-tenancy:** `tenant_id` column + application-level filtering (analytics is read-only)
+
+---
+
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| --- | --- |
+| Option                             | Reason Rejected                                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | PostgreSQL with materialized views | Operational DB doubles as analytics DB — resource contention; P95 < 3s target unachievable at scale with aggregation queries |
-| BigQuery | Outside AWS stack; per-TB pricing unpredictable at scale; data residency compliance concerns |
-| Snowflake | Not in AWS stack; per-query billing; data residency issues |
-| AWS Redshift | Higher infrastructure cost; lower query performance than ClickHouse for construction data aggregation patterns |
+| BigQuery                           | Outside AWS stack; per-TB pricing unpredictable at scale; data residency compliance concerns                                 |
+| Snowflake                          | Not in AWS stack; per-query billing; data residency issues                                                                   |
+| AWS Redshift                       | Higher infrastructure cost; lower query performance than ClickHouse for construction data aggregation patterns               |
 
 ---
 

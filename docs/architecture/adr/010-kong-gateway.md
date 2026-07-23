@@ -1,7 +1,7 @@
 ---
-title: "ADR-010 — Kong Gateway for API Rate Limiting and Request Management"
+title: 'ADR-010 — Kong Gateway for API Rate Limiting and Request Management'
 status: Accepted
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 ---
@@ -40,9 +40,10 @@ conflicted with spec §4.8 and created two problems:
 We will use **Kong Gateway (open-source, Kubernetes-native)** as the primary API gateway
 for all rate limiting, JWT validation, tenant routing, and API analytics.
 
-Kong is deployed as a Kubernetes service in front of the NestJS monolith.
-NestJS retains its own guards for defense-in-depth (authorization, business rule checks)
-but Kong is the authoritative enforcement layer for rate limiting.
+Kong is deployed as a Kubernetes service in front of the NestJS monolith
+(configuration lives in `infrastructure/k8s/kong/`). NestJS retains its own guards
+for defense-in-depth (authorization, business rule checks) but Kong is the
+authoritative enforcement layer for rate limiting.
 
 EP-API-001 (APIMonetizationProvider) is updated: Kong is now the infrastructure;
 EP-API-001 covers advanced metering and billing integrations only (usage plans, quota
@@ -91,11 +92,11 @@ management for external API customers).
 
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| ------ | --------------- |
+| Option                 | Reason Rejected                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------- |
 | NestJS ThrottlerModule | Application-layer only; conflicted with spec §4.8; no JWT validation or routing |
-| AWS API Gateway | Cloud-vendor lock-in; not Kubernetes-native; higher cost at scale |
-| NGINX rate limiting | No plugin ecosystem; no API analytics; limited tenant-aware configuration |
+| AWS API Gateway        | Cloud-vendor lock-in; not Kubernetes-native; higher cost at scale               |
+| NGINX rate limiting    | No plugin ecosystem; no API analytics; limited tenant-aware configuration       |
 
 ---
 
@@ -107,5 +108,5 @@ management for external API customers).
 
 ---
 
-*Template source: `docs/01-architecture/adr/000-template.md`*
-*Format: Based on Michael Nygard's ADR format*
+_Template source: `docs/01-architecture/adr/000-template.md`_
+_Format: Based on Michael Nygard's ADR format_

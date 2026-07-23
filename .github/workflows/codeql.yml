@@ -2,7 +2,7 @@ name: CodeQL
 
 # SAST — semantic/dataflow analysis (QM-4; spec §30.10 SAST, §30.12 CI gates).
 #
-# Replaces the SonarQube gate that QM-4 previously specified (ADR-070). Two reasons:
+# Replaces the SonarQube gate that QM-4 previously specified (ADR-011). Two reasons:
 #   1. Cost — CodeQL is free for public repositories, which this repo is. SonarQube Community Build
 #      is also free but cannot do what QM-4 asks: it has no branch or pull-request analysis, so a
 #      "0 new bugs / 0 new vulnerabilities on new code, before merge" gate is impossible on it.
@@ -12,7 +12,7 @@ name: CodeQL
 #
 # ⚠️ This workflow's zero cost depends on the repository staying PUBLIC. On a private repository
 # CodeQL requires a GitHub Code Security licence, billed per active committer. If visibility ever
-# changes, this gate has a price attached — see ADR-070.
+# changes, this gate has a price attached — see ADR-011.
 #
 # Air-gapped note: CodeQL runs on GitHub and cannot scan in a disconnected environment. Semgrep CE
 # (.github/workflows/semgrep.yml) is the offline-capable half of the pair and covers that case.

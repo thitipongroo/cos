@@ -54,6 +54,25 @@ Define a single `CosRole` enum in `@cos/types` containing all twelve roles:
 The enum is the single source of truth. `CosRoleEnum` in the PostgreSQL schema
 (`platform."CosRoleEnum"`) mirrors this list exactly.
 
+### Role identifier naming — spec §6.2 alignment
+
+The system identifiers use SCREAMING_SNAKE_CASE matching the spec §6.2 role names
+exactly (no abbreviations, no extra suffixes). Earlier drafts used mismatched
+identifiers, corrected as follows (AWAITING_DECISION C-03, resolved 2026-05-27):
+
+| Old identifier    | Current identifier    | Spec §6.2 name      |
+| ----------------- | --------------------- | ------------------- |
+| `SITE_MANAGER`    | `SITE_ENGINEER`       | Site Engineer       |
+| `PROC_OFFICER`    | `PROCUREMENT_OFFICER` | Procurement Officer |
+| `FINANCE_OFFICER` | `FINANCE`             | Finance             |
+| `SUPER_ADMIN`     | `SYSTEM_ADMIN`        | System Admin        |
+
+Rationale: spec §6.2 is the source of truth; identifiers in code, JWT claims,
+Keycloak roles, and API guards must match it to avoid documentation–code divergence.
+"Site Engineer" (not "Site Manager") is the spec role — a Site Manager is a
+different seniority in construction context — and the abbreviated/suffixed forms
+(`PROC_`, `_OFFICER`, `SUPER_`) have no spec backing.
+
 ## Rationale
 
 **Single enum vs. separate enums:** A single enum is simpler to validate in DTOs

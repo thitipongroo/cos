@@ -94,7 +94,7 @@ class PgVectorBackend:
         # reader used the bare name; nothing in the application, the DSN, or any ALTER ROLE sets
         # search_path, so the query resolved against the default path and would not find the table
         # at all. The unit tests mock the connection pool, so nothing caught it.
-        # (QM-4 / spec §11.0 rule 2 — the same defect class as the outbox INSERT, ADR-070.)
+        # (QM-4 / spec §11.0 rule 2 — the same defect class as the outbox INSERT, ADR-011.)
         table: str = "ai.document_embeddings",
         id_column: str = "id",
         text_column: str = "chunk_text",

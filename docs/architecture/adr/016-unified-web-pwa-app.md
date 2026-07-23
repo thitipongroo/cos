@@ -14,9 +14,13 @@ The original platform design specified two separate Next.js apps targeting table
 - `apps/web/` — online only; no offline support
 - `apps/pwa/` — offline only; prompts user to switch to `apps/web/` when connectivity restored
 
-Both apps targeted the same users (all roles), the same devices (tablet/laptop browser), and would have shared nearly all UI pages, components, API calls, state management, and design tokens. The only difference was offline capability.
+Both apps targeted the same users (all roles), the same devices (tablet/laptop browser),
+and would have shared nearly all UI pages, components, API calls, state management, and
+design tokens. The only difference was offline capability.
 
-This separation created significant implementation duplication and a poor UX: users had to maintain two separate apps and manually switch between them depending on connectivity state.
+This separation created significant implementation duplication and a poor UX: users had
+to maintain two separate apps and manually switch between them depending on connectivity
+state.
 
 ## Decision
 
@@ -32,7 +36,8 @@ The unified app:
 
 ## Rationale
 
-PWAs are designed to work in both online and offline states — this is the standard pattern. A single app with `next-pwa` provides:
+PWAs are designed to work in both online and offline states — this is the standard
+pattern. A single app with `next-pwa` provides:
 
 - Service Worker intercepts requests when offline and serves from cache / IndexedDB
 - Normal API fetch path when online — no extra overhead

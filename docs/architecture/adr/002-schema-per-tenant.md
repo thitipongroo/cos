@@ -1,7 +1,7 @@
 ---
-title: "ADR-002 — Tiered Tenant Isolation (Schema-per-tenant for Mid-market)"
+title: 'ADR-002 — Tiered Tenant Isolation (Schema-per-tenant for Mid-market)'
 status: Accepted
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 ---
@@ -29,11 +29,11 @@ Multi-tenancy requires strong data isolation. Three standard approaches:
 
 **Three-tier isolation model, mapped to deployment tier:**
 
-| Deployment Tier | Isolation Model | Details |
-| --- | --- | --- |
-| Shared SaaS — SMB | **Shared DB + `tenant_id`** | All tenant tables include `tenant_id` column; queries include `WHERE tenant_id = $tenant_id`; enforced at service layer |
-| Shared SaaS — Mid-market | **Schema-per-tenant** | Each tenant gets an isolated `tenant_<id>` schema; `search_path` set per request by `RequestContextMiddleware` |
-| Dedicated Tenant / Enterprise / On-premise | **Dedicated DB** | Entire database per tenant; Prisma connection string switched per tenant |
+| Deployment Tier                            | Isolation Model             | Details                                                                                                                 |
+| ------------------------------------------ | --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Shared SaaS — SMB                          | **Shared DB + `tenant_id`** | All tenant tables include `tenant_id` column; queries include `WHERE tenant_id = $tenant_id`; enforced at service layer |
+| Shared SaaS — Mid-market                   | **Schema-per-tenant**       | Each tenant gets an isolated `tenant_<id>` schema; `search_path` set per request by `RequestContextMiddleware`          |
+| Dedicated Tenant / Enterprise / On-premise | **Dedicated DB**            | Entire database per tenant; Prisma connection string switched per tenant                                                |
 
 **MVP default is SMB tier (Shared DB + `tenant_id`).** Schema-per-tenant applies to mid-market tenants only.
 
@@ -56,7 +56,8 @@ The tradeoff — migrations must run per-tenant schema — is managed by a tenan
 ## Consequences
 
 - **SMB path:** all tables include `tenant_id` column; service layer enforces isolation; no schema switching
-- **Mid-market path:** `RequestContextMiddleware` runs `SET LOCAL search_path TO tenant_<id>, public` per request; migrations run per-schema
+- **Mid-market path:** `RequestContextMiddleware` runs
+  `SET LOCAL search_path TO tenant_<id>, public` per request; migrations run per-schema
 - **Enterprise path:** Prisma `DATABASE_URL` is tenant-specific; completely separate database
 - New tenant provisioning flow is documented in `07-multi-tenant-architecture §7.6`
 
@@ -70,11 +71,11 @@ where `tenant_id` is required on all tables. That statement has been removed to 
 
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| --- | --- |
-| Schema-per-tenant universally (original ADR) | Over-engineered for SMB — per-tenant schema migration on each new signup is unsustainable; no natural step up to dedicated DB for enterprise |
-| Shared DB + `tenant_id` for all tiers | Insufficient isolation for mid-market and enterprise compliance requirements; complex queries risk `tenant_id` filter omission in shared schema |
-| Dedicated DB for all tiers | Unsustainable operational cost at SMB scale; each new SMB tenant would require a separate database instance |
+| Option                                       | Reason Rejected                                                                                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Schema-per-tenant universally (original ADR) | Over-engineered for SMB — per-tenant schema migration on each new signup is unsustainable; no natural step up to dedicated DB for enterprise    |
+| Shared DB + `tenant_id` for all tiers        | Insufficient isolation for mid-market and enterprise compliance requirements; complex queries risk `tenant_id` filter omission in shared schema |
+| Dedicated DB for all tiers                   | Unsustainable operational cost at SMB scale; each new SMB tenant would require a separate database instance                                     |
 
 ---
 
@@ -82,4 +83,5 @@ where `tenant_id` is required on all tables. That statement has been removed to 
 
 - `docs/00-specifications/07-multi-tenant-architecture.md` §7.1 — canonical tiered isolation model (authoritative spec)
 - `docs/00-specifications/08-enterprise-deployment.md` §8.1 — deployment tier definitions
-- `docs/01-architecture/adr/008-prisma-as-orm.md` — `SET LOCAL search_path` implementation for schema-per-tenant
+- `docs/architecture/adr/018-prisma-as-orm.md` — Prisma as ORM (uses `SET LOCAL` inside `$transaction`)
+- `docs/architecture/adr/008-shared-db-tenant-id-rls.md` — shared-DB + tenant_id + RLS (the SMB-tier default)

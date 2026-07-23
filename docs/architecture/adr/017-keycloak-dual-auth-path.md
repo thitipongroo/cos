@@ -11,10 +11,13 @@
 
 Construction OS serves two distinct user populations with fundamentally different authentication needs:
 
-1. **Field workers** (SITE_WORKER, SITE_ENGINEER) — low-tech fluency, work on mobile in the field, cannot reliably remember passwords, may share devices across shifts.
-2. **Office users** (PROJECT_MANAGER, FINANCE, PROCUREMENT_OFFICER, TENANT_ADMIN, SYSTEM_ADMIN) — desk-based, email-centric, expect standard corporate login.
+1. **Field workers** (SITE_WORKER, SITE_ENGINEER) — low-tech fluency, work on mobile in
+   the field, cannot reliably remember passwords, may share devices across shifts.
+2. **Office users** (PROJECT_MANAGER, FINANCE, PROCUREMENT_OFFICER, TENANT_ADMIN,
+   SYSTEM_ADMIN) — desk-based, email-centric, expect standard corporate login.
 
-A single authentication mechanism would either force field workers to manage passwords (adoption risk) or deprive office users of SSO and MFA controls (security risk).
+A single authentication mechanism would either force field workers to manage passwords
+(adoption risk) or deprive office users of SSO and MFA controls (security risk).
 
 ---
 
@@ -44,7 +47,9 @@ Both paths produce identical RS256 JWT claims consumed by Kong and NestJS RolesG
 ## Rationale
 
 **Why not Keycloak extension for OTP?**
-Keycloak custom authenticator SPI requires Java expertise, adds upgrade risk, and is harder to test. A NestJS module in TypeScript is testable at 100% coverage and replaceable without touching Keycloak.
+Keycloak custom authenticator SPI requires Java expertise, adds upgrade risk, and is
+harder to test. A NestJS module in TypeScript is testable at 100% coverage and replaceable
+without touching Keycloak.
 
 **Alternatives rejected:**
 

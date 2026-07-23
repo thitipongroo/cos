@@ -1,4 +1,4 @@
-# ADR-070: CodeQL + Semgrep CE + jscpd replace SonarQube for SAST and code quality
+# ADR-011: CodeQL + Semgrep CE + jscpd replace SonarQube for SAST and code quality
 
 **Date:** 2026-07-21
 **Status:** Accepted

@@ -1,7 +1,7 @@
 ---
-title: "ADR-001 — Modular Monolith Architecture"
+title: 'ADR-001 — Modular Monolith Architecture'
 status: Accepted
-last_updated: "2026-01-15"
+last_updated: '2026-01-15'
 authors:
   - thitipongroo
 ---
@@ -14,7 +14,9 @@ authors:
 
 ## Context
 
-Construction OS needs to serve multiple construction workflows (projects, procurement, finance, site operations, equipment, workforce) with shared auth, tenant context, and event bus. The team is small and moving fast toward MVP.
+Construction OS needs to serve multiple construction workflows (projects, procurement,
+finance, site operations, equipment, workforce) with shared auth, tenant context, and
+event bus. The team is small and moving fast toward MVP.
 
 Two options were considered:
 
@@ -30,7 +32,8 @@ Two options were considered:
 
 ## Rationale
 
-- Small team cannot sustain the operational overhead of 10+ services (service mesh, separate CI, separate DB schemas, distributed tracing of inter-service calls)
+- Small team cannot sustain the operational overhead of 10+ services (service mesh,
+  separate CI, separate DB schemas, distributed tracing of inter-service calls)
 - Module boundaries are enforced by NestJS DI — no direct cross-module DB queries
 - Kafka is deployed as shared infrastructure but used as an internal event bus, not a microservices boundary
 - AI services (Python) and Go workers are always separate — different language runtimes, cannot be merged into Node.js
@@ -39,7 +42,8 @@ Two options were considered:
 
 - Single deployable unit for all NestJS modules — simpler CI, simpler local dev
 - Kafka events between modules are async, not blocking
-- When scaling pressure emerges on a specific module, extraction is possible without rewriting (module boundaries are already clean)
+- When scaling pressure emerges on a specific module, extraction is possible without
+  rewriting (module boundaries are already clean)
 
 ## Exceptions (always separate)
 
@@ -51,10 +55,10 @@ Two options were considered:
 
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| --- | --- |
-| Microservices from day 1 | Operational overhead (service mesh, distributed CI, cross-service tracing) unsustainable for a small team moving toward MVP; premature decomposition before team ownership boundaries are established |
-| Single monolith (no module boundaries) | No enforced module separation — cross-module DB queries become undetectable; migration to services later would require significant refactoring |
+| Option                                 | Reason Rejected                                                                                                                                                                                       |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Microservices from day 1               | Operational overhead (service mesh, distributed CI, cross-service tracing) unsustainable for a small team moving toward MVP; premature decomposition before team ownership boundaries are established |
+| Single monolith (no module boundaries) | No enforced module separation — cross-module DB queries become undetectable; migration to services later would require significant refactoring                                                        |
 
 ---
 
@@ -66,5 +70,5 @@ Two options were considered:
 
 ---
 
-*Template source: `docs/01-architecture/adr/000-template.md`*
-*Format: Based on Michael Nygard's ADR format*
+_Template source: `docs/01-architecture/adr/000-template.md`_
+_Format: Based on Michael Nygard's ADR format_

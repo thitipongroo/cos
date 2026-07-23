@@ -9,9 +9,14 @@
 
 ## Context
 
-Prisma ORM calls against PostgreSQL can fail transiently due to write conflicts (deadlocks), connection timeouts, or brief unavailability during failover. Without a retry layer, these errors surface directly to API callers as 500 errors, even though a simple retry would succeed.
+Prisma ORM calls against PostgreSQL can fail transiently due to write conflicts
+(deadlocks), connection timeouts, or brief unavailability during failover. Without a
+retry layer, these errors surface directly to API callers as 500 errors, even though a
+simple retry would succeed.
 
-The `@cos/database` package is the shared Prisma utility layer used by all NestJS modules. A centralized retry helper here ensures consistent retry behavior across the entire monolith without each module implementing its own retry logic.
+The `@cos/database` package is the shared Prisma utility layer used by all NestJS
+modules. A centralized retry helper here ensures consistent retry behavior across the
+entire monolith without each module implementing its own retry logic.
 
 The original `@cos/database` spec reference "(see ADR-008)" was incorrect — ADR-008 covers tenant isolation,
 not retry helpers. Retry helpers are a separate concern documented here in ADR-015.
@@ -40,13 +45,19 @@ export async function withRetry<T>(
 ## Rationale
 
 **Why exponential backoff with jitter?**
-Thundering herd: if many requests hit a deadlock simultaneously and all retry at the same interval, they collide again. Full jitter spreads retries across a time window, reducing collision probability.
+Thundering herd: if many requests hit a deadlock simultaneously and all retry at the same
+interval, they collide again. Full jitter spreads retries across a time window, reducing
+collision probability.
 
 **Why max 3 retries?**
-3 retries covers the overwhelming majority of transient failures. Beyond 3 retries, the error is likely structural (e.g. persistent overload), and retrying further delays the error response to the caller without improving outcomes.
+3 retries covers the overwhelming majority of transient failures. Beyond 3 retries, the
+error is likely structural (e.g. persistent overload), and retrying further delays the
+error response to the caller without improving outcomes.
 
 **Why centralize in @cos/database?**
-All NestJS modules use `TenantPrismaService` from this package. Centralizing retry logic here means a single implementation, single test suite, and consistent behaviour with no risk of modules implementing subtly different retry strategies.
+All NestJS modules use `TenantPrismaService` from this package. Centralizing retry logic
+here means a single implementation, single test suite, and consistent behaviour with no
+risk of modules implementing subtly different retry strategies.
 
 ## Consequences
 

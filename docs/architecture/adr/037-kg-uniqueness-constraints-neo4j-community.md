@@ -17,7 +17,7 @@ The original implementation (`internal/graph/constraints.go`) used `REQUIRE (...
 **`NODE KEY` constraints require Neo4j Enterprise Edition.** The local/dev and SMB stack runs
 `neo4j:5.19-community` (`docker-compose.yml`), so the worker crashed on startup:
 
-```
+```text
 Neo.DatabaseError.Schema.ConstraintCreationFailed:
 Node Key constraint requires Neo4j Enterprise Edition.
 ```

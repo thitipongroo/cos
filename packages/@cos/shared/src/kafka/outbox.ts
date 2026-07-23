@@ -57,7 +57,7 @@ export class OutboxPublisher {
     // table: nothing in the application sets search_path, and `public.outbox_events` was moved to
     // the `projects` schema by 20260605000004_db_refactor_global_schemas. The failure mode is the
     // bad kind — events accepted into a table the poller never reads, so they are never published
-    // and nothing errors. (QM-4 / spec §11.0 rule 2; found by the Semgrep SQL audit, ADR-070.)
+    // and nothing errors. (QM-4 / spec §11.0 rule 2; found by the Semgrep SQL audit, ADR-011.)
     await (tx as unknown as OutboxPrismaClient).$executeRaw`
       INSERT INTO platform.outbox_events (id, event_type, payload, published)
       VALUES (${eventId}::uuid, ${envelope.event_type}, ${JSON.stringify(envelope)}::jsonb, false)

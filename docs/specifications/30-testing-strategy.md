@@ -331,7 +331,7 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
 - **npm audit / pip-audit / govulncheck / Trivy** — dependency and container scanning (SCA). Note
   these scan _dependencies_, not first-party code; CodeQL and Semgrep are what read code we wrote.
 
-> Replaced SonarQube (ADR-070). SonarQube **Community** Build has no branch or pull-request
+> Replaced SonarQube (ADR-011). SonarQube **Community** Build has no branch or pull-request
 > analysis, so the "before merge, on new code" gate this section requires is not achievable on it,
 > and it has no taint analysis; both start at Developer Edition (paid).
 >

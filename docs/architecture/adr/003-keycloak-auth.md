@@ -1,7 +1,7 @@
 ---
-title: "ADR-003 — Keycloak for Identity and Authorization"
+title: 'ADR-003 — Keycloak for Identity and Authorization'
 status: Accepted
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 ---
@@ -37,12 +37,12 @@ Options considered:
 
 **Keycloak 24.x** — self-hosted, with a tiered realm model:
 
-| Deployment Tier | Keycloak Realm Strategy |
-| --- | --- |
-| Shared SaaS — SMB | Shared realm; tenants isolated by `tenant_id` claim in JWT |
-| Shared SaaS — Mid-market | Shared realm; tenants isolated by `tenant_id` claim in JWT |
-| Dedicated Tenant / Enterprise | Dedicated Keycloak realm per tenant |
-| Hybrid / On-premise | Dedicated Keycloak realm per tenant |
+| Deployment Tier               | Keycloak Realm Strategy                                    |
+| ----------------------------- | ---------------------------------------------------------- |
+| Shared SaaS — SMB             | Shared realm; tenants isolated by `tenant_id` claim in JWT |
+| Shared SaaS — Mid-market      | Shared realm; tenants isolated by `tenant_id` claim in JWT |
+| Dedicated Tenant / Enterprise | Dedicated Keycloak realm per tenant                        |
+| Hybrid / On-premise           | Dedicated Keycloak realm per tenant                        |
 
 ## Canonical Role Set (as of 2026-05-27)
 
@@ -50,17 +50,17 @@ Defined authoritatively in `06-rbac-permission-matrix §6.2` and the `UserRole` 
 `docs/api/auth.openapi.yaml`. Role identifier `SUPER_ADMIN` was renamed to `SYSTEM_ADMIN`
 per ADR-014 (2026-05-27):
 
-| Role (display) | Enum value |
-| --- | --- |
-| System Admin (platform operator only) | `SYSTEM_ADMIN` |
-| Tenant Admin | `TENANT_ADMIN` |
-| Executive | `EXECUTIVE` |
-| Project Manager | `PROJECT_MANAGER` |
-| Site Engineer | `SITE_ENGINEER` |
-| Procurement Officer | `PROCUREMENT_OFFICER` |
-| Finance | `FINANCE` |
-| Safety Officer | `SAFETY_OFFICER` |
-| CRM / Sales Manager | `CRM_SALES_MANAGER` |
+| Role (display)                        | Enum value            |
+| ------------------------------------- | --------------------- |
+| System Admin (platform operator only) | `SYSTEM_ADMIN`        |
+| Tenant Admin                          | `TENANT_ADMIN`        |
+| Executive                             | `EXECUTIVE`           |
+| Project Manager                       | `PROJECT_MANAGER`     |
+| Site Engineer                         | `SITE_ENGINEER`       |
+| Procurement Officer                   | `PROCUREMENT_OFFICER` |
+| Finance                               | `FINANCE`             |
+| Safety Officer                        | `SAFETY_OFFICER`      |
+| CRM / Sales Manager                   | `CRM_SALES_MANAGER`   |
 
 ## Rationale
 
@@ -91,11 +91,11 @@ per ADR-014 (2026-05-27):
 
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| --- | --- |
+| Option                    | Reason Rejected                                                                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Custom JWT auth in NestJS | Custom crypto is a security risk; no built-in user management, realm isolation, or SAML/OIDC federation for enterprise SSO |
-| Auth0 / Okta (managed) | Per-user pricing unsustainable at SaaS scale; vendor lock-in; tiered realm model harder to implement cleanly |
-| Supabase Auth | Not enterprise-grade; no SAML/OIDC identity provider federation required by EP-AUTH-003 |
+| Auth0 / Okta (managed)    | Per-user pricing unsustainable at SaaS scale; vendor lock-in; tiered realm model harder to implement cleanly               |
+| Supabase Auth             | Not enterprise-grade; no SAML/OIDC identity provider federation required by EP-AUTH-003                                    |
 
 ---
 

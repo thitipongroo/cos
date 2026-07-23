@@ -1,6 +1,6 @@
 name: Semgrep
 
-# SAST — pattern-based analysis, and the offline-capable half of the pair with CodeQL (ADR-070).
+# SAST — pattern-based analysis, and the offline-capable half of the pair with CodeQL (ADR-011).
 #
 # Two jobs with different purposes:
 #   - project-rules: OUR rules (.semgrep/), encoding the context.md §Never prohibitions that
@@ -12,7 +12,7 @@ name: Semgrep
 #
 # Unlike CodeQL, Semgrep runs fully offline (`semgrep --config .semgrep/` needs no network once the
 # container is present), which is what makes it usable for on-premise/air-gapped customers where
-# CodeQL cannot run at all — see ADR-070.
+# CodeQL cannot run at all — see ADR-011.
 #
 # Licence: the Semgrep engine is LGPL-2.1. Semgrep-maintained registry rules are under the
 # proprietary Semgrep Rules License (Dec 2024), which permits internal business use — scanning your

@@ -1,7 +1,7 @@
 ---
-title: "ADR-007 — k6 for Load Testing"
+title: 'ADR-007 — k6 for Load Testing'
 status: Accepted
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 ---
@@ -44,14 +44,14 @@ Options considered:
 
 ## Load test inventory
 
-| File | Scenario | VUs | Duration | P95 target |
-| ------ | --------- | ----- | --------- | ----------- |
-| `analytics-sla.js` | Dashboard SLA | 100 | 5 min | < 3000ms |
-| `file-upload-sla.js` | File uploads | 20 | 5 min | < 10000ms |
-| `api-throughput-sla.js` | API throughput | 200 | 10 min | < 1000ms |
-| `ai-report-sla.js` | AI reports | 10 | 5 min | < 15000ms |
-| `smoke-test.js` | Pre-load health | 1 | 1 iter | N/A |
-| `morning-peak.js` | Peak load simulation | 50 ramp | 7 min | < 2000ms |
+| File                    | Scenario             | VUs     | Duration | P95 target |
+| ----------------------- | -------------------- | ------- | -------- | ---------- |
+| `analytics-sla.js`      | Dashboard SLA        | 100     | 5 min    | < 3000ms   |
+| `file-upload-sla.js`    | File uploads         | 20      | 5 min    | < 10000ms  |
+| `api-throughput-sla.js` | API throughput       | 200     | 10 min   | < 1000ms   |
+| `ai-report-sla.js`      | AI reports           | 10      | 5 min    | < 15000ms  |
+| `smoke-test.js`         | Pre-load health      | 1       | 1 iter   | N/A        |
+| `morning-peak.js`       | Peak load simulation | 50 ramp | 7 min    | < 2000ms   |
 
 ## Consequences
 
@@ -61,13 +61,27 @@ Options considered:
 
 ---
 
+## Implementation notes
+
+Consolidated from the former ADR-020 (k6 as load testing and SLA validation tool,
+2026-06-09) when the duplicate was merged on 2026-07-23:
+
+- **Output:** k6 → InfluxDB → Grafana dashboard for SLA trend analysis
+  (`infrastructure/monitoring/grafana/dashboards/adoption-gates.json`)
+- **Scope:** k6 validates API-level SLAs only; frontend/browser performance is measured
+  separately (Lighthouse CI) — k6 does not simulate browser behavior
+- **Scenarios** live under `k6/`; CI runs them against staging and blocks the promotion
+  gate on any `thresholds` breach
+
+---
+
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| --- | --- |
-| Apache JMeter | XML-based configuration; JVM startup overhead; weaker Grafana/Prometheus native integration |
-| Locust (Python) | GIL limits single-process concurrency under sustained load; no declarative `thresholds` block for CI pass/fail |
-| Artillery (Node.js) | Less mature Grafana integration; smaller ecosystem; no first-class GitHub Actions native action |
+| Option              | Reason Rejected                                                                                                |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Apache JMeter       | XML-based configuration; JVM startup overhead; weaker Grafana/Prometheus native integration                    |
+| Locust (Python)     | GIL limits single-process concurrency under sustained load; no declarative `thresholds` block for CI pass/fail |
+| Artillery (Node.js) | Less mature Grafana integration; smaller ecosystem; no first-class GitHub Actions native action                |
 
 ---
 

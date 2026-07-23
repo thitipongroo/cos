@@ -9,7 +9,7 @@
 
 ## Context
 
-The duplication gate introduced by ADR-070 measured the repository at **2.80%** duplicated lines,
+The duplication gate introduced by ADR-011 measured the repository at **2.80%** duplicated lines,
 and named where it came from. Two clusters accounted for nearly all of it.
 
 **Go — 23.01% of all Go lines.** `analytics-worker` and `kg-ingestion-worker` each carried their own
@@ -165,5 +165,5 @@ how a cluster goes dark.
 ## References
 
 - ADR-039 (RKE2 `profile:cis`, air-gapped constraint), ADR-055 (apps/web unit-test lane),
-  ADR-070 (duplication gate)
+  ADR-011 (duplication gate)
 - Spec §7.3 (tenant guard), §20.7.2 / §20.7.4 (the two finance routes), §30.12 (CI gate table)

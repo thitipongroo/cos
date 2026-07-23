@@ -1,7 +1,7 @@
 ---
-title: "ADR-012 — ArgoCD for GitOps Continuous Delivery"
+title: 'ADR-012 — ArgoCD for GitOps Continuous Delivery'
 status: Accepted
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 ---
@@ -44,10 +44,10 @@ We will use **ArgoCD** for all CD operations per spec §4.9.
 
 Responsibility split:
 
-| Tool | Responsibility |
-| ---- | -------------- |
+| Tool               | Responsibility                                                                          |
+| ------------------ | --------------------------------------------------------------------------------------- |
 | **GitHub Actions** | CI only: lint → type-check → unit tests → Docker build → Trivy scan → push image to ECR |
-| **ArgoCD** | CD only: detect new image tag in GitOps repo → sync to EKS (staging / production) |
+| **ArgoCD**         | CD only: detect new image tag in GitOps repo → sync to EKS (staging / production)       |
 
 GitHub Actions no longer runs `kubectl` or `helm upgrade`. After pushing an image to
 ECR, it commits the new image tag to a GitOps repository. ArgoCD detects the change
@@ -108,11 +108,11 @@ ArgoCD deployment:
 
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| ------ | --------------- |
-| GitHub Actions + kubectl | No self-healing; no drift detection; conflicts with spec §4.9 |
-| Flux CD | Also GitOps-native, but ArgoCD is explicitly named in spec §4.9 |
-| Helm only (no GitOps) | No drift detection; rollback requires pipeline re-run |
+| Option                   | Reason Rejected                                                 |
+| ------------------------ | --------------------------------------------------------------- |
+| GitHub Actions + kubectl | No self-healing; no drift detection; conflicts with spec §4.9   |
+| Flux CD                  | Also GitOps-native, but ArgoCD is explicitly named in spec §4.9 |
+| Helm only (no GitOps)    | No drift detection; rollback requires pipeline re-run           |
 
 ---
 
@@ -124,5 +124,5 @@ ArgoCD deployment:
 
 ---
 
-*Template source: `docs/01-architecture/adr/000-template.md`*
-*Format: Based on Michael Nygard's ADR format*
+_Template source: `docs/01-architecture/adr/000-template.md`_
+_Format: Based on Michael Nygard's ADR format_

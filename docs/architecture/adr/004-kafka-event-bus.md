@@ -1,7 +1,7 @@
 ---
-title: "ADR-004 — Apache Kafka as Internal Event Bus"
+title: 'ADR-004 — Apache Kafka as Internal Event Bus'
 status: Accepted
-last_updated: "2026-05-29"
+last_updated: '2026-05-29'
 authors:
   - thitipongroo
 ---
@@ -58,16 +58,17 @@ Options considered:
 
 ## Alternatives Considered
 
-| Option | Reason Rejected |
-| --- | --- |
+| Option                           | Reason Rejected                                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | NestJS EventEmitter (in-process) | No persistence — event replay for Knowledge Graph rebuild and analytics backfill impossible; lost on pod restart |
-| PostgreSQL LISTEN/NOTIFY | Not distributed; cannot fan-out to multiple independent consumers; no schema registry for BACKWARD compatibility |
-| Redis Streams | Weaker durability guarantees; no Confluent Schema Registry integration; no native MSK managed offering |
-| RabbitMQ | Message log is ephemeral by default; no offset-based replay; no native schema enforcement |
+| PostgreSQL LISTEN/NOTIFY         | Not distributed; cannot fan-out to multiple independent consumers; no schema registry for BACKWARD compatibility |
+| Redis Streams                    | Weaker durability guarantees; no Confluent Schema Registry integration; no native MSK managed offering           |
+| RabbitMQ                         | Message log is ephemeral by default; no offset-based replay; no native schema enforcement                        |
 
 ---
 
 ## References
 
 - `docs/00-specifications/15-event-driven-workflow.md` §15.6 — topic naming convention and CloudEvents v1.0 envelope
-- `docs/00-specifications/32-implementation-specifications.md` §32.4 — event contracts, schema registry rules, and Avro schema catalogue
+- `docs/00-specifications/32-implementation-specifications.md` §32.4 — event contracts,
+  schema registry rules, and Avro schema catalogue
