@@ -1,15 +1,14 @@
-<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<!DOCTYPE html><html class="dark" lang="en"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
-<title>SiteOps Dashboard</title>
+<title>SiteOps Dashboard - Dark</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <style>
         body {
             font-family: 'Inter Tight', sans-serif;
-            background-color: #031427; /* Fallback for surface */
+            background-color: #020617; /* --cos-dark-bg */
             -webkit-tap-highlight-color: transparent;
         }
         .blueprint-bg {
@@ -21,6 +20,13 @@
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 <script id="tailwind-config">
       tailwind.config = {
@@ -28,285 +34,208 @@
         theme: {
           extend: {
             "colors": {
-                    "tertiary": "#c1c5dc",
-                    "dark-surface": "#0F172A",
-                    "surface-dim": "#031427",
-                    "cos-white": "#F8FAFC",
-                    "on-surface-variant": "#c3c6d7",
-                    "cos-navy": "#0B1020",
-                    "mobile-danger": "#FF3B30",
-                    "mobile-primary": "#0066FF",
-                    "on-secondary-container": "#00424e",
-                    "inverse-primary": "#0053db",
-                    "on-error-container": "#ffdad6",
-                    "on-tertiary-fixed-variant": "#414658",
-                    "background": "#031427",
-                    "on-surface": "#d3e4fe",
-                    "mobile-success": "#00C853",
-                    "inverse-surface": "#d3e4fe",
-                    "tertiary-fixed": "#dee1f9",
-                    "secondary-container": "#03b5d3",
-                    "primary-container": "#2563eb",
-                    "primary-fixed-dim": "#b4c5ff",
-                    "on-tertiary-container": "#eeefff",
-                    "surface-container-low": "#0b1c30",
-                    "sync-active": "#FFD60A",
-                    "sync-pending": "#94A3B8",
-                    "on-tertiary": "#2b3041",
-                    "primary": "#b4c5ff",
-                    "on-primary-container": "#eeefff",
-                    "secondary": "#4cd7f6",
-                    "secondary-fixed-dim": "#4cd7f6",
-                    "surface-container": "#102034",
-                    "on-background": "#d3e4fe",
-                    "surface-bright": "#2a3a4f",
-                    "on-primary-fixed": "#00174b",
-                    "error": "#ffb4ab",
-                    "cos-blue": "#2563EB",
-                    "tertiary-fixed-dim": "#c1c5dc",
-                    "on-tertiary-fixed": "#161b2b",
-                    "on-secondary-fixed-variant": "#004e5c",
-                    "on-secondary": "#003640",
-                    "secondary-fixed": "#acedff",
-                    "surface-tint": "#b4c5ff",
-                    "on-secondary-fixed": "#001f26",
-                    "error-container": "#93000a",
-                    "surface-container-high": "#1b2b3f",
-                    "inverse-on-surface": "#213145",
-                    "on-error": "#690005",
-                    "surface-variant": "#26364a",
-                    "tertiary-container": "#686c80",
-                    "surface-container-lowest": "#000f21",
-                    "cos-cyan": "#06B6D4",
-                    "outline-variant": "#434655",
-                    "surface-container-highest": "#26364a",
-                    "primary-fixed": "#dbe1ff",
-                    "outline": "#8d90a0",
-                    "on-primary-fixed-variant": "#003ea8",
-                    "dark-bg": "#020617",
-                    "on-primary": "#002a78",
-                    "surface": "#031427",
-                    "mobile-warning": "#FF9500"
+                    "mobile-primary": "#2563EB", /* Brand Blue */
+                    "ai-cyan": "#22D3EE",
+                    "surface-variant": "#1E293B",
+                    "surface-container-highest": "#0F172A",
+                    "primary": "#2563EB",
+                    "on-surface": "#F8FAFC", /* Primary Text */
+                    "on-surface-variant": "#94A3B8", /* Muted Text */
+                    "surface-container": "#0F172A", /* Card surfaces */
+                    "surface-container-low": "#020617",
+                    "surface-container-lowest": "#020617",
+                    "mobile-warning": "#F59E0B",
+                    "mobile-success": "#10B981",
+                    "mobile-danger": "#EF4444",
+                    "outline": "#1E293B",
+                    "outline-variant": "#334155",
+                    "background": "#020617"
             },
             "borderRadius": {
-                    "DEFAULT": "0.125rem",
-                    "lg": "0.25rem",
-                    "xl": "0.5rem",
-                    "full": "0.75rem"
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
             },
             "spacing": {
-                    "mobile-edge": "24px",
-                    "web-space-2": "8px",
-                    "web-space-1": "4px",
-                    "web-space-8": "32px",
-                    "web-base": "4px",
-                    "mobile-touch-target": "52px",
-                    "web-space-4": "16px",
-                    "web-space-3": "12px"
+                    "space-1": "4px",
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "space-2": "8px",
+                    "edge-mobile": "20px",
+                    "base": "4px"
             },
             "fontFamily": {
-                    "mobile-text-label": ["Inter Tight"],
-                    "mobile-text-hero": ["Inter Tight"],
-                    "web-text-h2": ["Inter Tight"],
-                    "web-text-small": ["Inter Tight"],
-                    "web-text-h1": ["Inter Tight"],
-                    "web-text-tiny": ["Inter Tight"],
-                    "web-text-body": ["Inter Tight"],
-                    "web-text-display": ["Inter Tight"],
-                    "mobile-text-body": ["Inter Tight"]
+                    "body-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"]
             },
             "fontSize": {
-                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
-                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
-                    "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                    "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
-                    "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
-                    "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
-                    "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                    "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    "label-mobile": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                    "body-mobile": ["15px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
             }
           },
         },
       }
     </script>
-<style>
-    body {
-      min-height: max(884px, 100dvh);
-    }
-  </style>
-  </head>
-<body class="bg-surface dark:bg-dark-bg text-on-surface dark:text-cos-white min-h-screen pb-24 blueprint-bg">
-<!-- TopAppBar Component -->
-<header class="fixed top-0 left-0 w-full z-50 bg-surface dark:bg-dark-surface flex justify-between items-center px-mobile-edge h-mobile-touch-target">
-<div class="flex items-center gap-3">
-
-<button class="text-on-surface-variant dark:text-on-surface-variant p-1 rounded-full transition-colors duration-200 flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVG-rP1aWvqIcP_yhvZEzZzNTyMx2VNxKChVdbLoldgMoSB-i59NKvcCK1cySyf-vw790lyWtg67MRsQfOrsuWP6-X8WAmjqzQEDyTtVifeWfyuR_1d_JYyJji1uhvXyUf_r-dz2fWzyMm_Ssjmus-CZauOBAxV5oP_b1UCPVySbZHyJvbKAiopr-A2UODzb7XV1E98enckehddT-DdhXyiGZeg1duTjWr4M0T3-MafCR6tShlowNGy2f-eUlMRbav6ErSg_3DZzM" alt="Construction OS Logo" class="w-8 h-8 object-contain"></button><span class="text-cos-blue font-bold tracking-tight text-[18px] uppercase">Construction OS</span>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-28 blueprint-bg">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#020617]/80 backdrop-blur-md border-b border-outline flex justify-between items-center px-edge-mobile h-16">
+<div class="flex items-center gap-2">
+<img alt="Logo" class="w-7 h-7 object-contain brightness-110" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVG-rP1aWvqIcP_yhvZEzZzNTyMx2VNxKChVdbLoldgMoSB-i59NKvcCK1cySyf-vw790lyWtg67MRsQfOrsuWP6-X8WAmjqzQEDyTtVifeWfyuR_1d_JYyJji1uhvXyUf_r-dz2fWzyMm_Ssjmus-CZauOBAxV5oP_b1UCPVySbZHyJvbKAiopr-A2UODzb7XV1E98enckehddT-DdhXyiGZeg1duTjWr4M0T3-MafCR6tShlowNGy2f-eUlMRbav6ErSg_3DZzM">
+<span class="text-mobile-primary font-bold tracking-tighter text-lg uppercase">Construction OS</span>
 </div>
-
-<div class="flex items-center gap-3"><button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-variant p-2 rounded-full transition-colors duration-200"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button><div class="w-8 h-8 rounded-full overflow-hidden border border-outline/30"><img class="w-full h-full object-cover" data-alt="A professional headshot of a site engineer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8_ZrD4dxKi4BkofcHHpoHlv2NsQSemxYpcShqO5sxAD8QccQEuuAtdc7vObjA_SqavgK2f6nHUpB5r_-s6sLC5z3Pi6Em1bS4w0EhIeRS5bDkGyOpQ1JebEGItQHJSwE4ixhqvPK4JW-5KUvVVSJKCYjgvADPfZmAfbo6DxPuQSSvGzaj7v4YLBovebYPQM7frEpzW8ex6-rBRMzI2sAF1yoB43A6zfATj5G9ie8ko0m549BXfqXnGS8B-0GTYDdRt6gLD1OHfXE"></div></div></header>
-<main class="pt-20 px-mobile-edge space-y-6">
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant relative p-2">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-mobile-danger rounded-full border-2 border-background"></span>
+</button>
+<div class="w-9 h-9 rounded-full overflow-hidden border border-outline">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8_ZrD4dxKi4BkofcHHpoHlv2NsQSemxYpcShqO5sxAD8QccQEuuAtdc7vObjA_SqavgK2f6nHUpB5r_-s6sLC5z3Pi6Em1bS4w0EhIeRS5bDkGyOpQ1JebEGItQHJSwE4ixhqvPK4JW-5KUvVVSJKCYjgvADPfZmAfbo6DxPuQSSvGzaj7v4YLBovebYPQM7frEpzW8ex6-rBRMzI2sAF1yoB43A6zfATj5G9ie8ko0m549BXfqXnGS8B-0GTYDdRt6gLD1OHfXE">
+</div>
+</div>
+</header>
+<main class="pt-20 px-edge-mobile space-y-6">
 <!-- Today's Progress Card -->
-<section class="bg-surface-container-low dark:bg-surface-container-lowest p-6 border border-outline/10 rounded-xl">
-<div class="flex justify-between items-end mb-4">
+<section class="bg-surface-container p-5 rounded-xl border border-outline shadow-xl">
+<div class="flex justify-between items-start mb-4">
 <div>
-<p class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-wider mb-1">Today's Progress</p>
-<h2 class="font-mobile-text-hero text-mobile-text-hero text-cos-blue dark:text-cos-cyan">65%</h2>
+<p class="text-label-mobile text-on-surface-variant uppercase tracking-wider mb-1">Today's Progress</p>
+<h2 class="text-hero-mobile text-mobile-primary">65%</h2>
 </div>
 <div class="text-right">
-<p class="font-mobile-text-label text-mobile-text-label text-mobile-success">Ahead of Schedule</p>
-<p class="text-[11px] text-on-surface-variant opacity-70">Phase 2: Structural</p>
+<span class="text-[10px] font-bold text-white bg-mobile-success px-2 py-1 rounded-full uppercase tracking-wider">Ahead of Schedule</span>
+<p class="text-[11px] mt-1.5 text-on-surface-variant font-medium">Phase 2: Structural</p>
 </div>
 </div>
-<div class="w-full h-3 bg-surface-container rounded-full overflow-hidden">
-<div class="h-full bg-cos-cyan transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(6,182,212,0.5)]" style="width: 65%;"></div>
+<div class="w-full h-3 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-mobile-primary transition-all duration-1000 ease-out shadow-[0_0_8px_rgba(37,99,235,0.4)]" id="progress-bar" style="width: 65%;"></div>
 </div>
-<div class="mt-4 flex justify-between text-[11px] font-medium text-on-surface-variant">
+<div class="mt-3 flex justify-between text-[11px] font-bold text-on-surface-variant/60 uppercase">
 <span class="">07:00 START</span>
-<span class="">18:00 EOD GOAL</span>
+<span class="">18:00 GOAL</span>
 </div>
 </section>
 <!-- Quick Action Grid -->
-<section class="grid grid-cols-2 gap-4">
-<button class="flex flex-col items-center justify-center bg-surface-container-high dark:bg-surface-container-high p-4 rounded-xl border border-outline/10 h-mobile-touch-target min-h-[100px] active:scale-95 transition-transform duration-150 group">
-<span class="material-symbols-outlined text-mobile-primary mb-2 group-hover:scale-110 transition-transform" data-icon="description">description</span>
-<span class="font-mobile-text-label text-mobile-text-label text-on-surface">Daily Report</span>
+<section class="grid grid-cols-2 gap-3">
+<button class="flex items-center justify-center gap-2 bg-surface-container px-3 min-h-[52px] rounded-xl border border-outline shadow-sm active:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-mobile-primary text-[20px]" data-icon="description">description</span>
+<span class="text-label-mobile text-on-surface">Daily Report</span>
 </button>
-<button class="flex flex-col items-center justify-center bg-surface-container-high dark:bg-surface-container-high p-4 rounded-xl border border-outline/10 h-mobile-touch-target min-h-[100px] active:scale-95 transition-transform duration-150 group">
-<span class="material-symbols-outlined text-mobile-primary mb-2 group-hover:scale-110 transition-transform" data-icon="photo_camera">photo_camera</span>
-<span class="font-mobile-text-label text-mobile-text-label text-on-surface">Capture Photo</span>
+<button class="flex items-center justify-center gap-2 bg-surface-container px-3 min-h-[52px] rounded-xl border border-outline shadow-sm active:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-mobile-primary text-[20px]" data-icon="photo_camera">photo_camera</span>
+<span class="text-label-mobile text-on-surface">Capture Photo</span>
 </button>
-<button class="flex flex-col items-center justify-center bg-surface-container-high dark:bg-surface-container-high p-4 rounded-xl border border-outline/10 h-mobile-touch-target min-h-[100px] active:scale-95 transition-transform duration-150 group">
-<span class="material-symbols-outlined text-mobile-warning mb-2 group-hover:scale-110 transition-transform" data-icon="security">security</span>
-<span class="font-mobile-text-label text-mobile-text-label text-on-surface">Safety Check</span>
+<button class="flex items-center justify-center gap-2 bg-surface-container px-3 min-h-[52px] rounded-xl border border-outline shadow-sm active:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-mobile-warning text-[20px]" data-icon="security">security</span>
+<span class="text-label-mobile text-on-surface">Safety Check</span>
 </button>
-<button class="flex flex-col items-center justify-center bg-surface-container-high dark:bg-surface-container-high p-4 rounded-xl border border-outline/10 h-mobile-touch-target min-h-[100px] active:scale-95 transition-transform duration-150 group">
-<span class="material-symbols-outlined text-cos-cyan mb-2 group-hover:scale-110 transition-transform" data-icon="inventory_2">inventory_2</span>
-<span class="font-mobile-text-label text-mobile-text-label text-on-surface">Material Req</span>
+<button class="flex items-center justify-center gap-2 bg-surface-container px-3 min-h-[52px] rounded-xl border border-outline shadow-sm active:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-mobile-primary text-[20px]" data-icon="inventory_2">inventory_2</span>
+<span class="text-label-mobile text-on-surface">Material Req</span>
 </button>
 </section>
-<!-- Active Issues List -->
+<!-- Active Issues -->
 <section class="space-y-3">
 <div class="flex justify-between items-center px-1">
-<h3 class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-on-surface-variant">Active Issues</h3>
+<h3 class="text-label-mobile uppercase tracking-widest text-on-surface-variant">Active Issues</h3>
 <span class="text-[11px] text-mobile-danger font-bold">2 CRITICAL</span>
 </div>
 <!-- Issue Card 1 -->
-<div class="flex items-center gap-4 bg-surface-container dark:bg-surface-container p-4 rounded-xl border-l-4 border-mobile-danger">
-<div class="flex-1">
-<div class="flex items-center gap-2 mb-1">
-<span class="bg-mobile-danger/20 text-mobile-danger text-[10px] font-bold px-2 py-0.5 rounded uppercase">Critical</span>
-<span class="text-[11px] text-on-surface-variant">LOG-442</span><span class="text-[10px] font-bold bg-[#06B6D4]/10 text-[#06B6D4] px-1.5 py-0.5 rounded border border-[#06B6D4]/20 ml-2 uppercase">CORE_AI</span>
+<div class="flex items-center gap-4 bg-surface-container p-4 rounded-xl border border-outline border-l-[4px] border-l-mobile-danger shadow-sm active:bg-surface-variant transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5 overflow-x-auto no-scrollbar">
+<span class="text-[11px] font-bold text-on-surface-variant whitespace-nowrap">LOG-442</span>
+<span class="text-[9px] font-black text-mobile-danger border border-mobile-danger/30 px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Critical</span>
+<span class="text-[10px] font-medium text-ai-cyan uppercase whitespace-nowrap">AI: 94% • BIM SYNC</span>
 </div>
-<p class="font-mobile-text-label text-mobile-text-label text-on-surface">Steel Beam Delay - Block B</p>
+<p class="text-body-mobile font-semibold text-on-surface truncate">Steel Beam Delay - Block B</p>
 </div>
-<button class="w-10 h-10 flex items-center justify-center bg-surface-variant rounded-full">
-<span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span>
-</button>
+<button class="text-on-surface-variant/40"><span class="material-symbols-outlined">chevron_right</span></button>
 </div>
 <!-- Issue Card 2 -->
-<div class="flex items-center gap-4 bg-surface-container dark:bg-surface-container p-4 rounded-xl border-l-4 border-mobile-warning">
-<div class="flex-1">
-<div class="flex items-center gap-2 mb-1">
-<span class="bg-mobile-warning/20 text-mobile-warning text-[10px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
-<span class="text-[11px] text-on-surface-variant">SAF-091</span><span class="text-[10px] font-bold bg-[#06B6D4]/10 text-[#06B6D4] px-1.5 py-0.5 rounded border border-[#06B6D4]/20 ml-2 uppercase">CORE_AI</span>
+<div class="flex items-center gap-4 bg-surface-container p-4 rounded-xl border border-outline border-l-[4px] border-l-mobile-warning shadow-sm active:bg-surface-variant transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5 overflow-x-auto no-scrollbar">
+<span class="text-[11px] font-bold text-on-surface-variant whitespace-nowrap">SAF-091</span>
+<span class="text-[9px] font-black text-mobile-warning border border-mobile-warning/30 px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Warning</span>
+<span class="text-[10px] font-medium text-ai-cyan uppercase whitespace-nowrap">AI: 87% • IOT SENSOR</span>
 </div>
-<p class="font-mobile-text-label text-mobile-text-label text-on-surface">Safety Barrier Missing - Lvl 4</p>
+<p class="text-body-mobile font-semibold text-on-surface truncate">Safety Barrier Missing - Lvl 4</p>
 </div>
-<button class="w-10 h-10 flex items-center justify-center bg-surface-variant rounded-full">
-<span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span>
-</button>
+<button class="text-on-surface-variant/40"><span class="material-symbols-outlined">chevron_right</span></button>
 </div>
 </section>
 <!-- Upcoming Tasks -->
 <section class="space-y-3">
 <div class="flex justify-between items-center px-1">
-<h3 class="font-mobile-text-label text-mobile-text-label uppercase tracking-widest text-on-surface-variant">Upcoming Tasks</h3>
+<h3 class="text-label-mobile uppercase tracking-widest text-on-surface-variant">Upcoming Tasks</h3>
 </div>
 <!-- Task Item 1 -->
-<div class="flex items-center justify-between bg-surface-container-low dark:bg-surface-container-lowest p-4 rounded-xl border border-outline/10">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded bg-cos-blue/10 flex items-center justify-center">
-<span class="material-symbols-outlined text-cos-blue" data-icon="construction">construction</span>
+<div class="flex items-center gap-4 bg-surface-container p-4 rounded-xl border border-outline border-l-[4px] border-l-mobile-primary shadow-sm active:bg-surface-variant transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5 overflow-x-auto no-scrollbar">
+<span class="text-[11px] font-bold text-on-surface-variant uppercase whitespace-nowrap">Phase 2.1</span>
+<span class="text-[9px] font-black text-mobile-primary border border-mobile-primary/30 px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Synced</span>
+<span class="text-[10px] font-medium text-mobile-success uppercase whitespace-nowrap">45% Progress</span>
 </div>
-<div>
-<p class="font-mobile-text-label text-mobile-text-label text-on-surface">Foundation Pouring</p>
-<p class="text-[11px] text-on-surface-variant">Starts 14:00 • Sector A</p>
+<p class="text-body-mobile font-semibold text-on-surface truncate">Rebar Reinforcement - North Wing</p>
 </div>
-</div>
-<span class="bg-primary-container text-on-primary-container text-[11px] font-bold px-3 py-1 rounded-full">In Progress</span>
+<button class="text-on-surface-variant/40"><span class="material-symbols-outlined">chevron_right</span></button>
 </div>
 <!-- Task Item 2 -->
-<div class="flex items-center justify-between bg-surface-container-low dark:bg-surface-container-lowest p-4 rounded-xl border border-outline/10">
-<div class="flex items-center gap-3">
-<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="architecture">architecture</span>
+<div class="flex items-center gap-4 bg-surface-container p-4 rounded-xl border border-outline border-l-[4px] border-l-on-surface-variant/20 shadow-sm active:bg-surface-variant transition-colors">
+<div class="flex-1 min-w-0">
+<div class="flex items-center gap-2 mb-1.5 overflow-x-auto no-scrollbar">
+<span class="text-[11px] font-bold text-on-surface-variant uppercase whitespace-nowrap">Phase 2.4</span>
+<span class="text-[9px] font-black text-on-surface-variant border border-outline px-1.5 py-0.5 rounded uppercase whitespace-nowrap">Pending</span>
+<span class="text-[10px] font-medium text-on-surface-variant/60 uppercase whitespace-nowrap">0% Progress</span>
 </div>
-<div>
-<p class="font-mobile-text-label text-mobile-text-label text-on-surface">Final Rebar Inspection</p>
-<p class="text-[11px] text-on-surface-variant">Tomorrow 08:30</p>
+<p class="text-body-mobile font-semibold text-on-surface truncate">Concrete Pouring - Section B</p>
 </div>
-</div>
-<span class="bg-surface-variant text-on-surface-variant text-[11px] font-bold px-3 py-1 rounded-full">To Do</span>
+<button class="text-on-surface-variant/40"><span class="material-symbols-outlined">chevron_right</span></button>
 </div>
 </section>
 </main>
-<!-- FAB for AI Interaction (Mission Critical Tool) -->
-<button class="fixed bottom-24 right-4 w-14 h-14 bg-mobile-primary text-white rounded-full shadow-lg shadow-mobile-primary/30 flex items-center justify-center active:scale-90 transition-transform z-50">
+<!-- FAB -->
+<button class="fixed bottom-24 right-5 w-14 h-14 bg-mobile-primary text-white rounded-full shadow-lg shadow-mobile-primary/20 flex items-center justify-center active:scale-95 transition-transform z-50">
 <span class="material-symbols-outlined" data-icon="mic" style="font-variation-settings: 'FILL' 1;">mic</span>
 </button>
-<!-- BottomNavBar Component -->
-<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface dark:bg-dark-surface flex justify-around items-center px-4 h-[72px]">
-<!-- Dashboard (Active) -->
-<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-xl px-4 py-1 scale-95 active:scale-90 transition-transform duration-150" href="#">
-<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-<span class="font-mobile-text-label text-mobile-text-label">Dashboard</span>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-[#020617]/95 backdrop-blur-lg border-t border-outline flex justify-around items-center px-2 min-h-[72px] h-20"><a class="flex flex-col items-center justify-center gap-1 text-mobile-primary min-h-[52px] min-w-[64px]" href="#">
+<div class="px-5 py-1.5 rounded-full mb-0.5 bg-mobile-primary"><span class="material-symbols-outlined text-white" data-icon="grid_view" style="font-variation-settings: &quot;FILL&quot; 1; opacity: 0;">grid_view</span></div>
+<span class="text-[11px] font-bold">Dashboard</span>
 </a>
-<!-- Issues -->
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant min-h-[52px] min-w-[64px]" href="#">
 <span class="material-symbols-outlined" data-icon="warning">warning</span>
-<span class="font-mobile-text-label text-mobile-text-label">Issues</span>
+<span class="text-[11px] font-medium">Issues</span>
 </a>
-<!-- Tasks -->
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant min-h-[52px] min-w-[64px]" href="#">
 <span class="material-symbols-outlined" data-icon="assignment">assignment</span>
-<span class="font-mobile-text-label text-mobile-text-label">Tasks</span>
+<span class="text-[11px] font-medium">Tasks</span>
 </a>
-<!-- Reports -->
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 scale-95 active:scale-90 transition-transform duration-150" href="#">
+<a class="flex flex-col items-center justify-center gap-1 text-on-surface-variant min-h-[52px] min-w-[64px]" href="#">
 <span class="material-symbols-outlined" data-icon="description">description</span>
-<span class="font-mobile-text-label text-mobile-text-label">Reports</span>
-</a>
-</nav>
+<span class="text-[11px] font-medium">Reports</span>
+</a></nav>
 <script>
-        // Micro-interaction for the progress bar on load
-        window.addEventListener('DOMContentLoaded', () => {
-            const progressBar = document.querySelector('.bg-cos-cyan');
-            progressBar.style.width = '0%';
-            setTimeout(() => {
-                progressBar.style.width = '65%';
-            }, 300);
+    window.addEventListener('DOMContentLoaded', () => {
+        const bar = document.getElementById('progress-bar');
+        bar.style.width = '0%';
+        setTimeout(() => {
+            bar.style.width = '65%';
+        }, 500);
+    });
+
+    document.querySelectorAll('button, a').forEach(el => {
+        el.addEventListener('click', () => {
+            if (navigator.vibrate) navigator.vibrate(10);
         });
-
-        // Add haptic-like feedback on button clicks
-        document.querySelectorAll('button, a').forEach(elem => {
-            elem.addEventListener('click', () => {
-                if (window.navigator.vibrate) {
-                    window.navigator.vibrate(5);
-                }
-            });
-        });
-    </script>
-
-
-
-
-
-
-
-
-
-
+    });
+</script>
 
 
 </body></html>
