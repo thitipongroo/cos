@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 <title>SiteOps Dashboard</title>
@@ -140,15 +140,11 @@
 <!-- TopAppBar Component -->
 <header class="fixed top-0 left-0 w-full z-50 bg-surface dark:bg-dark-surface flex justify-between items-center px-mobile-edge h-mobile-touch-target">
 <div class="flex items-center gap-3">
-<div class="w-8 h-8 rounded-full overflow-hidden border border-outline/30">
-<img class="w-full h-full object-cover" data-alt="A professional headshot of a site engineer wearing a white safety helmet, shot from a low angle with a high-tech industrial site blurred in the background. The lighting is crisp and cool-toned, echoing a mission-critical operating system aesthetic with deep blues and sharp contrasts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8_ZrD4dxKi4BkofcHHpoHlv2NsQSemxYpcShqO5sxAD8QccQEuuAtdc7vObjA_SqavgK2f6nHUpB5r_-s6sLC5z3Pi6Em1bS4w0EhIeRS5bDkGyOpQ1JebEGItQHJSwE4ixhqvPK4JW-5KUvVVSJKCYjgvADPfZmAfbo6DxPuQSSvGzaj7v4YLBovebYPQM7frEpzW8ex6-rBRMzI2sAF1yoB43A6zfATj5G9ie8ko0m549BXfqXnGS8B-0GTYDdRt6gLD1OHfXE">
+
+<button class="text-on-surface-variant dark:text-on-surface-variant p-1 rounded-full transition-colors duration-200 flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVG-rP1aWvqIcP_yhvZEzZzNTyMx2VNxKChVdbLoldgMoSB-i59NKvcCK1cySyf-vw790lyWtg67MRsQfOrsuWP6-X8WAmjqzQEDyTtVifeWfyuR_1d_JYyJji1uhvXyUf_r-dz2fWzyMm_Ssjmus-CZauOBAxV5oP_b1UCPVySbZHyJvbKAiopr-A2UODzb7XV1E98enckehddT-DdhXyiGZeg1duTjWr4M0T3-MafCR6tShlowNGy2f-eUlMRbav6ErSg_3DZzM" alt="Construction OS Logo" class="w-8 h-8 object-contain"></button><span class="text-cos-blue font-bold tracking-tight text-[18px] uppercase">Construction OS</span>
 </div>
-<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS4g5SxqpfGHNNJr7dtubnmBpDxISO9IEogzFPA96isZvePcjhGueueklYVvCnhczaQtKbUa04edfSEDTUW0jPsjn928LvkhnJ1fh84j-dnyIJy9e6W6Uh6QS98igtE8q1yFIrzOYO1Tw5rqHDJ687xSQzMh-WykYEiwQN3Lr0HHYJs4rTQ7FsbmX77-TA55VyANDvjTkU-u-V2LeQz6EqjTCgsBO8GsRbKKbfc9tiOdU7dcxGRd0je_lm-BrZCSNECRyZRUhdW28" alt="Construction OS Logo" class="h-8 w-auto object-contain">
-</div>
-<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-variant p-2 rounded-full transition-colors duration-200">
-<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-</button>
-</header>
+
+<div class="flex items-center gap-3"><button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-variant p-2 rounded-full transition-colors duration-200"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button><div class="w-8 h-8 rounded-full overflow-hidden border border-outline/30"><img class="w-full h-full object-cover" data-alt="A professional headshot of a site engineer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8_ZrD4dxKi4BkofcHHpoHlv2NsQSemxYpcShqO5sxAD8QccQEuuAtdc7vObjA_SqavgK2f6nHUpB5r_-s6sLC5z3Pi6Em1bS4w0EhIeRS5bDkGyOpQ1JebEGItQHJSwE4ixhqvPK4JW-5KUvVVSJKCYjgvADPfZmAfbo6DxPuQSSvGzaj7v4YLBovebYPQM7frEpzW8ex6-rBRMzI2sAF1yoB43A6zfATj5G9ie8ko0m549BXfqXnGS8B-0GTYDdRt6gLD1OHfXE"></div></div></header>
 <main class="pt-20 px-mobile-edge space-y-6">
 <!-- Today's Progress Card -->
 <section class="bg-surface-container-low dark:bg-surface-container-lowest p-6 border border-outline/10 rounded-xl">
@@ -200,7 +196,7 @@
 <div class="flex-1">
 <div class="flex items-center gap-2 mb-1">
 <span class="bg-mobile-danger/20 text-mobile-danger text-[10px] font-bold px-2 py-0.5 rounded uppercase">Critical</span>
-<span class="text-[11px] text-on-surface-variant">LOG-442</span>
+<span class="text-[11px] text-on-surface-variant">LOG-442</span><span class="text-[10px] font-bold bg-[#06B6D4]/10 text-[#06B6D4] px-1.5 py-0.5 rounded border border-[#06B6D4]/20 ml-2 uppercase">CORE_AI</span>
 </div>
 <p class="font-mobile-text-label text-mobile-text-label text-on-surface">Steel Beam Delay - Block B</p>
 </div>
@@ -213,7 +209,7 @@
 <div class="flex-1">
 <div class="flex items-center gap-2 mb-1">
 <span class="bg-mobile-warning/20 text-mobile-warning text-[10px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
-<span class="text-[11px] text-on-surface-variant">SAF-091</span>
+<span class="text-[11px] text-on-surface-variant">SAF-091</span><span class="text-[10px] font-bold bg-[#06B6D4]/10 text-[#06B6D4] px-1.5 py-0.5 rounded border border-[#06B6D4]/20 ml-2 uppercase">CORE_AI</span>
 </div>
 <p class="font-mobile-text-label text-mobile-text-label text-on-surface">Safety Barrier Missing - Lvl 4</p>
 </div>
@@ -256,7 +252,7 @@
 </section>
 </main>
 <!-- FAB for AI Interaction (Mission Critical Tool) -->
-<button class="fixed bottom-24 right-6 w-14 h-14 bg-mobile-primary text-white rounded-full shadow-lg shadow-mobile-primary/30 flex items-center justify-center active:scale-90 transition-transform z-40">
+<button class="fixed bottom-24 right-4 w-14 h-14 bg-mobile-primary text-white rounded-full shadow-lg shadow-mobile-primary/30 flex items-center justify-center active:scale-90 transition-transform z-50">
 <span class="material-symbols-outlined" data-icon="mic" style="font-variation-settings: 'FILL' 1;">mic</span>
 </button>
 <!-- BottomNavBar Component -->
@@ -301,6 +297,16 @@
             });
         });
     </script>
+
+
+
+
+
+
+
+
+
+
 
 
 </body></html>
