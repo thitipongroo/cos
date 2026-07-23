@@ -12,7 +12,7 @@
     "The threshold below is therefore a RATCHET, not an aspiration: it blocks duplication from",
     "growing past today's level. Lower it as clones are removed.",
     "",
-    "Measured baseline 2026-07-21, after ADR-069 (min-lines 10, min-tokens 70, tests excluded,",
+    "Measured baseline 2026-07-21, after ADR-021 (min-lines 10, min-tokens 70, tests excluded,",
     "same path list CI passes):",
     "  go           0.00%  <- was 23.01%. The two workers' copied internal/coskafka and internal/otel",
     "                         are now packages of one shared module, libs/go.",

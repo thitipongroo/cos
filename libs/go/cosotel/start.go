@@ -13,7 +13,7 @@ import (
 // collector is unreachable must keep consuming from Kafka. Failures are logged, not returned.
 //
 // This exists because the two workers had begun each carrying their own copy of this fourteen-line
-// dance, which is precisely the duplication ADR-069 set out to remove — and jscpd caught it
+// dance, which is precisely the duplication ADR-021 set out to remove — and jscpd caught it
 // immediately after it was introduced.
 func Start(ctx context.Context, serviceName string) func() {
 	shutdowns := make([]func(context.Context) error, 0, 2)

@@ -1,4 +1,4 @@
-// CredentialService HTTP routes (ADR-067; CS-8). Public did:web resolution + tenant-scoped verify.
+// CredentialService HTTP routes (ADR-019; CS-8). Public did:web resolution + tenant-scoped verify.
 // Issue/revoke (issuer-signing flow) land in the next increment. Uses app.pool with tenant RLS.
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { withTenant } from '../db.js';
@@ -51,7 +51,7 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
     }
     // Bound did:web resolution to this platform's issuer domain (SSRF guard, §5.9.8).
     const baseDomain = app.config.issuer.didWebBaseDomain;
-    // ADR-067 §Verification = Data Integrity proof AND Status List. The checker reads the bit from
+    // ADR-019 §Verification = Data Integrity proof AND Status List. The checker reads the bit from
     // this tenant's stored list, so `verified` already accounts for revocation; `revoked` is returned
     // separately so a caller can tell "forged" from "was valid, now revoked".
     const result = await verifyCredential(
@@ -103,7 +103,7 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
     let credential: unknown;
     let issuerDid = '';
     // Worker credentials are revocable → they claim a Status List bit and carry `credentialStatus`
-    // (ADR-067). Contract-signature VCs are point-in-time and stay non-revocable.
+    // (ADR-019). Contract-signature VCs are point-in-time and stay non-revocable.
     let signer: StatusListSigner | null = null;
     let statusEntry: StatusListEntry | null = null;
     if (isContractSig) {
@@ -211,7 +211,7 @@ export async function credentialRoutes(app: FastifyInstance): Promise<void> {
       const revokedEntry = await revokeVerifiableCredential(client, request.tenantId, vcId);
       if (!revokedEntry) return null;
       // Flip the published bit in the same transaction — the DB status and the published list can
-      // never disagree (ADR-067 §Revocation).
+      // never disagree (ADR-019 §Revocation).
       if (revokedEntry.statusListId !== null && revokedEntry.statusListIndex !== null) {
         await revokeStatusEntry(client, {
           tenantId: request.tenantId,

@@ -2,7 +2,7 @@
 // Call Configure() once at startup before processing any Kafka messages.
 // Sampling: 1% baseline (OTEL_SAMPLING_RATIO env), 100% for errors via Collector tail-sampling.
 //
-// Extracted from services/{analytics,kg-ingestion}-worker/internal/otel on 2026-07-21 (ADR-069).
+// Extracted from services/{analytics,kg-ingestion}-worker/internal/otel on 2026-07-21 (ADR-021).
 // The two copies differed in exactly one behavioural respect — the fallback service name — which is
 // now a Configure() parameter. kg-ingestion-worker additionally carried a package-level `shutdownFn`
 // that was assigned and never read; it is dropped rather than carried forward.

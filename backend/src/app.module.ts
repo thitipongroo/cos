@@ -83,7 +83,7 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     ComplianceModule,
     WorkforceModule, // Phase 22 — now wired (required for self check-in /workers/me, option A)
     SyncModule, // Finding 2 — generic offline sync API (/sync/delta, /sync/push, /sync/resolve)
-    CredentialsModule, // ADR-067 — REST client for the CredentialService (W3C DID/VC) microservice
+    CredentialsModule, // ADR-019 — REST client for the CredentialService (W3C DID/VC) microservice
     EquipmentModule, // Phase 21 — equipment tracking, assignments, maintenance, utilization
     // Phase 8: (Kafka/event infra wired into all modules)
     // Phase 9: (FileService is a separate deployable)

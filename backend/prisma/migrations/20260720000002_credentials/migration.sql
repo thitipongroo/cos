@@ -1,8 +1,8 @@
--- CredentialService (W3C DID/VC) — MVP (ADR-067; spec §5.3 BG-001).
+-- CredentialService (W3C DID/VC) — MVP (ADR-019; spec §5.3 BG-001).
 -- Storage for the DID/VC platform that underpins client contract signing (ADR-058) and BG-001
 -- worker/equipment/training credentials.
 --
--- Roles (ADR-067): ISSUER = persistent per-tenant did:web (Ed25519 key held in Vault/AWS SM, ADR-013 —
+-- Roles (ADR-019): ISSUER = persistent per-tenant did:web (Ed25519 key held in Vault/AWS SM, ADR-013 —
 -- only a `key_ref` is stored here, never the private key); SIGNER (contract signing) = ephemeral did:key
 -- (no stored key). VC format = Ed25519Signature2020 (JSON-LD Data Integrity). Revocation = Status List 2021.
 --

@@ -152,7 +152,7 @@ services:
           fault_tolerant: true
           error_code: 429
 
-  # ── CredentialService: public W3C DID/VC resolution only (ADR-067, §5.9.8) ──
+  # ── CredentialService: public W3C DID/VC resolution only (ADR-019, §5.9.8) ──
   # Own host, not a path under api.*: only the two unauthenticated GETs a third-party verifier needs
   # are edge-exposed. issue / verify / revoke stay internal-mesh only and are deliberately absent here —
   # they must never be reachable from the internet.

@@ -1,4 +1,4 @@
-# ADR-069: One shared Go module (`libs/go`), and the duplication it removed
+# ADR-021: One shared Go module (`libs/go`), and the duplication it removed
 
 **Date:** 2026-07-21
 **Status:** Accepted

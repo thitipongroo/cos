@@ -1,4 +1,4 @@
--- Client contract signing (ADR-058, re-based onto ADR-067 CredentialService). Bilateral PKI/VC signing
+-- Client contract signing (ADR-058, re-based onto ADR-019 CredentialService). Bilateral PKI/VC signing
 -- in the finance service. CT-1: data model only — the ContractSignature entity + Contract.signed_document_id.
 -- The status lifecycle, signing endpoints, and events land in later increments (CT-2..CT-7).
 --

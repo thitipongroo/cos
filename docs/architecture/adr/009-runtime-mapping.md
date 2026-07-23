@@ -84,8 +84,8 @@ compile-time contracts that catch cross-module leaks before runtime.
 
 ## Implementation notes
 
-Consolidated from the former ADR-021 (runtime language mapping: Python AI vs NestJS,
-2026-06-09) when the duplicate was merged on 2026-07-23:
+Consolidated from a former standalone runtime-language-mapping ADR (Python AI vs NestJS,
+2026-06-09) when the duplicate was merged on 2026-07-23 (its original number has since been reused):
 
 - **Python service inventory:** `services/ai-gateway/` (LLM provider abstraction — OpenAI/
   Claude/Ollama, prompt routing, OCR, semantic search), `services/ai-gateway/digital_twin/`

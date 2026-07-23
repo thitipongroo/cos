@@ -1,4 +1,4 @@
-# 67. CredentialService (W3C DID/VC) promoted to MVP + design — prerequisite for contract signing
+# 19. CredentialService (W3C DID/VC) promoted to MVP + design — prerequisite for contract signing
 
 Date: 2026-07-20
 

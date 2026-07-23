@@ -4,7 +4,7 @@
 # Scope is deliberately narrow. This worker consumes Kafka and is called by nothing: no chart in
 # infrastructure/helm references it, no Ingress routes to it, and its Service is ClusterIP. What its
 # HTTP port does carry is /health/live and POST /admin/rebuild — an endpoint that replays the entire
-# topic. Until ADR-069 that endpoint took an unauthenticated request from any pod that could reach
+# topic. Until ADR-021 that endpoint took an unauthenticated request from any pod that could reach
 # the pod IP, because the repository's only other NetworkPolicy selects
 # `cos.io/cloudflare-protected: 'true'`, a label no chart sets, and there is no default-deny.
 #

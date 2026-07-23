@@ -4,7 +4,7 @@ import {
   decryptIssuerPrivateKey,
 } from '../key-manager.js';
 
-describe('key-manager (ADR-067)', () => {
+describe('key-manager (ADR-019)', () => {
   const saved = { ...process.env };
   beforeEach(() => {
     process.env.NODE_ENV = 'test';

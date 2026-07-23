@@ -131,7 +131,7 @@ are now Semgrep rules in `.semgrep/`. No off-the-shelf ruleset contains them.
   files). The gate is now a ratchet. Most of that was one cluster: `analytics-worker` and
   `kg-ingestion-worker` carried near-identical `internal/coskafka` packages — **23.01% of Go lines**
   — copied rather than shared. That, and the `internal/otel` package copied alongside it, has since
-  been extracted to the shared module `libs/go` (ADR-069), which took Go to **0.00%** and the
+  been extracted to the shared module `libs/go` (ADR-021), which took Go to **0.00%** and the
   repository total to 1.34%; the ratchet was tightened to 1.5% to hold it.
 - **The SQL rule went through two designs.** A regex-over-the-file version was written, measured and
   rejected: of 11 hits it flagged `INSERT INTO finance.project_budgets` (already qualified), matched
@@ -232,7 +232,7 @@ is not valid). Triaged:
   service: it is absent from `kong-declarative.yml` entirely, and neither it nor `file-service` has
   an in-process limiter (`@fastify/rate-limit` is not in the lockfile). Spec §5 asks for edge limits
   at Kong plus a second independent layer, and §5.9 says the service is reachable only over the
-  internal mesh — a mesh that does not exist either (see ADR-069). Which layer should carry it is a
+  internal mesh — a mesh that does not exist either (see ADR-021). Which layer should carry it is a
   deployment decision, and adding a dependency to an air-gapped product with an in-memory store that
   multiplies by replica count is not a choice to make silently.
 - `js/user-controlled-bypass` and `js/indirect-command-line-injection` — both **fixed above but

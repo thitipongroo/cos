@@ -584,7 +584,7 @@ services:
       - cos-network
 
   # ─── AI Gateway (FastAPI) ─────────────────────────────────────────────────
-  # ─── CredentialService (W3C DID/VC — ADR-067) ─────────────────────────────
+  # ─── CredentialService (W3C DID/VC — ADR-019) ─────────────────────────────
   credential-service:
     build:
       context: .
@@ -683,7 +683,7 @@ services:
   # ─── AI Embedding Worker (FastAPI) ────────────────────────────────────────
   ai-embedding-worker:
     build:
-      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-069),
+      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-021),
       # which a service-scoped context cannot reach.
       context: .
       dockerfile: services/ai-embedding-worker/Dockerfile
@@ -718,7 +718,7 @@ services:
   # ─── AI OCR Pipeline (FastAPI) ────────────────────────────────────────────
   ai-ocr-pipeline:
     build:
-      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-069),
+      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-021),
       # which a service-scoped context cannot reach.
       context: .
       dockerfile: services/ai-ocr-pipeline/Dockerfile
@@ -756,7 +756,7 @@ services:
   # ─── AI Transcription Pipeline (FastAPI) — internal; ai-gateway is the client entry ───
   ai-transcription-pipeline:
     build:
-      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-069),
+      # Root context: requirements.txt installs the shared ../../libs/python/cosmetrics (ADR-021),
       # which a service-scoped context cannot reach.
       context: .
       dockerfile: services/ai-transcription-pipeline/Dockerfile
@@ -833,7 +833,7 @@ services:
   # ─── Analytics Worker (Go) — internal only (health-only until Phase 24) ───
   analytics-worker:
     build:
-      # Root context: this service `replace`s the shared coslib module at libs/go (ADR-069).
+      # Root context: this service `replace`s the shared coslib module at libs/go (ADR-021).
       context: .
       dockerfile: services/analytics-worker/Dockerfile
     container_name: cos-analytics-worker
@@ -860,7 +860,7 @@ services:
   # ─── KG Ingestion Worker (Go) — internal only (Kafka → Neo4j) ─────────────
   kg-ingestion-worker:
     build:
-      # Root context: this service `replace`s the shared coslib module at libs/go (ADR-069).
+      # Root context: this service `replace`s the shared coslib module at libs/go (ADR-021).
       context: .
       dockerfile: services/kg-ingestion-worker/Dockerfile
     container_name: cos-kg-ingestion-worker

@@ -1,4 +1,4 @@
-"""Shared Prometheus :9464 exposition for the Construction OS Python services (ADR-069).
+"""Shared Prometheus :9464 exposition for the Construction OS Python services (ADR-021).
 
 WHY THIS EXISTS: prometheus.yml scrapes each service on :9464 and the Helm charts declare a 9464
 containerPort and annotate the pod for scraping — but a service that opens no port and emits no

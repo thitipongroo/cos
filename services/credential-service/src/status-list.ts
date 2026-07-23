@@ -1,4 +1,4 @@
-// Revocation via W3C Status List 2021 (ADR-067; CS-6). A per-tenant bitstring credential; a revocable
+// Revocation via W3C Status List 2021 (ADR-019; CS-6). A per-tenant bitstring credential; a revocable
 // worker VC references a bit index. Ephemeral contract-signature VCs are point-in-time (non-revocable)
 // and do not occupy an index. The encodedList is stored in credentials.revocation_status_lists.
 import { createList, decodeList, createCredential } from '@digitalbazaar/vc-status-list';

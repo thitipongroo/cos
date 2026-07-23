@@ -1,4 +1,4 @@
-// Ed25519 key management (ADR-067). Issuer = persistent: private key AES-256-GCM encrypted (ADR-035)
+// Ed25519 key management (ADR-019). Issuer = persistent: private key AES-256-GCM encrypted (ADR-035)
 // and stored in credentials.did_documents.encrypted_private_key. Signer (contract signing) = ephemeral:
 // generated per signing and never stored. @digitalbazaar is ESM — imported dynamically.
 import { encryptSecret, decryptSecret } from './secret-cipher.js';

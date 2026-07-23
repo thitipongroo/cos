@@ -1,6 +1,6 @@
 // CredentialClientService — backend → CredentialService (services/credential-service/) REST client.
 //
-// Transport (ADR-067, decision 2026-07-21, option A): the backend calls CredentialService directly on
+// Transport (ADR-019, decision 2026-07-21, option A): the backend calls CredentialService directly on
 // the internal network (CREDENTIAL_SERVICE_URL) and forwards the acting principal as the identity
 // headers the service's auth plugin trusts (x-tenant-id / x-user-id / x-user-role). Trust boundary is
 // the internal mesh — mTLS at the infra layer (05 §5.4); CredentialService is not exposed to the edge
@@ -38,7 +38,7 @@ export interface IssueCredentialResult {
 }
 
 export interface VerifyCredentialResult {
-  /** Proof AND revocation status together (ADR-067 §Verification) — a revoked VC is never verified. */
+  /** Proof AND revocation status together (ADR-019 §Verification) — a revoked VC is never verified. */
   verified: boolean;
   /** Distinguishes "was valid, now revoked" from "bad proof". Always false for contract signatures,
    *  which are point-in-time and occupy no status-list bit. */

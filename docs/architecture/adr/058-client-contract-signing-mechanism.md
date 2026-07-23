@@ -4,9 +4,9 @@ Date: 2026-07-20
 
 ## Status
 
-Accepted — **re-based onto ADR-067 (2026-07-20).** Implementation-planning verification found
+Accepted — **re-based onto ADR-019 (2026-07-20).** Implementation-planning verification found
 `CredentialService` was not built and was spec'd as post-MVP/Enterprise, so PKI/VC could not be built as
-stated. Per ADR-067, CredentialService (W3C DID/VC) is promoted to MVP and built **first**; contract
+stated. Per ADR-019, CredentialService (W3C DID/VC) is promoted to MVP and built **first**; contract
 signing then consumes it. The signer uses an **ephemeral `did:key` per signing** (not a persistent key);
 the persistent issuer capability serves worker/equipment/training VCs. All other decisions in this ADR
 stand (bilateral, Finance service, upload-or-generate, magic-link client, direct contractor authority).

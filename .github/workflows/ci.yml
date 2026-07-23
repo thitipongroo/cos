@@ -49,7 +49,7 @@ jobs:
       - name: sqlfluff
         run: sqlfluff lint .
       # Python lint. Nothing linted Python before this: the repo had no ruff, flake8 or pylint in
-      # CI, which is how 39 unused imports and a mid-file import accumulated unnoticed (ADR-069).
+      # CI, which is how 39 unused imports and a mid-file import accumulated unnoticed (ADR-021).
       # Ruff's default E+F set was measured against this tree and now passes clean, so it runs as a
       # blocking gate rather than advisory. It needs no network at run time, which matters for the
       # air-gapped target (ADR-039).
@@ -58,7 +58,7 @@ jobs:
       # Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-011). Threshold
       # and measured baseline live in .jscpd.json; it is a ratchet against regression, not 0%.
       - name: jscpd (duplication)
-        # `libs` is in the list because the shared Go module lives there (ADR-069); without it
+        # `libs` is in the list because the shared Go module lives there (ADR-021); without it
         # code moved out of services/ would silently leave the duplication gate's scope.
         run: pnpm exec jscpd backend/src packages apps/web/src services libs
 
@@ -280,7 +280,7 @@ jobs:
           - services/kg-ingestion-worker
           - services/iot-ingestion-worker
           # coslib — its own go.mod, so it needs its own matrix entry or its tests
-          # (the decoder / DLQ / idempotency suites) run nowhere. ADR-069.
+          # (the decoder / DLQ / idempotency suites) run nowhere. ADR-021.
           - libs/go
     steps:
       - uses: actions/checkout@v4
@@ -380,7 +380,7 @@ jobs:
         working-directory: backend
         run: pnpm run test:integration
       # Testcontainers Postgres + the credentials migration: RLS isolation, did:web verification and
-      # the Status List revocation loop (ADR-067 CS-9/CS-6).
+      # the Status List revocation loop (ADR-019 CS-9/CS-6).
       - name: Run integration tests — credential-service
         working-directory: services/credential-service
         run: pnpm run test:integration
@@ -448,7 +448,7 @@ jobs:
       # Every service builds from the repo ROOT context (context: .) with an explicit
       # `file: <service>/Dockerfile`. Each COPYs at least one path OUTSIDE its own directory: pnpm
       # workspace members install the @cos/* packages they import; the Go workers `replace` libs/go;
-      # the Python workers install libs/python/cosmetrics (ADR-069); ai-gateway also bakes in repo-root
+      # the Python workers install libs/python/cosmetrics (ADR-021); ai-gateway also bakes in repo-root
       # ai/prompts. Verified by running `docker build` locally. A service-scoped context breaks those
       # COPYs with `"/<path>": not found`.
       matrix:
@@ -473,17 +473,17 @@ jobs:
             context: .
             file: services/ai-gateway/Dockerfile
           # analytics-worker is NOT self-contained: it `replace`s the shared coslib module at
-          # libs/go (ADR-069), which sits outside a service-scoped context.
+          # libs/go (ADR-021), which sits outside a service-scoped context.
           - service: services/analytics-worker
             context: .
             file: services/analytics-worker/Dockerfile
           # kg-ingestion-worker is NOT self-contained: it `replace`s the shared coslib module at
-          # libs/go (ADR-069), which sits outside a service-scoped context.
+          # libs/go (ADR-021), which sits outside a service-scoped context.
           - service: services/kg-ingestion-worker
             context: .
             file: services/kg-ingestion-worker/Dockerfile
           # The ai-*-pipeline / ai-embedding-worker services are NOT self-contained: requirements.txt
-          # installs the shared libs/python/cosmetrics (ADR-069), outside a service-scoped context.
+          # installs the shared libs/python/cosmetrics (ADR-021), outside a service-scoped context.
           - service: services/ai-embedding-worker
             context: .
             file: services/ai-embedding-worker/Dockerfile
@@ -553,7 +553,7 @@ jobs:
           for req in services/*/requirements.txt; do
             svc="$(dirname "$req")"
             echo "::group::pip-audit — $svc"
-            # Run from the service dir so a local path dep (../../libs/python/cosmetrics, ADR-069)
+            # Run from the service dir so a local path dep (../../libs/python/cosmetrics, ADR-021)
             # resolves — pip-audit rejects it as an "Invalid requirement" from the repo root, and
             # once resolved it is skipped gracefully (not on PyPI). Real PyPI deps are still audited.
             ( cd "$svc" && pip-audit -r requirements.txt ) || status=1
@@ -608,17 +608,17 @@ jobs:
             context: .
             file: services/ai-gateway/Dockerfile
           # analytics-worker is NOT self-contained: it `replace`s the shared coslib module at
-          # libs/go (ADR-069), which sits outside a service-scoped context.
+          # libs/go (ADR-021), which sits outside a service-scoped context.
           - service: services/analytics-worker
             context: .
             file: services/analytics-worker/Dockerfile
           # kg-ingestion-worker is NOT self-contained: it `replace`s the shared coslib module at
-          # libs/go (ADR-069), which sits outside a service-scoped context.
+          # libs/go (ADR-021), which sits outside a service-scoped context.
           - service: services/kg-ingestion-worker
             context: .
             file: services/kg-ingestion-worker/Dockerfile
           # The ai-*-pipeline / ai-embedding-worker services are NOT self-contained: requirements.txt
-          # installs the shared libs/python/cosmetrics (ADR-069), outside a service-scoped context.
+          # installs the shared libs/python/cosmetrics (ADR-021), outside a service-scoped context.
           - service: services/ai-embedding-worker
             context: .
             file: services/ai-embedding-worker/Dockerfile
@@ -738,7 +738,7 @@ jobs:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
     needs: [update-gitops]
-    # Spec §30.5/§30.12 + ADR-068 (PO decision 2026-07-04): E2E runs on merge to `staging` —
+    # Spec §30.5/§30.12 + ADR-020 (PO decision 2026-07-04): E2E runs on merge to `staging` —
     # the staging branch deploys to the staging env (update-gitops → ArgoCD auto-sync) and the
     # E2E result gates production promotion (merge staging → main).
     if: github.ref == 'refs/heads/staging'

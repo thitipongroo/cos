@@ -1,4 +1,4 @@
-// CredentialService persistence (ADR-067; CS-8). Raw SQL against the `credentials` schema (CS-1) via a
+// CredentialService persistence (ADR-019; CS-8). Raw SQL against the `credentials` schema (CS-1) via a
 // pg client already inside a tenant-scoped transaction (db.withTenant → RLS by app.current_tenant_id).
 import type { PoolClient } from 'pg';
 
@@ -96,7 +96,7 @@ export interface RevokedVcEntry {
 /**
  * Mark a VC revoked (worker credentials); returns its status-list position, or null when there was no
  * ACTIVE VC to revoke. A CONTRACT_SIGNATURE VC has no position (point-in-time, non-revocable per
- * ADR-067) so both fields come back null.
+ * ADR-019) so both fields come back null.
  */
 export async function revokeVerifiableCredential(
   client: PoolClient,

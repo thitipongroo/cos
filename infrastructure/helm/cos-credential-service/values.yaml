@@ -35,7 +35,7 @@ env:
   OTEL_SERVICE_NAME: 'credential-service'
   # Baked into every tenant DID (did:web:{domain}:tenants:{id}) and into every credential already
   # issued — renaming this host invalidates them all. Must match the Kong route host and the
-  # cos-credentials-tls certificate exactly (§5.9.8, ADR-067).
+  # cos-credentials-tls certificate exactly (§5.9.8, ADR-019).
   DID_WEB_BASE_DOMAIN: 'credentials.construction-os.io'
 
 # DATABASE_URL + APP_SECRET_ENCRYPTION_KEY (issuer private-key encryption, ADR-035) come from the

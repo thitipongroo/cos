@@ -1,6 +1,6 @@
 // FileServiceClient — backend → File Service (services/file-service/) REST client.
 //
-// Same transport model as CredentialClientService (ADR-067 option A): a direct internal call over the
+// Same transport model as CredentialClientService (ADR-019 option A): a direct internal call over the
 // mesh, forwarding the acting principal as the Kong-style identity headers the file-service auth plugin
 // trusts (x-tenant-id / x-user-id / x-user-role), read from the ambient request context (CLS, ADR-031).
 // File Service owns all uploads; the backend references files by file_id. Contract signing (ADR-058)

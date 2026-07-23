@@ -1,4 +1,4 @@
-// Ambient declarations for the @digitalbazaar W3C DID/VC stack (ADR-067) — these packages ship no
+// Ambient declarations for the @digitalbazaar W3C DID/VC stack (ADR-019) — these packages ship no
 // TypeScript types. Typed as `any` at the module boundary; CredentialService wraps them behind a
 // typed interface.
 declare module '@digitalbazaar/vc';

@@ -1,4 +1,4 @@
-// Issuer provisioning (ADR-067; CS-8b). Get the tenant's persistent did:web issuer, provisioning one on
+// Issuer provisioning (ADR-019; CS-8b). Get the tenant's persistent did:web issuer, provisioning one on
 // first use (generate Ed25519 key → encrypt private key → build DID document → store). Runs inside the
 // tenant RLS transaction.
 import type { Pool } from 'pg';

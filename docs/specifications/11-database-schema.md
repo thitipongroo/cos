@@ -72,7 +72,7 @@ single tenant-isolation policy — a second permissive policy would OR-widen acc
 | `site_ops`            | Site Operations                          | NOT NULL  |                                                                          |
 | `finance`             | Finance                                  | NOT NULL  |                                                                          |
 | `files`               | File Service                             | NOT NULL  |                                                                          |
-| `credentials`         | CredentialService (DID/VC, ADR-067)      | NOT NULL  | RLS by tenant_id; RESTRICTED — see §11.6                                 |
+| `credentials`         | CredentialService (DID/VC, ADR-019)      | NOT NULL  | RLS by tenant_id; RESTRICTED — see §11.6                                 |
 | `notifications`       | Notification Service                     | NOT NULL  | `notification_templates` has nullable tenant_id (null = system template) |
 | `equipment`           | Equipment Service                        | NOT NULL  |                                                                          |
 | `workforce`           | Workforce Service                        | NOT NULL  |                                                                          |
@@ -1168,12 +1168,12 @@ a mismatch means someone else edited the same photo offline, so the write is fla
 
 ## 11.6 Credentials Schema (`credentials`)
 
-The `credentials` schema backs CredentialService (W3C DID/VC — ADR-067, spec §5.3 BG-001), the MVP
+The `credentials` schema backs CredentialService (W3C DID/VC — ADR-019, spec §5.3 BG-001), the MVP
 prerequisite for client contract signing (ADR-058) and BG-001 worker/equipment/training credentials.
 Tenant-scoped (RLS by `tenant_id`); data classification **RESTRICTED**. Created by migration
 `20260720000002_credentials` (raw SQL, like the other domain schemas — not Prisma-modelled).
 
-**Roles (ADR-067):** ISSUER = persistent per-tenant `did:web` (Ed25519 key in Vault/AWS SM, ADR-013 — only
+**Roles (ADR-019):** ISSUER = persistent per-tenant `did:web` (Ed25519 key in Vault/AWS SM, ADR-013 — only
 `key_ref` is stored here, never the private key); SIGNER (contract signing) = ephemeral `did:key` (no
 stored key). VC format = `Ed25519Signature2020` (JSON-LD Data Integrity); revocation = W3C Status List 2021.
 

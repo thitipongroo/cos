@@ -1,6 +1,6 @@
 // Shared plumbing for Temporal activities — the I/O half of a workflow.
 //
-// Extracted 2026-07-21 (ADR-069). po.activities.ts and rfq.activities.ts each carried their own
+// Extracted 2026-07-21 (ADR-021). po.activities.ts and rfq.activities.ts each carried their own
 // copy of both helpers below; 47 of the 50 duplicated lines were identical, the rest being the name
 // of the id field. Two copies of a function that opens a tenant transaction is the kind of
 // duplication worth removing on sight: `SET LOCAL app.current_tenant_id` is what RLS reads, so a

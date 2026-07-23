@@ -1,6 +1,6 @@
 # cosmetrics — the shared Prometheus :9464 exposition for the Construction OS Python services.
 #
-# Extracted from the four services' copied metrics.py (ADR-069): the implementation lives here once
+# Extracted from the four services' copied metrics.py (ADR-021): the implementation lives here once
 # and each service's metrics.py is a thin re-export. Installed as a local path dependency from each
 # service's requirements.txt (`../../libs/python/cosmetrics`) — non-editable, so pip bakes it into
 # the runtime venv and the Docker runner needs no libs/python copy. The Go workers have the
@@ -8,7 +8,7 @@
 [project]
 name = "cosmetrics"
 version = "0.1.0"
-description = "Shared Prometheus :9464 exposition for Construction OS Python services (ADR-069)."
+description = "Shared Prometheus :9464 exposition for Construction OS Python services (ADR-021)."
 requires-python = ">=3.12"
 dependencies = ["prometheus-client>=0.21"]
 

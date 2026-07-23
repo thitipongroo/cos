@@ -1,4 +1,4 @@
-// VC issuance + verification (ADR-067; CS-4/CS-5). Ed25519Signature2020 (JSON-LD Data Integrity).
+// VC issuance + verification (ADR-019; CS-4/CS-5). Ed25519Signature2020 (JSON-LD Data Integrity).
 // The ephemeral contract signer uses a self-contained did:key (embeds its public key → offline
 // verifiable). Worker/issuer VCs (did:web) verify by resolving the issuer DID document (integration).
 // Service is ESM, so the ESM @digitalbazaar stack is imported statically.
@@ -211,7 +211,7 @@ export interface StatusCheckResult {
 export type StatusChecker = (options: { credential: unknown }) => Promise<StatusCheckResult>;
 
 /**
- * Verify a signed VC: Data Integrity proof **and** revocation status (ADR-067 §Verification).
+ * Verify a signed VC: Data Integrity proof **and** revocation status (ADR-019 §Verification).
  * `allowedIssuerDomains` bounds did:web resolution to platform issuers (SSRF guard, §5.9.8).
  *
  * `checkStatus` is not optional in practice — @digitalbazaar/vc refuses to verify any credential

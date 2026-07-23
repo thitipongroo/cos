@@ -28,7 +28,7 @@ podDisruptionBudget:
 env:
   # PORT must match service.port / the `http` containerPort and the probes below. Without it the
   # worker falls back to its own hardcoded default and nothing reaches it: the Service targetPort
-  # resolves to a port no one listens on. Pinned so the listen port cannot drift. ADR-069.
+  # resolves to a port no one listens on. Pinned so the listen port cannot drift. ADR-021.
   PORT: '8090'
   OTEL_SERVICE_NAME: 'kg-ingestion-worker'
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://otel-collector:4318'

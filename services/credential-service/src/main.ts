@@ -1,4 +1,4 @@
-// CredentialService (W3C DID/VC) — Fastify ESM microservice (ADR-067).
+// CredentialService (W3C DID/VC) — Fastify ESM microservice (ADR-019).
 // First ESM service in the repo: runs the @digitalbazaar stack natively. The backend calls it over
 // REST (like file-service). See services/credential-service/README when routes land (CS-8).
 import 'dotenv/config';

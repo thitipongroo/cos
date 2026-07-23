@@ -1,7 +1,7 @@
-// Status List 2021 lifecycle (ADR-067 §Revocation; CS-6). One signed bitstring credential per tenant:
+// Status List 2021 lifecycle (ADR-019 §Revocation; CS-6). One signed bitstring credential per tenant:
 // every revocable worker VC claims a bit index at issuance and carries a `credentialStatus` pointing at
 // the published list; revoking flips that bit and re-signs the list. Contract-signature VCs are
-// point-in-time and never occupy an index (ADR-067).
+// point-in-time and never occupy an index (ADR-019).
 //
 // The list is signed by the same persistent did:web issuer as the tenant's worker VCs, so an offline
 // verifier that already trusts the issuer DID document needs no additional trust anchor.

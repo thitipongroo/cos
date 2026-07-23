@@ -1,4 +1,4 @@
--- Rollback: CredentialService (W3C DID/VC) schema (ADR-067).
+-- Rollback: CredentialService (W3C DID/VC) schema (ADR-019).
 -- Safe to run only when no deployed code references these tables.
 
 DROP TABLE IF EXISTS credentials.audit_log CASCADE;

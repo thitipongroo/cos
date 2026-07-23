@@ -1,4 +1,4 @@
-// COS credentials JSON-LD @context (ADR-067; CS-7). Defines the four credential types + their claim
+// COS credentials JSON-LD @context (ADR-019; CS-7). Defines the four credential types + their claim
 // terms so custom fields survive JSON-LD processing (safe mode drops undefined terms). Registered in the
 // document loader (offline, no HTTP fetch) — see vc-service.createDocumentLoader.
 export const COS_CREDENTIALS_CONTEXT_URL = 'https://cos.dev/credentials/v1';

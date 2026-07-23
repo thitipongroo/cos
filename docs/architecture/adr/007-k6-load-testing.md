@@ -63,8 +63,8 @@ Options considered:
 
 ## Implementation notes
 
-Consolidated from the former ADR-020 (k6 as load testing and SLA validation tool,
-2026-06-09) when the duplicate was merged on 2026-07-23:
+Consolidated from a former standalone k6 load-testing/SLA-validation ADR
+(2026-06-09) when the duplicate was merged on 2026-07-23 (its original number has since been reused):
 
 - **Output:** k6 → InfluxDB → Grafana dashboard for SLA trend analysis
   (`infrastructure/monitoring/grafana/dashboards/adoption-gates.json`)

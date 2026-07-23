@@ -20,7 +20,7 @@ function Metric({ label, value }: { label: string; value: string }) {
  * The two routes are deliberate and stay separate: they differ in chrome (the PM view carries
  * ProjectTabs) and in page title. What was duplicated was this render, 61 lines of it, against the
  * same useFinanceSummary query — so a change to how a budget is presented had to be made twice.
- * Extracted 2026-07-21 (ADR-069); note that neither route has a unit or e2e test, so this component
+ * Extracted 2026-07-21 (ADR-021); note that neither route has a unit or e2e test, so this component
  * is currently covered by nothing but the type checker.
  */
 export function FinanceSummaryPanel({ projectId }: { projectId: string }) {

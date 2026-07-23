@@ -603,7 +603,7 @@ itself (`KeycloakJwtStrategy`).
 **One exception, by design:** `credentials.construction-os.io` carries no `jwt` plugin. It exposes only
 two unauthenticated GETs — `/tenants/:tenantId/did.json` and
 `/tenants/:tenantId/status-lists/:statusListId` — because a third-party verifier resolving a W3C
-credential holds no platform identity (BG-001, ADR-067). It is a separate host rather than a path under
+credential holds no platform identity (BG-001, ADR-019). It is a separate host rather than a path under
 `api.*` so nothing on `/api/v1/*` loses JWT enforcement; the route strips any client-supplied
 `x-tenant-id`/`x-user-id`/`x-user-role` and is IP-rate-limited. CredentialService's `issue`, `verify`
 and `revoke` are **not** routed at the edge at all — they are mesh-only (§5.9.8).

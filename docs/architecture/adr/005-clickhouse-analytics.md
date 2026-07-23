@@ -58,8 +58,8 @@ Options considered:
 
 ## Implementation notes
 
-Consolidated from the former ADR-019 (ClickHouse as analytics and time-series store,
-2026-06-09) when the duplicate was merged on 2026-07-23:
+Consolidated from a former standalone ClickHouse analytics/time-series-store ADR
+(2026-06-09) when the duplicate was merged on 2026-07-23 (its original number has since been reused):
 
 - **Deployment:** Docker container / Kubernetes — config in `infrastructure/clickhouse/`
 - **Ingestion:** Kafka → ClickHouse Kafka Engine → Materialized Views pipeline

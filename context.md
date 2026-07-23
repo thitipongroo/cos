@@ -251,7 +251,7 @@ Before starting any implementation task:
     was measured against this tree and passes clean. Runs offline (ADR-011).
   - **jscpd** (`.jscpd.json`, run in the CI lint job) — duplication. Threshold is a **ratchet at 1.3%**
     against a measured baseline of 1.12% (2026-07-21), not 0%: jscpd has no "new code" concept and
-    the repo already carries duplication. ADR-069 removed the three largest clusters — the Go
+    the repo already carries duplication. ADR-021 removed the three largest clusters — the Go
     workers' copied `internal/coskafka` and `internal/otel` (23.01% of Go lines → **0.00%**, now the
     shared module `libs/go`), the budget grid rendered by two routes (tsx 2.18% → 1.33%), and the
     cursor codec copied into seven `modules/project/` repositories (typescript 1.50% → 1.20%).

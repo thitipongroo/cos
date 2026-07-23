@@ -55,7 +55,7 @@ langchain-community>=0.3
 
 # Prometheus exposition for the :9464 scrape target (§31.3, QM-8) — see metrics.py.
 prometheus-client>=0.21
-# Shared :9464 endpoint implementation behind metrics.py (ADR-069). Non-editable local path so pip
+# Shared :9464 endpoint implementation behind metrics.py (ADR-021). Non-editable local path so pip
 # bakes it into the venv (the runtime image needs no libs/python copy); the relative path resolves
 # from the service dir in CI and from /app (root context) in the Docker build.
 ../../libs/python/cosmetrics

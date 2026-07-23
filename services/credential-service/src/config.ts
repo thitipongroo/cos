@@ -1,4 +1,4 @@
-// CredentialService — typed environment config (ADR-067).
+// CredentialService — typed environment config (ADR-019).
 // Values injected at runtime via AWS Secrets Manager / Vault (QM-4).
 export interface CredentialServiceConfig {
   port: number;

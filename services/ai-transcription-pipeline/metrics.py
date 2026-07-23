@@ -1,4 +1,4 @@
-"""Prometheus :9464 exposition for ai-transcription-pipeline — re-exports libs/python/cosmetrics (ADR-069).
+"""Prometheus :9464 exposition for ai-transcription-pipeline — re-exports libs/python/cosmetrics (ADR-021).
 
 Kept as a module so ``import metrics`` / ``metrics.<name>`` keep working for main.py and the tests;
 the endpoint implementation lives once in cosmetrics, replacing four byte-identical copies jscpd

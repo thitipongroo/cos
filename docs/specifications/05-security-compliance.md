@@ -186,13 +186,13 @@ DPO appointment mandatory for data-intensive companies. Vietnam new law effectiv
   training records — issued as W3C Verifiable Credentials (VCs)
 - **Architecture:** DID Documents stored in platform identity service; VC issuance via
   `CredentialService.issue(subjectDid, credentialType, claims)`
-- **Scope:** **Promoted to MVP (ADR-067, 2026-07-20)** as a prerequisite of client contract signing
+- **Scope:** **Promoted to MVP (ADR-019, 2026-07-20)** as a prerequisite of client contract signing
   (ADR-058) — was previously an opt-in Enterprise module. Core authentication remains Keycloak
   OAuth2/OIDC (§5.4); DID/VC is an additive credentialing capability, not an auth replacement.
 - **Self-sovereign identity:** Tenant admins may issue VCs to workers; third-party
   verification is cryptographic — no platform call required at verify time
 
-**Design (ADR-067) — separate roles:**
+**Design (ADR-019) — separate roles:**
 
 - **Issuer (persistent):** per-tenant `did:web`; issuer Ed25519 key in Vault / AWS Secrets Manager
   (ADR-013), rotated per §5.2. Issues `LicenceVC` / `EquipmentCertVC` / `TrainingRecordVC`.
@@ -566,7 +566,7 @@ modeled separately in [22-ai-architecture §22 AI Security](22-ai-architecture.m
 Public REST API (`/api/v1`) · Authentication (SMS OTP + JWT / Keycloak OIDC) · CRM webhook ·
 File upload (file-service) · Mobile offline sync (`/sync/delta`, `/sync/push`) · IoT ingestion
 (EMQX MQTT → Kafka) · Vendor/contractor portals (magic-link) · CredentialService (W3C DID/VC —
-public `did:web` resolution + internal issue/verify/revoke, ADR-067).
+public `did:web` resolution + internal issue/verify/revoke, ADR-019).
 
 ### 5.9.1 Public API `/api/v1`
 
@@ -638,7 +638,7 @@ Surfaces: **public** `GET /tenants/:id/did.json` and `GET /tenants/:id/status-li
 revocation bitstring with no platform identity) and **internal** `POST /credentials/issue|verify` +
 `POST /credentials/:vcId/revoke`
 (reached by the backend over the mesh; the auth plugin trusts Kong/mesh-forwarded `x-tenant-id` /
-`x-user-id` / `x-user-role`, ADR-067 option A). Data classification RESTRICTED (issuer keys + credentials).
+`x-user-id` / `x-user-role`, ADR-019 option A). Data classification RESTRICTED (issuer keys + credentials).
 
 | STRIDE | Threat                                                                                                                              | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------ | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -658,14 +658,14 @@ revocation bitstring with no platform identity) and **internal** `POST /credenti
 | S      | Point a VC at an attacker-controlled status list                                                                                    | `verify` resolves the status list from **this tenant's own rows**, never by fetching `credentialStatus.statusListCredential` — a URL outside `https://{issuerDomain}/tenants/{callerTenant}/status-lists/` fails closed (`UNRESOLVABLE_STATUS_LIST`). No outbound request, so no second SSRF path (CS-6)                                                                                                                                                                                                                                                                                                      |
 | E      | Read another tenant's status list via the public URL                                                                                | The route scopes the lookup by the `:tenantId` in the path under RLS — a foreign id returns 404, proven on a real database (CS-6 integration)                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | E      | Non-admin issues/revokes worker credentials                                                                                         | RBAC in-route: worker VC types + revoke require `x-user-role = TENANT_ADMIN` (403 otherwise) — built + tested (CS-8b)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| E      | Trigger contract-signature issuance without authorization                                                                           | Contract signing is fine-grained-authorized by the backend (ADR-067 option A). `RolesGuard` is applied at the `FinanceController` class and `CONTRACT_SIGN_ROLES` (Tenant Admin / Executive / Project Manager) gates `/document`, `/sign` and `/sign-links`. Proven wired, not merely decorated: `contract-signing.integration.spec.ts` drives all three endpoints as a `SITE_ENGINEER` over HTTP and asserts 403 before any signing logic runs                                                                                                                                                               |
+| E      | Trigger contract-signature issuance without authorization                                                                           | Contract signing is fine-grained-authorized by the backend (ADR-019 option A). `RolesGuard` is applied at the `FinanceController` class and `CONTRACT_SIGN_ROLES` (Tenant Admin / Executive / Project Manager) gates `/document`, `/sign` and `/sign-links`. Proven wired, not merely decorated: `contract-signing.integration.spec.ts` drives all three endpoints as a `SITE_ENGINEER` over HTTP and asserts 403 before any signing logic runs                                                                                                                                                               |
 | E      | Tenant A revokes tenant B's VC                                                                                                      | RLS scopes the `UPDATE` — a foreign revoke affects 0 rows (CS-9 revoke-isolation test)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 **Resolved in CS-10:** immutable audit on issue/revoke (`credentials.audit_log`) and the did:web
 `allowList` + fetch-timeout SSRF guard — both QM-4-mandatory, both covered by tests.
 
 **Resolved in CS-6:** revocation is now enforced end-to-end. Verification checks the Data Integrity
-proof **and** the Status List bit (ADR-067 §Verification); `verify` returns `{ verified, revoked }`,
+proof **and** the Status List bit (ADR-019 §Verification); `verify` returns `{ verified, revoked }`,
 where a revoked credential is never `verified`. The status check reads the local row, adding a public
 surface but no new outbound call.
 
@@ -702,7 +702,7 @@ observability work that remains.
   backend uses) and emits `http_requests_total` + `http_request_duration_seconds` per §31.3, labelled
   by route **pattern** so file ids never enter metric labels. Verified by scraping `:9464` on a live
   process. credential-service remains deliberately unscraped — it is ESM and cannot import `@cos/*`
-  source packages without changing its dist layout (see ADR-067 DP-8), so it has no metrics endpoint
+  source packages without changing its dist layout (see ADR-019 DP-8), so it has no metrics endpoint
   to point a target at.
 
 ### Cross-cutting controls

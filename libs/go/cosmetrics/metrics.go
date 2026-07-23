@@ -3,7 +3,7 @@
 // WHY THIS EXISTS: prometheus.yml scrapes each worker on :9464 and the Helm charts declare a 9464
 // containerPort, but a worker that opens no port and emits no metric is a permanently-down target,
 // indistinguishable from a real outage. This package is the one implementation of that endpoint,
-// shared by analytics-worker and kg-ingestion-worker (ADR-069: shared code lives in coslib, not
+// shared by analytics-worker and kg-ingestion-worker (ADR-021: shared code lives in coslib, not
 // copied per service — the two internal/metrics copies this replaced were a jscpd clone).
 //
 // It exposes the shared Kafka pipeline counters (defined in and incremented by coskafka) plus the Go

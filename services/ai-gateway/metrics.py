@@ -1,7 +1,7 @@
 """Prometheus :9464 exposition for ai-gateway — the shared endpoint plus AI metrics (§31.3, QM-8).
 
 The shared endpoint (registry, HTTP metrics, collectors, port/scrape/start_metrics_server/install)
-lives once in libs/python/cosmetrics (ADR-069) and is re-exported here so ``import metrics`` keeps
+lives once in libs/python/cosmetrics (ADR-021) and is re-exported here so ``import metrics`` keeps
 working. This module adds the LLM metrics that only ai-gateway emits.
 """
 

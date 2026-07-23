@@ -1009,7 +1009,7 @@ AVAILABLE / RESERVED / LEASED / SOLD (spec 28 §28.9 resources).
 
 ### 15.13 Enterprise / ecosystem opt-in surfaces
 
-- **DID / Verifiable Credentials module (spec 05 §5.3 BG-001)** — **`[MVP]` (promoted, ADR-067)** as the
+- **DID / Verifiable Credentials module (spec 05 §5.3 BG-001)** — **`[MVP]` (promoted, ADR-019)** as the
   prerequisite for contract signing (ADR-058). Tenant admins issue VCs to workers (contractor licence,
   equipment certification, safety-training records) via a persistent per-tenant `did:web` issuer; the
   contract signer uses an ephemeral `did:key`; third parties verify cryptographically (offline). See §5.3.

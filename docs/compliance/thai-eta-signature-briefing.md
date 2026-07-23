@@ -3,7 +3,7 @@
 **Status:** engineering description complete; legal opinion outstanding
 **Owner of the legal opinion:** in-country counsel (§28 pattern — Tilleke & Gibbins / Baker McKenzie / DFDL)
 **Gate:** before the first tenant signs a contract with a client in production
-**Engineering contact artefacts:** ADR-058 (mechanism), ADR-067 (credential service), §5.9.8 (threat model)
+**Engineering contact artefacts:** ADR-058 (mechanism), ADR-019 (credential service), §5.9.8 (threat model)
 
 This document exists because ADR-058 states plainly that it "fixes the technical mechanism, not a legal
 opinion". Nothing here interprets Thai law — that is counsel's work. What engineering can do is remove
@@ -56,7 +56,7 @@ record was altered after the fact.
 Each signature's proof is an Ed25519 Data Integrity proof over the credential. Contractor-side worker
 credentials resolve to a published issuer key document (`did:web`), and their revocation state is
 published as a W3C Status List. A third party can therefore verify a signature offline, with no call
-to Construction OS and no account. This is a deliberate design goal (ADR-067), and it is the property
+to Construction OS and no account. This is a deliberate design goal (ADR-019), and it is the property
 that makes the evidence survive the platform.
 
 ## 4. Characteristics counsel should know before opining

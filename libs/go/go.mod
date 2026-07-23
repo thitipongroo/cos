@@ -1,6 +1,6 @@
 // coslib — code shared by every Go worker. One module, one package per concern.
 //
-// Deliberately a single module rather than one per package (ADR-069): each additional module costs
+// Deliberately a single module rather than one per package (ADR-021): each additional module costs
 // four edits — its own go.mod, a `replace` line in every consumer, a Dockerfile COPY, and a
 // go-tests matrix entry — and that cost is paid again for every package added. The trade-off is
 // that a service using only `cosotel` still resolves `coskafka`'s dependencies into its go.sum.

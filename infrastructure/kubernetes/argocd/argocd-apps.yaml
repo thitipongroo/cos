@@ -91,7 +91,7 @@ spec:
         factor: 2
 
 ---
-# ─── CredentialService (W3C DID/VC — ADR-067) ─────────────────────────────────
+# ─── CredentialService (W3C DID/VC — ADR-019) ─────────────────────────────────
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

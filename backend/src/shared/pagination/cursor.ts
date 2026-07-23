@@ -1,6 +1,6 @@
 // Keyset-pagination cursor encoding, shared by every repository that pages on (created_at, id).
 //
-// Extracted 2026-07-21 (ADR-069). Seven repositories under modules/project/ carried their own copy;
+// Extracted 2026-07-21 (ADR-021). Seven repositories under modules/project/ carried their own copy;
 // six were byte-identical and project.repository.ts differed only in naming its field `projectId`
 // instead of `id`, plus a try/catch that could never fire (see decodeCursor below). Duplicating a
 // cursor codec is worse than it looks: encode and decode must agree exactly, and once there are

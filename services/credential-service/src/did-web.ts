@@ -1,4 +1,4 @@
-// did:web resolver + issuer DID Document builder (ADR-067; W3C did:web method).
+// did:web resolver + issuer DID Document builder (ADR-019; W3C did:web method).
 // Per-tenant issuer:  did:web:{baseDomain}:tenants:{tenantId}
 //   ↔  https://{baseDomain}/tenants/{tenantId}/did.json
 // Verification is offline/cryptographic (BG-001): a third party resolves this document to the

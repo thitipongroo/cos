@@ -1,6 +1,6 @@
 // Status List 2021 end-to-end (CS-6) — the loop the unit suite cannot close: a revocable worker VC is
 // issued against a real Postgres (RLS enforced as app_user), published at its public URL, verified
-// with BOTH the Data Integrity proof and the revocation bit (ADR-067 §Verification), then revoked and
+// with BOTH the Data Integrity proof and the revocation bit (ADR-019 §Verification), then revoked and
 // re-verified. Only the HTTPS transport is stubbed (@digitalbazaar/did-method-web rejects http:), the
 // same way did-web-verify.integration.spec.ts does — it serves exactly the document our own
 // GET /tenants/:id/did.json returns.
