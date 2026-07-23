@@ -55,7 +55,7 @@ jobs:
       # air-gapped target (ADR-039).
       - name: ruff (Python lint)
         run: ruff check services mlops
-      # Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-068). Threshold
+      # Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-070). Threshold
       # and measured baseline live in .jscpd.json; it is a ratchet against regression, not 0%.
       - name: jscpd (duplication)
         # `libs` is in the list because the shared Go module lives there (ADR-069); without it

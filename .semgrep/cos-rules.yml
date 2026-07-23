@@ -1,4 +1,4 @@
-# Construction OS — project-specific static rules (ADR-068).
+# Construction OS — project-specific static rules (ADR-070).
 #
 # These encode prohibitions that context.md §GLOBAL EXECUTION RULES "Never" already states but that
 # nothing mechanically enforced: until now they lived only in a document and in reviewer memory.

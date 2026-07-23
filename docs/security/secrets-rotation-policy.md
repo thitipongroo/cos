@@ -22,7 +22,7 @@
 | MinIO access/secret keys                                | All             | 90 days (manual)     | Update SM/Vault → rolling restart                                                                                                        | Engineering   |
 | OpenAI API key                                          | All             | 90 days (manual)     | OpenAI dashboard + SM/Vault update                                                                                                       | Engineering   |
 | kg-ingestion-worker admin token (`KG_ADMIN_TOKEN`)      | All             | 90 days (manual)     | Update SM/Vault → rolling restart. Guards POST /admin/rebuild, which replays the whole topic; the worker fails closed if unset (ADR-069) | Engineering   |
-| — (no SAST token required)                              | CI              | n/a                  | CodeQL and Semgrep CE run on the built-in `GITHUB_TOKEN`; no long-lived scanner credential exists (ADR-068)                              | Engineering   |
+| — (no SAST token required)                              | CI              | n/a                  | CodeQL and Semgrep CE run on the built-in `GITHUB_TOKEN`; no long-lived scanner credential exists (ADR-070)                              | Engineering   |
 
 ---
 

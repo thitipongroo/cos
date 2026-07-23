@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/kucherenko/jscpd/master/packages/jscpd/schema.json",
   "//": [
-    "Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-068).",
+    "Copy-paste detection — the duplication half of the QM-4 quality gate (ADR-070).",
     "",
     "QM-4 originally read '0% duplication on new code', inherited from SonarQube's quality-gate",
     "vocabulary. Two things make that unenforceable here: jscpd has no concept of 'new code' (it",
