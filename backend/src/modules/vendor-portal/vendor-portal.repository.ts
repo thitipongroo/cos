@@ -172,6 +172,24 @@ export class VendorPortalRepository {
     );
   }
 
+  // Fetch a single PO only if it belongs to this vendor (tenant-scoped by RLS via db.run). Used to
+  // authorize invoice submission — returns null when the PO does not exist or is another vendor's.
+  async findPurchaseOrderForVendor(
+    poId: string,
+    vendorId: string,
+  ): Promise<PurchaseOrderRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<PurchaseOrderRow[]>`
+        SELECT po_id, po_number, status, total_amount, currency_code, delivery_date, rfq_id
+        FROM procurement.purchase_orders
+        WHERE po_id = ${poId}::uuid AND vendor_id = ${vendorId}::uuid
+        LIMIT 1
+      `,
+    );
+    return rows[0] ?? null;
+  }
+
   // ── Invoices (Tier-2: submit + list own) ────────────────────────────────────
 
   async createInvoice(params: {

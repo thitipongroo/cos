@@ -28,7 +28,12 @@ export async function filesRoutes(app: FastifyInstance): Promise<void> {
 
     const { buffer, size } = await readMultipartBuffer(part);
     const mimeType = part.mimetype;
-    const filename = part.filename;
+    // The multipart Content-Disposition filename is attacker-controlled and is NOT sanitized by
+    // @fastify/multipart, so it can carry path separators (e.g. "../../x.png"). Reduce it to its
+    // basename before it reaches the object key / DB, mirroring the ZIP extraction path
+    // (zip-extraction.service.ts uses entry.fileName.split('/').pop()). Strip both '/' and '\'.
+    const rawFilename = part.filename;
+    const filename = rawFilename.split(/[\\/]/).pop() || rawFilename;
     const entityType = (request.query as Record<string, string>)['entity_type'] ?? null;
     const entityId = (request.query as Record<string, string>)['entity_id'] ?? null;
 

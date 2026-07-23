@@ -21,6 +21,7 @@ import redis.asyncio as aioredis
 from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Query
 
+from auth import get_verified_tenant
 from .divergence import generate_divergence_report
 from .models import (
     DivergenceReport,
@@ -55,7 +56,7 @@ async def get_twin_state(
     project_id: UUID,
     entity_type: EntityType | None = Query(None, description="Filter by entity type"),
     timestamp: datetime | None = Query(None, description="Point-in-time query; bypasses cache"),
-    tenant_id: str = Query(..., description="Tenant ID from JWT"),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
     redis_client: aioredis.Redis = Depends(_get_redis),
 ):
@@ -100,7 +101,7 @@ async def get_twin_state(
 )
 async def get_divergence_report(
     project_id: UUID,
-    tenant_id: str = Query(..., description="Tenant ID from JWT"),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
 ):
     return await generate_divergence_report(
@@ -120,7 +121,7 @@ async def get_divergence_report(
 async def list_entities(
     project_id: UUID,
     entity_type: EntityType | None = None,
-    tenant_id: str = Query(...),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
 ):
     query = """
@@ -156,7 +157,7 @@ class RegisterEntityRequest(BaseModel):
 async def register_entity(
     project_id: UUID,
     body: RegisterEntityRequest,
-    tenant_id: str = Query(...),
+    tenant_id: str = Depends(get_verified_tenant),
     db: asyncpg.Pool = Depends(_get_db),
 ):
     row = await db.fetchrow(

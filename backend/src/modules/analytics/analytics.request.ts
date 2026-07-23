@@ -12,8 +12,13 @@ export interface TenantRequest {
   tenantId?: string;
 }
 
-export function resolveTenantId(req: TenantRequest, queryTenantId?: string): string {
-  return req.tenantId ?? queryTenantId ?? '';
+export function resolveTenantId(req: TenantRequest, _queryTenantId?: string): string {
+  // Tenant scope comes ONLY from the authenticated request context (TenantContextInterceptor sets
+  // req.tenantId from the verified JWT `tenant_id`; the analytics controllers are behind JwtAuthGuard,
+  // and KeycloakJwtStrategy.validate() rejects any token missing tenant_id — so req.tenantId is always
+  // present here). The client-supplied `tenantId` query param is deliberately IGNORED: honouring it as
+  // a fallback would let an authenticated user of one tenant read another tenant's analytics (IDOR).
+  return req.tenantId ?? '';
 }
 
 export function resolveDateRange(dateRange?: unknown): string {

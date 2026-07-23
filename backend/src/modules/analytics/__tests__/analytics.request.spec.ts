@@ -7,11 +7,12 @@ describe('resolveTenantId', () => {
     expect(resolveTenantId({ tenantId: 'req-tenant' }, 'query-tenant')).toBe('req-tenant');
   });
 
-  it('falls back to the query param when the request carries no tenantId', () => {
-    expect(resolveTenantId({}, 'query-tenant')).toBe('query-tenant');
+  it('ignores a client-supplied query param — tenant comes only from the authenticated request (IDOR fix)', () => {
+    // Honouring the query param would let an authenticated caller read another tenant's analytics.
+    expect(resolveTenantId({}, 'query-tenant')).toBe('');
   });
 
-  it('returns empty string when neither request nor query provides a tenantId', () => {
+  it('returns empty string when the request carries no tenantId', () => {
     expect(resolveTenantId({})).toBe('');
   });
 });

@@ -240,7 +240,7 @@ class TestWireDigitalTwin:
 class TestTranscribeProxy:
     @pytest.mark.asyncio
     async def test_proxies_to_the_transcription_service(self, fake_http):
-        await transcribe(_transcribe_request())
+        await transcribe(_transcribe_request(), tenant_id="t-1")
 
         url, body = fake_http.posted[0]
         assert url.endswith("/api/v1/ai/transcribe")
@@ -248,7 +248,7 @@ class TestTranscribeProxy:
 
     @pytest.mark.asyncio
     async def test_returns_the_downstream_transcript(self, fake_http):
-        resp = await transcribe(_transcribe_request())
+        resp = await transcribe(_transcribe_request(), tenant_id="t-1")
 
         assert resp.file_id == "f-1"
         assert resp.transcript == "สวัสดีครับ"
@@ -259,7 +259,7 @@ class TestTranscribeProxy:
         import logging
 
         with caplog.at_level(logging.INFO, logger="cos.ai.usage"):
-            await transcribe(_transcribe_request())
+            await transcribe(_transcribe_request(), tenant_id="t-1")
 
         assert "ai.usage" in caplog.text
 
@@ -270,7 +270,7 @@ class TestTranscribeProxy:
         fake_http.raises = httpx.ConnectError("connection refused")
 
         with pytest.raises(HTTPException) as exc:
-            await transcribe(_transcribe_request())
+            await transcribe(_transcribe_request(), tenant_id="t-1")
 
         assert exc.value.status_code == 502
         assert "unreachable" in exc.value.detail
@@ -281,7 +281,7 @@ class TestTranscribeProxy:
         fake_http.response = _FakeResponse(503, {"detail": "provider not configured"})
 
         with pytest.raises(HTTPException) as exc:
-            await transcribe(_transcribe_request())
+            await transcribe(_transcribe_request(), tenant_id="t-1")
 
         assert exc.value.status_code == 503
         assert exc.value.detail == "provider not configured"
@@ -291,7 +291,7 @@ class TestTranscribeProxy:
         fake_http.response = _FakeResponse(503, {})
 
         with pytest.raises(HTTPException) as exc:
-            await transcribe(_transcribe_request())
+            await transcribe(_transcribe_request(), tenant_id="t-1")
 
         assert exc.value.detail == "Transcription provider not configured"
 
@@ -300,7 +300,7 @@ class TestTranscribeProxy:
         fake_http.response = _FakeResponse(500, {})
 
         with pytest.raises(HTTPException) as exc:
-            await transcribe(_transcribe_request())
+            await transcribe(_transcribe_request(), tenant_id="t-1")
 
         assert exc.value.status_code == 502
         assert exc.value.detail == "Transcription service error"
@@ -308,7 +308,7 @@ class TestTranscribeProxy:
     @pytest.mark.asyncio
     async def test_uses_a_long_timeout_for_audio(self, fake_http):
         # Transcription is slow; the default httpx timeout would cut long recordings off.
-        await transcribe(_transcribe_request())
+        await transcribe(_transcribe_request(), tenant_id="t-1")
 
         assert fake_http.init_kwargs.get("timeout") == 120
 

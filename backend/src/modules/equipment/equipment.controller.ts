@@ -12,8 +12,10 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { EquipmentService } from './equipment.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { AssignEquipmentDto, ReturnEquipmentDto } from './dto/assign-equipment.dto';
@@ -22,6 +24,7 @@ import { RecordUtilizationDto } from './dto/record-utilization.dto';
 
 @ApiTags('Equipment')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('equipment')
 export class EquipmentController {
   constructor(private readonly service: EquipmentService) {}
@@ -87,6 +90,7 @@ export class EquipmentController {
 
 @ApiTags('Equipment')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('projects/:projectId/equipment')
 export class ProjectEquipmentController {
   constructor(private readonly service: EquipmentService) {}

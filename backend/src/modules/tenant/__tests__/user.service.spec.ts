@@ -24,7 +24,12 @@ jest.mock('@cos/logger', () => ({
 import { UserService } from '../user.service';
 import { KeycloakAdminService } from '../../identity/keycloak-admin.service';
 import { PrismaClient } from '@prisma/client';
-import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { CosRole } from '@cos/types';
 
 const TENANT_ID = 'aaaaaaaa-0000-0000-0000-000000000001';
@@ -246,6 +251,21 @@ describe('UserService', () => {
         BadRequestException,
       );
     });
+
+    it('rejects assigning SYSTEM_ADMIN — a tenant admin must not mint a cross-tenant platform admin', async () => {
+      // Privilege-escalation guard (spec §6.7): SYSTEM_ADMIN is validated by @IsEnum(CosRole) at the
+      // DTO but must never be tenant-assignable. Rejected before any Keycloak/DB write.
+      const dto = {
+        display_name: 'attacker',
+        phone_number: '+66812345678',
+        role: CosRole.SYSTEM_ADMIN,
+      };
+      await expect(service.createUser(dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(keycloakAdmin.provisionPhoneUser).not.toHaveBeenCalled();
+      expect(keycloakAdmin.createEmailUser).not.toHaveBeenCalled();
+    });
   });
 
   // ─── changeRole ──────────────────────────────────────────────────────────
@@ -266,6 +286,14 @@ describe('UserService', () => {
       await expect(
         service.changeRole(USER_ID, { role: CosRole.FINANCE }, TENANT_ID, ACTOR_ID),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects changing a role to SYSTEM_ADMIN — privilege-escalation guard', async () => {
+      // Rejected before the membership lookup/update, so no DB write occurs.
+      await expect(
+        service.changeRole(USER_ID, { role: CosRole.SYSTEM_ADMIN }, TENANT_ID, ACTOR_ID),
+      ).rejects.toThrow(ForbiddenException);
+      expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
     });
   });
 

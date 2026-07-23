@@ -19,6 +19,11 @@ opentelemetry-exporter-otlp-proto-http==1.43.0
 opentelemetry-instrumentation-httpx==0.64b0
 httpx==0.28.1
 python-dotenv==1.2.2
+# In-service Keycloak JWT verification (auth.py) — RS256 via JWKS. [crypto] pulls the `cryptography`
+# backend required for RS256. Defense-in-depth alongside the Kong `jwt` plugin (spec §5.9.4): the
+# gateway verifies + injects x-tenant-id, and this service re-verifies the token and derives tenant
+# from the claim, so no endpoint trusts a client-supplied tenant_id.
+pyjwt[crypto]>=2.9,<3
 # Runtime deps imported by the report pipeline, cache, and digital-twin modules — these were
 # missing from requirements (service never started). Lower-bound pins; pip resolves compatible.
 asyncpg>=0.29

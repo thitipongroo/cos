@@ -151,6 +151,38 @@ services:
           redis_port: 6379
           fault_tolerant: true
           error_code: 429
+      # ── Identity forwarding (§5.9.4) ──────────────────────────────────────
+      # ai-gateway derives the caller's tenant from a VERIFIED source (auth.py), never from a client
+      # query/body param. Same pattern as the file-service route: strip anything the client sent, then
+      # re-add x-tenant-id/x-user-id/x-user-role from the JWT the `jwt` plugin already verified. The
+      # service ALSO re-verifies the token (defense-in-depth), and cross-checks it against this header.
+      - name: request-transformer
+        config:
+          remove:
+            headers:
+              - x-tenant-id
+              - x-user-id
+              - x-user-role
+      - name: post-function
+        config:
+          access:
+            # Sandbox-safe Lua (no `require`); a hostile claim cannot inject CR/LF or a quote because
+            # values are matched with a strict [%w_%-]+ class — a non-matching claim yields "".
+            - |
+              local token = kong.ctx.shared.authenticated_jwt_token
+              if not token then return end
+              local b64 = token:match("^[^.]+%.([^.]+)%.")
+              if not b64 then return end
+              b64 = b64:gsub("-", "+"):gsub("_", "/")
+              local pad = #b64 % 4
+              if pad > 0 then b64 = b64 .. string.rep("=", 4 - pad) end
+              local payload = ngx.decode_base64(b64) or ""
+              local function claim(name)
+                return payload:match('"' .. name .. '"%s*:%s*"([%w_%-]+)"') or ""
+              end
+              kong.service.request.set_header("x-tenant-id", claim("tenant_id"))
+              kong.service.request.set_header("x-user-id", claim("user_id"))
+              kong.service.request.set_header("x-user-role", claim("role"))
 
   # ── CredentialService: public W3C DID/VC resolution only (ADR-019, §5.9.8) ──
   # Own host, not a path under api.*: only the two unauthenticated GETs a third-party verifier needs

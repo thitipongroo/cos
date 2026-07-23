@@ -10,11 +10,12 @@ import os
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 
 import flags
 import metrics
+from auth import get_verified_tenant
 from otel import configure_telemetry
 from providers.llm_provider import Message, build_llm_provider
 from rag.retrieval import HybridRetriever
@@ -158,9 +159,11 @@ async def completions(req: CompletionsRequest):
 
 
 @app.post("/api/v1/rag/query", response_model=RAGQueryResponse)
-async def rag_query(req: RAGQueryRequest):
+async def rag_query(req: RAGQueryRequest, tenant_id: str = Depends(get_verified_tenant)):
     # Hybrid retrieval (keyword + vector, fused via RRF) runs whenever the backends are injected.
     # Stage-1 leaves them unconfigured, so this returns 503 — same posture as StubLLMProvider.
+    # tenant_id comes from the verified token/gateway (auth.get_verified_tenant), NOT req.tenant_id —
+    # a client-supplied body tenant must never scope another tenant's retrieval (cross-tenant IDOR).
     if _retriever is None:
         raise HTTPException(
             status_code=503,
@@ -168,7 +171,7 @@ async def rag_query(req: RAGQueryRequest):
         )
 
     chunks = await _retriever.retrieve(
-        req.query, req.tenant_id, req.entity_types, req.top_k
+        req.query, tenant_id, req.entity_types, req.top_k
     )
     context = _retriever.assemble_context(chunks)
     messages = [
@@ -223,14 +226,16 @@ def _usage_record(tenant_id: str, billed_minutes: int) -> dict:
 
 
 @app.post("/api/v1/ai/transcribe", response_model=TranscribeResponse)
-async def transcribe(req: TranscribeRequest):
+async def transcribe(req: TranscribeRequest, tenant_id: str = Depends(get_verified_tenant)):
+    # tenant_id is taken from the verified token/gateway, not req.tenant_id — the downstream pipeline
+    # and the usage meter are both scoped by it, so a client cannot bill or transcribe as another tenant.
     async with httpx.AsyncClient(timeout=120) as client:
         try:
             resp = await client.post(
                 f"{_transcription_url}/api/v1/ai/transcribe",
                 json={
                     "file_id": req.file_id,
-                    "tenant_id": req.tenant_id,
+                    "tenant_id": tenant_id,
                     "language": req.language,
                 },
             )
@@ -248,7 +253,7 @@ async def transcribe(req: TranscribeRequest):
     # A4 — per-minute usage metering (spec 26 §57). No metering store exists yet, so emit a
     # structured usage record for the billing aggregator; the Tenant-Admin usage dashboard
     # (spec 26 §58) consumes these downstream and is a separate concern.
-    _usage_logger.info("ai.usage %s", _usage_record(req.tenant_id, billed))
+    _usage_logger.info("ai.usage %s", _usage_record(tenant_id, billed))
 
     return TranscribeResponse(
         file_id=data["file_id"],
@@ -327,37 +332,45 @@ async def _run_report(report_type: str, project_id: str, tenant_id: str,
     )
 
 
+# tenant_id on every report endpoint comes from the verified token/gateway (get_verified_tenant),
+# never from the request body — otherwise a caller could generate/read another tenant's reports.
 @app.post("/api/v1/ai/reports/site-summary", response_model=ReportResponse)
-async def site_summary(req: SiteSummaryRequest):
+async def site_summary(req: SiteSummaryRequest, tenant_id: str = Depends(get_verified_tenant)):
     return await _run_report(
-        "SITE_SUMMARY", req.project_id, req.tenant_id, req.generated_by,
+        "SITE_SUMMARY", req.project_id, tenant_id, req.generated_by,
         {"date_range": req.date_range},
     )
 
 
 @app.post("/api/v1/ai/reports/procurement-summary", response_model=ReportResponse)
-async def procurement_summary(req: ProcurementSummaryRequest):
+async def procurement_summary(
+    req: ProcurementSummaryRequest, tenant_id: str = Depends(get_verified_tenant)
+):
     return await _run_report(
-        "PROCUREMENT_SUMMARY", req.project_id, req.tenant_id, req.generated_by, {},
+        "PROCUREMENT_SUMMARY", req.project_id, tenant_id, req.generated_by, {},
     )
 
 
 @app.post("/api/v1/ai/reports/executive-summary", response_model=ReportResponse)
-async def executive_summary(req: ExecutiveSummaryRequest):
+async def executive_summary(
+    req: ExecutiveSummaryRequest, tenant_id: str = Depends(get_verified_tenant)
+):
     return await _run_report(
-        "EXECUTIVE_SUMMARY", req.project_id, req.tenant_id, req.generated_by, {},
+        "EXECUTIVE_SUMMARY", req.project_id, tenant_id, req.generated_by, {},
     )
 
 
 @app.post("/api/v1/ai/reports/delay-risk", response_model=ReportResponse)
-async def delay_risk(req: DelayRiskRequest):
+async def delay_risk(req: DelayRiskRequest, tenant_id: str = Depends(get_verified_tenant)):
     return await _run_report(
-        "DELAY_RISK", req.project_id, req.tenant_id, req.generated_by, {},
+        "DELAY_RISK", req.project_id, tenant_id, req.generated_by, {},
     )
 
 
 @app.get("/api/v1/ai/reports/history")
-async def report_history(project_id: str, tenant_id: str, limit: int = 20):
+async def report_history(
+    project_id: str, tenant_id: str = Depends(get_verified_tenant), limit: int = 20
+):
     if _db_pool is None:
         raise HTTPException(status_code=503, detail="Database not configured")
     from reports.persistence import fetch_report_history

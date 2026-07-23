@@ -9,14 +9,31 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   OnModuleDestroy,
 } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
+import { CosRole } from '@cos/types';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { ChangeRoleDto } from './dto/change-role.dto';
+
+// SYSTEM_ADMIN is a cross-tenant platform role (spec §6.7 — "NOT provisioned to any tenant"). The
+// user-management endpoints are gated by @Roles(TENANT_ADMIN), and the role field is validated only
+// by @IsEnum(CosRole), which includes SYSTEM_ADMIN. Without this guard a TENANT_ADMIN could create a
+// user (or change a role) to SYSTEM_ADMIN; the Keycloak `role` attribute → JWT `role` claim mapper
+// (construction-os-realm.json) would then mint a SYSTEM_ADMIN token on that user's login, granting
+// cross-tenant platform control (TenantController @Roles(SYSTEM_ADMIN): list/provision/deactivate any
+// tenant, reassign dedicated DB URLs). Reject it here — the service is the authoritative boundary.
+function assertRoleAssignableByTenant(role: CosRole): void {
+  if (role === CosRole.SYSTEM_ADMIN) {
+    throw new ForbiddenException(
+      'SYSTEM_ADMIN is a cross-tenant platform role and cannot be assigned to a tenant user',
+    );
+  }
+}
 
 const logger = createLogger('user-service');
 
@@ -145,6 +162,7 @@ export class UserService implements OnModuleDestroy {
   }
 
   async createUser(dto: CreateUserDto, tenantId: string, actorId: string): Promise<UserRow> {
+    assertRoleAssignableByTenant(dto.role);
     if (!dto.phone_number && !dto.email) {
       throw new BadRequestException('Either phone_number (Path A) or email (Path B) is required');
     }
@@ -254,6 +272,7 @@ export class UserService implements OnModuleDestroy {
     tenantId: string,
     actorId: string,
   ): Promise<void> {
+    assertRoleAssignableByTenant(dto.role);
     const [membership] = await this.prisma.$queryRaw<Array<{ role: string }>>`
       SELECT role FROM platform.tenant_memberships
       WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid

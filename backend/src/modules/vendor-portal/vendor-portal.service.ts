@@ -113,7 +113,7 @@ export class VendorPortalService {
     return this.repo.listPurchaseOrdersByVendor(vendorId);
   }
 
-  submitInvoice(
+  async submitInvoice(
     vendorId: string,
     dto: {
       po_id: string;
@@ -124,6 +124,14 @@ export class VendorPortalService {
       due_date: string;
     },
   ): Promise<InvoiceRow> {
+    // Object-level authorization: a Tier-2 vendor may only invoice against a PO issued to THEM. The
+    // invoice's vendor_id is already forced to the authenticated caller, but po_id is caller-supplied,
+    // so without this check vendor A could attach an invoice to vendor B's PO in the same tenant.
+    // Verify ownership (tenant-scoped by RLS inside the repo's db.run) before creating the invoice.
+    const po = await this.repo.findPurchaseOrderForVendor(dto.po_id, vendorId);
+    if (!po) {
+      throw new NotFoundException('Purchase order not found for this vendor');
+    }
     return this.repo.createInvoice({
       poId: dto.po_id,
       vendorId,

@@ -1,7 +1,8 @@
 // IoT Ingestion Worker (spec §33.3 write path): EMQX (MQTT 5.0) → Kafka.
 //
-// Subscribes to cos/v1/devices/+/telemetry on the MQTT broker, transforms each message into a
-// per-tenant Kafka event (internal/ingest.Transform), and produces it for the Digital Twin Service.
+// Subscribes to cos/v1/tenants/+/devices/+/telemetry on the MQTT broker, transforms each message
+// into a per-tenant Kafka event (internal/ingest.Transform), and produces it for the Digital Twin
+// Service. tenant_id + device_id are taken from the broker-authenticated topic, not the payload.
 //
 // MOCK-VERIFIED ONLY: there is no EMQX broker in the stack and no physical device, so this wiring
 // has never run end to end. The transform it drives is unit-tested; the MQTT subscribe and Kafka
@@ -25,7 +26,7 @@ import (
 	"github.com/construction-os/iot-ingestion-worker/internal/topics"
 )
 
-const telemetryTopicFilter = "cos/v1/devices/+/telemetry"
+const telemetryTopicFilter = "cos/v1/tenants/+/devices/+/telemetry"
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
