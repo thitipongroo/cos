@@ -24,10 +24,21 @@ export interface SignTokenClaims {
   contractId: string;
 }
 
+// The HMAC key is the sole authenticity control for these external-party tokens. In production it MUST
+// be injected (AWS Secrets Manager / Vault) — refuse to boot rather than silently fall back to a
+// source-visible constant that would let anyone forge tokens. A dev-only fallback keeps local/test easy.
+function resolveSignSecret(): string {
+  const configured = process.env['CONTRACT_SIGN_SECRET'];
+  if (configured) return configured;
+  if (process.env['NODE_ENV'] === 'production') {
+    throw new Error('CONTRACT_SIGN_SECRET must be set in production');
+  }
+  return 'dev-contract-sign-secret-change-me';
+}
+
 @Injectable()
 export class ContractSignLinkService {
-  private readonly secret =
-    process.env['CONTRACT_SIGN_SECRET'] ?? 'dev-contract-sign-secret-change-me';
+  private readonly secret = resolveSignSecret();
   private cryptoLib?: typeof import('node:crypto');
 
   private async lib(): Promise<typeof import('node:crypto')> {

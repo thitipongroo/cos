@@ -80,7 +80,7 @@ describe('MagicLinkService', () => {
     expect(svc.hashToken('abc')).toHaveLength(64);
   });
 
-  it('falls back to a default secret when the env var is unset', () => {
+  it('falls back to a default secret when the env var is unset (non-production only)', () => {
     const saved = process.env['VENDOR_PORTAL_SECRET'];
     delete process.env['VENDOR_PORTAL_SECRET'];
     try {
@@ -92,6 +92,21 @@ describe('MagicLinkService', () => {
       });
     } finally {
       process.env['VENDOR_PORTAL_SECRET'] = saved;
+    }
+  });
+
+  it('refuses to construct in production when the secret is unset', () => {
+    const savedSecret = process.env['VENDOR_PORTAL_SECRET'];
+    const savedEnv = process.env['NODE_ENV'];
+    delete process.env['VENDOR_PORTAL_SECRET'];
+    process.env['NODE_ENV'] = 'production';
+    try {
+      expect(() => new MagicLinkService()).toThrow(
+        'VENDOR_PORTAL_SECRET must be set in production',
+      );
+    } finally {
+      process.env['NODE_ENV'] = savedEnv;
+      if (savedSecret !== undefined) process.env['VENDOR_PORTAL_SECRET'] = savedSecret;
     }
   });
 });
