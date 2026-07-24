@@ -20,12 +20,12 @@ func TestParseTelemetryTopic(t *testing.T) {
 	}
 
 	for _, bad := range []string{
-		"cos/v1/tenants//devices/x/telemetry",       // empty tenant id
-		"cos/v1/tenants/t/devices//telemetry",       // empty device id
-		"cos/v1/tenants/t/devices/x/state",          // wrong suffix
-		"other/v1/tenants/t/devices/x/telemetry",    // wrong prefix
-		"cos/v1/devices/x/telemetry",                // old (tenant-less) topic — must be rejected
-		"cos/v1/tenants/t/devices/x",                // too short
+		"cos/v1/tenants//devices/x/telemetry",    // empty tenant id
+		"cos/v1/tenants/t/devices//telemetry",    // empty device id
+		"cos/v1/tenants/t/devices/x/state",       // wrong suffix
+		"other/v1/tenants/t/devices/x/telemetry", // wrong prefix
+		"cos/v1/devices/x/telemetry",             // old (tenant-less) topic — must be rejected
+		"cos/v1/tenants/t/devices/x",             // too short
 	} {
 		if _, _, err := ParseTelemetryTopic(bad); err == nil {
 			t.Errorf("expected error for topic %q", bad)

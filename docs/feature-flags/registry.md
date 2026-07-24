@@ -13,7 +13,7 @@ disable a live production feature. New-feature flags should default OFF until ro
 | `s1.identity.sms-otp-login`    | `POST /api/v1/auth/otp/request`, `POST /api/v1/auth/otp/verify` (Path A login)                                                                             | ON       | kill-switch — permanent |
 | `s1.finance.payment-mutations` | `POST /api/v1/finance/payments`, `PATCH /api/v1/finance/payments/:id/approve`, `POST /api/v1/finance/billing`, `PATCH /api/v1/finance/billing/:id/approve` | ON       | kill-switch — permanent |
 | `s1.ai.report-generation`      | AI report generation (`services/ai-gateway` — see registry note below)                                                                                     | ON       | kill-switch — permanent |
-| `s1.ai.completions`            | `POST /api/v1/ai/completions` (general LLM completion endpoint, `services/ai-gateway`)                                                                      | ON       | kill-switch — permanent |
+| `s1.ai.completions`            | `POST /api/v1/ai/completions` (general LLM completion endpoint, `services/ai-gateway`)                                                                     | ON       | kill-switch — permanent |
 
 Notes:
 

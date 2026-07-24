@@ -40,7 +40,7 @@ The custom backend TOTP module is marked **deprecated** (kept to avoid test chur
 
 - The only place Path B MFA can be enforced at login is Keycloak — the backend is not in the password path.
 - Placing Layer 2 in `JwtAuthGuard` (not a global `APP_GUARD`) is required: `JwtAuthGuard` is applied
-  per-route and populates `req.user`; a global guard runs *before* authentication and would see no user.
+  per-route and populates `req.user`; a global guard runs _before_ authentication and would see no user.
 - `MFA_ENFORCE` default-off avoids a lockout: enforcing against a realm that does not yet emit the expected
   `acr` would reject every privileged login. The realm behavior cannot be validated by CI (no Keycloak in
   the test harness), so enforcement is activated by ops only after live verification.

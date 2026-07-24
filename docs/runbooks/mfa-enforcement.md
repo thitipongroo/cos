@@ -11,7 +11,7 @@ two layers:
   enforcing against a realm that does not yet emit the expected `acr` would lock out every privileged user.
 
 > ⚠️ **Why Layer 1 is not a blind realm-JSON edit.** The realm file (`infrastructure/keycloak/realms/
-> construction-os-realm.json`) has no `authenticatorConfig` array or realm-level `attributes` block, and this
+construction-os-realm.json`) has no `authenticatorConfig` array or realm-level `attributes` block, and this
 > repo has no running Keycloak to validate an import against. A malformed authentication-flow import breaks
 > **all** logins. So Layer 1 is applied + verified against a live Keycloak using the steps below, then the
 > corrected realm is exported back to git.
