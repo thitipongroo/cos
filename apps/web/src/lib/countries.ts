@@ -1,6 +1,14 @@
 // Phone country picker data for the OTP login (§20.6.1 Path A). Scope: the markets COS operates in
 // — Thailand (home), Singapore and Vietnam. Flags are bundled SVGs (public/flags/<iso2>.svg, from the
 // MIT flag-icons set) — no external/CDN request. Dial codes are ITU-T E.164 country codes.
+//
+// `toE164` and `DEFAULT_COUNTRY_ISO2` are shared with the mobile app via @cos/ui-logic (ADR-068);
+// re-exported here so this module stays the single import surface. The country catalogue itself is
+// web-specific (no `nationalDigits`, asset-based flags, BCP-47 locale detection).
+
+import { DEFAULT_COUNTRY_ISO2, toE164 } from '@cos/ui-logic';
+
+export { DEFAULT_COUNTRY_ISO2, toE164 };
 
 export interface Country {
   /** ISO 3166-1 alpha-2, lowercased to match the bundled public/flags/<iso2>.svg asset. */
@@ -17,21 +25,8 @@ export const COUNTRIES: Country[] = [
   { iso2: 'sg', dialCode: '+65', nameEn: 'Singapore', nameTh: 'สิงคโปร์' },
 ];
 
-/** Home market — the fallback when device/locale detection yields nothing in-list. */
-export const DEFAULT_COUNTRY_ISO2 = 'th';
-
 export function findCountry(iso2: string): Country {
   return COUNTRIES.find((c) => c.iso2 === iso2) ?? COUNTRIES[0]!;
-}
-
-/**
- * Combine a country dial code + a nationally-formatted number into an E.164 string the backend
- * accepts (^\+[1-9]\d{7,14}$). Strips separators and a single leading trunk '0' (e.g. TH mobile
- * "081-234-5678" → "+66812345678").
- */
-export function toE164(dialCode: string, nationalNumber: string): string {
-  const digits = nationalNumber.replace(/\D/g, '').replace(/^0+/, '');
-  return `${dialCode}${digits}`;
 }
 
 /**

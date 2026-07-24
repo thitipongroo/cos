@@ -1,6 +1,15 @@
 // Phone country picker data for the mobile OTP login (§20.6.1 Path A). Scope: the markets COS
-// operates in — Thailand (home), Singapore and Vietnam. Flags are inline SVG strings (from the MIT flag-icons
-// set), rendered via react-native-svg <SvgXml> — fully bundled, no network. Dial codes are E.164.
+// operates in — Thailand (home), Singapore and Vietnam. Flags are inline SVG strings (from the MIT
+// flag-icons set), rendered via react-native-svg <SvgXml> — fully bundled, no network. Dial codes
+// are E.164.
+//
+// `toE164` and `DEFAULT_COUNTRY_ISO2` are shared with the web app via @cos/ui-logic (ADR-068);
+// re-exported here so this module stays the single import surface. The country catalogue itself is
+// mobile-specific (`nationalDigits`, inline flag SVGs, device-region detection).
+
+import { DEFAULT_COUNTRY_ISO2, toE164 } from '@cos/ui-logic';
+
+export { DEFAULT_COUNTRY_ISO2, toE164 };
 
 export interface Country {
   iso2: string;
@@ -8,7 +17,7 @@ export interface Country {
   nameEn: string;
   nameTh: string;
   /**
-   * Digits a user types in the national format, including any leading trunk "0" \u2014 used to cap and
+   * Digits a user types in the national format, including any leading trunk "0" — used to cap and
    * validate the phone field. TH mobile "081-234-5678" = 10; VN "091-234-5678" = 10; SG "8123 4567" =
    * 8 (no trunk prefix). `toE164` strips the trunk 0 before assembling the E.164 number.
    */
@@ -20,26 +29,24 @@ export const COUNTRIES: Country[] = [
     iso2: 'th',
     dialCode: '+66',
     nameEn: 'Thailand',
-    nameTh: '\u0e44\u0e17\u0e22',
+    nameTh: 'ไทย',
     nationalDigits: 10,
   },
   {
     iso2: 'vn',
     dialCode: '+84',
     nameEn: 'Vietnam',
-    nameTh: '\u0e40\u0e27\u0e35\u0e22\u0e14\u0e19\u0e32\u0e21',
+    nameTh: 'เวียดนาม',
     nationalDigits: 10,
   },
   {
     iso2: 'sg',
     dialCode: '+65',
     nameEn: 'Singapore',
-    nameTh: '\u0e2a\u0e34\u0e07\u0e04\u0e42\u0e1b\u0e23\u0e4c',
+    nameTh: 'สิงคโปร์',
     nationalDigits: 8,
   },
 ];
-
-export const DEFAULT_COUNTRY_ISO2 = 'th';
 
 /** Inline flag SVG markup keyed by iso2, for <SvgXml xml={FLAG_SVG[iso2]} />. */
 export const FLAG_SVG: Record<string, string> = {
@@ -50,15 +57,6 @@ export const FLAG_SVG: Record<string, string> = {
 
 export function findCountry(iso2: string): Country {
   return COUNTRIES.find((c) => c.iso2 === iso2) ?? COUNTRIES[0]!;
-}
-
-/**
- * Combine a dial code + national number into E.164 (^\+[1-9]\d{7,14}$): strip separators and a
- * leading trunk "0" (e.g. TH "081-234-5678" -> "+66812345678").
- */
-export function toE164(dialCode: string, nationalNumber: string): string {
-  const digits = nationalNumber.replace(/\D/g, '').replace(/^0+/, '');
-  return `${dialCode}${digits}`;
 }
 
 /** Map a device region code (e.g. "TH", "SG") to an in-list iso2; fallback to the home market. */

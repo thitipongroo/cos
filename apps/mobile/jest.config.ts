@@ -23,6 +23,8 @@ const config: Config = {
     // Workspace package aliases
     '^@cos/types$': '<rootDir>/../../packages/@cos/types/src/index.ts',
     '^@cos/types/(.*)$': '<rootDir>/../../packages/@cos/types/src/$1',
+    '^@cos/ui-logic$': '<rootDir>/../../packages/@cos/ui-logic/src/index.ts',
+    '^@cos/ui-logic/(.*)$': '<rootDir>/../../packages/@cos/ui-logic/src/$1',
   },
   collectCoverage: true,
   coverageDirectory: 'coverage',

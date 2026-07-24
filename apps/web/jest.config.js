@@ -17,6 +17,12 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
   },
+  // @cos/ui-logic (ADR-068) is consumed from source in tests so the runner needs no prior build,
+  // matching the mobile jest mapping for @cos/types.
+  moduleNameMapper: {
+    '^@cos/ui-logic$': '<rootDir>/../../packages/@cos/ui-logic/src/index.ts',
+    '^@cos/ui-logic/(.*)$': '<rootDir>/../../packages/@cos/ui-logic/src/$1',
+  },
   collectCoverage: true,
   coverageDirectory: 'coverage',
   // Scoped to the modules that have unit tests. src/lib/{countries,format,nav}.ts and the

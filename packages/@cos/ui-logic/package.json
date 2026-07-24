@@ -1,0 +1,30 @@
+{
+  "name": "@cos/ui-logic",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "dev": "tsc --watch --project tsconfig.build.json",
+    "type-check": "tsc --noEmit",
+    "clean": "node ../../../scripts/rimraf-dist.mjs",
+    "test": "jest",
+    "test:unit": "jest --testPathPatterns='src/'",
+    "test:cov": "jest --coverage"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.12.0",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.1.0",
+    "typescript": "^6.0.3"
+  }
+}

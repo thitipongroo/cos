@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@cos/types": "file:../../packages/@cos/types",
+    "@cos/ui-logic": "file:../../packages/@cos/ui-logic",
     "@expo-google-fonts/inter-tight": "^0.4.2",
     "@expo/config-plugins": "~8.0.11",
     "@expo/vector-icons": "^15.1.1",
