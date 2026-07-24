@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>Notification Preferences | Construction OS</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -226,7 +224,7 @@
 <p class="font-web-text-small text-web-text-small text-on-surface-variant">24h aggregate of progress &amp; blockers.</p>
 </div>
 <label class="custom-toggle">
-<input checked="" type="checkbox"/>
+<input checked="" type="checkbox">
 <span class="slider"></span>
 </label>
 </div>
@@ -258,7 +256,7 @@
 <p class="font-web-text-small text-web-text-small text-on-surface-variant">Machine insights on resource allocation.</p>
 </div>
 <label class="custom-toggle">
-<input type="checkbox"/>
+<input type="checkbox">
 <span class="slider"></span>
 </label>
 </div>
@@ -279,7 +277,7 @@
 <p class="text-[12px] text-on-surface-variant">Notify when schedule slips &gt; 4 hours.</p>
 </div>
 <label class="custom-toggle">
-<input checked="" type="checkbox"/>
+<input checked="" type="checkbox">
 <span class="slider"></span>
 </label>
 </div>
@@ -289,7 +287,7 @@
 <p class="text-[12px] text-on-surface-variant">Sensor alerts exceeding ±2mm tolerance.</p>
 </div>
 <label class="custom-toggle">
-<input checked="" type="checkbox"/>
+<input checked="" type="checkbox">
 <span class="slider"></span>
 </label>
 </div>
@@ -299,18 +297,46 @@
 <p class="text-[12px] text-on-surface-variant">Allow critical pings during downtime.</p>
 </div>
 <label class="custom-toggle">
-<input type="checkbox"/>
+<input type="checkbox">
 <span class="slider"></span>
 </label>
 </div>
 </div>
+</section><section class="space-y-web-space-3">
+  <h3 class="font-mobile-text-label text-mobile-text-label text-cos-cyan uppercase tracking-wider">Quiet Hours (Push Only)</h3>
+  <div class="industrial-glass rounded-xl p-web-space-4 space-y-4">
+    <div class="flex justify-between items-center">
+      <div class="space-y-1">
+        <p class="font-mobile-text-label text-mobile-text-label text-cos-white">Enable Quiet Hours</p>
+        <p class="font-web-text-small text-web-text-small text-on-surface-variant">Mute push alerts during rest periods.</p>
+      </div>
+      <label class="custom-toggle">
+        <input type="checkbox">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="flex items-center justify-between bg-surface-container-highest/50 p-3 rounded-lg border border-outline-variant/30">
+      <div class="flex flex-col">
+        <span class="text-[9px] font-bold text-outline uppercase">Start Time</span>
+        <span class="text-cos-white font-bold">22:00</span>
+      </div>
+      <span class="material-symbols-outlined text-outline">arrow_forward</span>
+      <div class="flex flex-col text-right">
+        <span class="text-[9px] font-bold text-outline uppercase">End Time</span>
+        <span class="text-cos-white font-bold">07:00</span>
+      </div>
+    </div>
+    <div class="pt-2 border-t border-outline-variant/20">
+      <p class="text-[11px] text-on-surface-variant italic">* Spec §10.3: Mandatory for field safety compliance.</p>
+    </div>
+  </div>
 </section>
 <!-- Connectivity Status Bar (SSE, PUSH, LINE, SMTP) -->
 <section class="mt-12 py-6 border-t border-outline-variant/30">
 <p class="text-center font-web-text-tiny text-web-text-tiny text-outline mb-4 uppercase tracking-[0.2em]">System Service Handshakes</p>
 <div class="flex justify-center items-center gap-web-space-4">
 <div class="flex items-center gap-1.5 grayscale opacity-80" id="status-sse">
-<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse" style="opacity: 0.5;"></div>
 <span class="font-web-text-tiny text-web-text-tiny">SSE</span>
 </div>
 <div class="flex items-center gap-1.5" id="status-push">
@@ -376,4 +402,6 @@
             sseStatus.style.opacity = sseStatus.style.opacity === '0.5' ? '1' : '0.5';
         }, 1500);
     </script>
+
+
 </body></html>

@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        try {
+            tailwind.config = {
+                darkMode: "class",
+                theme: {
+                    extend: {
+                        "colors": {
+                            "on-secondary-container": "#00424e",
+                            "tertiary": "#c1c5dc",
+                            "mobile-success": "#00C853",
+                            "primary": "#b4c5ff",
+                            "tertiary-fixed": "#dee1f9",
+                            "sync-pending": "#94A3B8",
+                            "surface-container-lowest": "#000f21",
+                            "on-secondary-fixed": "#001f26",
+                            "surface-variant": "#26364a",
+                            "surface-bright": "#2a3a4f",
+                            "secondary": "#4cd7f6",
+                            "on-primary": "#002a78",
+                            "surface-container-low": "#0b1c30",
+                            "secondary-fixed-dim": "#4cd7f6",
+                            "on-background": "#d3e4fe",
+                            "on-primary-fixed-variant": "#003ea8",
+                            "tertiary-fixed-dim": "#c1c5dc",
+                            "on-tertiary-fixed-variant": "#414658",
+                            "dark-surface": "#0B1020",
+                            "primary-fixed": "#dbe1ff",
+                            "secondary-container": "#03b5d3",
+                            "error": "#ffb4ab",
+                            "on-primary-fixed": "#00174b",
+                            "secondary-fixed": "#acedff",
+                            "on-tertiary": "#2b3041",
+                            "outline-variant": "#434655",
+                            "on-primary-container": "#eeefff",
+                            "tertiary-container": "#686c80",
+                            "surface-tint": "#b4c5ff",
+                            "sync-active": "#FFD60A",
+                            "on-error": "#690005",
+                            "on-tertiary-container": "#eeefff",
+                            "on-surface": "#d3e4fe",
+                            "inverse-primary": "#0053db",
+                            "surface-container-high": "#1b2b3f",
+                            "dark-bg": "#020617",
+                            "primary-fixed-dim": "#b4c5ff",
+                            "error-container": "#93000a",
+                            "mobile-primary": "#0066FF",
+                            "surface-dim": "#031427",
+                            "on-error-container": "#ffdad6",
+                            "inverse-on-surface": "#213145",
+                            "surface": "#0B1020",
+                            "on-tertiary-fixed": "#161b2b",
+                            "inverse-surface": "#d3e4fe",
+                            "primary-container": "#2563eb",
+                            "on-surface-variant": "#c3c6d7",
+                            "surface-container-highest": "#26364a",
+                            "surface-container": "#102034",
+                            "on-secondary": "#003640",
+                            "on-secondary-fixed-variant": "#004e5c",
+                            "outline": "#8d90a0",
+                            "background": "#020617",
+                            "mobile-danger": "#FF3B30",
+                            "mobile-warning": "#FF9500",
+                            "cos-blue": "#2563eb",
+                            "infra-navy": "#0B1020",
+                            "status-draft": "#8E8E93"
+                        },
+                        "borderRadius": {
+                            "DEFAULT": "0.25rem",
+                            "lg": "0.5rem",
+                            "xl": "0.75rem",
+                            "full": "9999px"
+                        },
+                        "spacing": {
+                            "web-margin": "32px",
+                            "space-2": "8px",
+                            "edge-mobile": "24px",
+                            "touch-target": "52px",
+                            "space-3": "12px",
+                            "base": "4px",
+                            "space-4": "16px",
+                            "space-1": "4px",
+                            "mobile-edge": "24px",
+                            "mobile-touch-target": "52px"
+                        },
+                        "fontFamily": {
+                            "body-web": ["Inter Tight"],
+                            "h1-web": ["Inter Tight"],
+                            "hero-mobile": ["Inter Tight"],
+                            "body-mobile": ["Inter Tight"],
+                            "tiny-web": ["Inter Tight"],
+                            "label-mobile": ["Inter Tight"],
+                            "display-web": ["Inter Tight"],
+                            "h2-web": ["Inter Tight"],
+                            "mobile-text-hero": ["Inter Tight"],
+                            "mobile-text-label": ["Inter Tight"],
+                            "mobile-text-body": ["Inter Tight"]
+                        },
+                        "fontSize": {
+                            "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                            "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                            "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                            "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                            "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                            "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                            "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                            "mobile-text-hero": ["20px", {"lineHeight": "24px", "fontWeight": "700"}],
+                            "mobile-text-label": ["12px", {"lineHeight": "16px", "fontWeight": "600"}],
+                            "mobile-text-body": ["16px", {"lineHeight": "22px", "fontWeight": "400"}]
+                        }
+                    },
+                },
+            }
+        } catch (_e) {}
+    </script>
+</head>
+<body class="font-body-mobile text-on-surface antialiased bg-dark-bg">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-40 bg-infra-navy border-b border-outline-variant/20 flex items-center justify-between px-mobile-edge h-mobile-touch-target">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<img alt="COS Logo" class="w-7 h-7 object-contain bg-transparent" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTq61JYB6tDI5K09DS7VLLivYKWFekh5IYQz0NWx67kUB6a7PLH9U-EovCZSVy8pNeuAlCJqzRTjjXzDbB6DNg7AZATeNn_PVcPbotrhca72h6Dvju3BT1gguuIXJllxU0Z0USbKpx0sCNyjuQSNFvHOxORgzZg9KE_UejV8kiVxvAfGVh3ET_NJ23fMUQKFYNfoMQunGsrTm1QZCxsT65_rwHKFG-rxVhH3NW921Y8tSLEZxoMATHpPXWXgIpnfV8vu1G24RRTUc"/>
+<h1 class="font-mobile-text-hero text-[16px] font-bold text-primary uppercase tracking-[0.1em] whitespace-nowrap">CONSTRUCTION OS</h1>
+</div>
+</div>
+<button class="active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant">cloud_sync</span>
+</button>
+</header>
+<main class="pb-[160px]">
+<!-- Search & Filter Area -->
+<section class="px-mobile-edge pt-space-4 pb-space-2">
+<div class="relative flex items-center h-[52px]">
+<span class="material-symbols-outlined absolute left-4 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full h-full bg-infra-navy rounded-xl border border-outline-variant/20 pl-12 pr-4 text-body-mobile focus:ring-1 focus:ring-primary/50 placeholder-on-surface-variant/40" placeholder="Search by date or keywords..." type="text"/>
+<button class="ml-2 w-[52px] h-[52px] shrink-0 flex items-center justify-center bg-infra-navy border border-outline-variant/20 rounded-xl active:bg-surface-variant">
+<span class="material-symbols-outlined text-primary">filter_list</span>
+</button>
+</div>
+</section>
+<!-- Reports List -->
+<section class="px-mobile-edge space-y-space-3 mt-4">
+<!-- Report Card: Submitted -->
+<div class="bg-infra-navy rounded-xl overflow-hidden active:scale-[0.98] transition-transform duration-150 border border-outline-variant/10 border-l-4 border-l-mobile-success min-h-[120px]">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-2">
+<div>
+<p class="font-mobile-text-label text-on-surface-variant/60 uppercase tracking-wider text-[11px]">OCT 24, 2023</p>
+<h3 class="font-mobile-text-hero text-[18px] text-on-surface">Foundation Pour Phase 2</h3>
+</div>
+<div class="bg-mobile-success/10 text-mobile-success px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            SUBMITTED
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">wb_sunny</span>
+<span class="text-label-mobile text-on-surface-variant">Clear, 28°C</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">groups</span>
+<span class="text-label-mobile text-on-surface-variant">42 Workers</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/10">
+<p class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-2">PRIMARY MATERIALS</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-surface-variant/40 px-3 py-1 rounded-full text-tiny-web text-on-surface border border-outline-variant/20">C35 Concrete: 120m³</span>
+<span class="bg-surface-variant/40 px-3 py-1 rounded-full text-tiny-web text-on-surface border border-outline-variant/20">Rebar T20: 4.5t</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Report Card: Syncing -->
+<div class="bg-infra-navy rounded-xl overflow-hidden active:scale-[0.98] transition-transform duration-150 border border-outline-variant/10 border-l-4 border-l-sync-active relative min-h-[120px]">
+<div class="p-space-4 relative">
+<div class="flex justify-between items-start mb-space-2">
+<div>
+<p class="font-mobile-text-label text-on-surface-variant/60 uppercase tracking-wider text-[11px]">OCT 23, 2023</p>
+<h3 class="font-mobile-text-hero text-[18px] text-on-surface">Site Excavation Works</h3>
+</div>
+<div class="bg-sync-active/10 text-sync-active px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                            SYNCING
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">cloud</span>
+<span class="text-label-mobile text-on-surface-variant">Overcast, 22°C</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">groups</span>
+<span class="text-label-mobile text-on-surface-variant">18 Workers</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/10">
+<p class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-2">PRIMARY MATERIALS</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-surface-variant/40 px-3 py-1 rounded-full text-tiny-web text-on-surface border border-outline-variant/20">Diesel: 450L</span>
+<span class="bg-surface-variant/40 px-3 py-1 rounded-full text-tiny-web text-on-surface border border-outline-variant/20">Blinding: 20m³</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Report Card: Draft -->
+<div class="bg-infra-navy rounded-xl overflow-hidden active:scale-[0.98] transition-transform duration-150 border border-outline-variant/10 border-l-4 border-l-status-draft min-h-[120px]">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-2">
+<div>
+<p class="font-mobile-text-label text-on-surface-variant/60 uppercase tracking-wider text-[11px]">OCT 22, 2023</p>
+<h3 class="font-mobile-text-hero text-[18px] text-on-surface">Drainage Installation</h3>
+</div>
+<div class="bg-status-draft/10 text-status-draft px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">edit_note</span>
+                            DRAFT
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">rainy</span>
+<span class="text-label-mobile text-on-surface-variant">Light Rain, 19°C</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">groups</span>
+<span class="text-label-mobile text-on-surface-variant">12 Workers</span>
+</div>
+</div>
+<div class="mt-4 pt-4 border-t border-outline-variant/10">
+<p class="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-widest mb-2">PRIMARY MATERIALS</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-surface-variant/40 px-3 py-1 rounded-full text-tiny-web text-on-surface border border-outline-variant/20">PVC Pipes 150mm: 30m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Report Card: Older Submitted -->
+<div class="bg-infra-navy rounded-xl overflow-hidden active:scale-[0.98] transition-transform duration-150 border border-outline-variant/10 border-l-4 border-l-mobile-success opacity-70 min-h-[120px]">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-2">
+<div>
+<p class="font-mobile-text-label text-on-surface-variant/60 uppercase tracking-wider text-[11px]">OCT 21, 2023</p>
+<h3 class="font-mobile-text-hero text-[18px] text-on-surface">Perimeter Fencing</h3>
+</div>
+<div class="bg-mobile-success/10 text-mobile-success px-2 py-1 rounded text-[11px] font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                            SUBMITTED
+                        </div>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">wb_sunny</span>
+<span class="text-label-mobile text-on-surface-variant">Sunny, 30°C</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">groups</span>
+<span class="text-label-mobile text-on-surface-variant">8 Workers</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB -->
+<div class="fixed bottom-[92px] right-mobile-edge z-40">
+<button class="w-[56px] h-[56px] rounded-full bg-cos-blue shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center active:scale-95 transition-all duration-150 group">
+<span class="material-symbols-outlined text-white text-[28px] font-bold">add</span>
+</button>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 border-t border-outline-variant/20 bg-infra-navy shadow-2xl flex justify-around items-center h-[72px] px-2 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 active:bg-surface-variant/20 transition-all duration-200 px-4 py-1" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="text-[11px] font-semibold mt-0.5">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 active:bg-surface-variant/20 transition-all duration-200 px-4 py-1" href="#">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="text-[11px] font-semibold mt-0.5">BIM</span>
+</a>
+<!-- Active Tab: Reports -->
+<a class="flex flex-col items-center justify-center text-primary px-4 py-1 relative" href="#">
+<div class="absolute -top-1 w-8 h-1 bg-primary rounded-full"></div>
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="text-[11px] font-bold mt-0.5">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 active:bg-surface-variant/20 transition-all duration-200 px-4 py-1" href="#">
+<span class="material-symbols-outlined">health_and_safety</span>
+<span class="text-[11px] font-semibold mt-0.5">Safety</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/60 active:bg-surface-variant/20 transition-all duration-200 px-4 py-1" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="text-[11px] font-semibold mt-0.5">More</span>
+</a>
+</nav>
+<!-- Overlay remains similar but styled for new theme -->
+<div class="fixed inset-0 bg-black/80 z-[60] flex items-end justify-center pointer-events-none opacity-0 transition-opacity duration-300" id="new-report-overlay">
+<div class="w-full max-w-md bg-infra-navy rounded-t-3xl p-6 transform translate-y-full transition-transform duration-300 ease-out ios-bottom-sheet">
+<div class="w-12 h-1.5 bg-outline-variant/30 rounded-full mx-auto mb-6"></div>
+<h2 class="text-hero-mobile text-on-surface mb-2">New Report</h2>
+<p class="text-body-mobile text-on-surface-variant mb-8">Select the report type to initialize your site record for today.</p>
+<div class="grid grid-cols-2 gap-4 mb-8">
+<button class="bg-surface-variant/20 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 active:bg-surface-variant/40 border border-outline-variant/10">
+<span class="material-symbols-outlined text-secondary text-3xl">wb_sunny</span>
+<span class="text-label-mobile text-on-surface">Daily Progress</span>
+</button>
+<button class="bg-surface-variant/20 p-4 rounded-2xl flex flex-col items-center justify-center gap-3 active:bg-surface-variant/40 border border-outline-variant/10">
+<span class="material-symbols-outlined text-mobile-warning text-3xl">warning</span>
+<span class="text-label-mobile text-on-surface">Incident Report</span>
+</button>
+</div>
+<button class="w-full h-[56px] bg-surface-variant/30 text-on-surface rounded-2xl font-bold uppercase tracking-widest pointer-events-auto" id="close-overlay">
+                Cancel
+            </button>
+</div>
+</div>
+<script>
+        const fab = document.querySelector('button.bg-cos-blue');
+        const overlay = document.getElementById('new-report-overlay');
+        const sheet = overlay.querySelector('.ios-bottom-sheet');
+        const closeBtn = document.getElementById('close-overlay');
+
+        fab.addEventListener('click', () => {
+            overlay.classList.remove('pointer-events-none', 'opacity-0');
+            overlay.classList.add('opacity-100');
+            sheet.classList.remove('translate-y-full');
+        });
+
+        const hideOverlay = () => {
+            overlay.classList.add('opacity-0');
+            sheet.classList.add('translate-y-full');
+            setTimeout(() => {
+                overlay.classList.add('pointer-events-none');
+            }, 300);
+        };
+
+        closeBtn.addEventListener('click', hideOverlay);
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) hideOverlay();
+        });
+    </script>
+</body></html>

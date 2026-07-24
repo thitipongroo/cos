@@ -1,0 +1,296 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface": "#0F172A",
+                      "background": "#020617",
+                      "primary": "#0066FF",
+                      "secondary": "#4cd7f6",
+                      "on-background": "#F8FAFC",
+                      "on-surface": "#F8FAFC",
+                      "on-surface-variant": "#94A3B8",
+                      "outline-variant": "#334155",
+                      "mobile-danger": "#FF3B30",
+                      "mobile-warning": "#FF9500",
+                      "mobile-success": "#00C853",
+                      "mobile-primary": "#0066FF",
+                      "cos-cyan": "#06B6D4",
+                      "cos-blue": "#0066FF",
+                      "surface-container": "#1e293b",
+                      "surface-container-high": "#334155",
+                      "surface-container-highest": "#475569"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "web-base": "4px",
+                      "mobile-touch-target": "52px",
+                      "mobile-edge": "24px"
+              },
+              "fontFamily": {
+                      "mobile-text-label": ["Inter Tight"],
+                      "web-text-tiny": ["Inter Tight"],
+                      "web-text-h1": ["Inter Tight"],
+                      "web-text-body": ["Inter Tight"],
+                      "web-text-h2": ["Inter Tight"],
+                      "web-text-display": ["Inter Tight"],
+                      "mobile-text-hero": ["Inter Tight"],
+                      "mobile-text-body": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    }catch(_e){}</script></head><body class="bg-background text-on-background font-mobile-text-body text-mobile-text-body min-h-screen pb-32">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge h-mobile-touch-target bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-3">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTYxJoKPOfq9CRhVBIyb6GRp9JybiJBrxnl9H9vUv0tRppGAbWven49F4kR9-OTHW59ceQJ6NJR4Gp7FW5rzuxxT0IYhdPcgNxI2wMxNa0BnKO9T2ordPxSmniHXSlFu65JMsZCkeWPHr3cOou47qve_5uxre7RyCj_S39HrXvG4-mnvvLVboWX9Huv70SaaQBdi8Rl9s8khiDziyCMgvW93pmbf9BdU1co4zcgNTQMujz_xu1yPztXKVS5JN77jrisxKBK-nLeQ0" alt="COS Logo" class="h-8 w-8 object-contain">
+<div class="flex flex-col -space-y-1">
+<h1 class="font-web-text-label text-xs tracking-tighter text-on-surface-variant opacity-80">CONSTRUCTION OS</h1>
+<h2 class="font-web-text-h2 text-lg text-primary truncate max-w-[180px]">Skyline Tower A</h2>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">more_vert</span>
+</div>
+</header>
+<main class="pt-20 px-mobile-edge max-w-7xl mx-auto space-y-6">
+<!-- Summary Dashboard (Bento Grid) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Critical Items -->
+<div class="bg-surface border-l-4 border-mobile-danger p-5 flex flex-col justify-between shadow-lg">
+<div class="flex justify-between items-start">
+<p class="font-mobile-text-label text-mobile-text-label uppercase tracking-wider text-on-surface-variant">Critical Items</p>
+<span class="material-symbols-outlined text-mobile-danger">report_problem</span>
+</div>
+<div class="mt-4">
+<span class="font-web-text-display text-web-text-display text-on-surface">08</span>
+<p class="text-[12px] text-mobile-danger">Immediate action required</p>
+</div>
+</div>
+<!-- Expected Today -->
+<div class="bg-surface border-l-4 border-cos-blue p-5 flex flex-col justify-between shadow-lg">
+<div class="flex justify-between items-start">
+<p class="font-mobile-text-label text-mobile-text-label uppercase tracking-wider text-on-surface-variant">Expected Today</p>
+<span class="material-symbols-outlined text-cos-blue">local_shipping</span>
+</div>
+<div class="mt-4">
+<span class="font-web-text-display text-web-text-display text-on-surface">12</span>
+<p class="text-[12px] text-on-surface-variant">Scheduled deliveries</p>
+</div>
+</div>
+<!-- Stock Value -->
+<div class="bg-surface border-l-4 border-mobile-success p-5 flex flex-col justify-between shadow-lg">
+<div class="flex justify-between items-start">
+<p class="font-mobile-text-label text-mobile-text-label uppercase tracking-wider text-on-surface-variant">Stock Value</p>
+<span class="material-symbols-outlined text-mobile-success">payments</span>
+</div>
+<div class="mt-4">
+<span class="font-web-text-display text-web-text-display text-on-surface">$1.2M</span>
+<p class="text-[12px] text-on-surface-variant">Asset valuation</p>
+</div>
+</div>
+</section>
+<!-- Main Content Area -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+<!-- Left: Material Stock -->
+<div class="lg:col-span-8 bg-surface border border-outline-variant shadow-xl rounded-sm">
+<div class="p-4 border-b border-outline-variant flex justify-between items-center bg-surface-container/30">
+<h2 class="font-web-text-h2 text-web-text-h2">Material Stock</h2>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">filter_list</span>
+<span class="font-web-text-tiny text-web-text-tiny text-on-surface-variant uppercase">Filter</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-background/50">
+<th class="font-web-text-tiny text-web-text-tiny uppercase text-on-surface-variant border-b border-outline-variant whitespace-nowrap px-3 py-2">Item &amp; Code</th>
+<th class="font-web-text-tiny text-web-text-tiny uppercase text-on-surface-variant border-b border-outline-variant px-3 py-2">Quantity</th>
+<th class="font-web-text-tiny text-web-text-tiny uppercase text-on-surface-variant border-b border-outline-variant pr-6 px-3 py-2">Status</th>
+<th class="border-b border-outline-variant px-3 py-2"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<tr class="hover:bg-primary/5 cursor-pointer transition-colors">
+<td class="px-3 py-2 max-w-[150px]">
+<div class="font-mobile-text-label text-mobile-text-label text-on-surface truncate">Structural Steel H-Beam</div>
+<div class="text-[12px] text-on-surface-variant">BEAM-H400-A2</div>
+</td>
+<td class="font-web-text-body text-web-text-body text-on-surface px-3 py-2">42 Units</td>
+<td class="px-3 py-2">
+<span class="px-2 py-0.5 bg-mobile-success/20 text-mobile-success border border-mobile-success/30 rounded-sm font-web-text-tiny text-[10px] uppercase whitespace-nowrap">In Stock</span>
+</td>
+<td class="text-right px-3 py-2 pr-4">
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 cursor-pointer transition-colors bg-background/20">
+<td class="px-3 py-2 max-w-[150px]">
+<div class="font-mobile-text-label text-mobile-text-label text-on-surface truncate">Portland Cement (50kg)</div>
+<div class="text-[12px] text-on-surface-variant">CEM-I-42.5</div>
+</td>
+<td class="font-web-text-body text-web-text-body text-on-surface px-3 py-2">120 Bags</td>
+<td class="px-3 py-2">
+<span class="px-2 py-0.5 bg-mobile-warning/20 text-mobile-warning border border-mobile-warning/30 rounded-sm font-web-text-tiny text-[10px] uppercase whitespace-nowrap">Low Stock</span>
+</td>
+<td class="text-right px-3 py-2 pr-4">
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</td>
+</tr>
+<tr class="hover:bg-primary/5 cursor-pointer transition-colors">
+<td class="px-3 py-2 max-w-[150px]">
+<div class="font-mobile-text-label text-mobile-text-label text-on-surface truncate">Rebar Grade 60 (12mm)</div>
+<div class="text-[12px] text-on-surface-variant">REB-12MM-G60</div>
+</td>
+<td class="font-web-text-body text-web-text-body text-on-surface px-3 py-2">0 Tons</td>
+<td class="px-3 py-2">
+<span class="px-2 py-0.5 bg-mobile-danger/20 text-mobile-danger border border-mobile-danger/30 rounded-sm font-web-text-tiny text-[10px] uppercase whitespace-nowrap">Out of Stock</span>
+</td>
+<td class="text-right px-3 py-2 pr-4">
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Right: AI Consumption & Activity -->
+<div class="lg:col-span-4 space-y-6">
+<!-- AI Consumption Insight -->
+<div class="bg-surface border-l-4 border-cos-cyan p-5 shadow-xl">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan ai-pulse">psychology</span>
+<h2 class="font-web-text-h2 text-web-text-h2 text-cos-cyan">AI Insights</h2>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] uppercase text-on-surface-variant font-bold tracking-widest">Confidence</span>
+<span class="text-xs font-bold text-mobile-success">92% Accurate</span>
+</div>
+</div>
+<div class="p-4 bg-background/50 rounded-sm border border-outline-variant">
+<div class="flex justify-between items-center mb-2">
+<p class="text-[11px] text-on-surface-variant uppercase font-medium">Usage Forecast (Weekly)</p>
+<div class="flex gap-2">
+<span class="w-2 h-2 rounded-full bg-cos-cyan"></span>
+<span class="w-2 h-2 rounded-full bg-cos-cyan/20"></span>
+</div>
+</div>
+<div class="h-24 flex items-end justify-between gap-1 mb-4">
+<div class="w-full bg-cos-cyan/10 h-full relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[60%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/10 h-full relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[85%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/10 h-full relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[45%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/10 h-full relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[95%] rounded-t-sm"></div>
+</div>
+<div class="w-full bg-cos-cyan/10 h-full relative group">
+<div class="absolute bottom-0 w-full bg-cos-cyan h-[70%] rounded-t-sm"></div>
+</div>
+</div>
+<p class="text-[12px] text-primary mb-3 leading-relaxed">Potential shortage of Portland Cement detected in T-minus 48 hours based on current schedule.</p>
+<div class="pt-3 border-t border-outline-variant/30">
+<p class="text-[10px] text-on-surface-variant">DATA SOURCES: <span class="text-on-surface opacity-80">BIM Sync + Procurement Logs + Fleet Telematics</span></p>
+</div>
+</div>
+</div>
+<!-- Recent Activity -->
+<div class="bg-surface border border-outline-variant shadow-xl">
+<div class="p-4 border-b border-outline-variant bg-surface-container/30">
+<h2 class="font-web-text-h2 text-web-text-h2">Recent Logs</h2>
+</div>
+<div class="p-4 space-y-5">
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-mobile-success/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-success text-sm">add_circle</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Material Received</p>
+<p class="text-[12px] text-on-surface-variant">500 units of Brick-G1 by J. Doe</p>
+<span class="text-[10px] text-on-surface-variant uppercase font-bold opacity-60">14:20 PM</span>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-mobile-danger/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-danger text-sm">remove_circle</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Material Consumed</p>
+<p class="text-[12px] text-on-surface-variant">12 beams used for Section B12</p>
+<span class="text-[10px] text-on-surface-variant uppercase font-bold opacity-60">11:05 AM</span>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-cos-blue/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-cos-blue text-sm">local_shipping</span>
+</div>
+<div>
+<p class="text-sm font-medium text-on-surface">Delivery Gate-In</p>
+<p class="text-[12px] text-on-surface-variant">Trailer #492 arrived at North Gate</p>
+<span class="text-[10px] text-on-surface-variant uppercase font-bold opacity-60">09:45 AM</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Navigation Shell (Desktop Hidden, Mobile Visible) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[72px] px-mobile-edge pb-safe bg-surface border-t border-outline-variant">
+<div class="flex flex-col items-center justify-center min-h-[52px] text-primary transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">report_problem</span>
+<span class="font-mobile-text-label text-[10px] uppercase mt-1">Issues</span>
+</div>
+<div class="flex flex-col items-center justify-center min-h-[52px] text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">map</span>
+<span class="font-mobile-text-label text-[10px] uppercase mt-1">Map</span>
+</div>
+<div class="flex flex-col items-center justify-center min-h-[52px] text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-mobile-text-label text-[10px] uppercase mt-1">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center min-h-[52px] text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">person</span>
+<span class="font-mobile-text-label text-[10px] uppercase mt-1">Profile</span>
+</div>
+</nav>
+<!-- FABs -->
+<div class="fixed bottom-24 right-6 flex flex-col gap-4 z-40">
+<button class="w-[52px] h-[52px] rounded-full bg-primary text-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 group relative">
+<span class="material-symbols-outlined">add_box</span>
+<span class="absolute right-16 bg-surface border border-outline-variant px-3 py-1 rounded-sm text-[10px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">LOG DELIVERY</span>
+</button>
+<button class="w-[52px] h-[52px] rounded-full bg-surface-container border border-outline-variant text-primary shadow-2xl flex items-center justify-center transition-all hover:scale-110 active:scale-90 group relative">
+<span class="material-symbols-outlined">description</span>
+<span class="absolute right-16 bg-surface border border-outline-variant px-3 py-1 rounded-sm text-[10px] font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">REQUEST MATERIAL</span>
+</button>
+</div>
+<script class="">
+        // Simple Micro-interactions for table rows
+        document.querySelectorAll('tbody tr').forEach(row => {
+            row.addEventListener('click', () => {
+                row</script></body></html>
