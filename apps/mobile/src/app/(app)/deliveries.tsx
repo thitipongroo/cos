@@ -12,6 +12,7 @@ import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface DeliveryRow {
   delivery_id: string;
@@ -101,8 +102,8 @@ export default function DeliveriesScreen() {
   };
 
   return (
-    <View testID="deliveries-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('procurement.deliveries.title')}</Text>
+    <View testID="deliveries-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('procurement.deliveries.title')}</Text>
 
       {/* PO picker */}
       <Text style={styles.label}>{t('procurement.deliveries.selectPo')}</Text>
@@ -148,15 +149,19 @@ export default function DeliveriesScreen() {
 
           <TextInput
             testID="delivery-note-input"
-            style={styles.input}
+            style={screen.input}
             placeholder={t('procurement.deliveries.notePlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={note}
             onChangeText={setNote}
           />
           <PhotoCapture entityType="inspection" entityId={poId} />
-          <TouchableOpacity testID="record-delivery-button" style={styles.button} onPress={record}>
-            <Text style={styles.buttonText}>{t('procurement.deliveries.record')}</Text>
+          <TouchableOpacity
+            testID="record-delivery-button"
+            style={screen.primaryButton}
+            onPress={record}
+          >
+            <Text style={screen.primaryButtonText}>{t('procurement.deliveries.record')}</Text>
           </TouchableOpacity>
           {saved ? (
             <Text testID="delivery-saved" style={styles.saved}>
@@ -171,10 +176,10 @@ export default function DeliveriesScreen() {
         style={styles.list}
         data={rows}
         keyExtractor={(r, i) => r.delivery_id || String(i)}
-        ListEmptyComponent={<Text style={styles.empty}>{t('procurement.deliveries.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('procurement.deliveries.empty')}</Text>}
         renderItem={({ item }) => (
-          <View testID="delivery-item" style={styles.item}>
-            <Text style={styles.itemTitle}>{item.delivery_id.slice(0, 8)}</Text>
+          <View testID="delivery-item" style={screen.item}>
+            <Text style={screen.itemTitle}>{item.delivery_id.slice(0, 8)}</Text>
             <StatusChip label={item.status} />
           </View>
         )}
@@ -184,12 +189,6 @@ export default function DeliveriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   label: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.semibold,
@@ -241,28 +240,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     color: colors.textPrimary,
   },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textPrimary,
-  },
-  button: {
-    minHeight: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: colors.bg,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.body.fontSize,
-  },
   notice: {
     color: colors.textSecondary,
     fontFamily: fontFamily.regular,
@@ -274,16 +251,4 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
   },
   list: { marginTop: spacing.md },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

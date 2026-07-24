@@ -8,6 +8,7 @@ import { get, mutate } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface PaymentRow {
   payment_id: string;
@@ -47,23 +48,23 @@ export default function PaymentsScreen() {
   };
 
   return (
-    <View testID="payments-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('finance.payments.title')}</Text>
+    <View testID="payments-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('finance.payments.title')}</Text>
       <FlatList
         testID="payments-list"
         data={payments}
         keyExtractor={(p, i) => p.payment_id || String(i)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>{t('finance.payments.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('finance.payments.empty')}</Text>}
         renderItem={({ item }) => {
           const open = expandedId === item.payment_id;
           return (
-            <View testID="payment-item" style={styles.item}>
+            <View testID="payment-item" style={screen.item}>
               <TouchableOpacity
                 style={styles.row}
                 onPress={() => setExpandedId(open ? null : item.payment_id)}
               >
-                <Text style={styles.itemTitle}>
+                <Text style={screen.itemTitle}>
                   {item.payment_reference ?? item.payment_id.slice(0, 8)}
                 </Text>
                 <StatusChip label={item.status} />
@@ -109,24 +110,7 @@ export default function PaymentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
   sub: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.regular,
@@ -145,5 +129,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     fontSize: typography.caption.fontSize,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

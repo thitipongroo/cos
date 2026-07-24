@@ -12,6 +12,7 @@ import { get } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface ExecRow {
   projectId: string;
@@ -52,8 +53,8 @@ export default function PortfolioScreen() {
         ]
       : [];
     return (
-      <View testID="portfolio-health" style={styles.container}>
-        <Text style={styles.heading}>{selected.projectName}</Text>
+      <View testID="portfolio-health" style={screen.container}>
+        <Text style={screen.heading}>{selected.projectName}</Text>
         {h ? (
           <>
             {h.atRisk ? (
@@ -62,14 +63,14 @@ export default function PortfolioScreen() {
               </Text>
             ) : null}
             {rowsOut.map(([label, value]) => (
-              <View key={label} style={styles.row}>
-                <Text style={styles.key}>{label}</Text>
-                <Text style={styles.value}>{value}</Text>
+              <View key={label} style={screen.kvRow}>
+                <Text style={screen.kvKey}>{label}</Text>
+                <Text style={screen.kvValue}>{value}</Text>
               </View>
             ))}
           </>
         ) : (
-          <Text style={styles.empty}>{t('exec.portfolio.noHealth')}</Text>
+          <Text style={screen.empty}>{t('exec.portfolio.noHealth')}</Text>
         )}
         <TouchableOpacity testID="portfolio-back" onPress={() => setSelected(null)}>
           <Text style={styles.back}>{t('common.back')}</Text>
@@ -79,22 +80,22 @@ export default function PortfolioScreen() {
   }
 
   return (
-    <View testID="portfolio-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('exec.portfolio.title')}</Text>
+    <View testID="portfolio-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('exec.portfolio.title')}</Text>
       <FlatList
         testID="portfolio-list"
         data={projects}
         keyExtractor={(p) => p.id}
-        ListEmptyComponent={<Text style={styles.empty}>{t('exec.portfolio.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('exec.portfolio.empty')}</Text>}
         renderItem={({ item }) => {
           const h = execById[item.projectId];
           return (
             <TouchableOpacity
               testID="portfolio-item"
-              style={styles.item}
+              style={screen.item}
               onPress={() => setSelected(item)}
             >
-              <Text style={styles.itemTitle}>{item.projectName}</Text>
+              <Text style={screen.itemTitle}>{item.projectName}</Text>
               <View style={styles.chips}>
                 <StatusChip label={item.status} />
                 {h ? (
@@ -112,23 +113,6 @@ export default function PortfolioScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
   chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   badge: {
     fontSize: typography.caption.fontSize,
@@ -139,28 +123,10 @@ const styles = StyleSheet.create({
   },
   badgeRisk: { color: colors.bg, backgroundColor: colors.danger, paddingVertical: 2 },
   badgeOk: { color: colors.textSecondary },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  key: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-  },
-  value: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   atRisk: {
     color: colors.danger,
     fontFamily: fontFamily.semibold,
     fontSize: typography.caption.fontSize,
   },
   back: { color: colors.primary, fontFamily: fontFamily.medium, marginTop: spacing.md },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

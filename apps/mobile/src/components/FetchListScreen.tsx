@@ -16,6 +16,8 @@ interface FetchListScreenProps<T> {
   itemTestID: string;
   mapItem: (row: T) => { key: string; title: string; status?: string };
   emptyText?: string;
+  /** Optional testID for the FlatList itself (e.g. 'po-list'); omit to leave the list untagged. */
+  listTestID?: string;
 }
 
 export function FetchListScreen<T>({
@@ -25,6 +27,7 @@ export function FetchListScreen<T>({
   itemTestID,
   mapItem,
   emptyText,
+  listTestID,
 }: FetchListScreenProps<T>) {
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
@@ -50,6 +53,7 @@ export function FetchListScreen<T>({
     <View testID={testID} style={styles.container}>
       <Text style={styles.heading}>{heading}</Text>
       <FlatList
+        testID={listTestID}
         data={rows}
         keyExtractor={(row, index) => mapItem(row).key || String(index)}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}

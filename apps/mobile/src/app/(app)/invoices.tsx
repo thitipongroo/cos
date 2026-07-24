@@ -8,6 +8,7 @@ import { get, post } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 const STATUSES = ['RECEIVED', 'VERIFIED', 'APPROVED', 'PAID', 'DISPUTED'] as const;
 
@@ -82,12 +83,12 @@ export default function InvoicesScreen() {
       [t('finance.invoices.poRef'), detail.po_id],
     ];
     return (
-      <View testID="invoice-detail" style={styles.container}>
-        <Text style={styles.heading}>{detail.invoice_number}</Text>
+      <View testID="invoice-detail" style={screen.container}>
+        <Text style={screen.heading}>{detail.invoice_number}</Text>
         {fields.map(([label, value]) => (
-          <View key={label} style={styles.detailRow}>
-            <Text style={styles.detailKey}>{label}</Text>
-            <Text style={styles.detailVal}>{value}</Text>
+          <View key={label} style={screen.kvRow}>
+            <Text style={screen.kvKey}>{label}</Text>
+            <Text style={screen.kvValue}>{value}</Text>
           </View>
         ))}
 
@@ -118,8 +119,8 @@ export default function InvoicesScreen() {
   }
 
   return (
-    <View testID="invoices-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('finance.invoices.title')}</Text>
+    <View testID="invoices-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('finance.invoices.title')}</Text>
 
       <View testID="invoice-status-filter" style={styles.filterRow}>
         <TouchableOpacity
@@ -147,17 +148,17 @@ export default function InvoicesScreen() {
         testID="invoices-list"
         data={rows}
         keyExtractor={(r, i) => r.vendor_invoice_id ?? r.invoice_id ?? String(i)}
-        ListEmptyComponent={<Text style={styles.empty}>{t('finance.invoices.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('finance.invoices.empty')}</Text>}
         renderItem={({ item }) => {
           const id = item.vendor_invoice_id ?? item.invoice_id;
           return (
             <TouchableOpacity
               testID="invoice-item"
-              style={styles.item}
+              style={screen.item}
               disabled={!id}
               onPress={() => id && openDetail(id)}
             >
-              <Text style={styles.itemTitle}>
+              <Text style={screen.itemTitle}>
                 {item.invoice_number ?? item.vendor_invoice_id ?? item.invoice_id ?? '—'}
               </Text>
               {item.status ? <StatusChip label={item.status} /> : null}
@@ -170,12 +171,6 @@ export default function InvoicesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
     borderRadius: 16,
@@ -191,23 +186,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   chipTextOn: { color: colors.bg },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  detailKey: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-  },
-  detailVal: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   back: { color: colors.primary, fontFamily: fontFamily.medium, marginTop: spacing.md },
   noteLabel: {
     marginTop: spacing.md,
@@ -244,16 +222,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     fontSize: typography.caption.fontSize,
   },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

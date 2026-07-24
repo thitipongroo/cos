@@ -7,6 +7,7 @@ import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface ProjectBudget {
   total_budget_amount: string;
@@ -71,16 +72,16 @@ export default function BudgetScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.heading}>{t('finance.budget.title')}</Text>
+      <Text style={screen.heading}>{t('finance.budget.title')}</Text>
       <ProjectPicker selectedId={projectId} onSelect={onSelect} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {data ? (
         <>
           <View testID="budget-figures">
             {figures.map(([label, value, color]) => (
-              <View key={label} style={styles.row}>
-                <Text style={styles.key}>{label}</Text>
-                <Text style={[styles.value, color ? { color } : null]}>{value}</Text>
+              <View key={label} style={screen.kvRow}>
+                <Text style={screen.kvKey}>{label}</Text>
+                <Text style={[screen.kvValue, color ? { color } : null]}>{value}</Text>
               </View>
             ))}
           </View>
@@ -88,16 +89,16 @@ export default function BudgetScreen() {
             <View testID="budget-lines" style={styles.lines}>
               <Text style={styles.linesHeading}>{t('finance.budget.lines')}</Text>
               {data.lines.map((line) => (
-                <View key={line.line_id} style={styles.row}>
-                  <Text style={styles.key}>{line.line_name}</Text>
-                  <Text style={styles.value}>{line.allocated_amount}</Text>
+                <View key={line.line_id} style={screen.kvRow}>
+                  <Text style={screen.kvKey}>{line.line_name}</Text>
+                  <Text style={screen.kvValue}>{line.allocated_amount}</Text>
                 </View>
               ))}
             </View>
           ) : null}
         </>
       ) : (
-        <Text style={styles.empty}>{t('finance.budget.selectPrompt')}</Text>
+        <Text style={screen.empty}>{t('finance.budget.selectPrompt')}</Text>
       )}
     </ScrollView>
   );
@@ -106,28 +107,6 @@ export default function BudgetScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  key: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-  },
-  value: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   lines: { marginTop: spacing.md },
   linesHeading: {
     fontSize: typography.body.fontSize,
@@ -140,5 +119,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: typography.caption.fontSize,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

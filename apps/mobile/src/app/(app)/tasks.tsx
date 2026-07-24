@@ -16,6 +16,7 @@ import { TaskCard } from '../../components/TaskCard';
 import { mutate } from '../../api/client';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 export default function TasksScreen() {
   const tasks = useCollection<Task>('local_tasks');
@@ -59,19 +60,23 @@ export default function TasksScreen() {
 
   if (selected) {
     return (
-      <View testID="task-detail-screen" style={styles.container}>
-        <Text style={styles.heading}>{selected.taskName}</Text>
+      <View testID="task-detail-screen" style={screen.container}>
+        <Text style={screen.heading}>{selected.taskName}</Text>
         <Text style={styles.label}>{t('tasks.detail.progressLabel')}</Text>
         <TextInput
           testID="progress-input"
-          style={styles.input}
+          style={screen.input}
           keyboardType="number-pad"
           maxLength={3}
           value={progress}
           onChangeText={setProgress}
         />
-        <TouchableOpacity testID="save-progress-button" style={styles.button} onPress={onSave}>
-          <Text style={styles.buttonText}>{t('tasks.detail.save')}</Text>
+        <TouchableOpacity
+          testID="save-progress-button"
+          style={screen.primaryButton}
+          onPress={onSave}
+        >
+          <Text style={screen.primaryButtonText}>{t('tasks.detail.save')}</Text>
         </TouchableOpacity>
         {savedValue !== null ? (
           <Text testID="progress-display" style={styles.saved}>
@@ -86,13 +91,13 @@ export default function TasksScreen() {
   }
 
   return (
-    <View testID="tasks-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('tasks.list.title')}</Text>
+    <View testID="tasks-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('tasks.list.title')}</Text>
       <FlatList
         testID="task-list"
         data={tasks}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>{t('tasks.list.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('tasks.list.empty')}</Text>}
         renderItem={({ item }) => (
           <TaskCard
             task={item}
@@ -106,38 +111,10 @@ export default function TasksScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   label: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
     color: colors.textSecondary,
-  },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textPrimary,
-  },
-  button: {
-    minHeight: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonText: {
-    color: colors.bg,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
   },
   saved: {
     fontSize: typography.title.fontSize,
@@ -145,22 +122,4 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   back: { color: colors.primary, fontFamily: fontFamily.medium, marginTop: spacing.md },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  pct: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

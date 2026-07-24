@@ -14,6 +14,7 @@ import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface InspectionRow {
   inspection_id: string;
@@ -113,10 +114,10 @@ export default function InspectionsScreen() {
     const allRated = items.every((it, idx) => results[it.id ?? String(idx)] !== undefined);
     const willFail = items.some((it, idx) => results[it.id ?? String(idx)] === 'FAIL');
     return (
-      <View testID="inspection-checklist" style={styles.container}>
-        <Text style={styles.heading}>{active.checklistName}</Text>
+      <View testID="inspection-checklist" style={screen.container}>
+        <Text style={screen.heading}>{active.checklistName}</Text>
         {items.length === 0 ? (
-          <Text style={styles.empty}>{t('site.inspections.noItems')}</Text>
+          <Text style={screen.empty}>{t('site.inspections.noItems')}</Text>
         ) : null}
         {items.map((it, idx) => {
           const key = it.id ?? String(idx);
@@ -172,11 +173,11 @@ export default function InspectionsScreen() {
 
         <TouchableOpacity
           testID="submit-inspection-button"
-          style={[styles.submit, !allRated && styles.disabled]}
+          style={[screen.primaryButton, !allRated && screen.buttonDisabled]}
           onPress={submit}
           disabled={!allRated}
         >
-          <Text style={styles.submitText}>{t('site.inspections.submit')}</Text>
+          <Text style={screen.primaryButtonText}>{t('site.inspections.submit')}</Text>
         </TouchableOpacity>
         {submitted ? (
           <Text testID="inspection-saved" style={styles.saved}>
@@ -191,24 +192,24 @@ export default function InspectionsScreen() {
   }
 
   return (
-    <View testID="inspection-list" style={styles.container}>
-      <Text style={styles.heading}>{t('site.inspections.title')}</Text>
+    <View testID="inspection-list" style={screen.container}>
+      <Text style={screen.heading}>{t('site.inspections.title')}</Text>
       <TouchableOpacity
         testID="new-inspection-button"
-        style={[styles.submit, checklists.length === 0 && styles.disabled]}
+        style={[screen.primaryButton, checklists.length === 0 && screen.buttonDisabled]}
         onPress={openChecklist}
         disabled={checklists.length === 0}
       >
-        <Text style={styles.submitText}>{t('site.inspections.fill')}</Text>
+        <Text style={screen.primaryButtonText}>{t('site.inspections.fill')}</Text>
       </TouchableOpacity>
       <FlatList
         data={inspections}
         keyExtractor={(i) => i.inspection_id}
-        ListEmptyComponent={<Text style={styles.empty}>{t('site.inspections.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('site.inspections.empty')}</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity
             testID="inspection-item"
-            style={styles.item}
+            style={screen.item}
             onPress={() => openInspection(item)}
           >
             <Text style={styles.itemTitle}>{item.inspection_id.slice(0, 8)}</Text>
@@ -221,18 +222,6 @@ export default function InspectionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
   checkRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -293,24 +282,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   severityTextOn: { color: colors.bg },
-  submit: {
-    minHeight: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  disabled: { opacity: 0.5 },
-  submitText: {
-    color: colors.bg,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.body.fontSize,
-  },
   saved: {
     color: colors.success,
     fontFamily: fontFamily.medium,
     fontSize: typography.caption.fontSize,
   },
   back: { color: colors.primary, fontFamily: fontFamily.medium, marginTop: spacing.sm },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

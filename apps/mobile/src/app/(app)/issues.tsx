@@ -19,6 +19,7 @@ import { PhotoCapture } from '../../components/PhotoCapture';
 import { OptimisticList } from '../../components/OptimisticList';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 export default function IssuesScreen() {
   const issues = useCollection<Issue>('local_issues');
@@ -58,13 +59,13 @@ export default function IssuesScreen() {
   };
 
   return (
-    <View testID="issues-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('site.issues.title')}</Text>
+    <View testID="issues-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('site.issues.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="issue-title-input"
-        style={styles.input}
+        style={screen.input}
         placeholder={t('site.issues.titlePlaceholder')}
         placeholderTextColor={colors.textSecondary}
         value={title}
@@ -73,11 +74,14 @@ export default function IssuesScreen() {
       <PhotoCapture entityType="issue" entityId={draftId} />
       <TouchableOpacity
         testID="create-issue-button"
-        style={[styles.button, (!projectId.trim() || !title.trim()) && styles.buttonDisabled]}
+        style={[
+          screen.primaryButton,
+          (!projectId.trim() || !title.trim()) && screen.buttonDisabled,
+        ]}
         onPress={onCreate}
         disabled={!projectId.trim() || !title.trim()}
       >
-        <Text style={styles.buttonText}>{t('site.issues.submit')}</Text>
+        <Text style={screen.primaryButtonText}>{t('site.issues.submit')}</Text>
       </TouchableOpacity>
 
       <View style={styles.list}>
@@ -88,8 +92,8 @@ export default function IssuesScreen() {
           isPending={(item) => item.offlineSyncStatus === 'PENDING'}
           emptyText={t('site.issues.empty')}
           renderItem={(item) => (
-            <View testID="issue-item" style={styles.item}>
-              <Text style={styles.itemTitle}>{item.title}</Text>
+            <View testID="issue-item" style={screen.item}>
+              <Text style={screen.itemTitle}>{item.title}</Text>
               <View style={styles.chips}>
                 <StatusChip label={item.severity} />
                 <StatusChip label={item.offlineSyncStatus} />
@@ -118,47 +122,7 @@ export default function IssuesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textPrimary,
-  },
-  button: {
-    minHeight: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: {
-    color: colors.bg,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-  },
   list: { marginTop: spacing.sm },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
   chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   escalate: {
     borderRadius: 8,
@@ -173,5 +137,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     color: colors.textPrimary,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

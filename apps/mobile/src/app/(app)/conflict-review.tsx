@@ -9,6 +9,7 @@ import { get, mutate } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 type Payload = Record<string, unknown> | null;
 
@@ -74,24 +75,24 @@ export default function ConflictReviewScreen() {
   };
 
   return (
-    <View testID="conflict-review-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('sync.conflictReview.title')}</Text>
+    <View testID="conflict-review-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('sync.conflictReview.title')}</Text>
       <FlatList
         data={records}
         keyExtractor={(r) => r.conflict_id}
-        ListEmptyComponent={<Text style={styles.empty}>{t('sync.conflictReview.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('sync.conflictReview.empty')}</Text>}
         renderItem={({ item }) => {
           const open = openId === item.conflict_id;
           const diff = open
             ? buildDiff(item.client_payload ?? null, item.server_payload ?? null)
             : [];
           return (
-            <View testID="conflict-record-item" style={styles.item}>
+            <View testID="conflict-record-item" style={screen.item}>
               <TouchableOpacity
                 style={styles.itemHead}
                 onPress={() => setOpenId(open ? null : item.conflict_id)}
               >
-                <Text style={styles.itemTitle}>{item.entity_type}</Text>
+                <Text style={screen.itemTitle}>{item.entity_type}</Text>
                 <StatusChip label={item.conflict_type} />
               </TouchableOpacity>
 
@@ -141,24 +142,7 @@ export default function ConflictReviewScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
   itemHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
   diff: { gap: 2, marginVertical: spacing.xs },
   diffRow: { flexDirection: 'row', gap: spacing.xs },
   diffCell: {
@@ -181,5 +165,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semibold,
     fontSize: typography.caption.fontSize,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

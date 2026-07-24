@@ -15,6 +15,7 @@ import { StatusChip } from '../../components/StatusChip';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 type Severity = (typeof SEVERITIES)[number];
@@ -49,13 +50,13 @@ export default function IncidentsScreen() {
   };
 
   return (
-    <View testID="incidents-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('safety.incidents.title')}</Text>
+    <View testID="incidents-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('safety.incidents.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="incident-type-input"
-        style={styles.input}
+        style={screen.input}
         placeholder={t('safety.incidents.typePlaceholder')}
         placeholderTextColor={colors.textSecondary}
         value={incidentType}
@@ -77,11 +78,11 @@ export default function IncidentsScreen() {
       </View>
       <TouchableOpacity
         testID="create-incident-button"
-        style={[styles.button, !canSubmit && styles.buttonDisabled]}
+        style={[screen.primaryButton, !canSubmit && screen.buttonDisabled]}
         onPress={onCreate}
         disabled={!canSubmit}
       >
-        <Text style={styles.buttonText}>{t('safety.incidents.submit')}</Text>
+        <Text style={screen.primaryButtonText}>{t('safety.incidents.submit')}</Text>
       </TouchableOpacity>
 
       <FlatList
@@ -89,10 +90,10 @@ export default function IncidentsScreen() {
         style={styles.list}
         data={incidents}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>{t('safety.incidents.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('safety.incidents.empty')}</Text>}
         renderItem={({ item }) => (
-          <View testID="incident-item" style={styles.item}>
-            <Text style={styles.itemTitle}>{item.incidentType}</Text>
+          <View testID="incident-item" style={screen.item}>
+            <Text style={screen.itemTitle}>{item.incidentType}</Text>
             <View style={styles.chips}>
               <StatusChip label={item.severity} />
               <StatusChip label={item.offlineSyncStatus} />
@@ -105,22 +106,6 @@ export default function IncidentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: colors.textSecondary,
-    borderRadius: 8,
-    paddingHorizontal: spacing.md,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textPrimary,
-  },
   severityRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
   severityChip: {
     paddingHorizontal: spacing.md,
@@ -136,31 +121,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   severityTextActive: { color: colors.bg },
-  button: {
-    minHeight: 48,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: {
-    color: colors.bg,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.body.fontSize,
-  },
   list: { marginTop: spacing.sm },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
   chips: { flexDirection: 'row', gap: spacing.xs },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });
