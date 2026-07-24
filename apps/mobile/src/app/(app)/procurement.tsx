@@ -2,11 +2,11 @@
 // Fetches GET /procurement/purchase-orders and lists POs with delivery status.
 
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, FlatList, RefreshControl } from 'react-native';
 import { get } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface PoRow {
   po_id: string;
@@ -36,17 +36,17 @@ export default function ProcurementScreen() {
   }, []);
 
   return (
-    <View testID="procurement-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('pm.procurement.title')}</Text>
+    <View testID="procurement-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('pm.procurement.title')}</Text>
       <FlatList
         testID="po-list"
         data={orders}
         keyExtractor={(p) => p.po_id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>{t('pm.procurement.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('pm.procurement.empty')}</Text>}
         renderItem={({ item }) => (
-          <View testID="po-item" style={styles.item}>
-            <Text style={styles.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>
+          <View testID="po-item" style={screen.item}>
+            <Text style={screen.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>
             <StatusChip label={item.status} />
           </View>
         )}
@@ -54,24 +54,3 @@ export default function ProcurementScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
-});

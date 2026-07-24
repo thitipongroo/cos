@@ -2,13 +2,13 @@
 // (local_projects) and refreshes from GET /projects when online.
 
 import { useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList } from 'react-native';
 import type { Project } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { refreshProjectsCache } from '../../api/projects';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 export default function ProjectsScreen() {
   const projects = useCollection<Project>('local_projects');
@@ -21,16 +21,16 @@ export default function ProjectsScreen() {
   }, []);
 
   return (
-    <View testID="projects-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('pm.projects.title')}</Text>
+    <View testID="projects-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('pm.projects.title')}</Text>
       <FlatList
         testID="projects-list"
         data={projects}
         keyExtractor={(p) => p.id}
-        ListEmptyComponent={<Text style={styles.empty}>{t('pm.projects.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('pm.projects.empty')}</Text>}
         renderItem={({ item }) => (
-          <View testID="project-item" style={styles.item}>
-            <Text style={styles.itemTitle}>
+          <View testID="project-item" style={screen.item}>
+            <Text style={screen.itemTitle}>
               {item.projectCode} · {item.projectName}
             </Text>
             <StatusChip label={item.status} />
@@ -40,24 +40,3 @@ export default function ProjectsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
-});

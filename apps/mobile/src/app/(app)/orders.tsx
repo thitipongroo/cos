@@ -8,6 +8,7 @@ import { get } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface PoRow {
   po_id: string;
@@ -54,16 +55,16 @@ export default function OrdersScreen() {
     return (
       <ScrollView
         testID="order-detail-screen"
-        style={styles.container}
+        style={screen.container}
         contentContainerStyle={styles.content}
       >
         <View style={styles.detailHead}>
-          <Text style={styles.heading}>{detail.po.po_number ?? detail.po.po_id.slice(0, 8)}</Text>
+          <Text style={screen.heading}>{detail.po.po_number ?? detail.po.po_id.slice(0, 8)}</Text>
           <StatusChip label={detail.po.status} />
         </View>
         <Text style={styles.linesHeading}>{t('procurement.orders.lineItems')}</Text>
         {detail.line_items.length === 0 ? (
-          <Text style={styles.empty}>{t('procurement.orders.noLines')}</Text>
+          <Text style={screen.empty}>{t('procurement.orders.noLines')}</Text>
         ) : (
           detail.line_items.map((l) => (
             <View key={l.line_id} style={styles.lineRow}>
@@ -82,20 +83,20 @@ export default function OrdersScreen() {
   }
 
   return (
-    <View testID="orders-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('procurement.orders.title')}</Text>
+    <View testID="orders-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('procurement.orders.title')}</Text>
       <FlatList
         testID="orders-list"
         data={rows}
         keyExtractor={(r, i) => r.po_id || String(i)}
-        ListEmptyComponent={<Text style={styles.empty}>{t('procurement.orders.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('procurement.orders.empty')}</Text>}
         renderItem={({ item }) => (
           <TouchableOpacity
             testID="order-item"
-            style={styles.item}
+            style={screen.item}
             onPress={() => open(item.po_id)}
           >
-            <Text style={styles.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>
+            <Text style={screen.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>
             <StatusChip label={item.status} />
           </TouchableOpacity>
         )}
@@ -105,30 +106,13 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
   content: { gap: spacing.sm, paddingBottom: spacing.lg },
   detailHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   linesHeading: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.semibold,
     color: colors.textSecondary,
     marginTop: spacing.sm,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
   },
   lineRow: {
     flexDirection: 'row',
@@ -149,5 +133,4 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   back: { color: colors.primary, fontFamily: fontFamily.medium, marginTop: spacing.md },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

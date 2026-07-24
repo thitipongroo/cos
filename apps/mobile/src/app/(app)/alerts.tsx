@@ -6,6 +6,7 @@ import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface ExecutiveDashboardRow {
   projectId: string;
@@ -46,13 +47,13 @@ export default function AlertsScreen() {
   }, []);
 
   return (
-    <View testID="alerts-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('exec.alerts.title')}</Text>
+    <View testID="alerts-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('exec.alerts.title')}</Text>
       <FlatList
         testID="alerts-list"
         data={rows}
         keyExtractor={(r, i) => r.projectId || String(i)}
-        ListEmptyComponent={<Text style={styles.empty}>{t('exec.alerts.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('exec.alerts.empty')}</Text>}
         renderItem={({ item }) => (
           <View testID="alert-item" style={[styles.card, item.atRisk && styles.cardRisk]}>
             <View style={styles.row}>
@@ -87,12 +88,6 @@ export default function AlertsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 8,
@@ -119,5 +114,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     color: colors.textSecondary,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });
