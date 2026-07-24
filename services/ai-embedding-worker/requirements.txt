@@ -25,3 +25,4 @@ prometheus-client>=0.21
 # bakes it into the venv (the runtime image needs no libs/python copy); the relative path resolves
 # from the service dir in CI and from /app/services/<svc> in the Docker root-context build.
 ../../libs/python/cosmetrics
+../../libs/python/cosembedding

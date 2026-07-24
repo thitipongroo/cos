@@ -109,8 +109,10 @@ def test_factory_returns_real_provider_when_key_present(monkeypatch):
     # Construct with an injected client so no network/SDK is touched during the test.
     assert build_embedding_provider.__name__ == "build_embedding_provider"
     # The factory builds OpenAIEmbeddingProvider() which lazily imports openai; assert the selection
-    # branch, not the network client, by checking the type via a patched constructor.
-    import providers.embedding_provider as mod
+    # branch, not the network client, by checking the type via a patched constructor. build_embedding_provider
+    # and the class both live in cosembedding now (ADR-021), so patch there — the factory resolves the
+    # class in its own module namespace, not in the providers.embedding_provider re-export shim.
+    import cosembedding as mod
 
     created = {}
 

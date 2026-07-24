@@ -1,0 +1,22 @@
+# cosembedding — the shared OpenAI embedding provider for the Construction OS Python services.
+#
+# Extracted from the copies in ai-embedding-worker and ai-gateway (ADR-021 follow-up): the ingestion
+# side embeds document chunks, the gateway embeds the RAG query, and both used the same model,
+# dimension contract and factory. The implementation lives here once and each service's
+# providers/embedding_provider.py is a thin re-export. Installed as a local path dependency from each
+# service's requirements.txt (`../../libs/python/cosembedding`) — non-editable, so pip bakes it into
+# the runtime venv and the Docker runner needs no libs/python copy. The Go workers have the same
+# shared-package arrangement under libs/go; the sibling Python package is libs/python/cosmetrics.
+[project]
+name = "cosembedding"
+version = "0.1.0"
+description = "Shared OpenAI text-embedding-3-small provider for Construction OS Python services (§22.7)."
+requires-python = ">=3.12"
+dependencies = ["openai>=1.0"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["cosembedding"]
