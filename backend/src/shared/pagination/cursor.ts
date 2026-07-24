@@ -35,3 +35,32 @@ export function decodeCursor(cursor: string): DecodedCursor | null {
   if (!id || !createdAt) return null;
   return { id, createdAt };
 }
+
+/** Options every keyset-paginated `list()` accepts: an opaque cursor and a page size. */
+export interface CursorListOptions {
+  cursor?: string;
+  limit: number;
+}
+
+/**
+ * Trim a keyset page and derive its next cursor.
+ *
+ * Repositories fetch `limit + 1` rows (a probe row that answers "is there a next page?"). This drops
+ * that probe, and — when there is more — encodes the last kept row's (id, created_at) as the next
+ * cursor. Only the row's id field differs between repositories, so it is supplied via `getId`; the
+ * sort key is always `created_at`. Behaviour matches the copy every `modules/project/*` repository
+ * carried before this was extracted (ADR-021 follow-up): an empty page (e.g. `limit === 0`) yields a
+ * null cursor rather than encoding an undefined row.
+ */
+export function paginate<T>(
+  rows: T[],
+  limit: number,
+  getId: (row: T) => string,
+  getCreatedAt: (row: T) => Date,
+): { items: T[]; nextCursor: string | null } {
+  const hasMore = rows.length > limit;
+  const items = hasMore ? rows.slice(0, limit) : rows;
+  const last = items[items.length - 1];
+  const nextCursor = hasMore && last ? encodeCursor(getId(last), getCreatedAt(last)) : null;
+  return { items, nextCursor };
+}

@@ -1,4 +1,4 @@
-import { decodeCursor, encodeCursor } from '../cursor';
+import { decodeCursor, encodeCursor, paginate } from '../cursor';
 
 describe('encodeCursor', () => {
   it('encodes id and timestamp as opaque base64', () => {
@@ -50,5 +50,39 @@ describe('decodeCursor', () => {
     // implementation has no try/catch: the length guards are what reject these.
     expect(() => decodeCursor(input)).not.toThrow();
     expect(decodeCursor(input)).toBeNull();
+  });
+});
+
+describe('paginate', () => {
+  interface Row {
+    rid: string;
+    created_at: Date;
+  }
+  const getId = (r: Row): string => r.rid;
+  const getCreatedAt = (r: Row): Date => r.created_at;
+  const at = new Date('2026-07-21T10:00:00.000Z');
+
+  it('returns all rows and no cursor when the page is not full', () => {
+    const rows: Row[] = [{ rid: 'a', created_at: at }];
+
+    expect(paginate(rows, 20, getId, getCreatedAt)).toEqual({ items: rows, nextCursor: null });
+  });
+
+  it('drops the probe row and encodes the last kept row as the next cursor', () => {
+    const rows: Row[] = [
+      { rid: 'a', created_at: at },
+      { rid: 'b', created_at: at }, // the probe row (limit + 1)
+    ];
+
+    const result = paginate(rows, 1, getId, getCreatedAt);
+
+    expect(result.items).toEqual([{ rid: 'a', created_at: at }]);
+    expect(result.nextCursor).toBe(encodeCursor('a', at));
+  });
+
+  it('yields a null cursor for an empty page even when there is more (limit 0)', () => {
+    const rows: Row[] = [{ rid: 'a', created_at: at }];
+
+    expect(paginate(rows, 0, getId, getCreatedAt)).toEqual({ items: [], nextCursor: null });
   });
 });

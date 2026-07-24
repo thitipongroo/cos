@@ -6,7 +6,7 @@ import type { Request } from 'express';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import type { CreateRoomDto } from './dto/create-room.dto';
 import type { UpdateRoomDto } from './dto/update-room.dto';
-import { decodeCursor, encodeCursor } from '../../../shared/pagination/cursor';
+import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
 
 export interface RoomRow {
   room_id: string;
@@ -18,11 +18,6 @@ export interface RoomRow {
   created_by: string;
   created_at: Date;
   updated_at: Date;
-}
-
-export interface ListRoomsOptions {
-  cursor?: string;
-  limit: number;
 }
 
 @Injectable({ scope: Scope.REQUEST })
@@ -77,7 +72,7 @@ export class RoomsRepository {
 
   async list(
     floorId: string,
-    opts: ListRoomsOptions,
+    opts: CursorListOptions,
   ): Promise<{ items: RoomRow[]; nextCursor: string | null }> {
     const limit = Math.min(opts.limit, 100);
     const parsed = opts.cursor ? decodeCursor(opts.cursor) : null;
@@ -102,14 +97,12 @@ export class RoomsRepository {
       `;
     });
 
-    const hasMore = items.length > limit;
-    const page = hasMore ? items.slice(0, limit) : items;
-    const nextCursor =
-      hasMore && page.length > 0
-        ? encodeCursor(page[page.length - 1]!.room_id, page[page.length - 1]!.created_at)
-        : null;
-
-    return { items: page, nextCursor };
+    return paginate(
+      items,
+      limit,
+      (r) => r.room_id,
+      (r) => r.created_at,
+    );
   }
 
   async update(roomId: string, dto: UpdateRoomDto): Promise<RoomRow> {

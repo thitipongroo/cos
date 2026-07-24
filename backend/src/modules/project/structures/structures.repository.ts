@@ -6,7 +6,7 @@ import type { Request } from 'express';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import type { CreateStructureDto } from './dto/create-structure.dto';
 import type { UpdateStructureDto } from './dto/update-structure.dto';
-import { decodeCursor, encodeCursor } from '../../../shared/pagination/cursor';
+import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
 
 export interface StructureRow {
   structure_id: string;
@@ -17,11 +17,6 @@ export interface StructureRow {
   created_by: string;
   created_at: Date;
   updated_at: Date;
-}
-
-export interface ListStructuresOptions {
-  cursor?: string;
-  limit: number;
 }
 
 @Injectable({ scope: Scope.REQUEST })
@@ -80,7 +75,7 @@ export class StructuresRepository {
 
   async list(
     buildingId: string,
-    opts: ListStructuresOptions,
+    opts: CursorListOptions,
   ): Promise<{ items: StructureRow[]; nextCursor: string | null }> {
     const limit = Math.min(opts.limit, 100);
     const parsed = opts.cursor ? decodeCursor(opts.cursor) : null;
@@ -105,14 +100,12 @@ export class StructuresRepository {
       `;
     });
 
-    const hasMore = items.length > limit;
-    const page = hasMore ? items.slice(0, limit) : items;
-    const nextCursor =
-      hasMore && page.length > 0
-        ? encodeCursor(page[page.length - 1]!.structure_id, page[page.length - 1]!.created_at)
-        : null;
-
-    return { items: page, nextCursor };
+    return paginate(
+      items,
+      limit,
+      (r) => r.structure_id,
+      (r) => r.created_at,
+    );
   }
 
   async update(structureId: string, dto: UpdateStructureDto): Promise<StructureRow> {
