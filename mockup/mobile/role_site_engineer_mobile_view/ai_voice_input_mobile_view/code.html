@@ -1,12 +1,10 @@
-<!DOCTYPE html>
-
-<html class="dark" lang="en"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
 <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -178,8 +176,8 @@
   </head>
 <body class="bg-dark-bg text-on-surface font-mobile-text-body min-h-screen flex flex-col">
 <!-- Top Navigation App Bar -->
-<header class="w-full top-0 sticky z-50 bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge h-mobile-touch-target">
-<div class="flex items-center gap-3">
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge h-mobile-touch-target"><div class="flex items-center gap-2 mr-auto"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDY9WMHZh3IxNEeNjnecp45nH3jXye00ni2YM51YPIztz7zmVidF5_ZADPa-Jy8tx4T-ctOcd6rjp-EQOSs3ZvtO8gAgzAXtMVwhinhX6I25Hy_nJ7ERUj7Qtiv3MjKWrNzRfuRmtJgycn5OSQpyr0ipu6ncAZASbxZW_8ZA9z0SKiOaHOzaI2sAlr207zXVnS_aQspd5C-BfginNSD6VsYhQCWNMz42gSMvlBqdNAYSfGEewotge9ALr-pd4P-Gj7Aw4ZfvjGpnMI" alt="Construction OS Logo" class="h-6 w-6"><span class="text-web-text-tiny font-bold tracking-widest text-on-surface-variant uppercase">Construction OS</span></div>
+<div class="flex items-center gap-3 hidden">
 <span class="material-symbols-outlined text-cos-blue">mic</span>
 <h1 class="font-mobile-text-hero text-mobile-text-hero font-bold text-cos-blue dark:text-primary tracking-tight">Voice Note</h1>
 </div>
@@ -189,10 +187,7 @@
 </header>
 <main class="flex-1 flex flex-col px-mobile-edge py-8 space-y-8 pb-32">
 <!-- Status Indicator -->
-<div class="flex items-center justify-center space-x-2">
-<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
-<span class="text-mobile-text-label font-mobile-text-label uppercase tracking-widest text-on-surface-variant">System Listening...</span>
-</div>
+<div class="flex items-center justify-center space-x-2"><div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse" aria-hidden="true"></div><span class="text-mobile-text-label font-mobile-text-label uppercase tracking-widest text-on-surface-variant" role="status" aria-live="polite" aria-label="ระบบกำลังบันทึกเสียง...">กำลังฟัง...</span></div>
 <!-- Hero Visualization: Pulsing Mic -->
 <div class="relative flex-1 flex items-center justify-center py-12">
 <div class="pulse-circle opacity-20"></div>
@@ -232,26 +227,26 @@
 <!-- Dynamic Waveform Visualization -->
 <div class="flex items-end justify-center gap-1 h-12 mb-8 opacity-80" id="waveform">
 <!-- Bars will be animated by JS -->
-<div class="waveform-bar h-2"></div>
-<div class="waveform-bar h-6"></div>
-<div class="waveform-bar h-4"></div>
-<div class="waveform-bar h-10"></div>
-<div class="waveform-bar h-7"></div>
-<div class="waveform-bar h-3"></div>
-<div class="waveform-bar h-8"></div>
-<div class="waveform-bar h-5"></div>
-<div class="waveform-bar h-12"></div>
-<div class="waveform-bar h-6"></div>
-<div class="waveform-bar h-4"></div>
-<div class="waveform-bar h-10"></div>
-<div class="waveform-bar h-7"></div>
-<div class="waveform-bar h-3"></div>
-<div class="waveform-bar h-9"></div>
-<div class="waveform-bar h-5"></div>
-<div class="waveform-bar h-11"></div>
-<div class="waveform-bar h-6"></div>
-<div class="waveform-bar h-4"></div>
-<div class="waveform-bar h-10"></div>
+<div class="waveform-bar h-2" style="height: 30px;"></div>
+<div class="waveform-bar h-6" style="height: 34px;"></div>
+<div class="waveform-bar h-4" style="height: 32px;"></div>
+<div class="waveform-bar h-10" style="height: 39px;"></div>
+<div class="waveform-bar h-7" style="height: 37px;"></div>
+<div class="waveform-bar h-3" style="height: 31px;"></div>
+<div class="waveform-bar h-8" style="height: 11px;"></div>
+<div class="waveform-bar h-5" style="height: 17px;"></div>
+<div class="waveform-bar h-12" style="height: 45px;"></div>
+<div class="waveform-bar h-6" style="height: 30px;"></div>
+<div class="waveform-bar h-4" style="height: 47px;"></div>
+<div class="waveform-bar h-10" style="height: 24px;"></div>
+<div class="waveform-bar h-7" style="height: 36px;"></div>
+<div class="waveform-bar h-3" style="height: 37px;"></div>
+<div class="waveform-bar h-9" style="height: 36px;"></div>
+<div class="waveform-bar h-5" style="height: 23px;"></div>
+<div class="waveform-bar h-11" style="height: 37px;"></div>
+<div class="waveform-bar h-6" style="height: 29px;"></div>
+<div class="waveform-bar h-4" style="height: 14px;"></div>
+<div class="waveform-bar h-10" style="height: 43px;"></div>
 </div>
 <div class="flex gap-4 items-center">
 <button class="flex-1 h-mobile-touch-target rounded-full border border-outline-variant text-on-surface font-mobile-text-label flex items-center justify-center active:bg-surface-variant transition-colors">
@@ -286,4 +281,6 @@
             this.classList.replace('bg-cos-blue', 'bg-cos-cyan');
         });
     </script>
+
+
 </body></html>

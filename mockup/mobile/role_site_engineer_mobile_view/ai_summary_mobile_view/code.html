@@ -1,0 +1,247 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>CORE_AI Summary - SafeSite OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ai-glow {
+            box-shadow: 0 0 20px -5px rgba(6, 182, 212, 0.3);
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.7);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface": "#031427",
+                        "on-tertiary-fixed": "#161b2b",
+                        "inverse-primary": "#0053db",
+                        "outline-variant": "#434655",
+                        "inverse-surface": "#d3e4fe",
+                        "on-background": "#d3e4fe",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#686c80",
+                        "surface-dim": "#031427",
+                        "on-error-container": "#ffdad6",
+                        "dark-surface": "#0F172A",
+                        "on-secondary": "#003640",
+                        "surface-container-highest": "#26364a",
+                        "surface-variant": "#26364a",
+                        "sync-pending": "#94A3B8",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-low": "#0b1c30",
+                        "surface-container-high": "#1b2b3f",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-tint": "#b4c5ff",
+                        "secondary-container": "#03b5d3",
+                        "secondary-fixed": "#acedff",
+                        "error-container": "#93000a",
+                        "on-primary": "#002a78",
+                        "cos-white": "#F8FAFC",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "cos-cyan": "#06B6D4",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-container": "#102034",
+                        "on-surface": "#d3e4fe",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-primary-container": "#eeefff",
+                        "outline": "#8d90a0",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-error": "#690005",
+                        "surface-bright": "#2a3a4f",
+                        "on-primary-fixed": "#00174b",
+                        "on-surface-variant": "#c3c6d7",
+                        "sync-active": "#FFD60A",
+                        "mobile-primary": "#0066FF",
+                        "primary-container": "#2563eb",
+                        "tertiary": "#c1c5dc",
+                        "mobile-warning": "#FF9500",
+                        "cos-navy": "#0B1020",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "cos-blue": "#2563EB",
+                        "background": "#031427",
+                        "mobile-danger": "#FF3B30",
+                        "primary": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-tertiary": "#2b3041",
+                        "on-secondary-container": "#00424e",
+                        "inverse-on-surface": "#213145",
+                        "secondary": "#4cd7f6",
+                        "dark-bg": "#020617",
+                        "mobile-success": "#00C853",
+                        "tertiary-fixed": "#dee1f9"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-base": "4px",
+                        "mobile-edge": "24px",
+                        "web-space-3": "12px",
+                        "web-space-4": "16px",
+                        "web-space-2": "8px",
+                        "web-space-1": "4px",
+                        "web-space-8": "32px",
+                        "mobile-touch-target": "52px"
+                    },
+                    "fontFamily": {
+                        "mobile-text-body": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "web-text-small": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-mobile-text-body selection:bg-cos-cyan/30 overflow-x-hidden">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 h-[64px] bg-surface-container-high flex justify-between items-center px-6 md:px-web-space-8"><div class="flex items-center gap-2 mr-4 flex-shrink-0 ml-2"><button class="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-surface-bright transition-colors active:scale-95 mr-2"><span class="material-symbols-outlined text-primary">arrow_back</span></button><img alt="COS Logo" class="w-[18px] h-[18px] object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAwiATOb2-wi4oKQxJxofSf2UXSD_4OB5Qp682sbedtKSSQ6k5lar5tXKLKMUwi222jLNXDffUxwbya5hVd0Tn2Y9coG209w0HYN1AJhzhbOwFcB39D-ts6HgitpQBM0Kkf-jyYQxawphuXp22TuZYF7Ry1CGsg-Zd93h249Xo1v4So3j0DVWMI4s0eI86-DkL545IJxorq6DGJkC48ZOUutbOYwYaMD9ofQOl-fcCydCzOwqGBHvUKyHW6uK3sO0UrEegmyNRDRNY"><span class="font-mobile-text-label text-on-surface tracking-widest uppercase whitespace-nowrap text-[13px]">CONSTRUCTION OS</span></div><div class="flex items-center gap-3 mr-2"><div class="flex items-center gap-2 px-3 py-1 bg-surface-container-highest rounded-full border border-outline-variant/30"><span class="material-symbols-outlined text-mobile-success text-[12px]" style="font-variation-settings: &quot;FILL&quot; 1;">sync</span><span class="font-mobile-text-label uppercase tracking-widest text-on-surface-variant text-[10px]">Synced</span></div></div></header>
+<!-- Main Content Canvas -->
+<main class="pt-20 pb-32 px-mobile-edge max-w-4xl mx-auto space-y-6">
+<!-- Hero AI Section (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Summary Text Block -->
+<div class="md:col-span-3 border-l-4 border-cos-cyan bg-cos-cyan/5 p-web-space-4 rounded-r-xl ai-glow">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-cos-cyan">psychology</span>
+<span class="font-mobile-text-label text-cos-cyan tracking-wider uppercase text-[11px]">System Generated Synthesis</span>
+</div>
+<p class="font-mobile-text-body text-on-surface leading-relaxed">
+                    Today's shift focused on the structural reinforcement of Zone B. Deployment of <span class="text-cos-cyan font-bold">04 Site Engineers</span> successfully overseen a workforce of <span class="text-cos-cyan font-bold">12 General Laborers</span>. Total rebar consumption reached <span class="text-cos-cyan font-bold">2.4 Tons</span>, aligning with the planned daily threshold. Work concluded at 17:45 with no recorded safety incidents, though high humidity delayed the concrete curing process slightly for the northern pillar section.
+                </p>
+</div>
+<!-- Workforce Card -->
+<div class="bg-surface-container-low border border-outline-variant p-web-space-4 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-mobile-text-label text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">engineering</span> Workforce Efficiency
+                    </h3>
+<div class="flex items-baseline gap-2">
+<span class="font-mobile-text-hero text-primary">94%</span>
+<span class="text-mobile-success text-web-text-tiny font-bold flex items-center">
+<span class="material-symbols-outlined text-sm">trending_up</span>+2%
+                        </span>
+</div>
+</div>
+<div class="mt-4 w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-secondary h-full w-[94%]"></div>
+</div>
+</div>
+<!-- Material Card -->
+<div class="bg-surface-container-low border border-outline-variant p-web-space-4 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-mobile-text-label text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-lg">inventory_2</span> Material Variance
+                    </h3>
+<div class="flex items-baseline gap-2">
+<span class="font-mobile-text-hero text-primary">-0.4%</span>
+<span class="text-mobile-success text-web-text-tiny font-bold">Under Budget</span>
+</div>
+</div>
+<div class="text-web-text-small text-on-surface-variant mt-2">
+                    Optimal usage of 2.4T Rebar detected against 2.5T forecast.
+                </div>
+</div>
+<!-- Risk Card -->
+<div class="bg-surface-container-low border border-outline-variant p-web-space-4 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-mobile-text-label text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-warning text-lg">bolt</span> Predicted Risks
+                    </h3>
+<div class="flex items-baseline gap-2">
+<span class="font-mobile-text-hero text-mobile-warning">Low</span>
+</div>
+</div>
+<div class="text-web-text-small text-on-surface-variant mt-2 italic">
+                    Weather alert: Precipitation possible in T-14 hours.
+                </div>
+</div>
+</div>
+<!-- Visual Context / Schematic Section -->
+<div class="relative w-full h-48 md:h-64 rounded-xl overflow-hidden border border-outline-variant group">
+<div class="w-full h-full bg-cover bg-center transition-transform duration-700 group-hover:scale-105" data-alt="A high-tech digital construction site site map overlaid with cyan blueprints and glowing data points. The visual style is dark, sophisticated, and minimalist, utilizing a deep navy and electric cyan color palette to convey a sense of technical precision and mission-critical operations. No people or literal machinery, only abstract data representations." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCo6wdJ6GSslKzLS_nKtDqu9N2VciKVYMsktHIaQzoX6G6r7FtbeZC9S1vGdmGrCK7eTjb8lyhjT3BvVNko5U5NPEaHsph-oHrikiEexVqboCgBe0LN633gWwlDXJOW3B4wfsunkCKqHohPHhhEFXqIHOMnEjIL48rl1drxUvRM7bqDFrP6F1leOkpoNikhgZ93EEI22WvSkmxkVaW2_tzfKqk5Wsxgb2L949_XCh9A9DxkN3ey2xXemy3vFeBWqr7xbf6AZfMSgL0')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-60"></div>
+<div class="absolute bottom-4 left-4 flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-cos-cyan animate-pulse"></div>
+<span class="text-web-text-tiny font-bold text-cos-white uppercase tracking-widest">Active Site Overlay: Alpha-7</span>
+</div>
+</div>
+<!-- Detailed Breakdown -->
+<div class="space-y-4">
+<h2 class="font-mobile-text-label text-on-surface-variant uppercase tracking-[0.2em] text-[11px]">Technical Breakdown</h2>
+<!-- Workforce Detailed Item -->
+<div class="group p-web-space-4 bg-surface-container border border-outline-variant/30 rounded-xl hover:border-cos-cyan/50 transition-all"><div class="flex justify-between items-start mb-3"><div class="flex gap-4"><div class="w-10 h-10 rounded bg-secondary/10 flex items-center justify-center"><span class="material-symbols-outlined text-secondary">groups</span></div><div><h4 class="font-mobile-text-label text-on-surface">Workforce Efficiency</h4><p class="text-web-text-small text-on-surface-variant">Optimal engineer-to-laborer ratio (1:3). High task completion in Zone B.</p></div></div><div class="text-right"><span class="text-mobile-success font-bold text-web-text-small block">OPTIMIZED</span><span class="text-cos-cyan font-bold text-[11px] tracking-wider">95% CONFIDENCE</span></div></div><div class="flex items-center gap-2 pt-2 border-t border-outline-variant/20"><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Sources:</span><span class="text-[10px] text-on-surface-variant/60">Field Logs, IoT Sensors</span></div></div>
+<!-- Material Detailed Item -->
+<div class="group p-web-space-4 bg-surface-container border border-outline-variant/30 rounded-xl hover:border-cos-cyan/50 transition-all"><div class="flex justify-between items-start mb-3"><div class="flex gap-4"><div class="w-10 h-10 rounded bg-secondary/10 flex items-center justify-center"><span class="material-symbols-outlined text-secondary">database</span></div><div><h4 class="font-mobile-text-label text-on-surface">Material Usage Variance</h4><p class="text-web-text-small text-on-surface-variant">Rebar wastage reduced by 0.12T compared to last Tuesday's average.</p></div></div><div class="text-right"><span class="text-mobile-success font-bold text-web-text-small block">EFFICIENT</span><span class="text-cos-cyan font-bold text-[11px] tracking-wider">92% CONFIDENCE</span></div></div><div class="flex items-center gap-2 pt-2 border-t border-outline-variant/20"><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Sources:</span><span class="text-[10px] text-on-surface-variant/60">BIM Model, Inventory API</span></div></div>
+<!-- Risk Detailed Item -->
+<div class="group p-web-space-4 bg-surface-container border border-outline-variant/30 rounded-xl hover:border-mobile-warning/50 transition-all"><div class="flex justify-between items-start mb-3"><div class="flex gap-4"><div class="w-10 h-10 rounded bg-mobile-warning/10 flex items-center justify-center"><span class="material-symbols-outlined text-mobile-warning">warning</span></div><div><h4 class="font-mobile-text-label text-on-surface">Predicted Risks</h4><p class="text-web-text-small text-on-surface-variant">Minor supply chain delay for Grade-40 concrete anticipated for Thursday.</p></div></div><div class="text-right"><span class="text-mobile-warning font-bold text-web-text-small block">MONITORING</span><span class="text-cos-cyan font-bold text-[11px] tracking-wider">88% CONFIDENCE</span></div></div><div class="flex items-center gap-2 pt-2 border-t border-outline-variant/20"><span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Sources:</span><span class="text-[10px] text-on-surface-variant/60">Weather API, Logistics Node</span></div></div>
+</div>
+</main>
+<!-- Fixed Action Footer -->
+<footer class="fixed bottom-0 w-full bg-surface-container-high p-mobile-edge border-t border-outline-variant/20 backdrop-blur-md z-50">
+<div class="max-w-4xl mx-auto flex gap-4">
+<button class="h-[52px] border border-outline text-on-surface font-mobile-text-label rounded-xl flex items-center justify-center gap-2 hover:bg-surface-bright transition-all active:scale-95 tracking-widest whitespace-nowrap flex-[1.2] text-[11px]" id="regen-btn">
+<span class="material-symbols-outlined text-lg">refresh</span>
+                RE-GENERATE
+            </button>
+<button class="flex-[1.5] h-[52px] bg-cos-blue text-cos-white font-mobile-text-label rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-cos-blue/20 hover:brightness-110 transition-all active:scale-95 text-[11px]">
+<span class="material-symbols-outlined text-lg">check_circle</span>
+                USE THIS SUMMARY
+            </button>
+</div>
+</footer>
+<!-- Interactive Layer for Re-generation effect -->
+<div class="fixed inset-0 bg-surface/80 backdrop-blur-sm z-[100] hidden flex-col items-center justify-center" id="ai-loading">
+<div class="relative w-24 h-24 mb-6">
+<div class="absolute inset-0 border-4 border-cos-cyan/20 rounded-full"></div>
+<div class="absolute inset-0 border-4 border-t-cos-cyan rounded-full animate-spin"></div>
+</div>
+<div class="text-center">
+<h3 class="font-mobile-text-hero text-cos-cyan mb-2">Analyzing Logs</h3>
+<p class="text-on-surface-variant font-mobile-text-label animate-pulse">Consulting CORE_AI Infrastructure Node...</p>
+</div>
+</div>
+<script>
+        document.getElementById('regen-btn').addEventListener('click', function() {
+            const loader = document.getElementById('ai-loading');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            
+            // Artificial delay to simulate AI processing
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+                
+                // Shake effect on success
+                document.querySelector('main').animate([
+                    { transform: 'translateY(10px)', opacity: 0.8 },
+                    { transform: 'translateY(0)', opacity: 1 }
+                ], { duration: 400, easing: 'ease-out' });
+            }, 2200);
+        });
+    </script>
+
+
+</body></html>
