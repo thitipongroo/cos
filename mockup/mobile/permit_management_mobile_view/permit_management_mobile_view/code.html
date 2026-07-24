@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 
-<html class="dark" lang="en"><head>
+<html class="dark" lang="en" style=""><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Construction OS - Permit Management</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
     tailwind.config = {
@@ -144,16 +143,18 @@
       min-height: max(884px, 100dvh);
     }
   </style>
-  </head>
+</head>
 <body class="flex flex-col min-h-screen">
 <!-- Top AppBar Shell -->
-<header class="bg-surface-dim dark:bg-surface-dim border-b border-outline-variant docked full-width top-0 sticky z-40">
-<div class="flex justify-between items-center h-web-space-8 px-mobile-edge">
+<header class="bg-surface-dim dark:bg-surface-dim border-b border-outline-variant docked full-width top-0 sticky z-40 py-4">
+<div class="flex justify-between items-center px-mobile-edge">
 <div class="flex items-center gap-4">
 <button class="material-symbols-outlined text-primary dark:text-primary active:opacity-80 transition-opacity">menu</button>
-<span class="font-mobile-text-hero text-mobile-text-hero font-bold text-cos-white">Construction OS</span>
+<div class="flex items-center">
+<span class="font-mobile-text-hero text-[22px] leading-none font-bold text-cos-white uppercase whitespace-nowrap tracking-tight">CONSTRUCTION OS</span>
 </div>
-<div class="w-8 h-8 rounded-full bg-surface-variant overflow-hidden border border-outline">
+</div>
+<div class="w-9 h-9 rounded-full bg-surface-variant overflow-hidden border border-outline shrink-0">
 <img class="w-full h-full object-cover" data-alt="Professional headshot of a site engineer wearing a modern high-visibility vest and a smart safety helmet, set against a blurred background of a complex urban infrastructure project at dusk with technical blue and amber lighting. High-end professional photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2gIdP2rOhi3VJe5xvsLnflHp6quYWYStCPOWVYiGm0l507bJaLQ-DBL2r6_cM8OiD1kLAwHpW8WfE12zbFzWzHTdo4eO5feuWOZMLM1q5abor3IEzlaNtmaNyH63EmtXRQYSUoIztK-mvFvzEQcRGi5kjq69oETvjuR2y-_Lz1iE3-klhuDdJf790fY_kbudL-fWLejS4zZRYecuHtvxthBtMjHcGygt0fj07gnziXOHWw7eMVLj02-LO_KBQKMt_eIrCE8dEpTo"/>
 </div>
 </div>
@@ -162,27 +163,27 @@
 <main class="flex-1 pb-24 overflow-y-auto">
 <!-- AI Predictive Banner -->
 <section class="mt-6 px-mobile-edge">
-<div class="bg-cos-cyan/5 border-l-2 border-cos-cyan rounded-xl p-4 flex gap-4 items-start relative overflow-hidden">
+<div class="bg-cos-cyan/5 border-l-2 border-cos-cyan p-4 flex gap-4 items-start relative overflow-hidden rounded-lg">
 <div class="shimmer absolute inset-0 opacity-10 pointer-events-none"></div>
 <span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">psychology</span>
 <div class="flex-1">
 <p class="font-mobile-text-label text-mobile-text-label text-cos-cyan mb-1">AI Predictive Safety Analysis</p>
-<p class="font-mobile-text-body text-[14px] leading-tight text-on-surface-variant">High risk of thermal overlap in Sector B. 4 pending safety permits require immediate secondary review before 14:00.</p>
+<p class="font-mobile-text-body text-[14px] leading-tight text-on-surface-variant">High risk of thermal overlap in Sector B. 4 pending safety permits require immediate secondary review before 14:00.</p><div class="mt-3 flex flex-wrap gap-3 border-t border-cos-cyan/20 pt-2"><div class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-cos-cyan">analytics</span><span class="text-web-text-tiny text-cos-cyan uppercase">Confidence: 94%</span></div><div class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px] text-cos-cyan">database</span><span class="text-web-text-tiny text-cos-cyan uppercase">Sources: Site Telemetry, BIM Schedule</span></div></div>
 </div>
 </div>
 </section>
 <!-- Navigation Tabs -->
 <nav class="mt-6 px-mobile-edge">
 <div class="flex space-x-2 overflow-x-auto scrollbar-hide">
-<button class="flex-shrink-0 px-4 py-2 rounded-lg bg-cos-blue text-cos-white font-mobile-text-label text-mobile-text-label">Work Permits</button>
-<button class="flex-shrink-0 px-4 py-2 rounded-lg bg-surface-container text-on-surface-variant font-mobile-text-label text-mobile-text-label">Safety Permits</button>
-<button class="flex-shrink-0 px-4 py-2 rounded-lg bg-surface-container text-on-surface-variant font-mobile-text-label text-mobile-text-label">Drawing Approvals</button>
+<button class="flex-shrink-0 px-4 py-2 bg-cos-blue text-cos-white font-mobile-text-label text-mobile-text-label rounded">Work Permits</button>
+<button class="flex-shrink-0 px-4 py-2 bg-surface-container text-on-surface-variant font-mobile-text-label text-mobile-text-label rounded">Safety Permits</button>
+<button class="flex-shrink-0 px-4 py-2 bg-surface-container text-on-surface-variant font-mobile-text-label text-mobile-text-label rounded">Drawing Approvals</button>
 </div>
 </nav>
 <!-- Permit List -->
 <div class="mt-8 px-mobile-edge space-y-4">
 <!-- Permit Card 1: Active -->
-<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/30 active:scale-[0.98] transition-transform">
+<div class="bg-surface-container rounded-lg overflow-hidden border border-outline-variant/30 active:scale-[0.98] transition-transform">
 <div class="h-1 bg-mobile-success w-full"></div>
 <div class="p-4">
 <div class="flex justify-between items-start mb-3">
@@ -290,22 +291,19 @@
 <!-- Bottom Navigation Shell -->
 <nav class="bg-surface-container dark:bg-surface-container border-t border-outline-variant fixed bottom-0 w-full z-50">
 <div class="flex justify-around items-center h-mobile-touch-target px-web-space-4">
-<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 active:scale-95 transition-transform duration-100">
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 active:scale-95 transition-transform duration-100 h-full">
 <span class="material-symbols-outlined text-[24px]">description</span>
 <span class="font-mobile-text-label text-[10px]">Permits</span>
 </div>
-<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100">
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100 h-full">
 <span class="material-symbols-outlined text-[24px]">security</span>
 <span class="font-mobile-text-label text-[10px]">Security</span>
 </div>
-<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100">
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100 h-full">
 <span class="material-symbols-outlined text-[24px]">notifications</span>
 <span class="font-mobile-text-label text-[10px]">Alerts</span>
 </div>
-<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100">
-<span class="material-symbols-outlined text-[24px]">settings</span>
-<span class="font-mobile-text-label text-[10px]">Settings</span>
-</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-variant active:scale-95 transition-transform duration-100 h-full"><span class="material-symbols-outlined text-[24px]">settings</span><span class="font-mobile-text-label text-[10px]">Settings</span></div>
 </div>
 </nav>
 <!-- Atmospheric Background Interaction -->
