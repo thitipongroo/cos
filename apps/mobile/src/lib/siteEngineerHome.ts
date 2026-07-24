@@ -13,6 +13,7 @@ export interface UpcomingTask {
 
 export interface ActiveIssue {
   issue_id: string;
+  issue_number: string | null; // human-readable ISS-<year>-<seq> (ADR-069); NULL for pre-existing rows
   title: string;
   severity: string;
   status: string;

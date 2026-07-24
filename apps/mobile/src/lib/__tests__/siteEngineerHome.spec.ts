@@ -22,7 +22,7 @@ function task(over: Partial<UpcomingTask> = {}): UpcomingTask {
 }
 
 function issue(severity: string, id = 'i1'): ActiveIssue {
-  return { issue_id: id, title: 'Steel beam delay', severity, status: 'OPEN' };
+  return { issue_id: id, issue_number: null, title: 'Steel beam delay', severity, status: 'OPEN' };
 }
 
 describe('selectUpcomingTasks', () => {

@@ -36,6 +36,7 @@ const reportRow = {
 
 const issueRow = {
   issue_id: 'issue-uuid-001',
+  issue_number: 'ISS-2026-0001',
   project_id: 'proj-uuid-001',
   tenant_id: 'tenant-uuid-001',
   report_id: null,
@@ -180,6 +181,7 @@ describe('SiteOpsRepository', () => {
     mockPrisma.$queryRaw.mockResolvedValue([issueRow]);
     const result = await repo.createIssue({
       issue_id: 'issue-uuid-001',
+      issue_number: 'ISS-2026-0001',
       project_id: 'proj-uuid-001',
       report_id: null,
       title: 'Crack',
@@ -189,6 +191,23 @@ describe('SiteOpsRepository', () => {
       client_submitted_at: null,
     });
     expect(result.issue_id).toBe('issue-uuid-001');
+  });
+
+  // nextIssueNumber (ADR-069) — ISS-<year>-<seq> from MAX+1 per tenant/year. The three cases cover the
+  // `rows[0]?.max_seq ?? 0` branches: no rows, a row with a null max, and a row with a value.
+  it('nextIssueNumber starts at 0001 when the query returns no rows', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([]);
+    expect(await repo.nextIssueNumber(2026)).toBe('ISS-2026-0001');
+  });
+
+  it('nextIssueNumber starts at 0001 when the tenant has no issues this year', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ max_seq: null }]);
+    expect(await repo.nextIssueNumber(2026)).toBe('ISS-2026-0001');
+  });
+
+  it('nextIssueNumber increments the highest existing sequence', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([{ max_seq: 41 }]);
+    expect(await repo.nextIssueNumber(2026)).toBe('ISS-2026-0042');
   });
 
   it('findIssueById returns null when not found', async () => {

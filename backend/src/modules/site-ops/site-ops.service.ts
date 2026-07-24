@@ -217,8 +217,12 @@ export class SiteOpsService {
   async createIssue(dto: CreateIssueDto) {
     // Use the client-provided id when present (offline create → photo linkage, G-M11); else generate.
     const issueId = dto.client_id ?? randomUUID();
+    // Server assigns the human-readable number (ADR-069) — not the offline client, which cannot know
+    // the tenant's next ISS-<year>-<seq>.
+    const issueNumber = await this.repo.nextIssueNumber(new Date().getFullYear());
     const issue = await this.repo.createIssue({
       issue_id: issueId,
+      issue_number: issueNumber,
       project_id: dto.project_id,
       report_id: dto.report_id ?? null,
       title: dto.title,

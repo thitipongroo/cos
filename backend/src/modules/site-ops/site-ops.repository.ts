@@ -144,8 +144,29 @@ export class SiteOpsRepository {
 
   // ── Issues ─────────────────────────────────────────────────────────────
 
+  /**
+   * Next issue number for the tenant, as `ISS-<year>-<seq>` (ADR-069). Mirrors nextPrNumber: derived
+   * from the highest existing number for that year (not a sequence), so the series stays per-tenant and
+   * restarts each January. Called inside the caller's transaction; concurrent creates collide on
+   * uq_issues_tenant_number, which is the constraint doing the real uniqueness work.
+   */
+  async nextIssueNumber(year: number): Promise<string> {
+    const prefix = `ISS-${year}-`;
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ max_seq: number | null }>>`
+        SELECT MAX(NULLIF(regexp_replace(issue_number, '^ISS-[0-9]{4}-', ''), '')::int) AS max_seq
+        FROM site_ops.issues
+        WHERE tenant_id = ${this.tenantId}::uuid
+          AND issue_number LIKE ${prefix + '%'}`,
+    );
+    const next = (rows[0]?.max_seq ?? 0) + 1;
+    return `${prefix}${String(next).padStart(4, '0')}`;
+  }
+
   async createIssue(params: {
     issue_id: string;
+    issue_number: string;
     project_id: string;
     report_id: string | null;
     title: string;
@@ -160,10 +181,10 @@ export class SiteOpsRepository {
       (tx) =>
         tx.$queryRaw<IssueRow[]>`
         INSERT INTO site_ops.issues
-          (issue_id, project_id, tenant_id, report_id, title, description,
+          (issue_id, issue_number, project_id, tenant_id, report_id, title, description,
            severity, assigned_to, client_submitted_at, latitude, longitude)
         VALUES
-          (${params.issue_id}::uuid, ${params.project_id}::uuid,
+          (${params.issue_id}::uuid, ${params.issue_number}, ${params.project_id}::uuid,
            ${this.tenantId}::uuid,
            ${params.report_id}::uuid,
            ${params.title}, ${params.description},

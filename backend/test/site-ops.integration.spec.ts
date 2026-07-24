@@ -56,6 +56,7 @@ function makeServerReport(overrides: Partial<SiteReportRow> = {}): SiteReportRow
 function makeServerIssue(overrides: Partial<IssueRow> = {}): IssueRow {
   return {
     issue_id: ISSUE_ID_A,
+    issue_number: 'ISS-2026-0001',
     project_id: PROJECT_ID,
     tenant_id: 'tenant-integration-001',
     report_id: null,

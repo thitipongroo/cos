@@ -51,6 +51,7 @@ const mockRepo = {
   listSiteReports: jest.fn(),
   updateReportStatus: jest.fn(),
   createIssue: jest.fn(),
+  nextIssueNumber: jest.fn(),
   findIssueById: jest.fn(),
   listIssues: jest.fn(),
   updateIssue: jest.fn(),
@@ -99,6 +100,7 @@ function makeReport(overrides?: Partial<SiteReportRow>): SiteReportRow {
 function makeIssue(overrides?: Partial<IssueRow>): IssueRow {
   return {
     issue_id: 'issue-1',
+    issue_number: 'ISS-2026-0001',
     project_id: 'project-1',
     tenant_id: 'tenant-uuid-1',
     report_id: null,
@@ -358,6 +360,8 @@ describe('syncSiteReports', () => {
 // ── createIssue ───────────────────────────────────────────────────────────
 
 describe('createIssue', () => {
+  beforeEach(() => mockRepo.nextIssueNumber.mockResolvedValue('ISS-2026-0001'));
+
   it('creates issue and emits site.issue.created.v1', async () => {
     mockRepo.createIssue.mockResolvedValue(makeIssue());
     const result = await service.createIssue({

@@ -20,6 +20,7 @@ export interface SiteReportRow {
 
 export interface IssueRow {
   issue_id: string;
+  issue_number: string | null; // human-readable ISS-<year>-<seq> (ADR-069); NULL for pre-existing rows
   project_id: string;
   tenant_id: string;
   report_id: string | null;

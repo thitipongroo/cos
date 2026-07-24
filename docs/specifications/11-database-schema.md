@@ -602,6 +602,8 @@ Site Reports :
 Issues (site_ops schema) :
 
 - issue_id
+- issue_number (nullable — human-readable `ISS-<year>-<seq>`, unique per tenant, generated at create;
+  mirrors pr_number; pre-existing rows stay NULL — ADR-069)
 - tenant_id
 - project_id
 - report_id (nullable — FK → Site Reports)

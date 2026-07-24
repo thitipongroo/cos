@@ -266,11 +266,23 @@ export default function SiteEngineerHome() {
             onPress={() => router.push('/issues')}
           >
             <View style={styles.rowBody}>
-              <Text
-                style={[styles.chip, { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted }]}
-              >
-                {issue.severity}
-              </Text>
+              <View style={styles.issueHead}>
+                {/* Human-readable ISS-<year>-<seq> (ADR-069) — the mockup's ID chip; null for
+                    pre-existing issues, in which case only the severity chip shows. */}
+                {issue.issue_number ? (
+                  <Text testID={`issue-${issue.issue_id}-number`} style={styles.issueNumber}>
+                    {issue.issue_number}
+                  </Text>
+                ) : null}
+                <Text
+                  style={[
+                    styles.chip,
+                    { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
+                  ]}
+                >
+                  {issue.severity}
+                </Text>
+              </View>
               <Text style={styles.rowTitle} numberOfLines={2}>
                 {issue.title}
               </Text>
@@ -406,6 +418,12 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
   },
   rowBody: { flex: 1, gap: 2 },
+  issueHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  issueNumber: {
+    fontSize: typography.label.fontSize,
+    fontFamily: fontFamily.bold,
+    color: darkColors.muted,
+  },
   chevronBox: {
     width: 36,
     height: 36,
