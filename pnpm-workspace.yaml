@@ -33,6 +33,8 @@ overrides:
   '@opentelemetry/propagator-jaeger@<2.9.0': '^2.9.0' # GHSA-45rx-2jwx-cxfr — DoS via malformed Jaeger header (via @opentelemetry/sdk-node)
   'fast-uri@>=3.0.0 <3.1.4': '^3.1.4' # GHSA-4c8g-83qw-93j6 + GHSA-v2hh-gcrm-f6hx — host confusion (via ajv / @confluentinc/schemaregistry)
   'sharp@<0.35.0': '^0.35.0' # GHSA-f88m-g3jw-g9cj — inherited libvips CVEs (via next / @serwist/turbopack)
+  'postcss@<8.5.12': '^8.5.12' # GHSA-6g55-p6wh-862q — arbitrary file read via sourceMappingURL (transitive, via next/tailwind toolchain)
+  'find-my-way@<9.6.1': '^9.6.1' # GHSA-c96f-x56v-gq3h — DoS with HTTP/2 (transitive, via fastify)
 
 auditConfig:
   ignoreCves:
