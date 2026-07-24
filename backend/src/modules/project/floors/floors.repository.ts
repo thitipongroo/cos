@@ -8,6 +8,7 @@ import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import type { CreateFloorDto } from './dto/create-floor.dto';
 import type { UpdateFloorDto } from './dto/update-floor.dto';
 import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
+import { buildingExistsInTenant } from '../shared/parent-existence';
 
 export interface FloorRow {
   floor_id: string;
@@ -32,16 +33,7 @@ export class FloorsRepository {
   ) {}
 
   async buildingExists(buildingId: string): Promise<boolean> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<Array<{ exists: boolean }>>`
-        SELECT EXISTS(
-          SELECT 1 FROM projects.buildings
-          WHERE building_id = ${buildingId}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ) AS exists
-      `,
-    );
-    return rows[0]?.exists ?? false;
+    return buildingExistsInTenant(this.tenantPrisma, buildingId, this.tenantId);
   }
 
   async create(buildingId: string, dto: CreateFloorDto, createdBy: string): Promise<FloorRow> {

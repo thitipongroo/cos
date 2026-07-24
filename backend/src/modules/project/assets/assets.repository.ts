@@ -7,6 +7,7 @@ import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
 import type { CreateAssetDto } from './dto/create-asset.dto';
 import type { UpdateAssetDto } from './dto/update-asset.dto';
 import { decodeCursor, paginate, type CursorListOptions } from '../../../shared/pagination/cursor';
+import { projectExistsInTenant } from '../shared/parent-existence';
 
 export interface AssetRow {
   asset_id: string;
@@ -33,16 +34,7 @@ export class AssetsRepository {
   ) {}
 
   async projectExists(projectId: string): Promise<boolean> {
-    const rows = await this.tenantPrisma.run(
-      async (tx) =>
-        await tx.$queryRaw<Array<{ exists: boolean }>>`
-        SELECT EXISTS(
-          SELECT 1 FROM projects.projects
-          WHERE project_id = ${projectId}::uuid AND tenant_id = ${this.tenantId}::uuid
-        ) AS exists
-      `,
-    );
-    return rows[0]?.exists ?? false;
+    return projectExistsInTenant(this.tenantPrisma, projectId, this.tenantId);
   }
 
   async create(projectId: string, dto: CreateAssetDto, createdBy: string): Promise<AssetRow> {
