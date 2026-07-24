@@ -7,6 +7,7 @@ import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useI18n } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface PmDashboardRow {
   eventDate: string;
@@ -46,7 +47,7 @@ export default function DashboardScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.heading}>{t('pm.dashboard.title')}</Text>
+      <Text style={screen.heading}>{t('pm.dashboard.title')}</Text>
       <ProjectPicker selectedId={projectId} onSelect={onSelect} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -58,15 +59,15 @@ export default function DashboardScreen() {
               <Text style={styles.dayDate}>{formatDate(row.eventDate)}</Text>
               {KPI_LABELS.map(([key, labelKey]) => (
                 <View key={key} style={styles.kpiRow}>
-                  <Text style={styles.kpiKey}>{t(labelKey)}</Text>
-                  <Text style={styles.kpiValue}>{String(row[key])}</Text>
+                  <Text style={screen.kvKey}>{t(labelKey)}</Text>
+                  <Text style={screen.kvValue}>{String(row[key])}</Text>
                 </View>
               ))}
             </View>
           ))}
         </View>
       ) : (
-        <Text style={styles.empty}>
+        <Text style={screen.empty}>
           {rows ? t('pm.dashboard.emptyForProject') : t('pm.dashboard.selectPrompt')}
         </Text>
       )}
@@ -77,11 +78,6 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   content: { padding: spacing.md, gap: spacing.sm },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   kpis: { gap: spacing.sm, marginTop: spacing.sm },
   dayCard: {
     backgroundColor: colors.surface,
@@ -95,16 +91,6 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   kpiRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs },
-  kpiKey: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-  },
-  kpiValue: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   error: {
     color: colors.danger,
     fontFamily: fontFamily.regular,

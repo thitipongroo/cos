@@ -8,6 +8,7 @@ import { get, mutate } from '../../api/client';
 import { useI18n } from '../../i18n';
 import type { Locale } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface Preference {
   event_type: string;
@@ -81,23 +82,23 @@ export default function ProfileScreen() {
   const { t, locale, setLocale } = useI18n();
 
   return (
-    <View testID="profile-screen" style={styles.container}>
+    <View testID="profile-screen" style={screen.container}>
       <Text style={styles.heading}>{t('profile.main.title')}</Text>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>{t('profile.main.userId')}</Text>
+      <View style={screen.kvRow}>
+        <Text style={screen.kvKey}>{t('profile.main.userId')}</Text>
         <Text testID="profile-user-id" style={styles.value}>
           {userId ?? '—'}
         </Text>
       </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>{t('profile.main.role')}</Text>
+      <View style={screen.kvRow}>
+        <Text style={screen.kvKey}>{t('profile.main.role')}</Text>
         <Text testID="profile-role" style={styles.value}>
           {role ?? '—'}
         </Text>
       </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>{t('profile.main.language')}</Text>
+      <View style={screen.kvRow}>
+        <Text style={screen.kvKey}>{t('profile.main.language')}</Text>
         <View style={styles.localeRow}>
           {LOCALES.map((item) => {
             const active = item.locale === locale;
@@ -127,24 +128,11 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
   heading: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.semibold,
     color: colors.textPrimary,
     marginBottom: spacing.sm,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  label: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
   },
   value: {
     fontSize: typography.body.fontSize,

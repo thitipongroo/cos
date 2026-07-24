@@ -30,6 +30,7 @@ import { QuickActionCard } from '../../components/QuickActionCard';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 // ── shared presentational bits ──────────────────────────────────────────────
 function KpiCard({ testID, value, label }: { testID: string; value: string; label: string }) {
@@ -52,7 +53,7 @@ function Screen({
 }) {
   return (
     <View testID={testID} style={styles.container}>
-      <Text style={styles.heading}>{title}</Text>
+      <Text style={screen.heading}>{title}</Text>
       {children}
     </View>
   );
@@ -118,11 +119,11 @@ function FieldHome() {
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TouchableOpacity
         testID="check-in-button"
-        style={[styles.checkIn, (busy || !projectId.trim()) && styles.disabled]}
+        style={[styles.checkIn, (busy || !projectId.trim()) && screen.buttonDisabled]}
         onPress={onCheckIn}
         disabled={busy || !projectId.trim()}
       >
-        <Text style={styles.checkInText}>{t('home.main.checkIn')}</Text>
+        <Text style={screen.primaryButtonText}>{t('home.main.checkIn')}</Text>
       </TouchableOpacity>
 
       {message ? (
@@ -390,11 +391,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.md },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
   kpiRow: { flexDirection: 'row', gap: spacing.md },
   quickRow: { flexDirection: 'row', gap: spacing.md },
   kpi: {
@@ -422,12 +418,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  disabled: { opacity: 0.5 },
-  checkInText: {
-    color: colors.bg,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
   },
   message: {
     color: colors.textPrimary,

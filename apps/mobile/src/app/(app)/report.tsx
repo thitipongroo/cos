@@ -15,6 +15,7 @@ import { ProjectPicker } from '../../components/ProjectPicker';
 import { VoiceNoteButton } from '../../components/VoiceNoteButton';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -62,7 +63,7 @@ export default function ReportScreen() {
   };
 
   return (
-    <View testID="report-screen" style={styles.container}>
+    <View testID="report-screen" style={screen.container}>
       <Text style={styles.heading}>{t('site.report.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
@@ -100,11 +101,11 @@ export default function ReportScreen() {
 
       <TouchableOpacity
         testID="save-report-button"
-        style={[styles.button, !canSave && styles.buttonDisabled]}
+        style={[styles.button, !canSave && screen.buttonDisabled]}
         onPress={onSave}
         disabled={!canSave}
       >
-        <Text style={styles.buttonText}>{t('site.report.save')}</Text>
+        <Text style={screen.primaryButtonText}>{t('site.report.save')}</Text>
       </TouchableOpacity>
 
       {saved ? (
@@ -117,7 +118,6 @@ export default function ReportScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
   heading: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.semibold,
@@ -142,12 +142,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: {
-    color: colors.bg,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.semibold,
   },
   saved: {
     color: colors.success,

@@ -28,6 +28,7 @@ import { ConflictBadge } from '../../components/ConflictBadge';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useI18n } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { screen } from '../../theme/screenStyles';
 
 interface ReportRow {
   report_id: string;
@@ -81,9 +82,9 @@ function SiteEngineerReports() {
   };
 
   return (
-    <View testID="reports-screen" style={styles.container}>
+    <View testID="reports-screen" style={screen.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.heading}>{t('site.reports.title')}</Text>
+        <Text style={screen.heading}>{t('site.reports.title')}</Text>
         <ConflictBadge onPress={() => router.push('/conflict-review')} />
       </View>
       <FlatList
@@ -91,16 +92,16 @@ function SiteEngineerReports() {
         data={reports}
         keyExtractor={(r) => r.report_id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>{t('site.reports.empty')}</Text>}
+        ListEmptyComponent={<Text style={screen.empty}>{t('site.reports.empty')}</Text>}
         renderItem={({ item }) => {
           const open = selectedReportId === item.report_id;
           return (
             <TouchableOpacity
               testID="report-item"
-              style={styles.item}
+              style={screen.item}
               onPress={() => setSelectedReportId(open ? null : item.report_id)}
             >
-              <Text style={styles.itemTitle}>{formatDate(item.report_date)}</Text>
+              <Text style={screen.itemTitle}>{formatDate(item.report_date)}</Text>
               {item.summary ? <Text style={styles.sub}>{item.summary}</Text> : null}
               <StatusChip label={item.status} />
 
@@ -136,11 +137,11 @@ function SiteEngineerReports() {
                   </View>
                   <TouchableOpacity
                     testID="record-material-button"
-                    style={[styles.button, !canRecord && styles.buttonDisabled]}
+                    style={[styles.button, !canRecord && screen.buttonDisabled]}
                     onPress={() => recordMaterial(item.report_id)}
                     disabled={!canRecord}
                   >
-                    <Text style={styles.buttonText}>{t('site.reports.record')}</Text>
+                    <Text style={screen.primaryButtonText}>{t('site.reports.record')}</Text>
                   </TouchableOpacity>
                   {savedFor === item.report_id ? (
                     <Text testID="material-saved" style={styles.saved}>
@@ -199,17 +200,17 @@ function ExecReports() {
   };
 
   return (
-    <View testID="exec-reports-screen" style={styles.container}>
-      <Text style={styles.heading}>{t('exec.reports.title')}</Text>
+    <View testID="exec-reports-screen" style={screen.container}>
+      <Text style={screen.heading}>{t('exec.reports.title')}</Text>
 
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TouchableOpacity
         testID="generate-report-button"
-        style={[styles.button, (!projectId || state === 'loading') && styles.buttonDisabled]}
+        style={[styles.button, (!projectId || state === 'loading') && screen.buttonDisabled]}
         onPress={generate}
         disabled={!projectId || state === 'loading'}
       >
-        <Text style={styles.buttonText}>
+        <Text style={screen.primaryButtonText}>
           {state === 'loading' ? t('exec.reports.generating') : t('exec.reports.generate')}
         </Text>
       </TouchableOpacity>
@@ -229,7 +230,7 @@ function ExecReports() {
           <Text style={styles.summaryText}>{summary}</Text>
         </View>
       ) : state === 'idle' ? (
-        <Text style={styles.empty}>{t('exec.reports.empty')}</Text>
+        <Text style={screen.empty}>{t('exec.reports.empty')}</Text>
       ) : null}
     </View>
   );
@@ -241,24 +242,7 @@ export default function ReportsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
   sub: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.regular,
@@ -288,12 +272,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  buttonDisabled: { opacity: 0.5 },
-  buttonText: {
-    color: colors.bg,
-    fontFamily: fontFamily.semibold,
-    fontSize: typography.body.fontSize,
   },
   saved: {
     color: colors.success,
@@ -327,5 +305,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: typography.body.fontSize,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });
