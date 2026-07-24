@@ -50,7 +50,7 @@ The package carries its own 100 %-line/branch Jest suite (Rule 35 / QM-1), becau
 - **Why a new package, not `@cos/shared`:** `@cos/shared` pulls Node-only runtime deps into its value
   exports; a mobile runtime import breaks Metro. A dedicated package with **no dependencies** is the
   only home that satisfies Rule 34 for all three targets (mobile / web / Node).
-- **Why not `@cos/types`:** it is pure and mobile already consumes it, but it is a *types* package
+- **Why not `@cos/types`:** it is pure and mobile already consumes it, but it is a _types_ package
   (Rule 35 test-exempt). Adding executable logic there would blur that boundary and force test infra
   onto a package deliberately without it. Keeping types and logic separate keeps both exemptions honest.
 - **Why not leave the duplication:** the clone is small (~57 lines) and — because the mobile tree is not
@@ -75,7 +75,7 @@ The package carries its own 100 %-line/branch Jest suite (Rule 35 / QM-1), becau
 ### Neutral
 
 - Platform-specific logic (RN palette, Tailwind classes, flag assets, region-vs-locale detection) stays
-  in each app's `lib/` by design — this package is intentionally *only* the identical core.
+  in each app's `lib/` by design — this package is intentionally _only_ the identical core.
 
 ## References
 
