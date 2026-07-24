@@ -43,11 +43,18 @@ const QUARANTINED_ROW = {
   quarantined_at: new Date('2026-01-01'),
 };
 
+// A scanned-clean row — the signed-URL endpoint only serves CLEAN files (COS-FILE-016 gate).
+const CLEAN_ROW = { ...FILE_ROW, file_status: 'CLEAN' as const };
+
+// Valid magic-byte prefixes so uploads pass the server-side content check (magicByteMismatch).
+const JPEG_BYTES = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+const ZIP_BYTES = Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x14, 0x00]);
+
 function buildMockServices() {
   const db: Partial<DbService> = {
     insertFile: jest.fn().mockResolvedValue(FILE_ROW),
     insertMetadata: jest.fn().mockResolvedValue(undefined),
-    findFileById: jest.fn().mockResolvedValue(FILE_ROW),
+    findFileById: jest.fn().mockResolvedValue(CLEAN_ROW),
     findFileByIdAdmin: jest.fn().mockResolvedValue(QUARANTINED_ROW),
     softDeleteFile: jest.fn().mockResolvedValue(true),
     listFiles: jest.fn().mockResolvedValue([FILE_ROW]),
@@ -118,7 +125,7 @@ describe('Files routes (integration)', () => {
     it('201 — uploads a valid image and returns file metadata', async () => {
       const { app, mocks } = await buildTestApp();
       const form = new FormData();
-      form.append('file', Buffer.from('fake-image-data'), {
+      form.append('file', JPEG_BYTES, {
         filename: 'photo.jpg',
         contentType: 'image/jpeg',
       });
@@ -144,7 +151,7 @@ describe('Files routes (integration)', () => {
     it('201 — a ZIP upload starts the async extraction workflow (is_archive)', async () => {
       const { app, mocks } = await buildTestApp();
       const form = new FormData();
-      form.append('file', Buffer.from('PK-zip-bytes'), {
+      form.append('file', ZIP_BYTES, {
         filename: 'bulk.zip',
         contentType: 'application/zip',
       });
@@ -167,7 +174,7 @@ describe('Files routes (integration)', () => {
       const { app, mocks } = await buildTestApp();
       (mocks.extraction.startExtraction as jest.Mock).mockRejectedValue(new Error('temporal down'));
       const form = new FormData();
-      form.append('file', Buffer.from('PK-zip-bytes'), {
+      form.append('file', ZIP_BYTES, {
         filename: 'bulk.zip',
         contentType: 'application/zip',
       });
@@ -204,7 +211,7 @@ describe('Files routes (integration)', () => {
       const { app } = await buildTestApp();
       const form = new FormData();
       form.append('file', Buffer.from('data'), {
-        filename: 'file.xyz',
+        filename: 'file.png',
         contentType: 'application/unknown',
       });
 
@@ -223,7 +230,7 @@ describe('Files routes (integration)', () => {
       (mocks.minio.uploadFile as jest.Mock).mockRejectedValue(new Error('minio down'));
 
       const form = new FormData();
-      form.append('file', Buffer.from('data'), {
+      form.append('file', JPEG_BYTES, {
         filename: 'photo.jpg',
         contentType: 'image/jpeg',
       });
@@ -236,6 +243,45 @@ describe('Files routes (integration)', () => {
       });
       expect(res.statusCode).toBe(500);
       expect(JSON.parse(res.body).error.code).toBe('COS-FILE-007');
+    });
+
+    it('422 — rejects a file whose bytes contradict the declared type (M7)', async () => {
+      const { app, mocks } = await buildTestApp();
+      const form = new FormData();
+      form.append('file', Buffer.from('this is not a PNG'), {
+        filename: 'evil.png',
+        contentType: 'image/png',
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/upload',
+        headers: { ...AUTH_HEADERS, ...form.getHeaders() },
+        payload: form.getBuffer(),
+      });
+      expect(res.statusCode).toBe(422);
+      expect(JSON.parse(res.body).error.code).toBe('COS-FILE-017');
+      expect(mocks.minio.uploadFile).not.toHaveBeenCalled();
+    });
+
+    it('422 — rejects an upload that exceeds the per-type size cap mid-stream (M6)', async () => {
+      const { app, mocks } = await buildTestApp();
+      const form = new FormData();
+      // 21 MB declared as image/jpeg (20 MB cap) — readMultipartBuffer aborts and reports truncated.
+      form.append('file', Buffer.alloc(21 * 1024 * 1024), {
+        filename: 'huge.jpg',
+        contentType: 'image/jpeg',
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/files/upload',
+        headers: { ...AUTH_HEADERS, ...form.getHeaders() },
+        payload: form.getBuffer(),
+      });
+      expect(res.statusCode).toBe(422);
+      expect(JSON.parse(res.body).error.code).toBe('COS-FILE-003');
+      expect(mocks.minio.uploadFile).not.toHaveBeenCalled();
     });
 
     it('401 — returns 401 with no auth headers', async () => {
@@ -262,7 +308,7 @@ describe('Files routes (integration)', () => {
     it('uploads with entity_type and entity_id query params', async () => {
       const { app, mocks } = await buildTestApp();
       const form = new FormData();
-      form.append('file', Buffer.from('data'), {
+      form.append('file', JPEG_BYTES, {
         filename: 'photo.jpg',
         contentType: 'image/jpeg',
       });
@@ -301,6 +347,20 @@ describe('Files routes (integration)', () => {
       });
       expect(res.statusCode).toBe(404);
       expect(JSON.parse(res.body).error.code).toBe('COS-FILE-005');
+    });
+
+    it('409 — refuses the signed URL until the scan clears (PENDING_SCAN)', async () => {
+      const { app, mocks } = await buildTestApp();
+      (mocks.db.findFileById as jest.Mock).mockResolvedValue(FILE_ROW); // PENDING_SCAN
+
+      const res = await app.inject({
+        method: 'GET',
+        url: `/api/v1/files/${FILE_ID}/url`,
+        headers: AUTH_HEADERS,
+      });
+      expect(res.statusCode).toBe(409);
+      expect(JSON.parse(res.body).error.code).toBe('COS-FILE-016');
+      expect(mocks.minio.getSignedUrl).not.toHaveBeenCalled();
     });
 
     it('404 — returns FILE_DELETED when deleted_at is set', async () => {

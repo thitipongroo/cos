@@ -17,6 +17,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { CrmService } from './crm.service';
@@ -31,7 +32,7 @@ const CRM_WRITE_ROLES = [CosRole.CRM_SALES_MANAGER, CosRole.TENANT_ADMIN] as con
 
 @ApiTags('crm')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class CrmController {
   constructor(private readonly svc: CrmService) {}

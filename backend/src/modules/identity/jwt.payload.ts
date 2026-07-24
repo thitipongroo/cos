@@ -19,4 +19,9 @@ export interface JwtPayload {
   email?: string;
   phone_number?: string;
   name?: string;
+
+  // Authentication Context Class Reference (OIDC standard). Emitted by Keycloak's `acr` client scope
+  // and driven by the realm's acr.loa.map step-up config — used to prove MFA (OTP) was performed for
+  // privileged roles (see shared/guards/mfa-enforcement.ts, spec §5.4.1).
+  acr?: string;
 }

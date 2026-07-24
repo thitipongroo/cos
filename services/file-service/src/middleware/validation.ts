@@ -37,7 +37,31 @@ export const ALLOWED_MIME_TYPES = new Set([
   'audio/webm',
 ]);
 
-export const BLOCKED_EXTENSIONS = new Set(['.exe', '.sh', '.bat', '.js']);
+// Allowlist (not a denylist): only these extensions are accepted — one per allowed MIME type. An
+// allowlist is closed by default, so it cannot be bypassed by an extension the denylist forgot
+// (.html/.svg/.phtml/.htaccess, …). Pairs with the server-side MIME allowlist + magic-byte sniff.
+export const ALLOWED_EXTENSIONS = new Set([
+  '.jpg',
+  '.jpeg',
+  '.png',
+  '.webp',
+  '.gif',
+  '.pdf',
+  '.dxf',
+  '.dwg',
+  '.xls',
+  '.xlsx',
+  '.zip',
+  '.mp4',
+  '.mov',
+  '.webm',
+  '.avi',
+  '.wmv',
+  '.m4a',
+  '.aac',
+  '.mp3',
+  '.wav',
+]);
 
 const SIZE_LIMITS: Record<string, number> = {
   'image/jpeg': 20 * 1024 * 1024,
@@ -74,9 +98,10 @@ export function validateFile(
   mimeType: string,
   sizeBytes: number,
 ): ValidationError | null {
-  // Block by extension first
-  const ext = filename.slice(filename.lastIndexOf('.')).toLowerCase();
-  if (BLOCKED_EXTENSIONS.has(ext)) {
+  // Extension allowlist first — a file with no extension or one outside the allowlist is rejected.
+  const dot = filename.lastIndexOf('.');
+  const ext = dot >= 0 ? filename.slice(dot).toLowerCase() : '';
+  if (!ALLOWED_EXTENSIONS.has(ext)) {
     return FILE_ERRORS.BLOCKED_EXTENSION;
   }
 
@@ -94,13 +119,66 @@ export function validateFile(
   return null;
 }
 
+/** Per-MIME byte cap (falls back to the 100 MB default for spreadsheets/archives). */
+export function sizeLimitFor(mimeType: string): number {
+  return SIZE_LIMITS[mimeType] ?? DEFAULT_SIZE_LIMIT;
+}
+
 export async function readMultipartBuffer(
   part: MultipartFile,
-): Promise<{ buffer: Buffer; size: number }> {
+  maxBytes: number,
+): Promise<{ buffer: Buffer; size: number; truncated: boolean }> {
   const chunks: Buffer[] = [];
+  let size = 0;
   for await (const chunk of part.file) {
+    size += chunk.length;
+    // Enforce the per-type cap WHILE streaming — never accumulate a payload larger than this MIME type
+    // allows. The previous code buffered up to the 1 GB multipart hard cap regardless of declared type,
+    // so a handful of "image/png" uploads carrying 1 GB each could OOM the pod.
+    if (size > maxBytes) {
+      part.file.destroy();
+      return { buffer: Buffer.alloc(0), size, truncated: true };
+    }
     chunks.push(chunk);
   }
-  const buffer = Buffer.concat(chunks);
-  return { buffer, size: buffer.length };
+  // @fastify/multipart flags truncation if the 1 GB hard cap (main.ts) was hit mid-stream.
+  return { buffer: Buffer.concat(chunks), size, truncated: part.file.truncated };
+}
+
+/** Reduce an attacker-controlled multipart filename to its basename (strip '/' and '\' path segments).
+ *  Falls back to the raw value if the basename is empty (a trailing separator). */
+export function toBasename(rawFilename: string): string {
+  return rawFilename.split(/[\\/]/).pop() || rawFilename;
+}
+
+function startsWith(buf: Buffer, sig: number[], offset = 0): boolean {
+  if (buf.length < offset + sig.length) return false;
+  return sig.every((b, i) => buf[offset + i] === b);
+}
+
+// Magic-byte validators for the binary types where a spoofed Content-Type is a real risk — images and
+// PDFs are served inline from presigned URLs. Dependency-free on purpose: this service is CommonJS and
+// `file-type` is ESM-only, and a generic sniffer would false-reject legitimate uploads (an .xlsx is a
+// ZIP container, so it sniffs as application/zip). Types we cannot reliably sniff (DXF text, DWG, the
+// many video/audio container variants) are intentionally omitted so they are never false-rejected.
+const MAGIC_VALIDATORS: Record<string, (b: Buffer) => boolean> = {
+  'image/jpeg': (b) => startsWith(b, [0xff, 0xd8, 0xff]),
+  'image/png': (b) => startsWith(b, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  'image/gif': (b) => startsWith(b, [0x47, 0x49, 0x46, 0x38]),
+  'image/webp': (b) =>
+    startsWith(b, [0x52, 0x49, 0x46, 0x46]) && startsWith(b, [0x57, 0x45, 0x42, 0x50], 8),
+  'application/pdf': (b) => startsWith(b, [0x25, 0x50, 0x44, 0x46]),
+  'application/zip': (b) =>
+    startsWith(b, [0x50, 0x4b, 0x03, 0x04]) || startsWith(b, [0x50, 0x4b, 0x05, 0x06]),
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': (b) =>
+    startsWith(b, [0x50, 0x4b, 0x03, 0x04]),
+  'application/vnd.ms-excel': (b) => startsWith(b, [0xd0, 0xcf, 0x11, 0xe0]),
+};
+
+/** True when the file's magic bytes clearly contradict its declared MIME type (server-side, not the
+ *  attacker-supplied Content-Type). Types without a validator are not enforced (no false positives). */
+export function magicByteMismatch(buffer: Buffer, mimeType: string): boolean {
+  const validator = MAGIC_VALIDATORS[mimeType];
+  if (!validator) return false;
+  return !validator(buffer);
 }

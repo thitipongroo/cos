@@ -19,8 +19,14 @@ from providers.embedding_provider import EMBEDDING_DIMENSIONS
 
 
 class _FakeMessage:
-    def __init__(self, value: bytes):
+    def __init__(self, value: bytes, headers=None):
         self.value = value
+        # Default to a tenant_id header matching _event()'s tenant so the §7.3 guard passes.
+        self.headers = (
+            headers
+            if headers is not None
+            else [("tenant_id", b"11111111-1111-1111-1111-111111111111")]
+        )
 
 
 class _FakeConsumer:

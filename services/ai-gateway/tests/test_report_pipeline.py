@@ -6,8 +6,8 @@ Every branch tested here is a way the pipeline can hand a user a bad report with
   - LLM returns non-JSON → must degrade to LOW_CONFIDENCE, not surface a parse error
   - guard fails on low confidence → the fallback shape from §Phase 12, and NOTHING persisted
   - guard fails for any other reason → same fallback, still nothing persisted
-  - POTENTIAL_HALLUCINATION → logged but the report is still returned (spec: "logged, not returned
-    to user" refers to the flag, not the report)
+  - POTENTIAL_HALLUCINATION → logged AND persisted/returned, but marked low_confidence=true so the UI
+    never presents it as trustworthy (previously returned as low_confidence=false with a false log)
 
 The "nothing persisted" assertions are the important half: a report that failed the guard must not
 end up in ai_generated_reports, where the history endpoint would later serve it as a real report.
@@ -31,6 +31,9 @@ class _FakeLLMResponse:
         self.content = content
         self.model_used = model_used
         self.total_tokens = total_tokens
+        # Metering (TokenLoggerMiddleware) reads prompt/completion tokens too.
+        self.prompt_tokens = total_tokens // 2
+        self.completion_tokens = total_tokens - total_tokens // 2
 
 
 class _FakeProvider:
@@ -49,6 +52,16 @@ class _FakePool:
 
     async def execute(self, query, *params):
         self.execute_calls.append((query, params))
+
+
+# The pool now receives two kinds of write: the usage-log insert (metering, before the guard) and the
+# report persist (only when the guard passes). Split them so assertions stay precise.
+def _persist_calls(pool):
+    return [c for c in pool.execute_calls if "ai_generated_reports" in c[0]]
+
+
+def _usage_calls(pool):
+    return [c for c in pool.execute_calls if "ai_usage_logs" in c[0]]
 
 
 def _valid_output(**overrides) -> dict:
@@ -160,7 +173,8 @@ class TestHappyPath:
         assert result.low_confidence is False
         assert result.report_id is not None
         assert result.confidence == 0.9
-        assert len(pool.execute_calls) == 1
+        assert len(_persist_calls(pool)) == 1
+        assert len(_usage_calls(pool)) == 1  # metering fired (QM-7/QM-8)
 
     @pytest.mark.asyncio
     async def test_persisted_row_carries_the_model_and_token_count(self, rendered):
@@ -171,7 +185,7 @@ class TestHappyPath:
 
         await _run(provider, pool)
 
-        _, params = pool.execute_calls[0]
+        _, params = _persist_calls(pool)[0]
         assert params[6] == "gpt-4o-mini"
         assert params[7] == 77
 
@@ -188,7 +202,7 @@ class TestHappyPath:
 
         assert result.low_confidence is True
         assert result.report_id is None
-        assert pool.execute_calls == []
+        assert _persist_calls(pool) == []  # no report persisted (usage was still metered)
 
 
 class TestNonJsonOutput:
@@ -208,7 +222,7 @@ class TestNonJsonOutput:
 
         await _run(_FakeProvider(_FakeLLMResponse("not json")), pool)
 
-        assert pool.execute_calls == []
+        assert _persist_calls(pool) == []
 
     @pytest.mark.asyncio
     async def test_a_response_without_content_is_handled(self, rendered):
@@ -216,6 +230,8 @@ class TestNonJsonOutput:
         class _NoContent:
             model_used = "gpt-4o"
             total_tokens = 0
+            prompt_tokens = 0
+            completion_tokens = 0
 
         result = await _run(_FakeProvider(_NoContent()), _FakePool())
 
@@ -239,7 +255,7 @@ class TestGuardRejection:
         assert result.low_confidence is True
         assert result.confidence == 0.42
         assert result.report_id is None
-        assert pool.execute_calls == []
+        assert _persist_calls(pool) == []
 
     @pytest.mark.asyncio
     async def test_other_guard_failures_drop_the_confidence(self, rendered, monkeypatch):
@@ -256,11 +272,14 @@ class TestGuardRejection:
 
         assert result.low_confidence is True
         assert result.confidence is None
-        assert pool.execute_calls == []
+        assert _persist_calls(pool) == []
 
     @pytest.mark.asyncio
-    async def test_flagged_hallucination_still_returns_the_report(self, rendered, monkeypatch, caplog):
-        # The flag is logged, not surfaced — the report itself passed the guard.
+    async def test_flagged_hallucination_returns_the_report_marked_low_confidence(
+        self, rendered, monkeypatch, caplog
+    ):
+        # A flagged report is persisted + returned (for audit/UI), but marked low_confidence so it is
+        # never presented as trustworthy — the old behaviour returned it as low_confidence=False.
         import logging
 
         monkeypatch.setattr(
@@ -273,7 +292,7 @@ class TestGuardRejection:
         with caplog.at_level(logging.WARNING, logger=pipeline_module.__name__):
             result = await _run(_FakeProvider(_FakeLLMResponse(json.dumps(_valid_output()))), pool)
 
-        assert result.low_confidence is False
+        assert result.low_confidence is True
         assert result.report_id is not None
         assert "POTENTIAL_HALLUCINATION" in caplog.text
-        assert len(pool.execute_calls) == 1
+        assert len(_persist_calls(pool)) == 1

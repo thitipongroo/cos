@@ -123,7 +123,7 @@ describe('IdentityController', () => {
         refreshExpiresIn: 604800,
       };
       mockIdentityService.refreshAccessToken.mockResolvedValue(tokenResult);
-      const result = await controller.refresh('old-refresh-token');
+      const result = await controller.refresh({ refreshToken: 'old-refresh-token' });
       expect(mockIdentityService.refreshAccessToken).toHaveBeenCalledWith('old-refresh-token');
       expect(result).toEqual(tokenResult);
     });
@@ -132,7 +132,7 @@ describe('IdentityController', () => {
   describe('logout', () => {
     it('delegates to identityService.logout', async () => {
       mockIdentityService.logout.mockResolvedValue(undefined);
-      await controller.logout('refresh-token');
+      await controller.logout({ refreshToken: 'refresh-token' });
       expect(mockIdentityService.logout).toHaveBeenCalledWith('refresh-token');
     });
   });
@@ -202,7 +202,7 @@ describe('IdentityController', () => {
   describe('mfaVerify', () => {
     it('delegates to mfaService.verifyAndActivate', async () => {
       mockMfaService.verifyAndActivate.mockResolvedValue(undefined);
-      await controller.mfaVerify(fakeReq('user-1', 'user@example.com'), '123456');
+      await controller.mfaVerify(fakeReq('user-1', 'user@example.com'), { token: '123456' });
       expect(mockMfaService.verifyAndActivate).toHaveBeenCalledWith('user-1', '123456');
     });
   });
@@ -210,7 +210,7 @@ describe('IdentityController', () => {
   describe('mfaAuthenticate', () => {
     it('delegates to mfaService.authenticate', async () => {
       mockMfaService.authenticate.mockResolvedValue(undefined);
-      await controller.mfaAuthenticate(fakeReq('user-1', 'user@example.com'), '654321');
+      await controller.mfaAuthenticate(fakeReq('user-1', 'user@example.com'), { token: '654321' });
       expect(mockMfaService.authenticate).toHaveBeenCalledWith('user-1', '654321');
     });
   });

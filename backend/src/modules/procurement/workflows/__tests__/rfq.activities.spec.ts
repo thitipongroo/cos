@@ -41,7 +41,7 @@ const mockKafkaDisconnect = jest.fn().mockResolvedValue(undefined);
 
 const baseParams = {
   rfq_id: 'rfq-uuid-001',
-  tenant_id: 'tenant-uuid-001',
+  tenant_id: '00000000-0000-4000-8000-000000000001',
   correlation_id: 'corr-uuid-001',
 };
 
@@ -86,7 +86,7 @@ describe('updateRfqStatus', () => {
   it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
     await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
     expect(mockExecuteRawUnsafe).toHaveBeenCalledWith(
-      "SET LOCAL app.current_tenant_id = 'tenant-uuid-001'",
+      "SET LOCAL app.current_tenant_id = '00000000-0000-4000-8000-000000000001'",
     );
   });
 
@@ -97,7 +97,7 @@ describe('updateRfqStatus', () => {
     expect(sql).toContain('UPDATE procurement.rfqs SET status =');
     expect(sql).toContain('WHERE rfq_id =');
     expect(sql).toContain('AND tenant_id =');
-    expect(values).toEqual(['PUBLISHED', 'rfq-uuid-001', 'tenant-uuid-001']);
+    expect(values).toEqual(['PUBLISHED', 'rfq-uuid-001', '00000000-0000-4000-8000-000000000001']);
   });
 
   it('publishes the exact status_changed envelope and logs the transition', async () => {
@@ -105,7 +105,7 @@ describe('updateRfqStatus', () => {
     expect(mockKafkaPublish).toHaveBeenCalledWith({
       event_type: 'procurement.rfq.status_changed.v1',
       event_version: '1.0',
-      tenant_id: 'tenant-uuid-001',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
       actor_id: 'system',
       occurred_at: expect.any(String),
       correlation_id: 'corr-uuid-001',
@@ -173,11 +173,11 @@ describe('markQuotationsEvaluated', () => {
     expect(sql).toContain("UPDATE procurement.rfqs SET status = 'EVALUATED'");
     expect(sql).toContain('WHERE rfq_id =');
     expect(sql).toContain('AND tenant_id =');
-    expect(values).toEqual(['rfq-uuid-001', 'tenant-uuid-001']);
+    expect(values).toEqual(['rfq-uuid-001', '00000000-0000-4000-8000-000000000001']);
     expect(mockKafkaPublish).toHaveBeenCalledWith({
       event_type: 'procurement.rfq.status_changed.v1',
       event_version: '1.0',
-      tenant_id: 'tenant-uuid-001',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
       actor_id: 'system',
       occurred_at: expect.any(String),
       correlation_id: 'corr-uuid-001',

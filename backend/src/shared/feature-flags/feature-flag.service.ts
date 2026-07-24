@@ -15,6 +15,7 @@ const logger = createLogger('feature-flags');
 // default ON so a flag-service outage never disables a live feature (fail-open by design).
 export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   's1.ai.report-generation': true,
+  's1.ai.completions': true,
   's1.identity.sms-otp-login': true,
   's1.finance.payment-mutations': true,
 };

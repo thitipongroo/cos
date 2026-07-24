@@ -20,6 +20,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { ProcurementService } from './procurement.service';
@@ -51,7 +52,7 @@ function parseLimit(limit: string): number {
 
 @ApiTags('procurement')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class ProcurementController {
   constructor(private readonly svc: ProcurementService) {}

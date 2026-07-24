@@ -11,8 +11,14 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
+import { appDatabaseUrl } from './shared/prisma/app-database-url';
 
 async function bootstrap(): Promise<void> {
+  // Fail fast at startup if the non-superuser app DB role is not configured — every tenant-scoped
+  // query depends on it for PostgreSQL RLS enforcement (spec §7.7, QM-18). Booting without it would
+  // silently degrade tenant isolation, so refuse to start rather than fall back to a superuser role.
+  appDatabaseUrl();
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ logger: false }),
@@ -38,15 +44,18 @@ async function bootstrap(): Promise<void> {
     }),
   );
 
-  // Swagger / OpenAPI 3.1 — QM-11
-  const config = new DocumentBuilder()
-    .setTitle('Construction OS API')
-    .setDescription('AI-Native Construction Operating System — REST API')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger / OpenAPI 3.1 — QM-11. Served only outside production: the interactive UI publishes the
+  // full API surface with no auth, so it must not be exposed on prod ingress (security misconfig).
+  if (process.env['NODE_ENV'] !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Construction OS API')
+      .setDescription('AI-Native Construction Operating System — REST API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   // CORS — QM-4: explicit origins only, never wildcard in production. `methods` must be listed
   // explicitly: without it the preflight advertises only GET,HEAD,POST, so the browser blocks every

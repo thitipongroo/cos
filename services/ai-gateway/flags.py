@@ -12,6 +12,7 @@ import time
 import httpx
 
 FLAG_AI_REPORTS = "s1.ai.report-generation"
+FLAG_AI_COMPLETIONS = "s1.ai.completions"
 
 _TTL_SECONDS = 15.0  # matches backend Unleash poll — kill switch stays inside the 60s bound
 _cache: dict = {"at": 0.0, "flags": {}}

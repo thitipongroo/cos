@@ -32,6 +32,10 @@ _PROMPTS_DIR = _resolve_prompts_dir()
 
 
 def _get_env() -> Environment:
+    # autoescape=False is intentional (security review L11): the rendered output is an LLM PROMPT (plain
+    # text), not HTML — HTML-escaping it would corrupt the prompt (e.g. `&` → `&amp;`). Not an XSS/SSTI
+    # sink: variables are passed as render context (not compiled into template source), and the four
+    # templates are server-owned. Do NOT set autoescape=True here.
     return Environment(loader=FileSystemLoader(str(_PROMPTS_DIR)), autoescape=False)
 
 

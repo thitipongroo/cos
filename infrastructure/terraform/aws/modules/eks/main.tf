@@ -82,8 +82,19 @@ resource "aws_eks_cluster" "main" {
   vpc_config {
     subnet_ids              = var.private_subnet_ids
     endpoint_private_access = true
-    endpoint_public_access  = true
-    security_group_ids      = [aws_security_group.nodes.id]
+    # Public access is enabled ONLY when an explicit CIDR allowlist is supplied (CIS EKS 5.4.1/5.4.2).
+    # Default is an empty list → public access is off (private-only via VPN/bastion). Never 0.0.0.0/0.
+    endpoint_public_access = length(var.public_access_cidrs) > 0
+    public_access_cidrs    = var.public_access_cidrs
+    security_group_ids     = [aws_security_group.nodes.id]
+  }
+
+  # Envelope-encrypt Kubernetes Secrets at rest with a customer-managed KMS key (CIS EKS 3.1).
+  encryption_config {
+    provider {
+      key_arn = var.secrets_kms_key_arn
+    }
+    resources = ["secrets"]
   }
 
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]

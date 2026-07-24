@@ -29,6 +29,7 @@ import {
   AttestDeviceDto,
   RegisterDeviceDto,
 } from './dto/request-otp.dto';
+import { RefreshTokenDto, MfaTokenDto } from './dto/token.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { JwtPayload } from './jwt.payload';
 
@@ -143,16 +144,16 @@ export class IdentityController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh JWT access token using refresh token' })
   @ApiResponse({ status: 200, description: 'Returns new access_token' })
-  async refresh(@Body('refreshToken') refreshToken: string) {
-    return this.identityService.refreshAccessToken(refreshToken);
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.identityService.refreshAccessToken(dto.refreshToken);
   }
 
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Logout — invalidate refresh token' })
-  async logout(@Body('refreshToken') refreshToken: string) {
-    await this.identityService.logout(refreshToken);
+  async logout(@Body() dto: RefreshTokenDto) {
+    await this.identityService.logout(dto.refreshToken);
   }
 
   // ─── MFA (TOTP) — TENANT_ADMIN and FINANCE only ──────────────────────
@@ -180,9 +181,9 @@ export class IdentityController {
   @ApiResponse({ status: 204, description: 'MFA enrollment confirmed — mfa_enabled set to true' })
   @ApiResponse({ status: 400, description: 'No pending enrollment or enrollment expired' })
   @ApiResponse({ status: 401, description: 'Invalid TOTP token' })
-  async mfaVerify(@Req() req: Request, @Body('token') token: string) {
+  async mfaVerify(@Req() req: Request, @Body() dto: MfaTokenDto) {
     const user = req.user as JwtPayload;
-    await this.mfaService.verifyAndActivate(user.user_id, token);
+    await this.mfaService.verifyAndActivate(user.user_id, dto.token);
   }
 
   @Post('mfa/authenticate')
@@ -193,8 +194,8 @@ export class IdentityController {
   @ApiResponse({ status: 204, description: 'TOTP verified' })
   @ApiResponse({ status: 400, description: 'MFA not enrolled for this user' })
   @ApiResponse({ status: 401, description: 'Invalid TOTP token' })
-  async mfaAuthenticate(@Req() req: Request, @Body('token') token: string) {
+  async mfaAuthenticate(@Req() req: Request, @Body() dto: MfaTokenDto) {
     const user = req.user as JwtPayload;
-    await this.mfaService.authenticate(user.user_id, token);
+    await this.mfaService.authenticate(user.user_id, dto.token);
   }
 }

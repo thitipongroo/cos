@@ -181,6 +181,12 @@ describe('authStore Path A OTP flow', () => {
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith('cos_access_token', 'new-token');
   });
 
+  it('updateRefreshToken persists and updates the rotated refresh token', async () => {
+    await useAuthStore.getState().updateRefreshToken('rotated-refresh');
+    expect(useAuthStore.getState().refreshToken).toBe('rotated-refresh');
+    expect(SecureStore.setItemAsync).toHaveBeenCalledWith('cos_refresh_token', 'rotated-refresh');
+  });
+
   it('logout clears state and secure store', async () => {
     await useAuthStore.getState().logout();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);

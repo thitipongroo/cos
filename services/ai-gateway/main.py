@@ -14,6 +14,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from pydantic import BaseModel
 
 import flags
+import metering
 import metrics
 from auth import get_verified_tenant
 from otel import configure_telemetry
@@ -139,7 +140,16 @@ async def liveness():
 
 
 @app.post("/api/v1/ai/completions", response_model=CompletionsResponse)
-async def completions(req: CompletionsRequest):
+async def completions(req: CompletionsRequest, tenant_id: str = Depends(get_verified_tenant)):
+    # tenant_id comes from the verified token/gateway (get_verified_tenant), never a request body —
+    # parity with every other AI endpoint. Without it this endpoint alone depended on Kong, had no
+    # per-tenant metering, and was not behind a kill-switch.
+    # QM-15 kill-switch (ADR-049) — fail-open per flags.py, same 503 posture as the report endpoints.
+    if not await flags.is_enabled(flags.FLAG_AI_COMPLETIONS):
+        raise HTTPException(
+            status_code=503,
+            detail="COS-FLAG-001: AI completions are temporarily disabled",
+        )
     try:
         prompt = render_template(req.template_name, _VariablesModel(**req.variables))
     except FileNotFoundError as exc:
@@ -147,7 +157,9 @@ async def completions(req: CompletionsRequest):
 
     messages = [Message(role="user", content=prompt)]
     try:
-        response = await _provider.complete(messages, req.model_hint)
+        response = await metering.complete_and_meter(
+            _provider, messages, req.model_hint, tenant_id, "ai.completions", _db_pool, req.template_name
+        )
     except NotImplementedError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 
@@ -182,7 +194,9 @@ async def rag_query(req: RAGQueryRequest, tenant_id: str = Depends(get_verified_
         Message(role="user", content=f"Context:\n{context}\n\nQuestion: {req.query}"),
     ]
     try:
-        response = await _provider.complete(messages, "report-generation")
+        response = await metering.complete_and_meter(
+            _provider, messages, "report-generation", tenant_id, "ai.rag", _db_pool
+        )
     except NotImplementedError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 

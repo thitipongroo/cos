@@ -9,6 +9,7 @@ const ERRORS = {
   VC_NOT_FOUND: 'Verifiable credential not found or already revoked',
   INVALID_REQUEST: 'Invalid request body',
   STATUS_LIST_NOT_FOUND: 'No status list exists at this URL',
+  INVALID_TOKEN: 'Invalid or expired authentication token',
 } as const;
 
 export type ErrorKey = keyof typeof ERRORS;

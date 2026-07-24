@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { EquipmentService } from './equipment.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { AssignEquipmentDto, ReturnEquipmentDto } from './dto/assign-equipment.dto';
+import { UpdateEquipmentStatusDto } from './dto/update-status.dto';
 import { LogMaintenanceDto } from './dto/log-maintenance.dto';
 import { RecordUtilizationDto } from './dto/record-utilization.dto';
 
@@ -52,8 +53,8 @@ export class EquipmentController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update equipment status' })
-  updateStatus(@Param('id', ParseUUIDPipe) id: string, @Body('status') status: string) {
-    return this.service.updateStatus(id, status);
+  updateStatus(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateEquipmentStatusDto) {
+    return this.service.updateStatus(id, dto.status);
   }
 
   @Post(':id/assignments')

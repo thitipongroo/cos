@@ -145,7 +145,13 @@ services:
           secret_is_base64: false
       - name: rate-limiting
         config:
-          minute: 30
+          # QM-7: AI/LLM endpoints = 20 req/min. Scoped per authenticated consumer (the `jwt` plugin
+          # sets the Kong consumer from the verified token, and runs before rate-limiting). NOTE: do NOT
+          # switch to `limit_by: header` on X-Tenant-Id — rate-limiting runs BEFORE the request-transformer
+          # injects the verified header, so it would see the spoofable client value. True per-tenant
+          # granularity needs a consumer→tenant mapping verified against a live Kong.
+          minute: 20
+          limit_by: consumer
           policy: redis
           redis_host: redis.cos.svc.cluster.local
           redis_port: 6379

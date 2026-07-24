@@ -81,6 +81,12 @@ variable "node_max_size" {
   default     = 10
 }
 
+variable "eks_public_access_cidrs" {
+  description = "CIDRs allowed to reach the public EKS API endpoint (CIS EKS 5.4). Empty (default) disables public access — the API is reachable only privately via VPN/bastion. Never set to 0.0.0.0/0."
+  type        = list(string)
+  default     = []
+}
+
 variable "rds_instance_class" {
   description = "RDS instance class"
   type        = string

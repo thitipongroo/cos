@@ -1,8 +1,18 @@
-// Unit tests for AuditInterceptor — auto-logs mutating operations
+// Unit tests for AuditInterceptor — auto-logs mutating operations as the app role (RLS-bound).
+
+process.env['APP_DATABASE_URL'] = 'postgresql://app_user@localhost/db';
+
+const txExecuteRaw = jest.fn().mockResolvedValue(undefined);
+const txExecuteRawUnsafe = jest.fn().mockResolvedValue(undefined);
+const transaction = jest
+  .fn()
+  .mockImplementation(async (cb: (tx: unknown) => unknown) =>
+    cb({ $executeRaw: txExecuteRaw, $executeRawUnsafe: txExecuteRawUnsafe }),
+  );
 
 jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({
-    $executeRaw: jest.fn().mockResolvedValue(undefined),
+    $transaction: transaction,
     $disconnect: jest.fn().mockResolvedValue(undefined),
   })),
 }));
@@ -10,7 +20,8 @@ jest.mock('@prisma/client', () => ({
 import { AuditInterceptor } from '../audit.interceptor';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
 import { of } from 'rxjs';
-import { PrismaClient } from '@prisma/client';
+
+const TENANT = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
 
 const makeCtx = (
   method: string,
@@ -30,48 +41,56 @@ const makeHandler = (): CallHandler => ({ handle: () => of({ result: 'ok' }) });
 
 describe('AuditInterceptor', () => {
   let interceptor: AuditInterceptor;
-  let prismaMock: jest.Mocked<PrismaClient>;
 
   beforeEach(() => {
+    txExecuteRaw.mockClear();
+    txExecuteRawUnsafe.mockClear();
+    transaction.mockClear();
     interceptor = new AuditInterceptor();
-    prismaMock = (interceptor as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
   });
 
   it('does NOT write audit log for GET requests', (done) => {
-    const ctx = makeCtx('GET', '/api/v1/projects', { user_id: 'u1' }, 'tenant-1');
-    interceptor.intercept(ctx, makeHandler()).subscribe(() => {
-      expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
-      done();
-    });
-  });
-
-  it('writes audit log for POST requests with user and tenant', (done) => {
-    const ctx = makeCtx('POST', '/api/v1/projects', { user_id: 'u1' }, 'tenant-1');
-    interceptor.intercept(ctx, makeHandler()).subscribe(() => {
-      // Audit write is async (fire-and-forget) — give it a tick
-      setImmediate(() => {
-        expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
+    interceptor
+      .intercept(makeCtx('GET', '/api/v1/projects', { user_id: 'u1' }, TENANT), makeHandler())
+      .subscribe(() => {
+        expect(transaction).not.toHaveBeenCalled();
         done();
       });
-    });
   });
 
-  it('writes audit log for PATCH requests', (done) => {
-    const ctx = makeCtx('PATCH', '/api/v1/projects/p1', { user_id: 'u1' }, 'tenant-1');
-    interceptor.intercept(ctx, makeHandler()).subscribe(() => {
-      setImmediate(() => {
-        expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
-        done();
+  it('writes an audit log for POST (SET LOCAL + INSERT in one transaction)', (done) => {
+    interceptor
+      .intercept(makeCtx('POST', '/api/v1/projects', { user_id: 'u1' }, TENANT), makeHandler())
+      .subscribe(() => {
+        setImmediate(() => {
+          expect(transaction).toHaveBeenCalledTimes(1);
+          expect(txExecuteRawUnsafe).toHaveBeenCalledWith(
+            `SET LOCAL app.current_tenant_id = '${TENANT}'`,
+          );
+          expect(txExecuteRaw).toHaveBeenCalledTimes(1);
+          done();
+        });
       });
-    });
+  });
+
+  it('writes an audit log for PATCH requests', (done) => {
+    interceptor
+      .intercept(makeCtx('PATCH', '/api/v1/projects/p1', { user_id: 'u1' }, TENANT), makeHandler())
+      .subscribe(() => {
+        setImmediate(() => {
+          expect(txExecuteRaw).toHaveBeenCalledTimes(1);
+          done();
+        });
+      });
   });
 
   it('does NOT write audit log when no user on request (auth endpoints)', (done) => {
-    const ctx = makeCtx('POST', '/api/v1/auth/otp/request', undefined, undefined);
-    interceptor.intercept(ctx, makeHandler()).subscribe(() => {
-      expect(prismaMock.$executeRaw).not.toHaveBeenCalled();
-      done();
-    });
+    interceptor
+      .intercept(makeCtx('POST', '/api/v1/auth/otp/request', undefined, undefined), makeHandler())
+      .subscribe(() => {
+        expect(transaction).not.toHaveBeenCalled();
+        done();
+      });
   });
 
   it('extracts resourceType correctly from path', () => {
@@ -81,14 +100,14 @@ describe('AuditInterceptor', () => {
     expect(extract('/api/v1/procurement/po/123')).toBe('procurement');
   });
 
-  it('writes audit log with null ipAddress when ip is missing (covers ?? null branch)', (done) => {
+  it('writes with null ipAddress when ip is missing (covers ?? null branch)', (done) => {
     const ctx: ExecutionContext = {
       switchToHttp: () => ({
         getRequest: () => ({
           method: 'POST',
           path: '/api/v1/projects',
           user: { user_id: 'u1' },
-          tenantId: 'tenant-1',
+          tenantId: TENANT,
           ip: undefined,
           headers: {},
         }),
@@ -98,22 +117,22 @@ describe('AuditInterceptor', () => {
     } as unknown as ExecutionContext;
     interceptor.intercept(ctx, makeHandler()).subscribe(() => {
       setImmediate(() => {
-        expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
+        expect(txExecuteRaw).toHaveBeenCalledTimes(1);
         done();
       });
     });
   });
 
-  it('logs error when writeAuditLog throws (covers catch on line 50)', (done) => {
-    prismaMock.$executeRaw.mockRejectedValueOnce(new Error('DB write failed'));
-    const ctx = makeCtx('POST', '/api/v1/projects', { user_id: 'u1' }, 'tenant-1');
-    interceptor.intercept(ctx, makeHandler()).subscribe(() => {
-      setImmediate(() => {
-        // $executeRaw threw — the .catch() logger.error branch is covered
-        expect(prismaMock.$executeRaw).toHaveBeenCalledTimes(1);
-        done();
+  it('logs error when the audit write throws (covers the .catch branch)', (done) => {
+    transaction.mockRejectedValueOnce(new Error('DB write failed'));
+    interceptor
+      .intercept(makeCtx('POST', '/api/v1/projects', { user_id: 'u1' }, TENANT), makeHandler())
+      .subscribe(() => {
+        setImmediate(() => {
+          expect(transaction).toHaveBeenCalledTimes(1);
+          done();
+        });
       });
-    });
   });
 });
 

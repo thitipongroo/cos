@@ -22,7 +22,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestj
 import { FeatureFlag } from '../../shared/feature-flags/feature-flag.decorator';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
-import { Roles } from '@cos/rbac';
+import { PermissionsGuard } from '../../shared/guards/permissions.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
+import { Roles, RequirePermissions } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { FinanceService } from './finance.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
@@ -82,7 +84,7 @@ function parseLimit(limit: string): number {
 
 @ApiTags('finance')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard, PolicyGuard)
 @Controller()
 export class FinanceController {
   constructor(private readonly svc: FinanceService) {}
@@ -169,6 +171,7 @@ export class FinanceController {
 
   @Patch('finance/payments/:paymentId/approve')
   @Roles(...PAYMENT_APPROVE_ROLES)
+  @RequirePermissions('finance:approve') // fine-grained least-privilege enforcement (spec §6.4)
   @FeatureFlag('s1.finance.payment-mutations') // QM-15 retrofit kill-switch (ADR-049)
   @ApiOperation({ summary: 'Approve a pending payment (FINANCE) → PROCESSED' })
   @ApiParam({ name: 'paymentId', type: 'string', format: 'uuid' })

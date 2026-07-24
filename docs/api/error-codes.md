@@ -17,6 +17,14 @@ All API error responses follow the structure:
 
 ---
 
+## COS-AUTH — Authentication & Authorization (Phase 2)
+
+| Code         | HTTP | Message                                               | Trigger                                                                                 |
+| ------------ | ---- | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| COS-AUTH-001 | 403  | Multi-factor authentication is required for this role | TENANT_ADMIN/FINANCE token lacks proof of OTP (`acr`) and `MFA_ENFORCE=true` (§5.4.1) |
+
+---
+
 ## COS-FILE — File Service (Phase 9)
 
 | Code         | HTTP | Message                                 | Trigger                                       |
@@ -36,6 +44,9 @@ All API error responses follow the structure:
 | COS-FILE-013 | 422  | Archive rejected (zip-bomb guard)       | Ratio/total-size limit exceeded               |
 | COS-FILE-014 | 422  | Invalid retention policy                | Bad category or retention_days                |
 | COS-FILE-015 | 404  | No annotation for this file             | GET annotation on a photo with none (ADR-056) |
+| COS-FILE-016 | 409  | File not available (scan pending/failed) | Signed-URL requested before ClamAV cleared the file (not CLEAN) |
+| COS-FILE-017 | 422  | File content does not match declared type | Magic-byte sniff contradicts the declared MIME (M7) |
+| COS-FILE-018 | 401  | Invalid or expired authentication token | In-service JWT verify failed, or token/Kong-header tenant mismatch (M1) |
 
 ---
 

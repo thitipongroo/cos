@@ -15,7 +15,7 @@ jest.mock('@nestjs/passport', () => ({
   }),
 }));
 
-import { ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { JwtAuthGuard } from '../jwt-auth.guard';
 import {
@@ -97,5 +97,36 @@ describe('JwtAuthGuard.handleRequest', () => {
 
     expect(() => guard.handleRequest(null, null as never, null, CONTEXT)).toThrow('unauthorized');
     expect(set).not.toHaveBeenCalled();
+  });
+
+  describe('Layer 2 MFA gate', () => {
+    const ORIGINAL_ENV = { ...process.env };
+    afterEach(() => {
+      process.env = { ...ORIGINAL_ENV };
+    });
+
+    it('rejects a privileged role lacking MFA acr when MFA_ENFORCE=true (before CLS is touched)', () => {
+      process.env['MFA_ENFORCE'] = 'true';
+      const admin = { ...FULL_USER, role: 'TENANT_ADMIN', acr: undefined };
+      mockSuperHandleRequest.mockReturnValue(admin);
+      const { guard, set } = makeGuard(true);
+
+      expect(() => guard.handleRequest(null, admin as never, null, CONTEXT)).toThrow(
+        ForbiddenException,
+      );
+      expect(set).not.toHaveBeenCalled();
+    });
+
+    it('admits a privileged role whose acr proves MFA and still publishes CLS', () => {
+      process.env['MFA_ENFORCE'] = 'true';
+      const admin = { ...FULL_USER, role: 'TENANT_ADMIN', acr: 'gold' };
+      mockSuperHandleRequest.mockReturnValue(admin);
+      const { guard, set } = makeGuard(true);
+
+      const result = guard.handleRequest(null, admin as never, null, CONTEXT);
+
+      expect(result).toBe(admin);
+      expect(set).toHaveBeenCalledWith(CLS_USER_ROLE, 'TENANT_ADMIN');
+    });
   });
 });

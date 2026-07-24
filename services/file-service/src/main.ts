@@ -18,6 +18,7 @@ initTracing({
 
 import Fastify from 'fastify';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
 import { createLogger } from '@cos/logger';
 
@@ -71,9 +72,18 @@ export async function buildApp() {
   // ── Auth hook (after decorators, before routes) ───────────────────────
   await app.register(authPlugin);
 
-  // ── Health (no auth required) ─────────────────────────────────────────
+  // ── Health (no auth required, registered before the rate limiter so probes are never throttled) ─
   app.get('/health/live', async () => ({ status: 'ok', service: 'file-service' }));
   app.get('/health/ready', async () => ({ status: 'ok', service: 'file-service' }));
+
+  // ── App-layer rate limit (QM-7, defense-in-depth behind Kong) ─────────────
+  // Per authenticated user (auth hook sets request.userId; fall back to IP for any unauthenticated
+  // path). 100/min general backstop; the tighter 20/min upload limit is enforced at the Kong edge.
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    keyGenerator: (request) => request.userId ?? request.ip,
+  });
 
   // ── Routes ─────────────────────────────────────────────────────────────
   // No fp() — route plugins must NOT be wrapped with fastify-plugin (would lose encapsulation)

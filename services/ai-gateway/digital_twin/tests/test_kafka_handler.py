@@ -25,9 +25,14 @@ from digital_twin import kafka_handler
 from digital_twin.models import SeverityLevel, StateSource, TwinDivergenceEvent, TwinState
 
 
+TENANT = "22222222-2222-2222-2222-222222222222"
+
+
 class _FakeMessage:
-    def __init__(self, value: dict):
-        self.value = value
+    def __init__(self, value: dict, tenant_id: str = TENANT, header_tenant: str | None = TENANT):
+        # The §7.3 guard compares the tenant_id header against the envelope's tenant_id.
+        self.value = {**value, "tenant_id": tenant_id}
+        self.headers = [] if header_tenant is None else [("tenant_id", header_tenant.encode())]
 
 
 class _FakeConsumer:
@@ -219,7 +224,7 @@ class TestTelemetryProcessing:
 
         await kafka_handler.start_telemetry_consumer(db_pool=db, redis_client=redis_client)
 
-        assert calls[0] == ({"a": 1}, db, redis_client)
+        assert calls[0] == ({"a": 1, "tenant_id": TENANT}, db, redis_client)
 
     @pytest.mark.asyncio
     async def test_nothing_is_published_when_the_sync_service_declines(self, fake_kafka, handled):
@@ -263,6 +268,36 @@ class TestPoisonRecordHandling:
 
         assert consumer_cls.instances[0].stopped is True
         assert producer_cls.instances[0].stopped is True
+
+
+class TestTenantHeaderGuard:
+    @pytest.mark.asyncio
+    async def test_skips_records_with_a_missing_or_mismatched_tenant_header(
+        self, fake_kafka, handled, caplog
+    ):
+        import logging
+
+        calls, _ = handled
+        consumer_cls, producer_cls = fake_kafka
+        consumer_cls.next_messages = [
+            _FakeMessage({"a": 1}, header_tenant=None),  # missing header → skip
+            _FakeMessage({"a": 2}, header_tenant="99999999-9999-9999-9999-999999999999"),  # mismatch → skip
+            _FakeMessage({"a": 3}),  # header matches envelope → processed
+        ]
+
+        with caplog.at_level(logging.ERROR, logger="digital-twin.kafka"):
+            await kafka_handler.start_telemetry_consumer(db_pool=object(), redis_client=object())
+
+        assert len(calls) == 1
+        assert calls[0][0] == {"a": 3, "tenant_id": TENANT}
+        assert len(producer_cls.instances[0].sent) == 1
+        assert "does not match envelope" in caplog.text
+
+    def test_header_value_decodes_and_defaults(self):
+        assert kafka_handler._header_value([("tenant_id", b"t-1")], "tenant_id") == "t-1"
+        assert kafka_handler._header_value([("tenant_id", "t-2")], "tenant_id") == "t-2"
+        assert kafka_handler._header_value([("other", b"x")], "tenant_id") is None
+        assert kafka_handler._header_value(None, "tenant_id") is None
 
 
 class TestPublishDivergenceDetected:

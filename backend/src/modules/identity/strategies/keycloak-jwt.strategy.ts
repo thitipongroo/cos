@@ -62,6 +62,12 @@ export class KeycloakJwtStrategy
 
   // Passport sets the return value as req.user. (passReqToCallback is intentionally NOT
   // used — @nestjs/passport does not wire validate() when it is enabled.)
+  //
+  // Accepted tradeoff (security review L4): we verify the tenant is active but do NOT re-check that the
+  // user is still active / still a member on every request. This keeps auth stateless (no per-request
+  // DB lookup on the user), at the cost of a deactivated user / role-downgrade remaining valid until
+  // the 15-minute access token expires (`accessTokenLifespan: 900`). For immediate revocation, shorten
+  // the access-token lifespan or add a per-request platform.users.is_active check here.
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
     if (!payload.tenant_id || !payload.role) {
       logger.warn({ sub: payload.sub }, 'JWT missing required claims (tenant_id, role)');

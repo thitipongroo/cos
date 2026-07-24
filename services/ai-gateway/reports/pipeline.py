@@ -15,6 +15,7 @@ import logging
 
 from pydantic import BaseModel
 
+import metering
 from providers.llm_provider import LLMProvider, Message
 from reports.guard import HallucinationGuard
 from reports.models import LowConfidenceResponse, REPORT_TYPE_MAP
@@ -63,7 +64,11 @@ async def generate_report(
     vars_model = _Vars(**{"context": context, "project_id": project_id, **template_extra_vars})
     prompt = render_template(template_name, vars_model)
     messages = [Message(role="user", content=prompt)]
-    llm_response = await provider.complete(messages, "report-generation")
+    # Per-tenant usage metering (QM-7/QM-8) — persists to ai.ai_usage_logs when a pool is configured,
+    # else emits the llm.* metrics directly. The report LLM call previously bypassed metering entirely.
+    llm_response = await metering.complete_and_meter(
+        provider, messages, "report-generation", tenant_id, f"ai.reports.{report_type}", db_pool, template_name
+    )
 
     # Parse JSON structured output
     try:
@@ -98,8 +103,13 @@ async def generate_report(
             low_confidence=True,
         )
 
+    # A flagged summary contains figures absent from the retrieval context. It is returned (and
+    # persisted for audit) but marked low_confidence so the UI surfaces the uncertainty — it must never
+    # be presented as trustworthy. (The previous log claimed "not returned to user", which was false.)
     if guard_result.hallucination_flagged:
-        logger.warning("POTENTIAL_HALLUCINATION flagged for %s (not returned to user)", report_type)
+        logger.warning(
+            "POTENTIAL_HALLUCINATION flagged for %s — returned with low_confidence=true", report_type
+        )
 
     # Step 5: persist
     confidence = float(output_data.get("confidence", 0.0))
@@ -121,5 +131,5 @@ async def generate_report(
         report_type=report_type,
         content=output_data,
         confidence=confidence,
-        low_confidence=False,
+        low_confidence=guard_result.hallucination_flagged,
     )

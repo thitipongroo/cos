@@ -19,6 +19,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { MasterDataService } from './master-data.service';
@@ -45,7 +46,7 @@ const ALL_ROLES = [
 
 @ApiTags('master-data')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class MasterDataController {
   constructor(private readonly svc: MasterDataService) {}

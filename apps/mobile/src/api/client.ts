@@ -69,12 +69,18 @@ http.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      const { data } = await axios.post<{ access_token: string }>(`${BASE_URL}/auth/refresh`, {
-        refresh_token: refreshToken,
-      });
+      const { data } = await axios.post<{ access_token: string; refresh_token?: string }>(
+        `${BASE_URL}/auth/refresh`,
+        { refresh_token: refreshToken },
+      );
 
       const newToken = data.access_token;
       await useAuthStore.getState().updateAccessToken(newToken);
+      // Keycloak issues single-use refresh tokens (revokeRefreshToken=true) — the old one is now
+      // invalid, so persist the rotated token or the next refresh fails and forces a re-login.
+      if (data.refresh_token) {
+        await useAuthStore.getState().updateRefreshToken(data.refresh_token);
+      }
 
       refreshQueue.forEach((resolve) => resolve(newToken));
       refreshQueue = [];

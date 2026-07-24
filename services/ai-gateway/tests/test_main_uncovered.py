@@ -342,14 +342,16 @@ class TestReportHistory:
 
 
 class TestCompletionsProviderCall:
-    """`completions` past the template render — the LLM call and its 503.
+    """`completions` past the template render — the LLM call, its metering, its flag gate and its 503.
 
     Every AI feature funnels through this endpoint, and the stub provider is the DEFAULT deployment
     posture (no OPENAI_API_KEY), so the 503 branch is the path most real installs actually take.
     """
 
     @pytest.mark.asyncio
-    async def test_returns_the_provider_response(self, monkeypatch):
+    async def test_returns_response_and_meters_metrics_when_no_db_pool(self, monkeypatch):
+        # Stage-1 posture: no DB pool → usage is not persisted, but the QM-8 LLM metrics MUST still
+        # fire (the finding was that metering existed but nothing invoked it).
         from main import CompletionsRequest, completions
 
         class _Resp:
@@ -365,18 +367,81 @@ class TestCompletionsProviderCall:
                 self.calls.append((messages, model_hint))
                 return _Resp()
 
+        recorded = []
         provider = _Provider()
         monkeypatch.setattr(main_module, "_provider", provider)
+        monkeypatch.setattr(main_module, "_db_pool", None)
         monkeypatch.setattr(main_module, "render_template", lambda name, vars_: "PROMPT")
+        monkeypatch.setattr(
+            main_module.metrics, "record_llm_usage", lambda *a: recorded.append(a)
+        )
 
         resp = await completions(
-            CompletionsRequest(template_name="t", variables={}, model_hint="report-generation")
+            CompletionsRequest(template_name="t", variables={}, model_hint="report-generation"),
+            tenant_id="tenant-abc",
         )
 
         assert resp.content == "สรุปแล้ว"
         assert resp.model_used == "gpt-4o-mini"
         assert resp.total_tokens == 42
         assert provider.calls[0][1] == "report-generation"
+        # metric emitted per tenant: (tenant_id, model, total_tokens, latency_ms)
+        assert recorded and recorded[0][0] == "tenant-abc"
+        assert recorded[0][1] == "gpt-4o-mini"
+        assert recorded[0][2] == 42
+
+    @pytest.mark.asyncio
+    async def test_persists_usage_via_token_logger_when_db_pool_present(self, monkeypatch):
+        # With a DB pool, TokenLoggerMiddleware persists the call to ai.ai_usage_logs.
+        from main import CompletionsRequest, completions
+
+        class _FullResp:
+            content = "ok"
+            model_used = "gpt-4o"
+            prompt_tokens = 10
+            completion_tokens = 20
+            total_tokens = 30
+
+        class _Provider:
+            async def complete(self, messages, model_hint):
+                return _FullResp()
+
+        class _Pool:
+            def __init__(self):
+                self.executed = []
+
+            async def execute(self, *args):
+                self.executed.append(args)
+
+        pool = _Pool()
+        monkeypatch.setattr(main_module, "_provider", _Provider())
+        monkeypatch.setattr(main_module, "_db_pool", pool)
+        monkeypatch.setattr(main_module, "render_template", lambda name, vars_: "PROMPT")
+
+        resp = await completions(
+            CompletionsRequest(template_name="t", variables={}), tenant_id="tenant-xyz"
+        )
+
+        assert resp.total_tokens == 30
+        # a usage row was written to ai.ai_usage_logs for this tenant
+        assert pool.executed and "tenant-xyz" in pool.executed[0]
+
+    @pytest.mark.asyncio
+    async def test_returns_503_when_flag_disabled(self, monkeypatch):
+        from main import CompletionsRequest, completions
+
+        async def _disabled(flag, default=True):
+            return False
+
+        monkeypatch.setattr(main_module.flags, "is_enabled", _disabled)
+
+        with pytest.raises(HTTPException) as exc:
+            await completions(
+                CompletionsRequest(template_name="t", variables={}), tenant_id="tenant-abc"
+            )
+
+        assert exc.value.status_code == 503
+        assert "COS-FLAG-001" in exc.value.detail
 
     @pytest.mark.asyncio
     async def test_503_when_the_provider_is_the_stub(self, monkeypatch):
@@ -387,10 +452,13 @@ class TestCompletionsProviderCall:
                 raise NotImplementedError("StubLLMProvider: no API key configured")
 
         monkeypatch.setattr(main_module, "_provider", _Stub())
+        monkeypatch.setattr(main_module, "_db_pool", None)
         monkeypatch.setattr(main_module, "render_template", lambda name, vars_: "PROMPT")
 
         with pytest.raises(HTTPException) as exc:
-            await completions(CompletionsRequest(template_name="t", variables={}))
+            await completions(
+                CompletionsRequest(template_name="t", variables={}), tenant_id="tenant-abc"
+            )
 
         assert exc.value.status_code == 503
         assert "no API key" in exc.value.detail

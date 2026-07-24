@@ -16,6 +16,7 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
 import { RolesGuard } from '../../shared/guards/roles.guard';
+import { PolicyGuard } from '../../shared/guards/policy.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { TasksService } from './tasks.service';
@@ -38,7 +39,7 @@ const TASK_WRITE_ROLES = [
 
 @ApiTags('tasks')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PolicyGuard)
 @Controller()
 export class TasksController {
   constructor(private readonly svc: TasksService) {}

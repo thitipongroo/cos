@@ -128,6 +128,8 @@ module "eks" {
   node_desired_size   = var.node_desired_size
   node_min_size       = var.node_min_size
   node_max_size       = var.node_max_size
+  public_access_cidrs = var.eks_public_access_cidrs
+  secrets_kms_key_arn = aws_kms_key.eks.arn
   tags                = var.tags
 }
 
@@ -140,6 +142,7 @@ module "rds" {
   instance_class     = var.rds_instance_class
   allocated_storage  = var.rds_allocated_storage
   master_password    = var.rds_password
+  kms_key_id         = aws_kms_key.rds.arn
   tags               = var.tags
 }
 
@@ -171,5 +174,6 @@ module "s3" {
   files_bucket_name    = var.s3_files_bucket_name
   backups_bucket_name  = var.s3_backups_bucket_name
   eks_oidc_provider    = module.eks.oidc_provider_arn
+  kms_master_key_id    = aws_kms_key.s3.arn
   tags                 = var.tags
 }

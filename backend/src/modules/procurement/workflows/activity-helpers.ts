@@ -11,6 +11,7 @@ import type { Logger } from '@cos/logger';
 import { KafkaProducer } from '@cos/shared';
 
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
+import { assertSafeTenantId } from '../../../shared/prisma/assert-safe-tenant-id';
 import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
 
 /**
@@ -23,6 +24,9 @@ export async function withTenantTx<T>(
   tenantId: string,
   fn: (prisma: PrismaClient) => Promise<T>,
 ): Promise<T> {
+  // Validate before interpolation into SET LOCAL — same guard as TenantPrismaService (QM-4; the file
+  // header warns a divergence between the tenant-transaction helpers is a tenant-isolation bug).
+  assertSafeTenantId(tenantId);
   const dbUrl = await getDbUrlForTenant(tenantId);
   const prisma = createPrismaClient(dbUrl);
   try {

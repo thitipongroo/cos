@@ -21,7 +21,7 @@ const prisma = createPrismaClient();
 
 // Deterministic UUID (v5-shaped) from a stable key → idempotent inserts.
 function uid(key: string): string {
-  const h = createHash('sha1').update(`cos-demo:${key}`).digest('hex');
+  const h = createHash('sha256').update(`cos-demo:${key}`).digest('hex');
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
 

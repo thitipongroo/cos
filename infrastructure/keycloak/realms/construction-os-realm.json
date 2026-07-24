@@ -1,11 +1,11 @@
 {
   "id": "construction-os",
-  "realm": "construction-os",
+  "realm": "construction-os-dev",
   "displayName": "Construction OS",
   "loginTheme": "cos",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
-  "revokeRefreshToken": false,
+  "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
   "accessTokenLifespan": 900,
   "accessTokenLifespanForImplicitFlow": 900,

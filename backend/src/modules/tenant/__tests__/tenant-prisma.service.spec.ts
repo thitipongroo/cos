@@ -135,26 +135,30 @@ describe('TenantPrismaService', () => {
       expect(PrismaPg).toHaveBeenCalledWith({ connectionString: 'postgresql://app@localhost/app' });
     });
 
-    it('falls back to DATABASE_URL when APP_DATABASE_URL is unset', async () => {
+    it('throws when APP_DATABASE_URL is unset — never falls back to the superuser DATABASE_URL', async () => {
+      // H1: a shared tenant with no app-role URL must fail loudly rather than connect as a
+      // RLS-bypassing superuser. DATABASE_URL being present must NOT rescue it.
       delete process.env['APP_DATABASE_URL'];
       process.env['DATABASE_URL'] = 'postgresql://super@localhost/db';
       stubClient();
-      await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect(PrismaPg).toHaveBeenCalledWith({
-        connectionString: 'postgresql://super@localhost/db',
-      });
-    });
-
-    it('falls back to empty string when neither env var is set', async () => {
-      delete process.env['APP_DATABASE_URL'];
-      delete process.env['DATABASE_URL'];
-      stubClient();
-      await runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop));
-      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: '' });
+      await expect(
+        runInCls({ tenantId: VALID_UUID }, () => new TenantPrismaService().run(noop)),
+      ).rejects.toThrow(/APP_DATABASE_URL is not set/);
+      expect(PrismaPg).not.toHaveBeenCalled();
     });
 
     it('uses the dedicated DB URL when present (enterprise tenant)', async () => {
       process.env['APP_DATABASE_URL'] = 'postgresql://app@localhost/app';
+      stubClient();
+      const dedicated = 'postgresql://app@dedicated/ent';
+      await runInCls({ tenantId: VALID_UUID, dedicatedDbUrl: dedicated }, () =>
+        new TenantPrismaService().run(noop),
+      );
+      expect(PrismaPg).toHaveBeenCalledWith({ connectionString: dedicated });
+    });
+
+    it('uses the dedicated DB URL even when APP_DATABASE_URL is unset (enterprise never needs it)', async () => {
+      delete process.env['APP_DATABASE_URL'];
       stubClient();
       const dedicated = 'postgresql://app@dedicated/ent';
       await runInCls({ tenantId: VALID_UUID, dedicatedDbUrl: dedicated }, () =>

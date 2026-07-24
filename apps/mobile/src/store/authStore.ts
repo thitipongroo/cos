@@ -73,6 +73,13 @@ interface AuthState {
   /** Update access token after silent refresh (refresh token still valid). */
   updateAccessToken: (accessToken: string) => Promise<void>;
 
+  /**
+   * Persist the rotated refresh token after a silent refresh. Keycloak issues single-use refresh
+   * tokens (revokeRefreshToken=true, refreshTokenMaxReuse=0), so the old token is invalidated on
+   * each refresh — the client MUST store the new one or the next refresh fails and logs the user out.
+   */
+  updateRefreshToken: (refreshToken: string) => Promise<void>;
+
   /** Clear all auth state — called on logout or expired session. */
   logout: () => Promise<void>;
 }
@@ -185,6 +192,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateAccessToken: async (accessToken) => {
     await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
     set({ accessToken });
+  },
+
+  updateRefreshToken: async (refreshToken) => {
+    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
+    set({ refreshToken });
   },
 
   logout: async () => {

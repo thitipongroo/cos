@@ -62,6 +62,14 @@ def _topic(tenant_id: str, event_type: str) -> str:
     return f"{tenant_id}.{event_type}"
 
 
+def _header_value(headers, key: str) -> str | None:
+    """First matching Kafka header value as str (aiokafka headers are (str, bytes) tuples)."""
+    for k, v in headers or []:
+        if k == key:
+            return v.decode() if isinstance(v, (bytes, bytearray)) else v
+    return None
+
+
 async def start_telemetry_consumer(*, db_pool, redis_client, encode: EncodeFn = _json_encode) -> None:
     """
     Long-running Kafka consumer: equipment.telemetry.* → twin state update.
@@ -86,6 +94,15 @@ async def start_telemetry_consumer(*, db_pool, redis_client, encode: EncodeFn = 
     try:
         async for msg in consumer:
             try:
+                # §7.3 tenant isolation guard: the tenant_id header is a secondary validation. A missing
+                # or mismatched header means the event was misrouted/tampered with — skip it, never apply
+                # it to another tenant's twin (parity with the Go coskafka consumer + RAG embedding worker).
+                header_tenant = _header_value(msg.headers, "tenant_id")
+                if not header_tenant or header_tenant != msg.value.get("tenant_id"):
+                    logger.error(
+                        "tenant_id header missing or does not match envelope — skipping telemetry event"
+                    )
+                    continue
                 twin_state = await handle_iot_telemetry_event(
                     msg.value,
                     db_pool=db_pool,

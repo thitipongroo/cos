@@ -1,7 +1,10 @@
 // Identity Service — Phase 2
 // Path A: OTP verified → Keycloak Direct Grant → RS256 JWT from Keycloak (spec §5.4.1)
 // Path B: Keycloak OIDC — this service handles refresh/logout proxy only.
-// Refresh token rotation: Keycloak handles natively (refreshTokenMaxReuse: 0 in realm JSON).
+// Refresh token rotation: Keycloak issues single-use refresh tokens — the realm sets
+// revokeRefreshToken=true + refreshTokenMaxReuse=0, so each refresh rotates the token and the old
+// one is revoked (reuse detection). refreshAccessToken returns the new refresh_token; every client
+// must persist it (web + mobile do) or the next refresh is rejected.
 
 import { Injectable, UnauthorizedException, OnModuleDestroy } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
@@ -73,8 +76,9 @@ export class IdentityService implements OnModuleDestroy {
 
   /**
    * Proxy refresh_token grant to Keycloak.
-   * Keycloak rotates the refresh token natively (refreshTokenMaxReuse: 0).
-   * Returns new access token + new refresh token.
+   * Keycloak rotates the refresh token (revokeRefreshToken=true, refreshTokenMaxReuse=0): the old
+   * token is single-use and revoked on rotation. Returns the new access token + new refresh token —
+   * the caller must persist the new refresh token for the next refresh.
    */
   async refreshAccessToken(refreshToken: string): Promise<TokenResult> {
     const realm = extractRealmFromToken(refreshToken);

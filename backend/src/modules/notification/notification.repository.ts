@@ -1,7 +1,10 @@
 // Notification Repository — Phase 20
-// All tables are in the global `notifications` schema (not per-tenant).
-// tenant_id is used as a column filter on every query.
-// findUsersByRole queries platform.* — always uses shared DB via platformPrisma.
+// The notifications-schema tables carry tenant_id and ARE protected by PostgreSQL RLS. Per-tenant
+// operations go through `this.db.run(tenantId, …)` (NotificationPrismaService), which connects as the
+// app role and sets `app.current_tenant_id` so RLS applies — the `WHERE tenant_id = …` clauses are
+// secondary defense-in-depth, not the primary isolation.
+// Cross-tenant SYSTEM sweeps (escalation, digest scheduler, role→user resolution over platform.*)
+// deliberately use `platformPrisma` (the RLS-bypassing shared connection) because they span tenants.
 
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
@@ -204,6 +207,7 @@ export class NotificationRepository implements OnModuleDestroy {
         SET status  = 'SENT',
             sent_at = now()
         WHERE notification_id = ${notificationId}::uuid
+          AND tenant_id       = ${tenantId}::uuid
       `,
     );
   }
@@ -216,6 +220,7 @@ export class NotificationRepository implements OnModuleDestroy {
         UPDATE notifications.notifications
         SET status = 'FAILED'
         WHERE notification_id = ${notificationId}::uuid
+          AND tenant_id       = ${tenantId}::uuid
       `,
     );
   }
@@ -359,8 +364,9 @@ export class NotificationRepository implements OnModuleDestroy {
 
   /**
    * Unacknowledged immediate notifications of `eventType` older than `olderThanSeconds` that have not
-   * yet been escalated. Cross-tenant sweep (system job) on the shared DB — covers SMB/mid-market; the
-   * `notifications` schema has no RLS (tenant_id is a plain column filter).
+   * yet been escalated. Deliberately a cross-tenant sweep (system job) — it runs on `platformPrisma`
+   * (the RLS-bypassing shared connection) precisely because it must span every tenant; per-tenant
+   * reads/writes instead go through `this.db.run`, under the notifications-schema RLS policies.
    */
   async findEscalationCandidates(
     eventType: string,

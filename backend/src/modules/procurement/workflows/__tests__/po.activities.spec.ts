@@ -43,7 +43,7 @@ const baseParams = {
   po_id: 'po-uuid-001',
   project_id: 'proj-uuid-001',
   vendor_id: 'vendor-uuid-001',
-  tenant_id: 'tenant-uuid-001',
+  tenant_id: '00000000-0000-4000-8000-000000000001',
   correlation_id: 'corr-uuid-001',
 };
 
@@ -93,7 +93,7 @@ describe('updatePoStatus', () => {
   it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
     expect(mockExecuteRawUnsafe).toHaveBeenCalledWith(
-      "SET LOCAL app.current_tenant_id = 'tenant-uuid-001'",
+      "SET LOCAL app.current_tenant_id = '00000000-0000-4000-8000-000000000001'",
     );
   });
 
@@ -104,7 +104,11 @@ describe('updatePoStatus', () => {
     expect(sql).toContain('UPDATE procurement.purchase_orders SET status =');
     expect(sql).toContain('WHERE po_id =');
     expect(sql).toContain('AND tenant_id =');
-    expect(values).toEqual(['PENDING_APPROVAL', 'po-uuid-001', 'tenant-uuid-001']);
+    expect(values).toEqual([
+      'PENDING_APPROVAL',
+      'po-uuid-001',
+      '00000000-0000-4000-8000-000000000001',
+    ]);
   });
 
   it('publishes the exact status_changed event envelope and logs the transition', async () => {
@@ -112,7 +116,7 @@ describe('updatePoStatus', () => {
     expect(mockKafkaPublish).toHaveBeenCalledWith({
       event_type: 'procurement.po.status_changed.v1',
       event_version: '1.0',
-      tenant_id: 'tenant-uuid-001',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
       actor_id: 'system',
       occurred_at: expect.any(String),
       correlation_id: 'corr-uuid-001',
@@ -171,7 +175,7 @@ describe('notifyApprover', () => {
     expect(mockKafkaPublish).toHaveBeenCalledWith({
       event_type: 'procurement.po.approval_requested.v1',
       event_version: '1.0',
-      tenant_id: 'tenant-uuid-001',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
       actor_id: 'system',
       occurred_at: expect.any(String),
       correlation_id: 'corr-uuid-001',
@@ -218,7 +222,7 @@ describe('compensateCancelledPo', () => {
     expect(mockKafkaPublish).toHaveBeenCalledWith({
       event_type: 'procurement.po.status_changed.v1',
       event_version: '1.0',
-      tenant_id: 'tenant-uuid-001',
+      tenant_id: '00000000-0000-4000-8000-000000000001',
       actor_id: 'system',
       occurred_at: expect.any(String),
       correlation_id: 'corr-uuid-001',

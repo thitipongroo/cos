@@ -13,6 +13,7 @@ disable a live production feature. New-feature flags should default OFF until ro
 | `s1.identity.sms-otp-login`    | `POST /api/v1/auth/otp/request`, `POST /api/v1/auth/otp/verify` (Path A login)                                                                             | ON       | kill-switch — permanent |
 | `s1.finance.payment-mutations` | `POST /api/v1/finance/payments`, `PATCH /api/v1/finance/payments/:id/approve`, `POST /api/v1/finance/billing`, `PATCH /api/v1/finance/billing/:id/approve` | ON       | kill-switch — permanent |
 | `s1.ai.report-generation`      | AI report generation (`services/ai-gateway` — see registry note below)                                                                                     | ON       | kill-switch — permanent |
+| `s1.ai.completions`            | `POST /api/v1/ai/completions` (general LLM completion endpoint, `services/ai-gateway`)                                                                      | ON       | kill-switch — permanent |
 
 Notes:
 
@@ -21,5 +22,7 @@ Notes:
 - `s1.ai.report-generation` is enforced inside `services/ai-gateway` (`flags.py` polls the
   backend `GET /api/v1/flags` with a 15s TTL via `BACKEND_FLAGS_URL`; fail-open) — gates all
   four `/api/v1/ai/reports/*` generation endpoints with 503 `COS-FLAG-001`.
+- `s1.ai.completions` is enforced the same way inside `services/ai-gateway` — gates
+  `POST /api/v1/ai/completions` with 503 `COS-FLAG-001`.
 - Stale flags (100% rollout > 30 days) move to `cleanup-backlog.md` (QM-15) — kill-switches are
   exempt (permanent operational controls).

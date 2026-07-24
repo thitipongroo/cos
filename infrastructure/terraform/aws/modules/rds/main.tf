@@ -63,6 +63,8 @@ resource "aws_db_instance" "main" {
   max_allocated_storage  = var.allocated_storage * 3
   storage_type           = "gp3"
   storage_encrypted      = true
+  # Customer-managed CMK (QM-4) — without this, RDS falls back to the AWS-managed aws/rds key.
+  kms_key_id             = var.kms_key_id
 
   db_name  = "cos"
   username = "cos_admin"
