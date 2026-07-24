@@ -38,9 +38,9 @@ each frame, so a mis-tap fails the run instead of writing a screenshot of the wr
 
 ## Site Engineer dashboard — [`21-site-engineer-home.png`](21-site-engineer-home.png)
 
-The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`, from
-[`mockup/site-engineer/dashboard-mobile/`](../../../mockup/site-engineer/dashboard-mobile)), captured
-against the `seed-realistic.ts` dataset through a real Path A (SMS OTP) login as
+The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`, from the
+[dashboard mockup](../../../mockup/mobile/role_site_engineer_mobile_view/dashboard_site_engineer_mobile_view)),
+captured against the `seed-realistic.ts` dataset through a real Path A (SMS OTP) login as
 `+66811000009` — Waraporn Klinhom, the SITE_ENGINEER the Rama IX Corporate Tower (`R9CT`) tasks are
 assigned to. Thai UI: this screen is documented in the th-TH default (QM-3).
 
