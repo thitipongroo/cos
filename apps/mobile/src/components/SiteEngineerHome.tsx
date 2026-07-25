@@ -16,12 +16,11 @@
 //   - Issue number chip — site_ops.issues.issue_number, ISS-<year>-<seq> (ADR-069).
 //   - Blueprint grid background + progress-bar glow — a scoped §32.7 exception (ADR-071), by PO
 //     decision 2026-07-25 to carry the auth-screen "mission-critical" motif onto this landing screen.
+//   - Work-hours strip — projects.work_hours_start/end (ADR-072); its own card, kept clear of the % bar.
+//   - Voice command FAB — records → transcribes → classifies intent (AI gateway) → routes (ADR-073).
+//     SEARCH has no screen yet (unsupported); live classification needs the gateway LLM key (deferred).
 //
 // Still deliberately absent:
-//   - Time strip ("07:00 START / 18:00 EOD GOAL") — no shift/work-hours model, and shift features are
-//     post-MVP (§21-mvp-scope:82); awaiting a PO-defined model.
-//   - Voice FAB — <VoiceNoteButton /> is hold-to-record against a field; a tap-FAB "AI voice command"
-//     has no defined target action, so it stays out until one is specified (ADR-071 scope note).
 //   - "Sector A" label — no backing field (§11 Issue is UUID-keyed).
 //   - FAB glow + hard-hat/construction icons — still §32.7-prohibited (outside the ADR-071 exception).
 //
@@ -42,6 +41,7 @@ import {
   type ProjectWorkHours,
 } from '../api/projects';
 import { BlueprintGrid } from './BlueprintGrid';
+import { VoiceCommandFab } from './VoiceCommandFab';
 import { ProjectPicker } from './ProjectPicker';
 import { QuickActionCard } from './QuickActionCard';
 import { useI18n } from '../i18n';
@@ -411,6 +411,8 @@ export default function SiteEngineerHome() {
           })
         )}
       </ScrollView>
+      {/* Voice command FAB (ADR-073) — floats over the content, bottom-right. */}
+      <VoiceCommandFab />
     </View>
   );
 }

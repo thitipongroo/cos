@@ -439,6 +439,10 @@
     "processing": "Transcribing…",
     "unavailable": "Transcription service unavailable",
     "error": "Recording/transcription failed",
-    "denied": "Microphone permission denied"
+    "denied": "Microphone permission denied",
+    "commandUnavailable": "Voice command unavailable",
+    "searchUnavailable": "Voice search is not available yet",
+    "unknownScreen": "That screen isn't available",
+    "unrecognized": "Sorry, I didn't catch a command"
   }
 }

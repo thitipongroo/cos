@@ -22,6 +22,7 @@ from providers.llm_provider import Message, build_llm_provider
 from rag.retrieval import HybridRetriever
 from reports.pipeline import generate_report
 from reports.risk_event import emit_risk_prediction
+from intent.classify import classify_intent
 from templates.loader import render_template
 from digital_twin.router import router as digital_twin_router
 
@@ -171,6 +172,40 @@ async def completions(req: CompletionsRequest, tenant_id: str = Depends(get_veri
         content=response.content,
         model_used=response.model_used,
         total_tokens=response.total_tokens,
+    )
+
+
+class IntentRequest(BaseModel):
+    transcript: str
+
+
+class IntentResponse(BaseModel):
+    intent: str
+    target: str | None
+    text: str | None
+    confidence: float | None
+
+
+@app.post("/api/v1/ai/intent", response_model=IntentResponse)
+async def voice_intent(req: IntentRequest, tenant_id: str = Depends(get_verified_tenant)):
+    """Classify a transcribed voice command into an intent for the SITE_ENGINEER FAB (ADR-073).
+    Under the same AI kill-switch + stub-safe 503 posture as completions (intent IS an LLM completion)."""
+    if not await flags.is_enabled(flags.FLAG_AI_COMPLETIONS):
+        raise HTTPException(
+            status_code=503,
+            detail="COS-FLAG-001: AI completions are temporarily disabled",
+        )
+    try:
+        result = await classify_intent(req.transcript, _provider, _db_pool, tenant_id)
+    except NotImplementedError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return IntentResponse(
+        intent=result.intent,
+        target=result.target,
+        text=result.text,
+        confidence=result.confidence,
     )
 
 
