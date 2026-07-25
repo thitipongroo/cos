@@ -38,6 +38,41 @@
     "COMPLETED": "เสร็จสิ้น",
     "CANCELLED": "ยกเลิก"
   },
+  "riskCategory": {
+    "SAFETY": "ความปลอดภัย",
+    "FINANCIAL": "การเงิน",
+    "SCHEDULE": "กำหนดการ",
+    "TECHNICAL": "เทคนิค",
+    "EXTERNAL": "ปัจจัยภายนอก",
+    "OTHER": "อื่นๆ"
+  },
+  "riskStatus": {
+    "OPEN": "เปิด",
+    "MITIGATING": "กำลังลดความเสี่ยง",
+    "CLOSED": "ปิด",
+    "ACCEPTED": "ยอมรับความเสี่ยง"
+  },
+  "risk": {
+    "title": "ทะเบียนความเสี่ยง",
+    "heatMap": "แผนภาพความเสี่ยง (โอกาส × ผลกระทบ)",
+    "impact": "ผลกระทบ",
+    "likelihood": "โอกาสเกิด",
+    "raise": "เพิ่มความเสี่ยง",
+    "edit": "แก้ไข",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "aiSuggested": "AI",
+    "filterAllStatus": "ทุกสถานะ",
+    "filterAllCategory": "ทุกหมวด",
+    "fieldTitle": "หัวข้อความเสี่ยง",
+    "fieldDescription": "รายละเอียด",
+    "fieldMitigation": "แนวทางลดความเสี่ยง",
+    "colTitle": "ความเสี่ยง",
+    "colCategory": "หมวด",
+    "colScore": "โอกาส × ผลกระทบ",
+    "colStatus": "สถานะ",
+    "colActions": ""
+  },
   "exec": {
     "homeTitle": "ภาพรวมพอร์ตโครงการ",
     "kpiActiveProjects": "โครงการที่ดำเนินการ",
@@ -79,6 +114,7 @@
     "tabProcurement": "จัดซื้อ",
     "tabFinance": "การเงิน",
     "tabSite": "หน้างาน",
+    "tabRisks": "ความเสี่ยง",
     "tabDashboard": "แดชบอร์ด",
     "tabGraph": "กราฟความรู้",
     "graphTitle": "กราฟความรู้โครงการ",

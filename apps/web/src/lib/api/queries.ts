@@ -6,6 +6,10 @@ import { useApi } from './client';
 import type {
   BoqVersionRow,
   CreateProjectInput,
+  RiskRow,
+  RiskStatus,
+  CreateRiskInput,
+  UpdateRiskInput,
   DeliveryRow,
   PurchaseOrderDetail,
   RecordDeliveryInput,
@@ -852,5 +856,53 @@ export function useCrmCustomers() {
   return useQuery({
     queryKey: ['crm', 'customers'],
     queryFn: () => api<CrmCustomerRow[]>('/crm/customers'),
+  });
+}
+
+// ── Project risk register (ADR-065, §20:426) ──────────────────────────────────
+
+export function useProjectRisks(id: string, filters?: { status?: string; category?: string }) {
+  const api = useApi();
+  const qs = new URLSearchParams();
+  if (filters?.status) qs.set('status', filters.status);
+  if (filters?.category) qs.set('category', filters.category);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return useQuery({
+    queryKey: ['project', id, 'risks', filters?.status ?? '', filters?.category ?? ''],
+    enabled: id !== '',
+    queryFn: () => api<RiskRow[]>(`/projects/${id}/risks${suffix}`),
+  });
+}
+
+export function useRaiseRisk(id: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateRiskInput) =>
+      api<RiskRow>(`/projects/${id}/risks`, { method: 'POST', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id, 'risks'] }),
+  });
+}
+
+export function useUpdateRisk(id: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ riskId, input }: { riskId: string; input: UpdateRiskInput }) =>
+      api<RiskRow>(`/risks/${riskId}`, { method: 'PATCH', body: JSON.stringify(input) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id, 'risks'] }),
+  });
+}
+
+export function useTransitionRiskStatus(id: string) {
+  const api = useApi();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ riskId, status }: { riskId: string; status: RiskStatus }) =>
+      api<RiskRow>(`/risks/${riskId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['project', id, 'risks'] }),
   });
 }

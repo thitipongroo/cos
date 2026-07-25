@@ -495,3 +495,47 @@ export interface CrmCustomerRow {
   status: string;
   created_at: string;
 }
+
+// ── Project risk register (ADR-065) ───────────────────────────────────────────
+
+export type RiskCategory = 'SAFETY' | 'FINANCIAL' | 'SCHEDULE' | 'TECHNICAL' | 'EXTERNAL' | 'OTHER';
+export type RiskStatus = 'OPEN' | 'MITIGATING' | 'CLOSED' | 'ACCEPTED';
+export type RiskSource = 'MANUAL' | 'AI_SUGGESTED';
+
+export interface RiskRow {
+  risk_id: string;
+  project_id: string;
+  title: string;
+  description: string | null;
+  category: RiskCategory;
+  likelihood: number;
+  impact: number;
+  risk_score: number;
+  mitigation: string | null;
+  owner: string | null;
+  status: RiskStatus;
+  source: RiskSource;
+  created_at: string;
+}
+
+/** POST /api/v1/projects/:id/risks body (CreateRiskDto). */
+export interface CreateRiskInput {
+  title: string;
+  description?: string;
+  category: RiskCategory;
+  likelihood: number;
+  impact: number;
+  mitigation?: string;
+  owner?: string;
+}
+
+/** PATCH /api/v1/risks/:riskId body (UpdateRiskDto). */
+export interface UpdateRiskInput {
+  title?: string;
+  description?: string;
+  category?: RiskCategory;
+  likelihood?: number;
+  impact?: number;
+  mitigation?: string;
+  owner?: string;
+}

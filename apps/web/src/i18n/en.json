@@ -38,6 +38,41 @@
     "COMPLETED": "Completed",
     "CANCELLED": "Cancelled"
   },
+  "riskCategory": {
+    "SAFETY": "Safety",
+    "FINANCIAL": "Financial",
+    "SCHEDULE": "Schedule",
+    "TECHNICAL": "Technical",
+    "EXTERNAL": "External",
+    "OTHER": "Other"
+  },
+  "riskStatus": {
+    "OPEN": "Open",
+    "MITIGATING": "Mitigating",
+    "CLOSED": "Closed",
+    "ACCEPTED": "Accepted"
+  },
+  "risk": {
+    "title": "Risk register",
+    "heatMap": "Likelihood × impact heat map",
+    "impact": "Impact",
+    "likelihood": "Likelihood",
+    "raise": "Raise risk",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel",
+    "aiSuggested": "AI",
+    "filterAllStatus": "All statuses",
+    "filterAllCategory": "All categories",
+    "fieldTitle": "Risk title",
+    "fieldDescription": "Description",
+    "fieldMitigation": "Mitigation",
+    "colTitle": "Risk",
+    "colCategory": "Category",
+    "colScore": "L × I",
+    "colStatus": "Status",
+    "colActions": ""
+  },
   "exec": {
     "homeTitle": "Portfolio overview",
     "kpiActiveProjects": "Active projects",
@@ -79,6 +114,7 @@
     "tabProcurement": "Procurement",
     "tabFinance": "Finance",
     "tabSite": "Site",
+    "tabRisks": "Risks",
     "tabDashboard": "Dashboard",
     "tabGraph": "Knowledge Graph",
     "graphTitle": "Project Knowledge Graph",

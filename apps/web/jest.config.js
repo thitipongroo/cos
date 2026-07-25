@@ -31,6 +31,8 @@ module.exports = {
   // module here in the same PR that adds its spec.
   collectCoverageFrom: [
     'src/lib/loadingState.ts',
+    // Risk-register heat-map banding + grid (ADR-065) — pure logic behind the RiskHeatMap component.
+    'src/lib/riskHeatMap.ts',
     // Kubernetes probe endpoints — a regression here silently disables liveness/readiness.
     'src/app/health/**/route.ts',
   ],
