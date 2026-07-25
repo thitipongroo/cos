@@ -649,6 +649,12 @@ services:
       KAFKA_BROKERS: kafka:9092
       REDIS_URL: redis://:${REDIS_PASSWORD:-cos_redis_password}@redis:6379
       OTEL_SERVICE_NAME: ai-gateway
+      # Delay-risk context assembly (F4b B, ADR-072/§22.4). Connects as the RLS-exempt owner role
+      # (cos) — tenant isolation is by explicit WHERE tenant_id, matching reports/persistence.py.
+      # Unset → _wire_db leaves the pool None and delay-risk falls back to an empty context.
+      DATABASE_URL: postgresql://cos:${POSTGRES_PASSWORD:-cos_dev_password}@postgres:5432/construction_os
+      # OpenWeather key for the delay-risk weather input (degrades to no weather when unset).
+      WEATHER_API_KEY: ${WEATHER_API_KEY:-}
       # Internal transcription pipeline the gateway delegates /api/v1/ai/transcribe to.
       TRANSCRIPTION_SERVICE_URL: http://ai-transcription-pipeline:8000
       # Prompt templates live at repo-root ai/prompts (not inside the service build context),

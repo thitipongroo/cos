@@ -23,6 +23,8 @@ from rag.retrieval import HybridRetriever
 from reports.pipeline import generate_report
 from reports.risk_event import emit_risk_prediction
 from intent.classify import classify_intent
+from providers.weather_provider import build_weather_provider
+from risk.context import assemble_delay_context
 from templates.loader import render_template
 from digital_twin.router import router as digital_twin_router
 
@@ -38,6 +40,7 @@ async def _lifespan(_app: FastAPI):
     metrics.start_metrics_server()
     await _wire_rag()
     await _wire_digital_twin()
+    await _wire_db()
     yield
 
 
@@ -54,10 +57,32 @@ app.include_router(digital_twin_router)
 # but factory-selected rather than hardcoded, so a provisioned key activates the real path with no
 # code change (§22.7).
 _provider = build_llm_provider()
-_db_pool = None  # injected at startup in production
+_db_pool = None  # set by _wire_db() at startup when DATABASE_URL is configured (else stays None)
+# Weather provider for the F4b delay-risk context (ADR-072/§22.4). Env-keyed; degrades to None with no
+# key so the context simply omits weather.
+_weather_provider = build_weather_provider()
 # Kafka producer for the F4b delay-risk feed (ai.risk_prediction.generated.v1). Injected at startup
 # in production, same posture as _db_pool; None → emit_risk_prediction is a no-op (no per-request broker).
 _risk_producer = None
+
+
+async def _wire_db() -> None:
+    """Create the asyncpg pool for delay-risk context assembly (F4b B) when DATABASE_URL is set.
+
+    Connects as the RLS-exempt owner role (tenant isolation is by explicit WHERE tenant_id, matching
+    reports/persistence.py). Guarded: any failure leaves _db_pool None and the delay-risk report falls
+    back to an empty context, so the gateway still starts where no database is provisioned."""
+    global _db_pool
+    dsn = os.environ.get("DATABASE_URL", "").strip()
+    if not dsn:
+        return
+    try:
+        import asyncpg
+
+        _db_pool = await asyncpg.create_pool(dsn, min_size=1, max_size=4)
+        _usage_logger.info("db pool configured for delay-risk context")
+    except Exception as exc:  # noqa: BLE001 - startup must not crash if the DB is unreachable
+        _usage_logger.warning("db pool not configured (%s); delay-risk context will be empty", exc)
 # Injected at startup in production (keyword=OpenSearch + vector=pgvector backends). Stage-1 leaves
 # it None — the /rag/query endpoint then returns 503, consistent with the StubLLMProvider posture.
 _retriever: HybridRetriever | None = None
@@ -353,7 +378,7 @@ class ReportResponse(BaseModel):
 
 
 async def _run_report(report_type: str, project_id: str, tenant_id: str,
-                      generated_by: str, extra_vars: dict) -> ReportResponse:
+                      generated_by: str, extra_vars: dict, context_data: str = "") -> ReportResponse:
     # QM-15 retrofit kill-switch (ADR-049) — single gate for all four report endpoints
     if not await flags.is_enabled(flags.FLAG_AI_REPORTS):
         raise HTTPException(
@@ -363,7 +388,7 @@ async def _run_report(report_type: str, project_id: str, tenant_id: str,
     try:
         result = await generate_report(
             report_type=report_type,
-            context_data="",  # RAG retrieval wired in Phase 13+
+            context_data=context_data,  # delay-risk assembles real context (F4b B); others empty for now
             template_extra_vars=extra_vars,
             provider=_provider,
             db_pool=_db_pool,
@@ -415,8 +440,20 @@ async def executive_summary(
 
 @app.post("/api/v1/ai/reports/delay-risk", response_model=ReportResponse)
 async def delay_risk(req: DelayRiskRequest, tenant_id: str = Depends(get_verified_tenant)):
+    # F4b(B): assemble the project's real delay signals (schedule / issues / procurement / workforce)
+    # + site weather into the context when the DB pool is wired; otherwise empty (degrades gracefully).
+    context = ""
+    if _db_pool is not None:
+        try:
+            context = await assemble_delay_context(
+                _db_pool, _weather_provider, tenant_id, req.project_id
+            )
+        except Exception as exc:  # noqa: BLE001 - context is best-effort; fall back to empty
+            logging.getLogger("cos.ai.risk").warning(
+                "delay-risk context assembly failed for %s: %s", req.project_id, exc
+            )
     resp = await _run_report(
-        "DELAY_RISK", req.project_id, tenant_id, req.generated_by, {},
+        "DELAY_RISK", req.project_id, tenant_id, req.generated_by, {}, context,
     )
     # F4b feed: a confident delay-risk assessment becomes a risk-prediction event, which the backend
     # consumes to create an AI_SUGGESTED ProjectRisk (ADR-065). Non-fatal — the report is already

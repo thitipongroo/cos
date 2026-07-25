@@ -646,8 +646,8 @@ const BOQ_TEMPLATE = [
 async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
   const pid = uid(`project/${p.key}`);
   await tx.$executeRaw`
-    INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, budget_amount, budget_currency, start_date, end_date, created_by)
-    VALUES (${pid}::uuid, ${TENANT_ID}::uuid, ${p.code}, ${p.name}, ${p.type}::"ProjectType", 'ACTIVE'::"ProjectStatus", ${p.budget}, ${THB}, ${p.start}::date, ${p.end}::date, ${U(p.pm)}::uuid)
+    INSERT INTO projects.projects (project_id, tenant_id, project_code, project_name, project_type, status, budget_amount, budget_currency, start_date, end_date, work_hours_start, work_hours_end, created_by)
+    VALUES (${pid}::uuid, ${TENANT_ID}::uuid, ${p.code}, ${p.name}, ${p.type}::"ProjectType", 'ACTIVE'::"ProjectStatus", ${p.budget}, ${THB}, ${p.start}::date, ${p.end}::date, '07:00'::time, '18:00'::time, ${U(p.pm)}::uuid)
     ON CONFLICT (project_id) DO NOTHING`;
 
   // Members: PM, site engineer, safety officer, finance, executive.
