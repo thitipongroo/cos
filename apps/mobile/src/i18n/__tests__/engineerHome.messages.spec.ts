@@ -12,6 +12,8 @@ const KEYS = [
   'notifications',
   'progressTitle',
   'progressEmpty',
+  'phaseTitle',
+  'phaseSeq',
   'ahead',
   'onTrack',
   'behind',

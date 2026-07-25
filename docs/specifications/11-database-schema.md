@@ -335,6 +335,25 @@ Unit :
 - unit_type
 - status
 
+Project Phases : (schema: `projects.project_phases` — ADR-070)
+
+A per-project ordered list of construction execution phases (a WBS top level). Populated by BIM
+Structure Import (`IfcBuildingStorey → project phases`, §13.4 `phasesCreated`) or entered by the PM;
+distinct from `projects.status` (coarse lifecycle) and from `task.work_type` (a task category).
+
+- phase_id
+- project_id (FK → Project; ON DELETE CASCADE)
+- tenant_id
+- seq (INTEGER — display/derivation order; unique per (tenant_id, project_id) via uq_project_phases_seq)
+- name (free-form — no fixed taxonomy; matches BIM `IfcBuildingStorey` names)
+- status (ENUM via CHECK: NOT_STARTED / IN_PROGRESS / COMPLETED — default NOT_STARTED)
+- planned_start / planned_end (nullable DATE)
+- actual_start / actual_end (nullable DATE)
+
+The **current phase** is derived, not stored (ADR-070): lowest-`seq` phase with status `IN_PROGRESS`;
+else the lowest-`seq` phase not `COMPLETED`; else none. Phases are not linked to tasks in this
+increment (no `task.phase_id`); a task↔phase link + status rollup is a documented follow-up.
+
 Tasks :
 
 - task_id

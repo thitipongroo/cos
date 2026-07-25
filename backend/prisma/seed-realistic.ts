@@ -931,6 +931,26 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
       ON CONFLICT (task_id) DO UPDATE SET boq_item_id = EXCLUDED.boq_item_id`;
   }
 
+  // Project phases (ADR-070) — the construction execution stages the SITE_ENGINEER dashboard's phase
+  // card reads. phase.status is PM-set here (phases are not linked to tasks in this increment, so it is
+  // not rolled up) but is kept coherent with the seeded tasks: the foundation tasks are still in
+  // progress (piles done, pile-caps ~65%) and the columns have started, so Foundation and Structure
+  // are both IN_PROGRESS and the DERIVED current phase — the lowest-seq IN_PROGRESS one (ADR-070) — is
+  // Foundation. actual_end stays null on both (only COMPLETED phases are signed off).
+  const phaseDefs = [
+    ['งานฐานราก (Foundation)', 'IN_PROGRESS', 0, 45, 0, null],
+    ['งานโครงสร้าง (Structure)', 'IN_PROGRESS', 40, 140, 45, null],
+    ['งานระบบประกอบอาคาร (MEP)', 'NOT_STARTED', 130, 210, null, null],
+    ['งานสถาปัตยกรรม (Architecture)', 'NOT_STARTED', 200, 290, null, null],
+    ['ส่งมอบงาน (Handover)', 'NOT_STARTED', 285, 300, null, null],
+  ] as const;
+  for (let phi = 0; phi < phaseDefs.length; phi++) {
+    const [pname, pstatus, ps, pe, astart, aend] = phaseDefs[phi];
+    await tx.$executeRaw`INSERT INTO projects.project_phases (phase_id, tenant_id, project_id, seq, name, status, planned_start, planned_end, actual_start, actual_end, created_by)
+      VALUES (${uid(`phase/${p.key}/${phi}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, ${phi + 1}, ${pname}, ${pstatus}, ${addDays(p.start, ps)}::date, ${addDays(p.start, pe)}::date, ${astart === null ? null : addDays(p.start, astart)}::date, ${aend === null ? null : addDays(p.start, aend)}::date, ${U(p.pm)}::uuid)
+      ON CONFLICT (phase_id) DO NOTHING`;
+  }
+
   // Permit (active work permit).
   await tx.$executeRaw`INSERT INTO site_ops.permits (permit_id, tenant_id, project_id, permit_type, permit_number, issued_by, valid_from, valid_until, status, created_by)
     VALUES (${uid(`permit/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'WORK_PERMIT', ${`WP-${p.code}-001`}, ${U('safety')}::uuid, ${p.start}::date, ${addDays(p.start, 90)}::date, 'ACTIVE', ${U('safety')}::uuid)

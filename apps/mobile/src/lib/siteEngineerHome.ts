@@ -19,6 +19,27 @@ export interface ActiveIssue {
   status: string;
 }
 
+export interface ProjectPhase {
+  phase_id: string;
+  seq: number;
+  name: string;
+  status: string; // NOT_STARTED | IN_PROGRESS | COMPLETED (ADR-070)
+}
+
+/**
+ * The project's current construction phase (ADR-070), derived — never a stored flag:
+ *   the lowest-seq phase that is IN_PROGRESS; if none is in progress, the lowest-seq phase not yet
+ *   COMPLETED (the next one due to start); if every phase is COMPLETED, or there are no phases, there
+ *   is no current phase (null) and the dashboard shows no phase card.
+ * Input order is not trusted — phases are sorted by seq before the scan.
+ */
+export function currentPhase(phases: ProjectPhase[]): ProjectPhase | null {
+  const ordered = [...phases].sort((a, b) => a.seq - b.seq);
+  const inProgress = ordered.find((phase) => phase.status === 'IN_PROGRESS');
+  if (inProgress) return inProgress;
+  return ordered.find((phase) => phase.status !== 'COMPLETED') ?? null;
+}
+
 /** A task that survived the `planned_start` filter — narrowed so the sort needs no null fallback. */
 type DatedTask = UpcomingTask & { planned_start: string };
 

@@ -30,11 +30,12 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../api/client';
-import { getProjectProgress, type ProjectProgress } from '../api/projects';
+import { getProjectProgress, getProjectPhases, type ProjectProgress } from '../api/projects';
 import { ProjectPicker } from './ProjectPicker';
 import { QuickActionCard } from './QuickActionCard';
 import { useI18n } from '../i18n';
 import {
+  currentPhase,
   hasProgressFigure,
   progressBarWidth,
   scheduleColour,
@@ -44,6 +45,7 @@ import {
   topSeverityCount,
   urgencyCounts,
   type ActiveIssue as IssueRow,
+  type ProjectPhase,
   type ScheduleColour,
   type TaskUrgency,
   type UpcomingTask as TaskRow,
@@ -116,6 +118,7 @@ export default function SiteEngineerHome() {
   const [progress, setProgress] = useState<ProjectProgress | null>(null);
   const [issues, setIssues] = useState<IssueRow[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
+  const [phases, setPhases] = useState<ProjectPhase[]>([]);
 
   const loadProject = useCallback((id: string) => {
     if (!id) return;
@@ -123,6 +126,11 @@ export default function SiteEngineerHome() {
       .then(setProgress)
       .catch(() => {
         /* offline — keep the last figure rather than showing a wrong one */
+      });
+    getProjectPhases(id)
+      .then(setPhases)
+      .catch(() => {
+        /* offline — keep the last phase rather than showing a wrong one */
       });
     get<{ items?: IssueRow[] } | IssueRow[]>('/site/issues', { project_id: id, status: 'OPEN' })
       .then((res) => setIssues(asList(res)))
@@ -155,6 +163,10 @@ export default function SiteEngineerHome() {
   // §32.12 Display: the verdict is one line — the status word in its three-band colour, carrying the
   // Earned Schedule day-variance ("ช้ากว่าแผน 21 วัน"). Word/colour from spi; number from days.
   const colour = scheduleColour(progress?.spi);
+
+  // The current construction phase (ADR-070), derived from the phase list — null when the project has
+  // no phases (or all are done), in which case the card is absent rather than showing a wrong stage.
+  const phase = currentPhase(phases);
 
   return (
     <ScrollView
@@ -198,6 +210,17 @@ export default function SiteEngineerHome() {
           </>
         )}
       </View>
+
+      {/* Current construction phase (ADR-070) — the mockup's phase card, now backed by real
+          project_phases data. Plain surface + text: no blueprint grid, gradient, or glow (§32.7). */}
+      {phase ? (
+        <View testID="phase-card" style={styles.phaseCard}>
+          <Text style={styles.cardLabel}>{t('home.engineer.phaseTitle')}</Text>
+          <Text testID="phase-name" style={styles.phaseName}>
+            {t('home.engineer.phaseSeq', { seq: phase.seq })}: {phase.name}
+          </Text>
+        </View>
+      ) : null}
 
       <Text style={styles.sectionTitle}>{t('home.engineer.quickActions')}</Text>
       <View style={styles.grid}>
@@ -372,6 +395,20 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  // Phase card — the same flat surface as the progress card (no blueprint bg / glow, §32.7).
+  phaseCard: {
+    backgroundColor: darkColors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  phaseName: {
+    fontSize: typography.body.fontSize,
+    fontFamily: fontFamily.semibold,
+    color: darkColors.text,
   },
   progressRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
   hero: {

@@ -43,14 +43,15 @@ Physical Objects :
 
 Operational Objects :
 
-| Object      | Key Properties                                                                                                                                                                                                                                                              |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Task        | task_id, name, work_type, status, planned_start, planned_end, progress_percent                                                                                                                                                                                              |
-| Inspection  | inspection_id, type, result (pass/fail/conditional), severity                                                                                                                                                                                                               |
-| Procurement | procurement_id, stage (PR/RFQ/PO/Delivery/Vendor Invoice), status, total_value                                                                                                                                                                                              |
-| Delivery    | delivery_id, po_id, quantity_delivered, delivery_date, received_by                                                                                                                                                                                                          |
-| Incident    | incident_id, type, severity (low/medium/high/critical), reported_by                                                                                                                                                                                                         |
-| Delay       | delay_id (= event_id from CloudEvents envelope, UUID), project_id, task_id (nullable), delay_days, cause (PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), detected_by (AI_FORECAST/MANUAL_REPORT), severity (LOW/MEDIUM/HIGH/CRITICAL), tenant_id, occurred_at |
+| Object        | Key Properties                                                                                                                                                                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Task          | task_id, name, work_type, status, planned_start, planned_end, progress_percent                                                                                                                                                                                              |
+| Project Phase | phase_id, project_id, seq, name, status (NOT_STARTED/IN_PROGRESS/COMPLETED), planned_start, planned_end, actual_start, actual_end — a WBS execution stage; `name` free-form (BIM `IfcBuildingStorey`), current phase derived not stored (ADR-070)                           |
+| Inspection    | inspection_id, type, result (pass/fail/conditional), severity                                                                                                                                                                                                               |
+| Procurement   | procurement_id, stage (PR/RFQ/PO/Delivery/Vendor Invoice), status, total_value                                                                                                                                                                                              |
+| Delivery      | delivery_id, po_id, quantity_delivered, delivery_date, received_by                                                                                                                                                                                                          |
+| Incident      | incident_id, type, severity (low/medium/high/critical), reported_by                                                                                                                                                                                                         |
+| Delay         | delay_id (= event_id from CloudEvents envelope, UUID), project_id, task_id (nullable), delay_days, cause (PROCUREMENT/WEATHER/WORKFORCE/EQUIPMENT/SCOPE_CHANGE/OTHER), detected_by (AI_FORECAST/MANUAL_REPORT), severity (LOW/MEDIUM/HIGH/CRITICAL), tenant_id, occurred_at |
 
 Note on Procurement :
 
@@ -104,25 +105,26 @@ Worker resolves to Employee via the Workforce record.
 
 ## 10.3 Core Relationships and Cardinality
 
-| Relationship       | From        | To         | Cardinality                            |
-| ------------------ | ----------- | ---------- | -------------------------------------- |
-| HAS_FLOOR          | Building    | Floor      | 1:N                                    |
-| HAS_ROOM           | Floor       | Room       | 1:N                                    |
-| CONTAINS_STRUCTURE | Building    | Structure  | 1:N                                    |
-| LOCATED_IN         | Task        | Floor      | N:1                                    |
-| LOCATED_IN         | Task        | Room       | N:1                                    |
-| USES               | Task        | Material   | N:M                                    |
-| DEPENDS_ON         | Task        | Task       | N:M                                    |
-| VALIDATED_BY       | Task        | Inspection | 1:N                                    |
-| IMPACTS            | Incident    | Task       | N:M                                    |
-| IMPACTS            | Delay       | Project    | N:1                                    |
-| IMPACTS            | Delay       | Task       | N:M (nullable — task-level delay only) |
-| DELIVERED_BY       | Material    | Vendor     | N:1                                    |
-| FULFILLED_BY       | Procurement | Vendor     | N:1                                    |
-| BELONGS_TO         | Contract    | Vendor     | N:1                                    |
-| BELONGS_TO         | Contract    | Customer   | N:1                                    |
-| BELONGS_TO         | Invoice     | Contract   | N:1                                    |
-| ASSIGNED_TO        | Task        | Worker     | N:M                                    |
+| Relationship       | From        | To            | Cardinality                            |
+| ------------------ | ----------- | ------------- | -------------------------------------- |
+| HAS_PHASE          | Project     | Project Phase | 1:N                                    |
+| HAS_FLOOR          | Building    | Floor         | 1:N                                    |
+| HAS_ROOM           | Floor       | Room          | 1:N                                    |
+| CONTAINS_STRUCTURE | Building    | Structure     | 1:N                                    |
+| LOCATED_IN         | Task        | Floor         | N:1                                    |
+| LOCATED_IN         | Task        | Room          | N:1                                    |
+| USES               | Task        | Material      | N:M                                    |
+| DEPENDS_ON         | Task        | Task          | N:M                                    |
+| VALIDATED_BY       | Task        | Inspection    | 1:N                                    |
+| IMPACTS            | Incident    | Task          | N:M                                    |
+| IMPACTS            | Delay       | Project       | N:1                                    |
+| IMPACTS            | Delay       | Task          | N:M (nullable — task-level delay only) |
+| DELIVERED_BY       | Material    | Vendor        | N:1                                    |
+| FULFILLED_BY       | Procurement | Vendor        | N:1                                    |
+| BELONGS_TO         | Contract    | Vendor        | N:1                                    |
+| BELONGS_TO         | Contract    | Customer      | N:1                                    |
+| BELONGS_TO         | Invoice     | Contract      | N:1                                    |
+| ASSIGNED_TO        | Task        | Worker        | N:M                                    |
 
 Note on FULFILLED_BY and BELONGS_TO :
 
@@ -130,8 +132,10 @@ Relationships from Procurement, Contract, and Invoice to Vendor/Customer are con
 At the schema level, these resolve as :
 
 - `Procurement FULFILLED_BY Vendor` → `purchase_order.vendor_id → vendor.vendor_id`
-- `Contract BELONGS_TO Vendor` → `contract.vendor_id → vendor.vendor_id` (subcontract / supply_agreement — vendor_id populated, customer_id null)
-- `Contract BELONGS_TO Customer` → `contract.customer_id → customer.customer_id` (main_contract / client-side — customer_id populated, vendor_id null)
+- `Contract BELONGS_TO Vendor` → `contract.vendor_id → vendor.vendor_id`
+  (subcontract / supply_agreement — vendor_id populated, customer_id null)
+- `Contract BELONGS_TO Customer` → `contract.customer_id → customer.customer_id`
+  (main_contract / client-side — customer_id populated, vendor_id null)
 - `Invoice BELONGS_TO Contract` (AR/client billing) → `Financials — Billing.contract_id → Contract.contract_id`
 
 See 11-database-schema Contract entity note for the contract_type distinction (main_contract / subcontract / supply_agreement).

@@ -213,6 +213,50 @@ VALUES
 )
 ON CONFLICT (task_id) DO NOTHING;
 
+-- ── Project phases (ADR-070) ───────────────────────────────────────────────────
+-- The construction execution stages the SITE_ENGINEER dashboard's phase card reads. status is PM-set
+-- (phases are not linked to tasks in this increment) and kept coherent with the tasks above: the
+-- foundation formwork is still ~60–85% and the Level-2 rebar has just started, so Foundation and
+-- Structure are both IN_PROGRESS. The DERIVED current phase — the lowest-seq IN_PROGRESS one — is
+-- Foundation (ADR-070). actual_end is NULL on both (only COMPLETED phases are signed off).
+INSERT INTO projects.project_phases
+(
+    phase_id, project_id, tenant_id, seq, name, status,
+    planned_start, planned_end, actual_start, actual_end, created_by
+)
+VALUES
+(
+    'b0000000-0000-4000-8000-000000000801', 'b0000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000001', 1, 'Foundation', 'IN_PROGRESS',
+    DATE '2026-01-15', DATE '2026-04-30', DATE '2026-01-20', null,
+    '00000000-0000-4000-8000-000000000012'
+),
+(
+    'b0000000-0000-4000-8000-000000000802', 'b0000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000001', 2, 'Structure', 'IN_PROGRESS',
+    DATE '2026-04-15', DATE '2026-08-31', DATE '2026-06-01', null,
+    '00000000-0000-4000-8000-000000000012'
+),
+(
+    'b0000000-0000-4000-8000-000000000803', 'b0000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000001', 3, 'MEP', 'NOT_STARTED',
+    DATE '2026-08-01', DATE '2026-10-31', null, null,
+    '00000000-0000-4000-8000-000000000012'
+),
+(
+    'b0000000-0000-4000-8000-000000000804', 'b0000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000001', 4, 'Architecture', 'NOT_STARTED',
+    DATE '2026-10-15', DATE '2026-12-15', null, null,
+    '00000000-0000-4000-8000-000000000012'
+),
+(
+    'b0000000-0000-4000-8000-000000000805', 'b0000000-0000-4000-8000-000000000001',
+    '00000000-0000-4000-8000-000000000001', 5, 'Handover', 'NOT_STARTED',
+    DATE '2026-12-10', DATE '2026-12-31', null, null,
+    '00000000-0000-4000-8000-000000000012'
+)
+ON CONFLICT (phase_id) DO NOTHING;
+
 -- ── Site reports ─────────────────────────────────────────────────────────────
 INSERT INTO site_ops.site_reports
 (report_id, project_id, tenant_id, report_date, submitted_by, status, summary, weather, manpower_count)

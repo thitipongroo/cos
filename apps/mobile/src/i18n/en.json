@@ -98,6 +98,8 @@
       "notifications": "Notifications",
       "progressTitle": "Project progress",
       "progressEmpty": "No BOQ-linked task yet",
+      "phaseTitle": "Current phase",
+      "phaseSeq": "Phase {seq}",
       "ahead": "Ahead by {days} d",
       "onTrack": "On schedule",
       "behind": "Behind by {days} d",

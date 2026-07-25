@@ -26,6 +26,10 @@ import { UnitsRepository } from './units/units.repository';
 import { AssetsController } from './assets/assets.controller';
 import { AssetsService } from './assets/assets.service';
 import { AssetsRepository } from './assets/assets.repository';
+// Project phases — construction execution-stage tracking (ADR-070). CRUD subset, no Kafka events.
+import { PhasesController } from './phases/phases.controller';
+import { PhasesService } from './phases/phases.service';
+import { PhasesRepository } from './phases/phases.repository';
 
 @Module({
   imports: [TenantModule],
@@ -37,6 +41,7 @@ import { AssetsRepository } from './assets/assets.repository';
     StructuresController,
     UnitsController,
     AssetsController,
+    PhasesController,
   ],
   providers: [
     ProjectService,
@@ -53,6 +58,8 @@ import { AssetsRepository } from './assets/assets.repository';
     UnitsRepository,
     AssetsService,
     AssetsRepository,
+    PhasesService,
+    PhasesRepository,
   ],
   exports: [ProjectService],
 })

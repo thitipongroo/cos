@@ -1,4 +1,5 @@
 import {
+  currentPhase,
   hasProgressFigure,
   progressBarWidth,
   scheduleColour,
@@ -8,6 +9,7 @@ import {
   topSeverityCount,
   urgencyCounts,
   type ActiveIssue,
+  type ProjectPhase,
   type UpcomingTask,
 } from '../siteEngineerHome';
 
@@ -23,6 +25,10 @@ function task(over: Partial<UpcomingTask> = {}): UpcomingTask {
 
 function issue(severity: string, id = 'i1'): ActiveIssue {
   return { issue_id: id, issue_number: null, title: 'Steel beam delay', severity, status: 'OPEN' };
+}
+
+function phase(seq: number, status: string, name = `Phase ${seq}`): ProjectPhase {
+  return { phase_id: `ph${seq}`, seq, name, status };
 }
 
 describe('selectUpcomingTasks', () => {
@@ -63,6 +69,41 @@ describe('selectUpcomingTasks', () => {
 
   it('returns empty rather than throwing on no tasks', () => {
     expect(selectUpcomingTasks([])).toEqual([]);
+  });
+});
+
+describe('currentPhase — derived, never a stored flag (ADR-070)', () => {
+  it('picks the lowest-seq IN_PROGRESS phase, ignoring input order', () => {
+    const out = currentPhase([
+      phase(3, 'IN_PROGRESS', 'MEP'),
+      phase(1, 'COMPLETED', 'Foundation'),
+      phase(2, 'IN_PROGRESS', 'Structure'),
+    ]);
+    expect(out?.name).toBe('Structure');
+  });
+
+  it('falls back to the lowest-seq not-COMPLETED when none is in progress', () => {
+    // Foundation done, nothing started yet → the next due phase (Structure) is current.
+    const out = currentPhase([
+      phase(1, 'COMPLETED', 'Foundation'),
+      phase(2, 'NOT_STARTED', 'Structure'),
+      phase(3, 'NOT_STARTED', 'MEP'),
+    ]);
+    expect(out?.name).toBe('Structure');
+  });
+
+  it('is null when every phase is COMPLETED', () => {
+    expect(currentPhase([phase(1, 'COMPLETED'), phase(2, 'COMPLETED')])).toBeNull();
+  });
+
+  it('is null for an empty list', () => {
+    expect(currentPhase([])).toBeNull();
+  });
+
+  it('does not mutate the input', () => {
+    const input = [phase(2, 'IN_PROGRESS'), phase(1, 'COMPLETED')];
+    currentPhase(input);
+    expect(input.map((p) => p.seq)).toEqual([2, 1]);
   });
 });
 

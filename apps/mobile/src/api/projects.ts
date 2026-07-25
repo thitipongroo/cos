@@ -5,6 +5,7 @@
 import { get } from './client';
 import { db, newLocalId } from '../db/database';
 import { localProjects } from '../db/schema';
+import type { ProjectPhase } from '../lib/siteEngineerHome';
 
 interface ProjectRow {
   project_id: string;
@@ -43,6 +44,14 @@ export interface ProjectProgress {
  */
 export async function getProjectProgress(projectId: string): Promise<ProjectProgress> {
   return get<ProjectProgress>(`/projects/${projectId}/progress`);
+}
+
+/**
+ * Ordered project phases (ADR-070). Not cached offline — the dashboard derives the current phase
+ * from the list and keeps its last value when this throws (offline), rather than showing a wrong one.
+ */
+export async function getProjectPhases(projectId: string): Promise<ProjectPhase[]> {
+  return get<ProjectPhase[]>(`/projects/${projectId}/phases`);
 }
 
 /** Best-effort refresh of the local project cache. Throws when offline — callers ignore. */
