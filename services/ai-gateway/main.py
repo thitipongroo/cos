@@ -21,6 +21,7 @@ from otel import configure_telemetry
 from providers.llm_provider import Message, build_llm_provider
 from rag.retrieval import HybridRetriever
 from reports.pipeline import generate_report
+from reports.risk_event import emit_risk_prediction
 from templates.loader import render_template
 from digital_twin.router import router as digital_twin_router
 
@@ -53,6 +54,9 @@ app.include_router(digital_twin_router)
 # code change (§22.7).
 _provider = build_llm_provider()
 _db_pool = None  # injected at startup in production
+# Kafka producer for the F4b delay-risk feed (ai.risk_prediction.generated.v1). Injected at startup
+# in production, same posture as _db_pool; None → emit_risk_prediction is a no-op (no per-request broker).
+_risk_producer = None
 # Injected at startup in production (keyword=OpenSearch + vector=pgvector backends). Stage-1 leaves
 # it None — the /rag/query endpoint then returns 503, consistent with the StubLLMProvider posture.
 _retriever: HybridRetriever | None = None
@@ -376,9 +380,23 @@ async def executive_summary(
 
 @app.post("/api/v1/ai/reports/delay-risk", response_model=ReportResponse)
 async def delay_risk(req: DelayRiskRequest, tenant_id: str = Depends(get_verified_tenant)):
-    return await _run_report(
+    resp = await _run_report(
         "DELAY_RISK", req.project_id, tenant_id, req.generated_by, {},
     )
+    # F4b feed: a confident delay-risk assessment becomes a risk-prediction event, which the backend
+    # consumes to create an AI_SUGGESTED ProjectRisk (ADR-065). Non-fatal — the report is already
+    # returned/persisted, so an emit failure must never fail the response. Low-confidence output is not
+    # emitted (the register must not fill with noise).
+    if not resp.low_confidence and resp.content.get("delay_risk_level"):
+        try:
+            await emit_risk_prediction(
+                req.project_id, tenant_id, resp.content, resp.confidence, producer=_risk_producer
+            )
+        except Exception as exc:  # noqa: BLE001 - emit is best-effort, report already succeeded
+            logging.getLogger("cos.ai.risk").warning(
+                "risk-prediction emit failed for %s: %s", req.project_id, exc
+            )
+    return resp
 
 
 @app.get("/api/v1/ai/reports/history")

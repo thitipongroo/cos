@@ -88,6 +88,17 @@ describe('RisksRepository', () => {
       );
       expect(queryRaw).toHaveBeenCalled();
     });
+    it('accepts an explicit source (AI_SUGGESTED feed path)', async () => {
+      const { repo, queryRaw } = makeRepo([{ ...baseRow, source: 'AI_SUGGESTED' }]);
+      const res = await repo.create(
+        PROJECT_ID,
+        { title: 'X', category: 'SCHEDULE' as never, likelihood: 4, impact: 4 },
+        USER_ID,
+        'AI_SUGGESTED',
+      );
+      expect(res.source).toBe('AI_SUGGESTED');
+      expect(queryRaw).toHaveBeenCalled();
+    });
   });
 
   describe('findById()', () => {

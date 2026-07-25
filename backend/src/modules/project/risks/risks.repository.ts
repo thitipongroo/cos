@@ -54,17 +54,23 @@ export class RisksRepository {
     return projectExistsInTenant(this.tenantPrisma, projectId, this.tenantId);
   }
 
-  async create(projectId: string, dto: CreateRiskDto, createdBy: string): Promise<RiskRow> {
+  // `source` defaults to MANUAL (the API path); the AI feed passes 'AI_SUGGESTED' (ADR-065).
+  async create(
+    projectId: string,
+    dto: CreateRiskDto,
+    createdBy: string,
+    source: RiskSourceValue = 'MANUAL',
+  ): Promise<RiskRow> {
     const rows = await this.tenantPrisma.run(
       async (tx) =>
         await tx.$queryRaw<RiskRow[]>`
         INSERT INTO projects.project_risk (
           project_id, tenant_id, title, description, category,
-          likelihood, impact, mitigation, owner, created_by
+          likelihood, impact, mitigation, owner, source, created_by
         ) VALUES (
           ${projectId}::uuid, ${this.tenantId}::uuid, ${dto.title}, ${dto.description ?? null},
           ${dto.category}, ${dto.likelihood}::smallint, ${dto.impact}::smallint,
-          ${dto.mitigation ?? null}, ${dto.owner ?? null}::uuid, ${createdBy}::uuid
+          ${dto.mitigation ?? null}, ${dto.owner ?? null}::uuid, ${source}, ${createdBy}::uuid
         )
         RETURNING *
       `,

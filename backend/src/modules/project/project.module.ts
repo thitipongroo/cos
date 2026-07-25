@@ -34,6 +34,8 @@ import { PhasesRepository } from './phases/phases.repository';
 import { RisksController } from './risks/risks.controller';
 import { RisksService } from './risks/risks.service';
 import { RisksRepository } from './risks/risks.repository';
+// F4b feed: consumes ai.risk_prediction.generated.v1 → AI_SUGGESTED ProjectRisk.
+import { RisksConsumer } from './risks/risks.consumer';
 
 @Module({
   imports: [TenantModule],
@@ -67,6 +69,7 @@ import { RisksRepository } from './risks/risks.repository';
     PhasesRepository,
     RisksService,
     RisksRepository,
+    RisksConsumer,
   ],
   exports: [ProjectService],
 })

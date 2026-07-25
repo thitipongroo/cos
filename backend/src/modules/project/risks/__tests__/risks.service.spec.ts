@@ -184,4 +184,34 @@ describe('RisksService', () => {
       expect(repo.updateStatus).not.toHaveBeenCalled();
     });
   });
+
+  describe('createSuggested() — the AI feed (ADR-065)', () => {
+    const input = {
+      title: 'AI delay-risk: HIGH',
+      description: 'AI-suggested schedule delay risk.',
+      category: 'SCHEDULE' as const,
+      likelihood: 4,
+      impact: 4,
+    };
+
+    it('creates an AI_SUGGESTED risk with the system actor when the project exists', async () => {
+      const repo = makeRepo();
+      const svc = await build(repo);
+      const res = await svc.createSuggested(PROJECT_ID, input);
+      expect(res).toEqual(baseRow);
+      expect(repo.create).toHaveBeenCalledWith(
+        PROJECT_ID,
+        expect.objectContaining({ title: input.title, category: 'SCHEDULE' }),
+        '00000000-0000-0000-0000-000000000000',
+        'AI_SUGGESTED',
+      );
+    });
+
+    it('returns null (skips) when the project no longer exists', async () => {
+      const repo = makeRepo({ projectExists: jest.fn().mockResolvedValue(false) });
+      const svc = await build(repo);
+      expect(await svc.createSuggested(PROJECT_ID, input)).toBeNull();
+      expect(repo.create).not.toHaveBeenCalled();
+    });
+  });
 });

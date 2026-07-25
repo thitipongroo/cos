@@ -11,6 +11,8 @@ import { createLogger } from '@cos/logger';
 import { RisksRepository } from './risks.repository';
 import type { RiskRow } from './risks.repository';
 import type { CreateRiskDto } from './dto/create-risk.dto';
+import type { SuggestedRiskInput } from './ai-risk-mapping';
+import { SYSTEM_ACTOR_ID } from '../../../shared/system-actor';
 import type { UpdateRiskDto } from './dto/update-risk.dto';
 import type { RiskStatusDto } from './dto/risk-status.dto';
 import type { ListRisksDto } from './dto/list-risks.dto';
@@ -76,6 +78,41 @@ export class RisksService {
     logger.info(
       { project_id: projectId, risk_id: risk.risk_id, correlation_id: this.correlationId },
       'risk.raised',
+    );
+    return risk;
+  }
+
+  /**
+   * Create an AI-suggested risk from the delay-risk feed (ADR-065). created_by is the system actor
+   * (no human author); source is AI_SUGGESTED. Returns null when the project no longer exists, so the
+   * consumer skips rather than failing. Emits RiskRaised like any raised risk (humans triage it).
+   */
+  async createSuggested(projectId: string, input: SuggestedRiskInput): Promise<RiskRow | null> {
+    if (!(await this.repo.projectExists(projectId))) return null;
+
+    const dto = {
+      title: input.title,
+      description: input.description,
+      category: input.category as unknown as CreateRiskDto['category'],
+      likelihood: input.likelihood,
+      impact: input.impact,
+    } as CreateRiskDto;
+    const risk = await this.repo.create(projectId, dto, SYSTEM_ACTOR_ID, 'AI_SUGGESTED');
+
+    await this.publishEvent('construction.project.risk_raised.v1', {
+      project_id: risk.project_id,
+      risk_id: risk.risk_id,
+      title: risk.title,
+      category: risk.category,
+      likelihood: risk.likelihood,
+      impact: risk.impact,
+      risk_score: risk.risk_score,
+      source: risk.source,
+    });
+
+    logger.info(
+      { project_id: projectId, risk_id: risk.risk_id, correlation_id: this.correlationId },
+      'risk.ai_suggested',
     );
     return risk;
   }
