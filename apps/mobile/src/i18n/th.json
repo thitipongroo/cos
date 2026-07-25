@@ -100,6 +100,7 @@
       "progressEmpty": "ยังไม่มีงานที่ผูกกับ BOQ",
       "phaseTitle": "ระยะงานปัจจุบัน",
       "phaseSeq": "เฟส {seq}",
+      "workHours": "เวลาทำงาน",
       "ahead": "เร็วกว่าแผน {days} วัน",
       "onTrack": "เป็นไปตามแผน",
       "behind": "ช้ากว่าแผน {days} วัน",

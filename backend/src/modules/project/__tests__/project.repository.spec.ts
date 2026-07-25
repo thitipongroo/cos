@@ -70,6 +70,21 @@ describe('ProjectRepository', () => {
       );
       expect(result.project_id).toBe(PROJECT_ID);
     });
+
+    it('passes the working-hours window through when provided (ADR-072)', async () => {
+      const repo = makeRepo([baseRow]);
+      const res = await repo.create(
+        {
+          project_code: 'PROJ-002',
+          project_name: 'Test',
+          project_type: 'COMMERCIAL' as never,
+          work_hours_start: '07:00',
+          work_hours_end: '18:00',
+        },
+        USER_ID,
+      );
+      expect(res.project_id).toBe(PROJECT_ID);
+    });
   });
 
   describe('findById()', () => {

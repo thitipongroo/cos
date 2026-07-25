@@ -14,6 +14,7 @@ const KEYS = [
   'progressEmpty',
   'phaseTitle',
   'phaseSeq',
+  'workHours',
   'ahead',
   'onTrack',
   'behind',

@@ -4,6 +4,7 @@ import {
   MaxLength,
   IsDateString,
   IsNumberString,
+  IsMilitaryTime,
   Length,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -42,4 +43,15 @@ export class UpdateProjectDto {
   @IsOptional()
   @IsDateString()
   estimated_completion_date?: string;
+
+  // Standard daily working window (ADR-072) — 24-hour HH:MM.
+  @ApiPropertyOptional({ example: '07:00' })
+  @IsOptional()
+  @IsMilitaryTime()
+  work_hours_start?: string;
+
+  @ApiPropertyOptional({ example: '18:00' })
+  @IsOptional()
+  @IsMilitaryTime()
+  work_hours_end?: string;
 }

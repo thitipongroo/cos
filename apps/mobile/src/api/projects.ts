@@ -54,6 +54,21 @@ export async function getProjectPhases(projectId: string): Promise<ProjectPhase[
   return get<ProjectPhase[]>(`/projects/${projectId}/phases`);
 }
 
+export interface ProjectWorkHours {
+  work_hours_start: string | null; // TIME "HH:MM[:SS]" (ADR-072)
+  work_hours_end: string | null;
+}
+
+/** The project's standard daily working window (ADR-072). GET /projects/:id returns the whole row;
+ *  only the two TIME fields are read. Throws when offline — the dashboard keeps its last value. */
+export async function getProjectWorkHours(projectId: string): Promise<ProjectWorkHours> {
+  const project = await get<ProjectWorkHours>(`/projects/${projectId}`);
+  return {
+    work_hours_start: project.work_hours_start ?? null,
+    work_hours_end: project.work_hours_end ?? null,
+  };
+}
+
 /** Best-effort refresh of the local project cache. Throws when offline — callers ignore. */
 export async function refreshProjectsCache(): Promise<void> {
   const res = await get<ListProjectsResponse>('/projects');

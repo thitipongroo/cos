@@ -42,6 +42,8 @@ const baseProject: ProjectRow = {
   start_date: '2026-06-01',
   end_date: '2027-12-31',
   estimated_completion_date: null,
+  work_hours_start: null,
+  work_hours_end: null,
   on_hold_reason: null,
   on_hold_at: null,
   cancellation_reason: null,

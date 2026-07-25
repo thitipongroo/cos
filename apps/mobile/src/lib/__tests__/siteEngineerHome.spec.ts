@@ -1,5 +1,6 @@
 import {
   currentPhase,
+  formatWorkWindow,
   hasProgressFigure,
   progressBarWidth,
   scheduleColour,
@@ -104,6 +105,22 @@ describe('currentPhase — derived, never a stored flag (ADR-070)', () => {
     const input = [phase(2, 'IN_PROGRESS'), phase(1, 'COMPLETED')];
     currentPhase(input);
     expect(input.map((p) => p.seq)).toEqual([2, 1]);
+  });
+});
+
+describe('formatWorkWindow — the time strip (ADR-072)', () => {
+  it('trims Postgres TIME (HH:MM:SS) to HH:MM', () => {
+    expect(formatWorkWindow('07:00:00', '18:00:00')).toEqual({ start: '07:00', end: '18:00' });
+  });
+
+  it('passes an already-HH:MM window through', () => {
+    expect(formatWorkWindow('07:00', '18:00')).toEqual({ start: '07:00', end: '18:00' });
+  });
+
+  it('is null when either end is unset (no half-set strip)', () => {
+    expect(formatWorkWindow(null, '18:00')).toBeNull();
+    expect(formatWorkWindow('07:00', null)).toBeNull();
+    expect(formatWorkWindow(null, null)).toBeNull();
   });
 });
 

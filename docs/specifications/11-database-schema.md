@@ -259,6 +259,9 @@ Projects :
 - end_date
 - estimated_completion_date — nullable DATE; entered by PM manually (PATCH /api/v1/projects/:id); used as input for
   AI delay risk detection (falls back to end_date when null)
+- work_hours_start / work_hours_end — nullable TIME (ADR-072); the project's standard daily working
+  window (the smallest slice of a Primavera "project calendar"). Backs the mobile dashboard time strip
+  and a future HR/timesheet baseline; NULL projects render no strip.
 
 ProjectRisk (projects schema — risk register, post-MVP, ADR-065) :
 

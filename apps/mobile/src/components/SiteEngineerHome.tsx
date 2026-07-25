@@ -34,13 +34,20 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-nati
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../api/client';
-import { getProjectProgress, getProjectPhases, type ProjectProgress } from '../api/projects';
+import {
+  getProjectProgress,
+  getProjectPhases,
+  getProjectWorkHours,
+  type ProjectProgress,
+  type ProjectWorkHours,
+} from '../api/projects';
 import { BlueprintGrid } from './BlueprintGrid';
 import { ProjectPicker } from './ProjectPicker';
 import { QuickActionCard } from './QuickActionCard';
 import { useI18n } from '../i18n';
 import {
   currentPhase,
+  formatWorkWindow,
   hasProgressFigure,
   progressBarWidth,
   scheduleColour,
@@ -124,9 +131,15 @@ export default function SiteEngineerHome() {
   const [issues, setIssues] = useState<IssueRow[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
+  const [workHours, setWorkHours] = useState<ProjectWorkHours | null>(null);
 
   const loadProject = useCallback((id: string) => {
     if (!id) return;
+    getProjectWorkHours(id)
+      .then(setWorkHours)
+      .catch(() => {
+        /* offline — keep the last window rather than showing a wrong one */
+      });
     getProjectProgress(id)
       .then(setProgress)
       .catch(() => {
@@ -172,6 +185,12 @@ export default function SiteEngineerHome() {
   // The current construction phase (ADR-070), derived from the phase list — null when the project has
   // no phases (or all are done), in which case the card is absent rather than showing a wrong stage.
   const phase = currentPhase(phases);
+
+  // The project's standard working window (ADR-072). null when unset (or half-set) → no strip.
+  const workWindow = formatWorkWindow(
+    workHours?.work_hours_start ?? null,
+    workHours?.work_hours_end ?? null,
+  );
 
   return (
     <View style={styles.root}>
@@ -226,6 +245,17 @@ export default function SiteEngineerHome() {
             <Text style={styles.cardLabel}>{t('home.engineer.phaseTitle')}</Text>
             <Text testID="phase-name" style={styles.phaseName}>
               {t('home.engineer.phaseSeq', { seq: phase.seq })}: {phase.name}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Standard working window (ADR-072). Its own labelled card — kept clear of the % bar so it
+          never reads as though the bar measured time (why the mockup strip was first omitted). */}
+        {workWindow ? (
+          <View testID="work-hours" style={styles.phaseCard}>
+            <Text style={styles.cardLabel}>{t('home.engineer.workHours')}</Text>
+            <Text testID="work-hours-window" style={styles.phaseName}>
+              {workWindow.start} – {workWindow.end}
             </Text>
           </View>
         ) : null}

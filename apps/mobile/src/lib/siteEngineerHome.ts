@@ -40,6 +40,19 @@ export function currentPhase(phases: ProjectPhase[]): ProjectPhase | null {
   return ordered.find((phase) => phase.status !== 'COMPLETED') ?? null;
 }
 
+/**
+ * The project's standard daily working window for the time strip (ADR-072). Postgres TIME arrives as
+ * "HH:MM:SS"; trim to "HH:MM". Both ends are required — a half-set window shows no strip (§32.12: show
+ * nothing rather than a wrong value), so this returns null unless both are present.
+ */
+export function formatWorkWindow(
+  start: string | null,
+  end: string | null,
+): { start: string; end: string } | null {
+  if (!start || !end) return null;
+  return { start: start.slice(0, 5), end: end.slice(0, 5) };
+}
+
 /** A task that survived the `planned_start` filter — narrowed so the sort needs no null fallback. */
 type DatedTask = UpcomingTask & { planned_start: string };
 

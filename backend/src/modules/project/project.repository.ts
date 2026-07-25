@@ -26,6 +26,8 @@ export interface ProjectRow {
   start_date: string | null;
   end_date: string | null;
   estimated_completion_date: string | null;
+  work_hours_start: string | null; // TIME (HH:MM[:SS]) — standard daily working window (ADR-072)
+  work_hours_end: string | null;
   on_hold_reason: string | null;
   on_hold_at: Date | null;
   cancellation_reason: string | null;
@@ -79,7 +81,8 @@ export class ProjectRepository {
         await tx.$queryRaw<ProjectRow[]>`
         INSERT INTO projects.projects (
           tenant_id, project_code, project_name, project_type,
-          budget_amount, budget_currency, start_date, end_date, created_by
+          budget_amount, budget_currency, start_date, end_date,
+          work_hours_start, work_hours_end, created_by
         ) VALUES (
           ${this.tenantId}::uuid, ${dto.project_code}, ${dto.project_name},
           ${dto.project_type}::"ProjectType",
@@ -87,6 +90,8 @@ export class ProjectRepository {
           ${dto.budget_currency ?? null},
           ${dto.start_date ?? null}::date,
           ${dto.end_date ?? null}::date,
+          ${dto.work_hours_start ?? null}::time,
+          ${dto.work_hours_end ?? null}::time,
           ${createdBy}::uuid
         )
         RETURNING *
@@ -212,6 +217,8 @@ export class ProjectRepository {
           end_date        = COALESCE(${dto.end_date ?? null}::date, end_date),
           estimated_completion_date =
             COALESCE(${dto.estimated_completion_date ?? null}::date, estimated_completion_date),
+          work_hours_start = COALESCE(${dto.work_hours_start ?? null}::time, work_hours_start),
+          work_hours_end   = COALESCE(${dto.work_hours_end ?? null}::time, work_hours_end),
           updated_at      = now()
         WHERE project_id = ${projectId}::uuid
           AND tenant_id  = ${this.tenantId}::uuid
