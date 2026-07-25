@@ -10,27 +10,52 @@ import { refreshProjectsCache } from '../api/projects';
 import { useT } from '../i18n';
 import { colors, darkColors, fontFamily, spacing, typography } from '../theme/tokens';
 
+/** The minimum a chip needs. The offline-cache Project satisfies it; so does a scoped server list. */
+export interface PickerProject {
+  projectId: string;
+  projectCode: string;
+}
+
 interface ProjectPickerProps {
   selectedId: string;
   onSelect: (projectId: string) => void;
   /** 'dark' for the §32.7 "Mobile Dark Surfaces" screens. Defaults to the light field-app palette. */
   variant?: 'light' | 'dark';
+  /**
+   * An explicit project list to show instead of the whole-tenant offline cache — e.g. the
+   * SITE_ENGINEER home passes the projects that engineer is a member of. When given, the cache is not
+   * read or refreshed.
+   */
+  projects?: PickerProject[];
+  /** Hide the "Project" heading above the chips (SITE_ENGINEER home shows only the chips). */
+  hideLabel?: boolean;
 }
 
-export function ProjectPicker({ selectedId, onSelect, variant = 'light' }: ProjectPickerProps) {
-  const projects = useCollection<Project>('local_projects');
+export function ProjectPicker({
+  selectedId,
+  onSelect,
+  variant = 'light',
+  projects: scoped,
+  hideLabel,
+}: ProjectPickerProps) {
+  const cached = useCollection<Project>('local_projects');
+  const projects: PickerProject[] = scoped ?? cached;
   const t = useT();
   const dark = variant === 'dark';
 
   useEffect(() => {
+    // Only the whole-tenant cache path refreshes; a scoped list is owned by the caller.
+    if (scoped) return;
     refreshProjectsCache().catch(() => {
       // offline or transient — keep showing the cached list
     });
-  }, []);
+  }, [scoped]);
 
   return (
     <View testID="project-picker" style={styles.container}>
-      <Text style={[styles.label, dark && styles.mutedDark]}>{t('common.project.label')}</Text>
+      {hideLabel ? null : (
+        <Text style={[styles.label, dark && styles.mutedDark]}>{t('common.project.label')}</Text>
+      )}
       {projects.length === 0 ? (
         <Text testID="project-picker-empty" style={[styles.empty, dark && styles.mutedDark]}>
           {t('common.project.empty')}
@@ -45,7 +70,7 @@ export function ProjectPicker({ selectedId, onSelect, variant = 'light' }: Proje
             const active = p.projectId === selectedId;
             return (
               <TouchableOpacity
-                key={p.id}
+                key={p.projectId}
                 testID={`project-option-${p.projectId}`}
                 style={[
                   styles.chip,

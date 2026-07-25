@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Minimal i18n for the web client (QM-3): default locale `th`, fallback `en`.
+ * Minimal i18n for the web client: default locale `en` (PO 2026-07-26, overrides QM-3), fallback `en`.
  * All user-facing strings resolve through `useT()` — no hardcoded copy in pages.
  * Locale is persisted in localStorage and toggled via the app-shell switcher.
  */
@@ -13,7 +13,8 @@ export type Locale = 'th' | 'en';
 
 const MESSAGES: Record<Locale, Record<string, unknown>> = { th, en };
 const STORAGE_KEY = 'cos.locale';
-const DEFAULT_LOCALE: Locale = 'th';
+// Default UI language is English (product-owner decision 2026-07-26 — overrides QM-3's th-TH default).
+const DEFAULT_LOCALE: Locale = 'en';
 const FALLBACK_LOCALE: Locale = 'en';
 
 /** Resolve a dot-path (e.g. "auth.login.title") against a nested messages object. */

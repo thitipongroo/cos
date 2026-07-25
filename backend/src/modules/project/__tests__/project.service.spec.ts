@@ -58,6 +58,7 @@ function makeRepo(overrides: Partial<ProjectRepository> = {}): ProjectRepository
     create: jest.fn().mockResolvedValue(baseProject),
     findById: jest.fn().mockResolvedValue(baseProject),
     list: jest.fn().mockResolvedValue({ items: [baseProject], nextCursor: null }),
+    listByMember: jest.fn().mockResolvedValue([baseProject]),
     update: jest.fn().mockResolvedValue(baseProject),
     updateStatus: jest.fn().mockResolvedValue(baseProject),
     addMember: jest.fn().mockResolvedValue({}),
@@ -288,6 +289,16 @@ describe('ProjectService', () => {
       const service = await buildService(makeRepo());
       const result = await service.list({ q: 'Test', limit: 10 } as never);
       expect(Array.isArray(result.items)).toBe(true);
+    });
+  });
+
+  describe('listMine()', () => {
+    it('returns the caller’s own projects via repo.listByMember', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      const result = await service.listMine();
+      expect(result.items).toHaveLength(1);
+      expect(repo.listByMember).toHaveBeenCalled();
     });
   });
 

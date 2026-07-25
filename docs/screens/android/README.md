@@ -38,19 +38,34 @@ each frame, so a mis-tap fails the run instead of writing a screenshot of the wr
 
 ## Site Engineer dashboard — [`21-site-engineer-home.png`](21-site-engineer-home.png)
 
-The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`, from the
-[dashboard mockup](../../../mockup/mobile/role_site_engineer_mobile_view/dashboard_site_engineer_mobile_view)),
-captured against the `seed-realistic.ts` dataset through a real Path A (SMS OTP) login as
-`+66811000009` — Waraporn Klinhom, the SITE_ENGINEER the Rama IX Corporate Tower (`R9CT`) tasks are
-assigned to. Thai UI: this screen is documented in the th-TH default (QM-3).
+The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`), captured against the `seed-realistic.ts`
+dataset through a real Path A (SMS OTP) login as `+66811000009` — Waraporn Klinhom, a SITE_ENGINEER at
+Ekachai. **English is the default UI language** (product-owner decision 2026-07-26 — overrides QM-3's
+former th-TH default); data values (issue titles, the phase name) stay in their stored Thai.
 
-Everything on it is live: `76%` is the BOQ-value-weighted earned percent from
-`GET /projects/{projectId}/progress` (§32.12 — the API returned `percentComplete: 75.56`,
-`plannedPercent: 100`, `spi: 0.756`, `status: "behind"`), and the issues are the project's real
-`site_ops.issues` rows. The verdict "ช้ากว่าแผน" is **red** because `spi` 0.756 is below 0.90
-(§32.12 Display three-band colour), and "ตามแผน 132%" is `plannedPercent ÷ percentComplete` — over
-100% exactly because the project is behind. The header right badge "สูง 1 รายการ" is the worst
-severity present (HIGH) and its count; the issues list is ordered worst-first.
+Layout (product-owner decisions 2026-07-25/26): a **project picker scoped to the projects this engineer
+is a member of** (`GET /projects/mine` → `project_members` — here `CWRD` + `R9CT`, auto-selecting the
+first); one consolidated command card (a "PROJECT PROGRESS" title, the project name, progress %, the
+schedule verdict as a pill, the current phase inline, and a **START / GOAL footer showing the project's
+`start_date` and `end_date`** — the project timeline, not a work-hours window); the four quick-action
+tiles (Daily report · Capture photo · Safety check → /inspections · Request materials); and a round mic
+FAB. The background is a **solid tiered dark surface** — the ADR-071 blueprint grid was removed to match
+the design tokens (which specify no grid; §32.7 prohibits blueprint imagery); the progress-bar **glow**
+(the other half of ADR-071) is kept.
+
+Everything is live, driven by real data rather than the mockup's placeholders (never fabricated): `76%`
+is the BOQ-value-weighted earned percent from `GET /projects/{projectId}/progress` (§32.12); the phase
+(`Phase 1: งานฐานราก` — the stored Thai name, its English gloss trimmed for display) is the derived
+current phase from `project_phases` (ADR-070); `01 Jun 2026` / `31 Jan 2027` are the project's
+`start_date` / `end_date` (formatted "DD Mon YYYY", PO 2026-07-26); and the issues are the project's
+real `site_ops.issues` rows. The verdict
+pill "Behind by 34 d" is **red** because the project is behind schedule (`spi` below 0.90, §32.12
+Display) — the mockup's green "Ahead of Schedule" is a placeholder this data does not support. The
+header badge "1 HIGH" (count first, then severity — mockup parity) is the worst severity present and
+its count. The issue rows carry no "AI: 94% • BIM SYNC" chip because no such field exists on issues.
+The header avatar shows the
+signed-in user's profile photo (`platform.users.photo_url`) when one is set; with no photo it falls
+back to their initials ("WK" here — Waraporn Klinhom has no photo), then to a neutral person glyph.
 
 > **Why it reads "ช้ากว่าแผน" (behind) and not the mockup's "Ahead of Schedule":** `seed-realistic.ts`
 > anchors its tasks to fixed calendar dates about a month wide, so every planned end date is now in

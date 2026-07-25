@@ -47,7 +47,7 @@ export function VoiceCommandFab() {
 
   return (
     <View style={styles.fab} testID="voice-command-fab">
-      <VoiceNoteButton onTranscript={onTranscript} testID="voice-fab-btn" />
+      <VoiceNoteButton onTranscript={onTranscript} shape="fab" testID="voice-fab-btn" />
     </View>
   );
 }

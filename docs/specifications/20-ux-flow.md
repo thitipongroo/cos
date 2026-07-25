@@ -299,8 +299,9 @@ text in component source. Thai is the primary field language for site workers.
 
 ### Locale Codes and File Convention
 
-- **Default locale:** `th-TH` (Buddhist Era display configurable per tenant — see Thai-specific
-  Rules below). **Fallback locale:** `en-US`.
+- **Default locale:** `en-US` (product-owner decision 2026-07-26 — overrides the original `th-TH`
+  default). **Fallback locale:** `en-US`. Users switch to `th-TH` in-app; Buddhist Era display
+  (configurable per tenant — see Thai-specific Rules below) still applies when Thai is selected.
 - **Locale negotiation:** honour the `Accept-Language` HTTP header for API responses; a user's
   stored profile locale overrides the header when present.
 - **Translation file location:** `apps/{web,mobile}/src/i18n/{locale}.json` — one file per locale

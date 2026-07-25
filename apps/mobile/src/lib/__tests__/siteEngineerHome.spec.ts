@@ -1,5 +1,6 @@
 import {
   currentPhase,
+  formatDdMonYyyy,
   formatWorkWindow,
   hasProgressFigure,
   progressBarWidth,
@@ -113,6 +114,14 @@ describe('formatWorkWindow — the time strip (ADR-072)', () => {
     expect(formatWorkWindow('07:00:00', '18:00:00')).toEqual({ start: '07:00', end: '18:00' });
   });
 
+  it('extracts HH:MM from an ISO datetime (pg/Prisma parses TIME to an epoch-day Date)', () => {
+    // Regression: the live capture showed "1970-" because the value arrives as a full ISO datetime.
+    expect(formatWorkWindow('1970-01-01T07:00:00.000Z', '1970-01-01T18:00:00.000Z')).toEqual({
+      start: '07:00',
+      end: '18:00',
+    });
+  });
+
   it('passes an already-HH:MM window through', () => {
     expect(formatWorkWindow('07:00', '18:00')).toEqual({ start: '07:00', end: '18:00' });
   });
@@ -121,6 +130,24 @@ describe('formatWorkWindow — the time strip (ADR-072)', () => {
     expect(formatWorkWindow(null, '18:00')).toBeNull();
     expect(formatWorkWindow('07:00', null)).toBeNull();
     expect(formatWorkWindow(null, null)).toBeNull();
+  });
+});
+
+describe('formatDdMonYyyy — project date footer "DD Mon YYYY" (PO 2026-07-26)', () => {
+  it('formats a bare YYYY-MM-DD date as DD Mon YYYY (English month abbreviation)', () => {
+    expect(formatDdMonYyyy('2026-06-01')).toBe('01 Jun 2026');
+    expect(formatDdMonYyyy('2027-01-31')).toBe('31 Jan 2027');
+    expect(formatDdMonYyyy('2026-12-25')).toBe('25 Dec 2026');
+  });
+
+  it('takes the date part when the value arrives as an ISO datetime', () => {
+    // A Postgres DATE parsed to a Date reaches the client as a full ISO datetime.
+    expect(formatDdMonYyyy('2026-06-01T00:00:00.000Z')).toBe('01 Jun 2026');
+  });
+
+  it('returns an unexpected shape (or out-of-range month) unchanged rather than a wrong value', () => {
+    expect(formatDdMonYyyy('not-a-date')).toBe('not-a-date');
+    expect(formatDdMonYyyy('2026-13-01')).toBe('2026-13-01');
   });
 });
 

@@ -57,6 +57,15 @@ describe('ProjectRepository', () => {
     });
   });
 
+  describe('listByMember()', () => {
+    it('returns the projects the user is a member of', async () => {
+      const repo = makeRepo([baseRow]);
+      const result = await repo.listByMember(USER_ID);
+      expect(result).toHaveLength(1);
+      expect(result[0]!.project_id).toBe(PROJECT_ID);
+    });
+  });
+
   describe('create()', () => {
     it('returns the inserted row', async () => {
       const repo = makeRepo([baseRow]);

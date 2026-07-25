@@ -205,6 +205,26 @@ export class ProjectRepository {
     return { items: page, nextCursor };
   }
 
+  /**
+   * The projects the given user is a member of (projects.project_members). Scopes the SITE_ENGINEER
+   * home's project picker to that engineer's own projects rather than the whole tenant. A user belongs
+   * to only a handful of projects, so this is unpaginated — capped at 100 as a guard.
+   */
+  async listByMember(userId: string): Promise<ProjectRow[]> {
+    return this.tenantPrisma.run(
+      async (tx): Promise<ProjectRow[]> =>
+        await tx.$queryRaw<ProjectRow[]>`
+          SELECT p.* FROM projects.projects p
+          JOIN projects.project_members m
+            ON m.project_id = p.project_id AND m.tenant_id = p.tenant_id
+          WHERE p.tenant_id = ${this.tenantId}::uuid
+            AND m.user_id = ${userId}::uuid
+          ORDER BY p.created_at DESC, p.project_id DESC
+          LIMIT 100
+        `,
+    );
+  }
+
   async update(projectId: string, dto: UpdateProjectDto): Promise<ProjectRow> {
     const rows = await this.tenantPrisma.run(
       async (tx) =>

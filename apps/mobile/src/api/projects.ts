@@ -19,6 +19,26 @@ interface ListProjectsResponse {
   nextCursor: string | null;
 }
 
+/** A project the signed-in engineer is a member of, with the dates the dashboard footer shows. */
+export interface MyProject {
+  project_id: string;
+  project_code: string;
+  project_name: string;
+  status: string;
+  start_date: string | null; // project start date (footer "START")
+  end_date: string | null; // project end / contract-end date (footer "GOAL")
+}
+
+/**
+ * The projects the signed-in engineer is a member of (GET /projects/mine — JWT-scoped). Scopes the
+ * SITE_ENGINEER home picker to that engineer's own projects. Throws when offline — the screen keeps
+ * its last list rather than showing someone else's or an empty picker.
+ */
+export async function getMyProjects(): Promise<MyProject[]> {
+  const res = await get<{ items: MyProject[] }>('/projects/mine');
+  return res.items;
+}
+
 export type ScheduleStatus = 'ahead' | 'on_track' | 'behind';
 
 /**

@@ -20,7 +20,7 @@ const logger = createLogger('provision-kc-demo');
 const prisma = createPrismaClient();
 
 const KC = process.env['KEYCLOAK_BASE_URL'] ?? 'http://localhost:8090';
-const REALM = 'construction-os';
+const REALM = process.env['KEYCLOAK_REALM'] ?? 'construction-os-dev';
 const ADMIN_USER = process.env['KEYCLOAK_ADMIN_USER'] ?? 'admin';
 const ADMIN_PW = process.env['KEYCLOAK_ADMIN_PASSWORD'] ?? 'cos_keycloak_admin';
 const DEMO_PASSWORD = process.env['DEMO_USER_PASSWORD'] ?? 'Ekachai@2026';

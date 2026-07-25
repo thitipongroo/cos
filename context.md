@@ -187,7 +187,7 @@ Before starting any implementation task:
 - **Zero hardcoded user-facing strings in application code** — all strings go through i18n keys
 - i18n keys format: `{domain}.{screen}.{element}` (e.g., `procurement.list.emptyState`)
 - Translation files live in `apps/*/src/i18n/{locale}.json` (e.g., `th.json`, `en.json`)
-- Default locale: `th-TH`. Fallback locale: `en-US`
+- Default locale: `en-US` (product-owner decision 2026-07-26 — overrides the original `th-TH` default). Fallback locale: `en-US`. Users switch to `th-TH` in-app; Buddhist-era display still applies when Thai is selected.
 - All dates → ISO 8601 internally; display via `Intl.DateTimeFormat` with user's locale
 - All currencies → `decimal.js` internally; display via `Intl.NumberFormat` with user's locale
 - All timestamps → stored in UTC; converted to user's timezone on display

@@ -29,8 +29,8 @@ const PKG = 'com.constructionos.cos';
 // assigned to. National format: the login screen prefixes +66 from the country picker.
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000009';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
-// Rama IX Corporate Tower — the project whose chip is tapped in the picker.
-const PROJECT_CODE = process.env['E2E_PROJECT_CODE'] ?? 'R9CT';
+// The dashboard now matches its mockup (PO 2026-07-25 full parity), which has no project picker — the
+// screen auto-selects the active project from the offline cache, so there is no chip to tap.
 
 const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
 const ADB = SDK
@@ -175,9 +175,11 @@ async function main() {
   await find(byId('site-engineer-home'), 'site-engineer-home', 40);
   await dismissDevBanners();
 
-  console.log(`· selecting project ${PROJECT_CODE}`);
-  await tap(byText(PROJECT_CODE), `${PROJECT_CODE} project chip`);
-  await delay(4000); // progress + issues + tasks fetches
+  // No picker anymore: the screen auto-selects the active project from local_projects (populated by
+  // the shell's delta-sync + the screen's own refreshProjectsCache), then fetches its progress /
+  // issues / tasks. Give the cache + auto-select + those fetches time to land.
+  console.log('· waiting for the auto-selected project data');
+  await delay(6000);
   await dismissDevBanners();
 
   // The card only renders a figure when the metric is computable (§32.12). If the placeholder is on

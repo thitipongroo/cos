@@ -41,16 +41,53 @@ export function currentPhase(phases: ProjectPhase[]): ProjectPhase | null {
 }
 
 /**
- * The project's standard daily working window for the time strip (ADR-072). Postgres TIME arrives as
- * "HH:MM:SS"; trim to "HH:MM". Both ends are required — a half-set window shows no strip (§32.12: show
- * nothing rather than a wrong value), so this returns null unless both are present.
+ * The project's standard daily working window for the time strip (ADR-072). A Postgres TIME reaches the
+ * client either as "HH:MM:SS" or — once the pg/Prisma adapter has parsed it to a Date — as an ISO
+ * datetime on the epoch day ("1970-01-01THH:MM:SS.sssZ"); take the "HH:MM" from either form. Both ends
+ * are required — a half-set window shows no strip (§32.12: show nothing, not a wrong value).
  */
+function toHourMinute(value: string): string {
+  // ISO datetime → the time component after 'T'; a bare "HH:MM:SS" is already the time.
+  const t = value.indexOf('T');
+  const time = t >= 0 ? value.slice(t + 1) : value;
+  return time.slice(0, 5);
+}
+
 export function formatWorkWindow(
   start: string | null,
   end: string | null,
 ): { start: string; end: string } | null {
   if (!start || !end) return null;
-  return { start: start.slice(0, 5), end: end.slice(0, 5) };
+  return { start: toHourMinute(start), end: toHourMinute(end) };
+}
+
+const MONTHS_EN = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+] as const;
+
+/**
+ * A project date (start_date / end_date) formatted as "DD Mon YYYY" for the card's START/GOAL footer
+ * (product-owner decision 2026-07-26): 2-digit day, English 3-letter month abbreviation, 4-digit
+ * Gregorian year, space-separated (e.g. "01 Jun 2026") — a fixed shape, not locale-aware. A Postgres
+ * DATE reaches the client as "YYYY-MM-DD" or, once parsed to a Date, as an ISO datetime
+ * "YYYY-MM-DDT..."; the leading date is taken either way. The month regex only accepts 01–12, so an
+ * unexpected shape (or out-of-range month) is returned unchanged rather than reformatted into a wrong
+ * value (§32.12: show nothing wrong).
+ */
+export function formatDdMonYyyy(value: string): string {
+  const m = /^(\d{4})-(0[1-9]|1[0-2])-(\d{2})/.exec(value);
+  return m ? `${m[3]} ${MONTHS_EN[Number(m[2]) - 1]} ${m[1]}` : value;
 }
 
 /** A task that survived the `planned_start` filter — narrowed so the sort needs no null fallback. */

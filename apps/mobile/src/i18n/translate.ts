@@ -8,7 +8,9 @@ import th from './th.json';
 
 export type Locale = 'th' | 'en';
 
-export const DEFAULT_LOCALE: Locale = 'th';
+// Default UI language is English (product-owner decision 2026-07-26 — overrides QM-3's th-TH default;
+// docs updated to match). Users can still switch to Thai; Buddhist-era formatting applies when they do.
+export const DEFAULT_LOCALE: Locale = 'en';
 export const FALLBACK_LOCALE: Locale = 'en';
 
 const MESSAGES: Record<Locale, Record<string, unknown>> = { th, en };

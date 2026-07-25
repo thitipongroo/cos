@@ -408,7 +408,9 @@ services:
     ports:
       - '${KEYCLOAK_PORT:-8090}:8080'
     volumes:
-      - ./infrastructure/keycloak/realms:/opt/keycloak/data/import:ro
+      # Keycloak 26 requires the import filename to match the realm name (`<realm>-realm.json`). The
+      # source file keeps its name (backend/provision reference it) but mounts as the KC26-correct name.
+      - ./infrastructure/keycloak/realms/construction-os-realm.json:/opt/keycloak/data/import/construction-os-dev-realm.json:ro
       # Custom "cos" login theme (Path B, §20.6.1 / mockup web/03). start-dev disables theme caching,
       # so edits under this dir are picked up on container restart without an image rebuild.
       - ./infrastructure/keycloak/themes:/opt/keycloak/themes:ro

@@ -7,6 +7,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, Animated, ActivityIndicator } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { useT } from '../i18n';
 import { transcribeAudio } from '../api/transcribe';
@@ -21,6 +22,12 @@ interface VoiceNoteButtonProps {
   language?: string;
   disabled?: boolean;
   testID?: string;
+  /**
+   * 'bar' (default) — the full-width labelled pill used inside report/issue forms.
+   * 'fab' — a round 56×56 icon-only button for the SITE_ENGINEER home FAB (mockup parity);
+   *   drops the label, same hold-to-record behaviour.
+   */
+  shape?: 'bar' | 'fab';
 }
 
 export function VoiceNoteButton({
@@ -28,6 +35,7 @@ export function VoiceNoteButton({
   language,
   disabled,
   testID,
+  shape = 'bar',
 }: VoiceNoteButtonProps) {
   const t = useT();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -114,6 +122,7 @@ export function VoiceNoteButton({
         accessibilityLabel={label}
         style={[
           styles.button,
+          shape === 'fab' ? styles.fab : null,
           phase === 'recording' ? styles.recording : null,
           isBusy ? styles.busy : null,
         ]}
@@ -126,10 +135,13 @@ export function VoiceNoteButton({
           </View>
         ) : phase === 'transcribing' ? (
           <ActivityIndicator color={colors.bg} />
+        ) : shape === 'fab' ? (
+          // Round FAB (SITE_ENGINEER home) — the mockup's clean line mic, white on the blue button.
+          <MaterialIcons name="mic" size={26} color={colors.bg} />
         ) : (
           <Text style={styles.mic}>🎙️</Text>
         )}
-        <Text style={styles.label}>{label}</Text>
+        {shape === 'fab' ? null : <Text style={styles.label}>{label}</Text>}
       </Pressable>
       {error ? (
         <Text testID="voice-note-error" style={styles.error}>
@@ -151,6 +163,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: colors.primary,
     borderRadius: 12,
+  },
+  // Round icon-only FAB variant (mockup parity, SITE_ENGINEER home). 56×56 per the DESIGN.md FAB spec.
+  fab: {
+    minHeight: 0,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    paddingHorizontal: 0,
+    gap: 0,
   },
   recording: { backgroundColor: colors.danger },
   busy: { opacity: 0.7 },

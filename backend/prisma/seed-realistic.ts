@@ -50,7 +50,7 @@ function ts(iso: string, hhmm: string): string {
 }
 
 const TENANT_ID = uid('tenant/ekachai');
-const REALM = 'construction-os';
+const REALM = 'construction-os-dev';
 const THB = 'THB';
 const SEED_END = D('2026-07-03'); // last working Friday of the ~1-month window
 

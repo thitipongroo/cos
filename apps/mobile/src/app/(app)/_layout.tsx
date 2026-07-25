@@ -45,7 +45,8 @@ export default function AppLayout() {
   }, []);
 
   // The Site Engineer's shell is dark (§32.7 Mobile Dark Surfaces); every other role is light.
-  const variant = role === CosRole.SITE_ENGINEER ? 'dark' : 'light';
+  const isSiteEngineer = role === CosRole.SITE_ENGINEER;
+  const variant = isSiteEngineer ? 'dark' : 'light';
 
   return (
     <View style={styles.root}>
@@ -53,7 +54,10 @@ export default function AppLayout() {
           background. Then the offline/sync banners, then the tab content. */}
       <TopBar variant={variant} />
       <OfflineBanner />
-      <SyncStatusBar />
+      {/* The SITE_ENGINEER dashboard matches its mockup, which has no persistent sync strip (PO
+          decision 2026-07-25, "full parity"); the bar stays for every other role — including its
+          E2E assertions. OfflineBanner is kept for all roles (it only appears while offline). */}
+      {isSiteEngineer ? null : <SyncStatusBar />}
       <View style={styles.tabs}>
         <MobileNav />
       </View>

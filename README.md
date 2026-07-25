@@ -70,8 +70,11 @@ separate deployables only for language-boundary services (Python AI, Go workers)
 ### Local Setup
 
 ```bash
-# 1. Copy environment config
-cp .env.example .env
+# 1. Select an environment (builds .env.<env> = .env.example base + the <env>
+#    overlay, then activates it as .env). develop is the default.
+make use-env APP_ENV=dev          # or: staging | production
+#    Real staging/production never run from a file — secrets are injected via
+#    Vault / AWS Secrets Manager through Helm (QM-4, docs/specifications/08).
 
 # 2. Install dependencies
 pnpm install
@@ -90,11 +93,16 @@ make seed
 make dev
 ```
 
-Or use the all-in-one setup script:
+Or use the all-in-one setup script (activates `dev` by default; `APP_ENV=staging make setup` for another):
 
 ```bash
 make setup
 ```
+
+Switch the active environment at any time with `make use-env APP_ENV=<dev|staging|production>`
+— it regenerates `.env` from the base (`.env.example`) plus that environment's overlay
+(`.env.<env>.example`). `.env` is generated, never hand-edited; put machine-local secrets in the
+concrete `.env.<env>` file (all gitignored).
 
 ### Local run tiers (Docker Compose profiles)
 

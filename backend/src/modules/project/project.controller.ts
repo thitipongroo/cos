@@ -52,6 +52,14 @@ export class ProjectController {
     return this.projectService.list(dto);
   }
 
+  // Declared before @Get(':id') so the literal path "mine" is not captured as an :id param.
+  @Get('mine')
+  @ApiOperation({ summary: "The signed-in user's own projects (project_members) — JWT-scoped" })
+  @ApiResponse({ status: 200, description: 'The projects the caller is a member of' })
+  listMine() {
+    return this.projectService.listMine();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get project by ID' })
   @ApiParam({ name: 'id', format: 'uuid' })

@@ -118,6 +118,14 @@ export class ProjectService {
     return this.repo.list({ status: dto.status, type: dto.type, cursor: dto.cursor, limit });
   }
 
+  /**
+   * The signed-in user's own projects (projects they are a member of). Scoped by the JWT user_id, so
+   * a caller only ever sees their own projects — used by the SITE_ENGINEER home picker.
+   */
+  async listMine(): Promise<{ items: ProjectRow[] }> {
+    return { items: await this.repo.listByMember(this.userId) };
+  }
+
   async update(projectId: string, dto: UpdateProjectDto): Promise<ProjectRow> {
     const existing = await this.findById(projectId);
 

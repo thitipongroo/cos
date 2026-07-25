@@ -8,7 +8,7 @@ const LOCALE_FLAG: Record<Locale, string> = { th: 'th', en: 'gb' };
 /**
  * th/en language switcher (§20.5 / §20.6.2). Shows the current locale's national flag + code.
  * `className` overrides the default (light app-shell) styling so the same control can be dropped onto
- * the dark login surface (QM-3: default locale stays th-TH; this only lets the user switch).
+ * the dark login surface (default locale is en per PO 2026-07-26; this only lets the user switch).
  */
 export function LanguageSwitcher({ className }: { className?: string }) {
   const { locale, setLocale, t } = useI18n();

@@ -1,7 +1,10 @@
 # Construction OS — Makefile
 # Usage: make <target>
 
-.PHONY: help setup dev dev-backend dev-web dev-file dev-clean dev-ports-free dev-infra-ready test build migrate seed clean lint type-check docker-up docker-up-full docker-down
+.PHONY: help setup use-env dev dev-backend dev-web dev-file dev-clean dev-ports-free dev-infra-ready test build migrate seed clean lint type-check docker-up docker-up-full docker-down
+
+# Active environment for `use-env` (dev|staging|production). Override: make use-env APP_ENV=staging
+APP_ENV ?= dev
 
 # Dev ports: backend=3000, web=3001, file-service=3002
 DEV_PORTS := 3000 3001 3002
@@ -20,6 +23,20 @@ help: ## Show this help
 # ─── Development ──────────────────────────────────────────────────────────────
 setup: ## Initial local setup (copies .env, installs deps, starts Docker)
 	@bash scripts/setup/local-dev.sh
+
+use-env: ## Activate an environment's config: make use-env APP_ENV=dev|staging|production
+	@env="$(APP_ENV)"; \
+	case "$$env" in dev|staging|production) ;; *) \
+	  echo "APP_ENV must be dev|staging|production (got '$$env')"; exit 1;; esac; \
+	if [ ! -f ".env.$$env" ]; then \
+	  if [ ! -f ".env.$$env.example" ]; then \
+	    echo "Missing .env.$$env.example — cannot build .env.$$env"; exit 1; fi; \
+	  echo "==> Building .env.$$env  (.env.example base + .env.$$env.example overlay)"; \
+	  cat .env.example ".env.$$env.example" > ".env.$$env"; \
+	  echo "    Fill any REPLACE_ME secrets in .env.$$env (real staging/prod → Vault/SM)."; \
+	fi; \
+	cp ".env.$$env" .env; \
+	echo "$(GREEN)==> Active environment: $$env$(RESET)  (.env ← .env.$$env)"
 
 dev: dev-clean dev-infra-ready dev-ports-free ## Start all services in development mode
 	@# --ui=stream (passed to turbo, not the tasks): the turbo Rust TUI hides which task
