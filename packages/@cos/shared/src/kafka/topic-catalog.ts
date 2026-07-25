@@ -26,6 +26,8 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'construction.project.updated.v1': 'construction.project.updated.v1.avsc',
   'construction.project.status_changed.v1': 'construction.project.status_changed.v1.avsc',
   'construction.project.archived.v1': 'construction.project.archived.v1.avsc',
+  'construction.project.risk_raised.v1': 'construction.project.risk_raised.v1.avsc',
+  'construction.project.risk_status_changed.v1': 'construction.project.risk_status_changed.v1.avsc',
   'construction.boq.version_created.v1': 'construction.boq.version_created.v1.avsc',
   'construction.boq.version_approved.v1': 'construction.boq.version_approved.v1.avsc',
   'construction.boq.created.v1': 'construction.boq.created.v1.avsc',

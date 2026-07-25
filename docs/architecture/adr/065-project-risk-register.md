@@ -6,6 +6,11 @@ Date: 2026-07-20
 
 Accepted
 
+**Implementation note (2026-07-25):** the register itself — `projects.project_risk`, the four
+`/projects/{id}/risks` endpoints, RBAC, and the `RiskRaised` / `RiskStatusChanged` events — was pulled
+forward and built by product-owner decision. The **AI-suggested feed** (`source = AI_SUGGESTED`, from
+the Layer B delay-risk model) and the **web UX** (`/projects/{id}/risks` heat map) remain follow-ups.
+
 ## Context
 
 ADR-057 recorded a project risk register as a post-MVP gap. AI delay-risk forecasting exists (Layer B,

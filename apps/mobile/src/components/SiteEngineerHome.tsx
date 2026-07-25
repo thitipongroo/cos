@@ -11,15 +11,19 @@
 // the mockup's Daily Report / Safety Check tiles are SITE_WORKER workflows (master 3079) and Material
 // Req has no mobile flow at all, so they are not here (product-owner decision 2026-07-16).
 //
-// Deliberately absent from the mockup, all product-owner decisions of 2026-07-16:
-//   - Phase card ("Phase 2: Structural")  — no project-phase entity exists in §10/§11.
-//   - Time strip ("07:00 START / 18:00 EOD GOAL") — no shift-start data; and sitting under the % bar
-//     it read as though the bar measured time.
+// Mockup elements now present, each on its own backing decision:
+//   - Phase card — projects.project_phases (ADR-070); the card shows the derived current phase.
+//   - Issue number chip — site_ops.issues.issue_number, ISS-<year>-<seq> (ADR-069).
+//   - Blueprint grid background + progress-bar glow — a scoped §32.7 exception (ADR-071), by PO
+//     decision 2026-07-25 to carry the auth-screen "mission-critical" motif onto this landing screen.
+//
+// Still deliberately absent:
+//   - Time strip ("07:00 START / 18:00 EOD GOAL") — no shift/work-hours model, and shift features are
+//     post-MVP (§21-mvp-scope:82); awaiting a PO-defined model.
 //   - Voice FAB — <VoiceNoteButton /> is hold-to-record against a field; a tap-FAB "AI voice command"
-//     has no defined target action.
-//   - Issue codes (LOG-442) and "Sector A" — no backing field (§11:478 Issue is UUID-keyed).
-//   - Blueprint grid background, progress-bar glow, FAB glow, construction/architecture icons —
-//     §32.7:622-623 prohibits gradients, glow, and hard-hat/blueprint/gear imagery.
+//     has no defined target action, so it stays out until one is specified (ADR-071 scope note).
+//   - "Sector A" label — no backing field (§11 Issue is UUID-keyed).
+//   - FAB glow + hard-hat/construction icons — still §32.7-prohibited (outside the ADR-071 exception).
 //
 // The header avatar (Profile), the schedule verdict's "ตามแผน N%" ratio + three-band colour
 // (§32.12 Display), the four-tab dark nav (Home|Issues|Inspections|Reports, in MobileNav), and the
@@ -31,6 +35,7 @@ import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../api/client';
 import { getProjectProgress, getProjectPhases, type ProjectProgress } from '../api/projects';
+import { BlueprintGrid } from './BlueprintGrid';
 import { ProjectPicker } from './ProjectPicker';
 import { QuickActionCard } from './QuickActionCard';
 import { useI18n } from '../i18n';
@@ -169,213 +174,221 @@ export default function SiteEngineerHome() {
   const phase = currentPhase(phases);
 
   return (
-    <ScrollView
-      testID="site-engineer-home"
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-    >
-      {/* Brand / bell / avatar now live in the shared <TopBar /> (§32.7), rendered by (app)/_layout. */}
-      <ProjectPicker selectedId={projectId} onSelect={setProjectId} variant="dark" />
+    <View style={styles.root}>
+      {/* Blueprint grid backdrop (ADR-071 — a scoped §32.7 exception for this landing screen). */}
+      <BlueprintGrid />
+      <ScrollView
+        testID="site-engineer-home"
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+      >
+        {/* Brand / bell / avatar now live in the shared <TopBar /> (§32.7), rendered by (app)/_layout. */}
+        <ProjectPicker selectedId={projectId} onSelect={setProjectId} variant="dark" />
 
-      <View testID="progress-card" style={styles.card}>
-        <Text style={styles.cardLabel}>{t('home.engineer.progressTitle')}</Text>
-        {!hasProgressFigure(pct) ? (
-          <Text testID="progress-empty" style={styles.muted}>
-            {t('home.engineer.progressEmpty')}
+        <View testID="progress-card" style={styles.card}>
+          <Text style={styles.cardLabel}>{t('home.engineer.progressTitle')}</Text>
+          {!hasProgressFigure(pct) ? (
+            <Text testID="progress-empty" style={styles.muted}>
+              {t('home.engineer.progressEmpty')}
+            </Text>
+          ) : (
+            <>
+              <View style={styles.progressRow}>
+                <Text testID="progress-pct" style={styles.hero}>
+                  {Math.round(pct)}%
+                </Text>
+                {/* One-line verdict in its three-band colour: the status word carrying the Earned
+                  Schedule day-variance ("ช้ากว่าแผน 21 วัน"); on_track shows the word alone. */}
+                {progress?.status && colour ? (
+                  <Text
+                    testID="schedule-status"
+                    style={[styles.statusText, { color: SCHEDULE_COLOR[colour] }]}
+                  >
+                    {progress.status === 'on_track'
+                      ? t('home.engineer.onTrack')
+                      : t(STATUS_KEY[progress.status], {
+                          days: Math.abs(progress.scheduleDaysBehind ?? 0),
+                        })}
+                  </Text>
+                ) : null}
+              </View>
+              <View style={styles.track}>
+                <View style={[styles.fill, { width: `${progressBarWidth(pct)}%` }]} />
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* Current construction phase (ADR-070) — the mockup's phase card, now backed by real
+          project_phases data. Plain surface + text: no blueprint grid, gradient, or glow (§32.7). */}
+        {phase ? (
+          <View testID="phase-card" style={styles.phaseCard}>
+            <Text style={styles.cardLabel}>{t('home.engineer.phaseTitle')}</Text>
+            <Text testID="phase-name" style={styles.phaseName}>
+              {t('home.engineer.phaseSeq', { seq: phase.seq })}: {phase.name}
+            </Text>
+          </View>
+        ) : null}
+
+        <Text style={styles.sectionTitle}>{t('home.engineer.quickActions')}</Text>
+        <View style={styles.grid}>
+          <QuickActionCard
+            testID="qa-reports"
+            variant="dark"
+            icon={<MaterialIcons name="description" size={22} color={darkColors.primary} />}
+            label={t('home.engineer.reviewReports')}
+            onPress={() => router.push('/reports')}
+          />
+          {/* Inspections is not a tile — it is a bottom-nav tab for this role, so a shortcut to it
+            would only duplicate the tab bar (product-owner decision 2026-07-16). */}
+          <QuickActionCard
+            testID="qa-issues"
+            variant="dark"
+            icon={<MaterialIcons name="report-problem" size={22} color={darkColors.primary} />}
+            label={t('home.engineer.issues')}
+            badge={issues.length}
+            onPress={() => router.push('/issues')}
+          />
+        </View>
+        <View style={styles.grid}>
+          <QuickActionCard
+            testID="qa-photo"
+            variant="dark"
+            icon={<MaterialIcons name="photo-camera" size={22} color={darkColors.primary} />}
+            label={t('home.engineer.capturePhoto')}
+            onPress={() => router.push('/report')}
+          />
+          <QuickActionCard
+            testID="qa-material-request"
+            variant="dark"
+            icon={<MaterialIcons name="inventory-2" size={22} color={darkColors.primary} />}
+            label={t('home.engineer.materialRequest')}
+            onPress={() => router.push('/material-request')}
+          />
+        </View>
+
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>{t('home.engineer.activeIssues')}</Text>
+          {/* Worst level present ×N — follows the data rather than the mockup's hard-coded CRITICAL.
+            Label is the raw code (HIGH), matching the card's chip; the count is emphasized. */}
+          {topSev ? (
+            <CountBadge
+              testID="severity-count"
+              label={topSev.severity}
+              count={topSev.count}
+              unit={t('home.engineer.unit')}
+              colour={SEVERITY_COLOR[topSev.severity] ?? darkColors.muted}
+            />
+          ) : null}
+        </View>
+        {sortedIssues.length === 0 ? (
+          <Text testID="issues-empty" style={styles.muted}>
+            {t('home.engineer.noIssues')}
           </Text>
         ) : (
-          <>
-            <View style={styles.progressRow}>
-              <Text testID="progress-pct" style={styles.hero}>
-                {Math.round(pct)}%
-              </Text>
-              {/* One-line verdict in its three-band colour: the status word carrying the Earned
-                  Schedule day-variance ("ช้ากว่าแผน 21 วัน"); on_track shows the word alone. */}
-              {progress?.status && colour ? (
-                <Text
-                  testID="schedule-status"
-                  style={[styles.statusText, { color: SCHEDULE_COLOR[colour] }]}
-                >
-                  {progress.status === 'on_track'
-                    ? t('home.engineer.onTrack')
-                    : t(STATUS_KEY[progress.status], {
-                        days: Math.abs(progress.scheduleDaysBehind ?? 0),
-                      })}
-                </Text>
-              ) : null}
-            </View>
-            <View style={styles.track}>
-              <View style={[styles.fill, { width: `${progressBarWidth(pct)}%` }]} />
-            </View>
-          </>
-        )}
-      </View>
-
-      {/* Current construction phase (ADR-070) — the mockup's phase card, now backed by real
-          project_phases data. Plain surface + text: no blueprint grid, gradient, or glow (§32.7). */}
-      {phase ? (
-        <View testID="phase-card" style={styles.phaseCard}>
-          <Text style={styles.cardLabel}>{t('home.engineer.phaseTitle')}</Text>
-          <Text testID="phase-name" style={styles.phaseName}>
-            {t('home.engineer.phaseSeq', { seq: phase.seq })}: {phase.name}
-          </Text>
-        </View>
-      ) : null}
-
-      <Text style={styles.sectionTitle}>{t('home.engineer.quickActions')}</Text>
-      <View style={styles.grid}>
-        <QuickActionCard
-          testID="qa-reports"
-          variant="dark"
-          icon={<MaterialIcons name="description" size={22} color={darkColors.primary} />}
-          label={t('home.engineer.reviewReports')}
-          onPress={() => router.push('/reports')}
-        />
-        {/* Inspections is not a tile — it is a bottom-nav tab for this role, so a shortcut to it
-            would only duplicate the tab bar (product-owner decision 2026-07-16). */}
-        <QuickActionCard
-          testID="qa-issues"
-          variant="dark"
-          icon={<MaterialIcons name="report-problem" size={22} color={darkColors.primary} />}
-          label={t('home.engineer.issues')}
-          badge={issues.length}
-          onPress={() => router.push('/issues')}
-        />
-      </View>
-      <View style={styles.grid}>
-        <QuickActionCard
-          testID="qa-photo"
-          variant="dark"
-          icon={<MaterialIcons name="photo-camera" size={22} color={darkColors.primary} />}
-          label={t('home.engineer.capturePhoto')}
-          onPress={() => router.push('/report')}
-        />
-        <QuickActionCard
-          testID="qa-material-request"
-          variant="dark"
-          icon={<MaterialIcons name="inventory-2" size={22} color={darkColors.primary} />}
-          label={t('home.engineer.materialRequest')}
-          onPress={() => router.push('/material-request')}
-        />
-      </View>
-
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>{t('home.engineer.activeIssues')}</Text>
-        {/* Worst level present ×N — follows the data rather than the mockup's hard-coded CRITICAL.
-            Label is the raw code (HIGH), matching the card's chip; the count is emphasized. */}
-        {topSev ? (
-          <CountBadge
-            testID="severity-count"
-            label={topSev.severity}
-            count={topSev.count}
-            unit={t('home.engineer.unit')}
-            colour={SEVERITY_COLOR[topSev.severity] ?? darkColors.muted}
-          />
-        ) : null}
-      </View>
-      {sortedIssues.length === 0 ? (
-        <Text testID="issues-empty" style={styles.muted}>
-          {t('home.engineer.noIssues')}
-        </Text>
-      ) : (
-        sortedIssues.slice(0, 5).map((issue) => (
-          <TouchableOpacity
-            key={issue.issue_id}
-            testID={`issue-${issue.issue_id}`}
-            style={[
-              styles.row,
-              { borderLeftColor: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
-            ]}
-            onPress={() => router.push('/issues')}
-          >
-            <View style={styles.rowBody}>
-              <View style={styles.issueHead}>
-                {/* Human-readable ISS-<year>-<seq> (ADR-069) — the mockup's ID chip; null for
-                    pre-existing issues, in which case only the severity chip shows. */}
-                {issue.issue_number ? (
-                  <Text testID={`issue-${issue.issue_id}-number`} style={styles.issueNumber}>
-                    {issue.issue_number}
-                  </Text>
-                ) : null}
-                <Text
-                  style={[
-                    styles.chip,
-                    { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
-                  ]}
-                >
-                  {issue.severity}
-                </Text>
-              </View>
-              <Text style={styles.rowTitle} numberOfLines={2}>
-                {issue.title}
-              </Text>
-            </View>
-            {/* Chevron in a filled square, per the mockup (its bg-surface-variant button). */}
-            <View style={styles.chevronBox}>
-              <MaterialIcons name="chevron-right" size={20} color={darkColors.text} />
-            </View>
-          </TouchableOpacity>
-        ))
-      )}
-
-      <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>{t('home.engineer.upcomingTasks')}</Text>
-        {/* Overdue (red) and due-soon (amber) counts, each shown only when non-zero. */}
-        <View style={styles.urgencyRow}>
-          {urgency.overdue > 0 ? (
-            <CountBadge
-              testID="overdue-count"
-              label={t('home.engineer.overdueLabel')}
-              count={urgency.overdue}
-              unit={t('home.engineer.unit')}
-              colour={darkColors.danger}
-            />
-          ) : null}
-          {urgency.dueSoon > 0 ? (
-            <CountBadge
-              testID="due-soon-count"
-              label={t('home.engineer.dueSoonLabel')}
-              count={urgency.dueSoon}
-              unit={t('home.engineer.unit')}
-              colour={darkColors.warning}
-            />
-          ) : null}
-        </View>
-      </View>
-      {upcoming.length === 0 ? (
-        <Text testID="tasks-empty" style={styles.muted}>
-          {t('home.engineer.noTasks')}
-        </Text>
-      ) : (
-        upcoming.map((task) => {
-          // planned_start is non-null here (selectUpcomingTasks filters it), so the date and its
-          // urgency colour always resolve. Red once the start is past, amber within three days.
-          const urgency = task.planned_start ? taskStartUrgency(task.planned_start, now) : 'normal';
-          return (
-            <View key={task.task_id} testID={`task-${task.task_id}`} style={styles.row}>
+          sortedIssues.slice(0, 5).map((issue) => (
+            <TouchableOpacity
+              key={issue.issue_id}
+              testID={`issue-${issue.issue_id}`}
+              style={[
+                styles.row,
+                { borderLeftColor: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
+              ]}
+              onPress={() => router.push('/issues')}
+            >
               <View style={styles.rowBody}>
-                <Text style={styles.rowTitle} numberOfLines={2}>
-                  {task.task_name}
-                </Text>
-                {task.planned_start ? (
+                <View style={styles.issueHead}>
+                  {/* Human-readable ISS-<year>-<seq> (ADR-069) — the mockup's ID chip; null for
+                    pre-existing issues, in which case only the severity chip shows. */}
+                  {issue.issue_number ? (
+                    <Text testID={`issue-${issue.issue_id}-number`} style={styles.issueNumber}>
+                      {issue.issue_number}
+                    </Text>
+                  ) : null}
                   <Text
-                    testID={`task-${task.task_id}-start`}
-                    style={[styles.muted, { color: URGENCY_COLOR[urgency] }]}
+                    style={[
+                      styles.chip,
+                      { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
+                    ]}
                   >
-                    {t('home.engineer.starts', { date: formatDate(task.planned_start) })}
+                    {issue.severity}
                   </Text>
-                ) : null}
+                </View>
+                <Text style={styles.rowTitle} numberOfLines={2}>
+                  {issue.title}
+                </Text>
               </View>
-            </View>
-          );
-        })
-      )}
-    </ScrollView>
+              {/* Chevron in a filled square, per the mockup (its bg-surface-variant button). */}
+              <View style={styles.chevronBox}>
+                <MaterialIcons name="chevron-right" size={20} color={darkColors.text} />
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionTitle}>{t('home.engineer.upcomingTasks')}</Text>
+          {/* Overdue (red) and due-soon (amber) counts, each shown only when non-zero. */}
+          <View style={styles.urgencyRow}>
+            {urgency.overdue > 0 ? (
+              <CountBadge
+                testID="overdue-count"
+                label={t('home.engineer.overdueLabel')}
+                count={urgency.overdue}
+                unit={t('home.engineer.unit')}
+                colour={darkColors.danger}
+              />
+            ) : null}
+            {urgency.dueSoon > 0 ? (
+              <CountBadge
+                testID="due-soon-count"
+                label={t('home.engineer.dueSoonLabel')}
+                count={urgency.dueSoon}
+                unit={t('home.engineer.unit')}
+                colour={darkColors.warning}
+              />
+            ) : null}
+          </View>
+        </View>
+        {upcoming.length === 0 ? (
+          <Text testID="tasks-empty" style={styles.muted}>
+            {t('home.engineer.noTasks')}
+          </Text>
+        ) : (
+          upcoming.map((task) => {
+            // planned_start is non-null here (selectUpcomingTasks filters it), so the date and its
+            // urgency colour always resolve. Red once the start is past, amber within three days.
+            const urgency = task.planned_start
+              ? taskStartUrgency(task.planned_start, now)
+              : 'normal';
+            return (
+              <View key={task.task_id} testID={`task-${task.task_id}`} style={styles.row}>
+                <View style={styles.rowBody}>
+                  <Text style={styles.rowTitle} numberOfLines={2}>
+                    {task.task_name}
+                  </Text>
+                  {task.planned_start ? (
+                    <Text
+                      testID={`task-${task.task_id}-start`}
+                      style={[styles.muted, { color: URGENCY_COLOR[urgency] }]}
+                    >
+                      {t('home.engineer.starts', { date: formatDate(task.planned_start) })}
+                    </Text>
+                  ) : null}
+                </View>
+              </View>
+            );
+          })
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: darkColors.bg },
+  // The bg lives on the root so the BlueprintGrid (ADR-071) shows through the ScrollView's gaps.
+  root: { flex: 1, backgroundColor: darkColors.bg },
+  screen: { flex: 1, backgroundColor: 'transparent' },
   content: {
     padding: spacing.md,
     gap: spacing.md,
@@ -421,11 +434,20 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: darkColors.elevated,
-    overflow: 'hidden',
+    // No overflow:hidden — it would clip the fill's glow (ADR-071); the fill rounds its own corners.
     marginTop: spacing.xs,
   },
-  // Flat fill: §32.7:623 prohibits the glow the mockup puts on this bar.
-  fill: { height: '100%', backgroundColor: darkColors.primary },
+  // Glow on the progress fill (ADR-071 — a scoped §32.7 exception, per the mockup).
+  fill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: darkColors.primary,
+    shadowColor: darkColors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 6,
+    elevation: 6,
+  },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: {
     fontSize: typography.label.fontSize,

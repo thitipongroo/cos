@@ -30,6 +30,10 @@ import { AssetsRepository } from './assets/assets.repository';
 import { PhasesController } from './phases/phases.controller';
 import { PhasesService } from './phases/phases.service';
 import { PhasesRepository } from './phases/phases.repository';
+// Project risk register (ADR-065). CRUD + status, emits RiskRaised / RiskStatusChanged.
+import { RisksController } from './risks/risks.controller';
+import { RisksService } from './risks/risks.service';
+import { RisksRepository } from './risks/risks.repository';
 
 @Module({
   imports: [TenantModule],
@@ -42,6 +46,7 @@ import { PhasesRepository } from './phases/phases.repository';
     UnitsController,
     AssetsController,
     PhasesController,
+    RisksController,
   ],
   providers: [
     ProjectService,
@@ -60,6 +65,8 @@ import { PhasesRepository } from './phases/phases.repository';
     AssetsRepository,
     PhasesService,
     PhasesRepository,
+    RisksService,
+    RisksRepository,
   ],
   exports: [ProjectService],
 })

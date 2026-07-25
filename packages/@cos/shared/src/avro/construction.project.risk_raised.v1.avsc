@@ -1,0 +1,30 @@
+{
+  "type": "record",
+  "name": "ProjectRiskRaisedEvent",
+  "namespace": "com.constructionos.events.construction",
+  "doc": "construction.project.risk_raised.v1 — Project risk register (ADR-065)",
+  "fields": [
+    { "name": "event_id",       "type": "string" },
+    { "name": "event_type",     "type": "string" },
+    { "name": "event_version",  "type": "string" },
+    { "name": "tenant_id",      "type": "string" },
+    { "name": "actor_id",       "type": "string" },
+    { "name": "occurred_at",    "type": "string" },
+    { "name": "correlation_id", "type": "string" },
+    { "name": "trace_id",       "type": ["null", "string"], "default": null },
+    { "name": "span_id",        "type": ["null", "string"], "default": null },
+    { "name": "payload", "type": {
+      "type": "record", "name": "ProjectRiskRaisedPayload",
+      "fields": [
+        { "name": "project_id", "type": "string", "doc": "UUID" },
+        { "name": "risk_id",    "type": "string", "doc": "UUID" },
+        { "name": "title",      "type": "string" },
+        { "name": "category",   "type": "string" },
+        { "name": "likelihood", "type": "int" },
+        { "name": "impact",     "type": "int" },
+        { "name": "risk_score", "type": "int", "doc": "likelihood * impact (1-25)" },
+        { "name": "source",     "type": "string", "doc": "MANUAL or AI_SUGGESTED" }
+      ]
+    }}
+  ]
+}
