@@ -1,0 +1,282 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Construction OS - Site Issues</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary": "#2b3041",
+                    "dark-surface": "#0F172A",
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "outline-variant": "#434655",
+                    "surface-container": "#102034",
+                    "surface-bright": "#2a3a4f",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface": "#031427",
+                    "on-tertiary-fixed": "#161b2b",
+                    "background": "#031427",
+                    "inverse-primary": "#0053db",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-primary-container": "#eeefff",
+                    "on-primary": "#002a78",
+                    "on-secondary": "#003640",
+                    "primary": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "mobile-warning": "#FF9500",
+                    "tertiary-container": "#686c80",
+                    "on-surface": "#d3e4fe",
+                    "surface-variant": "#26364a",
+                    "mobile-success": "#00C853",
+                    "on-secondary-container": "#00424e",
+                    "on-primary-fixed": "#00174b",
+                    "cos-blue": "#2563EB",
+                    "primary-container": "#2563eb",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-high": "#1b2b3f",
+                    "on-error-container": "#ffdad6",
+                    "mobile-danger": "#FF3B30",
+                    "inverse-on-surface": "#213145",
+                    "cos-navy": "#0B1020",
+                    "error-container": "#93000a",
+                    "on-tertiary-container": "#eeefff",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-lowest": "#000f21",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-highest": "#26364a",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-background": "#d3e4fe",
+                    "mobile-primary": "#0066FF",
+                    "on-error": "#690005",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "error": "#ffb4ab",
+                    "cos-white": "#F8FAFC",
+                    "on-secondary-fixed": "#001f26",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "secondary": "#4cd7f6",
+                    "dark-bg": "#020617",
+                    "secondary-container": "#03b5d3",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-dim": "#031427",
+                    "tertiary": "#c1c5dc",
+                    "secondary-fixed": "#acedff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "cos-cyan": "#06B6D4",
+                    "sync-active": "#FFD60A",
+                    "outline": "#8d90a0"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "mobile-touch-target": "52px",
+                    "web-space-8": "32px",
+                    "web-base": "4px",
+                    "mobile-edge": "24px",
+                    "web-space-4": "16px",
+                    "web-space-3": "12px",
+                    "web-space-2": "8px",
+                    "web-space-1": "4px"
+            },
+            "fontFamily": {
+                    "mobile-text-body": ["Inter Tight"],
+                    "mobile-text-label": ["Inter Tight"],
+                    "mobile-text-hero": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .issue-card {
+            transition: transform 0.1s ease, background-color 0.1s ease;
+        }
+        .issue-card:active {
+            transform: scale(0.98);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface overflow-x-hidden">
+<!-- Top AppBar -->
+<header class="w-full top-0 sticky z-40 bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge h-mobile-touch-target px-4"><div class="flex items-center gap-3"><div class="flex items-center gap-2"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuANbO70cdtoPYd3vwp9Su3KI7xb0i2kOBPAB5UrMvGr21uHJDq19Ltc-W8idzi7BdL9CN7uZRngvwlMYrlnFvrwq3IRpJqJwU8uCahTrStSuMirJN_aL8eDv504AGWtUQVVOSRAqoeLWiVEvxKwMDy6wlISvrvWiepebI4rI-2_DjLJbEsT2e87jT-GbcgD3R3f_946_X22WX1oZ5t9KfKhFCHhI6DDsggi2HbjfDUl18AaDFoDH_LV2V32ueluC3YjVdhQxHnR4S4" alt="Construction OS Logo" class="w-6 h-6 object-contain"><span class="font-mobile-text-label text-mobile-text-label font-bold text-primary tracking-wider uppercase">CONSTRUCTION OS</span></div></div><div class="flex items-center gap-4 pr-4"><span class="material-symbols-outlined text-on-surface-variant active:transition-transform scale-95">search</span><div class="w-8 h-8 rounded-full border border-outline-variant/30 overflow-hidden flex-shrink-0 active:scale-95 transition-transform">
+  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&amp;fit=crop&amp;q=80&amp;w=100&amp;h=100" alt="Alex Rivers Profile" class="w-full h-full object-cover">
+</div></div></header>
+<!-- Filter Section (Horizontal Scroll) -->
+<div class="sticky top-[52px] z-30 bg-surface/95 backdrop-blur-md py-4 px-mobile-edge border-b border-outline-variant/10">
+<div class="flex gap-2 overflow-x-auto custom-scrollbar no-scrollbar">
+<button class="px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container font-mobile-text-label text-mobile-text-label whitespace-nowrap h-mobile-touch-target">ALL</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-mobile-text-label text-mobile-text-label whitespace-nowrap h-mobile-touch-target">CRITICAL</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-mobile-text-label text-mobile-text-label whitespace-nowrap h-mobile-touch-target">HIGH</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-mobile-text-label text-mobile-text-label whitespace-nowrap h-mobile-touch-target">OPEN</button>
+<button class="px-4 py-1.5 rounded-full bg-surface-variant text-on-surface-variant font-mobile-text-label text-mobile-text-label whitespace-nowrap h-mobile-touch-target">RESOLVED</button>
+</div>
+</div>
+<!-- Main Content Canvas -->
+<main class="px-mobile-edge pt-4 pb-32 space-y-4">
+<!-- AI Insight Module (Briefly mentioned for branding context) -->
+<div class="p-4 rounded-xl bg-cos-cyan/5 border-l-4 border-cos-cyan flex items-start gap-3">
+<span class="material-symbols-outlined text-cos-cyan" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div>
+<p class="font-mobile-text-label text-mobile-text-label text-cos-cyan mb-1">AI INSIGHT</p>
+<p class="font-mobile-text-body text-mobile-text-body text-on-surface-variant text-sm">3 high-priority issues detected in Sector B. Oxidation risk increasing due to humidity levels.</p><div class="mt-2 flex flex-wrap gap-3 items-center"><span class="text-[10px] font-bold text-cos-cyan uppercase tracking-wider">Confidence Score: 94%</span><span class="text-[10px] text-cos-cyan/70 uppercase tracking-wider">Data Source: BIM &amp; Sensor Telemetry</span></div>
+</div>
+</div>
+<!-- Issue List -->
+<div class="space-y-3">
+<!-- Issue Item 1: Critical -->
+<div class="issue-card bg-surface-container-high border border-outline-variant/20 rounded-xl overflow-hidden shadow-sm flex">
+<div class="w-1.5 bg-mobile-danger"></div>
+<div class="flex-1 p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant opacity-70">IS-4402</span>
+<div class="flex items-center gap-1.5"><span class="text-mobile-success text-[10px] font-bold uppercase tracking-wider">SYNCED</span><span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span></div>
+</div>
+<h3 class="font-mobile-text-body font-bold text-on-surface mb-1">Exposed Rebar Oxidation</h3>
+<div class="flex flex-wrap gap-2 items-center text-on-surface-variant text-xs">
+<span class="px-2 py-0.5 rounded bg-mobile-danger/20 text-mobile-danger font-bold">CRITICAL</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Sector B - Pier 4</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">history</span> 2h ago</span>
+</div>
+</div>
+</div>
+<!-- Issue Item 2: High -->
+<div class="issue-card bg-surface-container-high border border-outline-variant/20 rounded-xl overflow-hidden shadow-sm flex">
+<div class="w-1.5 bg-mobile-warning"></div>
+<div class="flex-1 p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant opacity-70">IS-4398</span>
+<div class="flex items-center gap-1.5"><span class="text-sync-pending text-[10px] font-bold uppercase tracking-wider">PENDING</span><span class="material-symbols-outlined text-sync-pending text-sm">sync</span></div>
+</div>
+<h3 class="font-mobile-text-body font-bold text-on-surface mb-1">Incomplete Scaffolding Anchor</h3>
+<div class="flex flex-wrap gap-2 items-center text-on-surface-variant text-xs">
+<span class="px-2 py-0.5 rounded bg-mobile-warning/20 text-mobile-warning font-bold">HIGH</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Main Span - West</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">history</span> 5h ago</span>
+</div>
+</div>
+</div>
+<!-- Issue Item 3: Medium -->
+<div class="issue-card bg-surface-container-high border border-outline-variant/20 rounded-xl overflow-hidden shadow-sm flex">
+<div class="w-1.5 bg-cos-blue"></div>
+<div class="flex-1 p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant opacity-70">IS-4395</span>
+<div class="flex items-center gap-1.5"><span class="text-mobile-success text-[10px] font-bold uppercase tracking-wider">SYNCED</span><span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span></div>
+</div>
+<h3 class="font-mobile-text-body font-bold text-on-surface mb-1">Missing Safety Signage</h3>
+<div class="flex flex-wrap gap-2 items-center text-on-surface-variant text-xs">
+<span class="px-2 py-0.5 rounded bg-cos-blue/20 text-cos-blue font-bold">MEDIUM</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Access Point 2</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">history</span> Yesterday</span>
+</div>
+</div>
+</div>
+<!-- Issue Item 4 with Image Placeholder -->
+<div class="issue-card bg-surface-container-high border border-outline-variant/20 rounded-xl overflow-hidden shadow-sm flex flex-col">
+<div class="h-32 w-full bg-cover bg-center" data-alt="A professional high-resolution close-up photo of a construction site issue where concrete foundation shows early hairline cracking. The lighting is harsh and technical, emphasizing the textures of the grey concrete against a dark, industrial site background. The style is ultra-modern, clean, and utilitarian, shot from a site engineer's perspective." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAORQiL9S6WeRrVrlw585rWMeAGnRh27D-G5wMmxr7wSEMKYOLmteXD1gXBALSFgy8Q076E0rXguV0SyCgawvU4Rip2zzNgkXTvcrktSaCb4pdHorWjCeKBH6LlGRqpbNmxsFZVBE4PEOFsGFnNLPjBrNO-d4LtXmKoPTUUUp0E48D047tkjsqSQfpdCflBALq-2zZrGITLbPtnuusOaaMGAG2E-5Vpzfo7i0oZ5P4zBfbuHIfhRmc4Jas-Q1jROKV6Gn-Wp3uORtY')"></div>
+<div class="flex relative">
+<div class="w-1.5 bg-mobile-warning h-full absolute left-0 top-0"></div>
+<div class="flex-1 p-4 pl-5">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant opacity-70">IS-4392</span>
+<div class="flex items-center gap-1.5"><span class="text-mobile-success text-[10px] font-bold uppercase tracking-wider">SYNCED</span><span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span></div>
+</div>
+<h3 class="font-mobile-text-body font-bold text-on-surface mb-1">Hairline Crack - Sector A Slab</h3>
+<div class="flex flex-wrap gap-2 items-center text-on-surface-variant text-xs">
+<span class="px-2 py-0.5 rounded bg-mobile-warning/20 text-mobile-warning font-bold">HIGH</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Sector A</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Issue Item 5 -->
+<div class="issue-card bg-surface-container-high border border-outline-variant/20 rounded-xl overflow-hidden shadow-sm flex">
+<div class="w-1.5 bg-mobile-success"></div>
+<div class="flex-1 p-4">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mobile-text-label text-mobile-text-label text-on-surface-variant opacity-70">IS-4380</span>
+<div class="flex items-center gap-1.5"><span class="text-mobile-success text-[10px] font-bold uppercase tracking-wider">RESOLVED</span><span class="material-symbols-outlined text-mobile-success text-sm" style="font-variation-settings: &quot;FILL&quot; 1;">task_alt</span></div>
+</div>
+<h3 class="font-mobile-text-body font-bold text-on-surface-variant line-through opacity-50 mb-1">Debris Removal Required</h3>
+<div class="flex flex-wrap gap-2 items-center text-on-surface-variant text-xs opacity-60">
+<span class="px-2 py-0.5 rounded bg-surface-variant text-on-surface-variant font-bold">RESOLVED</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">location_on</span> Lift Shaft 3</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed right-6 bottom-[92px] w-[56px] h-[56px] bg-primary text-on-primary rounded-xl shadow-xl flex items-center justify-center active:scale-95 transition-transform z-50">
+<span class="material-symbols-outlined text-2xl font-bold">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface dark:bg-dark-surface border-t border-outline-variant/30 shadow-lg flex justify-around items-center h-[72px] px-2 pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span class="font-mobile-text-label text-mobile-text-label">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">view_in_ar</span>
+<span class="font-mobile-text-label text-mobile-text-label">BIM</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-mobile-text-label text-mobile-text-label font-bold">Issues</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="font-mobile-text-label text-mobile-text-label">Photos</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">more_horiz</span>
+<span class="font-mobile-text-label text-mobile-text-label">More</span>
+</a>
+</nav>
+<script>
+        // Simple ripple effect or interaction feedback logic could go here
+        document.querySelectorAll('.issue-card').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.classList.add('bg-surface-variant/40');
+            });
+            card.addEventListener('touchend', () => {
+                card.classList.remove('bg-surface-variant/40');
+            });
+        });
+    </script>
+
+
+
+
+</body></html>

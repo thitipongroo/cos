@@ -1,0 +1,306 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>สร้างกลุ่มใหม่ - Construction OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        /* Custom scrollbar for horizontal chips */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Industrial high-contrast focus */
+        .focus-industrial:focus-within {
+            outline: 2px solid #b4c5ff;
+            outline-offset: 2px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-lowest": "#000f21",
+                      "surface-container-low": "#0b1c30",
+                      "surface-container": "#102034",
+                      "on-surface": "#d3e4fe",
+                      "error-container": "#93000a",
+                      "on-primary-container": "#eeefff",
+                      "on-secondary-fixed": "#001f26",
+                      "on-secondary": "#003640",
+                      "primary": "#b4c5ff",
+                      "inverse-on-surface": "#213145",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "primary-fixed": "#dbe1ff",
+                      "inverse-surface": "#d3e4fe",
+                      "on-secondary-container": "#00424e",
+                      "on-error": "#690005",
+                      "tertiary-fixed": "#dee1f9",
+                      "inverse-primary": "#0053db",
+                      "secondary-container": "#03b5d3",
+                      "background": "#031427",
+                      "surface-container-high": "#1b2b3f",
+                      "secondary-fixed": "#acedff",
+                      "on-error-container": "#ffdad6",
+                      "on-surface-variant": "#c3c6d7",
+                      "primary-container": "#2563eb",
+                      "mobile-warning": "#FF9500",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "outline-variant": "#434655",
+                      "outline": "#8d90a0",
+                      "sync-active": "#FFD60A",
+                      "surface": "#031427",
+                      "dark-surface": "#0F172A",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "mobile-danger": "#FF3B30",
+                      "mobile-primary": "#0066FF",
+                      "secondary": "#4cd7f6",
+                      "on-tertiary-fixed": "#161b2b",
+                      "on-primary-fixed": "#00174b",
+                      "error": "#ffb4ab",
+                      "surface-tint": "#b4c5ff",
+                      "surface-bright": "#2a3a4f",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-background": "#d3e4fe",
+                      "on-tertiary-container": "#eeefff",
+                      "dark-bg": "#020617",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "tertiary-container": "#686c80",
+                      "surface-container-highest": "#26364a",
+                      "on-primary": "#002a78",
+                      "mobile-success": "#00C853",
+                      "on-tertiary": "#2b3041",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-dim": "#031427",
+                      "tertiary": "#c1c5dc",
+                      "surface-variant": "#26364a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "4px",
+                      "lg": "8px",
+                      "xl": "12px",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "web-margin": "32px",
+                      "space-4": "16px",
+                      "edge-mobile": "24px",
+                      "space-2": "8px",
+                      "touch-target": "52px",
+                      "space-1": "4px",
+                      "space-3": "12px"
+              },
+              "fontFamily": {
+                      "tiny-web": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "display-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-mobile text-body-mobile min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface sticky top-0 z-50 flex justify-between items-center px-edge-mobile h-16 w-full bg-surface-container-high shadow-sm">
+<div class="flex items-center gap-space-3">
+<button class="material-symbols-outlined text-primary hover:bg-surface-container-highest p-2 rounded-full transition-transform duration-150 active:scale-95">arrow_back</button>
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuQIhLkuuWRd_RmPnFS09nlIgGCeSXkwjXQ4q9kK3cbToK3cYZCR_HQak66kjARFM70rhR7UPSQiErWhytsxdgy2GIGU36PSVMTJKFCpJJ96tQvw6ssN0WB_JN7AgNjaEScTlzn1V1PWuwBJJvfGtB0uM13hv6iFrtZOU9ovOfTsgSWz1-od32umHipaznLFcS0PAN0n2d2zHKPWuIIl0KEO9CEqWRQQclS1VCct7TBLMQQsGEMPis9ZIhxm46BXP1mwhmePSyvMA" alt="COS Brand Icon" class="w-7 h-7 object-contain mr-space-2"><h1 class="font-h1-web text-h1-web-mobile font-bold text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a female construction project manager wearing a white hard hat and safety glasses, set against a blurred urban construction site at dusk. The lighting is crisp and cinematic with a high-contrast industrial color palette dominated by deep blues and bright highlights." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4NLMWAHfaFu0O6iowUuXnCBLHGdP66I2cQyPqtt0HsNYmM5IjAg2gdx-M1h8F76I-F5eLT_NVf1yVX7FKT4QrxylEyhC2lu5QVqykHthNpsU8jsptWUCRxv_iS7AVO3x1HSNw0Fz9uHi49PtjEQ9-kL-Nnz_mWs8CnJn2VKObU5kFbxAhtH5X2Qd0uk8K_tXaIdCWRwQXjwBUubHjZ21mhsQdgb98gkZV3VjKQsi1hBBE3rRnG6ux5qDjQYt_AwfYe1b8O2spzMA">
+</div>
+</header>
+<main class="flex-1 flex flex-col pb-32">
+<!-- Search Bar Section -->
+<div class="px-edge-mobile pt-space-4 pb-space-2 sticky top-16 bg-background z-40">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full h-12 pl-12 pr-4 bg-surface-container border-none rounded-lg text-on-surface placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary-container transition-all" placeholder="ค้นหาสมาชิก..." type="text">
+</div>
+</div>
+<!-- Group & Project Info Card -->
+<div class="mx-edge-mobile mt-space-3 p-space-4 bg-surface-container-low border border-outline-variant rounded-xl space-y-space-4">
+<div class="space-y-space-1">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant px-1">ชื่อกลุ่ม</label>
+<input class="w-full h-12 px-4 bg-surface border border-outline-variant rounded-lg focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface" placeholder="ระบุชื่อกลุ่มใหม่..." type="text">
+</div>
+<div class="space-y-space-1">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant px-1">โครงการ</label>
+<div class="relative">
+<select class="w-full h-12 pl-4 pr-10 bg-surface border border-outline-variant rounded-lg appearance-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-on-surface">
+<option>Skyline Tower A</option>
+<option>Grand Marina Bridge</option>
+<option>Industrial Park East</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Selected Members Horizontal List -->
+<div class="mt-space-4 border-b border-outline-variant pb-space-2">
+<div class="px-edge-mobile flex items-center justify-between mb-space-2">
+<h3 class="font-label-mobile text-label-mobile text-primary">เลือกสมาชิกแล้ว (3)</h3>
+</div>
+<div class="flex gap-space-3 px-edge-mobile overflow-x-auto no-scrollbar py-1">
+<!-- Selected Chip 1 -->
+<div class="flex-shrink-0 flex items-center gap-2 bg-secondary-container text-on-secondary-container px-3 py-1.5 rounded-full border border-secondary">
+<div class="w-6 h-6 rounded-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a male site foreman wearing a yellow high-visibility vest and a dusty hard hat. The aesthetic is gritty and realistic, focusing on textures of concrete and steel in the background with a focused, professional expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhRZL5YM7XNcTvj2ePZOQJgZNu6N1qT_e85BVerJg6OWr0tyyBMzPRUW5vvGSTLYTuYvAvB06-6s11dmUq3mcsNFGmd5K_wgwrWcToSk1uumNmOtX8jEnyA62Ml8B8Qf_7AtTtA8Czi06SJdORt2n8U4NemG89OBDg_4ttkAtJaJZh8CrENRzCVxEwN1NXx1NtxDRMU89RChrJQTs1rxAnQH4wIZMj2JFJlKd5gewI_0flUolOyXQ3mfLSlTLkalwCGwk9nWc0fUY">
+</div>
+<span class="text-tiny-web font-tiny-web">มานะ สมชาย</span>
+<span class="material-symbols-outlined text-[16px]">close</span>
+</div>
+<!-- Selected Chip 2 -->
+<div class="flex-shrink-0 flex items-center gap-2 bg-secondary-container text-on-secondary-container px-3 py-1.5 rounded-full border border-secondary">
+<div class="w-6 h-6 rounded-full overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A portrait of an architect holding a digital tablet in a modern construction office. Bright, clean lighting with a professional atmosphere, featuring blueprints and architectural models in the background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwO6Ud6u8OfWjKV3SQRu_Ss-Ba7C2C7mSB5Ys6XkMEguLTBGFQycu1KnxSIa25lN0WfY79E1ydN0OcSTUOLLfzowcoBw7woAUVlTeFISYaBwvUQR08CS2-9yrWLd0GLUSoo7EDLahcU35DjI9BHP4rGVliPtHJz0-1MlZvX2C8u4U7WVVXYN3CNlgoDhyYHaXyUnRpzTCpftudzmX9-RGyEj5XIZ7Orot8d4HInKJAIhsofUXDaNTgFUwPzUnMawNWodLfc9tqkRg">
+</div>
+<span class="text-tiny-web font-tiny-web">วิภาวรรณ</span>
+<span class="material-symbols-outlined text-[16px]">close</span>
+</div>
+<!-- Selected Chip 3 -->
+<div class="flex-shrink-0 flex items-center gap-2 bg-secondary-container text-on-secondary-container px-3 py-1.5 rounded-full border border-secondary">
+<div class="w-6 h-6 rounded-full overflow-hidden bg-primary-container flex items-center justify-center text-[10px] text-on-primary-container">
+                        JS
+                    </div>
+<span class="text-tiny-web font-tiny-web">John S.</span>
+<span class="material-symbols-outlined text-[16px]">close</span>
+</div>
+</div>
+</div>
+<!-- Contact List -->
+<div class="flex-1 overflow-y-auto px-edge-mobile pt-space-4">
+<!-- Section: Project Team -->
+<div class="mb-space-4">
+<div class="flex items-center gap-2 text-on-surface-variant mb-space-3">
+<span class="material-symbols-outlined text-[18px]">engineering</span>
+<h2 class="font-label-mobile text-label-mobile uppercase tracking-wider">ทีมงานโครงการ (Project Team)</h2>
+</div>
+<div class="space-y-space-2">
+<!-- Contact Item 1 -->
+<label class="flex items-center gap-space-3 p-space-3 bg-surface-container rounded-xl border border-transparent active:bg-surface-container-highest transition-colors cursor-pointer border-primary/30 bg-surface-container-highest">
+<input checked="" class="w-6 h-6 rounded border-outline-variant text-mobile-primary focus:ring-primary bg-surface-container-low" type="checkbox">
+<div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Portrait of a young civil engineer standing in front of a massive crane at a construction site. Daylight is golden and warm, casting long shadows and highlighting the high-visibility orange gear and silver reflective strips." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlpmgJvmc2Fl17Zol2PyRUnIi1I_PEGwkkj7PxZKjov4fk4d5ZCkh2pA1Ot-yXSmgSvUQwRiWyJ7Ruxcf-7UMyoco1QhY70dAPDQEDwlYO_ZaZ_MEOiBkB_PAUHSTEcy80g3xoH6ln5VlP_aLDWrt8rKHIN60HRpcmARDOuWhaJ-Rj7_Wr9epobgNqKR_v1SDdrBhPGjXtM-j46DdUh3XCJiIyKUpY-WCHBSnNjyzJ8UIWI--aNSNVPFBow9-yED5FXPlqsa3yP8k">
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-mobile text-on-surface truncate">พงศกร รัตนพงษ์</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Site Engineer</p>
+</div>
+<div class="text-mobile-success flex items-center">
+<span class="material-symbols-outlined text-[16px]">radio_button_checked</span>
+</div>
+</label>
+<!-- Contact Item 2 -->
+<label class="flex items-center gap-space-3 p-space-3 bg-surface-container rounded-xl border border-transparent active:bg-surface-container-highest transition-colors cursor-pointer">
+<input class="w-6 h-6 rounded border-outline-variant text-mobile-primary focus:ring-primary bg-surface-container-low" type="checkbox">
+<div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A focused safety officer in a high-vis vest and hard hat inspecting a site with a clipboard. The image is crisp, with a cool industrial color palette of blues and grays, emphasizing a professional and systematic environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwuu3UH8sdMf9wRBDNC_zQK6OSRKcWzxw_8Fpw0kMfhZqrNKs_AqtgIq_JLEPdcorLdkTzm_nDI5qgfXtp7kIn_PTatRIrBxlduOm115j_zhVFVWpxatMtvzO0hXc245uCd6dC9M1yjB-VaWQtm5W8cLFTnsEBRmBFxNdrIrMhZ4vIxWetlPbrG4sqU5BYWPnMiKK7SmeTIr3TVHnlX1eK60o5guSPdI4qUeP2MtDLc0PJQFCfIxUuP5EE_RivTv6Bpxlwlp4_gJ4">
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-mobile text-on-surface truncate">สมพร มั่งมี</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Safety Officer</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Section: Recent Contacts -->
+<div class="mb-space-4">
+<div class="flex items-center gap-2 text-on-surface-variant mb-space-3">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<h2 class="font-label-mobile text-label-mobile uppercase tracking-wider">ติดต่อล่าสุด (Recent)</h2>
+</div>
+<div class="space-y-space-2">
+<!-- Contact Item 3 -->
+<label class="flex items-center gap-space-3 p-space-3 bg-surface-container rounded-xl border border-transparent active:bg-surface-container-highest transition-colors cursor-pointer border-primary/30 bg-surface-container-highest">
+<input checked="" class="w-6 h-6 rounded border-outline-variant text-mobile-primary focus:ring-primary bg-surface-container-low" type="checkbox">
+<div class="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A macro detail shot of a worker's hands using a heavy-duty industrial tool on a steel beam. The focus is sharp on the tool and material, with a shallow depth of field. High-contrast lighting brings out the metallic textures and sparks." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBuF-4j8fruDvq1LYZneJb_bS68ZqUiwuwQPgml4ZlGCBr6AxN-lZpPeualpKvXtzlEGJDVHCjvv51uDMKJCNiAhJwfsyKTe0aJ8hOAFRYFD03-uN1xkmQ_eXEPIktquG2oHyx_pYrJWawfRrTYww5d4-fw0DzDbXdR5fe2HReRmyUjaIPBlBsIRCWLTK9Jqs7SjAEJ4k5fjUapKwEqTXi_Yd-b_W0DkNA-lfh0Z3S5VZvuRfpa3jdAO4typeEjIydPC8CqNya-so">
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-mobile text-on-surface truncate">ชัยพล อุดมสุข</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Structural Foreman</p>
+</div>
+</label>
+<!-- Contact Item 4 -->
+<label class="flex items-center gap-space-3 p-space-3 bg-surface-container rounded-xl border border-transparent active:bg-surface-container-highest transition-colors cursor-pointer">
+<input class="w-6 h-6 rounded border-outline-variant text-mobile-primary focus:ring-primary bg-surface-container-low" type="checkbox">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-on-surface-variant flex-shrink-0">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body-mobile text-on-surface truncate">Ananya K.</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Procurement</p>
+</div>
+</label>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Primary Action Button -->
+<div class="fixed bottom-0 left-0 right-0 p-edge-mobile bg-gradient-to-t from-background via-background to-transparent pt-8">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-h2-web text-h2-web font-bold rounded-xl shadow-lg hover:shadow-primary/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">group_add</span>
+            สร้างกลุ่มใหม่
+        </button>
+<div class="pb-safe"></div>
+</div>
+<!-- Bottom Navigation Mock (Only if needed, here we prioritize the Action Button) -->
+<!-- Suppressed as per "Transactional/Task-Focused" rule -->
+<script>
+        // Simple micro-interaction for checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const parent = this.closest('label');
+                if(this.checked) {
+                    parent.classList.add('border-primary/30');
+                    parent.classList.add('bg-surface-container-highest');
+                } else {
+                    parent.classList.remove('border-primary/30');
+                    parent.classList.remove('bg-surface-container-highest');
+                }
+            });
+        });
+
+        // Initialize state
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            if(checkbox.checked) {
+                const parent = checkbox.closest('label');
+                parent.classList.add('border-primary/30');
+                parent.classList.add('bg-surface-container-highest');
+            }
+        });
+    </script>
+
+
+</body></html>

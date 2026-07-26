@@ -1,0 +1,272 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary-container": "#eeefff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "surface-dim": "#031427",
+                    "secondary-fixed": "#acedff",
+                    "surface-container-low": "#0b1c30",
+                    "on-secondary-container": "#00424e",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "secondary": "#4cd7f6",
+                    "outline": "#8d90a0",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "dark-surface": "#0F172A",
+                    "tertiary-container": "#686c80",
+                    "on-surface-variant": "#c3c6d7",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container": "#102034",
+                    "mobile-success": "#00C853",
+                    "surface-container-highest": "#26364a",
+                    "background": "#031427",
+                    "on-surface": "#d3e4fe",
+                    "dark-bg": "#020617",
+                    "error": "#ffb4ab",
+                    "error-container": "#93000a",
+                    "surface": "#031427",
+                    "primary": "#b4c5ff",
+                    "outline-variant": "#434655",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-bright": "#2a3a4f",
+                    "mobile-danger": "#FF3B30",
+                    "surface-variant": "#26364a",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-primary": "#0053db",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-warning": "#FF9500",
+                    "tertiary": "#c1c5dc",
+                    "primary-container": "#2563eb",
+                    "on-tertiary-container": "#eeefff",
+                    "on-background": "#d3e4fe",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-high": "#1b2b3f",
+                    "sync-active": "#FFD60A",
+                    "on-primary-fixed": "#00174b",
+                    "on-tertiary": "#2b3041",
+                    "sync-pending": "#94A3B8",
+                    "on-secondary": "#003640",
+                    "secondary-container": "#03b5d3",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container-lowest": "#000f21",
+                    "inverse-on-surface": "#213145",
+                    "on-primary": "#002a78",
+                    "surface-tint": "#b4c5ff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "cos-blue": "#2563eb",
+                    "ai-cyan": "#03b5d3"
+            },
+            "spacing": {
+                    "mobile-edge": "24px",
+                    "touch-target": "52px"
+            },
+            "fontFamily": {
+                    "font-mobile-text-label": ["Inter Tight"],
+                    "font-mobile-text-body": ["Inter Tight"],
+                    "font-mobile-text-hero": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .camera-grid {
+            background-image: 
+                linear-gradient(to right, rgba(163, 222, 254, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(163, 222, 254, 0.05) 1px, transparent 1px);
+            background-size: 33.33% 33.33%;
+        }
+        .shutter-ring {
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3);
+        }
+        .scanline {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #03b5d3, transparent);
+            position: absolute;
+            top: 0;
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface font-font-mobile-text-body antialiased overflow-hidden">
+<!-- Top AppBar (JSON Map) -->
+<header class="w-full top-0 sticky bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge h-mobile-touch-target z-50">
+<div class="flex items-center gap-3">
+<img alt="Construction OS Logo" class="h-8 w-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkwl9LrtvzY9r_3CThY0Ctvtx_j19DFqkGfKzi9gY-oIyvNjxQGH9b0jwm0itizyIKwk9Jc0aZ3baXSzKLVAT5ILEA-fcgk1jbfNTz_BX18JcDaTj9kdFDbvDNLQLEiIFQrssle16GTki_35FZOxmUdLV_6NJQNrsbbwPCpriJ7jWy3DNt6ySqCzcQQCh36fc5Cwt21lzJEyVVaCG6LX83eDxdnylPSW2gO2r36AtnfUpdPy5fUIaOpjgt6ob1FXreexA3eTZkkp8">
+<span class="text-[14px] font-bold text-cos-blue dark:text-primary">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-1 px-1.5 py-0 bg-surface-container-high rounded-full border border-outline-variant/20">
+<span class="material-symbols-outlined text-sync-active text-[10px]" style="font-variation-settings: &quot;FILL&quot; 1;">cloud_sync</span>
+<span class="text-[8px] font-bold text-sync-active uppercase tracking-tight">Timestamp: 2026-07-25 03:26:25</span>
+</div>
+</header>
+<main class="flex flex-col h-[calc(100vh-52px)]">
+<!-- Camera Viewfinder Section (60% Height) -->
+<section class="relative h-[60vh] w-full bg-black overflow-hidden group">
+<!-- Simulated Camera Feed Placeholder -->
+<div class="absolute inset-0 flex items-center justify-center">
+<img class="w-full h-full object-cover opacity-80" data-alt="A sharp, high-resolution perspective view of an active construction site with steel beams, concrete reinforcement, and orange safety nets. The lighting is bright and clear, emphasizing industrial textures like rusted metal and grainy concrete. The atmosphere is professional and mission-critical, with a dark industrial SaaS aesthetic overlaying the scene." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLYeyGpDac-CbNZGB53t5qxDdhPmdjw3qEJu1YpH7m-jCZfjdsRWiGxn8sX2aghivaO469bLJs4gc8Ex5yiv4TT0grHGqnFwPIBsGPMZRCctHoabw4_IUTYsGVt5_PvWDBK4Z6zVW0WvB2uHltU27xBmUWiazLyCeYDFoFvkPJTntzRWGg05fTcCLvX-7jrWFwgUWXFeoEdAvf08RqluNKKU9hEruGfME3dM1Uw_woZ4tU3WpWZ6EsPL7ZYLMRRaCXJ6ti72gz878">
+</div>
+<!-- Viewfinder Overlays -->
+<div class="absolute inset-0 camera-grid pointer-events-none"></div>
+<!-- Industrial Corners (AI Cyan) -->
+<div class="absolute top-8 left-8 w-12 h-12 border-t-4 border-l-4 border-ai-cyan rounded-tl-sm"></div>
+<div class="absolute top-8 right-8 w-12 h-12 border-t-4 border-r-4 border-ai-cyan rounded-tr-sm"></div>
+<div class="absolute bottom-8 left-8 w-12 h-12 border-b-4 border-l-4 border-ai-cyan rounded-bl-sm"></div>
+<div class="absolute bottom-8 right-8 w-12 h-12 border-b-4 border-r-4 border-ai-cyan rounded-br-sm"></div>
+<!-- Scanning Effect -->
+<div class="scanline"></div>
+<!-- Metadata Overlay -->
+<div class="absolute bottom-6 left-6 right-6 flex flex-col gap-1 pointer-events-none">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-cyan text-[16px]">location_on</span>
+<p class="font-mono text-[11px] text-on-surface/80 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded">GPS: 13.7563 N, 100.5018 E</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-cyan text-[16px]">schedule</span>
+<p class="font-mono text-[11px] text-on-surface/80 bg-black/40 backdrop-blur-md px-2 py-0.5 rounded uppercase">Timestamp: 2024-03-20 14:30:05</p>
+</div>
+</div>
+<!-- Focus Indicator (Center) -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border border-ai-cyan/30 rounded-full animate-pulse flex items-center justify-center">
+<div class="w-1 h-1 bg-ai-cyan rounded-full"></div>
+</div>
+<!-- Title Overlay -->
+<div class="absolute top-6 left-6 right-6 text-center">
+<h1 class="text-white font-mobile-text-body font-bold text-[18px] drop-shadow-md">ถ่ายภาพหลักฐาน</h1>
+</div>
+</section>
+<!-- Controls & Workflow Section -->
+<section class="flex-1 bg-surface-container-lowest flex flex-col justify-between pb-safe">
+<!-- Photo Strip (Scrollable) -->
+<div class="px-mobile-edge py-4">
+<p class="text-on-surface-variant font-mobile-text-label mb-3 uppercase tracking-tight">รูปภาพที่ถ่ายแล้ว (4)</p>
+<div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+<!-- Photo Thumbnails -->
+<div class="relative min-w-[72px] h-[72px] rounded-lg overflow-hidden border border-outline-variant bg-surface-container-high flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Close-up thumbnail of a cracked concrete pillar on a construction site. High-contrast industrial lighting, sharp detail." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtaQmMXhsFviywgLp_t67renXVIDvBUgefu9WA3u-MKjEs3eo_ix-nklSkCVc0Wab4eXYFw1u0FdxLU52uLTxk0tFOWXo5iRktb7yHdT1z6ELq1UqZwNhqKme6LcbuAuXwvPvoV-VrUhvuGTD4QocNeJBOL9R0rTJv6XkuzSDUVMm9GWnjdS0DrYqvcXPxIHoreiRX5oZeagQrrbMOUP_29Uo_uUq5adgOiTN3LZxeUAZxTKhIL9kbF-0XhcKHTq_cuKjxXS7MMiA">
+</div>
+<div class="relative min-w-[72px] h-[72px] rounded-lg overflow-hidden border border-outline-variant bg-surface-container-high flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Thumbnail of a site inspection tag attached to a steel beam. Bright orange tag, blurry construction background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5qnEG_CcQSAXpxPG_oKCos3nmbcx8_RYEO_CKalJ6h_iCjSYSTLy9FBW8gFFwEQgTxIVGm6_G0xGXom8CoJTx83kuAWEkmEn7_p7tSeFtuwuww66gqDeUZQ-aMrlStCvlDGauZFuz4HGr4TetddtA9B8ErmOFD8Pvm_PWYiKuQLMq3-OPOES53WGjTAvpYwG_94GJaN9wPgLMJnGNrJCZQ6U9WdGOsjVFQHt6nBMg9DQmr2DyjRw_i-isptAR1DfvQkZKwI85m6s">
+</div>
+<div class="relative min-w-[72px] h-[72px] rounded-lg overflow-hidden border border-outline-variant bg-surface-container-high flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A wide view of a construction floor showing debris. Dark, industrial first-person perspective." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBo-cuyV2a3UojKTXsSOHK0lcnqBaSo78RfJlI2zRZgYfVjROWL4I6Rbqboke361osGPlI--0X5DxehIRy5cRstZticpcbwITwM-EMPTEfqokSpxQtEGoW8m_FZC_RbKuV6m0ad7PX13cxuyFPwXAv54XfDVXVkjnHjwIw_MudfwvSPYRP7BjTpMS3Xjr2boGTOR8bd5vjEc0cIEB4aLFPaONO_zaa2giWNl1HJDvhpWImPjCn2rN9vrb8pD1KtjIiN14jymes2Gmw">
+</div>
+<!-- Empty/Add Slot -->
+<div class="min-w-[72px] h-[72px] rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center flex-shrink-0 bg-surface-container">
+<span class="material-symbols-outlined text-outline">add_a_photo</span>
+</div>
+</div>
+</div>
+<!-- Primary Actions -->
+<div class="px-mobile-edge flex items-center justify-between h-32 bg-surface-container rounded-t-[32px] border-t border-outline-variant/30">
+<!-- Flash Toggle -->
+<button class="w-touch-target h-touch-target flex items-center justify-center rounded-full bg-surface-container-high text-on-surface active:scale-90 transition-transform">
+<span class="material-symbols-outlined">flash_off</span>
+</button>
+<!-- Main Shutter -->
+<button class="relative group active:scale-95 transition-all">
+<div class="w-20 h-20 rounded-full border-4 border-cos-blue/40 flex items-center justify-center shutter-ring">
+<div class="w-16 h-16 rounded-full bg-white flex items-center justify-center">
+<div class="w-14 h-14 rounded-full border-2 border-black/10"></div>
+</div>
+</div>
+</button>
+<!-- Retake / Settings -->
+<button class="w-touch-target h-touch-target flex items-center justify-center rounded-full bg-surface-container-high text-on-surface active:scale-90 transition-transform">
+<span class="material-symbols-outlined">replay</span>
+</button>
+</div>
+<!-- Confirmation Bottom Bar -->
+<div class="px-mobile-edge py-4 grid grid-cols-2 gap-4 bg-surface-container">
+<button class="h-touch-target flex items-center justify-center gap-2 border border-outline rounded-xl text-on-surface font-bold uppercase active:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">close</span>
+<span class="">ยกเลิก</span>
+</button>
+<button class="h-touch-target flex items-center justify-center gap-2 bg-cos-blue rounded-xl text-white font-bold uppercase shadow-lg active:scale-95 transition-all">
+<span class="material-symbols-outlined">check_circle</span>
+<span class="">บันทึกเรียบร้อย</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation (JSON Structure) -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl border-t border-outline-variant/30 bg-surface dark:bg-dark-surface shadow-lg flex justify-around items-center h-[72px] px-2 pb-safe">
+<div class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-mobile-text-label text-mobile-text-label">Tasks</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-mobile-text-label text-mobile-text-label">BIM</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" data-icon="photo_camera" style="font-variation-settings: 'FILL' 1;">photo_camera</span>
+<span class="font-mobile-text-label text-mobile-text-label">Photos</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" data-icon="health_and_safety">health_and_safety</span>
+<span class="font-mobile-text-label text-mobile-text-label">Safety</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="font-mobile-text-label text-mobile-text-label">More</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for shutter press
+        const shutterBtn = document.querySelector('.shutter-ring').parentElement;
+        shutterBtn.addEventListener('click', () => {
+            // Flash effect
+            const flashOverlay = document.createElement('div');
+            flashOverlay.className = 'fixed inset-0 bg-white z-[100] pointer-events-none opacity-0';
+            document.body.appendChild(flashOverlay);
+            
+            const flashAnim = [
+                { opacity: 0 },
+                { opacity: 0.8 },
+                { opacity: 0 }
+            ];
+            flashOverlay.animate(flashAnim, { duration: 150 });
+            
+            setTimeout(() => flashOverlay.remove(), 200);
+        });
+
+        // Mocking GPS & Timestamp Updates
+        setInterval(() => {
+            const timeEl = document.querySelector('.uppercase');
+            const now = new Date();
+            const timeStr = `Timestamp: ${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0]}`;
+            if(timeEl) timeEl.innerText = timeStr;
+        }, 1000);
+    </script>
+
+
+</body></html>

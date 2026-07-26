@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Construction OS - Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .industrial-bracket {
+            position: relative;
+        }
+        .industrial-bracket::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            border-top: 2px solid currentColor;
+            border-left: 2px solid currentColor;
+            opacity: 0.5;
+        }
+        .industrial-bracket::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 8px;
+            height: 8px;
+            border-bottom: 2px solid currentColor;
+            border-right: 2px solid currentColor;
+            opacity: 0.5;
+        }
+
+        .chat-container {
+            height: calc(100vh - 64px - 84px - 72px); /* Header - Input - Nav */
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(3, 181, 211, 0.1) 25%, rgba(3, 181, 211, 0.2) 50%, rgba(3, 181, 211, 0.1) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#031427",
+                        "mobile-danger": "#FF3B30",
+                        "on-secondary-container": "#00424e",
+                        "background": "#031427",
+                        "inverse-primary": "#0053db",
+                        "surface-container-lowest": "#000f21",
+                        "inverse-surface": "#d3e4fe",
+                        "mobile-primary": "#0066FF",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-tint": "#b4c5ff",
+                        "on-primary": "#002a78",
+                        "surface-container": "#102034",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#686c80",
+                        "mobile-success": "#00C853",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "on-error-container": "#ffdad6",
+                        "on-background": "#d3e4fe",
+                        "surface-bright": "#2a3a4f",
+                        "on-secondary": "#003640",
+                        "inverse-on-surface": "#213145",
+                        "primary": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary": "#2b3041",
+                        "outline-variant": "#434655",
+                        "secondary-container": "#03b5d3",
+                        "surface-container-highest": "#26364a",
+                        "tertiary": "#c1c5dc",
+                        "sync-active": "#FFD60A",
+                        "tertiary-fixed": "#dee1f9",
+                        "primary-container": "#2563eb",
+                        "on-tertiary-container": "#eeefff",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-tertiary-fixed": "#161b2b",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed": "#001f26",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-primary-fixed": "#00174b",
+                        "surface-variant": "#26364a",
+                        "dark-bg": "#020617",
+                        "primary-fixed": "#dbe1ff",
+                        "outline": "#8d90a0",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#c3c6d7",
+                        "secondary": "#4cd7f6",
+                        "secondary-fixed": "#acedff",
+                        "on-surface": "#d3e4fe",
+                        "surface": "#031427",
+                        "sync-pending": "#94A3B8",
+                        "surface-container-high": "#1b2b3f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-3": "12px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "space-1": "4px"
+                    },
+                    "fontFamily": {
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-dim text-on-surface">
+<!-- Top Navigation Anchor (Shared Component Mapping) -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface-dim border-b border-white/10 flex justify-between items-center px-edge-mobile h-[64px]">
+<div class="flex items-center gap-space-4">
+<button class="material-symbols-outlined text-primary Active:scale-95 transition-transform duration-150">arrow_back</button>
+<div>
+<h1 class="font-label-mobile text-label-mobile text-on-surface uppercase tracking-wider">Structural Team A</h1>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+                    สมาชิก 12 คน
+                </p>
+</div>
+</div>
+<div class="flex items-center gap-space-4">
+<span class="material-symbols-outlined text-primary">search</span>
+<span class="material-symbols-outlined text-primary">more_vert</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[64px] pb-[156px] min-h-screen flex flex-col">
+<div class="flex-1 px-edge-mobile py-space-4 overflow-y-auto chat-container space-y-space-4">
+<!-- Date Indicator -->
+<div class="flex justify-center my-space-4">
+<span class="px-space-3 py-1 bg-surface-container-high rounded-full font-tiny-web text-tiny-web text-on-surface-variant uppercase">
+                    วันนี้
+                </span>
+</div>
+<!-- Incoming Message -->
+<div class="flex flex-col items-start max-w-[85%] space-y-1">
+<span class="font-tiny-web text-tiny-web text-primary ml-1">นายช่าง วิชัย</span>
+<div class="bg-surface-container border border-white/5 rounded-xl rounded-tl-none p-space-3 industrial-bracket">
+<p class="font-body-mobile text-body-mobile text-on-surface">ตรวจสอบการเปลี่ยนแบบเหล็ก Slab 4 เรียบร้อยแล้วครับ</p>
+<div class="mt-1 flex justify-end">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant/60">09:12</span>
+</div>
+</div>
+</div>
+<!-- AI Insight Message -->
+<div class="flex flex-col items-start w-full py-2">
+<div class="w-full bg-secondary-container/10 border-l-4 border-secondary p-space-4 rounded-r-xl ai-shimmer relative overflow-hidden">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-[20px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-label-mobile text-label-mobile text-secondary tracking-widest uppercase">CORE_AI : INSIGHT</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface leading-snug">
+                        ตรวจพบความล่าช้าที่อาจเกิดขึ้นในการบ่มคอนกรีต (Concrete Curing) เนื่องด้วยพยากรณ์อากาศแจ้งอุณหภูมิสูงขึ้น 3°C แนะนำให้เพิ่มความถี่ในการพ่นละอองน้ำ
+                    </p>
+<div class="mt-3 flex gap-2">
+<button class="px-3 py-1.5 bg-secondary-container text-on-secondary-container rounded-lg font-tiny-web text-tiny-web uppercase font-bold">ดำเนินการทันที</button>
+<button class="px-3 py-1.5 border border-secondary text-secondary rounded-lg font-tiny-web text-tiny-web uppercase">รับทราบ</button>
+</div>
+</div>
+</div>
+<!-- Outgoing Message (User Photo) -->
+<div class="flex flex-col items-end w-full space-y-1">
+<div class="max-w-[85%] bg-primary-container rounded-xl rounded-tr-none p-1 shadow-lg industrial-bracket text-on-primary-container">
+<div class="rounded-lg overflow-hidden mb-2">
+<div class="w-full h-48 bg-cover bg-center" data-alt="A high-resolution, industrial close-up photo of reinforced steel rebar grids laid out for a concrete slab on a large construction site. The lighting is bright, natural daylight highlighting the metallic textures and orange rust spots on the steel. In the background, blurry construction workers in safety vests and heavy equipment are visible, creating a professional, active engineering site atmosphere." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAeckEHrSnmtjbrBQmsUUgC4RRBSppZ9msmA2xLmyyI2Puwr8V_nY0Jg5Ty0yj85xoX4oGB7yz1qT3HmJSy4mzQic54TmfFbPu7RhUdoZrbQtH41VHMZHyyfsWJbdlg32GviajZsVOabUEfNXpAXNDYCSsxBBINO1DERaAhFitkhTO9WjEupLCrO9ljLVxwzHi90AbTFMeg83ZkGdqI5N_ZFYm84ym2ZmtBD2_w9JN8MTlTTXkTKC0c2vtaTpF1MPU4SlTNN5684tI')"></div>
+</div>
+<div class="px-2 pb-1">
+<p class="font-body-mobile text-body-mobile">การติดตั้งเหล็กเสริม (Rebar) หน้างานจริงครับ ตรวจสอบแล้วตรงตามแบบใหม่</p>
+<div class="mt-1 flex items-center justify-end gap-1">
+<span class="font-tiny-web text-tiny-web opacity-70">09:45</span>
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+</div>
+</div>
+<!-- More Incoming -->
+<div class="flex flex-col items-start max-w-[85%] space-y-1">
+<span class="font-tiny-web text-tiny-web text-primary ml-1">PM สมชาย</span>
+<div class="bg-surface-container border border-white/5 rounded-xl rounded-tl-none p-space-3 industrial-bracket">
+<p class="font-body-mobile text-body-mobile text-on-surface">ขอบคุณครับ ทีม QC กำลังเข้าไปตรวจสอบบ่ายนี้</p>
+<div class="mt-1 flex justify-end">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant/60">09:48</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Chat Input Area -->
+<div class="fixed bottom-[72px] left-0 w-full bg-surface-container-low border-t border-white/5 px-edge-mobile py-space-3 z-40">
+<div class="flex items-center gap-space-3 h-touch-target">
+<button class="w-touch-target h-touch-target flex items-center justify-center bg-surface-bright rounded-xl text-primary Active:scale-95 transition-all">
+<span class="material-symbols-outlined">add_a_photo</span>
+</button>
+<div class="flex-1 relative">
+<input class="w-full bg-surface-dim border-none rounded-xl h-touch-target px-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-1 focus:ring-primary" placeholder="พิมพ์ข้อความ..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 text-primary">
+<span class="material-symbols-outlined">sentiment_satisfied</span>
+</button>
+</div>
+<button class="w-touch-target h-touch-target flex items-center justify-center bg-primary-container text-on-primary-container rounded-full Active:scale-95 transition-all shadow-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mic</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation Bar (Shared Component Logic) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-surface-container flex justify-around items-center px-space-2 h-[72px] pb-safe shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface" href="#">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="font-label-mobile text-label-mobile">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-mobile text-label-mobile">Safety</span>
+</a>
+<!-- Active Tab: Chat (Intent Mapping) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-4 py-1 Active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">forum</span>
+<span class="font-label-mobile text-label-mobile">Chat</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for input bar focus
+        const chatInput = document.querySelector('input');
+        const inputArea = chatInput.parentElement.parentElement;
+        
+        chatInput.addEventListener('focus', () => {
+            inputArea.classList.add('ring-1', 'ring-primary/20');
+        });
+        
+        chatInput.addEventListener('blur', () => {
+            inputArea.classList.remove('ring-1', 'ring-primary/20');
+        });
+
+        // Simple scroll to bottom on load
+        window.scrollTo(0, document.body.scrollHeight);
+    </script>
+</body></html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Success Confirmation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-background": "#d3e4fe",
+                    "mobile-primary": "#0066FF",
+                    "surface-bright": "#2a3a4f",
+                    "error-container": "#93000a",
+                    "tertiary": "#c1c5dc",
+                    "sync-active": "#FFD60A",
+                    "secondary": "#4cd7f6",
+                    "primary": "#b4c5ff",
+                    "secondary-fixed": "#acedff",
+                    "on-primary": "#002a78",
+                    "primary-fixed": "#dbe1ff",
+                    "mobile-warning": "#FF9500",
+                    "surface-dim": "#031427",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container-high": "#1b2b3f",
+                    "surface": "#031427",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-container": "#102034",
+                    "inverse-primary": "#0053db",
+                    "surface-variant": "#26364a",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "primary-container": "#2563eb",
+                    "secondary-container": "#03b5d3",
+                    "on-primary-container": "#eeefff",
+                    "dark-surface": "#0F172A",
+                    "on-surface": "#d3e4fe",
+                    "mobile-success": "#00C853",
+                    "on-secondary-fixed": "#001f26",
+                    "error": "#ffb4ab",
+                    "on-secondary-container": "#00424e",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-lowest": "#000f21",
+                    "surface-tint": "#b4c5ff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-tertiary-container": "#eeefff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-primary-fixed": "#00174b",
+                    "on-error": "#690005",
+                    "tertiary-container": "#686c80",
+                    "inverse-on-surface": "#213145",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline-variant": "#434655",
+                    "dark-bg": "#020617",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-error-container": "#ffdad6",
+                    "background": "#031427",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-highest": "#26364a",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary": "#003640",
+                    "outline": "#8d90a0",
+                    "mobile-danger": "#FF3B30"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "space-4": "16px",
+                    "touch-target": "52px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "hero-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .success-glow {
+            filter: drop-shadow(0 0 15px rgba(0, 200, 83, 0.3));
+        }
+
+        .bento-card {
+            border-left: 4px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bento-card-active {
+            border-left-color: #0066FF;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-high h-16 flex justify-between items-center px-edge-mobile">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back">arrow_back</span>
+<div class="flex items-center gap-space-2"><img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBh-MplZVPTVta_mZMwlxR6am08hE28Doj294_SVP3-kU5X39Puj1NvdXgGyl2EqEtXrDdZRdN3pSNEHcVI88qZS63F1eEX_nOp2tJOCvUMdEFt6Ykc5xulREfBDgw-7m7taKPJeo-P2Pml-QmSJzwLrE4ILzxEnNvxWRg52WSGh6xnZ9ZWArP1xbPzcmVtgxr2IznEwkJ4csOoWaYwR0qtDQywRAuyHNLaZLkmwAzHrcX60I6p67USoJHJgTZd06QW8jsjBflJHUg"><span class="font-h1-web text-h1-web-mobile font-bold text-on-surface tracking-tight uppercase">CONSTRUCTION OS</span></div>
+</div>
+<div class="flex items-center gap-space-2 bg-mobile-success/10 border border-mobile-success/20 px-space-2 h-8 rounded-lg"><span class="material-symbols-outlined text-mobile-success text-sm" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span><span class="font-tiny-web text-tiny-web uppercase text-mobile-success font-bold tracking-wider">Synced</span></div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-32 px-edge-mobile max-w-lg mx-auto w-full flex flex-col items-center">
+<!-- Success Icon Section -->
+<div class="relative mb-space-4">
+<div class="w-32 h-32 rounded-full bg-surface-container-highest flex items-center justify-center success-glow">
+<span class="material-symbols-outlined text-[80px] text-mobile-success" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<!-- Subliminal Industrial Detail -->
+
+</div>
+<!-- Headline & Transaction ID -->
+<div class="text-center space-y-space-1 mb-8">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">สร้างสัญญาสำเร็จ</h2>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant tracking-wider uppercase">
+                ID: <span class="text-primary font-bold">CNTR-2024-0882</span>
+</p>
+</div>
+<!-- Details Bento Card -->
+<div class="w-full bg-surface-container rounded-xl overflow-hidden border border-white/5 bento-card bento-card-active mb-space-4">
+<div class="p-space-4 space-y-space-3">
+<div class="flex justify-between items-start border-b border-white/10 pb-space-3">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Contract Summary</span>
+<span class="material-symbols-outlined text-on-surface-variant opacity-50" data-icon="description">description</span>
+</div>
+<div class="space-y-space-4 py-space-2">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">Project</span>
+<span class="font-h2-web text-h2-web text-on-surface">Skyline Tower A</span>
+</div>
+<div class="grid grid-cols-2 gap-space-4">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">Partner</span>
+<span class="font-body-mobile text-body-mobile font-semibold text-on-surface">Pacific Structural Corp.</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase mb-1">Total Value</span>
+<span class="font-body-mobile text-body-mobile font-bold text-primary">฿12,450,000.00</span>
+</div>
+</div>
+</div>
+<div class="pt-space-3 flex items-center gap-2">
+<div class="h-1.5 flex-grow bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-mobile-success w-full"></div>
+</div>
+<span class="font-tiny-web text-tiny-web text-mobile-success font-bold">LOCKED</span>
+</div>
+</div>
+</div>
+<!-- AI Confirmation Module -->
+<div class="w-full bg-secondary-container/5 border-l-4 border-secondary p-space-4 rounded-r-xl mb-8 flex items-start gap-space-3">
+<span class="material-symbols-outlined text-secondary text-xl" data-icon="smart_toy">smart_toy</span>
+<div class="flex flex-col">
+<p class="font-label-mobile text-label-mobile text-on-primary-container leading-tight"><span class="font-bold text-secondary">CORE_AI:</span> ข้อมูลสัญญาถูกซิงค์กับ Cloud Ledger เรียบร้อยแล้ว (ความแม่นยำ 100% | Integrity Verified)</p>
+</div>
+</div>
+</main>
+<!-- Bottom Actions (Non-fixed but anchored) -->
+<footer class="fixed bottom-0 w-full bg-surface-container p-edge-mobile flex flex-col gap-space-3 pb-safe">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-label-mobile text-label-mobile rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-200 uppercase tracking-wider">
+            ดูรายละเอียดสัญญา
+            <span class="material-symbols-outlined text-xl" data-icon="visibility">visibility</span>
+</button>
+<button class="w-full h-touch-target border-2 border-outline-variant text-on-surface-variant font-label-mobile text-label-mobile rounded-xl flex items-center justify-center active:scale-95 transition-transform duration-200 uppercase tracking-wider">
+            กลับสู่หน้าแดชบอร์ด
+        </button>
+</footer>
+<script>
+        // Simple interaction handling
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.add('opacity-80');
+                setTimeout(() => this.classList.remove('opacity-80'), 150);
+            });
+        });
+    </script>
+
+
+</body></html>

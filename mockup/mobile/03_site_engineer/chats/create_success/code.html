@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Construction OS - Success State (Dark Mode)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #020617; /* Infrastructure Navy */
+            color: #F8FAFC; /* High Contrast Text */
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        /* Modern Industrial High-Density Accents */
+        .industrial-border {
+            border: 1px solid #1E293B;
+        }
+        .status-pill {
+            letter-spacing: 0.05em;
+            font-weight: 700;
+            font-size: 10px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#0066FF",
+                      "mobile-primary": "#0066FF",
+                      "mobile-success": "#00C853",
+                      "on-surface": "#F8FAFC",
+                      "on-surface-variant": "#94A3B8",
+                      "surface-container": "#0F172A",
+                      "surface-container-low": "#020617",
+                      "outline": "#1E293B",
+                      "outline-variant": "#334155"
+              },
+              "spacing": {
+                      "edge-mobile": "20px",
+                      "touch-target": "52px",
+                      "space-2": "8px",
+                      "space-3": "12px",
+                      "space-4": "16px"
+              },
+              "fontFamily": {
+                      "body-mobile": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "label-mobile": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                      "body-mobile": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "hero-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-[#020617] border-b border-outline sticky top-0 z-50 flex justify-between items-center px-edge-mobile h-16 w-full">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2">
+<img alt="Construction OS Logo" class="w-7 h-7 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDix6EjK9pUzozt20LSRGpm--pruXg17gKI6GjhNMBBcYGYhJnKHsoVjyS-TXHmRykLJ8Td4I294-jtjv8Rym1RSM4ILtoVYNliRKZ5g_zYMKBHtbq8U2cQxCEEXQmuIfBa4IoF7eZFZQO-49jEBTujTMISvtN_iHRTQDIO5fYQJZCzG2UzO7CWQOS4GTRDgyL4TIJ6wU0sqV1oXlqyRr4pMGGWnfvddDiZkO2_niVlT4hgAo37k_gQKWTwS5uwUgSOUNT20efF9Ks"/>
+<h1 class="font-bold text-[18px] text-on-surface tracking-tight uppercase">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1.5 px-3 py-1.5 bg-mobile-success/10 rounded-full border border-mobile-success/30">
+<span class="material-symbols-outlined text-[14px] text-mobile-success" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+<span class="text-[11px] font-bold text-mobile-success tracking-wider">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-slate-800 overflow-hidden border border-outline">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGHa4pTVKdsRGr_kApKoTRj8eVWKJO22MwZnjLoRGroCN2YJRsaa4d4wdxUPHEzYLFiruS6tXGHZz9VuEJbyZMvgIvoQPDv4hg5gNQzkblPbQiVigId5ZLiPyuXKhDGq_w3hiOM0HXfH9gqL0HiVsbgUO_9HZ_0McGuoV44joiH7pWb8ynDIdqUHxJVfDSUpBkzdM35DyjKcCmvPo8D2bNAgE5kp35j7lFITcfzM3gdfiM3LKNeJ66g0K-Bc-PggH1nkSMi17DYI0"/>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow flex flex-col items-center px-edge-mobile pt-10 pb-32 max-w-lg mx-auto w-full">
+<!-- Success Icon -->
+<div class="mb-6 flex flex-col items-center">
+<div class="w-16 h-16 rounded-full bg-mobile-success/10 flex items-center justify-center border border-mobile-success/30">
+<span class="material-symbols-outlined text-mobile-success text-4xl" style="font-variation-settings: 'wght' 600;">check_circle</span>
+</div>
+</div>
+<div class="text-center mb-8">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-2">สร้างช่องทางสำเร็จ</h2>
+<p class="font-body-mobile text-on-surface-variant px-4">ระบบได้ทำการเปิดใช้งานช่องทางสื่อสารใหม่เรียบร้อยแล้ว</p>
+</div>
+<!-- Success Card (Modern Industrial Dark Style) -->
+<div class="w-full bg-surface-container rounded-lg border border-outline shadow-xl overflow-hidden">
+<div class="h-1.5 w-full bg-mobile-success"></div>
+<div class="p-5 space-y-6">
+<!-- Card Header -->
+<div class="flex justify-between items-start">
+<div>
+<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.1em] block mb-1">CHANNEL DETAILS</span>
+<h3 class="text-[18px] font-bold text-on-surface">ประกาศความปลอดภัยไซต์ A</h3>
+</div>
+<span class="px-2 py-0.5 bg-mobile-success text-white status-pill rounded">LIVE</span>
+</div>
+<!-- Details List -->
+<div class="space-y-4">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">podcasts</span>
+<div>
+<p class="text-[12px] font-bold text-on-surface-variant uppercase tracking-wide">Type</p>
+<p class="text-[15px] text-on-surface">Broadcast (แจ้งข่าวสาร)</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">bolt</span>
+<div>
+<p class="text-[12px] font-bold text-on-surface-variant uppercase tracking-wide">System Triggers</p>
+<div class="flex flex-wrap gap-2 mt-1.5">
+<span class="bg-slate-800 px-2 py-1 rounded text-[11px] font-semibold text-on-surface border border-outline">BIM Divergence</span>
+<span class="bg-slate-800 px-2 py-1 rounded text-[11px] font-semibold text-on-surface border border-outline">Weather Warnings</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Insight (Clean Box) -->
+<div class="bg-slate-900/50 border border-slate-800 p-4 rounded flex gap-3">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<div>
+<p class="text-[12px] font-bold text-on-surface uppercase tracking-wide mb-0.5">AI Automation Active</p>
+<p class="text-[13px] text-on-surface-variant leading-tight">ระบบจะทำการคัดกรองการแจ้งเตือนจากเซ็นเซอร์ไซต์งานและแปลงเป็นข้อความประกาศอัตโนมัติ 24/7</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full mt-10 space-y-3">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-label-mobile rounded flex items-center justify-center gap-2 uppercase tracking-widest active:bg-blue-700 transition-colors shadow-lg">
+<span>ไปที่ช่องทางใหม่</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<button class="w-full h-touch-target bg-transparent border border-outline text-on-surface font-label-mobile rounded flex items-center justify-center gap-2 uppercase tracking-widest active:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>สร้างช่องทางอื่นเพิ่ม</span>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full h-[72px] flex justify-around items-center px-2 bg-[#0F172A] border-t border-outline pb-safe z-50">
+<a class="flex flex-col items-center justify-center w-1/4 text-mobile-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="text-[10px] font-bold mt-0.5">Messages</span>
+</a>
+<a class="flex flex-col items-center justify-center w-1/4 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">foundation</span>
+<span class="text-[10px] font-bold mt-0.5">Projects</span>
+</a>
+<a class="flex flex-col items-center justify-center w-1/4 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">groups</span>
+<span class="text-[10px] font-bold mt-0.5">Contacts</span>
+</a>
+<a class="flex flex-col items-center justify-center w-1/4 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">engineering</span>
+<span class="text-[10px] font-bold mt-0.5">Safety</span>
+</a>
+</nav>
+<script>
+    // Minimal feedback for buttons
+    document.querySelectorAll('button, a').forEach(el => {
+        el.addEventListener('touchstart', () => el.style.opacity = '0.7');
+        el.addEventListener('touchend', () => el.style.opacity = '1');
+    });
+</script>
+</body></html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SafeSite OS - Enrollment Success</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(0, 200, 83, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427; /* surface-dim from config */
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#2a3a4f",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-background": "#d3e4fe",
+                        "sync-active": "#FFD60A",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-dim": "#031427",
+                        "secondary-fixed": "#acedff",
+                        "dark-bg": "#020617",
+                        "error-container": "#93000a",
+                        "on-primary-fixed": "#00174b",
+                        "mobile-success": "#00C853",
+                        "primary": "#b4c5ff",
+                        "on-primary-container": "#eeefff",
+                        "secondary-container": "#03b5d3",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary": "#003640",
+                        "outline-variant": "#434655",
+                        "on-secondary-container": "#00424e",
+                        "on-surface": "#d3e4fe",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-high": "#1b2b3f",
+                        "inverse-on-surface": "#213145",
+                        "on-surface-variant": "#c3c6d7",
+                        "secondary": "#4cd7f6",
+                        "surface-container": "#102034",
+                        "surface-container-highest": "#26364a",
+                        "sync-pending": "#94A3B8",
+                        "mobile-primary": "#0066FF",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-primary": "#0053db",
+                        "mobile-warning": "#FF9500",
+                        "mobile-danger": "#FF3B30",
+                        "surface": "#031427",
+                        "on-primary": "#002a78",
+                        "tertiary-fixed": "#dee1f9",
+                        "primary-container": "#2563eb",
+                        "outline": "#8d90a0",
+                        "error": "#ffb4ab",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "background": "#031427",
+                        "on-error-container": "#ffdad6",
+                        "tertiary": "#c1c5dc",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary-container": "#eeefff",
+                        "on-tertiary": "#2b3041",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-variant": "#26364a",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary-container": "#686c80",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-tint": "#b4c5ff",
+                        "dark-surface": "#0F172A"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-2": "8px",
+                        "space-3": "12px",
+                        "space-1": "4px",
+                        "base": "4px",
+                        "edge-mobile": "24px",
+                        "space-4": "16px",
+                        "touch-target": "52px"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="text-on-surface antialiased flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface flex justify-between items-center h-[64px] px-4 w-full">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded flex items-center justify-center text-on-primary-container"><img alt="CONSTRUCTION OS" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAelRBsoIJ0u7-822u80dcLfbi1Ikj25ZX_Fz9fBjoEy6J2tfbuV_BwZ4v8jBfYBlBwzPN-5sZrTBTcI9VE99SvOmB4ieXxWtBKGBTOFovguwFR-0ZV4eHYo3nCDGSEsDl7SpFjCwJAqu0kA-uO8JWf4z_dssqkVf3dZOEx_BqTuJ_inv8iwgmWYUx_9TpqRVqySe1HY914bUyUo-NRnPMjP2VSkz158aaH_QTSrZNal5XpOCyAjVOHS4TTLTTC-x5f7axmXqLajDE"/></div>
+<span class="font-hero-mobile text-hero-mobile text-primary tracking-tight">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded-full">
+<span class="material-symbols-outlined text-[16px] text-mobile-success" data-icon="sync">sync</span>
+<span class="text-[11px] font-bold tracking-widest text-mobile-success">SYNCED</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow pt-[64px] pb-[100px] px-edge-mobile flex flex-col items-center justify-center text-center max-w-md mx-auto">
+<!-- Success Animation/Icon Wrapper -->
+<div class="relative mb-8">
+<div class="absolute inset-0 bg-mobile-success/20 blur-3xl rounded-full"></div>
+<div class="relative w-24 h-24 bg-surface-container rounded-full flex items-center justify-center border-4 border-mobile-success/30">
+<span class="material-symbols-outlined text-[64px] text-mobile-success" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<!-- Content -->
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface mb-4">Enrollment Successful</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mb-8 px-2">
+            Your account is now protected with Multi-Factor Authentication. You will be required to provide a verification code during your next login.
+        </p>
+<!-- Security Summary Card (Bento Style) -->
+<div class="w-full bg-surface-container border-l-4 border-mobile-success rounded-xl overflow-hidden mb-10 text-left success-shimmer">
+<div class="p-space-4 border-b border-outline-variant/10">
+<span class="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Security Audit Summary</span>
+</div>
+<div class="p-space-4 space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-medium">Status</span>
+<div class="flex items-center gap-1.5 bg-mobile-success/10 px-3 py-1 rounded-full border border-mobile-success/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
+<span class="text-[13px] font-bold text-mobile-success">Active</span>
+</div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-medium">Method</span>
+<span class="text-on-surface font-semibold">Authenticator App</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface-variant font-medium">Backup Codes</span>
+<div class="flex items-center gap-1 text-mobile-success">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span class="text-on-surface font-semibold">Saved</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full space-y-3">
+<button class="w-full h-[52px] bg-primary-container text-on-primary-container font-bold rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform">
+                GO TO DASHBOARD
+                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="w-full h-[52px] border border-outline text-on-surface font-bold rounded-xl flex items-center justify-center active:scale-95 transition-transform">
+                View Security Settings
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container border-t border-outline-variant rounded-t-xl h-[80px] px-2 flex justify-around items-center">
+<!-- Tasks -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-label-mobile text-label-mobile">Tasks</span>
+</a>
+<!-- Safety -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="font-label-mobile text-label-mobile">Safety</span>
+</a>
+<!-- Chat -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-label-mobile text-label-mobile">Chat</span>
+</a>
+<!-- Settings (Active) -->
+<!-- Note: We are on a success screen for an MFA enrollment which is a sub-page of Settings. 
+             Per instructions, 'Settings' should be active. From JSON bottom nav, labels are Tasks, Safety, Chat, Field. 
+             Applying 'Settings' as the fallback logic for Field or as a needed context.
+        -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 transition-transform duration-150 active:scale-90" href="#">
+<span class="material-symbols-outlined" data-icon="settings" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for the success icon scaling
+        window.addEventListener('DOMContentLoaded', () => {
+            const successIcon = document.querySelector('.material-symbols-outlined.text-mobile-success');
+            if (successIcon) {
+                successIcon.style.transition = 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                successIcon.style.transform = 'scale(0)';
+                setTimeout(() => {
+                    successIcon.style.transform = 'scale(1)';
+                }, 200);
+            }
+        });
+    </script>
+</body></html>

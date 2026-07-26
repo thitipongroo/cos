@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th" style=""><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ตั้งค่าการแจ้งเตือน | CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#002a78",
+                        "mobile-danger": "#FF3B30",
+                        "outline-variant": "#434655",
+                        "cos-cyan": "#06B6D4",
+                        "on-tertiary-container": "#eeefff",
+                        "on-secondary": "#003640",
+                        "on-surface": "#d3e4fe",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container": "#102034",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-primary-fixed": "#00174b",
+                        "secondary": "#4cd7f6",
+                        "cos-blue": "#2563EB",
+                        "dark-bg": "#020617",
+                        "surface-bright": "#2a3a4f",
+                        "dark-surface": "#0F172A",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-tertiary": "#2b3041",
+                        "inverse-on-surface": "#213145",
+                        "inverse-primary": "#0053db",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "outline": "#8d90a0",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-secondary-fixed": "#001f26",
+                        "tertiary": "#c1c5dc",
+                        "surface-container-highest": "#26364a",
+                        "secondary-container": "#03b5d3",
+                        "mobile-primary": "#0066FF",
+                        "error-container": "#93000a",
+                        "cos-navy": "#0B1020",
+                        "on-secondary-container": "#00424e",
+                        "primary-container": "#2563eb",
+                        "surface-dim": "#031427",
+                        "surface-container-low": "#0b1c30",
+                        "surface": "#031427",
+                        "sync-active": "#FFD60A",
+                        "primary": "#b4c5ff",
+                        "surface-variant": "#26364a",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "primary-fixed": "#dbe1ff",
+                        "mobile-warning": "#FF9500",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "tertiary-fixed": "#dee1f9",
+                        "cos-white": "#F8FAFC",
+                        "surface-container-high": "#1b2b3f",
+                        "on-background": "#d3e4fe",
+                        "inverse-surface": "#d3e4fe",
+                        "on-primary-container": "#eeefff",
+                        "mobile-success": "#00C853",
+                        "surface-container-lowest": "#000f21",
+                        "secondary-fixed": "#acedff",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error": "#690005",
+                        "background": "#031427",
+                        "tertiary-container": "#686c80",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "sync-pending": "#94A3B8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-space-1": "4px",
+                        "web-space-2": "8px",
+                        "mobile-edge": "24px",
+                        "web-space-3": "12px",
+                        "mobile-touch-target": "52px",
+                        "web-space-8": "32px",
+                        "web-space-4": "16px",
+                        "web-base": "4px"
+                    },
+                    "fontFamily": {
+                        "web-text-small": ["Inter Tight"],
+                        "mobile-text-hero": ["Inter Tight"],
+                        "web-text-h2": ["Inter Tight"],
+                        "mobile-text-label": ["Inter Tight"],
+                        "web-text-tiny": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-display": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "web-text-body": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "web-text-small": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                        "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "web-text-h2": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "web-text-tiny": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-display": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "web-text-body": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            min-height: max(884px, 100dvh);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
+        }
+        /* Optimized Touch Targets for Switches */
+        .custom-toggle {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .toggle-track {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            background-color: #26364a;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .custom-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .toggle-track { background-color: #2563EB; }
+        input:checked + .toggle-track:before { transform: translateX(20px); }
+        
+        .industrial-glass {
+            background: rgba(16, 32, 52, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(67, 70, 85, 0.3);
+        }
+        
+        /* High contrast for outdoor visibility */
+        .high-contrast-text {
+            color: #FFFFFF;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- Top AppBar -->
+<header class="bg-surface-dim dark:bg-surface-dim sticky top-0 z-50 border-b border-outline-variant flex justify-between items-center px-mobile-edge h-[64px]">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center -ml-2 rounded-full active:bg-surface-variant">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD79LyCe9rxFFoWdbhVROlDoJIU5lOzixnpw68srXb9QdsYs9HcegahZHWY0B1A8vi0hcJcb5a4hnqXRhrJGSPGiXdVNkPGXoy6xYc8vpbIA1_B9m3TKggR_WArgACqNUZZT-azgb9DsPRtdx1fGviGADOPZEO8956z6RFMIeMcm2t5lONv8Khzie3SMUtqv2_RvHCpkPUgnOxeOUcZbk7lKalqSmzlIbBnl3RLQTY086jdFsYMBM3V_1RJAMUkzlxlH5JIu_MdwZU"/>
+<h1 class="font-mobile-text-hero font-bold text-cos-white tracking-tight uppercase" style="font-size: 20px; line-height: 1.2;">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-web-space-4">
+<span class="material-symbols-outlined text-primary cursor-pointer">search</span>
+<div class="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container text-[12px] font-bold border border-primary/30">
+                SE
+            </div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow pt-6 pb-32 px-mobile-edge overflow-y-auto space-y-8">
+<!-- Screen Title & Context -->
+<header class="space-y-1">
+<h2 class="font-mobile-text-hero text-2xl high-contrast-text">ตั้งค่าการแจ้งเตือน</h2>
+<p class="font-mobile-text-label text-on-surface-variant opacity-80">แผงควบคุมผู้ดูแลระบบ (Tenant Admin)</p>
+</header>
+<!-- Immediate & Safety Alerts -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="font-mobile-text-label text-cos-cyan uppercase tracking-widest text-xs">โครงสร้างพื้นฐานที่สำคัญ</h3>
+<span class="text-[10px] font-bold bg-mobile-danger/20 text-mobile-danger px-2 py-1 rounded-sm border border-mobile-danger/30">จำเป็น</span>
+</div>
+<div class="industrial-glass rounded-xl p-5 border-l-4 border-mobile-danger relative">
+<div class="flex justify-between items-start">
+<div class="space-y-1">
+<p class="font-semibold text-cos-white">การละเมิดความปลอดภัย (ทันที)</p>
+<p class="text-sm text-on-surface-variant leading-tight">การไม่ปฏิบัติตาม OSHA หรือการตรวจพบอันตรายในไซต์งาน</p>
+</div>
+<span class="material-symbols-outlined text-outline/50 text-xl">lock</span>
+</div>
+<div class="mt-5 flex gap-3">
+<div class="flex items-center gap-1.5 bg-surface-container-highest px-3 py-1.5 rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-mobile-success text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-xs font-bold text-cos-white uppercase">SMS</span>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-highest px-3 py-1.5 rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-mobile-success text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-xs font-bold text-cos-white uppercase">PUSH</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Digest & Daily Summary -->
+<section class="space-y-4">
+<h3 class="font-mobile-text-label text-cos-blue uppercase tracking-widest text-xs">สรุปความคืบหน้าโครงการ</h3>
+<div class="space-y-3">
+<!-- Digest Card -->
+<div class="industrial-glass rounded-xl p-5">
+<div class="flex justify-between items-center mb-6">
+<div class="space-y-1">
+<p class="font-semibold text-cos-white">สรุปการดำเนินงานรายวัน</p>
+<p class="text-sm text-on-surface-variant">รวบรวมความคืบหน้าและปัญหาใน 24 ชม.</p>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="toggle-track"></span>
+</label>
+</div>
+<!-- Channel Matrix - Min 52px targets -->
+<div class="grid grid-cols-4 gap-2 mt-4 pt-4 border-t border-outline-variant/30">
+<button class="flex flex-col items-center justify-center gap-1 h-[64px] rounded-xl bg-primary-container/20 border border-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-cos-blue">rss_feed</span>
+<span class="text-[9px] font-black text-cos-blue uppercase">SSE</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 h-[64px] rounded-xl bg-surface-container-highest border border-outline-variant/30 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant">notifications</span>
+<span class="text-[9px] font-black text-on-surface-variant uppercase">PUSH</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 h-[64px] rounded-xl bg-primary-container/20 border border-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-cos-blue">chat</span>
+<span class="text-[9px] font-black text-cos-blue uppercase">LINE</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-1 h-[64px] rounded-xl bg-primary-container/20 border border-primary-container active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-cos-blue">mail</span>
+<span class="text-[9px] font-black text-cos-blue uppercase">EMAIL</span>
+</button>
+</div>
+</div>
+<!-- Report Card (AI Section) -->
+<div class="industrial-glass rounded-xl p-5 border-t-2 border-cos-cyan">
+<div class="flex justify-between items-center">
+<div class="space-y-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-cos-cyan text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<p class="font-semibold text-cos-white">วิเคราะห์ประสิทธิภาพด้วย AI รายสัปดาห์</p>
+</div>
+<p class="text-sm text-on-surface-variant">ข้อมูลเชิงลึกเกี่ยวกับทรัพยากรและการจัดการ</p>
+</div>
+<label class="custom-toggle">
+<input type="checkbox"/>
+<span class="toggle-track"></span>
+</label>
+</div>
+<div class="mt-4 border-l-2 border-cos-cyan bg-cos-cyan/10 p-3 rounded-r-lg">
+<p class="text-xs text-cos-cyan italic font-medium">แนะนำสำหรับการเพิ่มประสิทธิภาพระดับผู้บริหาร</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Escalation Protocol -->
+<section class="space-y-4">
+<h3 class="font-mobile-text-label text-mobile-warning uppercase tracking-widest text-xs">ตรรกะการยกระดับการแจ้งเตือน</h3>
+<div class="industrial-glass rounded-xl divide-y divide-outline-variant/20 overflow-hidden">
+<div class="flex justify-between items-center p-4 pl-5 min-h-[72px]">
+<div class="flex-1 pr-4">
+<p class="font-semibold text-cos-white">ความล่าช้าสะสม</p>
+<p class="text-xs text-on-surface-variant">แจ้งเตือนเมื่อตารางงานล่าช้าเกิน 4 ชั่วโมง</p>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="toggle-track"></span>
+</label>
+</div>
+<div class="flex justify-between items-center p-4 pl-5 min-h-[72px]">
+<div class="flex-1 pr-4">
+<p class="font-semibold text-cos-white">คำเตือนโครงสร้างคลาดเคลื่อน</p>
+<p class="text-xs text-on-surface-variant">เซ็นเซอร์ตรวจพบการคลาดเคลื่อนเกิน ±2มม.</p>
+</div>
+<label class="custom-toggle">
+<input checked="" type="checkbox"/>
+<span class="toggle-track"></span>
+</label>
+</div>
+<div class="flex justify-between items-center p-4 pl-5 min-h-[72px]">
+<div class="flex-1 pr-4">
+<p class="font-semibold text-cos-white">ข้ามโหมดเงียบ</p>
+<p class="text-xs text-on-surface-variant">อนุญาตให้การแจ้งเตือนที่สำคัญส่งถึงแม้ในโหมดเงียบ</p>
+</div>
+<label class="custom-toggle">
+<input type="checkbox"/>
+<span class="toggle-track"></span>
+</label>
+</div>
+</div>
+</section>
+<!-- Quiet Hours -->
+<section class="space-y-4">
+<h3 class="font-mobile-text-label text-cos-cyan uppercase tracking-widest text-xs">ช่วงเวลาพัก (เฉพาะ Push)</h3>
+<div class="industrial-glass rounded-xl p-5 space-y-5">
+<div class="flex justify-between items-center">
+<div class="space-y-1">
+<p class="font-semibold text-cos-white">เปิดใช้งานช่วงเวลาพัก</p>
+<p class="text-sm text-on-surface-variant">ปิดเสียงเตือน Push ระหว่างช่วงพักผ่อน</p>
+</div>
+<label class="custom-toggle">
+<input type="checkbox"/>
+<span class="toggle-track"></span>
+</label>
+</div>
+<div class="flex items-center justify-between bg-surface-container-highest/50 p-4 rounded-xl border border-outline-variant/30">
+<div class="flex flex-col">
+<span class="text-[10px] font-black text-outline uppercase">เวลาเริ่ม</span>
+<span class="text-lg text-cos-white font-bold">22:00</span>
+</div>
+<span class="material-symbols-outlined text-outline">arrow_forward</span>
+<div class="flex flex-col text-right">
+<span class="text-[10px] font-black text-outline uppercase">เวลาสิ้นสุด</span>
+<span class="text-lg text-cos-white font-bold">07:00</span>
+</div>
+</div>
+<div class="pt-3 border-t border-outline-variant/20">
+<p class="text-[11px] text-on-surface-variant italic leading-relaxed">* ข้อกำหนด §10.3: จำเป็นต้องปฏิบัติตามเพื่อความปลอดภัยในภาคสนาม</p>
+</div>
+</div>
+</section>
+<!-- Action Button -->
+<div class="pt-4 pb-8">
+<button class="w-full h-14 bg-primary text-on-primary font-bold rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-primary/20">
+                บันทึกการเปลี่ยนแปลง
+            </button>
+</div>
+<!-- Connectivity Status Bar -->
+<section class="mt-8 py-6 border-t border-outline-variant/30">
+<p class="text-center text-[10px] text-outline mb-4 uppercase tracking-[0.3em] font-bold">สถานะการเชื่อมต่อระบบ</p>
+<div class="flex justify-center items-center gap-6">
+<div class="flex items-center gap-1.5" id="status-sse">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="text-[10px] font-bold">SSE</span>
+</div>
+<div class="flex items-center gap-1.5" id="status-push">
+<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
+<span class="text-[10px] font-bold">PUSH</span>
+</div>
+<div class="flex items-center gap-1.5" id="status-line">
+<div class="w-2 h-2 rounded-full bg-mobile-warning"></div>
+<span class="text-[10px] font-bold">LINE</span>
+</div>
+<div class="flex items-center gap-1.5" id="status-smtp">
+<div class="w-2 h-2 rounded-full bg-mobile-success"></div>
+<span class="text-[10px] font-bold">SMTP</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navbar (Consistent with SCREEN_44) -->
+<nav class="bg-surface-container dark:bg-surface-container fixed bottom-0 w-full z-50 border-t border-outline-variant flex justify-around items-center h-[72px] px-web-space-4 pb-2">
+<button class="flex flex-col items-center justify-center text-on-surface-variant w-16 h-14 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">description</span>
+<span class="font-semibold text-[10px] mt-1">รายการ</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant w-16 h-14 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">security</span>
+<span class="font-semibold text-[10px] mt-1">ความปลอดภัย</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant w-16 h-14 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-semibold text-[10px] mt-1">แจ้งเตือน</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl w-16 h-14 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-bold text-[10px] mt-1">ตั้งค่า</span>
+</button>
+</nav>
+<script>
+        // Micro-interactions for channel buttons
+        document.querySelectorAll('.grid button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const isActive = this.classList.contains('bg-primary-container/20');
+                if (isActive) {
+                    this.classList.remove('bg-primary-container/20', 'border-primary-container');
+                    this.classList.add('bg-surface-container-highest', 'border-outline-variant/30');
+                    const icon = this.querySelector('.material-symbols-outlined');
+                    const text = this.querySelector('span:last-child');
+                    icon.classList.replace('text-cos-blue', 'text-on-surface-variant');
+                    text.classList.replace('text-cos-blue', 'text-on-surface-variant');
+                } else {
+                    this.classList.add('bg-primary-container/20', 'border-primary-container');
+                    this.classList.remove('bg-surface-container-highest', 'border-outline-variant/30');
+                    const icon = this.querySelector('.material-symbols-outlined');
+                    const text = this.querySelector('span:last-child');
+                    icon.classList.replace('text-on-surface-variant', 'text-cos-blue');
+                    text.classList.replace('text-on-surface-variant', 'text-cos-blue');
+                }
+            });
+        });
+
+        // Atmospheric sync pulse
+        setInterval(() => {
+            const sseStatusIndicator = document.querySelector('#status-sse div');
+            if(sseStatusIndicator) {
+                sseStatusIndicator.style.opacity = sseStatusIndicator.style.opacity === '0.4' ? '1' : '0.4';
+            }
+        }, 1500);
+    </script>
+</body></html>

@@ -1,0 +1,300 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Create New Contract</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration Verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+                  "error": "#ffb4ab",
+                  "surface-container-highest": "#26364a",
+                  "on-primary-container": "#eeefff",
+                  "on-error": "#690005",
+                  "on-surface": "#d3e4fe",
+                  "inverse-on-surface": "#213145",
+                  "on-background": "#d3e4fe",
+                  "surface-container": "#102034",
+                  "tertiary-fixed-dim": "#c1c5dc",
+                  "on-secondary-fixed-variant": "#004e5c",
+                  "on-primary-fixed-variant": "#003ea8",
+                  "on-tertiary-container": "#eeefff",
+                  "inverse-surface": "#d3e4fe",
+                  "secondary-fixed": "#acedff",
+                  "outline-variant": "#434655",
+                  "background": "#031427",
+                  "on-tertiary-fixed": "#161b2b",
+                  "mobile-success": "#00C853",
+                  "surface-variant": "#26364a",
+                  "on-primary-fixed": "#00174b",
+                  "mobile-danger": "#FF3B30",
+                  "tertiary-container": "#686c80",
+                  "surface-container-low": "#0b1c30",
+                  "surface-bright": "#2a3a4f",
+                  "dark-bg": "#020617",
+                  "outline": "#8d90a0",
+                  "surface-container-high": "#1b2b3f",
+                  "on-tertiary-fixed-variant": "#414658",
+                  "on-secondary-container": "#00424e",
+                  "secondary-container": "#03b5d3",
+                  "sync-active": "#FFD60A",
+                  "secondary": "#4cd7f6",
+                  "tertiary": "#c1c5dc",
+                  "secondary-fixed-dim": "#4cd7f6",
+                  "mobile-warning": "#FF9500",
+                  "on-secondary": "#003640",
+                  "mobile-primary": "#0066FF",
+                  "sync-pending": "#94A3B8",
+                  "on-primary": "#002a78",
+                  "inverse-primary": "#0053db",
+                  "surface": "#031427",
+                  "surface-container-lowest": "#000f21",
+                  "on-error-container": "#ffdad6",
+                  "surface-tint": "#b4c5ff",
+                  "tertiary-fixed": "#dee1f9",
+                  "on-secondary-fixed": "#001f26",
+                  "primary": "#b4c5ff",
+                  "on-surface-variant": "#c3c6d7",
+                  "surface-dim": "#031427",
+                  "dark-surface": "#0F172A",
+                  "error-container": "#93000a",
+                  "primary-container": "#2563eb",
+                  "primary-fixed": "#dbe1ff",
+                  "on-tertiary": "#2b3041",
+                  "primary-fixed-dim": "#b4c5ff"
+          },
+          "borderRadius": {
+                  "DEFAULT": "0.25rem",
+                  "lg": "0.5rem",
+                  "xl": "0.75rem",
+                  "full": "9999px"
+          },
+          "spacing": {
+                  "touch-target": "52px",
+                  "web-margin": "32px",
+                  "space-2": "8px",
+                  "base": "4px",
+                  "space-1": "4px",
+                  "space-3": "12px",
+                  "edge-mobile": "24px",
+                  "space-4": "16px"
+          },
+          "fontFamily": {
+                  "tiny-web": ["Inter Tight"],
+                  "hero-mobile": ["Inter Tight"],
+                  "display-web": ["Inter Tight"],
+                  "label-mobile": ["Inter Tight"],
+                  "body-mobile": ["Inter Tight"],
+                  "body-web": ["Inter Tight"],
+                  "h1-web": ["Inter Tight"],
+                  "h2-web": ["Inter Tight"]
+          },
+          "fontSize": {
+                  "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                  "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                  "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                  "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                  "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                  "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                  "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                  "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #031427;
+      color: #d3e4fe;
+      font-family: 'Inter Tight', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .stepper-line {
+      height: 2px;
+      flex-grow: 1;
+      background: #26364a;
+    }
+    .stepper-line-active {
+      background: #b4c5ff;
+    }
+    .ai-module-glow {
+      box-shadow: inset 0 0 20px rgba(76, 215, 246, 0.05);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pb-[120px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-high dark:bg-surface-container-high flex justify-between items-center h-16 px-edge-mobile">
+<div class="flex items-center gap-space-3">
+<button class="transition-transform active:scale-95 duration-200 p-2 hover:bg-surface-variant rounded-full">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 bg-background rounded flex items-center justify-center border border-outline-variant overflow-hidden">
+<img alt="Logo" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuALuqWMwWXdU0LlAk8Y14kFTM4vn-OB79Bq0X4fqaXAO5Al_qICXvbMLUdrKVfLzrH9qiWtQ99SasOWbOLSYIuEmbfFlDp6trLPcXPwgRVblfkHzHv1Yg45kGg9SYnDWhRLfTTEw2A1nf682CVnZcpxx-SGu1nsNn4rHQWxPKc3wPmzpiHZ2OjDVXHdGHjr9-0if_LufQmA0ATpaoW6soVIzHv1a2-8TZs3ozDM2jo4HSbysveLVsnqmdW5RmFYKnch8bLqxLdEUQM">
+</div>
+<h1 class="font-h1-web text-h1-web-mobile font-bold text-on-surface tracking-tight uppercase">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full border border-outline-variant"><span class="material-symbols-outlined text-mobile-success text-sm">check_circle</span>
+<span class="font-tiny-web text-tiny-web uppercase tracking-widest text-on-surface-variant">ซิงค์แล้ว</span></div>
+</header>
+<main class="mt-20 px-edge-mobile flex-grow max-w-2xl mx-auto w-full">
+<!-- Stepper Navigation -->
+<div class="py-space-4 mb-space-4"><div class="relative flex items-center justify-between px-2">
+  <!-- Background Line Container -->
+  <div class="absolute top-4 left-8 right-8 h-[2px] flex">
+    <div class="h-full bg-mobile-success" style="width: 50%;"></div>
+    <div class="h-full bg-surface-container-highest" style="width: 50%;"></div>
+  </div>
+  
+  <!-- Step 1 -->
+  <div class="relative z-10 flex flex-col items-center gap-1">
+    <div class="w-8 h-8 rounded-full bg-mobile-success flex items-center justify-center">
+      <span class="material-symbols-outlined text-white text-sm">check</span>
+    </div>
+    <span class="font-tiny-web text-tiny-web text-on-surface-variant">ข้อมูลทั่วไป</span>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="relative z-10 flex flex-col items-center gap-1">
+    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center ring-4 ring-primary/20">
+      <span class="font-label-mobile text-label-mobile text-on-primary">2</span>
+    </div>
+    <span class="font-tiny-web text-tiny-web text-primary">มูลค่าสัญญา</span>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="relative z-10 flex flex-col items-center gap-1">
+    <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+      <span class="font-label-mobile text-label-mobile text-outline">3</span>
+    </div>
+    <span class="font-tiny-web text-tiny-web text-outline">แนบเอกสาร</span>
+  </div>
+</div></div>
+<div class="mb-space-4">
+<h2 class="font-h1-web text-h1-web-mobile text-on-surface">รายละเอียดมูลค่าสัญญา</h2>
+<p class="font-body-web text-body-web text-on-surface-variant">ระบุข้อมูลทางการเงินและระยะเวลาของสัญญาจ้าง</p>
+</div>
+<!-- Form Section -->
+<div class="space-y-space-4">
+<!-- Contract Value Input -->
+<div class="space-y-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant ml-1">มูลค่าสัญญารวม (Contract Value)</label>
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="font-label-mobile text-label-mobile text-primary">THB</span>
+</div>
+<input class="w-full h-touch-target bg-surface-container border-outline-variant pl-14 pr-4 text-on-surface focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-h2-web text-h2-web rounded" placeholder="0.00" type="number">
+</div>
+</div>
+<!-- Read-only Allocated Budget -->
+<div class="p-4 bg-surface-container-low border border-outline-variant/30 flex justify-between items-center rounded">
+<div class="space-y-1">
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-wider">งบประมาณที่จัดสรร (Allocated Budget)</span>
+<p class="font-h2-web text-h2-web text-on-surface-variant opacity-80">฿5,000,000.00</p>
+</div>
+<span class="material-symbols-outlined text-outline">lock</span>
+</div>
+<!-- Retention Percentage -->
+<div class="space-y-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant ml-1">เงินประกันผลงาน (Retention %)</label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container border-outline-variant px-4 text-on-surface focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-body-mobile text-body-mobile rounded" type="number" value="10">
+<div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">%</span>
+</div>
+</div>
+</div>
+<!-- Date Range -->
+<div class="grid grid-cols-2 gap-space-3">
+<div class="space-y-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant ml-1">วันที่เริ่มสัญญา</label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container border-outline-variant px-4 text-on-surface focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-body-web text-body-web [color-scheme:dark] rounded" type="date">
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant ml-1">วันที่สิ้นสุดสัญญา</label>
+<div class="relative">
+<input class="w-full h-touch-target bg-surface-container border-outline-variant px-4 text-on-surface focus:ring-2 focus:ring-primary focus:border-transparent transition-all font-body-web text-body-web [color-scheme:dark] rounded" type="date">
+</div>
+</div>
+</div>
+<!-- AI Insights Module -->
+<div class="relative mt-space-4 p-5 bg-surface-container rounded border-l-4 border-secondary ai-module-glow overflow-hidden group" style="border-left-color: #06B6D4;">
+<div class="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-6xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1; color: #06B6D4;">auto_awesome</span>
+<span class="font-label-mobile text-label-mobile tracking-wide uppercase" style="color: #06B6D4;">CORE_AI ข้อมูลเชิงลึก</span>
+</div>
+<div class="px-2 py-0.5 bg-secondary-container/20 rounded text-[10px] font-bold text-secondary border border-secondary/30">
+98% Confidence
+</div>
+</div>
+<p class="font-body-web text-body-web text-on-surface leading-relaxed relative z-10">
+          AI วิเคราะห์: มูลค่าสัญญานี้อยู่ในเกณฑ์ปกติสำหรับพาร์ทเนอร์รายนี้ โดยมีค่าเบี่ยงเบนจากงบประมาณกลางเพียง 2%
+        </p>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container border-t border-outline-variant/10 px-edge-mobile py-space-4 pb-safe">
+  <div class="flex flex-col gap-space-3 max-w-2xl mx-auto">
+    <button class="w-full h-touch-target bg-primary-container text-white rounded-xl flex items-center justify-center gap-2 font-bold active:scale-95 transition-all duration-200 shadow-md">
+      <span class="font-label-mobile text-label-mobile uppercase tracking-wider">ขั้นตอนถัดไป</span>
+      <span class="material-symbols-outlined text-xl">arrow_forward</span>
+    </button>
+    <button class="w-full h-touch-target bg-surface-container border border-outline-variant text-white rounded-xl flex items-center justify-center font-bold active:scale-95 transition-all duration-200">
+      <span class="font-label-mobile text-label-mobile uppercase tracking-wider">บันทึกร่าง</span>
+    </button>
+  </div>
+</nav>
+<script>
+    // Micro-interactions for inputs
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('focus', () => {
+        input.parentElement.classList.add('scale-[1.01]');
+      });
+      input.addEventListener('blur', () => {
+        input.parentElement.classList.remove('scale-[1.01]');
+      });
+    });
+
+    // Simple numeric formatting simulation for the primary input
+    const valueInput = document.querySelector('input[type="number"]');
+    if(valueInput) {
+      valueInput.addEventListener('input', (e) => {
+        // Just keeping it reactive for now
+        console.log('Value updated:', e.target.value);
+      });
+    }
+  </script>
+
+
+
+
+</body></html>
