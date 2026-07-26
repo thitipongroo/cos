@@ -11,7 +11,8 @@
     "project": {
       "label": "Project",
       "empty": "No projects cached — connect once to load"
-    }
+    },
+    "loadingLabel": "Loading…"
   },
   "nav": {
     "tabs": {
@@ -51,10 +52,10 @@
       "securityProtocol": "Security Protocol",
       "heroTitle": "AI-NATIVE",
       "heroSubtitle": "Secure access for field operations and enterprise project management.",
-      "fieldWorkerAccess": "Mobile OTP",
+      "fieldWorkerAccess": "Field Worker Access",
       "or": "or",
-      "loginEmail": "Username & Password",
-      "officeHelper": "Sign in with your username and password",
+      "loginEmail": "Login with Email",
+      "officeHelper": "OFFICE STAFF AND PROJECT MANAGEMENT",
       "systemOperational": "System Operational",
       "otpSendError": "Could not send OTP. Check the phone number and try again.",
       "otpVerifyError": "Invalid or expired OTP. Please try again.",

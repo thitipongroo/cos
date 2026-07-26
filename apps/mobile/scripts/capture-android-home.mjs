@@ -38,7 +38,12 @@ const ADB = SDK
   : 'adb';
 
 const adb = (...args) => execFileSync(ADB, args, { maxBuffer: 16 * 1024 * 1024 }).toString();
+const docker = (...args) => execFileSync('docker', args).toString();
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// CAPTURE_LOADING=1 → capture the dashboard's <LoadingState /> skeletons (ADR-055) instead of the
+// loaded screen: pause Postgres so the data fetches hang, relaunch, and photograph the skeletons.
+const LOADING_MODE = process.env['CAPTURE_LOADING'] === '1';
 
 /**
  * A dump only succeeds once the window is idle; mid-transition it fails with
@@ -174,6 +179,35 @@ async function main() {
   // app landed anywhere else, this throws instead of saving a screenshot of the wrong screen.
   await find(byId('site-engineer-home'), 'site-engineer-home', 40);
   await dismissDevBanners();
+
+  if (LOADING_MODE) {
+    // Hold the loading state for the screenshot: pause Postgres so the dashboard's data fetches hang,
+    // then relaunch. The session survives a force-stop (only `pm clear` wipes it), so the app opens
+    // straight to the dashboard, whose GET /projects/mine + progress calls now hang — leaving the
+    // LoadingState skeletons (ADR-055) on screen to photograph.
+    console.log('· pausing postgres + relaunching to hold the loading state');
+    docker('pause', 'cos-postgres');
+    try {
+      adb('shell', 'am', 'force-stop', PKG);
+      adb('shell', 'monkey', '-p', PKG, '-c', 'android.intent.category.LAUNCHER', '1');
+      // The dashboard re-mounts with GET /projects/mine hanging (postgres paused), so its
+      // <LoadingState /> skeletons (ADR-055) show for ~15s (the app's HTTP timeout) before the fetch
+      // errors and the empty state replaces them. The skeletons animate continuously, so uiautomator
+      // cannot dump them ("could not get idle state") — screencap the framebuffer directly on a fixed
+      // delay that lands after the JS bundle + mount but well inside the ~15s skeleton window.
+      await delay(15_000);
+      // Dismiss the debug-only LogBox toast ("Open debugger to view warnings.") by tapping its X.
+      // uiautomator can't be used here (the skeleton animates → "could not get idle state"), so the
+      // coordinate is fixed for this AVD (Medium_Phone 1080×2400): the toast X sits bottom-right.
+      adb('shell', 'input', 'tap', '1012', '2236');
+      await delay(1500);
+      await shot('22-site-engineer-loading');
+    } finally {
+      docker('unpause', 'cos-postgres');
+    }
+    console.log('done (loading).');
+    return;
+  }
 
   // No picker anymore: the screen auto-selects the active project from local_projects (populated by
   // the shell's delta-sync + the screen's own refreshProjectsCache), then fetches its progress /

@@ -78,6 +78,70 @@ below. It asserts the `site-engineer-home` testID before saving, and fails outri
 card is showing its "no BOQ-linked task" placeholder, so a screenshot of an empty card cannot be
 committed by accident.
 
+## Site Engineer dashboard — loading state — [`22-site-engineer-loading.png`](22-site-engineer-loading.png)
+
+The same dashboard while its data is still loading: the reusable [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
+component (ADR-055 — the implementation of
+[`mockup/mobile/imp_002_universal_loading_component_mobile_view`](../../../mockup/mobile/imp_002_universal_loading_component_mobile_view))
+now stands in for the content instead of the "no data" empty states: a `micro` strip (spinner +
+"Loading…" + %) where the picker goes — so the picker's "no projects cached" message never reads as a
+failure during load — the `widget` variant (corner brackets + an analytics icon-plate + a "Loading…"
+label + % + bar) for the command card, and the `list` variant (ragged skeleton rows + a sync-active
+spinner and % on the first row) under both Active Issues and Upcoming Tasks. The percentage is honest,
+not simulated (ADR-055 caller-owns-progress): the dashboard's caller derives it from how many of its
+load steps — `GET /projects/mine` + the project's progress / issues / tasks — have settled (`0 → 25 →
+50 → 75 → 100`); the copy is the project's own `common.loadingLabel`, not the mockup's machine strings.
+Once every step settles the real content replaces the skeletons. (In this capture all four fetches
+hang, so the honest value is `0%`.)
+
+Captured by the same script with `CAPTURE_LOADING=1`
+(`CAPTURE_LOADING=1 node scripts/capture-android-home.mjs`): it pauses Postgres so the dashboard's
+fetches hang, relaunches so the screen re-mounts into its loading state, and screencaps the framebuffer
+directly — uiautomator cannot dump the screen because the skeletons animate continuously ("could not
+get idle state").
+
+## App launch — loading state — [`23-app-launch-loading.png`](23-app-launch-loading.png)
+
+Opening the app now shows the same [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
+`widget` ("loading A", ADR-055) on a dark ground while the persisted session hydrates and the brand
+font resolves ([`src/app/_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx)) — corner brackets, the
+**app favicon** (the hexagon mark) in place of the icon-plate skeleton, the **brand tagline** ("AI-NATIVE
+/ Construction Platform") in place of the top skeleton bar, then a two-step (hydration + font) percentage
+and a matching bar (`50%` here: session hydrated, font still loading). This mirrors the login hero, and
+continues the native splash's identity into the JS layer so `24-native-splash.png` → this state is one
+continuous branded dark hold (same `#020617` ground, same mark + wordmark), not a colour or content jump.
+The favicon + tagline are passed by the caller through the new opt-in `iconSource` / `heading` props
+(ADR-055 — the component bakes no brand asset or copy; the dashboard's `widget` skeleton, which passes
+neither, is unchanged). The tagline is the English brand default, not i18n: this renders before
+`I18nProvider` mounts and before the persisted locale is known (QM-3's system default); the interactive
+`label` is still omitted for the same reason. Captured by cold-launching (`pm clear` wipes the font
+cache, widening the font-load window) and screencapping the framebuffer. (LogBox toast at the very bottom
+is a dev-build artifact.)
+
+## Native splash — [`24-native-splash.png`](24-native-splash.png)
+
+The Android 12+ system splash (`android/app/src/main/res/values/styles.xml`, `Theme.App.SplashScreen`)
+shown for the ~1 s before the JS bundle mounts. Two changes from the original:
+
+- **Background** darkened from `#0B1020` to **`#020617`** (`darkColors.bg`, the app-shell ground —
+  `splashscreen_background` in `res/values/colors.xml`), so splash → launch-loading → app is one
+  continuous dark surface with no navy flash.
+- **Layout** reworked so the mark reads large and balanced. The old splash fed the whole wide
+  `splash-logo.png` wordmark (878×154) into `windowSplashScreenAnimatedIcon`, and Android 12 letterboxed
+  it into the small square icon slot — tiny. Now the **icon is the square hexagon mark** (from
+  `assets/favicon.png`, replacing the `drawable-*/splashscreen_logo.png` set), so it fills that slot at
+  ~192 dp, and the **"CONSTRUCTION OS" wordmark** (cropped out of `splash-logo.png` and scaled per
+  density into `drawable-*/splashscreen_branding.png`) moves to `android:windowSplashScreenBrandingImage`,
+  centred at the bottom.
+
+This is **native config** (drawables + theme in `android/`), hand-maintained beyond what the
+`expo-splash-screen` plugin generates (the plugin has no branding-image option), so it changes only on a
+fresh native build, not via Metro. Rebuilt with `gradlew assembleDebug` under **JDK 21** (Android Studio
+JBR) — the shell's default `JAVA_HOME` (JDK 25) is not yet supported by the RN 0.85 / Gradle 8.13
+toolchain and fails plugin resolution. Captured by cold-launching (`am start`) and screencapping the
+framebuffer inside the splash window. The launcher app icon is untouched: it reads a separate
+`iconBackground` colour (`res/mipmap-anydpi-v26/ic_launcher.xml`), not these splash drawables.
+
 ## App screens — `00-login.png` … `20-profile.png`
 
 The 21 flat files are the same route set as [iOS](../ios/README.md), captured by

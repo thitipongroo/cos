@@ -3,7 +3,10 @@
 //
 // Presentational only: it owns no data source, no timer, and no i18n copy. The caller passes
 // `progress` (0–100; omit for indeterminate) and an already-translated `label` (QM-3 — the
-// component holds no key and no literal).
+// component holds no key and no literal). The `widget` variant additionally accepts a caller-owned
+// brand `iconSource` + `heading` for its launch/branded use (e.g. app favicon + tagline); both are
+// opt-in, so the plain dashboard skeleton is unchanged when they are omitted (ADR-055 — brand assets
+// and copy stay with the caller, none are baked here).
 //
 // The `ai` variant carries the cyan glow / scan-line / waveform. §32.7 "Exception 2 — loading
 // states" permits the motif here for the reason the pre-auth exception exists: no project data is
@@ -15,7 +18,8 @@
 // mocked wholesale, so components cannot be rendered under jest — they are Detox territory).
 
 import { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
+import type { ImageSourcePropType } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   resolvePalette,
@@ -38,6 +42,18 @@ export interface LoadingStateProps {
   progress?: number;
   /** Already-translated copy. Omit to render no text. */
   label?: string;
+  /**
+   * `widget` only — a caller-supplied brand mark that replaces the pulsing icon-plate skeleton
+   * (rendered static + contained, e.g. the app favicon on the launch screen). The caller owns the
+   * asset; the component bakes none (ADR-055). Omit to keep the skeleton plate.
+   */
+  iconSource?: ImageSourcePropType;
+  /**
+   * `widget` only — already-resolved heading that replaces the top skeleton bar (e.g. the brand
+   * tagline on the launch screen). Caller-owned copy like `label` (QM-3 — no literal in here).
+   * `\n` renders multiple lines. Omit to keep the skeleton bar.
+   */
+  heading?: string;
   /** Selects the §32.7 palette. Dark screens are listed in §32.7 "Mobile Dark Surfaces". */
   theme: LoadingTheme;
   /** Rows for the `list` variant. Defaults to the three the mockup shows. */
@@ -78,6 +94,8 @@ export function LoadingState({
   label,
   theme,
   rows = LIST_SKELETON_ROWS,
+  iconSource,
+  heading,
   testID,
 }: LoadingStateProps): React.JSX.Element {
   const palette = resolvePalette(theme);
@@ -139,9 +157,10 @@ export function LoadingState({
   if (variant === 'micro') {
     return (
       <View testID={testID} style={styles.microRow} {...a11yProps}>
-        <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
-          <MaterialIcons name="sync" size={16} color={palette.primary} />
-        </Animated.View>
+        {/* Spinning ring (mockup D) — a low-alpha track with a rotating primary arc. */}
+        <View style={styles.ring}>
+          <Animated.View style={[styles.ringArc, { transform: [{ rotate: spinDeg }] }]} />
+        </View>
         {label !== undefined && label !== '' && (
           <Text style={styles.microLabel} numberOfLines={1}>
             {label}
@@ -166,6 +185,15 @@ export function LoadingState({
                 <SkeletonBar palette={palette} width={title} height={14} pulse={pulse} />
                 <SkeletonBar palette={palette} width={subtitle} height={10} pulse={pulse} />
               </View>
+              {/* The first row carries a sync-in-progress spinner + percentage (mockup B). */}
+              {row === 0 ? (
+                <View style={styles.listSync}>
+                  <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
+                    <MaterialIcons name="sync" size={18} color={palette.syncing} />
+                  </Animated.View>
+                  {percent !== null ? <Text style={styles.listSyncPercent}>{percent}</Text> : null}
+                </View>
+              ) : null}
             </View>
           );
         })}
@@ -230,9 +258,27 @@ export function LoadingState({
   // The dashboard tile: icon plate, text skeletons, label + percentage, progress bar.
   return (
     <View testID={testID} style={styles.card} {...a11yProps}>
+      {/* Technical corner brackets (mockup A) — token-coloured, no glow/gradient (§32.7-safe). */}
+      <View style={[styles.corner, styles.cornerTL]} />
+      <View style={[styles.corner, styles.cornerTR]} />
+      <View style={[styles.corner, styles.cornerBL]} />
+      <View style={[styles.corner, styles.cornerBR]} />
       <View style={styles.widgetBody}>
-        <SkeletonBar palette={palette} width={56} height={56} radius={28} pulse={pulse} />
-        <SkeletonBar palette={palette} width="35%" height={12} pulse={pulse} />
+        {/* Mark: a caller-supplied brand image (static, for the branded launch use), else the
+            pulsing circular skeleton with an analytics glyph inside (mockup A). */}
+        {iconSource !== undefined ? (
+          <Image source={iconSource} style={styles.iconImage} resizeMode="contain" />
+        ) : (
+          <Animated.View style={[styles.iconPlate, { opacity: pulse }]}>
+            <MaterialIcons name="analytics" size={28} color={palette.muted} />
+          </Animated.View>
+        )}
+        {/* Under the mark: the caller's heading (brand tagline) when branded, else a skeleton bar. */}
+        {heading !== undefined && heading !== '' ? (
+          <Text style={styles.widgetHeading}>{heading}</Text>
+        ) : (
+          <SkeletonBar palette={palette} width="35%" height={12} pulse={pulse} />
+        )}
         {(label !== undefined && label !== '') || percent !== null ? (
           <View style={styles.widgetTextRow}>
             {label !== undefined && label !== '' && (
@@ -298,6 +344,52 @@ const makeStyles = (palette: LoadingPalette) =>
       gap: spacing.sm,
       overflow: 'hidden',
     },
+    // Corner brackets (mockup A) — 16×16 L-shapes in the primary hue at low alpha.
+    corner: { position: 'absolute', width: 16, height: 16, borderColor: `${palette.primary}66` },
+    cornerTL: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2, borderTopLeftRadius: 2 },
+    cornerTR: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2, borderTopRightRadius: 2 },
+    cornerBL: {
+      bottom: 0,
+      left: 0,
+      borderBottomWidth: 2,
+      borderLeftWidth: 2,
+      borderBottomLeftRadius: 2,
+    },
+    cornerBR: {
+      bottom: 0,
+      right: 0,
+      borderBottomWidth: 2,
+      borderRightWidth: 2,
+      borderBottomRightRadius: 2,
+    },
+    // Icon plate (mockup A) — a circular skeleton with a glyph centred inside.
+    iconPlate: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: palette.skeleton,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // Spinning ring (mockup D) — low-alpha track + a rotating primary top arc overlaid on it.
+    ring: {
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 2,
+      borderColor: `${palette.primary}33`,
+    },
+    ringArc: {
+      position: 'absolute',
+      top: -2,
+      left: -2,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      borderWidth: 2,
+      borderColor: 'transparent',
+      borderTopColor: palette.primary,
+    },
     aiCard: {
       // Start/end, not left/right: RN does not auto-flip borderLeft* under I18nManager.isRTL, so a
       // physical edge would sit on the wrong side in ar-SA (QM-3).
@@ -332,6 +424,18 @@ const makeStyles = (palette: LoadingPalette) =>
       color: palette.accent ?? palette.primary,
       fontVariant: ['tabular-nums'],
     },
+    // Brand mark for the launch/branded widget — the favicon, rendered static + contained (no plate
+    // skeleton, no pulse). The favicon PNG is transparent, so it floats on the card ground.
+    iconImage: { width: 72, height: 72 },
+    // Brand heading (tagline) for the launch/branded widget — replaces the top skeleton bar.
+    widgetHeading: {
+      fontFamily: fontFamily.bold,
+      fontSize: typography.title.fontSize,
+      lineHeight: typography.title.lineHeight,
+      color: palette.text,
+      textAlign: 'center',
+      letterSpacing: 0.5,
+    },
     widgetBody: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
     widgetTextRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
     widgetLabel: {
@@ -354,7 +458,15 @@ const makeStyles = (palette: LoadingPalette) =>
       overflow: 'hidden',
     },
     fill: { height: '100%', borderRadius: 3, backgroundColor: palette.primary },
-    list: { gap: 2, borderRadius: 4, overflow: 'hidden' },
+    // Clustered container (mockup B) — a bordered group; the 2px gaps show the tinted ground through.
+    list: {
+      gap: 2,
+      borderRadius: 4,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: palette.skeleton,
+      backgroundColor: palette.skeleton,
+    },
     listRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -365,6 +477,14 @@ const makeStyles = (palette: LoadingPalette) =>
       backgroundColor: palette.surface,
     },
     listRowText: { flex: 1, gap: spacing.xs },
+    listSync: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    listSyncPercent: {
+      fontFamily: fontFamily.bold,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight,
+      color: palette.syncing,
+      fontVariant: ['tabular-nums'],
+    },
     microRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
     microLabel: {
       flexShrink: 1,

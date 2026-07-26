@@ -20,6 +20,7 @@ describe('resolvePalette', () => {
     expect(palette.muted).toBe(darkColors.muted);
     expect(palette.primary).toBe(darkColors.primary);
     expect(palette.accent).toBe(darkColors.cyan);
+    expect(palette.syncing).toBe(darkColors.syncing);
   });
 
   it('maps the light theme onto the --mobile-* tokens, with no accent', () => {
@@ -29,6 +30,7 @@ describe('resolvePalette', () => {
     expect(palette.text).toBe(colors.textPrimary);
     expect(palette.muted).toBe(colors.textSecondary);
     expect(palette.primary).toBe(colors.primary);
+    expect(palette.syncing).toBe(colors.syncing);
     // §32.7 defines no cyan in the light mobile set — the AI motif is dark-only.
     expect(palette.accent).toBeNull();
   });

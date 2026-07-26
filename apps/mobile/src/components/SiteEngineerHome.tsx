@@ -38,6 +38,7 @@ import {
 import { VoiceCommandFab } from './VoiceCommandFab';
 import { QuickActionCard } from './QuickActionCard';
 import { ProjectPicker } from './ProjectPicker';
+import { LoadingState } from './LoadingState';
 import { useI18n } from '../i18n';
 import {
   currentPhase,
@@ -123,6 +124,13 @@ export default function SiteEngineerHome() {
   const [issues, setIssues] = useState<IssueRow[]>([]);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
+  // Load-step flags → an honest progress % (steps settled / total), per ADR-055 (caller owns
+  // progress — the component invents none). The initial load is GET /projects/mine + the selected
+  // project's progress + issues + tasks; the % is how many have settled.
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const [progressLoaded, setProgressLoaded] = useState(false);
+  const [issuesLoaded, setIssuesLoaded] = useState(false);
+  const [tasksLoaded, setTasksLoaded] = useState(false);
 
   // The projects this engineer is a member of (GET /projects/mine). The picker is scoped to these;
   // the first (an ACTIVE one, else the first) is auto-selected so the card loads without a tap.
@@ -131,7 +139,8 @@ export default function SiteEngineerHome() {
       .then(setMyProjects)
       .catch(() => {
         /* offline — keep the last list rather than showing an empty picker */
-      });
+      })
+      .finally(() => setProjectsLoaded(true));
   }, []);
   useEffect(() => {
     if (projectId || myProjects.length === 0) return;
@@ -145,7 +154,8 @@ export default function SiteEngineerHome() {
       .then(setProgress)
       .catch(() => {
         /* offline — keep the last figure rather than showing a wrong one */
-      });
+      })
+      .finally(() => setProgressLoaded(true));
     getProjectPhases(id)
       .then(setPhases)
       .catch(() => {
@@ -155,15 +165,27 @@ export default function SiteEngineerHome() {
       .then((res) => setIssues(asList(res)))
       .catch(() => {
         /* offline — keep last */
-      });
+      })
+      .finally(() => setIssuesLoaded(true));
     get<{ items?: TaskRow[] } | TaskRow[]>(`/projects/${id}/tasks`)
       .then((res) => setTasks(asList(res)))
       .catch(() => {
         /* offline — keep last */
-      });
+      })
+      .finally(() => setTasksLoaded(true));
   }, []);
 
   useEffect(() => loadProject(projectId), [projectId, loadProject]);
+
+  // Honest load progress: 1 step (projects) if the engineer is a member of none, else 4 (projects +
+  // the project's progress / issues / tasks). `loading` holds the skeletons until every step settles.
+  const projectsEmpty = projectsLoaded && myProjects.length === 0;
+  const totalSteps = projectsEmpty ? 1 : 4;
+  const doneSteps = [projectsLoaded, progressLoaded, issuesLoaded, tasksLoaded].filter(
+    Boolean,
+  ).length;
+  const loading = doneSteps < totalSteps;
+  const loadProgress = Math.round((Math.min(doneSteps, totalSteps) / totalSteps) * 100);
 
   // Issues most severe first, plus the "worst level present ×N" badge for the section header.
   const sortedIssues = sortIssuesBySeverity(issues);
@@ -236,54 +258,76 @@ export default function SiteEngineerHome() {
         style={styles.screen}
         contentContainerStyle={styles.content}
       >
-        {/* Project picker, scoped to this engineer's own projects (project_members). */}
-        <ProjectPicker
-          selectedId={projectId}
-          onSelect={setProjectId}
-          variant="dark"
-          projects={myProjects.map((p) => ({
-            projectId: p.project_id,
-            projectCode: p.project_code,
-          }))}
-          hideLabel
-        />
+        {/* Project picker, scoped to this engineer's own projects (project_members). While the
+          projects are still loading, show a loading strip rather than the picker's "no projects
+          cached" empty message, which would read as a failure (PO 2026-07-26). */}
+        {loading ? (
+          <LoadingState
+            variant="micro"
+            theme="dark"
+            label={t('common.loadingLabel')}
+            progress={loadProgress}
+          />
+        ) : (
+          <ProjectPicker
+            selectedId={projectId}
+            onSelect={setProjectId}
+            variant="dark"
+            projects={myProjects.map((p) => ({
+              projectId: p.project_id,
+              projectCode: p.project_code,
+            }))}
+            hideLabel
+          />
+        )}
 
-        {/* Consolidated command card: progress + schedule pill + inline phase + START/GOAL footer. */}
-        <View testID="progress-card" style={styles.card}>
-          <View style={styles.cardTopRow}>
-            <Text style={styles.cardLabel}>{t('home.engineer.progressTitle')}</Text>
-            {schedulePill}
-          </View>
-          {/* Which project these figures belong to. */}
-          {selectedProject ? (
-            <Text testID="project-name" style={styles.projectName} numberOfLines={1}>
-              {selectedProject.project_name}
-            </Text>
-          ) : null}
+        {/* While the first project's data loads, a widget skeleton stands in for the command card
+          (ADR-055); once loaded, the real consolidated card renders. */}
+        {loading ? (
+          <LoadingState
+            variant="widget"
+            theme="dark"
+            label={t('common.loadingLabel')}
+            progress={loadProgress}
+            testID="dash-loading-widget"
+          />
+        ) : (
+          <View testID="progress-card" style={styles.card}>
+            <View style={styles.cardTopRow}>
+              <Text style={styles.cardLabel}>{t('home.engineer.progressTitle')}</Text>
+              {schedulePill}
+            </View>
+            {/* Which project these figures belong to. */}
+            {selectedProject ? (
+              <Text testID="project-name" style={styles.projectName} numberOfLines={1}>
+                {selectedProject.project_name}
+              </Text>
+            ) : null}
 
-          {!hasProgressFigure(pct) ? (
-            <Text testID="progress-empty" style={styles.muted}>
-              {t('home.engineer.progressEmpty')}
-            </Text>
-          ) : (
-            <>
-              <View style={styles.heroRow}>
-                <Text testID="progress-pct" style={styles.hero}>
-                  {Math.round(pct)}%
-                </Text>
-                {phaseLabel ? (
-                  <Text testID="phase-name" style={styles.phaseInline} numberOfLines={2}>
-                    {phaseLabel}
+            {!hasProgressFigure(pct) ? (
+              <Text testID="progress-empty" style={styles.muted}>
+                {t('home.engineer.progressEmpty')}
+              </Text>
+            ) : (
+              <>
+                <View style={styles.heroRow}>
+                  <Text testID="progress-pct" style={styles.hero}>
+                    {Math.round(pct)}%
                   </Text>
-                ) : null}
-              </View>
-              <View style={styles.track}>
-                <View style={[styles.fill, { width: `${progressBarWidth(pct)}%` }]} />
-              </View>
-              {projectDates}
-            </>
-          )}
-        </View>
+                  {phaseLabel ? (
+                    <Text testID="phase-name" style={styles.phaseInline} numberOfLines={2}>
+                      {phaseLabel}
+                    </Text>
+                  ) : null}
+                </View>
+                <View style={styles.track}>
+                  <View style={[styles.fill, { width: `${progressBarWidth(pct)}%` }]} />
+                </View>
+                {projectDates}
+              </>
+            )}
+          </View>
+        )}
 
         {/* The mockup's four quick-action tiles. Each routes to a real screen. */}
         <View style={styles.grid}>
@@ -331,7 +375,14 @@ export default function SiteEngineerHome() {
             />
           ) : null}
         </View>
-        {sortedIssues.length === 0 ? (
+        {loading ? (
+          <LoadingState
+            variant="list"
+            theme="dark"
+            progress={loadProgress}
+            testID="dash-loading-issues"
+          />
+        ) : sortedIssues.length === 0 ? (
           <Text testID="issues-empty" style={styles.muted}>
             {t('home.engineer.noIssues')}
           </Text>
@@ -394,7 +445,14 @@ export default function SiteEngineerHome() {
             ) : null}
           </View>
         </View>
-        {upcoming.length === 0 ? (
+        {loading ? (
+          <LoadingState
+            variant="list"
+            theme="dark"
+            progress={loadProgress}
+            testID="dash-loading-tasks"
+          />
+        ) : upcoming.length === 0 ? (
           <Text testID="tasks-empty" style={styles.muted}>
             {t('home.engineer.noTasks')}
           </Text>

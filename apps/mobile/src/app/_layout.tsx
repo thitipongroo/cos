@@ -2,6 +2,7 @@
 // Guards all (app) routes: redirects unauthenticated users to (auth)/login.
 
 import { useEffect, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { Slot, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
@@ -18,6 +19,20 @@ import { useLocaleStore } from '../store/localeStore';
 import { I18nProvider } from '../i18n';
 import { initSyncQueue } from '../db/sync-queue';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
+import { LoadingState } from '../components/LoadingState';
+import { darkColors } from '../theme/tokens';
+import appFavicon from '../../assets/favicon.png';
+
+// Brand tagline shown on the app-launch loading state. This renders BEFORE I18nProvider mounts and
+// before the persisted locale is known, so it cannot come from i18n — it is the English brand
+// default (QM-3's system default), matching the wordmark on the native splash. `\n` splits the two
+// lines exactly as the login hero renders heroTitle / heroTitle2.
+const LAUNCH_TAGLINE = 'AI-NATIVE\nConstruction Platform';
+
+// Interactive label shown before the launch percentage ("Loading… 50%"). Hardcoded, not i18n, for the
+// same reason as the tagline — this renders before I18nProvider mounts (QM-3's English system default);
+// it mirrors the `common.loadingLabel` string the rest of the app resolves through i18n.
+const LAUNCH_LABEL = 'Loading…';
 
 function AuthGate() {
   const router = useRouter();
@@ -95,7 +110,30 @@ export default function RootLayout() {
   //
   // An earlier note here avoided blocking for fear of a permanently blank screen if the font hangs or
   // fails; `fontError` covers that — useFonts reports a failure and we render with the fallback.
-  if (!hydrated || !(fontsLoaded || fontError)) return null;
+  //
+  // While the session hydrates and the brand font resolves, show the app-launch loading state — the
+  // reusable <LoadingState /> widget (ADR-055 "loading A") on a dark ground — instead of holding the
+  // native splash. It renders the app favicon + brand tagline (LAUNCH_TAGLINE) over the progress bar,
+  // continuing the native splash's identity, and unmounts the instant the app is ready.
+  // Honest launch progress: two steps — session hydration and the brand font. Both the tagline and the
+  // "Loading…" label are the English brand default, not i18n: this renders before I18nProvider mounts
+  // and before the persisted locale is known (QM-3's system default).
+  const launchSteps = (hydrated ? 1 : 0) + (fontsLoaded || fontError ? 1 : 0);
+  if (launchSteps < 2) {
+    return (
+      <View style={styles.launch}>
+        <LoadingState
+          variant="widget"
+          theme="dark"
+          progress={(launchSteps / 2) * 100}
+          iconSource={appFavicon}
+          heading={LAUNCH_TAGLINE}
+          label={LAUNCH_LABEL}
+          testID="app-launch-loading"
+        />
+      </View>
+    );
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -108,3 +146,13 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  // Full-screen dark ground for the launch loading — matches the app shell, not the navy splash.
+  launch: {
+    flex: 1,
+    backgroundColor: darkColors.bg,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+});

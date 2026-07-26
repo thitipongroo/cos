@@ -46,6 +46,7 @@ export const darkColors = {
   success: '#10B981', // --cos-dark-success — on-track, security/status marks
   warning: '#F59E0B', // --cos-dark-warning — behind-schedule, medium-severity
   danger: '#EF4444', // --cos-dark-danger — errors, critical severity
+  syncing: '#FFD60A', // --sync-active — offline-sync-in-progress indicator (matches colors.syncing)
   // Derived: --cos-dark-muted at low alpha. The dark set has no outline token, and --cos-dark-elevated
   // (#111827) is invisible against --cos-dark-surface (#0F172A), so borders take a muted tint instead.
   border: 'rgba(148, 163, 184, 0.24)',

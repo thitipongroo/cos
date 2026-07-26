@@ -7,7 +7,11 @@
   </style>
   <style name="Theme.App.SplashScreen" parent="Theme.SplashScreen">
     <item name="windowSplashScreenBackground">@color/splashscreen_background</item>
+    <!-- Icon = the square brand mark (hexagon), so it fills the Android-12 splash icon slot instead
+         of the wide wordmark being letterboxed tiny. Wordmark moves to the branding image below. -->
     <item name="windowSplashScreenAnimatedIcon">@drawable/splashscreen_logo</item>
+    <!-- Branding image (API 31+) — the "CONSTRUCTION OS" wordmark, shown centred at the bottom. -->
+    <item name="android:windowSplashScreenBrandingImage">@drawable/splashscreen_branding</item>
     <item name="postSplashScreenTheme">@style/AppTheme</item>
     <item name="android:windowSplashScreenBehavior">icon_preferred</item>
   </style>

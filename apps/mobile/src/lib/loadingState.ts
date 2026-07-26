@@ -39,6 +39,8 @@ export interface LoadingPalette {
   readonly muted: string;
   readonly primary: string;
   readonly accent: string | null;
+  /** Offline-sync-in-progress accent (mockup's `sync-active`) — the `list` variant's sync spinner. */
+  readonly syncing: string;
 }
 
 /** Skeleton bars are the surface's neighbour, tinted — the §32.7 tonal-layer rule, not a new token. */
@@ -54,6 +56,7 @@ export function resolvePalette(theme: LoadingTheme): LoadingPalette {
       muted: darkColors.muted,
       primary: darkColors.primary,
       accent: darkColors.cyan,
+      syncing: darkColors.syncing,
     };
   }
   return {
@@ -63,6 +66,7 @@ export function resolvePalette(theme: LoadingTheme): LoadingPalette {
     muted: colors.textSecondary,
     primary: colors.primary,
     accent: null,
+    syncing: colors.syncing,
   };
 }
 

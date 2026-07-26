@@ -133,6 +133,39 @@ no feedback at all or a second loading implementation to maintain.
 - The mockups' `PRC_ID` / `STAGING_v2` / `CALCULATING_PROBABILITY_MATRIX_V2.4` machine strings are
   not implemented — they are `label` content if a caller wants them.
 
+### Update (2026-07-26) — visual parity, decisions unchanged
+
+Product-owner request to bring the component closer to the mockup's visual chrome. The chrome was
+added **within** this ADR's decisions (all colour from tokens; caller still owns copy + progress):
+the `widget` variant gained the mockup's technical corner brackets and an analytics glyph inside its
+icon-plate skeleton; the `list` variant gained a clustered bordered container and a sync-active
+spinner on its first row (`syncing` added to the token palette); the `micro` variant's spinner became
+the mockup's ring. The machine strings and the `65/42/82/12` percentages remain caller-supplied — the
+in-app uses (SITE_ENGINEER dashboard, app launch) pass none, so they render as wordless indeterminate
+skeletons. The `ai` variant keeps `psychology` (the mockup's `neurology` glyph is absent from the
+installed MaterialIcons set).
+
+A follow-up (same date) wired the in-app callers to supply a `label` + `progress` after all, keeping
+this ADR's "caller owns them" decision intact: the SITE_ENGINEER dashboard passes `common.loadingLabel`
+("Loading…" — the project's own copy, not the mockup's machine strings) and an **honest** percentage
+derived from how many of its load steps (`GET /projects/mine` + the project's progress / issues /
+tasks) have settled — no simulated timer, no baked demo values. The `list` variant now renders that
+percentage beside its sync spinner, and the app-launch state derives its own two-step (hydration +
+font) percentage. The percentages are real load progress, so the "no progress signal" rationale is
+honoured, not reversed.
+
+A further follow-up (same date) gave the `widget` variant two **opt-in, caller-owned** props for its
+branded launch use — `iconSource` (a brand image that replaces the pulsing icon-plate skeleton) and
+`heading` (already-resolved text that replaces the top skeleton bar). The app-launch state
+([`_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx)) passes the app favicon + the tagline
+"AI-NATIVE / Construction Platform", so the launch loading continues the native splash's identity
+(same mark + wordmark) rather than showing an abstract skeleton. Both props are optional and default
+to the skeleton, so the dashboard's `widget` use is unchanged. This keeps decisions 4–5 intact: the
+component still bakes no brand asset and no copy — the caller owns them, exactly as it owns `progress`
+and `label`. The launch tagline is the English brand default (not i18n) because it renders before
+`I18nProvider` mounts and before the persisted locale is known — QM-3's documented system default,
+the same reason the interactive `label` is omitted there.
+
 ## References
 
 - [32-implementation-specifications.md §32.7](../../specifications/32-implementation-specifications.md) —
