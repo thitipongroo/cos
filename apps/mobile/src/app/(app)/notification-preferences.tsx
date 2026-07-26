@@ -28,14 +28,16 @@ import {
   type PreferenceUpdate,
 } from '../../api/notifications';
 
-// Real §19.4 event catalog surfaced to a Tenant Admin. `channels` lists the channels offered per
-// event (IN_APP = in-app/SSE, PUSH, EMAIL, LINE — the delivered channels; SMS has no adapter §19.2).
+// Real §19.4 event catalog surfaced to a Tenant Admin. `channels` are the persistable preference
+// channels — exactly the `notifications."NotificationChannel"` enum the PATCH DTO accepts and the
+// dispatcher delivers: IN_APP (in-app/SSE), EMAIL, LINE. (SMS is a valid enum value but has no MVP
+// adapter §19.2, and PUSH is device-token delivery, NOT a preference channel — neither is offered
+// here so a toggle never maps to a channel the backend rejects.)
 // `critical` marks the one event that is locked ON and bypasses quiet hours (§19.6).
 const IN_APP = 'IN_APP';
-const PUSH = 'PUSH';
 const EMAIL = 'EMAIL';
 const LINE = 'LINE';
-const ALL_CHANNELS = [IN_APP, PUSH, EMAIL, LINE] as const;
+const ALL_CHANNELS = [IN_APP, EMAIL, LINE] as const;
 
 interface EventDef {
   eventType: string;
@@ -50,7 +52,7 @@ const EVENT_CATALOG: readonly EventDef[] = [
     eventType: 'safety.incident.created.v1',
     labelKey: 'notifications.preferences.events.safety.label',
     descKey: 'notifications.preferences.events.safety.desc',
-    channels: [PUSH, IN_APP],
+    channels: [IN_APP, LINE],
     critical: true,
   },
   {
@@ -63,31 +65,30 @@ const EVENT_CATALOG: readonly EventDef[] = [
     eventType: 'site.inspection.failed.v1',
     labelKey: 'notifications.preferences.events.inspectionFailed.label',
     descKey: 'notifications.preferences.events.inspectionFailed.desc',
-    channels: [PUSH, IN_APP, EMAIL],
+    channels: [IN_APP, EMAIL],
   },
   {
     eventType: 'finance.variance.alert.v1',
     labelKey: 'notifications.preferences.events.budgetVariance.label',
     descKey: 'notifications.preferences.events.budgetVariance.desc',
-    channels: [PUSH, EMAIL],
+    channels: [EMAIL, LINE],
   },
   {
     eventType: 'procurement.po.approval_requested.v1',
     labelKey: 'notifications.preferences.events.poApproval.label',
     descKey: 'notifications.preferences.events.poApproval.desc',
-    channels: [PUSH, IN_APP, EMAIL],
+    channels: [IN_APP, EMAIL],
   },
   {
     eventType: 'ai.risk_prediction.generated.v1',
     labelKey: 'notifications.preferences.events.riskPrediction.label',
     descKey: 'notifications.preferences.events.riskPrediction.desc',
-    channels: [PUSH, IN_APP],
+    channels: [IN_APP, LINE],
   },
 ];
 
 const CHANNEL_ICON: Record<string, keyof typeof MaterialIcons.glyphMap> = {
   IN_APP: 'rss-feed',
-  PUSH: 'notifications',
   EMAIL: 'mail',
   LINE: 'chat',
 };
@@ -104,7 +105,12 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
   const [saved, setSaved] = useState(false);
   // enabled[eventType:channel] = true/false; seeded from stored rows, defaults handled in isOn().
   const [enabled, setEnabled] = useState<Record<string, boolean>>({});
-  const [quiet, setQuiet] = useState<{ start: string; end: string } | null>(null);
+  // Quiet-hours window (§19.6), 'HH:MM:SS'. Defaults to the server default until the stored window
+  // loads; editable by the hour steppers below and persisted on save.
+  const [quiet, setQuiet] = useState<{ start: string; end: string }>({
+    start: '22:00:00',
+    end: '07:00:00',
+  });
 
   useEffect(() => {
     let alive = true;
@@ -145,10 +151,18 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
 
   const quietWindow = useMemo(() => {
     const fmt = (s: string): string => s.slice(0, 5); // 'HH:MM:SS' → 'HH:MM'
-    return quiet
-      ? { start: fmt(quiet.start), end: fmt(quiet.end) }
-      : { start: '22:00', end: '07:00' };
+    return { start: fmt(quiet.start), end: fmt(quiet.end) };
   }, [quiet]);
+
+  // Step a window edge by whole hours (wrap 0–23), minutes pinned to :00. The stored column is TIME,
+  // and hour granularity is enough for a quiet window (the mockup shows 22:00 / 07:00).
+  const adjustQuiet = (edge: 'start' | 'end', delta: number): void => {
+    setQuiet((prev) => {
+      const hh = Number(prev[edge].slice(0, 2));
+      const next = ((hh + delta + 24) % 24).toString().padStart(2, '0');
+      return { ...prev, [edge]: `${next}:00:00` };
+    });
+  };
 
   const onSave = async (): Promise<void> => {
     setSaving(true);
@@ -161,7 +175,10 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
       }
     }
     try {
-      await updateNotificationPreferences(updates);
+      await updateNotificationPreferences(updates, {
+        start: quietWindow.start,
+        end: quietWindow.end,
+      });
       setSaved(true);
     } catch {
       // mutate() queues offline, so a thrown error here is a hard failure — surface it minimally.
@@ -307,16 +324,35 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
           {t('notifications.preferences.section.quiet')}
         </Text>
         <View style={styles.card}>
-          <View style={styles.quietRow}>
-            <View style={styles.quietCol}>
-              <Text style={styles.quietCaption}>{t('notifications.preferences.quiet.start')}</Text>
-              <Text style={styles.quietTime}>{quietWindow.start}</Text>
-            </View>
-            <MaterialIcons name="arrow-forward" size={20} color={darkColors.muted} />
-            <View style={[styles.quietCol, styles.quietColRight]}>
-              <Text style={styles.quietCaption}>{t('notifications.preferences.quiet.end')}</Text>
-              <Text style={styles.quietTime}>{quietWindow.end}</Text>
-            </View>
+          {/* Stacked START / END rows so the ±hour steppers keep their 44px touch targets without
+              overflowing the card width (side-by-side did not fit). */}
+          <View style={styles.quietStack}>
+            {(['start', 'end'] as const).map((edge) => (
+              <View key={edge} style={styles.quietEdgeRow}>
+                <Text style={styles.quietCaption}>
+                  {t(`notifications.preferences.quiet.${edge}`)}
+                </Text>
+                <View style={styles.stepperRow}>
+                  <Pressable
+                    testID={`quiet-${edge}-dec`}
+                    onPress={() => adjustQuiet(edge, -1)}
+                    style={styles.stepperBtn}
+                    accessibilityLabel={`${t(`notifications.preferences.quiet.${edge}`)} -1h`}
+                  >
+                    <MaterialIcons name="remove" size={18} color={darkColors.primary} />
+                  </Pressable>
+                  <Text style={styles.quietTime}>{quietWindow[edge]}</Text>
+                  <Pressable
+                    testID={`quiet-${edge}-inc`}
+                    onPress={() => adjustQuiet(edge, 1)}
+                    style={styles.stepperBtn}
+                    accessibilityLabel={`${t(`notifications.preferences.quiet.${edge}`)} +1h`}
+                  >
+                    <MaterialIcons name="add" size={18} color={darkColors.primary} />
+                  </Pressable>
+                </View>
+              </View>
+            ))}
           </View>
           <Text style={styles.quietNote}>{t('notifications.preferences.quiet.note')}</Text>
         </View>
@@ -436,16 +472,23 @@ const styles = StyleSheet.create({
   channelChipOn: { backgroundColor: `${darkColors.primary}22`, borderColor: darkColors.primary },
   channelChipOff: { backgroundColor: darkColors.elevated, borderColor: darkColors.border },
   channelChipText: { fontFamily: fontFamily.bold, fontSize: 9, letterSpacing: 0.5 },
-  quietRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  quietStack: {
     backgroundColor: darkColors.elevated,
     borderRadius: 8,
     padding: spacing.md,
+    gap: spacing.sm,
   },
-  quietCol: { gap: 2 },
-  quietColRight: { alignItems: 'flex-end' },
+  quietEdgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stepperRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  stepperBtn: {
+    width: touchTarget.iconButton,
+    height: touchTarget.iconButton,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: darkColors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   quietCaption: {
     fontFamily: fontFamily.bold,
     fontSize: 10,
@@ -453,7 +496,14 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
     textTransform: 'uppercase',
   },
-  quietTime: { fontFamily: fontFamily.bold, fontSize: 18, color: darkColors.text },
+  quietTime: {
+    fontFamily: fontFamily.bold,
+    fontSize: 18,
+    color: darkColors.text,
+    minWidth: 64,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+  },
   quietNote: {
     fontFamily: fontFamily.regular,
     fontSize: 11,

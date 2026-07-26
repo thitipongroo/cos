@@ -287,6 +287,29 @@ export class NotificationRepository implements OnModuleDestroy {
     return rows[0]!;
   }
 
+  /**
+   * Set the user's quiet-hours window (§19.6) on all their preference rows. The window lives on the
+   * denormalised TIME columns of notification_preferences, so it updates every row the user owns and
+   * returns how many were touched — 0 when the user has no rows yet (the caller upserts first).
+   */
+  async updateQuietHours(
+    tenantId: string,
+    userId: string,
+    start: string,
+    end: string,
+  ): Promise<{ updated: number }> {
+    const updated = await this.db.run(
+      tenantId,
+      (tx) =>
+        tx.$executeRaw`
+        UPDATE notifications.notification_preferences
+        SET quiet_hours_start = ${start}::time, quiet_hours_end = ${end}::time
+        WHERE tenant_id = ${tenantId}::uuid AND user_id = ${userId}::uuid
+      `,
+    );
+    return { updated: Number(updated) };
+  }
+
   // ── device tokens ──────────────────────────────────────────────────────────
 
   async upsertDeviceToken(params: {

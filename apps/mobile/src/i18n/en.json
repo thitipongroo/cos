@@ -435,6 +435,64 @@
       }
     }
   },
+  "drawer": {
+    "open": "Open menu",
+    "close": "Close menu",
+    "member": "Member",
+    "online": "Online & synced",
+    "fieldTools": "Field tools",
+    "settings": "Notification settings",
+    "security": "Security & MFA",
+    "logout": "Log out",
+    "projects": "Project overview",
+    "reports": "Daily site reports",
+    "incidents": "Safety incident logs",
+    "inspections": "Inspections",
+    "materials": "Materials",
+    "deliveries": "Deliveries"
+  },
+  "mfa": {
+    "enroll": {
+      "title": "Two-factor authentication",
+      "body": "Add a second step at login with an authenticator app. Required for admin and finance roles.",
+      "step1": "Open your authenticator app (Google Authenticator, Authy, 1Password)",
+      "step2": "Scan the QR code shown by Construction OS security",
+      "step3": "Enter the 6-digit code to confirm, then save your backup codes",
+      "cta": "Set up authenticator",
+      "hint": "You'll continue in a secure Construction OS window.",
+      "cancelled": "Setup was cancelled. You can try again anytime.",
+      "error": "Could not start setup. Please try again."
+    },
+    "success": {
+      "title": "Enrollment successful",
+      "body": "Your account is now protected with multi-factor authentication. You'll be asked for a verification code at your next login.",
+      "summary": "Security audit summary",
+      "status": "Status",
+      "active": "Active",
+      "method": "Method",
+      "methodValue": "Authenticator app",
+      "backupCodes": "Backup codes",
+      "saved": "Saved",
+      "done": "Go to dashboard",
+      "viewSecurity": "View Security Settings"
+    },
+    "downloaded": {
+      "title": "Backup Codes Downloaded",
+      "body": "Your MFA recovery codes have been saved to your device. Please store them in a safe location.",
+      "fileName": "cos-recovery-codes.txt",
+      "fileMeta": "Recovery codes • Document",
+      "savedBadge": "Saved",
+      "encrypted": "Secure storage",
+      "viewFile": "View File",
+      "returnSecurity": "Return to Security",
+      "goDashboard": "Go to Dashboard"
+    },
+    "recovery": {
+      "title": "Backup security codes",
+      "body": "Generate single-use recovery codes to sign in if you lose access to your authenticator.",
+      "cta": "Set up backup codes"
+    }
+  },
   "materialRequest": {
     "title": "Request materials",
     "item": "Item {n}",

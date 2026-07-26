@@ -86,7 +86,16 @@ export class NotificationController {
   @Patch('notifications/preferences')
   @ApiOperation({ summary: 'Update my notification channel preferences' })
   updatePreferences(@Req() req: AuthRequest, @Body() dto: UpdatePreferencesDto) {
-    return this.svc.updatePreferences(req.tenantId!, req.user!.user_id!, dto.preferences);
+    const quietHours =
+      dto.quiet_hours_start !== undefined && dto.quiet_hours_end !== undefined
+        ? { start: dto.quiet_hours_start, end: dto.quiet_hours_end }
+        : undefined;
+    return this.svc.updatePreferences(
+      req.tenantId!,
+      req.user!.user_id!,
+      dto.preferences,
+      quietHours,
+    );
   }
 
   // POST /api/v1/notifications/device-token

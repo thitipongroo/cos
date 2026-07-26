@@ -21,6 +21,7 @@ const mockRepo = {
   findByRecipient: jest.fn(),
   findPreferences: jest.fn(),
   upsertPreference: jest.fn(),
+  updateQuietHours: jest.fn(),
   upsertDeviceToken: jest.fn(),
   findDeviceTokens: jest.fn(),
   getTenantTimezone: jest.fn(),
@@ -583,6 +584,30 @@ describe('updatePreferences', () => {
     expect(result).toHaveLength(1);
     expect(mockRepo.upsertPreference).toHaveBeenCalledWith(
       expect.objectContaining({ is_enabled: false }),
+    );
+    // No window supplied → the quiet-hours update is skipped.
+    expect(mockRepo.updateQuietHours).not.toHaveBeenCalled();
+  });
+
+  it('stamps the quiet-hours window on the rows when supplied', async () => {
+    mockRepo.upsertPreference.mockResolvedValue({
+      pref_id: 'p1',
+      event_type: 'e',
+      channel: 'IN_APP',
+      is_enabled: true,
+    });
+    mockRepo.updateQuietHours.mockResolvedValue({ updated: 1 });
+    await svc.updatePreferences(
+      'tenant-001',
+      'user-001',
+      [{ event_type: 'e', channel: 'IN_APP', is_enabled: true }],
+      { start: '22:00', end: '07:00' },
+    );
+    expect(mockRepo.updateQuietHours).toHaveBeenCalledWith(
+      'tenant-001',
+      'user-001',
+      '22:00',
+      '07:00',
     );
   });
 });

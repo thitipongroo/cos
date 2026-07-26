@@ -68,14 +68,19 @@ export async function getNotificationPreferences(): Promise<PreferenceRow[]> {
 
 export async function updateNotificationPreferences(
   preferences: PreferenceUpdate[],
+  quietHours?: { start: string; end: string },
 ): Promise<void> {
-  // 'preferences' is the queue key so repeated saves collapse to the latest rather than stacking
-  // (mirrors markAllNotificationsRead's 'all').
-  await mutate<void>(
-    'PATCH',
-    '/notifications/preferences',
-    { preferences },
-    'notification-preferences',
-    'me',
-  );
+  // Body carries the channel flags plus, optionally, the quiet-hours window (§19.6) as 'HH:MM'
+  // strings. 'preferences' is the queue key so repeated saves collapse to the latest rather than
+  // stacking (mirrors markAllNotificationsRead's 'all').
+  const body: {
+    preferences: PreferenceUpdate[];
+    quiet_hours_start?: string;
+    quiet_hours_end?: string;
+  } = { preferences };
+  if (quietHours) {
+    body.quiet_hours_start = quietHours.start;
+    body.quiet_hours_end = quietHours.end;
+  }
+  await mutate<void>('PATCH', '/notifications/preferences', body, 'notification-preferences', 'me');
 }

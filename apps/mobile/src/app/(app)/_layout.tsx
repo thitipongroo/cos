@@ -13,6 +13,7 @@ import { OfflineBanner } from '../../components/OfflineBanner';
 import { SyncStatusBar } from '../../components/SyncStatusBar';
 import { TopBar } from '../../components/TopBar';
 import { MobileNav } from '../../components/MobileNav';
+import { NavigationDrawer } from '../../components/NavigationDrawer';
 import { useAuthStore } from '../../store/authStore';
 import { setLastAppPath } from '../../lib/e2e/lastRoute';
 
@@ -61,6 +62,9 @@ export default function AppLayout() {
       <View style={styles.tabs}>
         <MobileNav />
       </View>
+      {/* Side drawer (mockup 04) — overlays the tabs, opened from the TopBar hamburger. Renders null
+          while closed, so it never intercepts touches until opened. */}
+      <NavigationDrawer />
     </View>
   );
 }

@@ -7,21 +7,30 @@
 
 import { useEffect, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import appIcon from '../../assets/icon.png';
 import { Avatar } from './Avatar';
 import { listNotifications, unreadCount } from '../api/notifications';
+import { useUiStore } from '../store/uiStore';
 import { useT } from '../i18n';
 import { colors, darkColors, fontFamily, spacing, touchTarget, typography } from '../theme/tokens';
 
+// Pushed sub-screens reached from the drawer (settings-style detail routes) show a Back arrow instead
+// of the drawer hamburger — a hamburger to re-open the drawer you just came from is the wrong
+// affordance, and their mockups show a back arrow (e.g. 04_tenant_admin/01 header).
+const BACK_ROUTES = new Set(['/notification-preferences', '/mfa-enrollment']);
+
 export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const t = useT();
+  const openDrawer = useUiStore((s) => s.openDrawer);
   const [unread, setUnread] = useState(0);
   const dark = variant === 'dark';
+  const showBack = BACK_ROUTES.has(pathname);
 
   useEffect(() => {
     listNotifications()
@@ -42,6 +51,27 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
       ]}
     >
       <View style={styles.brand}>
+        {showBack ? (
+          <TouchableOpacity
+            testID="topbar-back"
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+            style={styles.menuButton}
+            onPress={() => router.back()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color={fg} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            testID="drawer-menu-button"
+            accessibilityRole="button"
+            accessibilityLabel={t('drawer.open')}
+            style={styles.menuButton}
+            onPress={openDrawer}
+          >
+            <MaterialIcons name="menu" size={24} color={fg} />
+          </TouchableOpacity>
+        )}
         <Image
           testID="brand-logo"
           source={appIcon}
@@ -84,6 +114,13 @@ const styles = StyleSheet.create({
   barDark: { backgroundColor: darkColors.surface, borderBottomColor: darkColors.border },
   barLight: { backgroundColor: colors.surface, borderBottomColor: colors.textSecondary },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  menuButton: {
+    minWidth: touchTarget.iconButton,
+    minHeight: touchTarget.iconButton,
+    marginLeft: -spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   brandIcon: { width: 28, height: 28 },
   appName: {
     fontSize: typography.caption.fontSize,

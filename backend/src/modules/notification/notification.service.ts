@@ -307,8 +307,9 @@ export class NotificationService {
     tenantId: string,
     userId: string,
     preferences: Array<{ event_type: string; channel: string; is_enabled: boolean }>,
+    quietHours?: { start: string; end: string },
   ) {
-    return Promise.all(
+    const results = await Promise.all(
       preferences.map((p) =>
         this.repo.upsertPreference({
           tenant_id: tenantId,
@@ -319,6 +320,12 @@ export class NotificationService {
         }),
       ),
     );
+    // Quiet hours (§19.6) live on the denormalised preference rows, so upsert the rows first, then
+    // stamp the window on all of them. Skipped unless the caller supplied a validated window.
+    if (quietHours) {
+      await this.repo.updateQuietHours(tenantId, userId, quietHours.start, quietHours.end);
+    }
+    return results;
   }
 
   // ── Template rendering ─────────────────────────────────────────────────────

@@ -298,6 +298,17 @@ describe('upsertPreference', () => {
   });
 });
 
+// ── updateQuietHours ──────────────────────────────────────────────────────────
+
+describe('updateQuietHours', () => {
+  it('updates the window on the user rows and returns the affected count', async () => {
+    mockExecuteRaw.mockResolvedValueOnce(3);
+    const result = await repo.updateQuietHours('tenant-001', 'user-001', '22:00', '07:00');
+    expect(result.updated).toBe(3);
+    expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
+  });
+});
+
 // ── upsertDeviceToken ───────────────────────────────────────────────────────
 
 describe('upsertDeviceToken', () => {
