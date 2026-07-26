@@ -1,0 +1,291 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Request Re-inspection | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "mobile-danger": "#FF3B30",
+                        "on-tertiary-container": "#eeefff",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface-container-high": "#1b2b3f",
+                        "sync-pending": "#94A3B8",
+                        "primary-fixed": "#dbe1ff",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#686c80",
+                        "surface": "#031427",
+                        "background": "#031427",
+                        "dark-surface": "#0F172A",
+                        "secondary-container": "#03b5d3",
+                        "mobile-warning": "#FF9500",
+                        "surface-variant": "#26364a",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "secondary": "#4cd7f6",
+                        "mobile-primary": "#0066FF",
+                        "on-primary-fixed": "#00174b",
+                        "on-tertiary": "#2b3041",
+                        "on-background": "#d3e4fe",
+                        "on-secondary": "#003640",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#0b1c30",
+                        "tertiary-fixed": "#dee1f9",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary-container": "#eeefff",
+                        "sync-active": "#FFD60A",
+                        "inverse-on-surface": "#213145",
+                        "surface-container": "#102034",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error": "#690005",
+                        "surface-tint": "#b4c5ff",
+                        "outline": "#8d90a0",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-container-lowest": "#000f21",
+                        "dark-bg": "#020617",
+                        "surface-container-highest": "#26364a",
+                        "secondary-fixed": "#acedff",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-primary": "#002a78",
+                        "tertiary": "#c1c5dc",
+                        "mobile-success": "#00C853",
+                        "on-surface": "#d3e4fe",
+                        "primary-container": "#2563eb",
+                        "primary": "#b4c5ff",
+                        "on-secondary-container": "#00424e",
+                        "inverse-primary": "#0053db",
+                        "surface-bright": "#2a3a4f",
+                        "outline-variant": "#434655",
+                        "surface-dim": "#031427",
+                        "cos-blue": "#0066FF"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "space-1": "4px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "space-3": "12px",
+                        "touch-target": "52px",
+                        "mobile-edge": "24px",
+                        "mobile-touch-target": "52px"
+                    },
+                    "fontFamily": {
+                        "hero-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #102034 25%, #1b2b3f 50%, #102034 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .bento-border {
+            border-left: 4px solid transparent;
+        }
+    </style>
+</head>
+<body class="font-body-mobile text-body-mobile select-none overflow-x-hidden">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge h-mobile-touch-target bg-surface dark:bg-dark-bg border-b border-outline-variant dark:border-outline-variant">
+<div class="flex items-center gap-space-3">
+<button class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-variant/50 transition-colors active:opacity-70">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-2">
+<img alt="Logo" class="w-6 h-6 rounded-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzB8KqO5nGNV-WiQJg0xgzIxeMBiEXh0dTLj8pK-MWe2fRObo32coSNgYIFv75UyCFgQVdYFvfOlitDFhOZotbBtJuEQn6f4yxZzj194aznpni6VOGdhz9NY5tuojNsU1LuSKHhD646D4LPrbmZxbo0jg1M6NxwJBGmVytwm_NkffPTtSsN6qsoTm27rep5pvZJOM0Ho83yBbwFZxq0hUCshwe2CAzGfr0hEFXcvhPcigZCbwdYps2JwReFEhJaBnGADUMIV7c4pA">
+<span class="text-[14px] font-bold uppercase tracking-widest text-primary">CONSTRUCTION OS</span>
+</div>
+</div>
+<div class="flex items-center gap-space-2">
+<div class="flex items-center gap-1 bg-surface-container-high py-0 rounded-full border border-outline-variant px-1"><div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div><span class="font-bold uppercase tracking-widest text-primary text-[10px]">SYNCED</span></div>
+<button class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-surface-variant/50 transition-colors active:opacity-70">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="pt-20 pb-28 px-mobile-edge space-y-space-4">
+<!-- Header Title -->
+<section class="mb-space-4"><h1 class="font-h1-web text-h1-web text-on-surface leading-tight">Request Re-inspection</h1><p class="font-label-mobile text-on-surface-variant">(Ref: #REBAR-042)</p></section>
+<!-- Reference Issue Card -->
+<div class="bg-surface-container border-l-4 border-mobile-danger rounded-xl p-space-4 shadow-lg flex flex-col gap-space-3">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-h2-web text-h2-web text-on-surface">Exposed Rebar Oxidation</h3>
+<p class="text-xs text-on-surface-variant mt-0.5">Found in Sector B4 - Foundation Slab</p>
+</div>
+<span class="bg-mobile-danger/20 text-mobile-danger px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider border border-mobile-danger/30">Failed</span>
+</div>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">history</span>
+<span class="font-label-mobile text-on-surface-variant">Last Inspection: 24 Oct, 09:15 AM</span>
+</div>
+</div>
+<!-- AI Assistant Panel -->
+<div class="bg-secondary/5 border-l-4 border-secondary rounded-xl p-space-4 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-2 opacity-10">
+<span class="material-symbols-outlined text-4xl">neurology</span>
+</div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="text-[11px] font-bold uppercase tracking-[0.1em] text-secondary">Core AI Assistant</span>
+</div><div class="flex flex-wrap items-center gap-2 mb-2"><span class="bg-secondary/20 text-secondary px-1.5 py-0.5 rounded text-[9px] font-bold tracking-widest uppercase border border-secondary/30">98% Confidence</span><span class="text-[9px] text-on-surface-variant/60 font-medium uppercase tracking-wider">Sources: BIM Model Verification | Rust Coating Spec v2.1</span></div>
+<p class="text-sm font-medium text-on-secondary-fixed-variant leading-relaxed">
+                CORE_AI: Verifying mitigation steps against BIM model... I've detected that the rust conversion coating application matches the specification for re-inspection.
+            </p>
+</div>
+<!-- Form Inputs -->
+<form class="space-y-6 pt-2">
+<!-- Reason for Re-inspection -->
+<div class="space-y-2">
+<label class="font-label-mobile text-on-surface-variant px-1">Reason for Re-inspection</label>
+<textarea class="w-full bg-surface-container border border-outline-variant rounded-xl p-space-4 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary transition-all min-h-[100px] placeholder-on-surface-variant/30" placeholder="Describe the corrective actions taken..."></textarea>
+</div>
+<!-- Photo Upload Area -->
+<div class="space-y-2">
+<label class="font-label-mobile text-on-surface-variant px-1">Updated Photos</label>
+<div class="grid grid-cols-3 gap-2">
+<div class="aspect-square bg-surface-container-high border border-dashed border-outline rounded-xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary">add_a_photo</span>
+<span class="text-[10px] text-on-surface-variant font-bold uppercase">Add</span>
+</div>
+<!-- Mock Preview -->
+<div class="aspect-square bg-surface-container rounded-xl overflow-hidden border border-outline-variant relative">
+<div class="w-full h-full bg-cover bg-center" data-alt="A macro close-up photo of a clean steel rebar treated with dark grey rust converter coating in an industrial construction site setting. The lighting is crisp and detailed, showing the texture of the treatment. Dark mode aesthetic with high contrast industrial tones." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDa1hizr_v1CnTJqvExw5bAF32w1i7dLV8KtTtS6jLHqRWycy2EKQcPwA2TUNpqae6L2B3R5F5aB-_b4qS-z8ABmrN0xOsCgv1E6u_-vKAYvlZO85INQR42nuwLv2WKtGED0TIc66C8VT8gOnofh4m7JyZ_CvqZn8iSHEBhlmL1O6svSW48BPMDuYKCIp3EPmZ5pDrEe1ereRt0WX7HxiygZu0CUStWHj0gyffZJLna_PdryoLV5yc_sWEXbm8gico3YATD3Gs0vUQ')"></div>
+<button class="absolute top-1 right-1 w-5 h-5 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-white">close</span>
+</button>
+</div>
+<div class="aspect-square bg-surface-container rounded-xl overflow-hidden border border-outline-variant relative">
+<div class="w-full h-full bg-cover bg-center" data-alt="A wide angle shot of a construction site floor showing multiple rebar points already treated and ready for re-inspection. The environment is a dimly lit basement level with focused work lights creating strong highlights and deep shadows. Industrial dark mode style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDiHiMxA58q8Cey7f18_879dsZxqrfj4SSoK-6rGiMDjc362MGt7N6CRoMeRqLk-_Yn9Ih6scI556CO4Q03gCtxV_i8LM11X9QmZlXkOJCkRx9D7lo3KVunpIiyt3g2Ga7xRfWb3CEkPbgCJM71ciSLUI82Wq_ngm6mNpe_94xcAtHSDELFLu9xRCMr7vG5RV_1UdOZ0uD8_zJk1ABzZbmf5FzwbEv2qaiXv8CjEXwNvzx3semjuedXOUA87QQZbVx4bS_aBT6qZFk')"></div>
+<button class="absolute top-1 right-1 w-5 h-5 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-white">close</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Priority Chips -->
+<div class="space-y-2">
+<label class="font-label-mobile text-on-surface-variant px-1">Priority</label>
+<div class="flex flex-wrap gap-2">
+<button class="chip-active px-space-4 py-2 rounded-full border border-mobile-warning bg-mobile-warning/20 text-mobile-warning font-label-mobile transition-all active:scale-95" onclick="selectChip(this)" type="button">Urgent</button>
+<button class="chip-inactive px-space-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-mobile transition-all active:scale-95" onclick="selectChip(this)" type="button">Standard</button>
+<button class="chip-inactive px-space-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-mobile transition-all active:scale-95" onclick="selectChip(this)" type="button">Low</button>
+</div>
+</div>
+</form>
+<!-- Actions -->
+<div class="flex flex-col gap-3 pt-6">
+<button class="h-touch-target w-full bg-primary-container text-on-primary-container rounded-xl font-bold uppercase tracking-[0.05em] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg">
+<span class="material-symbols-outlined">send</span>
+                Submit Re-inspection Request
+            </button>
+<button class="h-touch-target w-full bg-surface-container-high border border-outline-variant/30 text-on-surface-variant rounded-xl font-bold uppercase tracking-[0.05em] flex items-center justify-center active:bg-surface-variant/20 transition-all">
+                Cancel
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[72px] px-mobile-edge pb-safe bg-surface dark:bg-dark-bg border-t border-outline-variant dark:border-outline-variant">
+<!-- Issues Active -->
+<a class="flex flex-col items-center justify-center text-cos-blue font-semibold transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">report_problem</span>
+<span class="font-mobile-text-label text-mobile-text-label">Issues</span>
+</a>
+<!-- Map -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-mobile-text-label text-mobile-text-label">Map</span>
+</a>
+<!-- Inventory -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-mobile-text-label text-mobile-text-label">Inventory</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant transition-transform duration-150 active:scale-95" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-mobile-text-label text-mobile-text-label">Profile</span>
+</a>
+</nav>
+<script>
+        function selectChip(element) {
+            // Find sibling buttons
+            const siblings = element.parentNode.querySelectorAll('button');
+            siblings.forEach(btn => {
+                btn.className = "px-space-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-mobile transition-all active:scale-95";
+            });
+            
+            // Set active style (using the context of the priority)
+            if(element.innerText === 'Urgent') {
+                element.className = "px-space-4 py-2 rounded-full border border-mobile-warning bg-mobile-warning/20 text-mobile-warning font-label-mobile transition-all active:scale-95";
+            } else {
+                element.className = "px-space-4 py-2 rounded-full border border-primary-container bg-primary-container/20 text-primary font-label-mobile transition-all active:scale-95";
+            }
+        }
+
+        // Add some micro-interaction for the photo boxes
+        document.querySelectorAll('.aspect-square').forEach(box => {
+            box.addEventListener('touchstart', () => {
+                box.classList.add('opacity-80');
+            });
+            box.addEventListener('touchend', () => {
+                box.classList.remove('opacity-80');
+            });
+        });
+    </script>
+
+
+
+
+</body></html>

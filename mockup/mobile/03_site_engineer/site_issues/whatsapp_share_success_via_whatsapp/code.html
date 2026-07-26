@@ -1,0 +1,230 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Share Success via WhatsApp - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "dark-bg": "#020617",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-tint": "#b4c5ff",
+                    "inverse-primary": "#0053db",
+                    "mobile-danger": "#FF3B30",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "primary-fixed": "#dbe1ff",
+                    "primary": "#b4c5ff",
+                    "error": "#ffb4ab",
+                    "surface-container": "#102034",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-container-highest": "#26364a",
+                    "on-secondary": "#003640",
+                    "surface-dim": "#031427",
+                    "outline": "#8d90a0",
+                    "mobile-primary": "#0066FF",
+                    "on-tertiary": "#2b3041",
+                    "on-background": "#d3e4fe",
+                    "on-primary": "#002a78",
+                    "on-error": "#690005",
+                    "secondary-container": "#03b5d3",
+                    "inverse-on-surface": "#213145",
+                    "on-surface": "#d3e4fe",
+                    "on-secondary-container": "#00424e",
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary-container": "#eeefff",
+                    "background": "#031427",
+                    "surface": "#031427",
+                    "surface-variant": "#26364a",
+                    "on-primary-fixed": "#00174b",
+                    "secondary": "#4cd7f6",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "error-container": "#93000a",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "outline-variant": "#434655",
+                    "tertiary-container": "#686c80",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-primary-container": "#eeefff",
+                    "on-secondary-fixed": "#001f26",
+                    "secondary-fixed": "#acedff",
+                    "tertiary-fixed": "#dee1f9",
+                    "mobile-success": "#00C853",
+                    "sync-active": "#FFD60A",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "sync-pending": "#94A3B8",
+                    "on-error-container": "#ffdad6",
+                    "surface-bright": "#2a3a4f",
+                    "primary-container": "#2563eb",
+                    "dark-surface": "#0F172A",
+                    "surface-container-lowest": "#000f21",
+                    "mobile-warning": "#FF9500",
+                    "cos-blue": "#2563eb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "space-4": "16px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "touch-target": "52px",
+                    "space-2": "8px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "mobile-edge": "24px",
+                    "mobile-touch-target": "52px"
+            },
+            "fontFamily": {
+                    "hero-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.2; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+        .bento-card {
+            background: #102034;
+            border-left: 4px solid transparent;
+        }
+        .ai-border {
+            border-left: 4px solid #4cd7f6;
+            background: rgba(76, 215, 246, 0.05);
+        }
+    </style>
+</head>
+<body class="text-on-surface selection:bg-primary/30">
+<!-- Top Navigation Header (Suppressed as per task, but standardized brand present) -->
+<header class="w-full top-0 sticky bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge h-mobile-touch-target z-50">
+<div class="flex items-center gap-3"><div class="flex items-center gap-3"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCZWZ-3ta5yoqz1OlHEDl93DDzaetXAlMinruKUX0TgkM2jDPoZQDz_FKAwkuCLOe1tLUrLEtuQOBO1t4BuCaLqg-oCrn858tRmvva05PVKqTNq03gIua34CWuS2QxCNfiy0Ea0Ae1ncFuHz58RFtGGzLyLsD07D3ZG_5gnCNf8j3bsZiVZ4-PXgLML1QMv_EXl2viyeQ1-ENXPi1hhR5gCm7M3031r3PrQTTu-Q5g8kkvI6WXOMC0f4tLIqkJvi2E5EX0n65O8gpU" alt="Construction OS Logo" class="w-8 h-8 object-contain"><div><h1 class="font-hero-mobile text-hero-mobile font-bold text-cos-blue dark:text-primary text-sm tracking-tighter uppercase leading-none">CONSTRUCTION OS</h1></div></div></div>
+<div class="flex items-center gap-2 px-3 py-1 bg-mobile-success/10 border border-mobile-success/20 rounded-full">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="text-[10px] font-bold text-mobile-success tracking-widest">SYNCED</span>
+</div>
+</header>
+<main class="min-h-[calc(100vh-52px)] flex flex-col px-mobile-edge pt-12 pb-safe">
+<!-- Success Animation & Title Section -->
+<div class="flex flex-col items-center text-center mb-10">
+<div class="relative mb-6">
+
+<div class="relative w-24 h-24 bg-mobile-success flex items-center justify-center rounded-full">
+<span class="material-symbols-outlined text-white text-5xl" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-2">แชร์สำเร็จ</h2>
+<p class="text-on-surface-variant font-body-mobile text-body-mobile px-4">
+                รายงาน <span class="font-bold text-on-surface">#REBAR-042</span> ถูกส่งไปยัง WhatsApp เรียบร้อยแล้ว
+            </p>
+</div>
+<!-- Transaction Summary Bento -->
+<div class="bento-card rounded-xl p-5 mb-4 shadow-xl" style="opacity: 1; transform: translateY(0px); transition: 0.6s cubic-bezier(0.22, 1, 0.36, 1);">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-[#25D366]/20 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-[#25D366]">chat</span>
+</div>
+<div>
+<div class="text-[11px] text-on-surface-variant font-bold uppercase tracking-wider mb-0.5">Recipient</div>
+<div class="font-bold text-on-surface">Structural Team A</div>
+</div>
+</div>
+<div class="text-right">
+<div class="text-[11px] text-on-surface-variant font-bold uppercase tracking-wider mb-0.5">Timestamp</div>
+<div class="text-sm font-medium text-on-surface/80">24/05/2024 14:32</div>
+</div>
+</div>
+<div class="h-px bg-outline-variant/20 w-full mb-4"></div>
+<div class="flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm">description</span>
+                    Site_Report_REBAR_042.pdf
+                </span>
+<span class="bg-surface-variant px-2 py-0.5 rounded text-[10px]">4.2 MB</span>
+</div>
+</div>
+<!-- AI Summary Snippet -->
+<div class="ai-border rounded-xl p-4 mb-10 flex items-start gap-3" style="opacity: 1; transform: translateY(0px); transition: 0.6s cubic-bezier(0.22, 1, 0.36, 1);"><span class="material-symbols-outlined text-secondary text-xl" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span><div class="flex-1"><div class="flex items-center justify-between mb-1"><p class="text-secondary font-bold text-[12px] uppercase tracking-widest">CORE_AI ANALYSIS</p><span class="bg-secondary/20 text-secondary px-2 py-0.5 rounded text-[10px] font-bold border border-secondary/30">98% CONFIDENCE</span></div><p class="text-on-surface/90 text-sm italic leading-relaxed">"ระบบประมวลผลโครงสร้างข้อความเพื่อความสะดวกในการอ่านบนมือถือ พร้อมสรุปตัวชี้วัดสำคัญสำหรับผู้ควบคุมงานภาคสนามโดยเฉพาะ"</p></div></div>
+<!-- Action Buttons Section -->
+<div class="mt-auto space-y-3">
+<button class="w-full h-mobile-touch-target bg-primary text-on-primary font-bold uppercase tracking-widest rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-lg shadow-primary/10 min-h-[52px]">
+<span class="">ดูรายละเอียดรายงาน</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+<button class="w-full h-mobile-touch-target bg-transparent border-2 border-outline-variant text-on-surface font-bold uppercase tracking-widest rounded-xl transition-all active:bg-surface-variant/30 flex items-center justify-center gap-2 min-h-[52px]">
+<span class="material-symbols-outlined text-lg">share</span>
+<span class="">แชร์ไปยังช่องทางอื่น</span>
+</button>
+</div>
+</main>
+<!-- Visual Polish: Background Grid Pattern -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[-1]" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 24px 24px;"></div>
+<script>
+        // Micro-interactions for button presses
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', function() {
+                this.classList.add('transition-transform');
+            });
+            btn.addEventListener('touchend', function() {
+                this.classList.remove('transition-transform');
+            });
+        });
+
+        // Simple Fade-in Observer for components
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = "1";
+                    entry.target.style.transform = "translateY(0)";
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.bento-card, .ai-border').forEach(el => {
+            el.style.opacity = "0";
+            el.style.transform = "translateY(10px)";
+            el.style.transition = "all 0.6s cubic-bezier(0.22, 1, 0.36, 1)";
+            observer.observe(el);
+        });
+    </script>
+
+
+</body></html>

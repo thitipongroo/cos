@@ -1,0 +1,350 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Add to Favorites</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#102034",
+                    "on-primary": "#002a78",
+                    "surface-tint": "#b4c5ff",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "sync-active": "#FFD60A",
+                    "mobile-warning": "#FF9500",
+                    "error-container": "#93000a",
+                    "primary-container": "#2563eb",
+                    "secondary-fixed": "#acedff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "mobile-primary": "#0066FF",
+                    "dark-surface": "#0F172A",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container-low": "#0b1c30",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-container": "#00424e",
+                    "tertiary": "#c1c5dc",
+                    "sync-pending": "#94A3B8",
+                    "on-background": "#d3e4fe",
+                    "outline": "#8d90a0",
+                    "surface-dim": "#031427",
+                    "on-primary-container": "#eeefff",
+                    "on-secondary": "#003640",
+                    "tertiary-fixed": "#dee1f9",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-primary": "#0053db",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "dark-bg": "#020617",
+                    "surface-variant": "#26364a",
+                    "error": "#ffb4ab",
+                    "secondary": "#4cd7f6",
+                    "surface-container-high": "#1b2b3f",
+                    "primary": "#b4c5ff",
+                    "inverse-surface": "#d3e4fe",
+                    "on-tertiary-fixed": "#161b2b",
+                    "mobile-success": "#00C853",
+                    "secondary-container": "#03b5d3",
+                    "on-surface": "#d3e4fe",
+                    "on-primary-fixed": "#00174b",
+                    "mobile-danger": "#FF3B30",
+                    "surface-container-highest": "#26364a",
+                    "on-error-container": "#ffdad6",
+                    "on-tertiary": "#2b3041",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "outline-variant": "#434655",
+                    "on-tertiary-container": "#eeefff",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-container": "#686c80",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary-fixed": "#001f26",
+                    "surface": "#031427",
+                    "on-error": "#690005",
+                    "surface-container-lowest": "#000f21",
+                    "background": "#031427",
+                    "cos-blue": "#2563eb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "mobile-edge": "24px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "touch-target": "52px",
+                    "mobile-touch-target": "52px",
+                    "space-2": "8px"
+            },
+            "fontFamily": {
+                    "h1-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .status-strip {
+            width: 4px;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        /* Industrial Shimmer effect for loading/interactive elements */
+        .shimmer-active {
+            background: linear-gradient(90deg, #102034 0%, #1b2b3f 50%, #102034 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+
+        @keyframes shimmer {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="font-body-mobile text-body-mobile">
+<!-- Top App Bar -->
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-mobile-edge h-mobile-touch-target">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-cos-blue dark:text-primary" data-icon="menu">menu</span>
+<h1 class="font-hero-mobile font-bold text-cos-blue dark:text-primary tracking-tight text-h1-web">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5 px-2 py-1 bg-surface-variant/50 rounded-full">
+<span class="w-2 h-2 rounded-full bg-sync-active shadow-[0_0_8px_#FFD60A]"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface uppercase tracking-widest">SYNCED</span>
+</div>
+
+</div>
+</header>
+<main class="pb-32 px-mobile-edge pt-6 space-y-6">
+<!-- Headline Section -->
+<section>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface leading-tight">เลือกรายการที่จะติดดาว</h2>
+<p class="text-on-surface-variant font-body-mobile mt-1">เพิ่มไฟล์หรือรายงานที่สำคัญไปยังรายการโปรด</p>
+</section>
+<!-- Search & Filter Area -->
+<section class="space-y-4">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline" data-icon="search">search</span>
+<input class="w-full h-14 pl-12 pr-4 bg-surface-container border-none rounded-xl text-on-surface placeholder:text-outline-variant focus:ring-2 focus:ring-primary-container transition-all" placeholder="ค้นหา..." type="text">
+</div>
+<!-- Scrollable Filter Tabs -->
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="flex-shrink-0 px-6 h-11 bg-primary-container text-on-primary-container rounded-full font-label-mobile text-label-mobile transition-transform active:scale-95">ทั้งหมด</button>
+<button class="flex-shrink-0 px-6 h-11 bg-surface-variant text-on-surface-variant rounded-full font-label-mobile text-label-mobile active:bg-surface-container-highest">รายงาน</button>
+<button class="flex-shrink-0 px-6 h-11 bg-surface-variant text-on-surface-variant rounded-full font-label-mobile text-label-mobile active:bg-surface-container-highest">แบบแปลน</button>
+<button class="flex-shrink-0 px-6 h-11 bg-surface-variant text-on-surface-variant rounded-full font-label-mobile text-label-mobile active:bg-surface-container-highest">รูปภาพ</button>
+<button class="flex-shrink-0 px-6 h-11 bg-surface-variant text-on-surface-variant rounded-full font-label-mobile text-label-mobile active:bg-surface-container-highest">บันทึก</button>
+</div>
+</section>
+<!-- Items List (Bento-style list) -->
+<section class="bento-grid">
+<!-- Item 1: Report -->
+<div class="relative overflow-hidden bg-surface-container rounded-xl p-4 flex items-center justify-between border border-outline-variant/10 group active:bg-surface-variant/40 transition-colors">
+<div class="status-strip bg-mobile-warning"></div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="assignment">assignment</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">รายงานความคืบหน้าประจำสัปดาห์ - โซน A</h3>
+<p class="text-[12px] text-on-surface-variant uppercase tracking-wider">12 นาทีที่แล้ว • PDF</p>
+</div>
+</div>
+<button class="min-w-[72px] h-10 border border-outline-variant text-primary rounded-lg font-label-mobile text-[12px] active:scale-95 transition-all" onclick="toggleAdd(this)">เพิ่ม</button>
+</div>
+<!-- Item 2: Drawing -->
+<div class="relative overflow-hidden bg-surface-container rounded-xl p-4 flex items-center justify-between border border-outline-variant/10 group active:bg-surface-variant/40 transition-colors">
+<div class="status-strip bg-cos-blue"></div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="architecture">architecture</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">แบบวิศวกรรมโครงสร้างชั้น 4 (แก้ไขครั้งที่ 2)</h3>
+<p class="text-[12px] text-on-surface-variant uppercase tracking-wider">2 ชม. ที่แล้ว • DWG</p>
+</div>
+</div>
+<button class="min-w-[72px] h-10 border border-outline-variant text-primary rounded-lg font-label-mobile text-[12px] active:scale-95 transition-all" onclick="toggleAdd(this)">เพิ่ม</button>
+</div>
+<!-- Item 3: Photo -->
+<div class="relative overflow-hidden bg-surface-container rounded-xl p-4 flex items-center justify-between border border-outline-variant/10 group active:bg-surface-variant/40 transition-colors">
+<div class="status-strip bg-mobile-success"></div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-variant overflow-hidden relative">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A high-contrast industrial site photo showing steel reinforcements and concrete pouring under harsh construction lighting. The image captures the raw textures of iron and wet cement with a cool, bluish professional color grade typical of a high-end engineering dashboard. Deep shadows and bright metallic highlights emphasize a mission-critical construction environment." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuDAcTuq5j0I8o9RNyKKvyWVDSqDTVjdKCuDrymC_AhxNbTJDmod8hiSskxIJLTwR_PKx16nYz14xMW4yDgUns6NKAnvexjebwGChPvUjAXh_scpN9CpBvCQYC3Fbg4dVOdD6cWp_7AVizp4lb_xakv0-WuX_lPcwMOxHAWLnvyJ-isoLl4KTaPVoM4JxEwfes8LRasGZ59MEDSBT6FtXx0un8pFXYcxNvhE8YT3QJCYI-EfjoUvYDykijcRDpoESd5a6lLzL2yl3Fk&quot;);"></div>
+<div class="absolute inset-0 bg-black/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" data-icon="photo_camera">photo_camera</span>
+</div>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">จุดติดตั้งเสาเข็มหมายเลข P-102</h3>
+<p class="text-[12px] text-on-surface-variant uppercase tracking-wider">วันนี้, 09:15 • JPG</p>
+</div>
+</div>
+<button class="min-w-[72px] h-10 border border-outline-variant text-primary rounded-lg font-label-mobile text-[12px] active:scale-95 transition-all" onclick="toggleAdd(this)">เพิ่ม</button>
+</div>
+<!-- Item 4: Safety Log -->
+<div class="relative overflow-hidden bg-surface-container rounded-xl p-4 flex items-center justify-between border border-outline-variant/10 group active:bg-surface-variant/40 transition-colors">
+<div class="status-strip bg-mobile-danger"></div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-danger" data-icon="health_and_safety">health_and_safety</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">บันทึกความปลอดภัยหน้างาน - รอบเช้า</h3>
+<p class="text-[12px] text-on-surface-variant uppercase tracking-wider">วันนี้, 08:30 • LOG</p>
+</div>
+</div>
+<button class="min-w-[72px] h-10 border border-outline-variant text-primary rounded-lg font-label-mobile text-[12px] active:scale-95 transition-all" onclick="toggleAdd(this)">เพิ่ม</button>
+</div>
+<!-- Item 5: AI Insights Module -->
+<div class="relative overflow-hidden bg-secondary/5 rounded-xl p-4 flex items-center justify-between border-l-4 border-secondary/40 group active:bg-secondary/10 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-secondary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="psychology">psychology</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">บทวิเคราะห์ความเสี่ยงรายวันโดย AI</h3>
+<p class="text-[12px] text-secondary font-bold uppercase tracking-wider italic">Smart Insight • Auto-generated</p>
+</div>
+</div>
+<button class="min-w-[72px] h-10 border border-secondary/30 text-secondary rounded-lg font-label-mobile text-[12px] active:scale-95 transition-all" onclick="toggleAdd(this)">เพิ่ม</button>
+</div>
+<!-- Item 6: RFI Document -->
+<div class="relative overflow-hidden bg-surface-container rounded-xl p-4 flex items-center justify-between border border-outline-variant/10 group active:bg-surface-variant/40 transition-colors">
+<div class="status-strip bg-sync-pending"></div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="request_quote">request_quote</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface">RFI #204: การเปลี่ยนเกรดเหล็กเส้น</h3>
+<p class="text-[12px] text-on-surface-variant uppercase tracking-wider">เมื่อวาน • DOCX</p>
+</div>
+</div>
+<button class="min-w-[72px] h-10 border border-outline-variant text-primary rounded-lg font-label-mobile text-[12px] active:scale-95 transition-all" onclick="toggleAdd(this)">เพิ่ม</button>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar -->
+<footer class="fixed bottom-0 w-full z-50 bg-surface dark:bg-dark-surface p-6 pb-safe border-t border-outline-variant/10 shadow-[0_-8px_24px_rgba(0,0,0,0.5)]">
+<button class="w-full h-14 bg-mobile-primary text-white rounded-xl font-hero-mobile text-lg flex items-center justify-center gap-3 active:scale-[0.98] transition-transform shadow-lg shadow-mobile-primary/20">
+<span class="material-symbols-outlined" data-icon="check_circle" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+            เสร็จสิ้น
+        </button>
+</footer>
+<!-- Interactive Layer for Touch Visuals -->
+<div class="fixed top-20 left-1/2 -translate-x-1/2 z-[60] pointer-events-none" id="toast-container"></div>
+<script>
+        function toggleAdd(btn) {
+            const isAdded = btn.textContent === 'เพิ่มแล้ว';
+            
+            if (!isAdded) {
+                // Change style to "Added"
+                btn.textContent = 'เพิ่มแล้ว';
+                btn.classList.remove('border-outline-variant', 'text-primary');
+                btn.classList.add('bg-primary', 'text-on-primary', 'border-transparent');
+                
+                // Trigger Haptic-like visual
+                showToast('เพิ่มรายการโปรดแล้ว');
+            } else {
+                // Revert style
+                btn.textContent = 'เพิ่ม';
+                btn.classList.add('border-outline-variant', 'text-primary');
+                btn.classList.remove('bg-primary', 'text-on-primary', 'border-transparent');
+            }
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-surface-bright text-on-surface px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 opacity-0 translate-y-4 transition-all duration-300 border border-primary/20 backdrop-blur-md';
+            toast.innerHTML = `
+                <span class="material-symbols-outlined text-mobile-success" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                <span class="text-sm font-medium">${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Animate In
+            setTimeout(() => {
+                toast.classList.remove('opacity-0', 'translate-y-4');
+            }, 10);
+
+            // Animate Out
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // Handle ripple-like effects on bento cards
+        document.querySelectorAll('.bento-grid > div').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.transform = 'scale(0.98)';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+
+
+</body></html>

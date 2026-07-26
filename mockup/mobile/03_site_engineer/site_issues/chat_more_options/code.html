@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Construction OS - Chat Options</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#690005",
+                        "outline": "#8d90a0",
+                        "mobile-primary": "#0066FF",
+                        "surface-container-lowest": "#000f21",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "surface-container-low": "#0b1c30",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "secondary": "#4cd7f6",
+                        "sync-pending": "#94A3B8",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface-container-highest": "#26364a",
+                        "outline-variant": "#434655",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container": "#102034",
+                        "tertiary": "#c1c5dc",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "inverse-on-surface": "#213145",
+                        "on-secondary-container": "#00424e",
+                        "dark-bg": "#020617",
+                        "surface": "#031427",
+                        "on-primary-container": "#eeefff",
+                        "on-tertiary-container": "#eeefff",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "sync-active": "#FFD60A",
+                        "on-background": "#d3e4fe",
+                        "secondary-container": "#03b5d3",
+                        "primary-container": "#2563eb",
+                        "secondary-fixed": "#acedff",
+                        "on-surface": "#d3e4fe",
+                        "on-secondary-fixed": "#001f26",
+                        "surface-variant": "#26364a",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-dim": "#031427",
+                        "tertiary-fixed": "#dee1f9",
+                        "inverse-primary": "#0053db",
+                        "primary": "#b4c5ff",
+                        "surface-container-high": "#1b2b3f",
+                        "on-primary-fixed": "#00174b",
+                        "surface-bright": "#2a3a4f",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "background": "#031427",
+                        "dark-surface": "#0F172A",
+                        "mobile-success": "#00C853",
+                        "on-primary": "#002a78",
+                        "on-tertiary": "#2b3041",
+                        "error-container": "#93000a",
+                        "mobile-danger": "#FF3B30",
+                        "tertiary-container": "#686c80",
+                        "mobile-warning": "#FF9500",
+                        "error": "#ffb4ab",
+                        "on-secondary": "#003640",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#d3e4fe",
+                        "cos-blue": "#0066FF"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "4px",
+                        "lg": "8px",
+                        "xl": "12px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "edge-mobile": "24px",
+                        "mobile-edge": "24px",
+                        "touch-target": "52px",
+                        "mobile-touch-target": "52px",
+                        "base": "4px",
+                        "space-2": "8px",
+                        "space-4": "16px",
+                        "space-3": "12px"
+                    },
+                    "fontFamily": {
+                        "mobile-text-label": ["Inter Tight"],
+                        "mobile-text-body": ["Inter Tight"],
+                        "web-text-h1": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #020617;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bottom-sheet-active {
+            transform: translateY(0);
+            transition: transform 0.4s cubic-bezier(0.33, 1, 0.68, 1);
+        }
+        .bottom-sheet-inactive {
+            transform: translateY(100%);
+        }
+        .scrim-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .scrim-inactive {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .industrial-blur {
+            backdrop-filter: blur(12px);
+            background: rgba(16, 32, 52, 0.85);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface overflow-hidden">
+<!-- Mock Background Content (Simulated Chat View) -->
+<div class="fixed inset-0 z-0 bg-dark-bg p-edge-mobile pt-[72px]">
+<div class="space-y-space-4 opacity-40">
+<div class="flex items-start gap-space-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest"></div>
+<div class="bg-surface-container p-space-3 rounded-xl max-w-[80%]">
+<p class="font-body-mobile text-body-mobile">Site supervisor confirmed the concrete delivery for tomorrow 0800.</p>
+</div>
+</div>
+<div class="flex items-start gap-space-2 justify-end">
+<div class="bg-primary-container p-space-3 rounded-xl max-w-[80%]">
+<p class="font-body-mobile text-body-mobile text-on-primary-container">Excellent. Make sure the testing lab is notified.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Top App Bar (Shared Component) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge h-mobile-touch-target bg-surface dark:bg-dark-bg border-b border-outline-variant dark:border-outline-variant">
+<div class="flex items-center gap-space-2">
+<button class="material-symbols-outlined text-primary dark:text-primary-fixed transition-colors duration-200 active:opacity-70 hover:bg-surface-variant/50 p-2 rounded-full">arrow_back</button>
+<span class="font-web-text-h1 text-web-text-h1 text-cos-blue">Issue Details</span>
+</div>
+<button class="material-symbols-outlined text-primary dark:text-primary-fixed transition-colors duration-200 active:opacity-70 hover:bg-surface-variant/50 p-2 rounded-full" onclick="toggleBottomSheet()">more_vert</button>
+</header>
+<!-- Scrim -->
+<div class="fixed inset-0 bg-black/60 z-[60] scrim-inactive transition-opacity duration-300" id="scrim" onclick="toggleBottomSheet()"></div>
+<!-- Chat Options Bottom Sheet -->
+<div class="fixed bottom-0 left-0 w-full z-[70] bottom-sheet-inactive industrial-blur rounded-t-xl border-t border-outline-variant/30 max-h-[795px] overflow-y-auto" id="bottomSheet">
+<!-- Handle -->
+<div class="flex justify-center p-space-3">
+<div class="w-12 h-1.5 bg-outline-variant/50 rounded-full"></div>
+</div>
+<div class="px-mobile-edge pb-12 pt-space-2">
+<!-- Header Identity -->
+<div class="flex items-center gap-space-3 mb-space-4">
+<div class="w-14 h-14 rounded-xl bg-surface-container flex items-center justify-center border border-outline-variant/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A macro close-up of high-quality industrial steel rebar and architectural plans on a digital tablet, reflecting a corporate blue glow. The lighting is moody and precise, suggesting a mission-critical construction environment in dark mode. Sharp focus on technical textures with deep shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBY_0rEOioHsXYc9AJRkeBJ97bFTOHxC22x1p49fsFgh08YJ6iAKJWEW-x-70h46iAKtY3aBjidwaRIb2DSbuYcmo4ok2yWEMlGtbRO84m_sVcUzSKC6aDGSyUHfknFuh842KINlTR4vct9pi6DoasN8Bf7t07IoMe68rzmotZDhBn4QRzpla3skiJd7cj4bAxYAvLKHTsuNa7aHJ-S40CU0UfO-rO3oDxzwp02br-4EsA7aAPv3OOq5bNRhAtS0lcnSKA1pgg5O1Q"/>
+</div>
+<div>
+<h2 class="font-h1-web text-h1-web text-on-surface">Concrete Lab Tests</h2>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant">Project ID: #8829-X-24</p>
+</div>
+</div>
+<!-- Bento Menu Actions -->
+<div class="grid grid-cols-1 gap-space-3">
+<!-- Quick Action Row -->
+<div class="grid grid-cols-2 gap-space-2">
+<button class="bg-surface-container-high p-space-4 rounded-xl flex flex-col items-start gap-space-2 transition-transform duration-150 active:scale-95 border-l-2 border-cos-blue">
+<span class="material-symbols-outlined text-cos-blue">search</span>
+<span class="font-label-mobile text-label-mobile">Search Chat</span>
+</button>
+<button class="bg-surface-container-high p-space-4 rounded-xl flex flex-col items-start gap-space-2 transition-transform duration-150 active:scale-95 border-l-2 border-secondary">
+<span class="material-symbols-outlined text-secondary">group</span>
+<span class="font-label-mobile text-label-mobile">Members (12)</span>
+</button>
+</div>
+<!-- Systematic List Actions -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/10">
+<button class="w-full flex items-center justify-between p-space-4 hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-outline">attachment</span>
+<span class="font-body-mobile text-body-mobile">Media, Links &amp; Docs</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant">chevron_right</span>
+</button>
+<button class="w-full flex items-center justify-between p-space-4 hover:bg-surface-variant/20 transition-colors border-b border-outline-variant/10" onclick="openMuteOptions()">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-outline">notifications_off</span>
+<span class="font-body-mobile text-body-mobile">Mute Notifications</span>
+</div>
+<span class="font-label-mobile text-label-mobile text-on-surface-variant">Off</span>
+</button>
+<!-- Industrial Mission Critical Action -->
+<button class="w-full flex items-center justify-between p-space-4 hover:bg-surface-variant/20 transition-colors bg-mobile-warning/5">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-mobile-warning">report_problem</span>
+<span class="font-body-mobile text-body-mobile">Report Field Issue</span>
+</div>
+<span class="material-symbols-outlined text-mobile-warning">arrow_forward</span>
+</button>
+</div>
+<!-- Secondary Cluster -->
+<div class="bg-surface-container rounded-xl overflow-hidden border border-outline-variant/10 mt-space-2">
+<button class="w-full flex items-center gap-space-3 p-space-4 hover:bg-surface-variant/20 transition-colors text-mobile-danger">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-body-mobile text-body-mobile">Leave Group</span>
+</button>
+<button class="w-full flex items-center gap-space-3 p-space-4 hover:bg-surface-variant/20 transition-colors text-mobile-danger">
+<span class="material-symbols-outlined">delete</span>
+<span class="font-body-mobile text-body-mobile">Delete Chat History</span>
+</button>
+</div>
+</div>
+<!-- AI Insight Fragment (Industrial Accents) -->
+<div class="mt-space-4 p-space-4 bg-secondary/5 rounded-xl border-l-4 border-secondary/50">
+<div class="flex items-center gap-space-2 mb-space-1">
+<span class="material-symbols-outlined text-secondary text-sm" style="font-size: 18px;">auto_awesome</span>
+<span class="font-tiny-web text-tiny-web uppercase tracking-widest text-secondary">System Insight</span>
+</div>
+<p class="font-body-mobile text-[14px] text-on-surface-variant leading-snug">
+                    This conversation contains 4 unresolved RFI tasks. Closing this chat may archive pending documentation.
+                </p>
+</div>
+</div>
+</div>
+<!-- Mute Options Sub-Menu (Hidden by default) -->
+<div class="fixed inset-x-0 bottom-0 z-[80] industrial-blur rounded-t-xl translate-y-full transition-transform duration-300 border-t border-outline-variant/40" id="muteMenu">
+<div class="p-mobile-edge">
+<h3 class="font-h2-web text-h2-web mb-space-4">Mute Notifications</h3>
+<div class="space-y-space-2">
+<button class="w-full p-space-4 bg-surface-container rounded-lg text-left font-body-mobile hover:bg-primary-container hover:text-on-primary-container transition-colors">8 Hours</button>
+<button class="w-full p-space-4 bg-surface-container rounded-lg text-left font-body-mobile hover:bg-primary-container hover:text-on-primary-container transition-colors">1 Week</button>
+<button class="w-full p-space-4 bg-surface-container rounded-lg text-left font-body-mobile hover:bg-primary-container hover:text-on-primary-container transition-colors">Until I turn it back on</button>
+<button class="w-full p-space-4 mt-space-2 text-center font-label-mobile text-outline" onclick="closeMuteOptions()">Cancel</button>
+</div>
+</div>
+</div>
+<!-- Bottom Nav Bar (Shared Component - Hidden on focused detail views as per mandate) -->
+<nav class="hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[72px] px-mobile-edge pb-safe bg-surface dark:bg-dark-bg border-t border-outline-variant dark:border-outline-variant">
+<div class="flex flex-col items-center justify-center text-cos-blue font-semibold transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-mobile-text-label text-mobile-text-label">Issues</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">map</span>
+<span class="font-mobile-text-label text-mobile-text-label">Map</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-mobile-text-label text-mobile-text-label">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined">person</span>
+<span class="font-mobile-text-label text-mobile-text-label">Profile</span>
+</div>
+</nav>
+<script>
+        function toggleBottomSheet() {
+            const sheet = document.getElementById('bottomSheet');
+            const scrim = document.getElementById('scrim');
+            
+            if (sheet.classList.contains('bottom-sheet-inactive')) {
+                sheet.classList.remove('bottom-sheet-inactive');
+                sheet.classList.add('bottom-sheet-active');
+                scrim.classList.remove('scrim-inactive');
+                scrim.classList.add('scrim-active');
+            } else {
+                sheet.classList.remove('bottom-sheet-active');
+                sheet.classList.add('bottom-sheet-inactive');
+                scrim.classList.remove('scrim-active');
+                scrim.classList.add('scrim-inactive');
+                closeMuteOptions();
+            }
+        }
+
+        function openMuteOptions() {
+            const muteMenu = document.getElementById('muteMenu');
+            muteMenu.classList.remove('translate-y-full');
+            muteMenu.classList.add('translate-y-0');
+        }
+
+        function closeMuteOptions() {
+            const muteMenu = document.getElementById('muteMenu');
+            muteMenu.classList.add('translate-y-full');
+            muteMenu.classList.remove('translate-y-0');
+        }
+
+        // Initialize with sheet open for demo purposes as requested by "Create a screen"
+        window.onload = () => {
+            setTimeout(toggleBottomSheet, 500);
+        };
+    </script>
+</body></html>

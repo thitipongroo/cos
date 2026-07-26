@@ -1,0 +1,258 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>AI Resolution Insight - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    /* AI Pulse Effect */
+    @keyframes ai-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+      70% { box-shadow: 0 0 0 10px rgba(6, 182, 212, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+    }
+    .ai-glow {
+      animation: ai-pulse 2s infinite;
+    }
+    /* Hide scrollbars for a clean OS look */
+    ::-webkit-scrollbar { display: none; }
+    body { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "outline-variant": "#434655",
+            "surface-container-high": "#1b2b3f",
+            "mobile-warning": "#FF9500",
+            "tertiary-fixed-dim": "#c1c5dc",
+            "tertiary": "#c1c5dc",
+            "dark-bg": "#020617",
+            "on-background": "#d3e4fe",
+            "primary-container": "#2563eb",
+            "background": "#031427",
+            "on-primary-fixed-variant": "#003ea8",
+            "secondary-container": "#03b5d3",
+            "on-secondary-fixed-variant": "#004e5c",
+            "error": "#ffb4ab",
+            "sync-pending": "#94A3B8",
+            "surface-dim": "#031427",
+            "on-error": "#690005",
+            "primary-fixed": "#dbe1ff",
+            "sync-active": "#FFD60A",
+            "dark-surface": "#0F172A",
+            "mobile-success": "#00C853",
+            "outline": "#8d90a0",
+            "on-primary-container": "#eeefff",
+            "on-surface-variant": "#c3c6d7",
+            "inverse-primary": "#0053db",
+            "cos-cyan": "#06B6D4",
+            "error-container": "#93000a",
+            "on-primary": "#002a78",
+            "inverse-on-surface": "#213145",
+            "tertiary-container": "#686c80",
+            "surface-container": "#102034",
+            "mobile-danger": "#FF3B30",
+            "surface": "#031427",
+            "inverse-surface": "#d3e4fe",
+            "primary-fixed-dim": "#b4c5ff",
+            "mobile-primary": "#0066FF",
+            "on-secondary-container": "#00424e",
+            "on-error-container": "#ffdad6",
+            "surface-bright": "#2a3a4f",
+            "on-tertiary-fixed": "#161b2b",
+            "surface-container-lowest": "#000f21",
+            "surface-variant": "#26364a",
+            "on-secondary": "#003640",
+            "on-primary-fixed": "#00174b",
+            "surface-tint": "#b4c5ff",
+            "cos-navy": "#0B1020",
+            "secondary-fixed-dim": "#4cd7f6",
+            "secondary-fixed": "#acedff",
+            "cos-white": "#F8FAFC",
+            "on-tertiary-container": "#eeefff",
+            "on-tertiary": "#2b3041",
+            "on-secondary-fixed": "#001f26",
+            "surface-container-highest": "#26364a",
+            "tertiary-fixed": "#dee1f9",
+            "primary": "#b4c5ff",
+            "on-surface": "#d3e4fe",
+            "surface-container-low": "#0b1c30",
+            "secondary": "#4cd7f6",
+            "on-tertiary-fixed-variant": "#414658",
+            "cos-blue": "#2563EB"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "mobile-touch-target": "52px",
+            "web-space-1": "4px",
+            "web-space-8": "32px",
+            "web-space-4": "16px",
+            "web-space-3": "12px",
+            "web-space-2": "8px",
+            "web-base": "4px",
+            "mobile-edge": "24px"
+          },
+          "fontFamily": {
+            "mobile-text-hero": ["Inter Tight"],
+            "mobile-text-body": ["Inter Tight"],
+            "mobile-text-label": ["Inter Tight"],
+            "web-text-h1": ["Inter Tight"]
+          },
+          "fontSize": {
+            "mobile-text-hero": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+            "mobile-text-body": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "mobile-text-label": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+            "web-text-h1": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-mobile-text-body select-none">
+<!-- Top AppBar (From JSON Blueprint) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-mobile-edge h-mobile-touch-target bg-surface dark:bg-dark-bg border-b border-outline-variant transition-colors duration-200"><div class="flex items-center gap-3"><div class="w-8 h-8 flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuArUBA6Ew1L9vBPf_Y4WpKj2-RpIixyqz8Mr3VKI5GBhm4F2TGG027XDm1tWcudP3DFbToc-l1p30RI_x8NRZO4-hvuyvf4UYC3rozTff61dybuyiTdE2OG7NShaVG77IOaa0MsQqDI77-QfrC0PulQ6PZjdhtuF5Y8hpXYI9cu54e88pj6JyRIwyF2C2scdad65Shwij_z349qFHR5i34Z3o3MEiS2_4ThEb-2crShW8hJsfYl2WVgagBdiyloUnYPwJ_suoduERA" alt="COS Logo" class="w-full h-full object-contain"></div><h1 class="font-mobile-text-body text-mobile-text-body font-bold text-on-surface tracking-tight">CONSTRUCTION OS</h1></div><div class="flex items-center gap-2"><div class="flex items-center gap-1 px-2 py-1 rounded-full bg-mobile-success/10"><span class="material-symbols-outlined text-mobile-success text-[14px]">check_circle</span><span class="text-mobile-success text-[10px] font-bold uppercase tracking-wider">Synced</span></div><button class="h-10 w-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 active:opacity-70"><span class="material-symbols-outlined text-primary dark:text-primary-fixed">more_vert</span></button></div></header>
+<!-- Main Content Canvas -->
+<main class="pt-[72px] pb-[120px] px-mobile-edge space-y-6">
+<!-- AI Header Section -->
+<section class="mt-4">
+<div class="flex items-center justify-between mb-2">
+<span class="text-cos-cyan font-mobile-text-label text-mobile-text-label uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">psychology</span>
+          AI Resolution Insight
+        </span>
+<span class="text-on-surface-variant font-mono text-xs">#INS-4402-AI</span>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-high border-l-4 border-cos-cyan ai-glow">
+<p class="font-mobile-text-hero text-mobile-text-body text-cos-white leading-snug">
+          Apply anti-corrosive primer to vertical rebar starters.
+        </p>
+</div>
+</section>
+<!-- Visual Evidence Grid -->
+<section class="space-y-3">
+<h3 class="font-mobile-text-label text-mobile-text-label text-on-surface-variant uppercase tracking-wider">Analysis &amp; Evidence</h3>
+<div class="grid grid-cols-2 gap-3">
+<!-- Original Photo -->
+<div class="relative rounded-lg overflow-hidden border border-outline-variant bg-surface-container">
+<div class="aspect-square bg-cover bg-center" data-alt="A high-resolution construction site photograph showing a cluster of vertical steel rebar protruding from a concrete base. The lighting is harsh midday sun, casting deep shadows. The steel bars show clear signs of orange-brown surface oxidation against a backdrop of gray concrete and dusty construction debris in a modern industrial setting." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAR6V8iQ3g81d3-y4LlWpnuDa-xGgQQy52GdgFDbY2M_Dv2ASKMfC1NXPGqmx7mj8SgfIbJ63ikwPb9MrbTXVyGRUaxPnZ3obNPoEDV3UVUJIvKkaOECqfxu-Qut4w4-m4xCCFTPGB_Ht-g1Rf4ylXa8q49RlVSk3ont4ppMWMm5Yz4FdPnwcqoa1BA8EQIuBL_i_vcCWhZQySwGGHMnCVsP739j657GFkx3C3H821XsCmPVzPKGmyJRSIE6fBj6vhWuP0pGIt6N6c')"></div>
+<div class="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-md px-2 py-1">
+<span class="text-[10px] font-bold text-white uppercase">Original Issue</span>
+</div>
+</div>
+<!-- AI Annotated Photo -->
+<div class="relative rounded-lg overflow-hidden border border-cos-cyan bg-surface-container">
+<div class="aspect-square bg-cover bg-center relative" data-alt="The same construction site photograph of vertical rebar, but with high-tech digital overlays. Bright cyan glowing bounding boxes and heatmaps highlight specific areas of rust on the steel. Thin technical lines and data callouts float in 3D space around the rebar, indicating corrosion depth and material fatigue levels in a clean, professional HUD style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAxOvAUWA2kolhhhgOcky8iH-jK4iwpdGgav8YGjLpLo805egRHNEKAzP4viSGOJVyEITKDI0Qpy_TQlG6T8twMDqa5mSC0P5Xs7yyNlBwJiK1Se3mgqIagQIL7fG8-sdHsKkQRRFc66xt0TVk5V8OE-GmMJezxT5vIlcOojRYDiF6NPVbnr4dGks2mP2KDmvjavwRZQY-0TsLF2CHCxC1w5V89KSysAMiv-Q4d2gcoIn8x8jg3AgCCjjMIRGzqanvuZs200h7JrWA')">
+<!-- Simulated AI Overlay Elements -->
+<div class="absolute top-4 left-4 border-2 border-cos-cyan w-12 h-12 rounded-sm opacity-80"></div>
+<div class="absolute bottom-8 right-10 border-2 border-cos-cyan w-16 h-8 rounded-sm opacity-80"></div>
+<svg class="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+<path d="M 20 20 L 60 80 M 140 30 L 110 100" fill="none" stroke="#06B6D4" stroke-width="2"></path>
+</svg>
+</div>
+<div class="absolute bottom-0 left-0 right-0 bg-cos-cyan/80 backdrop-blur-md px-2 py-1">
+<span class="text-[10px] font-bold text-white uppercase">AI Annotated</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Technical Reasoning & Reliability -->
+<section class="grid grid-cols-1 gap-4">
+<!-- Reasoning -->
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant">
+<div class="flex items-center gap-2 mb-2 text-primary">
+<span class="material-symbols-outlined text-[20px]">gavel</span>
+<h4 class="font-mobile-text-label text-mobile-text-label uppercase">Technical Context</h4>
+</div>
+<p class="text-on-surface-variant text-sm leading-relaxed">
+          Reasoning based on <span class="text-on-surface font-semibold">ASTM G1-03</span> standard protocols for rebar corrosion. Surface oxidation detected exceeds 15% of surface area, requiring mechanical cleaning and epoxy-based primer application before the next pour to ensure structural integrity and bonding performance.
+        </p>
+</div>
+<!-- Confidence Score & Sources -->
+<div class="grid grid-cols-2 gap-4">
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant flex flex-col justify-between">
+<span class="text-on-surface-variant text-[11px] font-bold uppercase mb-1">Confidence</span>
+<div class="flex items-end gap-1">
+<span class="text-2xl font-bold text-mobile-success">0.95</span>
+<span class="text-xs text-on-surface-variant mb-1">/ 1.0</span>
+</div>
+<div class="w-full bg-outline-variant h-1 mt-2 rounded-full overflow-hidden">
+<div class="bg-mobile-success h-full" style="width: 95%;"></div>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant">
+<span class="text-on-surface-variant text-[11px] font-bold uppercase mb-1">Data Sources</span>
+<div class="flex flex-wrap gap-2 mt-2">
+<div class="flex items-center gap-1 bg-surface-variant px-2 py-0.5 rounded text-[10px] text-on-surface">
+<span class="material-symbols-outlined text-[12px]">sensors</span> Sensors
+            </div>
+<div class="flex items-center gap-1 bg-surface-variant px-2 py-0.5 rounded text-[10px] text-on-surface">
+<span class="material-symbols-outlined text-[12px]">history</span> Logs
+            </div>
+</div>
+</div>
+</div>
+</section>
+<!-- Action Center (The "Locked" UI) -->
+<section class="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant p-mobile-edge space-y-3 z-50">
+<button class="w-full h-mobile-touch-target bg-mobile-primary text-white rounded-lg font-bold flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">playlist_add_check</span>
+        Add to Work Plan
+      </button>
+<div class="flex gap-3">
+<button class="flex-1 h-mobile-touch-target bg-surface-container-highest border border-outline-variant text-on-surface rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">shopping_cart</span>
+          Materials
+        </button>
+<button class="flex-1 h-mobile-touch-target bg-surface-container-highest border border-outline-variant text-on-surface rounded-lg font-semibold flex items-center justify-center gap-2 active:opacity-70 transition-opacity">
+<span class="material-symbols-outlined text-[20px] text-mobile-danger">flag</span>
+          Dismiss
+        </button>
+</div>
+</section>
+</main>
+<!-- Bottom NavBar suppressed for Task-Focused screen per Design System rules -->
+<script>
+    // Micro-interaction: Tapping an image zooms it slightly
+    document.querySelectorAll('[data-alt]').forEach(el => {
+      el.addEventListener('click', () => {
+        el.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+        el.style.transform = el.style.transform === 'scale(1.05)' ? 'scale(1)' : 'scale(1.05)';
+      });
+    });
+
+    // Simulated "Add to Work Plan" success
+    const primaryBtn = document.querySelector('button.bg-mobile-primary');
+    primaryBtn.addEventListener('click', () => {
+      const originalText = primaryBtn.innerHTML;
+      primaryBtn.innerHTML = `<span class="material-symbols-outlined">check_circle</span> Added to Plan`;
+      primaryBtn.classList.remove('bg-mobile-primary');
+      primaryBtn.classList.add('bg-mobile-success');
+      setTimeout(() => {
+        primaryBtn.innerHTML = originalText;
+        primaryBtn.classList.remove('bg-mobile-success');
+        primaryBtn.classList.add('bg-mobile-primary');
+      }, 2000);
+    });
+  </script>
+
+
+</body></html>

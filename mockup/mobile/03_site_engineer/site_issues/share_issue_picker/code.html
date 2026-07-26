@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>แชร์ประเด็น - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .custom-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .checkbox-custom:checked + label .check-icon {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .checkbox-custom:checked + label .check-box {
+            background-color: #2563eb;
+            border-color: #2563eb;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-highest": "#26364a",
+                        "on-secondary": "#003640",
+                        "surface-tint": "#b4c5ff",
+                        "sync-pending": "#94A3B8",
+                        "dark-bg": "#020617",
+                        "on-primary": "#002a78",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "mobile-warning": "#FF9500",
+                        "primary": "#b4c5ff",
+                        "on-tertiary": "#2b3041",
+                        "secondary": "#4cd7f6",
+                        "surface-bright": "#2a3a4f",
+                        "surface-variant": "#26364a",
+                        "inverse-on-surface": "#213145",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-container": "#686c80",
+                        "on-background": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "error-container": "#93000a",
+                        "on-error": "#690005",
+                        "mobile-primary": "#0066FF",
+                        "mobile-success": "#00C853",
+                        "on-surface": "#d3e4fe",
+                        "tertiary": "#c1c5dc",
+                        "on-tertiary-fixed": "#161b2b",
+                        "outline-variant": "#434655",
+                        "on-primary-container": "#eeefff",
+                        "surface-container-low": "#0b1c30",
+                        "mobile-danger": "#FF3B30",
+                        "surface-container-high": "#1b2b3f",
+                        "outline": "#8d90a0",
+                        "primary-container": "#2563eb",
+                        "on-secondary-fixed": "#001f26",
+                        "inverse-primary": "#0053db",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-tertiary-container": "#eeefff",
+                        "sync-active": "#FFD60A",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#00424e",
+                        "on-primary-fixed": "#00174b",
+                        "surface": "#031427",
+                        "surface-dim": "#031427",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-container": "#102034",
+                        "secondary-container": "#03b5d3",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-error-container": "#ffdad6",
+                        "background": "#031427",
+                        "secondary-fixed": "#acedff"
+                    },
+                    "spacing": {
+                        "space-3": "12px",
+                        "base": "4px",
+                        "space-4": "16px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px",
+                        "space-2": "8px"
+                    },
+                    "fontFamily": {
+                        "h1-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container border-b border-outline-variant/10 shadow-sm flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-space-4">
+<button class="active:scale-95 transition-transform p-2 -ml-2 rounded-full hover:bg-surface-bright/20">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-h1-web text-[18px] text-on-surface font-semibold">แชร์ประเด็น</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-mobile-success/10 border border-mobile-success/20">
+<div class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="text-[10px] font-bold text-mobile-success tracking-wider">SYNCED</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[24px]">sync</span>
+</div>
+</header>
+<main class="flex-1 mt-14 mb-24 overflow-y-auto">
+<!-- Search Section -->
+<section class="px-edge-mobile pt-space-4">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full h-12 bg-surface-container-high border-none rounded-xl pl-12 pr-4 text-body-mobile placeholder:text-outline focus:ring-2 focus:ring-primary/50 transition-all" placeholder="ค้นหาชื่อผู้ติดต่อหรือกลุ่ม..." type="text"/>
+</div>
+</section>
+<!-- Recent Chats Section (Horizontal Scroll) -->
+<section class="mt-8">
+<div class="px-edge-mobile flex items-center justify-between mb-4">
+<h2 class="font-label-mobile text-on-surface-variant uppercase tracking-widest text-[11px]">รายการแชทล่าสุด</h2>
+</div>
+<div class="flex gap-space-4 overflow-x-auto px-edge-mobile custom-scrollbar pb-2">
+<!-- Recent Contact 1 -->
+<div class="flex flex-col items-center gap-2 min-w-[72px] active:scale-95 transition-all">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-primary/30 p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A professional headshot of a senior site engineer wearing a white hardhat, set against a dark industrial construction background. The lighting is dramatic and high-contrast, fitting the Construction OS modern industrial dark mode aesthetic with blue and slate tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPOAtftYvLnTkFwQHs0fbsuRodgu6bQ5cxrCfvyKlnbSksYEK6rsaWh9VcL9lBjgb4EtqcVlFpDKMs2J4zyYxOI_9omk-315pucL3KZ_IfbgNCIO0Og4pE_FPIZlniDswEmOBCCiHOefweZhbygUYy7IsDuFseEg1CYBkK3_i8b7_vOSC8iMCoqyxrcgiG3oOTUds4JlTLvy-6q79rHf_wVdbliGj93Zsz2uQgW0Y7JE5tj2xqiQIWjq3MwWbhXBGA2TnAV4yAfos"/>
+</div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-mobile-success border-2 border-background rounded-full"></div>
+</div>
+<span class="text-[12px] font-medium text-center text-on-surface truncate w-16">สมชาย</span>
+</div>
+<!-- Recent Contact 2 -->
+<div class="flex flex-col items-center gap-2 min-w-[72px] active:scale-95 transition-all">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-outline-variant/30 p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A portrait of a female project manager in a high-vis vest, with a blurred architectural blueprint in the background. The style is sharp, clean, and corporate modern, utilizing a deep navy and dark charcoal color palette consistent with a premium industrial SaaS interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD74uqFb9BE1Fkj9_pPL1EW_3n9a0hut7bJ8MSxDgu3j7h69XvbeO1q1i7m0p70FLKjwf3pArumCiDun6bOP0wTT50jP7bT1N3liBL_AKKG-FoCKodXXk2zaef1Iv8Q7O0CfXPLQE_04CimC5kVUvZULSmn65X7WgKq1NlsJmNTSx7_1UO9E89hYzbRvKxd2jBsDMPpma7skkRAOI4NaBf7ETHVhAJST5dmcol75vCABm8g1BoVTXTg3YzhLO5KGiqJzS3A5Vwdmi4"/>
+</div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-sync-pending border-2 border-background rounded-full"></div>
+</div>
+<span class="text-[12px] font-medium text-center text-on-surface truncate w-16">วิภาวรรณ</span>
+</div>
+<!-- Recent Contact 3 -->
+<div class="flex flex-col items-center gap-2 min-w-[72px] active:scale-95 transition-all">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-outline-variant/30 p-0.5">
+<div class="w-full h-full rounded-full bg-secondary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">groups</span>
+</div>
+</div>
+</div>
+<span class="text-[12px] font-medium text-center text-on-surface truncate w-16">ทีมโซน A</span>
+</div>
+<!-- Recent Contact 4 -->
+<div class="flex flex-col items-center gap-2 min-w-[72px] active:scale-95 transition-all">
+<div class="relative">
+<div class="w-14 h-14 rounded-full border-2 border-outline-variant/30 p-0.5">
+<img class="w-full h-full rounded-full object-cover" data-alt="A close-up of a construction foreman with a grit-textured face, wearing a safety helmet and reflective gear. The image follows a systematic and industrial aesthetic, emphasizing precision and mission-critical operations with cool blue ambient lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOba9zaw2cq-GIKVI1yMEYy-meAh-AorPUYQ3ezsKG9m3agOsKVoTs1t3rG1HBgsUqdBFizI15ApXvn66D9e84I4OUW7mRpFUqBY5n0fa09U9hMF3xLBC8R7RiCwZIV2YIR9gOl454LaGWN5VLqaotHihVjt1laZBOxX5FFjEo1k-i9UzK-KsAhKHIuAzAnoAY7FwSkXKr7gS71munyP3CchbR-6LM_7vfXjaquINKMEjUbQXDl7NEPkjJsHV-ih9uGvzRQSdRpnc"/>
+</div>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-mobile-success border-2 border-background rounded-full"></div>
+</div>
+<span class="text-[12px] font-medium text-center text-on-surface truncate w-16">ช่างเก่ง</span>
+</div>
+</div>
+</section>
+<!-- Main Selection List -->
+<section class="mt-6 px-edge-mobile pb-8">
+<h2 class="font-label-mobile text-on-surface-variant uppercase tracking-widest text-[11px] mb-4">เลือกผู้รับ</h2>
+<div class="space-y-3">
+<!-- Contact Item 1 -->
+<div class="recipient-item flex items-center justify-between p-4 bg-surface-container rounded-xl border-l-4 border-transparent hover:border-primary transition-all active:bg-surface-container-high" onclick="toggleSelect(this)">
+<div class="flex items-center gap-space-4">
+<div class="relative">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A portrait of a structural engineer in a professional dark blue uniform, with a blurred construction site crane in the background. High-utility industrial look, dark mode lighting, blue highlights, and sharp focus." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPGWIb3ctmlFwU4ReIqaG27A1xgSlgjPGWkJe-0yYetdF1HDBeReBBie15lTVssWE19MLk3ax_3-qa2U4UTL2m5cXv0iIPETqfNEdWLgo5x6-bLXZ3r4Xt0prykMalSfd0R-ZDt3P6egYDLd8Ttz4X3zMLyM6iwAOvkzmIi2hngRyBOLfqoPHtQD6-5BYBtL4VDWxphxP50XjnsBA171j4BoMsf_ECFvdamnSuRPTs4-q7uVgTvE_Wd6j8A2R-vkyg8Go1N_4upSA"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-mobile-success border-2 border-surface-container rounded-full"></div>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface">วิศวกรโครงสร้าง</span>
+<span class="text-[11px] text-on-surface-variant font-medium">ออนไลน์ • ออฟฟิศสนาม</span>
+</div>
+</div>
+<div class="relative inline-block w-6 h-6">
+<input class="checkbox-custom absolute opacity-0 w-full h-full cursor-pointer" onchange="updateCounter()" type="checkbox"/>
+<label class="check-box block w-6 h-6 border-2 border-outline rounded flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined check-icon text-on-primary-container text-[18px] opacity-0 scale-50 transition-all" style="font-variation-settings: 'wght' 700;">check</span>
+</label>
+</div>
+</div>
+<!-- Contact Item 2 (Group) -->
+<div class="recipient-item flex items-center justify-between p-4 bg-surface-container rounded-xl border-l-4 border-transparent hover:border-primary transition-all active:bg-surface-container-high" onclick="toggleSelect(this)">
+<div class="flex items-center gap-space-4">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[28px]">engineering</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface">หัวหน้าช่างเหล็ก</span>
+<span class="text-[11px] text-on-surface-variant font-medium">ออฟไลน์ • หน้างาน Zone C</span>
+</div>
+</div>
+<div class="relative inline-block w-6 h-6">
+<input class="checkbox-custom absolute opacity-0 w-full h-full cursor-pointer" onchange="updateCounter()" type="checkbox"/>
+<label class="check-box block w-6 h-6 border-2 border-outline rounded flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined check-icon text-on-primary-container text-[18px] opacity-0 scale-50 transition-all" style="font-variation-settings: 'wght' 700;">check</span>
+</label>
+</div>
+</div>
+<!-- Contact Item 3 (Group) -->
+<div class="recipient-item flex items-center justify-between p-4 bg-surface-container rounded-xl border-l-4 border-transparent hover:border-primary transition-all active:bg-surface-container-high" onclick="toggleSelect(this)">
+<div class="flex items-center gap-space-4">
+<div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center border border-secondary/20">
+<span class="material-symbols-outlined text-secondary text-[28px]">foundation</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface">ทีมงานก่อสร้าง Zone A</span>
+<span class="text-[11px] text-on-surface-variant font-medium">กลุ่ม (8 คน) • กำลังปฏิบัติงาน</span>
+</div>
+</div>
+<div class="relative inline-block w-6 h-6">
+<input class="checkbox-custom absolute opacity-0 w-full h-full cursor-pointer" onchange="updateCounter()" type="checkbox"/>
+<label class="check-box block w-6 h-6 border-2 border-outline rounded flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined check-icon text-on-primary-container text-[18px] opacity-0 scale-50 transition-all" style="font-variation-settings: 'wght' 700;">check</span>
+</label>
+</div>
+</div>
+<!-- Contact Item 4 -->
+<div class="recipient-item flex items-center justify-between p-4 bg-surface-container rounded-xl border-l-4 border-transparent hover:border-primary transition-all active:bg-surface-container-high" onclick="toggleSelect(this)">
+<div class="flex items-center gap-space-4">
+<div class="relative">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-highest">
+<img class="w-full h-full object-cover" data-alt="A portrait of a male safety officer wearing a neon yellow safety vest and a blue helmet. Detailed facial features, systematic lighting, industrial warehouse background, dark mode palette with cyan accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZu1Z4hA2PWldSqe0OqrHj7WG6v-AwZCF1P16FJF_qD5446-tmnK7i7uVWjwUOHF54m_vLsRPh8f3Gj7P2Apbg68BZ_GH6wTFc6Lqh-5oDDhX658Mq9xuOfZ4DhLPrV5dgnGVr3qO3oLHhIQSOa357dajTVC5V2_RSKeDtxKOcWBsV278PMmfCZiU05_NobKN8eCiC2j4V1rsk1y7KUdjEgs5eu89GYfLcXCu4yfC9SLX2zYmI1sHoozBBUzZ1E0Prd8Di7TZ70hU"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-mobile-success border-2 border-surface-container rounded-full"></div>
+</div>
+<div class="flex flex-col">
+<span class="font-label-mobile text-on-surface">เจ้าหน้าที่ความปลอดภัย</span>
+<span class="text-[11px] text-on-surface-variant font-medium">ออนไลน์ • ฝ่ายตรวจสอบ</span>
+</div>
+</div>
+<div class="relative inline-block w-6 h-6">
+<input class="checkbox-custom absolute opacity-0 w-full h-full cursor-pointer" onchange="updateCounter()" type="checkbox"/>
+<label class="check-box block w-6 h-6 border-2 border-outline rounded flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined check-icon text-on-primary-container text-[18px] opacity-0 scale-50 transition-all" style="font-variation-settings: 'wght' 700;">check</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Button -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest/80 backdrop-blur-md px-edge-mobile pt-4 pb-safe border-t border-outline-variant/10">
+<button class="w-full h-14 bg-mobile-primary text-white font-bold rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-all shadow-lg shadow-mobile-primary/20 disabled:opacity-50 disabled:grayscale disabled:scale-100" disabled="" id="submitBtn">
+<span class="uppercase tracking-[0.05em]">แชร์ไปยัง </span>
+<span class="bg-white/20 px-2 py-0.5 rounded-md text-[14px]" id="selectCount">0</span>
+<span class="uppercase tracking-[0.05em]"> รายการ</span>
+<span class="material-symbols-outlined ml-2">send</span>
+</button>
+</div>
+<script>
+        function toggleSelect(element) {
+            const checkbox = element.querySelector('.checkbox-custom');
+            checkbox.checked = !checkbox.checked;
+            updateCounter();
+        }
+
+        function updateCounter() {
+            const checkboxes = document.querySelectorAll('.checkbox-custom');
+            let count = 0;
+            checkboxes.forEach(cb => {
+                const parent = cb.closest('.recipient-item');
+                if (cb.checked) {
+                    count++;
+                    parent.classList.add('bg-primary-container/10', 'border-primary');
+                } else {
+                    parent.classList.remove('bg-primary-container/10', 'border-primary');
+                }
+            });
+
+            const countDisplay = document.getElementById('selectCount');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            countDisplay.innerText = count;
+            
+            if (count > 0) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('bg-mobile-primary/50');
+            } else {
+                submitBtn.disabled = true;
+            }
+        }
+
+        // Prevent checkbox double-trigger since we have onclick on the parent div
+        document.querySelectorAll('.checkbox-custom').forEach(cb => {
+            cb.onclick = (e) => e.stopPropagation();
+        });
+    </script>
+</body></html>

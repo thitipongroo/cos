@@ -1,0 +1,318 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - PDF Viewer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#dee1f9",
+                    "on-primary-container": "#eeefff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "inverse-on-surface": "#213145",
+                    "surface": "#031427",
+                    "secondary-fixed": "#acedff",
+                    "secondary-container": "#03b5d3",
+                    "on-secondary": "#003640",
+                    "on-tertiary": "#2b3041",
+                    "mobile-danger": "#FF3B30",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "mobile-primary": "#0066FF",
+                    "outline-variant": "#434655",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-primary": "#0053db",
+                    "background": "#031427",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-tertiary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "surface-container-low": "#0b1c30",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-background": "#d3e4fe",
+                    "mobile-warning": "#FF9500",
+                    "on-primary-fixed": "#00174b",
+                    "on-secondary-fixed": "#001f26",
+                    "sync-pending": "#94A3B8",
+                    "dark-surface": "#0F172A",
+                    "surface-container-highest": "#26364a",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "secondary": "#4cd7f6",
+                    "surface-dim": "#031427",
+                    "surface-bright": "#2a3a4f",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary-container": "#686c80",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container": "#102034",
+                    "mobile-success": "#00C853",
+                    "surface-container-lowest": "#000f21",
+                    "on-secondary-container": "#00424e",
+                    "on-error-container": "#ffdad6",
+                    "error-container": "#93000a",
+                    "primary": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "primary-container": "#2563eb",
+                    "sync-active": "#FFD60A",
+                    "on-surface": "#d3e4fe",
+                    "outline": "#8d90a0",
+                    "dark-bg": "#020617",
+                    "surface-variant": "#26364a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "touch-target": "52px",
+                    "edge-mobile": "24px",
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "web-margin": "32px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "hero-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: contain;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pdf-canvas {
+            background-image: 
+                radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-dark-surface border-b border-outline-variant/30 flex items-center justify-between px-6 h-[64px]">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform p-2 -ml-2 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDqxFtbNdxMKe1q-iXRky5GWGlU7fEspc6UPUsc7t7gcZrgClV8OFyi432lo36l5m4sW8aZ93g9UQB03UY6jIch160DS_Jss_crBiWdUJ2JHBksUWUrcSxvyQq1_o3NcTATCtv5j3l3jjCUbF5_U1gx59kgTfcJ77FyonvRZzOrdV851Ac1mnt9Zz6bHEGJWG4p5FMzN1fKtLlLkSSPDnJADvXOd0XZM5yOdnRAmeLKJRMPMyeqzN3ceUwQUuHC3SDealityt3P9_s" alt="Construction OS Logo" class="object-cover" style="width: 28px; height: 28px;"><h1 class="font-hero-mobile text-[13px] font-bold text-cos-blue dark:text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2"><div class="flex items-center gap-1 bg-mobile-success/10 px-2 py-0.5 rounded-full border border-mobile-success/20"><span class="material-symbols-outlined text-mobile-success text-[14px]" data-icon="cloud_done">cloud_done</span><span class="text-[10px] font-bold text-mobile-success uppercase tracking-wider">Synced</span></div>
+<button class="active:scale-95 transition-transform p-2 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="share">share</span>
+</button>
+
+</div>
+</header>
+<!-- Content Area -->
+<main class="flex-1 overflow-y-auto pb-24 pdf-canvas">
+<!-- PDF Header Info -->
+<div class="px-6 pt-6 pb-4">
+<div class="flex justify-between items-start mb-2">
+<div>
+<span class="text-[11px] font-bold tracking-[0.1em] text-secondary uppercase opacity-80">Report View</span>
+<h2 class="font-hero-mobile text-hero-mobile mt-1">#REBAR-042</h2>
+</div>
+<div class="bg-surface-container-high px-3 py-1 rounded-full flex items-center gap-2 border border-outline-variant/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success shadow-[0_0_8px_rgba(0,200,83,0.5)]"></div>
+<span class="text-[12px] font-bold text-on-surface">VERIFIED</span>
+</div>
+</div>
+<p class="text-on-surface-variant font-body-mobile text-sm">Site Inspection: Foundation Sector 4-B</p>
+</div>
+<!-- Document Preview Bento Grid -->
+<div class="px-4 space-y-4">
+<!-- Page 1 Rendering -->
+<div class="bg-white rounded-xl shadow-2xl overflow-hidden relative group">
+<!-- Watermark Layer -->
+<div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none rotate-[-45deg]">
+<span class="text-black font-black text-6xl">CONSTRUCTION OS</span>
+</div>
+<!-- Mock PDF Content -->
+<div class="p-8 min-h-[500px] text-slate-900">
+<div class="flex justify-between border-b-2 border-slate-200 pb-4 mb-6">
+<div class="w-12 h-12 bg-slate-800 rounded flex items-center justify-center text-white font-black text-xs">COS</div>
+<div class="text-right">
+<p class="text-[10px] font-bold text-slate-500 uppercase">Document ID</p>
+<p class="text-sm font-bold">PDF-2023-REBAR-042</p>
+</div>
+</div>
+<div class="space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<p class="text-[10px] font-bold text-slate-400 uppercase">Project</p>
+<p class="text-xs font-semibold">Skyline Residences Ph. 2</p>
+</div>
+<div class="space-y-1 text-right">
+<p class="text-[10px] font-bold text-slate-400 uppercase">Date</p>
+<p class="text-xs font-semibold">Oct 24, 2023 • 09:15 AM</p>
+</div>
+</div>
+<div class="bg-slate-50 p-4 border border-slate-200 rounded-lg">
+<h3 class="text-[12px] font-bold text-slate-800 mb-3 uppercase tracking-wider">Inspection Summary</h3>
+<div class="space-y-2">
+<div class="flex justify-between text-[11px]">
+<span class="text-slate-500">Rebar Grade</span>
+<span class="font-bold">SD40 High-Tensile</span>
+</div>
+<div class="flex justify-between text-[11px]">
+<span class="text-slate-500">Spacing Variance</span>
+<span class="font-bold text-green-600">Within Spec (±2mm)</span>
+</div>
+<div class="flex justify-between text-[11px]">
+<span class="text-slate-500">Lapping Length</span>
+<span class="font-bold">1200mm (Min)</span>
+</div>
+</div>
+</div>
+<div class="space-y-3">
+<h3 class="text-[12px] font-bold text-slate-800 uppercase tracking-wider">Evidence Logs</h3>
+<div class="grid grid-cols-2 gap-2">
+<div class="aspect-square bg-slate-200 rounded-md overflow-hidden relative">
+<img class="object-cover w-full h-full opacity-90" data-alt="A high-resolution professional construction site photograph showing a close-up of heavy-duty reinforced steel rebar grids laid out for a building foundation. The lighting is bright, natural daylight, casting sharp shadows that highlight the texture and metallic sheen of the steel. The composition is precise, showing the geometric patterns of the reinforcement mesh with industrial-grade quality and clarity, fitting the Construction OS dark mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDT_Jmb-j_kllb4IJueYbJxzhivRMxPXPhzuJqnXuVEMoX4ccROkHq0f3N6R0DNyHyCTvmC9JRrA-KqTL-b69CMdt8gZkUnuhNvCBa16BB8q8d1ADufdK7UrouZvRUGzdT2oQwzHQwwKUFRcX8tLHGYwBNW2t_h5CG6WDigFUKqTcaYYBICoYZ9zCPzVBhxw0U_BtBur-uDQmOu6eM_2Dytyrtjd9jgrYUs7_Ln0bMIEWOOqng0fjKvfjIDkj_pWzNVv78qRCdzCbY">
+<div class="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] px-1 rounded">IMG_001</div>
+</div>
+<div class="aspect-square bg-slate-200 rounded-md overflow-hidden relative">
+<img class="object-cover w-full h-full opacity-90" data-alt="A detailed technical photograph from a construction site showing a digital caliper measuring the thickness of a steel reinforcement bar. The scene is illuminated by crisp, directional site lighting, creating high contrast between the polished metal and the rough concrete background. The aesthetic is modern and industrial, emphasizing precision engineering and rigorous quality control standards consistent with a high-end SaaS platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKJBPHIhFJyhdGR1MlkUoZIv1MZKzvGT_zj9A6frnsJfKRezNs9e_t5SlImE-WAbXjtuBJ8lHJZhcQSrcOrSyYC9PO2RVrv_f28EAum8kDtcoD7oWxR6_MgqF1OT1BTk8BDu78xVE3SoEhIgJfGeVshg91li1KlIbiYAKntycp8icl2XiQO2zmE-f7G0nz8O8O1F0DP_PVLNOALeSkRt3DKmwoZpcAoncjxPcIAzX2HJb8c2Y6RLhn-reFZXsXguj8BhvK9GnDdns">
+<div class="absolute bottom-1 right-1 bg-black/50 text-white text-[8px] px-1 rounded">IMG_002</div>
+</div>
+</div>
+</div>
+<div class="pt-6 mt-8 border-t border-slate-200 flex justify-between items-end">
+<div class="space-y-2">
+<div class="w-24 h-8 bg-slate-100 border border-slate-200 rounded flex items-center justify-center italic text-[10px] text-slate-400">Digital Signature</div>
+<p class="text-[10px] text-slate-500">Alex Rivers - Field Supervisor</p>
+</div>
+<div class="text-[10px] text-slate-300">Page 1 of 4</div>
+</div>
+</div>
+</div>
+<!-- Interaction Overlay for PDF feel -->
+<div class="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-8 h-8 bg-surface/80 backdrop-blur rounded-full flex items-center justify-center text-on-surface shadow-lg">
+<span class="material-symbols-outlined text-[18px]" data-icon="zoom_in">zoom_in</span>
+</button>
+</div>
+</div>
+<!-- AI Insight Module -->
+<div class="bg-surface-container border-l-4 border-secondary p-4 rounded-r-xl">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-[20px]" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-[12px] font-bold text-secondary uppercase tracking-widest">OS Insight</span>
+</div>
+<p class="text-on-surface font-body-mobile text-sm leading-relaxed">
+                    This report confirms all <span class="font-bold text-primary">SD40 Steel</span> specifications align with the structural model. Estimated pour readiness: <span class="text-mobile-success font-bold">100%</span>.
+                </p>
+</div>
+<!-- Page 2 Placeholder (Infinite Scroll Style) -->
+<div class="h-16 flex items-center justify-center gap-3">
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+<span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest">Next: Site Photos</span>
+<div class="h-[1px] flex-1 bg-outline-variant/30"></div>
+</div>
+<div class="bg-surface-container-low rounded-xl h-48 flex items-center justify-center border-2 border-dashed border-outline-variant/20">
+<div class="text-center">
+<span class="material-symbols-outlined text-on-surface-variant mb-2" data-icon="pending">pending</span>
+<p class="text-xs font-bold text-on-surface-variant">LOADING PAGE 2...</p>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB: Download/Print -->
+<div class="fixed bottom-[88px] right-6 z-[60]">
+<button class="w-[56px] h-[56px] rounded-full bg-primary-container text-on-primary-container shadow-2xl flex items-center justify-center active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[28px]" data-icon="download">download</span>
+</button>
+</div>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl border-t border-outline-variant/30 bg-surface dark:bg-dark-surface shadow-lg flex justify-around items-center h-[72px] px-2 pb-safe">
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 p-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+<span class="font-label-mobile text-label-mobile mt-1">Tasks</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 p-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile mt-1">BIM</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1.5 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="photo_camera" style="font-variation-settings: &quot;FILL&quot; 1;">photo_camera</span>
+<span class="font-label-mobile text-label-mobile mt-0.5">Photos</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 p-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="health_and_safety">health_and_safety</span>
+<span class="font-label-mobile text-label-mobile mt-1">Safety</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-highest transition-all duration-200 p-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="more_horiz">more_horiz</span>
+<span class="font-label-mobile text-label-mobile mt-1">More</span>
+</button>
+</nav>
+<!-- Micro-interactions Script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const fab = document.querySelector('button[data-icon="download"]').parentElement;
+            let lastScroll = 0;
+
+            // Handle FAB visibility on scroll
+            const scrollContainer = document.querySelector('main');
+            scrollContainer.addEventListener('scroll', () => {
+                const currentScroll = scrollContainer.scrollTop;
+                if (currentScroll > lastScroll && currentScroll > 100) {
+                    fab.style.transform = 'translateY(120px) scale(0.5)';
+                    fab.style.opacity = '0';
+                } else {
+                    fab.style.transform = 'translateY(0) scale(1)';
+                    fab.style.opacity = '1';
+                }
+                lastScroll = currentScroll;
+            });
+
+            // Pulse effect for the Verified badge
+            const badge = document.querySelector('.bg-mobile-success');
+            setInterval(() => {
+                badge.style.boxShadow = '0 0 15px rgba(0,200,83,0.8)';
+                setTimeout(() => {
+                    badge.style.boxShadow = '0 0 8px rgba(0,200,83,0.5)';
+                }, 500);
+            }, 2000);
+        });
+    </script>
+
+
+</body></html>

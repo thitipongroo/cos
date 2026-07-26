@@ -1,0 +1,230 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>บันทึกสำเร็จ - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        :root {
+            --pb-safe: env(safe-area-inset-bottom);
+        }
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-glow {
+            box-shadow: 0 0 40px rgba(0, 200, 83, 0.2);
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.2) 50%, rgba(6, 182, 212, 0.1) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-surface-variant": "#c3c6d7",
+                        "outline-variant": "#434655",
+                        "on-error-container": "#ffdad6",
+                        "mobile-warning": "#FF9500",
+                        "inverse-on-surface": "#213145",
+                        "surface-dim": "#031427",
+                        "on-tertiary-container": "#eeefff",
+                        "on-primary-container": "#eeefff",
+                        "background": "#031427",
+                        "surface-container": "#102034",
+                        "primary-fixed": "#dbe1ff",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "primary": "#b4c5ff",
+                        "tertiary-container": "#686c80",
+                        "outline": "#8d90a0",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "error-container": "#93000a",
+                        "on-secondary": "#003640",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-primary": "#002a78",
+                        "on-tertiary": "#2b3041",
+                        "surface-variant": "#26364a",
+                        "on-background": "#d3e4fe",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary-container": "#00424e",
+                        "on-surface": "#d3e4fe",
+                        "secondary-container": "#03b5d3",
+                        "surface": "#031427",
+                        "inverse-primary": "#0053db",
+                        "dark-surface": "#0F172A",
+                        "mobile-primary": "#0066FF",
+                        "sync-pending": "#94A3B8",
+                        "mobile-success": "#00C853",
+                        "surface-container-highest": "#26364a",
+                        "secondary-fixed": "#acedff",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-low": "#0b1c30",
+                        "on-secondary-fixed": "#001f26",
+                        "tertiary-fixed": "#dee1f9",
+                        "error": "#ffb4ab",
+                        "surface-container-high": "#1b2b3f",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-bright": "#2a3a4f",
+                        "mobile-danger": "#FF3B30",
+                        "surface-container-lowest": "#000f21",
+                        "dark-bg": "#020617",
+                        "surface-tint": "#b4c5ff",
+                        "tertiary": "#c1c5dc",
+                        "sync-active": "#FFD60A",
+                        "secondary": "#4cd7f6",
+                        "primary-container": "#2563eb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-2": "8px",
+                        "space-1": "4px",
+                        "web-margin": "32px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "space-3": "12px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface flex flex-col min-h-screen">
+<!-- Top Navigation Header -->
+<header class="bg-surface sticky top-0 z-50 flex items-center justify-between px-edge-mobile h-touch-target w-full">
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant hover:bg-surface-variant p-2 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 flex items-center justify-center"><img alt="COS Logo" class="w-full h-full object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBNF3-5mjNIafuxUCJDBUPqvZfnK7Oy95doM4HdFCZjrXLHTwJHAb-9HWB9BEiaL83AO96ZAmUUGk9EV6fSE1meg7KiXFUgtGfAnOyzV6suehHjnAg26iPwUR5oLvnEbM0bpPEz6VIcsLGjohO1qcjfRryMdmWTA7SrhD-H6Hpc5SrnuAEP5QuEUM1bpHfreyaUo2w7fgY7GU5qV2kAglvJ_cJgf4QUs2tDjxZOqMgmgntfN9eP-mdF4V1jE74ylq6R-1eTmElohX4"></div>
+<div class="flex flex-col"><h1 class="font-display-web text-[18px] text-primary tracking-tight leading-none">CONSTRUCTION OS</h1></div>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-mobile-success/10 px-2 py-1 rounded border border-mobile-success/20">
+<div class="w-2 h-2 bg-mobile-success rounded-full animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase">Synced</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex flex-col items-center px-edge-mobile pt-10 pb-32">
+<!-- Success State Indicator -->
+<div class="flex flex-col items-center mb-8">
+<div class="w-20 h-20 bg-mobile-success/20 rounded-full flex items-center justify-center success-glow mb-6 border border-mobile-success/30">
+<span class="material-symbols-outlined text-mobile-success text-5xl" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-center mb-2">บันทึกลงเครื่องสำเร็จ</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant text-center opacity-80">
+                รายงาน <span class="text-primary">#REBAR-042</span> ถูกจัดเก็บไว้ในโฟลเดอร์ดาวน์โหลดแล้ว
+            </p>
+</div>
+<!-- File Detail Bento Card -->
+<div class="w-full bg-surface-container rounded-lg overflow-hidden border border-outline-variant/20 mb-6"><div class="p-4 border-b border-outline-variant/10 flex items-center gap-4"><div class="w-12 h-12 bg-red-500/10 rounded flex items-center justify-center"><span class="material-symbols-outlined text-red-400 text-3xl">picture_as_pdf</span></div><div class="flex flex-col"><span class="font-label-mobile text-label-mobile text-on-surface">Site_Report_REBAR_042.pdf</span><span class="font-tiny-web text-tiny-web text-on-surface-variant">2.4 MB • PDF Document</span></div></div><div class="p-4 bg-surface-container-low/50"><div class="flex items-start gap-3"><span class="material-symbols-outlined text-primary text-[18px]">folder_open</span><div class="flex flex-col"><span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider mb-1">Storage Path</span><code class="font-tiny-web text-on-surface break-all opacity-70">/Internal Storage/Download/COS_Reports</code></div></div></div></div>
+<!-- AI Verification Module -->
+<div class="w-full bg-secondary/5 border-l-4 border-secondary rounded-r-xl p-4 mb-10 ai-shimmer relative overflow-hidden">
+<div class="flex justify-between items-start mb-2 relative z-10">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-xl" style="font-variation-settings: &quot;FILL&quot; 1;">smart_toy</span>
+<span class="font-label-mobile text-label-mobile text-secondary">CORE_AI Insight</span>
+</div>
+<span class="font-tiny-web text-tiny-web text-secondary bg-secondary/20 px-2 py-0.5 rounded-full border border-secondary/30">99% CONFIDENCE</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface relative z-10">AI Verify: ไฟล์สมบูรณ์และพร้อมใช้งานแบบออฟไลน์<br><span class="text-tiny-web text-secondary uppercase tracking-wider mt-2 block">Data Sources: INTEGRITY CHECK &amp; OFFLINE CACHE</span></p>
+</div>
+<!-- Action Buttons -->
+<div class="w-full flex flex-col gap-4">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-label-mobile text-label-mobile uppercase tracking-[0.05em] flex items-center justify-center gap-2 active:scale-95 transition-transform duration-150 rounded-lg">
+<span class="material-symbols-outlined">open_in_new</span>Open File</button>
+<button class="w-full h-touch-target bg-transparent text-on-surface-variant border border-outline-variant/30 font-label-mobile text-label-mobile uppercase tracking-[0.05em] flex items-center justify-center gap-2 active:scale-95 transition-transform duration-150 hover:bg-surface-variant/30 rounded-lg">
+<span class="material-symbols-outlined">dashboard</span>Back to Dashboard</button>
+</div>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-low shadow-lg">
+<div class="flex justify-around items-center h-20 px-2 w-full">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 group">
+<span class="material-symbols-outlined group-active:scale-95 transition-transform">task</span>
+<span class="font-label-mobile text-label-mobile mt-1">Tasks</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 group">
+<span class="material-symbols-outlined group-active:scale-95 transition-transform">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile mt-1">BIM</span>
+</button>
+<!-- Active State: Reports (Closest match to current flow) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">description</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 group">
+<span class="material-symbols-outlined group-active:scale-95 transition-transform">photo_camera</span>
+<span class="font-label-mobile text-label-mobile mt-1">Photos</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:opacity-80 group">
+<span class="material-symbols-outlined group-active:scale-95 transition-transform">menu</span>
+<span class="font-label-mobile text-label-mobile mt-1">More</span>
+</button>
+</div>
+</nav>
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => {
+                if (window.navigator.vibrate) {
+                    window.navigator.vibrate(10);
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

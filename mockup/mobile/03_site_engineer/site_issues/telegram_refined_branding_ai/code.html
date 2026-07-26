@@ -1,0 +1,242 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Share Success - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#1b2b3f",
+                    "tertiary-container": "#686c80",
+                    "secondary-fixed": "#acedff",
+                    "on-surface-variant": "#c3c6d7",
+                    "background": "#031427",
+                    "on-surface": "#d3e4fe",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "error": "#ffb4ab",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "on-primary-fixed": "#00174b",
+                    "on-error-container": "#ffdad6",
+                    "dark-surface": "#0F172A",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container-highest": "#26364a",
+                    "error-container": "#93000a",
+                    "on-primary-container": "#eeefff",
+                    "outline-variant": "#434655",
+                    "surface-container": "#102034",
+                    "on-background": "#d3e4fe",
+                    "mobile-warning": "#FF9500",
+                    "sync-active": "#FFD60A",
+                    "surface-variant": "#26364a",
+                    "on-tertiary": "#2b3041",
+                    "inverse-primary": "#0053db",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "primary-fixed": "#dbe1ff",
+                    "mobile-danger": "#FF3B30",
+                    "surface-bright": "#2a3a4f",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-secondary-fixed": "#001f26",
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary-fixed": "#161b2b",
+                    "outline": "#8d90a0",
+                    "on-secondary-container": "#00424e",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-error": "#690005",
+                    "secondary": "#4cd7f6",
+                    "mobile-success": "#00C853",
+                    "primary": "#b4c5ff",
+                    "on-secondary": "#003640",
+                    "inverse-on-surface": "#213145",
+                    "on-tertiary-container": "#eeefff",
+                    "primary-container": "#2563eb",
+                    "on-primary": "#002a78",
+                    "surface-dim": "#031427",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-lowest": "#000f21",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "secondary-container": "#03b5d3",
+                    "surface": "#031427",
+                    "dark-bg": "#020617",
+                    "on-secondary-fixed-variant": "#004e5c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-4": "16px",
+                    "touch-target": "52px",
+                    "space-1": "4px",
+                    "space-3": "12px",
+                    "edge-mobile": "24px",
+                    "web-margin": "32px",
+                    "base": "4px",
+                    "space-2": "8px"
+            },
+            "fontFamily": {
+                    "display-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.4; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .shimmer-ai {
+            background: linear-gradient(90deg, rgba(76, 215, 246, 0) 0%, rgba(76, 215, 246, 0.1) 50%, rgba(76, 215, 246, 0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target sticky top-0 z-50 bg-background">
+<div class="flex items-center gap-space-2"><div class="flex items-center gap-space-2"><img alt="COS Logo" class="w-8 h-8 rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBTnzETL111KAHxzIyYIUfM5PCUuPamCClBSVlClWYll8VC3fHLy0_BLmnU2FN9u3oIn96bQQqnXqfLaZRKobPKVrpnkYFDUs47IM-R2PK-lJt1a-wUYPpBmFaFokHvNV-ukdlmqUe8kiVPz63E78fWpY9sr-TkQ0B0JS2Aotvct-W43JO8J3oJbwd4zJD9IDNKuxxR_QO7Ixstg35bIWg0OruvPKBs9WJomxVfO1MI-TG7jXUc_r_QkPlBON1pJ-7vlWm7sf7oyRo"><div class="flex flex-col"><h1 class="font-h1-mobile text-h1-mobile font-bold text-primary tracking-tight leading-none">CONSTRUCTION OS</h1></div></div></div>
+<div class="flex items-center gap-space-2 px-space-3 py-space-1 bg-surface-container rounded-full"><span class="material-symbols-outlined text-mobile-success text-[18px] transition-transform duration-700" data-icon="sync" style="font-variation-settings: &quot;FILL&quot; 1;">sync</span><span class="font-tiny-web text-tiny-web text-mobile-success uppercase tracking-widest">SYNCED</span></div>
+</header>
+<main class="flex-grow flex flex-col px-edge-mobile pt-space-4 pb-32">
+<!-- Hero Section -->
+<section class="flex flex-col items-center text-center py-10 space-y-space-4">
+<div class="relative flex items-center justify-center">
+<div class="absolute w-24 h-24 rounded-full bg-mobile-success opacity-20"></div>
+<div class="w-20 h-20 rounded-full bg-mobile-success flex items-center justify-center shadow-lg relative z-10">
+<span class="material-symbols-outlined text-white text-[48px] font-bold scale-100 transition-transform duration-500 ease-out" data-icon="check">check</span>
+</div>
+</div>
+<div class="space-y-space-1">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">แชร์สำเร็จ</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant max-w-[280px] mx-auto">
+                    รายงาน #REBAR-042 ถูกส่งไปยัง Telegram เรียบร้อยแล้ว
+                </p>
+</div>
+</section>
+<!-- Details Card (Bento Logic) -->
+<div class="bg-surface-container rounded-xl overflow-hidden shadow-lg border-l-4 border-mobile-success">
+<div class="p-space-4 space-y-space-4">
+<!-- Recipient Info -->
+<div class="flex items-center gap-space-3">
+<div class="w-12 h-12 bg-[#0088cc] rounded-lg flex items-center justify-center">
+<!-- Telegram Icon Placeholder -->
+<span class="material-symbols-outlined text-white text-[28px]" data-icon="send" style="font-variation-settings: &quot;FILL&quot; 1;">send</span>
+</div>
+<div class="flex-grow">
+<p class="font-label-mobile text-label-mobile text-on-surface">Infrastructure Management</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">Telegram Channel</p>
+</div>
+</div>
+<div class="h-px bg-outline-variant opacity-20"></div>
+<!-- Transaction Metadata -->
+<div class="grid grid-cols-1 gap-space-3">
+<div class="flex items-start gap-space-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="schedule">schedule</span>
+<div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">Timestamp</p>
+<p class="font-body-web text-body-web text-on-surface">24/05/2026 14:45</p>
+</div>
+</div>
+<div class="flex items-start gap-space-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="description">description</span>
+<div class="overflow-hidden">
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider">File</p>
+<p class="font-body-web text-body-web text-on-surface truncate">Site_Report_REBAR_042.pdf</p>
+<p class="font-tiny-web text-tiny-web text-secondary">2.4 MB</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- CORE_AI Analysis Panel -->
+<section class="mt-space-4 relative overflow-hidden bg-surface-container-low border border-secondary/20 rounded-xl p-space-4"><div class="flex justify-between items-start mb-space-2"><div class="flex items-center gap-space-2"><div class="w-1.5 h-4 bg-secondary rounded-full"></div><span class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">CORE_AI ANALYSIS</span></div><div class="text-right"><span class="text-[20px] font-bold text-secondary">99%</span><p class="text-[10px] text-on-surface-variant uppercase">Confidence</p></div></div><p class="font-body-web text-body-web text-on-surface-variant leading-relaxed">Verified against Project Hierarchy and Communication Logs. Message encrypted and validated for transmission.</p><div class="absolute -right-4 -bottom-4 opacity-10 pointer-events-none"><span class="material-symbols-outlined text-[80px] text-secondary" data-icon="hub">hub</span></div></section>
+<!-- Primary Actions -->
+<section class="mt-auto pt-space-4 space-y-space-3">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-label-mobile text-label-mobile rounded-lg active:scale-95 transition-all duration-200 uppercase tracking-[0.05em] flex items-center justify-center gap-space-2">
+                ดูรายละเอียดรายงาน
+                <span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</button>
+<button class="w-full h-touch-target border border-outline text-on-surface font-label-mobile text-label-mobile rounded-lg active:scale-95 transition-all duration-200 uppercase tracking-[0.05em] flex items-center justify-center gap-space-2">
+                แชร์ไปยังช่องทางอื่น
+                <span class="material-symbols-outlined text-[20px]" data-icon="share">share</span>
+</button>
+</section>
+</main>
+<!-- BottomNavBar (Suppressed for transactional screen focus, but layout structure remains for shell consistency) -->
+<!-- Exclusion Rule applied: High-focus success screen hides global nav to prioritize core action -->
+<script>
+        // Micro-interaction for the checkmark appearance
+        window.addEventListener('DOMContentLoaded', () => {
+            const checkIcon = document.querySelector('[data-icon="check"]');
+            checkIcon.classList.add('scale-0');
+            setTimeout(() => {
+                checkIcon.classList.remove('scale-0');
+                checkIcon.classList.add('scale-100', 'transition-transform', 'duration-500', 'ease-out');
+            }, 300);
+        });
+
+        // Toggle Sync State Animation
+        const syncBadge = document.querySelector('.material-symbols-outlined[data-icon="sync"]');
+        let rotating = true;
+        setInterval(() => {
+            if (rotating) {
+                syncBadge.classList.add('rotate-180', 'transition-transform', 'duration-700');
+                setTimeout(() => {
+                    syncBadge.classList.remove('rotate-180');
+                }, 700);
+            }
+        }, 5000);
+    </script>
+
+
+</body></html>
