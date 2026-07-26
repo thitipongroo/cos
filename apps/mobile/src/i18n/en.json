@@ -382,7 +382,58 @@
   "notifications": {
     "title": "Notifications",
     "markAllRead": "Mark all read",
-    "empty": "No notifications"
+    "empty": "No notifications",
+    "preferences": {
+      "title": "Notification Settings",
+      "subtitle": "Tenant Admin control panel",
+      "required": "Required",
+      "save": "Save changes",
+      "section": {
+        "critical": "Critical infrastructure",
+        "events": "Project & operations",
+        "quiet": "Quiet hours (Push only)"
+      },
+      "events": {
+        "safety": {
+          "label": "Safety incident (immediate)",
+          "desc": "OSHA non-compliance or a hazard detected on site"
+        },
+        "dailyReport": {
+          "label": "Daily site report",
+          "desc": "A site engineer's daily progress and blockers"
+        },
+        "inspectionFailed": {
+          "label": "Inspection failed",
+          "desc": "A QC checklist recorded a failing result"
+        },
+        "budgetVariance": {
+          "label": "Budget variance alert",
+          "desc": "A cost transaction pushed a project over budget"
+        },
+        "poApproval": {
+          "label": "Purchase approval requested",
+          "desc": "A purchase order is awaiting your approval"
+        },
+        "riskPrediction": {
+          "label": "AI risk prediction",
+          "desc": "A delay or safety risk the model flagged for review"
+        }
+      },
+      "quiet": {
+        "start": "Start",
+        "end": "End",
+        "note": "Push is muted during this window. Critical safety alerts are never quieted (§19.6)."
+      },
+      "saved": {
+        "title": "Changes saved",
+        "body": "Your notification preferences were updated and synced.",
+        "status": "Status",
+        "active": "Active",
+        "lastSync": "Last sync",
+        "justNow": "Just now",
+        "back": "Back"
+      }
+    }
   },
   "materialRequest": {
     "title": "Request materials",
