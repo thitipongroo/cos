@@ -567,6 +567,8 @@
     "posAwaiting": "Purchase orders awaiting approval",
     "review": "Review",
     "aiInsights": "AI System Insights",
-    "insightsAllClear": "AI usage is within budget — no alerts."
+    "insightsAllClear": "AI usage is within budget — no alerts.",
+    "insightWarning": "AI token usage at {percent}% of your monthly quota.",
+    "insightCritical": "AI token quota reached ({percent}%). New AI requests are paused."
   }
 }

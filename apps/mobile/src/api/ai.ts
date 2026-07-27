@@ -1,11 +1,16 @@
 // AI usage — the Tenant Admin home's "AI Token Usage" + "AI Insights" widgets.
 //
 // §26 pricing: AI is metered per tenant (input + output tokens) against a monthly quota by plan tier
-// (STARTER 500K / PROFESSIONAL 5M / ENTERPRISE custom). §31.3 raises the "AI token budget near limit"
-// signal at >80% of quota. `GET /ai/usage` returns the real figure the backend meters — never a mock:
+// (STARTER 500K / PROFESSIONAL 5M / ENTERPRISE uncapped). §31.3 raises the "AI token budget near limit"
+// signal at ≥80 % of quota. `GET /ai/usage` returns the real figure the backend meters — never a mock:
 // until the LLM gateway records real consumption, `tokensUsed` is genuinely 0, not a placeholder %.
+//
+// `alertLevel` is the authoritative §31.3 band (computed server-side); the widget localises the insight
+// message from it + `percentUsed` so Thai/English render correctly (no server-side English strings).
 
 import { get } from './client';
+
+export type AiAlertLevel = 'none' | 'warning' | 'critical';
 
 export interface AiUsage {
   /** Tokens consumed this billing month (input + output), per §26 metering. */
@@ -16,11 +21,8 @@ export interface AiUsage {
   percentUsed: number | null;
   /** Billing period this figure covers, `YYYY-MM`. */
   periodMonth: string;
-  /**
-   * The >80% budget signal (§31.3 AIHighTokenUsage), surfaced as the home's "AI Insights" line.
-   * null when usage is within budget — the widget shows the all-clear state, never a fabricated anomaly.
-   */
-  insight: { level: 'warning' | 'critical'; message: string } | null;
+  /** §31.3 budget band: warning ≥80 %, critical ≥100 %; none otherwise (or uncapped). */
+  alertLevel: AiAlertLevel;
 }
 
 export async function getAiUsage(): Promise<AiUsage> {

@@ -81,6 +81,14 @@ export default function TenantAdminHome(): React.JSX.Element {
         : t('adminHome.statusUnavailable');
   const statusColor = healthy === false ? darkColors.danger : darkColors.success;
 
+  // §31.3 insight, localised from the authoritative server band + percent (no server-side strings).
+  const insightText =
+    usage?.alertLevel === 'critical'
+      ? t('adminHome.insightCritical', { percent: usage.percentUsed ?? 100 })
+      : usage?.alertLevel === 'warning'
+        ? t('adminHome.insightWarning', { percent: usage.percentUsed ?? 80 })
+        : t('adminHome.insightsAllClear');
+
   return (
     <ScrollView
       style={styles.root}
@@ -162,9 +170,7 @@ export default function TenantAdminHome(): React.JSX.Element {
           <MaterialIcons name="insights" size={18} color={darkColors.cyan} />
           <Text style={styles.insightTitle}>{t('adminHome.aiInsights')}</Text>
         </View>
-        <Text style={styles.insightBody}>
-          {usage?.insight ? usage.insight.message : t('adminHome.insightsAllClear')}
-        </Text>
+        <Text style={styles.insightBody}>{insightText}</Text>
       </View>
     </ScrollView>
   );

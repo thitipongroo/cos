@@ -567,6 +567,8 @@
     "posAwaiting": "ใบสั่งซื้อที่รออนุมัติ",
     "review": "ตรวจสอบ",
     "aiInsights": "ข้อมูลเชิงลึกระบบ AI",
-    "insightsAllClear": "การใช้ AI อยู่ในงบประมาณ — ไม่มีการแจ้งเตือน"
+    "insightsAllClear": "การใช้ AI อยู่ในงบประมาณ — ไม่มีการแจ้งเตือน",
+    "insightWarning": "การใช้ AI Token อยู่ที่ {percent}% ของโควตารายเดือน",
+    "insightCritical": "ใช้โควตา AI Token ครบแล้ว ({percent}%) คำขอ AI ใหม่ถูกระงับชั่วคราว"
   }
 }

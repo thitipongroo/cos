@@ -12,6 +12,7 @@ import { ProjectModule } from './modules/project/project.module';
 import { BoqModule } from './modules/boq/boq.module';
 import { ProcurementModule } from './modules/procurement/procurement.module';
 import { FinanceModule } from './modules/finance/finance.module';
+import { AiModule } from './modules/ai/ai.module';
 import { SiteOpsModule } from './modules/site-ops/site-ops.module';
 import { FilesModule } from './modules/files/files.module';
 import { TasksModule } from './modules/tasks/tasks.module';
@@ -68,6 +69,7 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     BoqModule,
     ProcurementModule,
     FinanceModule,
+    AiModule, // Phase B — AI token metering (§26) + LLM gateway (§22.5 GW-001); GET /ai/usage
     SiteOpsModule,
     FilesModule, // Photo annotations — GET endpoint; write path via SyncModule (ADR-056)
     TasksModule,
