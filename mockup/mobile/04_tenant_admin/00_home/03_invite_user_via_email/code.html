@@ -1,0 +1,308 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Invite User - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#161b2b",
+                    "primary": "#b4c5ff",
+                    "surface-variant": "#26364a",
+                    "dark-surface": "#0F172A",
+                    "sync-pending": "#94A3B8",
+                    "on-error": "#690005",
+                    "surface-container-low": "#0b1c30",
+                    "dark-bg": "#020617",
+                    "outline": "#8d90a0",
+                    "on-primary-container": "#eeefff",
+                    "on-error-container": "#ffdad6",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-surface": "#d3e4fe",
+                    "mobile-success": "#00C853",
+                    "surface-container-lowest": "#000f21",
+                    "on-tertiary-container": "#eeefff",
+                    "error-container": "#93000a",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary": "#003640",
+                    "tertiary-container": "#686c80",
+                    "on-tertiary": "#2b3041",
+                    "tertiary": "#c1c5dc",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-primary": "#002a78",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-container-highest": "#26364a",
+                    "on-secondary-container": "#00424e",
+                    "inverse-surface": "#d3e4fe",
+                    "background": "#031427",
+                    "primary-fixed": "#dbe1ff",
+                    "secondary-container": "#03b5d3",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-container": "#102034",
+                    "mobile-warning": "#FF9500",
+                    "mobile-danger": "#FF3B30",
+                    "on-surface-variant": "#c3c6d7",
+                    "sync-active": "#FFD60A",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-secondary-fixed": "#001f26",
+                    "surface-dim": "#031427",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "inverse-primary": "#0053db",
+                    "surface": "#031427",
+                    "tertiary-fixed": "#dee1f9",
+                    "outline-variant": "#434655",
+                    "inverse-on-surface": "#213145",
+                    "primary-container": "#2563eb",
+                    "error": "#ffb4ab",
+                    "mobile-primary": "#0066FF",
+                    "surface-tint": "#b4c5ff",
+                    "secondary": "#4cd7f6",
+                    "on-background": "#d3e4fe",
+                    "secondary-fixed": "#acedff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "space-1": "4px",
+                    "space-2": "8px",
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "label-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ios-bottom-sheet {
+            box-shadow: 0 -8px 40px -12px rgba(0,0,0,0.5);
+        }
+        .bento-card {
+            background: linear-gradient(145deg, #102034 0%, #0b1c30 100%);
+            border-left: 4px solid transparent;
+        }
+        .bento-card-active {
+            border-left-color: #2563eb;
+            background: #1b2b3f;
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(3,181,211,0.05) 0%, rgba(3,181,211,0.15) 50%, rgba(3,181,211,0.05) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="text-on-surface overflow-x-hidden pb-safe">
+<!-- TOP APP BAR -->
+<header class="fixed top-0 w-full z-50 bg-surface-container border-b border-outline-variant/10 shadow-sm px-edge-mobile h-14 flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<button aria-label="Go Back" class="p-2 -ml-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-2">
+  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDDdXM-yX_ewBO97xUPN-yu-1HeTEyq1Gp6BZBV-w-1qeA-wVy051NapZhnyYTMoFJ1KJ7KxDKfKuAWa-rqs15P4wdW7jhM3xp4OQlEO9ZZsnlDqVxW6y1xW7qO4XFmLhRvMdvWRBUgXl9AhW4mMhj7aIoMc7LRflYpNXg9gdMEDPZggLRbGx-k53uxdORQyBxbijq_BeIeqk7pPRxtfk2FOBSMEWu3bJqfU5wVAcDQS6r6w0oDhfD2dbP-a5iX_7UchVH9g1HHzmI" alt="COS Logo" class="w-6 h-6 object-contain">
+  <div class="flex flex-col">
+    
+    <h1 class="font-h1-web text-[16px] text-on-surface truncate leading-tight">INVITE USER</h1>
+  </div>
+  <div class="ml-2 flex items-center gap-1 px-2 py-0.5 bg-mobile-success/10 border border-mobile-success/20 rounded-full">
+    <span class="material-symbols-outlined text-[12px] text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 1;">cloud_done</span>
+    <span class="text-[10px] font-bold text-mobile-success tracking-wider">SYNCED</span>
+  </div>
+</div>
+</div>
+<button aria-label="Help" class="p-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant">help_outline</span>
+</button>
+</header>
+<main class="mt-14 p-edge-mobile space-y-space-4 pb-32">
+<!-- PATH SELECTION -->
+<div class="flex bg-surface-container-lowest rounded-xl p-1 border border-outline-variant/10">
+<button class="flex-1 py-2 font-label-mobile text-label-mobile text-on-surface-variant active:scale-95 transition-all">
+                PHONE NUMBER
+            </button>
+<button class="flex-1 py-2 font-label-mobile text-label-mobile bg-primary-container text-on-primary-container rounded-lg shadow-sm active:scale-95 transition-all">
+                EMAIL ADDRESS
+            </button>
+</div>
+<!-- CONTACT DETAIL SECTION -->
+<section class="space-y-space-2">
+<h2 class="font-label-mobile text-label-mobile text-primary tracking-wider uppercase">CONTACT DETAIL</h2>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-space-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">alternate_email</span>
+</div>
+<input class="w-full h-touch-target pl-12 pr-space-4 bg-surface-container-high border border-outline-variant/30 rounded-xl text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container transition-all outline-none font-body-mobile text-body-mobile" placeholder="Enter email address..." type="email">
+</div>
+</section>
+<!-- ROLE ASSIGNMENT SECTION -->
+<section class="space-y-space-2">
+<h2 class="font-label-mobile text-label-mobile text-primary tracking-wider uppercase">ROLE ASSIGNMENT</h2>
+<div class="space-y-space-2">
+<!-- Executive -->
+<div class="bento-card p-space-4 rounded-xl flex items-center justify-between border active:scale-[0.98] transition-all border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant">admin_panel_settings</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">EXECUTIVE</p>
+<p class="text-[11px] text-on-surface-variant">Full company access &amp; financial visibility</p>
+</div>
+</div>
+</div>
+<!-- Project Manager (Selected) -->
+<div class="bento-card p-space-4 rounded-xl flex items-center justify-between border active:scale-[0.98] transition-all border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant">manage_accounts</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">PROJECT MANAGER</p>
+<p class="text-[11px] text-on-primary-container/70">Resource planning &amp; multi-site oversight</p>
+</div>
+</div>
+
+</div>
+<!-- Site Engineer -->
+<div class="bento-card p-space-4 rounded-xl flex items-center justify-between border active:scale-[0.98] transition-all bento-card-active border-primary/20">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-primary">construction</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-primary">SITE ENGINEER</p>
+<p class="text-[11px] text-on-surface-variant">Daily logs, issues &amp; inventory tracking</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span></div>
+</div>
+<button class="w-full py-2 text-center text-primary font-label-mobile text-label-mobile active:opacity-70 transition-opacity">
+                SHOW MORE ROLES (4)
+            </button>
+</section>
+<!-- ASSIGN PROJECTS SECTION -->
+<section class="space-y-space-2">
+<h2 class="font-label-mobile text-label-mobile text-primary tracking-wider uppercase">ASSIGN PROJECTS (OPTIONAL)</h2>
+<div class="relative mb-space-3">
+<div class="absolute inset-y-0 left-0 pl-space-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">search</span>
+</div>
+<input class="w-full h-11 pl-12 pr-space-4 bg-surface-container border border-outline-variant/10 rounded-full text-on-surface focus:outline-none font-body-mobile text-body-mobile" placeholder="Search projects..." type="text">
+</div>
+<div class="flex flex-wrap gap-space-2">
+<div class="flex items-center gap-2 bg-secondary-container/20 border border-secondary-container/40 px-3 py-1.5 rounded-full">
+<span class="font-label-mobile text-label-mobile text-secondary">Skyline Tower A</span>
+<button class="material-symbols-outlined text-secondary text-[16px]">close</button>
+</div>
+<div class="flex items-center gap-2 bg-secondary-container/20 border border-secondary-container/40 px-3 py-1.5 rounded-full">
+<span class="font-label-mobile text-label-mobile text-secondary">Central Hub</span>
+<button class="material-symbols-outlined text-secondary text-[16px]">close</button>
+</div>
+<button class="flex items-center gap-1 px-3 py-1.5 rounded-full border border-dashed border-outline-variant text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span class="font-label-mobile text-label-mobile">Add more</span>
+</button>
+</div>
+</section>
+<!-- CORE_AI ASSISTANT BANNER -->
+<section class="ai-shimmer border border-secondary/20 rounded-xl p-space-4 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary"></div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary text-[18px]" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<h3 class="font-label-mobile text-label-mobile text-secondary tracking-tight">CORE_AI ASSISTANT</h3><div class="flex gap-2 mt-1">
+  <span class="text-[10px] font-bold px-1.5 py-0.5 bg-secondary/10 border border-secondary/20 text-secondary rounded">94% CONFIDENCE</span>
+  <span class="text-[10px] font-bold px-1.5 py-0.5 bg-secondary/10 border border-secondary/20 text-secondary rounded">SOURCE: PROJECT ROLE TEMPLATES</span>
+</div>
+</div>
+<p class="font-body-mobile text-[13px] leading-relaxed text-on-surface-variant">
+                Permission templates have been pre-applied for "Project Manager". This role includes approval rights for Payouts and Daily Reports across assigned projects.
+            </p>
+</section>
+</main>
+<!-- FOOTER -->
+<footer class="fixed bottom-0 w-full bg-surface-container-low border-t border-outline-variant/10 px-edge-mobile py-space-4 flex flex-col items-center gap-space-3 shadow-[0_-4px_20px_rgba(0,0,0,0.4)] pb-safe">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-label-mobile text-label-mobile rounded-xl shadow-lg flex items-center justify-center gap-space-3 uppercase active:scale-[0.97] transition-all">
+            SEND INVITATION
+            <span class="material-symbols-outlined text-[20px]">send</span>
+</button>
+<button class="w-full h-touch-target border-2 border-outline-variant bg-surface-container-high/50 font-label-mobile text-label-mobile text-on-surface-variant uppercase flex items-center justify-center rounded-xl active:scale-[0.98] transition-all">
+            CANCEL</button>
+</footer>
+<!-- INTERACTION SCRIPTS -->
+<script>
+        // Simple role selection toggle simulation
+        document.querySelectorAll('.bento-card').forEach(card => {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.bento-card').forEach(c => {
+                    c.classList.remove('bento-card-active', 'border-primary/20');
+                    c.classList.add('border-outline-variant/10');
+                    const text = c.querySelector('p:first-child');
+                    if(text) text.classList.replace('text-primary', 'text-on-surface');
+                    const icon = c.querySelector('.material-symbols-outlined');
+                    if(icon) icon.classList.replace('text-primary', 'text-on-surface-variant');
+                    const check = c.querySelector('span:last-child');
+                    if(check && check.innerText === 'check_circle') check.remove();
+                });
+                
+                this.classList.add('bento-card-active', 'border-primary/20');
+                this.classList.remove('border-outline-variant/10');
+                const text = this.querySelector('p:first-child');
+                if(text) text.classList.replace('text-on-surface', 'text-primary');
+                const icon = this.querySelector('.material-symbols-outlined');
+                if(icon) icon.classList.replace('text-on-surface-variant', 'text-primary');
+                
+                if(!this.querySelector('span[style*="check_circle"]')){
+                    const check = document.createElement('span');
+                    check.className = "material-symbols-outlined text-primary";
+                    check.style.fontVariationSettings = "'FILL' 1";
+                    check.innerText = "check_circle";
+                    this.appendChild(check);
+                }
+            });
+        });
+    </script>
+
+
+</body></html>
