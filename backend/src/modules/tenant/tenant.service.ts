@@ -10,7 +10,7 @@ import {
   BadRequestException,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { Tenant, PlanType } from '@prisma/client';
+import { Tenant } from '@prisma/client';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
@@ -42,19 +42,6 @@ export class TenantService implements OnModuleDestroy {
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {
     await this.prisma.$disconnect();
-  }
-
-  /**
-   * The tenant's plan tier — used by AI metering to resolve the monthly token quota (§26). Reads the
-   * platform table with the cross-tenant PrismaClient (platform.tenants is not app_user-readable under
-   * RLS); the caller supplies its own authenticated tenant_id.
-   */
-  async getPlanType(tenantId: string): Promise<PlanType> {
-    const [row] = await this.prisma.$queryRaw<Array<{ plan_type: PlanType }>>`
-      SELECT plan_type FROM platform.tenants WHERE tenant_id = ${tenantId}::uuid LIMIT 1
-    `;
-    if (!row) throw new NotFoundException(`Tenant ${tenantId} not found`);
-    return row.plan_type;
   }
 
   async createTenant(dto: CreateTenantDto, createdBy: string): Promise<Tenant> {

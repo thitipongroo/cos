@@ -17,6 +17,7 @@ import flags
 import metering
 import metrics
 from auth import get_verified_tenant
+from usage import get_usage_summary
 from otel import configure_telemetry
 from providers.llm_provider import Message, build_llm_provider
 from rag.retrieval import HybridRetriever
@@ -232,6 +233,29 @@ async def voice_intent(req: IntentRequest, tenant_id: str = Depends(get_verified
         text=result.text,
         confidence=result.confidence,
     )
+
+
+class UsageResponse(BaseModel):
+    # camelCase to match the mobile contract (apps/mobile/src/api/ai.ts AiUsage).
+    tokensUsed: int
+    quota: int | None
+    percentUsed: int | None
+    periodMonth: str
+    alertLevel: str
+
+
+@app.get("/api/v1/ai/usage", response_model=UsageResponse)
+async def ai_usage(tenant_id: str = Depends(get_verified_tenant)):
+    """AI token usage vs the plan's monthly quota for the caller's tenant (§26 metering, §31.3 bands).
+    Reads ai.ai_usage_logs — the same table the metering middleware writes — so the figure is always
+    real (0 when the tenant has made no calls this month), never the mockup's 78 %. Tenant-scoped via
+    the verified token, like every other /ai endpoint; the admin widget is what surfaces it."""
+    if _db_pool is None:
+        # No DB pool (Stage-1 / DB unprovisioned) → no metering to read. Same 503 posture as the other
+        # endpoints; the mobile widget renders "—" on error rather than a fabricated number.
+        raise HTTPException(status_code=503, detail="AI usage metering not configured")
+    summary = await get_usage_summary(_db_pool, tenant_id)
+    return UsageResponse(**summary)
 
 
 @app.post("/api/v1/rag/query", response_model=RAGQueryResponse)
