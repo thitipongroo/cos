@@ -41,7 +41,11 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env'] }),
+    // Two-file env scheme (spec §08): the only .env is the monorepo ROOT one. Under turbo the backend
+    // runs with cwd = backend/, so ../.env is the root file; '.env' covers a run from the repo root.
+    // In docker the env is injected via docker-compose env_file (root .env), so neither path exists
+    // in the container and ConfigModule falls back to process.env — which is already populated.
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['../.env', '.env'] }),
     // Global CLS (AsyncLocalStorage) — carries authenticated tenant context across guards,
     // interceptors and (formerly request-scoped) providers. Under Fastify, Passport's req.user does
     // NOT survive into downstream handlers (Fastify clones the request), so JwtAuthGuard publishes the

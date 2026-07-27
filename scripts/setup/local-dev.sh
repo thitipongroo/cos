@@ -17,17 +17,13 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-# Activate an environment if none is selected yet (default: develop).
-# .env is the ACTIVE env — built from .env.example (base) + the chosen overlay.
-# Override the target env with: APP_ENV=staging ./scripts/setup/local-dev.sh
-APP_ENV="${APP_ENV:-dev}"
+# Two-file env scheme (spec §08): .env.example is the committed template; each environment
+# copies it to .env (gitignored) and fills its own values. Dev defaults already work.
 if [ ! -f .env ]; then
-  echo "==> Activating environment '$APP_ENV' (.env ← .env.$APP_ENV)"
-  if [ ! -f ".env.$APP_ENV" ]; then
-    cat .env.example ".env.$APP_ENV.example" > ".env.$APP_ENV"
-    echo "    Built .env.$APP_ENV — fill any REPLACE_ME secrets (real staging/prod → Vault/SM)."
-  fi
-  cp ".env.$APP_ENV" .env
+  echo "==> Creating .env from .env.example"
+  cp .env.example .env
+  echo "    Dev defaults already work. For staging/production set the values shown in the"
+  echo "    '# staging:/production:' comments and pull secrets from Vault/SM (never commit .env)."
 fi
 
 # Create .cos-stage if missing (default: stage 1 — BUILD)

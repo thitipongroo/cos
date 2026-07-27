@@ -123,7 +123,3 @@ cos-audit/*
 crash.log
 override.tf
 override_*.tf
-.env.dev
-.env.staging
-.env.production
-!.env.*.example

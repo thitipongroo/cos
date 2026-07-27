@@ -70,9 +70,9 @@ separate deployables only for language-boundary services (Python AI, Go workers)
 ### Local Setup
 
 ```bash
-# 1. Select an environment (builds .env.<env> = .env.example base + the <env>
-#    overlay, then activates it as .env). develop is the default.
-make use-env APP_ENV=dev          # or: staging | production
+# 1. Create your .env from the committed template (two-file scheme — spec §08).
+#    .env.example covers dev/staging/production; the dev defaults already work.
+make env-init                     # or: cp .env.example .env
 #    Real staging/production never run from a file — secrets are injected via
 #    Vault / AWS Secrets Manager through Helm (QM-4, docs/specifications/08).
 
@@ -93,16 +93,24 @@ make seed
 make dev
 ```
 
-Or use the all-in-one setup script (activates `dev` by default; `APP_ENV=staging make setup` for another):
+Or use the all-in-one setup script (creates `.env` from `.env.example` if missing, then installs
+deps and starts Docker):
 
 ```bash
 make setup
 ```
 
-Switch the active environment at any time with `make use-env APP_ENV=<dev|staging|production>`
-— it regenerates `.env` from the base (`.env.example`) plus that environment's overlay
-(`.env.<env>.example`). `.env` is generated, never hand-edited; put machine-local secrets in the
-concrete `.env.<env>` file (all gitignored).
+**Environment files (two-file scheme — spec §08).** `.env` and `.env.example` live at the **repo
+root only**. `.env.example` is the single committed template — it documents every variable and covers
+dev/staging/production inline (dev value as the default, with `# staging:` / `# production:` comments
+for anything that differs). Each environment copies it and fills its own values: `cp .env.example .env`
+(or `make env-init`), then edit `.env` (dev defaults already work). `.env` is gitignored and is the
+only file you hand-edit. Keep the two **in sync** — add a variable to one, add it to the other. The
+backend reads this root `.env` in every mode (under turbo its cwd is `backend/`, so NestJS and Prisma
+resolve `../.env`; docker injects it via `env_file`). The **one exception is `apps/mobile`**, which
+keeps its own `.env` / `.env.example` because Expo inlines `EXPO_PUBLIC_*` from the mobile package at
+bundle time (public client values only — no secrets). Real staging/production secrets are injected at
+runtime via Vault / AWS Secrets Manager through Helm, never written to a file.
 
 ### Local run tiers (Docker Compose profiles)
 
