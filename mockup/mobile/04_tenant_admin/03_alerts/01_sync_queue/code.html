@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#4cd7f6",
+                    "primary": "#b4c5ff",
+                    "on-secondary-container": "#00424e",
+                    "secondary-container": "#03b5d3",
+                    "error-container": "#93000a",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-warning": "#FF9500",
+                    "outline-variant": "#434655",
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-tertiary-container": "#eeefff",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed": "#acedff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "sync-active": "#FFD60A",
+                    "surface-container-low": "#0b1c30",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-container": "#eeefff",
+                    "sync-pending": "#94A3B8",
+                    "on-surface": "#d3e4fe",
+                    "primary-container": "#2563eb",
+                    "surface-variant": "#26364a",
+                    "on-surface-variant": "#c3c6d7",
+                    "error": "#ffb4ab",
+                    "mobile-primary": "#0066FF",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "background": "#031427",
+                    "surface": "#031427",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-highest": "#26364a",
+                    "outline": "#8d90a0",
+                    "surface-tint": "#b4c5ff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary": "#c1c5dc",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "dark-bg": "#020617",
+                    "inverse-primary": "#0053db",
+                    "mobile-danger": "#FF3B30",
+                    "inverse-surface": "#d3e4fe",
+                    "on-primary": "#002a78",
+                    "surface-dim": "#031427",
+                    "dark-surface": "#0F172A",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-error-container": "#ffdad6",
+                    "surface-container": "#102034",
+                    "surface-bright": "#2a3a4f",
+                    "on-background": "#d3e4fe",
+                    "tertiary-container": "#686c80",
+                    "on-error": "#690005",
+                    "surface-container-lowest": "#000f21",
+                    "mobile-success": "#00C853",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-on-surface": "#213145",
+                    "on-secondary": "#003640"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "edge-mobile": "24px",
+                    "space-4": "16px",
+                    "space-1": "4px"
+            },
+            "fontFamily": {
+                    "body-mobile": ["Inter Tight", "sans-serif"],
+                    "hero-mobile": ["Inter Tight", "sans-serif"],
+                    "display-web": ["Inter Tight", "sans-serif"],
+                    "body-web": ["Inter Tight", "sans-serif"],
+                    "label-mobile": ["Inter Tight", "sans-serif"],
+                    "tiny-web": ["Inter Tight", "sans-serif"],
+                    "h1-web": ["Inter Tight", "sans-serif"],
+                    "h2-web": ["Inter Tight", "sans-serif"]
+            },
+            "fontSize": {
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; background-color: #031427; color: #d3e4fe; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .status-strip-high { border-left: 4px solid #FF3B30; }
+        .status-strip-medium { border-left: 4px solid #FF9500; }
+        .status-strip-low { border-left: 4px solid #94A3B8; }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+<!-- Top Navigation Anchor -->
+<nav class="bg-background dark:bg-background flex justify-between items-center w-full px-4 h-touch-target fixed top-0 z-50">
+<div class="flex items-center gap-2">
+<img alt="CONSTRUCTION OS Logo" class="w-8 h-8" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3NuWdnH1w_FTkZ2eQbzOHzZcDfKiVPz25lMX-M_k-U6Pe0hRdWiDI0vLwozgD9UZC6rtF2PF_kpvOk6tNDO9_liNJiSE7spOJb2A4nNA0pz2LAoQ2e8-yvNVe1WjWDYcdc5rsd-BiI0ocv7kKxAKl86ay7KkfbKMYJ_UKsih6iI5jsOLaGaJMUidnbPB5kzCO48CnMphIWJcvjSWEAFIEWx__bScFztJ-YjvL0ndKxZ3VBrTv7L1TV1qWbqUr2g8NMnpI9wtZw0w"/>
+<span class="text-h2-web font-h2-web font-black text-primary dark:text-primary-fixed-dim tracking-tight">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-mobile-success/10 rounded-full border border-mobile-success/20">
+<span class="material-symbols-outlined text-mobile-success text-[18px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-tiny-web font-bold text-mobile-success tracking-wider">SYNCED</span>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-[64px] pb-[88px] px-edge-mobile max-w-5xl mx-auto w-full">
+<!-- Header Section -->
+<header class="py-space-4 mb-space-4">
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-hero-mobile text-hero-mobile mb-base">คิวตรวจสอบการซิงค์ล้มเหลว</h1>
+<p class="font-body-web text-on-surface-variant">พบรายการที่ขัดข้อง 12 รายการที่รอการแก้ไขจากภาคสนาม</p>
+</div>
+<div class="hidden md:flex rounded-lg p-1">
+<button class="px-4 py-1.5 text-tiny-web bg-primary-container text-on-primary-container rounded-md uppercase font-bold">ทั้งหมด</button>
+<button class="px-4 py-1.5 text-tiny-web text-on-surface-variant uppercase font-bold hover:text-primary transition-colors">รอกลั่นกรอง</button>
+</div>
+</div>
+</header>
+<!-- Filter Chips -->
+<section class="flex gap-space-2 mb-space-4 overflow-x-auto no-scrollbar">
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-full text-label-mobile whitespace-nowrap active:scale-95 transition-transform">
+<span class="w-2 h-2 rounded-full bg-mobile-danger"></span> สูงมาก
+            </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-full text-label-mobile whitespace-nowrap active:scale-95 transition-transform">
+<span class="w-2 h-2 rounded-full bg-mobile-warning"></span> ปานกลาง
+            </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-full text-label-mobile whitespace-nowrap active:scale-95 transition-transform">
+<span class="w-2 h-2 rounded-full bg-sync-pending"></span> ต่ำ
+            </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-surface-container border border-outline-variant rounded-full text-label-mobile whitespace-nowrap active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-[18px]">filter_list</span> ตัวกรอง
+            </button>
+</section>
+<!-- Sync Queue Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-3">
+<!-- Card 1: Safety Incident -->
+<div class="bg-surface-container rounded-xl overflow-hidden status-strip-high shadow-lg hover:bg-surface-container-high transition-all group border border-transparent hover:border-outline-variant/30">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<span class="text-tiny-web uppercase tracking-widest text-on-surface-variant block mb-1">ประเภทรายการ</span>
+<h3 class="font-h1-web text-h1-web-mobile text-primary">รายงานอุบัติเหตุ</h3>
+</div>
+<span class="px-2 py-1 bg-error-container/20 text-error text-[10px] font-bold rounded uppercase">วิกฤต</span>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-space-4">
+<div>
+<span class="text-tiny-web text-on-surface-variant block">รหัสอ้างอิง</span>
+<span class="font-body-mobile text-on-surface">#SI-2024-089</span>
+</div>
+<div>
+<span class="text-tiny-web text-on-surface-variant block">เวลาที่ล้มเหลว</span>
+<span class="font-body-mobile text-on-surface">14:22 | 12 ต.ค.</span>
+</div>
+</div>
+<div class="bg-dark-bg/50 p-3 rounded-lg border border-outline-variant/20 mb-space-4">
+<span class="text-tiny-web text-mobile-danger font-bold block mb-1 uppercase tracking-tighter">สาเหตุข้อผิดพลาด</span>
+<p class="font-body-web text-on-surface italic">"Conflict Detected: Remote record updated by Supervisor (ID:992) before field submission."</p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 h-[52px] bg-primary-container text-on-primary-container font-label-mobile rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md">
+<span class="material-symbols-outlined text-[20px]">difference</span> ตรวจสอบข้อมูล
+                        </button>
+<button class="w-[52px] h-[52px] bg-surface-container-high text-on-surface-variant rounded-lg flex items-center justify-center active:scale-95 transition-transform hover:text-sync-active">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+<button class="w-[52px] h-[52px] bg-surface-container-high text-on-surface-variant rounded-lg flex items-center justify-center active:scale-95 transition-transform hover:text-mobile-danger">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Site Report -->
+<div class="bg-surface-container rounded-xl overflow-hidden status-strip-medium shadow-lg hover:bg-surface-container-high transition-all border border-transparent hover:border-outline-variant/30">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<span class="text-tiny-web uppercase tracking-widest text-on-surface-variant block mb-1">ประเภทรายการ</span>
+<h3 class="font-h1-web text-h1-web-mobile text-primary">รายงานประจำวัน</h3>
+</div>
+<span class="px-2 py-1 bg-secondary-container/20 text-secondary text-[10px] font-bold rounded uppercase">ปานกลาง</span>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-space-4">
+<div>
+<span class="text-tiny-web text-on-surface-variant block">รหัสอ้างอิง</span>
+<span class="font-body-mobile text-on-surface">#SR-9921-A</span>
+</div>
+<div>
+<span class="text-tiny-web text-on-surface-variant block">เวลาที่ล้มเหลว</span>
+<span class="font-body-mobile text-on-surface">09:15 | 12 ต.ค.</span>
+</div>
+</div>
+<div class="bg-dark-bg/50 p-3 rounded-lg border border-outline-variant/20 mb-space-4">
+<span class="text-tiny-web text-mobile-warning font-bold block mb-1 uppercase tracking-tighter">สาเหตุข้อผิดพลาด</span>
+<p class="font-body-web text-on-surface italic">"Network Timeout: Socket closed abruptly during large image upload payload."</p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 h-[52px] bg-surface-container-high text-on-surface font-label-mobile rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform border border-outline-variant/30 shadow-md">
+<span class="material-symbols-outlined text-[20px]">sync</span> ซิงค์อีกครั้ง
+                        </button>
+<button class="w-[52px] h-[52px] bg-surface-container-high text-on-surface-variant rounded-lg flex items-center justify-center active:scale-95 transition-transform">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 3: Payout Request -->
+<div class="bg-surface-container rounded-xl overflow-hidden status-strip-high shadow-lg hover:bg-surface-container-high transition-all border border-transparent hover:border-outline-variant/30">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<span class="text-tiny-web uppercase tracking-widest text-on-surface-variant block mb-1">ประเภทรายการ</span>
+<h3 class="font-h1-web text-h1-web-mobile text-primary">คำขอเบิกจ่าย</h3>
+</div>
+<span class="px-2 py-1 bg-error-container/20 text-error text-[10px] font-bold rounded uppercase">สูง</span>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-space-4">
+<div>
+<span class="text-tiny-web text-on-surface-variant block">รหัสอ้างอิง</span>
+<span class="font-body-mobile text-on-surface">#PR-00424</span>
+</div>
+<div>
+<span class="text-tiny-web text-on-surface-variant block">เวลาที่ล้มเหลว</span>
+<span class="font-body-mobile text-on-surface">18:40 | 11 ต.ค.</span>
+</div>
+</div>
+<div class="bg-dark-bg/50 p-3 rounded-lg border border-outline-variant/20 mb-space-4">
+<span class="text-tiny-web text-mobile-danger font-bold block mb-1 uppercase tracking-tighter">สาเหตุข้อผิดพลาด</span>
+<p class="font-body-web text-on-surface italic">"Schema Validation: field 'tax_id' exceeds character limit (13 chars)."</p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 h-[52px] bg-primary-container text-on-primary-container font-label-mobile rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-md">
+<span class="material-symbols-outlined text-[20px]">edit_document</span> แก้ไขข้อมูล
+                        </button>
+<button class="w-[52px] h-[52px] bg-surface-container-high text-on-surface-variant rounded-lg flex items-center justify-center active:scale-95 transition-transform hover:text-mobile-danger">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 4: Equipment Log -->
+<div class="bg-surface-container rounded-xl overflow-hidden status-strip-low shadow-lg hover:bg-surface-container-high transition-all border border-transparent hover:border-outline-variant/30">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<span class="text-tiny-web uppercase tracking-widest text-on-surface-variant block mb-1">ประเภทรายการ</span>
+<h3 class="font-h1-web text-h1-web-mobile text-primary">บันทึกเครื่องจักร</h3>
+</div>
+<span class="px-2 py-1 bg-surface-variant text-on-surface-variant text-[10px] font-bold rounded uppercase">ต่ำ</span>
+</div>
+<div class="grid grid-cols-2 gap-4 mb-space-4">
+<div>
+<span class="text-tiny-web text-on-surface-variant block">รหัสอ้างอิง</span>
+<span class="font-body-mobile text-on-surface">#EL-081</span>
+</div>
+<div>
+<span class="text-tiny-web text-on-surface-variant block">เวลาที่ล้มเหลว</span>
+<span class="font-body-mobile text-on-surface">22:05 | 11 ต.ค.</span>
+</div>
+</div>
+<div class="bg-dark-bg/50 p-3 rounded-lg border border-outline-variant/20 mb-space-4">
+<span class="text-tiny-web text-sync-pending font-bold block mb-1 uppercase tracking-tighter">สาเหตุข้อผิดพลาด</span>
+<p class="font-body-web text-on-surface italic">"Duplication: Entry for 'Excavator 02' already exists for this timeframe."</p>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 h-[52px] bg-surface-container-high text-on-surface font-label-mobile rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform border border-outline-variant/30 shadow-md">
+<span class="material-symbols-outlined text-[20px]">auto_fix_high</span> ยุบรวมข้อมูล
+                        </button>
+<button class="w-[52px] h-[52px] bg-error-container/10 text-mobile-danger rounded-lg flex items-center justify-center active:scale-95 transition-transform border border-mobile-danger/20">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Empty State / Footer Shimmer -->
+<div class="mt-space-4 p-8 flex flex-col items-center justify-center text-center opacity-30">
+<span class="material-symbols-outlined text-[48px] mb-2">cloud_off</span>
+<p class="font-body-web uppercase tracking-widest">สิ้นสุดคิวการซิงค์</p>
+</div>
+</main>
+<!-- Contextual FAB -->
+<button class="fixed bottom-[96px] right-edge-mobile w-[52px] h-[52px] rounded-full bg-primary-container text-on-primary-container shadow-2xl flex items-center justify-center active:scale-95 transition-all z-40 border border-primary/20">
+<span class="material-symbols-outlined text-[24px]">sync_problem</span>
+</button>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-[72px] pb-safe px-4 bg-surface-container dark:bg-surface-container shadow-lg rounded-t-xl border-t border-outline-variant/10">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-colors w-16 h-full" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-mobile text-label-mobile">หน้าแรก</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-colors w-16 h-full" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile text-label-mobile">ผู้ใช้งาน</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 h-[44px] active:scale-95 transition-transform duration-200" href="#">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="font-label-mobile text-label-mobile">แจ้งเตือน</span>
+</div>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-colors w-16 h-full" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-label-mobile">ตั้งค่า</span>
+</a>
+</nav>
+<!-- Micro-interaction Script -->
+<script>
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.transform = 'scale(0.95)';
+            });
+            button.addEventListener('mouseup', () => {
+                button.style.transform = '';
+            });
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = '';
+            });
+        });
+
+        // Simple notification for action buttons
+        const actionButtons = document.querySelectorAll('button:not([class*="material-symbols-outlined"])');
+        actionButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const existingToast = document.querySelector('.toast-notif');
+                if (existingToast) existingToast.remove();
+                
+                const toast = document.createElement('div');
+                toast.className = 'toast-notif fixed bottom-24 left-1/2 -translate-x-1/2 bg-surface-bright text-on-surface px-6 py-3 rounded-full text-tiny-web uppercase font-bold tracking-widest shadow-2xl z-50 animate-bounce border border-outline-variant/30';
+                toast.innerText = 'กำลังดำเนินการ...';
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 2000);
+            });
+        });
+    </script>
+</body></html>

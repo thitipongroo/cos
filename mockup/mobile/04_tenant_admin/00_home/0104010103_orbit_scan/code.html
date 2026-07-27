@@ -1,0 +1,295 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Orbit Scan Control | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#2a3a4f",
+                        "secondary": "#4cd7f6",
+                        "surface": "#031427",
+                        "sync-active": "#FFD60A",
+                        "on-background": "#d3e4fe",
+                        "outline-variant": "#434655",
+                        "on-primary": "#002a78",
+                        "on-tertiary-fixed": "#161b2b",
+                        "inverse-surface": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary-fixed": "#dee1f9",
+                        "primary": "#b4c5ff",
+                        "secondary-fixed": "#acedff",
+                        "tertiary-container": "#686c80",
+                        "on-surface-variant": "#c3c6d7",
+                        "dark-bg": "#020617",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-container": "#eeefff",
+                        "background": "#031427",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "sync-pending": "#94A3B8",
+                        "mobile-warning": "#FF9500",
+                        "surface-dim": "#031427",
+                        "surface-container": "#102034",
+                        "mobile-danger": "#FF3B30",
+                        "surface-tint": "#b4c5ff",
+                        "on-error": "#690005",
+                        "surface-container-lowest": "#000f21",
+                        "on-primary-fixed": "#00174b",
+                        "primary-fixed": "#dbe1ff",
+                        "inverse-on-surface": "#213145",
+                        "error-container": "#93000a",
+                        "on-primary-container": "#eeefff",
+                        "secondary-container": "#03b5d3",
+                        "outline": "#8d90a0",
+                        "mobile-success": "#00C853",
+                        "on-secondary-fixed": "#001f26",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface": "#d3e4fe",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-tertiary": "#2b3041",
+                        "tertiary": "#c1c5dc",
+                        "surface-variant": "#26364a",
+                        "primary-container": "#2563eb",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "mobile-primary": "#0066FF",
+                        "on-secondary": "#003640",
+                        "surface-container-highest": "#26364a",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-container-low": "#0b1c30",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#00424e",
+                        "inverse-primary": "#0053db",
+                        "error": "#ffb4ab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px",
+                        "space-1": "4px",
+                        "space-3": "12px",
+                        "space-4": "16px",
+                        "web-margin": "32px"
+                    },
+                    "fontFamily": {
+                        "hero-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .orbit-animation { animation: orbit 12s linear infinite; }
+        @keyframes orbit { from { transform: rotate(0deg) translateX(120px) rotate(0deg); } to { transform: rotate(360deg) translateX(120px) rotate(-360deg); } }
+        .shimmer { background: linear-gradient(90deg, transparent, rgba(76, 215, 246, 0.1), transparent); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .circular-progress { background: conic-gradient(#4cd7f6 234deg, #102034 0deg); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col pb-safe">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface px-edge-mobile py-space-3 flex justify-between items-center bg-surface-container-low">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back">arrow_back</span>
+<div class="flex items-center gap-space-2">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsDVRGIItcf2_6gBbqsTdgfYXafqssUBLj6dg3Kga4F2z_EUOWG4uqFK43VVy1hZX77yzcFlhG8-LFhdsAw9e_yHNiKFaMurRzSgJLB6svcGbrUpO8zZmZ1w0z4WafBGSxPVVPdcmQIi0rKZ4MYlQtZzWxaDPqeGJtrFYpgkEGgl7HXvuKV5zQMbldHUKDr1FxD8ZIR_nzO8pnnOZboQM2RCAIBlUe2I-MtrD1d0dBLAjbLb5yvVcMxSyBO0bh3h96d6_S01i7rtg" alt="Construction OS Logo" class="w-8 h-8 object-contain">
+<h1 class="font-h1-web text-h1-web font-bold tracking-tight text-primary">CONSTRUCTION OS</h1>
+</div>
+</div>
+
+</header>
+<main class="flex-1 flex flex-col px-edge-mobile py-space-4 gap-space-4 overflow-y-auto">
+<!-- 3D Viewport Area -->
+<section class="relative w-full aspect-square rounded-3xl bg-surface-container-lowest overflow-hidden border border-outline/10 shadow-inner">
+
+<!-- Floating Data Overlays -->
+<div class="absolute top-space-4 left-space-4 flex flex-col gap-space-1">
+<div class="bg-surface/80 backdrop-blur-md px-space-2 py-1 rounded border border-outline/20">
+<span class="font-tiny-web text-tiny-web text-secondary uppercase">Mission Mode</span>
+<p class="font-label-mobile text-label-mobile font-bold">CIRCULAR_ORBIT_V4</p>
+</div>
+</div>
+<!-- Central 3D UI Mesh Simulation -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="relative w-64 h-64 border-[1px] border-secondary/20 rounded-full flex items-center justify-center">
+<div class="w-48 h-48 border-[1px] border-secondary/30 rounded-full border-dashed"></div>
+<div class="w-32 h-32 border-[2px] border-secondary/50 rounded-full flex items-center justify-center bg-secondary/5">
+<span class="material-symbols-outlined text-secondary text-4xl" data-icon="bridge">video_file</span>
+</div>
+<!-- Orbiting Drone -->
+<div class="absolute orbit-animation">
+<div class="bg-secondary p-2 rounded-full shadow-[0_0_15px_rgba(76,215,246,0.6)]">
+<span class="material-symbols-outlined text-on-secondary text-sm" data-icon="videocam" style="font-variation-settings: &quot;FILL&quot; 1;">videocam</span>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Guidance Strip -->
+<div class="absolute bottom-0 left-0 w-full bg-secondary-container/90 backdrop-blur-md px-space-4 py-space-2 border-t border-secondary/30 flex items-center gap-space-3">
+<div class="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+<p class="font-tiny-web text-tiny-web text-on-secondary-container font-bold tracking-widest leading-tight">CORE_AI: OPTIMIZING FLIGHT PATH BASED ON BIM GEOMETRY FOR MAXIMUM MESH DENSITY (99% CONFIDENCE)</p>
+</div>
+</section>
+<!-- Progress and Status -->
+<div class="flex gap-space-4">
+<div class="flex-1 bg-surface-container rounded-2xl p-space-4 border-l-4 border-secondary flex items-center gap-space-4">
+<div class="relative w-16 h-16 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full circular-progress opacity-20"></div>
+<svg class="absolute inset-0 w-full h-full -rotate-90">
+<circle class="text-surface-variant" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-width="4"></circle>
+<circle class="text-secondary" cx="32" cy="32" fill="transparent" r="28" stroke="currentColor" stroke-dasharray="175.9" stroke-dashoffset="61.5" stroke-width="4"></circle>
+</svg>
+<span class="font-label-mobile text-label-mobile font-bold text-secondary">65%</span>
+</div>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">Orbit Scan</span>
+<span class="font-label-mobile text-label-mobile font-bold text-on-surface">EST. REMAINING: 04:22</span>
+</div>
+</div>
+</div>
+<!-- Orbit Parameters Card (Bento Logic) -->
+<section class="bg-surface-container rounded-3xl p-space-4 border border-outline/10 flex flex-col gap-space-4">
+<div class="flex justify-between items-center">
+<h3 class="font-h2-web text-h2-web text-on-surface">Orbit Parameters</h3>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="tune">tune</span>
+</div>
+<div class="space-y-space-4">
+<!-- Radius Slider -->
+<div class="space-y-2">
+<div class="flex justify-between font-label-mobile text-label-mobile">
+<span class="text-on-surface-variant">Radius (m)</span>
+<input class="bg-surface-variant border-none rounded px-2 py-0.5 text-secondary font-bold w-16 text-right focus:ring-1 focus:ring-secondary" type="number" value="45.0">
+</div>
+<div class="h-2 bg-surface-variant rounded-full relative">
+<div class="absolute left-0 top-0 h-full bg-secondary w-[45%] rounded-full"></div>
+<div class="absolute left-[45%] top-1/2 -translate-y-1/2 w-4 h-4 bg-on-background border-2 border-secondary rounded-full shadow-md"></div>
+</div>
+</div>
+<!-- Altitude Slider -->
+<div class="space-y-2">
+<div class="flex justify-between font-label-mobile text-label-mobile">
+<span class="text-on-surface-variant">Altitude (m)</span>
+<input class="bg-surface-variant border-none rounded px-2 py-0.5 text-secondary font-bold w-16 text-right focus:ring-1 focus:ring-secondary" type="number" value="12.5">
+</div>
+<div class="h-2 bg-surface-variant rounded-full relative">
+<div class="absolute left-0 top-0 h-full bg-secondary w-[25%] rounded-full"></div>
+<div class="absolute left-[25%] top-1/2 -translate-y-1/2 w-4 h-4 bg-on-background border-2 border-secondary rounded-full shadow-md"></div>
+</div>
+</div>
+<!-- Speed Slider -->
+<div class="space-y-2">
+<div class="flex justify-between font-label-mobile text-label-mobile">
+<span class="text-on-surface-variant">Speed (deg/s)</span>
+<input class="bg-surface-variant border-none rounded px-2 py-0.5 text-secondary font-bold w-16 text-right focus:ring-1 focus:ring-secondary" type="number" value="4.2">
+</div>
+<div class="h-2 bg-surface-variant rounded-full relative">
+<div class="absolute left-0 top-0 h-full bg-secondary w-[60%] rounded-full"></div>
+<div class="absolute left-[60%] top-1/2 -translate-y-1/2 w-4 h-4 bg-on-background border-2 border-secondary rounded-full shadow-md"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Primary Actions -->
+<div class="grid grid-cols-2 gap-space-3 mt-auto">
+<button class="col-span-2 h-touch-target bg-primary-container text-on-primary-container rounded-2xl font-bold uppercase tracking-wider flex items-center justify-center gap-space-3 shadow-xl active:scale-95 transition-transform">
+<div class="w-6 h-6 border-2 border-on-primary-container/30 border-t-on-primary-container rounded-full animate-spin"></div>
+                START ORBIT SCAN
+            </button>
+<button class="h-touch-target bg-surface-container-high text-on-surface border border-outline/20 rounded-2xl font-bold flex items-center justify-center gap-space-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="pause_circle">pause_circle</span>
+                PAUSE
+            </button>
+<button class="h-touch-target bg-error-container text-on-error-container border border-mobile-danger/20 rounded-2xl font-bold flex items-center justify-center gap-space-2 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="home_pin">home_pin</span>
+                RTH
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[72px] px-edge-mobile bg-surface-container-lowest shadow-lg pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-mobile text-label-mobile mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile mt-1">Inventory</span>
+</a>
+<!-- Active Tab: BIM (Closest semantic to Drone Scan Control) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-1 transition-transform duration-150 scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="layers" style="font-variation-settings: &quot;FILL&quot; 1;">layers</span>
+<span class="font-label-mobile text-label-mobile mt-1">BIM</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile mt-1">Users</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile mt-1">Settings</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for sliders
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('change', (e) => {
+                // In a real app, this would update the drone parameters
+                console.log(`Setting ${e.target.previousElementSibling?.textContent || 'Param'} to ${e.target.value}`);
+            });
+        });
+
+        // Toggle Active State Simulation
+        const navItems = document.querySelectorAll('nav a');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                navItems.forEach(i => {
+                    i.className = 'flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150';
+                    const icon = i.querySelector('.material-symbols-outlined');
+                    if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+                });
+                item.className = 'flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-1 transition-transform duration-150 scale-95';
+                const icon = item.querySelector('.material-symbols-outlined');
+                if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+            });
+        });
+    </script>
+
+
+</body></html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>ตั้งค่าระบบ - CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #031427;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(180, 197, 255, 0.1);
+        }
+        .custom-toggle:checked + .toggle-dot {
+            transform: translateX(100%);
+            background-color: #b4c5ff;
+        }
+        .custom-toggle:checked {
+            background-color: #2563eb;
+        }
+        .touch-target {
+            min-height: 52px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#4cd7f6",
+                        "primary": "#b4c5ff",
+                        "on-secondary-container": "#00424e",
+                        "secondary-container": "#03b5d3",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed": "#001f26",
+                        "mobile-warning": "#FF9500",
+                        "outline-variant": "#434655",
+                        "tertiary-fixed": "#dee1f9",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-container": "#eeefff",
+                        "on-tertiary": "#2b3041",
+                        "secondary-fixed": "#acedff",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "sync-active": "#00C853",
+                        "surface-container-low": "#0b1c30",
+                        "primary-fixed": "#dbe1ff",
+                        "on-primary-container": "#eeefff",
+                        "sync-pending": "#94A3B8",
+                        "on-surface": "#d3e4fe",
+                        "primary-container": "#2563eb",
+                        "surface-variant": "#26364a",
+                        "on-surface-variant": "#c3c6d7",
+                        "error": "#ffb4ab",
+                        "mobile-primary": "#0066FF",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "background": "#031427",
+                        "surface": "#031427",
+                        "on-primary-fixed": "#00174b",
+                        "surface-container-highest": "#26364a",
+                        "outline": "#8d90a0",
+                        "surface-tint": "#b4c5ff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "dark-bg": "#020617",
+                        "inverse-primary": "#0053db",
+                        "mobile-danger": "#FF3B30",
+                        "inverse-surface": "#d3e4fe",
+                        "on-primary": "#002a78",
+                        "surface-dim": "#031427",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error-container": "#ffdad6",
+                        "surface-container": "#102034",
+                        "surface-bright": "#2a3a4f",
+                        "on-background": "#d3e4fe",
+                        "tertiary-container": "#686c80",
+                        "on-error": "#690005",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-success": "#00C853",
+                        "surface-container-high": "#1b2b3f",
+                        "inverse-on-surface": "#213145",
+                        "on-secondary": "#003640",
+                        "ai-cyan": "#06B6D4"
+                    },
+                    "spacing": {
+                        "touch-target": "52px",
+                        "base": "4px",
+                        "web-margin": "32px",
+                        "space-3": "12px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "space-4": "16px",
+                        "space-1": "4px"
+                    },
+                    "fontFamily": {
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-on-background min-h-screen pb-24">
+<!-- TopAppBar Shell -->
+<nav class="fixed top-0 w-full z-50 bg-background flex justify-between items-center px-edge-mobile h-touch-target border-b border-white/5">
+<div class="flex items-center gap-3">
+<img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO798ZidKc4MEgVGOpNTZPcX88dIDISjI_TGYCiMrHdlhWOHhIda0OSGIpgc4BCjW6_-o8EOd0SENNK3FoxAdMAEHCxogJjXhIH_cz6ZuwOnfiNq03lJe4Wyd3U-rnBR685ucUEFXcHZrZxxwCL3BdvzbNLe48hgbEO0q9DgTwx0UrWpGAh6zChyw9GjE1UfsfVFNV1HjZyH2wcgehdsf9LoaOeo9q6UrRCKqovjacWQPxwPKyWo7x5z0zK4Sgw03119STpvJbY1c">
+<h1 class="font-h1-web text-[18px] font-bold tracking-[0.1em] text-primary">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-sync-active/10 rounded-full">
+<div class="w-2 h-2 rounded-full bg-sync-active"></div>
+<span class="text-[11px] font-bold text-sync-active tracking-wider uppercase">SYNCED</span>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="pt-20 px-edge-mobile max-w-2xl mx-auto">
+<!-- Header Section -->
+<header class="mb-8">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-1">ตั้งค่าระบบ</h2>
+<p class="font-body-mobile text-on-surface-variant opacity-70">จัดการโครงสร้างพื้นฐานและข้อมูลประจำตัวองค์กรของคุณ</p>
+</header>
+<!-- Organization Profile Bento -->
+<section class="mb-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-[20px]">corporate_fare</span>
+<h3 class="font-h2-web text-h2-web text-on-surface">ข้อมูลองค์กร</h3>
+</div>
+<div class="space-y-3">
+<div class="glass-panel p-space-4 rounded-xl flex flex-col gap-4 border-l-4 border-l-primary">
+<div>
+<label class="font-label-mobile text-label-mobile text-primary mb-1 block">ชื่อองค์กร</label>
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 text-on-surface font-body-mobile focus:ring-2 focus:ring-primary outline-none" type="text" value="บริษัท รับเหมาก่อสร้างไทย จำกัด (มหาชน)">
+</div>
+<div>
+<label class="font-label-mobile text-label-mobile text-primary mb-1 block">รหัสองค์กร</label>
+<div class="flex items-center gap-2">
+<input class="flex-grow bg-surface-container-low border-none rounded-lg p-3 text-on-surface-variant font-mono text-sm opacity-60" readonly="" type="text" value="TH-CONS-8821">
+<button class="w-12 h-12 flex items-center justify-center bg-surface-variant rounded-lg text-primary hover:bg-primary hover:text-on-primary transition-all active:scale-95">
+<span class="material-symbols-outlined">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Branding Section -->
+<section class="mb-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-[20px]">palette</span>
+<h3 class="font-h2-web text-h2-web text-on-surface">แบรนด์และอัตลักษณ์</h3>
+</div>
+<div class="glass-panel rounded-xl overflow-hidden border-l-4 border-l-secondary">
+<!-- Logo Upload -->
+<div class="p-space-4 border-b border-white/5 flex items-center justify-between touch-target">
+<div class="flex items-center gap-4">
+<div class="w-16 h-16 rounded-lg bg-surface-container-highest flex items-center justify-center border-2 border-dashed border-outline-variant relative group cursor-pointer overflow-hidden">
+<span class="material-symbols-outlined text-outline-variant group-hover:hidden">add_a_photo</span>
+<div class="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+<span class="material-symbols-outlined text-primary">upload</span>
+</div>
+</div>
+<div>
+<p class="font-body-mobile text-on-surface leading-tight">โลโก้องค์กร</p>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant">PNG หรือ SVG ขนาดไม่เกิน 2MB</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<!-- Primary Color -->
+<div class="p-space-4 flex items-center justify-between touch-target">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary shadow-lg border-2 border-white/10"></div>
+<div>
+<p class="font-body-mobile text-on-surface leading-tight">สีหลักของระบบ</p>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant">#B4C5FF (Blue Industrial)</p>
+</div>
+</div>
+<button class="text-primary font-label-mobile px-6 h-[52px] bg-primary/10 rounded-full hover:bg-primary/20 transition-colors flex items-center justify-center whitespace-nowrap">
+                        เปลี่ยนสี
+                    </button>
+</div>
+</div>
+</section>
+<!-- Integrations Section -->
+<section class="mb-10">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary text-[20px]">hub</span>
+<h3 class="font-h2-web text-h2-web text-on-surface">การเชื่อมต่อภายนอก</h3>
+</div>
+<div class="space-y-4">
+<!-- LINE Notification -->
+<div class="glass-panel p-space-4 rounded-xl border-l-4 border-l-[#00C300]">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-[#00C300]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#00C300]">chat_bubble</span>
+</div>
+<div>
+<h4 class="font-body-mobile text-on-surface font-bold">LINE Notification</h4>
+<p class="text-[12px] text-on-surface-variant">ส่งแจ้งเตือนงานผ่าน LINE Messaging API</p>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer custom-toggle" type="checkbox">
+<div class="w-11 h-6 bg-surface-variant rounded-full peer peer-focus:ring-4 peer-focus:ring-primary/20 transition-all"></div>
+<div class="toggle-dot absolute left-1 top-1 bg-on-surface-variant w-4 h-4 rounded-full transition-transform"></div>
+</label>
+</div>
+<div>
+<label class="font-label-mobile text-label-mobile text-primary mb-1 block">LINE Channel Token</label>
+<div class="relative">
+<input class="w-full bg-surface-container-highest border-none rounded-lg p-3 text-on-surface font-mono pr-12 focus:ring-2 focus:ring-[#00C300] outline-none" type="password" value="••••••••••••••••••••••••••••">
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant cursor-pointer hover:text-primary">visibility</span>
+</div>
+</div>
+</div>
+<!-- BIM 360 -->
+<div class="glass-panel p-space-4 rounded-xl border-l-4 border-l-[#0696D7] opacity-90 touch-target flex items-center">
+<div class="flex justify-between items-center w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-[#0696D7]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#0696D7]">architecture</span>
+</div>
+<div>
+<h4 class="font-body-mobile text-on-surface font-bold leading-tight">Autodesk BIM 360 Sync</h4>
+<p class="text-[12px] text-on-surface-variant">ซิงค์โมเดล 3D และเอกสารจาก ACC</p>
+</div>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="font-label-mobile text-mobile-warning">ยกเลิกการเชื่อมต่อ</span>
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- System Preferences List -->
+<section class="mb-10">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest mb-4">อื่น ๆ</h3>
+<div class="glass-panel rounded-xl overflow-hidden">
+<div class="p-space-4 flex items-center justify-between border-b border-white/5 active:bg-surface-bright transition-colors cursor-pointer touch-target">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">language</span>
+<p class="font-body-mobile text-on-surface">ภาษาของระบบ</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-mobile text-primary">ภาษาไทย</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<div class="p-space-4 flex items-center justify-between border-b border-white/5 active:bg-surface-bright transition-colors cursor-pointer touch-target">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">lock_person</span>
+<p class="font-body-mobile text-on-surface">นโยบายความปลอดภัย</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<div class="p-space-4 flex items-center justify-between active:bg-surface-bright transition-colors cursor-pointer touch-target">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-mobile-danger">delete_forever</span>
+<p class="font-body-mobile text-mobile-danger">ลบบัญชีผู้เช่า</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+</section>
+<!-- AI Management Recommendation -->
+<div class="mt-8 p-space-4 bg-ai-cyan/5 border-l-4 border-l-ai-cyan rounded-r-xl glass-panel">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-ai-cyan" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<div class="w-full">
+<div class="flex justify-between items-center mb-1">
+<p class="font-body-mobile text-on-surface font-bold">AI System Insight</p>
+<div class="flex gap-2">
+<span class="text-[10px] px-2 py-0.5 bg-ai-cyan/20 text-ai-cyan rounded-full font-bold">98% Confidence</span>
+<span class="text-[10px] px-2 py-0.5 bg-white/5 text-on-surface-variant rounded-full">Data Source: System Audit</span>
+</div>
+</div>
+<p class="text-[13px] text-on-surface-variant leading-relaxed">ตรวจพบว่า LINE Token ของคุณจะหมดอายุในอีก 3 วัน แนะนำให้รีเฟรช Token เพื่อการแจ้งเตือนที่ต่อเนื่อง</p>
+<button class="mt-3 text-ai-cyan font-label-mobile flex items-center gap-1 hover:underline touch-target">
+                        ดำเนินการเดี๋ยวนี้ <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container flex justify-around items-center h-[72px] pb-safe px-4 shadow-lg rounded-t-xl border-none">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-mobile text-label-mobile">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">notifications</span>
+<span class="font-label-mobile text-label-mobile">Alerts</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</button>
+</nav>
+<script>
+        // Micro-interaction for Copy Button
+        const copyBtn = document.querySelector('button .material-symbols-outlined[innerText="content_copy"]')?.parentElement || document.querySelector('button .material-symbols-outlined')?.parentElement;
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                const icon = this.querySelector('.material-symbols-outlined');
+                const originalText = icon.innerText;
+                icon.innerText = 'check';
+                this.classList.add('bg-mobile-success');
+                setTimeout(() => {
+                    icon.innerText = originalText;
+                    this.classList.remove('bg-mobile-success');
+                }, 2000);
+            });
+        }
+
+        // Simple visibility toggle for password
+        const togglePass = document.querySelector('.relative .material-symbols-outlined');
+        if (togglePass) {
+            togglePass.addEventListener('click', function() {
+                const input = this.previousElementSibling;
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    this.innerText = 'visibility_off';
+                } else {
+                    input.type = 'password';
+                    this.innerText = 'visibility';
+                }
+            });
+        }
+    </script>
+
+
+</body></html>

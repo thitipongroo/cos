@@ -1,0 +1,271 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Construction OS - Drone Reality Capture</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#4cd7f6",
+                        "surface-variant": "#26364a",
+                        "surface-container-highest": "#26364a",
+                        "on-error": "#690005",
+                        "outline-variant": "#434655",
+                        "secondary-container": "#03b5d3",
+                        "on-tertiary": "#2b3041",
+                        "surface-container": "#102034",
+                        "surface-container-high": "#1b2b3f",
+                        "inverse-surface": "#d3e4fe",
+                        "on-error-container": "#ffdad6",
+                        "mobile-primary": "#0066FF",
+                        "outline": "#8d90a0",
+                        "surface-bright": "#2a3a4f",
+                        "mobile-danger": "#FF3B30",
+                        "on-primary": "#002a78",
+                        "surface-tint": "#b4c5ff",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "tertiary": "#c1c5dc",
+                        "on-surface": "#d3e4fe",
+                        "surface-dim": "#031427",
+                        "on-background": "#d3e4fe",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-success": "#00C853",
+                        "background": "#031427",
+                        "error": "#ffb4ab",
+                        "primary-fixed": "#dbe1ff",
+                        "primary": "#b4c5ff",
+                        "on-primary-container": "#eeefff",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#00424e",
+                        "secondary-fixed": "#acedff",
+                        "on-tertiary-container": "#eeefff",
+                        "primary-container": "#2563eb",
+                        "sync-active": "#FFD60A",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface": "#031427",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "dark-bg": "#020617",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-secondary": "#003640",
+                        "inverse-primary": "#0053db",
+                        "on-secondary-fixed": "#001f26",
+                        "inverse-on-surface": "#213145",
+                        "mobile-warning": "#FF9500",
+                        "sync-pending": "#94A3B8",
+                        "surface-container-low": "#0b1c30",
+                        "tertiary-container": "#686c80",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-primary-fixed": "#00174b",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "ai-cyan": "#06B6D4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "edge-mobile": "24px",
+                        "space-2": "8px",
+                        "space-1": "4px",
+                        "space-3": "12px",
+                        "touch-target": "52px",
+                        "web-margin": "32px",
+                        "space-4": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "tiny-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .viewfinder-overlay {
+            background: linear-gradient(to bottom, rgba(3, 20, 39, 0.4) 0%, transparent 15%, transparent 85%, rgba(3, 20, 39, 0.6) 100%);
+        }
+        .ai-shimmer {
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+        .shutter-glow {
+            box-shadow: 0 0 15px rgba(0, 102, 255, 0.4);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-mobile text-body-mobile select-none overflow-hidden h-screen flex flex-col">
+<!-- Top Navigation Bar (Shared Component Strategy) -->
+<header class="flex justify-between items-center w-full px-edge-mobile h-touch-target bg-background shrink-0 z-50">
+<div class="flex items-center gap-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 shrink-0">
+  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJsg8g3gxaHJaIPg0ipx4QI1t0qXEgFn2V8ZSx4Jy4vtewsoCbLjjbdvbK-LnNm1UtwvJpvtqg04CKVZWuBIOa4gxiuT9Yg04IMLdi2VkO3BOGPTiWkuCOXDT80eEGidg1PaoZWWOFWZ4OrP_WbtNLldn271-6MlTdh03ErVhNC8hK3qIkpRjz_3o4UO_uR_z29JGZ3tt96QWUGoys1kDueyLX-TRIeTYcLC03uTc6PoSuw6xhoe0r9323cWB540sJU3e3_z9zRcs" alt="Brand Icon" class="w-full h-full object-cover">
+</div>
+<h1 class="font-h1-web text-[18px] uppercase tracking-wider text-primary whitespace-nowrap">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-surface-container rounded-full">
+<span class="w-2 h-2 rounded-full bg-sync-active ai-shimmer"></span>
+<span class="font-label-mobile text-label-mobile text-sync-active">SYNCED</span>
+</div>
+</header>
+<!-- Main Viewport Area -->
+<main class="relative flex-1 w-full bg-dark-bg overflow-hidden">
+<!-- Live Camera Viewfinder -->
+<div class="absolute inset-0 w-full h-full bg-center bg-cover" data-alt="A high-resolution wide-angle drone perspective of a modern skyscraper construction site at golden hour. The view shows steel girders, concrete forms, and yellow cranes against a clear sky. The lighting is crisp and detailed, emphasizing the industrial textures and architectural complexity of the site." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDxvQLRWYcLGmSFR4DA9tweK_rd1lldurxu8VGFkc8AbnrVRS8IGl5Ut9khDsi8rwdyXHjhI4e9Jzlp5_ZkOdZJsUySAAOXyW7lHFAIgwGJjRzqnlzHLrepi7hCkfGLMpkXPVGySiwDyr9gd7bZKoot1o184S4L-zwYRhY9NOz13cN9gBS2d-kgX9jEiQDX_qNCZNkLGo-zJUbB2wrPCUHfpS2djBW4vdmA2zBTY-gHX_srqjWeX94ZU-NQfNVnSfltYapnre1tdIg')">
+<!-- Viewfinder HUD Overlays -->
+<div class="absolute inset-0 viewfinder-overlay pointer-events-none"></div>
+<!-- AI Object Detection Boxes -->
+<!-- Structural Joint -->
+<div class="absolute top-[25%] left-[35%] w-32 h-24 border-2 border-ai-cyan rounded-sm flex flex-col items-start p-1 bg-ai-cyan/10">
+<div class="bg-ai-cyan text-dark-bg px-1 font-bold text-[10px] uppercase tracking-tighter">STRUCTURAL JOINT</div>
+<div class="text-ai-cyan text-[10px] font-bold mt-auto">98.4% CONFIDENCE</div>
+</div>
+<!-- Bolt Pattern -->
+<div class="absolute bottom-[40%] right-[20%] w-20 h-20 border-2 border-ai-cyan/70 border-dashed rounded-sm flex flex-col items-start p-1 bg-ai-cyan/5">
+<div class="bg-ai-cyan/70 text-dark-bg px-1 font-bold text-[10px] uppercase tracking-tighter">BOLT PATTERN</div>
+<div class="text-ai-cyan/70 text-[10px] font-bold mt-auto">CONFIRMED</div>
+</div>
+<!-- Center Reticle -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="w-16 h-16 border border-white/20 rounded-full flex items-center justify-center">
+<div class="w-1 h-1 bg-ai-cyan rounded-full"></div>
+</div>
+<div class="absolute w-8 h-[1px] bg-white/40 left-[calc(50%-40px)]"></div>
+<div class="absolute w-8 h-[1px] bg-white/40 right-[calc(50%-40px)]"></div>
+<div class="absolute h-8 w-[1px] bg-white/40 top-[calc(50%-40px)]"></div>
+<div class="absolute h-8 w-[1px] bg-white/40 bottom-[calc(50%-40px)]"></div>
+</div>
+<!-- Left Slider: Exposure -->
+<div class="absolute left-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 bg-surface-container/60 backdrop-blur-md py-6 px-3 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-white text-sm">light_mode</span>
+<div class="h-48 w-1 bg-white/20 relative rounded-full overflow-hidden">
+<div class="absolute bottom-1/4 left-0 right-0 bg-primary h-1/2 rounded-full"></div>
+</div>
+<span class="material-symbols-outlined text-white text-sm">dark_mode</span>
+</div>
+<!-- Right Slider: Zoom -->
+<div class="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col items-center gap-4 bg-surface-container/60 backdrop-blur-md py-6 px-3 rounded-full border border-white/10">
+<span class="material-symbols-outlined text-white text-sm">add</span>
+<div class="h-48 w-1 bg-white/20 relative rounded-full overflow-hidden">
+<div class="absolute bottom-1/3 left-0 right-0 bg-ai-cyan h-1/3 rounded-full"></div>
+</div>
+<span class="material-symbols-outlined text-white text-sm">remove</span>
+</div>
+<!-- Camera Mode Toggles (Top Center) -->
+<div class="absolute top-6 left-1/2 -translate-x-1/2 flex gap-3">
+<button class="flex items-center gap-2 bg-ai-cyan px-4 py-2 rounded-lg text-dark-bg font-label-mobile shadow-lg active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
+                    AI AUTO-FOCUS
+                </button>
+<button class="flex items-center gap-2 bg-surface-container/80 backdrop-blur-md px-4 py-2 rounded-lg text-white font-label-mobile border border-white/10 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]">thermostat</span>
+                    THERMAL
+                </button>
+</div>
+</div>
+</main>
+<!-- Bottom Controls Area -->
+<footer class="bg-surface-container border-t border-outline-variant/10 px-edge-mobile pt-4 pb-8 flex flex-col gap-6 shrink-0 shadow-[0_-10px_20px_rgba(0,0,0,0.4)]">
+<!-- Gallery Strip & Shutter -->
+<div class="flex items-center justify-between gap-4">
+<!-- Recent Thumbs -->
+<div class="flex gap-2 overflow-hidden flex-1">
+<div class="relative w-16 h-16 rounded-lg overflow-hidden border border-primary/40">
+<img class="w-full h-full object-cover" data-alt="Close-up photograph of heavy-duty industrial bolts on a steel girder, high contrast and sharp focus, industrial dark mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvahhOlSgDrtUANicORw7nlUhl12gNBVi1s0JIfDpkOUVNPOC3X03S_pZY50s9o84NVxFT0QRPbvlLUHMdJoKJTRe-rUyePTUUSvhqes9XFMBDTfrRosjdooem5EWLWUZH935w6ghms8JC_Pu7TFXAS9r_XE0OR5NKOG14fz3L9R6ixj-eTvqARjTyfD1iVSzYMRuLJLCWd-46ovoQfKgXbvwS7OP9MUMowIlcdgvs1Wa3Fw9wGQUvCxPfYzdNZPcD7HXBUOlzoRc">
+<div class="absolute bottom-0 inset-x-0 h-1 bg-primary"></div>
+</div>
+<div class="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+<img class="w-full h-full object-cover opacity-60" data-alt="Detailed view of a reinforced concrete structural joint, site B-14, evening lighting, high detail industrial photography." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD3uhDHHz-obZ1A7KoS_wNQS0Ajiq3j4AJ8dL4IEe2G5Ix_uvrUVH01_-9BENdf24XQGuqN2bZ6wJ-dtSFe2g-qGujZsYD3bZCaEE94qrqy4yJLiap1-1ha-zQtCxdQkN4D9Lccfy_3A0cf5igpjJt0r0g57lE8Khj1M49HRU7zcXIHYNo5qChkjnWHqooEbP7hG7u5bsyHTGBFcOZr0LslqKlCjZ_Qq7e4zcTJrNvLZtNnWYXsNRz8EZ8GHShLsJEkuprw6QH8_Z8">
+</div>
+<div class="relative w-16 h-16 rounded-lg overflow-hidden border border-white/10">
+<img class="w-full h-full object-cover opacity-60" data-alt="Wide shot of the construction floor with steel reinforcement bars, industrial setting, drone survey style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHDK0vslk0BO2gfsp5YHwUwAMmoWmyX7irj5ab-dICNJ-iYCe6j1cnMbdtVVYVDiYFCinZmaaz7-NOMVkejnFgvNHhTo3jMfEweNQF-saV8Oo4HxaerfdJ9l8Y2E4qHw8op3pKvZSYgHNA7S4jtwUklbH_scoJNKhe3uJOJhzTpMGKkWvzZ6JAgcd_tpOxLmL0Gv1qoMN1wDGSdXyElVoGZq9zM1926rlA72a61WCD6411Appf7X4oC3gTjaHza0qq1xBCJz8_0W0">
+</div>
+</div>
+<!-- Primary Shutter Button -->
+<div class="relative">
+<button class="w-20 h-20 bg-white rounded-full flex items-center justify-center active:scale-90 transition-transform shutter-glow">
+<div class="w-16 h-16 border-4 border-dark-bg rounded-full flex items-center justify-center">
+<div class="w-12 h-12 bg-primary-container rounded-full"></div>
+</div>
+</button>
+</div>
+<!-- Settings/Switch -->
+<div class="flex flex-col gap-2 flex-1 items-end">
+<button class="w-12 h-12 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center active:bg-surface-bright">
+<span class="material-symbols-outlined text-on-surface">sync</span>
+</button>
+</div>
+</div>
+<!-- Main Action Buttons -->
+<div class="flex gap-4">
+<button class="flex-1 h-touch-target rounded-xl border border-outline font-label-mobile text-on-surface uppercase tracking-widest active:bg-white/5 transition-colors">
+                CANCEL
+            </button>
+<button class="flex-[2] h-touch-target rounded-xl bg-mobile-primary font-label-mobile text-white font-bold uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined">cloud_upload</span>
+                SAVE TO MISSION
+            </button>
+</div>
+</footer>
+<!-- Visual Polish: Shimmer Overlay for AI elements -->
+<div class="fixed top-0 left-0 w-full h-1 pointer-events-none bg-gradient-to-r from-transparent via-ai-cyan/20 to-transparent ai-shimmer"></div>
+<script>
+        // Micro-interaction for shutter press
+        document.querySelector('.shutter-glow').addEventListener('click', function() {
+            const flash = document.createElement('div');
+            flash.className = 'fixed inset-0 bg-white z-[100] opacity-100 transition-opacity duration-300';
+            document.body.appendChild(flash);
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 300);
+            }, 50);
+        });
+    </script>
+
+
+</body></html>

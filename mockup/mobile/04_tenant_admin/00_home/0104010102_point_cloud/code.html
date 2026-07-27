@@ -1,0 +1,275 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Point Cloud Viewer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "primary-container": "#2563eb",
+                    "dark-bg": "#020617",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-primary": "#002a78",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "tertiary-container": "#686c80",
+                    "on-tertiary": "#2b3041",
+                    "on-primary-fixed": "#00174b",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary": "#003640",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "inverse-primary": "#0053db",
+                    "mobile-warning": "#FF9500",
+                    "mobile-danger": "#FF3B30",
+                    "background": "#031427",
+                    "surface-dim": "#031427",
+                    "surface-container-low": "#0b1c30",
+                    "surface": "#031427",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "secondary-fixed": "#acedff",
+                    "on-primary-container": "#eeefff",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-container-high": "#1b2b3f",
+                    "on-error-container": "#ffdad6",
+                    "inverse-on-surface": "#213145",
+                    "error-container": "#93000a",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "sync-active": "#FFD60A",
+                    "surface-variant": "#26364a",
+                    "outline": "#8d90a0",
+                    "on-secondary-fixed": "#001f26",
+                    "surface-tint": "#b4c5ff",
+                    "surface-bright": "#2a3a4f",
+                    "primary": "#b4c5ff",
+                    "on-tertiary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "dark-surface": "#0F172A",
+                    "surface-container": "#102034",
+                    "mobile-primary": "#0066FF",
+                    "on-background": "#d3e4fe",
+                    "surface-container-highest": "#26364a",
+                    "outline-variant": "#434655",
+                    "secondary-container": "#03b5d3",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-lowest": "#000f21",
+                    "secondary": "#4cd7f6",
+                    "on-surface": "#d3e4fe",
+                    "mobile-success": "#00C853"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "web-margin": "32px"
+            },
+            "fontFamily": {
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            user-select: none;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .point-cloud-overlay {
+            background-image: radial-gradient(circle, #b4c5ff 0.5px, transparent 0.5px);
+            background-size: 8px 8px;
+            opacity: 0.15;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-dark-bg text-on-surface selection:bg-primary/30 antialiased overflow-hidden">
+<!-- Top AppBar -->
+<header class="w-full top-0 sticky z-[60] flex items-center justify-between px-edge-mobile h-touch-target bg-surface-container-low">
+<div class="flex items-center gap-space-3">
+<button class="flex items-center justify-center w-10 h-10 rounded-full transition-colors duration-200 ease-in-out hover:bg-white/5 active:scale-95 text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-3">
+  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcYQQ_nwMJxVoxxYebYHrrkov_KtXlxmlVbU0JU105Yn-1YHrCGtMF9EwqpUWpT9dZwRCVCrTDvQwGp2wnM08FvRX4T092SpyYFwKL9rFOdipELypK3MqQ_iyYE7WRPQKyeilPobYyAr8pQEOoOcCjn1GD1yTp_3k6GgCVQL6LiprCccGE6t8f0JO4Md1AOXOkkCcsb1RepCONlIxHi7yNAlHBD_6eK0OGXKRZ1PrW15t_DEmb9sdJx8EZONm1BbMtRUZTlfsQY8k" alt="Construction OS Logo" class="w-8 h-8 object-contain bg-transparent">
+  <h1 class="text-lg font-bold tracking-tight text-on-surface uppercase whitespace-nowrap">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center">
+<div class="flex items-center gap-space-2 bg-mobile-success/10 border border-mobile-success/20 px-space-3 py-1 rounded-full">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase tracking-widest font-bold">Synced</span>
+</div>
+</div>
+</header>
+<main class="relative h-[calc(100vh-124px)] w-full overflow-hidden">
+<!-- Interactive 3D Viewer Area -->
+<div class="absolute inset-0 bg-[#000814] overflow-hidden">
+<!-- Simulated LiDAR Point Cloud -->
+
+<!-- Grid Background Overlay -->
+<div class="absolute inset-0 point-cloud-overlay pointer-events-none"></div>
+<!-- Central Crosshair & Metadata -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+<div class="relative">
+<!-- Crosshair -->
+<div class="w-12 h-12 border border-primary/20 rounded-full flex items-center justify-center">
+<div class="w-0.5 h-6 bg-primary/40 absolute"></div>
+<div class="w-6 h-0.5 bg-primary/40 absolute"></div>
+</div>
+<!-- Metadata Label -->
+<div class="absolute top-14 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/60 backdrop-blur-md border border-white/10 px-space-2 py-1 rounded">
+<p class="font-tiny-web text-tiny-web text-primary-fixed-dim tabular-nums">X: 122.42, Y: 88.10, Z: 14.22</p>
+</div>
+</div>
+</div>
+<!-- Floating Measurement Toolbar -->
+<div class="absolute left-edge-mobile top-1/2 -translate-y-1/2 flex flex-col gap-space-3">
+<button class="w-12 h-12 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-variant active:scale-95 transition-all shadow-lg">
+<span class="material-symbols-outlined">straighten</span>
+</button>
+<button class="w-12 h-12 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-variant active:scale-95 transition-all shadow-lg">
+<span class="material-symbols-outlined">square_foot</span>
+</button>
+<button class="w-12 h-12 rounded-full bg-primary border border-primary-fixed flex items-center justify-center text-on-primary hover:opacity-90 active:scale-95 transition-all shadow-lg">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">ads_click</span>
+</button>
+<button class="w-12 h-12 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center text-on-surface hover:bg-surface-variant active:scale-95 transition-all shadow-lg">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+<!-- AI Intelligence Banner -->
+<div class="absolute bottom-32 left-edge-mobile right-edge-mobile">
+<div class="bg-secondary-container/90 backdrop-blur-lg border-l-4 border-secondary p-space-3 rounded-r-lg flex items-center gap-space-3 shadow-xl">
+<span class="material-symbols-outlined text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-secondary-container opacity-70 uppercase tracking-tighter font-black">Core_AI Processing</span>
+<p class="font-label-mobile text-label-mobile text-on-secondary-container font-bold">STRUCTURAL DEVIATION DETECTED (-12mm Tolerance)</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Summary Card Container (Above Nav) -->
+<div class="absolute bottom-4 left-0 w-full px-edge-mobile z-50">
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl p-space-4 shadow-2xl flex flex-col gap-space-3 backdrop-blur-sm">
+<div class="flex justify-between items-start">
+<div>
+<span class="font-tiny-web text-tiny-web text-outline uppercase tracking-widest">Active Scan</span>
+<h2 class="font-h2-web text-h2-web text-on-surface leading-tight">Sector 7B Rebar Audit</h2>
+</div>
+<div class="bg-primary/10 text-primary border border-primary/20 rounded px-space-2 py-1">
+<span class="font-tiny-web text-tiny-web font-bold">LIDAR-V2</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-3">
+<div class="bg-surface-container-high rounded-lg p-space-3 border border-white/5">
+<span class="font-tiny-web text-tiny-web text-outline uppercase">Density</span>
+<p class="font-label-mobile text-label-mobile text-on-surface font-bold">12.4M Points</p>
+</div>
+<div class="bg-surface-container-high rounded-lg p-space-3 border border-white/5">
+<span class="font-tiny-web text-tiny-web text-outline uppercase">Accuracy</span>
+<p class="font-label-mobile text-label-mobile text-mobile-success font-bold">+/- 2mm (Verified)</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container shadow-lg flex justify-around items-center h-[72px] px-space-2">
+<!-- Reports -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 transition-transform duration-150 active:scale-95 hover:opacity-80">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</button>
+<!-- Inventory -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 transition-transform duration-150 active:scale-95 hover:opacity-80">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</button>
+<!-- BIM (ACTIVE) -->
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 transition-transform duration-150 active:scale-95">
+<span class="material-symbols-outlined" data-icon="view_in_ar" style="font-variation-settings: 'FILL' 1;">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</button>
+<!-- Users -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 transition-transform duration-150 active:scale-95 hover:opacity-80">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</button>
+<!-- Settings -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 transition-transform duration-150 active:scale-95 hover:opacity-80">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</button>
+</nav>
+<script>
+        // Micro-interaction for toolbar buttons
+        document.querySelectorAll('.floating-toolbar button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.classList.add('scale-90');
+                setTimeout(() => this.classList.remove('scale-90'), 100);
+            });
+        });
+
+        // Simple visibility toggle for AI banner on scroll-like simulation
+        let lastScroll = 0;
+        window.addEventListener('mousemove', (e) => {
+            // Placeholder logic for mouse-driven parallax or view changes
+            // To be expanded with Three.js/WebGL logic if interactivity is required
+        });
+    </script>
+
+
+</body></html>

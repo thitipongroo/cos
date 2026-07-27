@@ -1,0 +1,237 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Point Captured Successfully - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            from { background-position: 200% 0; }
+            to { background-position: -200% 0; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#26364a",
+                      "dark-surface": "#0F172A",
+                      "surface-container-low": "#0b1c30",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "background": "#031427",
+                      "inverse-on-surface": "#213145",
+                      "inverse-primary": "#0053db",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "surface-variant": "#26364a",
+                      "surface-container-high": "#1b2b3f",
+                      "on-surface": "#d3e4fe",
+                      "outline": "#8d90a0",
+                      "sync-active": "#FFD60A",
+                      "secondary-fixed": "#acedff",
+                      "mobile-danger": "#FF3B30",
+                      "inverse-surface": "#d3e4fe",
+                      "on-secondary": "#003640",
+                      "on-primary-fixed": "#00174b",
+                      "surface": "#031427",
+                      "secondary": "#4cd7f6",
+                      "dark-bg": "#020617",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "error-container": "#93000a",
+                      "on-tertiary-container": "#eeefff",
+                      "on-primary": "#002a78",
+                      "mobile-primary": "#0066FF",
+                      "sync-pending": "#94A3B8",
+                      "tertiary": "#c1c5dc",
+                      "on-tertiary": "#2b3041",
+                      "mobile-warning": "#FF9500",
+                      "tertiary-container": "#686c80",
+                      "on-background": "#d3e4fe",
+                      "on-tertiary-fixed": "#161b2b",
+                      "secondary-container": "#03b5d3",
+                      "primary": "#b4c5ff",
+                      "surface-container-lowest": "#000f21",
+                      "on-error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "on-secondary-fixed": "#001f26",
+                      "error": "#ffb4ab",
+                      "surface-container": "#102034",
+                      "primary-fixed": "#dbe1ff",
+                      "mobile-success": "#00C853",
+                      "surface-dim": "#031427",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-surface-variant": "#c3c6d7",
+                      "surface-bright": "#2a3a4f",
+                      "on-primary-container": "#eeefff",
+                      "surface-tint": "#b4c5ff",
+                      "tertiary-fixed": "#dee1f9",
+                      "primary-container": "#2563eb",
+                      "on-error": "#690005",
+                      "outline-variant": "#434655",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-secondary-container": "#00424e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "touch-target": "52px",
+                      "space-1": "4px",
+                      "web-margin": "32px",
+                      "edge-mobile": "24px",
+                      "space-3": "12px",
+                      "space-4": "16px",
+                      "base": "4px",
+                      "space-2": "8px"
+              },
+              "fontFamily": {
+                      "body-mobile": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "display-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-surface dark:bg-dark-bg min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLet-exAD4mguzDQOLs8aBrs-h91LOUP63A85GyRTChlUI26vSuuXRhpla4PPRIxeEZCiYbf2uwBJ_Nu61GgrpgZ8rfy2BARE8ncQJK3L3YqbdP8JcxP7Q-0EThoVYThTkfx3PXM-MjzkPHtMEN1OAEUNxHuibPkXcmPRTjcf6peDQgfcQS5GzkdH24EzCmSBwUDCcl4PE-ikD_BqIBFa5OF9X5ENU0g3gXU9Iyp-1rG77qBEkld5eX_64jwIwOLuaBw518PHFonM" alt="Construction OS Logo" class="w-6 h-6 object-contain bg-transparent">
+<h1 class="font-display-web text-body-web font-bold text-primary tracking-widest uppercase">Construction OS</h1>
+</div>
+<div class="flex items-center gap-space-2 px-space-2 py-space-1 bg-surface-bright/10 rounded-full">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface">SYNCED</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow pt-touch-target pb-32 px-edge-mobile flex flex-col gap-space-4">
+<!-- Hero Section -->
+<section class="mt-space-4 flex flex-col items-center text-center py-space-4">
+<div class="relative mb-space-4">
+<div class="absolute inset-0 bg-mobile-success/20 rounded-full blur-xl animate-pulse"></div>
+<div class="relative w-24 h-24 bg-mobile-success/10 border-4 border-mobile-success rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-success text-5xl" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface uppercase tracking-tight">POINT CAPTURED SUCCESSFULLY</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mt-1">Identifier: #PT-082</p>
+</section>
+<!-- Bento Grid Data Summary -->
+<div class="grid grid-cols-2 gap-space-2">
+<div class="col-span-2 bg-surface-container border-l-4 border-primary p-space-4 rounded-xl flex flex-col">
+<div class="flex justify-between items-start mb-space-2">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Spatial Metadata</span>
+<span class="material-symbols-outlined text-primary text-xl" data-icon="location_on">location_on</span>
+</div>
+<div class="grid grid-cols-2 gap-y-space-3 gap-x-space-4">
+<div>
+<p class="font-tiny-web text-tiny-web text-outline">LATITUDE</p>
+<p class="font-h2-web text-h2-web text-on-surface">13.7563</p>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-outline">LONGITUDE</p>
+<p class="font-h2-web text-h2-web text-on-surface">100.5018</p>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-outline">ELEVATION</p>
+<p class="font-h2-web text-h2-web text-on-surface">12.4m</p>
+</div>
+<div class="bg-secondary-container/20 p-space-2 rounded-lg">
+<p class="font-tiny-web text-tiny-web text-on-secondary-container">ACCURACY</p>
+<p class="font-h2-web text-h2-web text-secondary">98.7%</p>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Module -->
+<section class="bg-secondary-container/5 border-l-4 border-secondary p-space-4 rounded-xl relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 opacity-10">
+<span class="material-symbols-outlined text-8xl" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="flex items-center gap-space-2 mb-space-1">
+<span class="material-symbols-outlined text-secondary text-sm" style="font-variation-settings: 'FILL' 1;">bolt</span>
+<span class="font-label-mobile text-label-mobile text-secondary font-bold tracking-widest uppercase">CORE_AI</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-secondary-container italic">
+                Reality mesh updated with new coordinate evidence. Precision alignment verified against project baseline.
+            </p>
+</section>
+<!-- Preview Map / Shimmer -->
+<div class="w-full h-40 bg-surface-container-high rounded-xl relative overflow-hidden group">
+<div class="absolute inset-0 shimmer"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="flex flex-col items-center text-on-surface-variant opacity-40">
+<span class="material-symbols-outlined text-4xl mb-space-1" data-icon="map">map</span>
+<span class="font-tiny-web text-tiny-web">GENERATING MINI-MAP PREVIEW...</span>
+</div>
+</div>
+<!-- Injected Map Background -->
+<div class="absolute inset-0 opacity-20 bg-cover bg-center" data-alt="A top-down technical satellite view of a construction site with structural steel frames and concrete foundations, overlaid with a digital blue topographical grid and neon coordinate markers, industrial navy and cyan lighting aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCGaE3USg-uLmHx6kka_HhY-JvnyYCHk4Y2MwzgAA3cVKU7IeupM-8I4yx8xSHcfWhAEHGCSvf2dTigneK1VLJ8FG7YIip4q8LbPcYPxR0IfD6MKxraOyh2N-uJ0VjxW7MvMNjX96skLMQLEUYEPvZg9Yw9xh8ff0d9ELzK6TadA2ACM0LLKl7A9GZj45qwIrSO0xntN9m8HdzpyVUm84pTrz_FlS6p7gzvGboycZadU6VF377OmncqD_SeXaeNpRtiSZK5Jud57EY')"></div>
+</div>
+</main>
+<!-- Action Bar / Footer -->
+<div class="fixed bottom-0 left-0 w-full p-edge-mobile bg-gradient-to-t from-background via-background to-transparent pt-8 flex flex-col gap-space-3 z-50">
+<button class="w-full h-touch-target bg-secondary text-on-secondary font-bold uppercase tracking-wider rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-space-2">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+            VIEW IN 3D VIEWER
+        </button>
+<button class="w-full h-touch-target border border-outline-variant text-on-surface-variant font-bold uppercase tracking-wider rounded-xl active:scale-95 transition-transform flex items-center justify-center gap-space-2 bg-surface-bright/5">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+            RETURN TO LIVE CAPTURE
+        </button>
+</div>
+<!-- Micro-interaction script -->
+<script>
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const icon = this.querySelector('.material-symbols-outlined');
+                if (icon) {
+                    icon.style.transform = 'scale(1.2)';
+                    setTimeout(() => icon.style.transform = 'scale(1)', 200);
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

@@ -1,0 +1,287 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Live Reality Capture</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "mobile-danger": "#FF3B30",
+                    "tertiary-container": "#686c80",
+                    "on-secondary-fixed": "#001f26",
+                    "on-surface": "#d3e4fe",
+                    "surface-container-low": "#0b1c30",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline": "#8d90a0",
+                    "error-container": "#93000a",
+                    "secondary-fixed": "#acedff",
+                    "on-tertiary": "#2b3041",
+                    "on-secondary": "#003640",
+                    "surface": "#031427",
+                    "on-error-container": "#ffdad6",
+                    "outline-variant": "#434655",
+                    "primary-container": "#2563eb",
+                    "tertiary-fixed": "#dee1f9",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-container-highest": "#26364a",
+                    "secondary-container": "#03b5d3",
+                    "mobile-primary": "#0066FF",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container": "#102034",
+                    "mobile-warning": "#FF9500",
+                    "primary-fixed": "#dbe1ff",
+                    "surface-container-high": "#1b2b3f",
+                    "on-error": "#690005",
+                    "inverse-primary": "#0053db",
+                    "on-secondary-container": "#00424e",
+                    "on-background": "#d3e4fe",
+                    "secondary": "#4cd7f6",
+                    "surface-container-lowest": "#000f21",
+                    "inverse-on-surface": "#213145",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-tint": "#b4c5ff",
+                    "dark-surface": "#0F172A",
+                    "dark-bg": "#020617",
+                    "background": "#031427",
+                    "on-primary-fixed": "#00174b",
+                    "on-primary-container": "#eeefff",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "sync-active": "#FFD60A",
+                    "mobile-success": "#00C853",
+                    "tertiary": "#c1c5dc",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-variant": "#26364a",
+                    "surface-dim": "#031427",
+                    "sync-pending": "#94A3B8",
+                    "surface-bright": "#2a3a4f",
+                    "on-tertiary-container": "#eeefff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "touch-target": "52px",
+                    "space-2": "8px",
+                    "space-4": "16px",
+                    "web-margin": "32px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .blinking-dot {
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.2; }
+            100% { opacity: 1; }
+        }
+        .scanline {
+            background: linear-gradient(to bottom, transparent 50%, rgba(6, 182, 212, 0.05) 50%);
+            background-size: 100% 4px;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- Top App Bar -->
+<header class="w-full top-0 sticky z-50 bg-surface dark:bg-surface flex justify-between items-center px-edge-mobile py-space-3 bg-surface-container-low"><div class="flex items-center gap-space-3"><button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant transition-colors"><span class="material-symbols-outlined text-primary">arrow_back</span></button><div class="flex items-center gap-space-2 gap-space-3"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9Hbqsh3Jr78ro5QavPSmiOD057-8PE0FUq7FWoWINGc-u94b_I5NNd7dh38yq8zkc4kRfvcn86ZrTF3vA9VXMMMy8kja8DF7gepgCpu8G7jlZEYriOBBrs5E24RcFLrxYTmtAeG79XBzc8LreYRgc0y-L7MQGrojFsl-EXeRb5RbHQyFruRpBWmmiRvXEkUDyXCxh8iSE_xupb0NsN2KHYrRja_lNOYUMwFiQhR137427iJtQ963lV2gmmVdWASCNhUXIoAl3qT4" alt="COS Logo" class="w-8 h-8 object-contain"><h1 class="font-h1-web text-[16px] font-bold tracking-tight text-primary uppercase whitespace-nowrap">CONSTRUCTION OS</h1></div></div><div class="flex items-center gap-space-2 px-space-3 py-1 rounded-full bg-surface-container-high border border-outline-variant/20"><div class="w-2 h-2 rounded-full bg-mobile-success"></div><span class="font-tiny-web text-tiny-web text-mobile-success uppercase tracking-widest font-bold">Synced</span></div></header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col relative overflow-hidden">
+<!-- Reality Capture Viewport -->
+<section class="relative w-full flex-1 bg-black overflow-hidden flex flex-col items-center justify-center">
+<!-- Video Feed Placeholder -->
+<div class="absolute inset-0 z-0">
+<div class="w-full h-full bg-cover bg-center" data-alt="A high-angle drone perspective of a modern construction site at dusk. The scene captures intricate steel rebar structures, concrete forms, and heavy machinery under intense industrial floodlights. The atmosphere is sharp and technical, with high contrast between deep shadows and the bright glow of site lighting, creating a professional, mission-critical engineering aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDrvXlof7puYQx-11ToRXYq4cqObUSIQ0EGO3HniklZFt-I1z_vFWFehszdloV7Q8o7oN-Tn-Hsn8haFfFSheTB-oiL-DrmRwZJXvMcnoEz-7pnI8gZe6Zai9wwa3H2w2cl3VgfwszPCMNdOcbA62qMSwrMfOyzRn6eZ2bR7U85dxF3L4I-ouLyRFzdMdhjU1DezJ4tWxNsXwf0em2Eqi9ezx1mZgeQCxSziY99-qcdc_FaAUuC0cUJUgJvK0kpLkQEbfeqb7mfpow')"></div>
+<!-- Scanline effect overlay -->
+<div class="absolute inset-0 scanline opacity-30 pointer-events-none"></div>
+</div>
+<!-- Telemetry Overlay (Top) -->
+<div class="absolute top-space-4 left-0 right-0 z-20 px-edge-mobile flex justify-between items-start pointer-events-none">
+<div class="flex flex-col gap-space-2">
+<div class="bg-surface-container-lowest/80 backdrop-blur-md px-space-3 py-space-2 border-l-2 border-secondary-container flex items-center gap-space-4">
+<div class="flex items-center gap-space-1">
+<span class="material-symbols-outlined text-secondary text-[18px]">altitude</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">120m</span>
+</div>
+<div class="w-px h-3 bg-outline-variant/30"></div>
+<div class="flex items-center gap-space-1">
+<span class="material-symbols-outlined text-mobile-success text-[18px]">battery_horiz_075</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">84%</span>
+</div>
+<div class="w-px h-3 bg-outline-variant/30"></div>
+<div class="flex items-center gap-space-1">
+<span class="material-symbols-outlined text-secondary text-[18px]">signal_cellular_alt</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">-65dB</span>
+</div>
+</div>
+</div>
+<!-- Mission Status (Floating Right) -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md px-space-3 py-space-2 flex items-center gap-space-2 rounded-lg border border-outline-variant/10">
+<div class="w-2 h-2 rounded-full bg-mobile-danger blinking-dot"></div>
+<span class="font-tiny-web text-tiny-web uppercase tracking-tighter text-on-surface">Survey in Progress</span>
+</div>
+</div>
+<!-- AI Overlays (Rebar Detection) -->
+<div class="absolute inset-0 z-10 pointer-events-none">
+<!-- Example AI Box 1 -->
+<div class="absolute top-[40%] left-[30%] w-32 h-24 border-2 border-secondary-container">
+<div class="absolute -top-6 left-0 bg-secondary-container text-on-secondary-container px-2 py-0.5 font-tiny-web text-tiny-web uppercase">
+                        Rebar Detected
+                    </div>
+<div class="absolute inset-0 bg-secondary-container/5"></div>
+</div>
+<!-- Example AI Box 2 -->
+<div class="absolute bottom-[35%] right-[25%] w-48 h-32 border-2 border-secondary-container">
+<div class="absolute -top-6 left-0 bg-secondary-container text-on-secondary-container px-2 py-0.5 font-tiny-web text-tiny-web uppercase">
+                        Rebar Detected
+                    </div>
+<div class="absolute inset-0 bg-secondary-container/5"></div>
+</div>
+</div>
+<!-- AI Insight Panel (Bottom of Video) -->
+<div class="absolute bottom-space-4 left-edge-mobile right-edge-mobile z-20">
+<div class="bg-surface-container/90 backdrop-blur-lg p-space-3 border-l-4 border-secondary-container rounded-r-lg flex items-center gap-space-3">
+<span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<p class="font-body-mobile text-label-mobile text-secondary-container uppercase tracking-wide">
+                        CORE_AI: <span class="text-on-surface">Detecting 14 Structural Elements (98.2% Confidence)</span>
+</p>
+</div>
+</div>
+<!-- Focus Corners (Aesthetic Only) -->
+<div class="absolute inset-8 pointer-events-none opacity-40">
+<div class="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/40"></div>
+<div class="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/40"></div>
+<div class="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/40"></div>
+<div class="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/40"></div>
+</div>
+</section>
+<!-- Primary Action Shell -->
+<section class="bg-surface px-edge-mobile py-space-4 flex flex-col gap-space-3 z-30 shadow-[0_-8px_24px_rgba(0,0,0,0.5)]">
+<div class="flex gap-space-3">
+<button class="flex-1 h-touch-target bg-surface-container-high border border-secondary-container/30 rounded-xl flex items-center justify-center gap-space-2 text-secondary-container active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[20px]">add_location</span>
+<span class="font-label-mobile text-label-mobile uppercase tracking-widest">Capture Point</span>
+</button>
+<button class="flex-1 h-touch-target bg-surface-container-high border border-secondary-container/30 rounded-xl flex items-center justify-center gap-space-2 text-secondary-container active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[20px]">360</span>
+<span class="font-label-mobile text-label-mobile uppercase tracking-widest">Orbit Scan</span>
+</button>
+</div>
+<button class="w-full h-touch-target bg-mobile-danger text-white rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[24px]">stop_circle</span>
+<span class="font-label-mobile text-label-mobile uppercase tracking-[0.1em] font-bold">Stop Survey</span>
+</button>
+</section>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-[72px] px-edge-mobile bg-surface-container-lowest dark:bg-surface-container-lowest shadow-lg pb-safe">
+<!-- Reports -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150 scale-95">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-label-mobile mt-1">Reports</span>
+</button>
+<!-- Inventory -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150 scale-95">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile mt-1">Inventory</span>
+</button>
+<!-- BIM (Active) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-1 transition-transform duration-150 scale-95">
+<span class="material-symbols-outlined" data-icon="view_in_ar" style="font-variation-settings: 'FILL' 1;">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</button>
+<!-- Users -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150 scale-95">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile mt-1">Users</span>
+</button>
+<!-- Settings -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-secondary transition-colors duration-150 scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile mt-1">Settings</span>
+</button>
+</nav>
+<!-- Spacer for Bottom Nav -->
+<div class="h-[72px] w-full shrink-0"></div>
+<script>
+        // Simple micro-interaction for the drone telemetry
+        document.addEventListener('DOMContentLoaded', () => {
+            const telemetryValues = document.querySelectorAll('.font-label-mobile');
+            
+            // Randomly flicker the signal or altitude slightly to feel "live"
+            setInterval(() => {
+                if(Math.random() > 0.7) {
+                    const alt = Math.floor(120 + Math.random() * 5);
+                    telemetryValues[0].textContent = alt + 'm';
+                }
+            }, 3000);
+        });
+    </script>
+
+
+</body></html>

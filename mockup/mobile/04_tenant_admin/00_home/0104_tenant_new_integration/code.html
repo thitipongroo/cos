@@ -1,0 +1,280 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>การรวมระบบใหม่ - CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error": "#ffb4ab",
+                    "on-secondary-container": "#00424e",
+                    "mobile-primary": "#0066FF",
+                    "primary-container": "#2563eb",
+                    "on-error": "#690005",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-primary-container": "#eeefff",
+                    "secondary": "#4cd7f6",
+                    "outline-variant": "#434655",
+                    "inverse-on-surface": "#213145",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container": "#102034",
+                    "secondary-container": "#03b5d3",
+                    "mobile-danger": "#FF3B30",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-tertiary-fixed": "#161b2b",
+                    "sync-pending": "#94A3B8",
+                    "primary": "#b4c5ff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "tertiary": "#c1c5dc",
+                    "surface-dim": "#031427",
+                    "on-surface": "#d3e4fe",
+                    "inverse-surface": "#d3e4fe",
+                    "on-tertiary-container": "#eeefff",
+                    "sync-active": "#FFD60A",
+                    "surface-container-highest": "#26364a",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-secondary": "#003640",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-container": "#686c80",
+                    "surface-container-lowest": "#000f21",
+                    "error-container": "#93000a",
+                    "on-background": "#d3e4fe",
+                    "surface": "#031427",
+                    "surface-bright": "#2a3a4f",
+                    "dark-bg": "#020617",
+                    "background": "#031427",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-error-container": "#ffdad6",
+                    "mobile-success": "#00C853",
+                    "on-primary": "#002a78",
+                    "surface-container-high": "#1b2b3f",
+                    "on-secondary-fixed": "#001f26",
+                    "primary-fixed": "#dbe1ff",
+                    "outline": "#8d90a0",
+                    "dark-surface": "#0F172A",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-container-low": "#0b1c30",
+                    "mobile-warning": "#FF9500",
+                    "inverse-primary": "#0053db",
+                    "secondary-fixed": "#acedff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-variant": "#26364a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "touch-target": "52px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "web-margin": "32px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Inter Tight', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .safe-pb {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="dark overflow-x-hidden">
+<!-- Top AppBar (from JSON blueprint) -->
+<header class="fixed top-0 w-full z-50 bg-surface-container dark:bg-surface-container-highest border-b border-outline-variant/10 shadow-sm flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-3">
+<button class="active:scale-95 transition-transform duration-150 flex items-center justify-center w-10 h-10 hover:bg-surface-bright/20 rounded-full">
+<span class="material-symbols-outlined text-primary">arrow_back_ios_new</span>
+</button>
+<h1 class="font-h1-web text-primary tracking-tight uppercase whitespace-nowrap text-[18px]">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-tiny-web text-tiny-web text-mobile-success flex items-center gap-1 bg-mobile-success/10 px-2 py-0.5 rounded-full border border-mobile-success/20">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: &quot;FILL&quot; 1;">sync</span>
+                SYNCED
+            </span>
+<button class="active:scale-95 transition-transform duration-150 flex items-center justify-center w-10 h-10 hover:bg-surface-bright/20 rounded-full">
+<span class="material-symbols-outlined text-on-surface" data-stitch-orig-opacity="0">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-14 pb-32 px-edge-mobile">
+<!-- Header Section -->
+<section class="mt-8 mb-6">
+<h2 class="font-display-web text-display-web text-on-surface mb-2">เพิ่มการเชื่อมต่อระบบ</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">เลือกคอนเนคเตอร์เพื่อเชื่อมต่อข้อมูลโครงการ</p>
+</section>
+<!-- Search Bar -->
+<div class="relative mb-8">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full h-14 bg-surface-container-high border-none rounded-xl pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant/50 focus:ring-2 focus:ring-primary transition-all font-body-mobile text-body-mobile" placeholder="ค้นหาคอนเนคเตอร์..." type="text">
+</div>
+<!-- AI Assistant Module (Modern Bento Style) -->
+<div class="mb-8 p-space-4 bg-surface-container-low rounded-2xl border-l-4 border-secondary relative overflow-hidden group">
+<div class="absolute inset-0 bg-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex gap-4 relative z-10">
+<div class="w-12 h-12 rounded-full bg-secondary/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+</div>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest mb-1">CORE_AI</h3>
+<p class="font-body-mobile text-body-mobile text-on-surface leading-snug">พร้อมช่วยเหลือในการกำหนดค่า Token อย่างปลอดภัย | <span class="text-secondary">98% Confidence</span></p>
+</div>
+</div>
+<!-- Subtle abstract background effect for AI section -->
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-secondary/10 rounded-full blur-3xl"></div>
+</div>
+<!-- Integration List (Bento-style High Density Cards) -->
+<div class="grid grid-cols-1 gap-4">
+<!-- LINE Messaging API -->
+<button class="flex flex-col w-full text-left bg-surface-container-highest rounded-2xl p-space-4 border border-outline-variant/10 active:scale-[0.98] transition-all hover:bg-surface-bright/10 relative overflow-hidden min-h-[140px] min-h-[160px] p-6">
+<div class="absolute top-0 left-0 w-1.5 h-full bg-[#06C755]"></div>
+<div class="flex justify-between items-start mb-4 w-full">
+<div class="w-12 h-12 bg-[#06C755]/10 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-[#06C755] text-3xl">chat</span>
+</div>
+<span class="font-tiny-web text-tiny-web px-2 py-1 bg-surface-container rounded-md text-on-surface-variant border border-outline-variant/20 uppercase">Notifications</span>
+</div>
+<h4 class="font-h2-web text-h2-web text-on-surface mb-1">LINE Messaging API</h4>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant text-[15px] leading-tight">ส่งการแจ้งเตือนเหตุการณ์สำคัญและสถานะโครงการผ่าน LINE</p>
+</button>
+<!-- Autodesk BIM 360 -->
+<button class="flex flex-col w-full text-left bg-surface-container-highest rounded-2xl p-space-4 border border-outline-variant/10 active:scale-[0.98] transition-all hover:bg-surface-bright/10 relative overflow-hidden min-h-[140px] min-h-[160px] p-6">
+<div class="absolute top-0 left-0 w-1.5 h-full bg-secondary"></div>
+<div class="flex justify-between items-start mb-4 w-full">
+<div class="w-12 h-12 bg-secondary/10 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary text-3xl">view_in_ar</span>
+</div>
+<span class="font-tiny-web text-tiny-web px-2 py-1 bg-surface-container rounded-md text-on-surface-variant border border-outline-variant/20 uppercase">3D Models</span>
+</div>
+<h4 class="font-h2-web text-h2-web text-on-surface mb-1">Autodesk BIM 360</h4>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant text-[15px] leading-tight">เข้าถึงโมเดล 3 มิติและข้อมูลอาคาร</p>
+</button>
+<!-- ERP Connect -->
+<button class="flex flex-col w-full text-left bg-surface-container-highest rounded-2xl p-space-4 border border-outline-variant/10 active:scale-[0.98] transition-all hover:bg-surface-bright/10 relative overflow-hidden min-h-[140px] min-h-[160px] p-6">
+<div class="absolute top-0 left-0 w-1.5 h-full bg-mobile-primary"></div>
+<div class="flex justify-between items-start mb-4 w-full">
+<div class="w-12 h-12 bg-mobile-primary/10 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-mobile-primary text-3xl">account_balance_wallet</span>
+</div>
+<span class="font-tiny-web text-tiny-web px-2 py-1 bg-surface-container rounded-md text-on-surface-variant border border-outline-variant/20 uppercase">Financial</span>
+</div>
+<h4 class="font-h2-web text-h2-web text-on-surface mb-1">ERP Connect</h4>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant text-[15px] leading-tight">เชื่อมต่อข้อมูลการเงินและงบประมาณ</p>
+</button>
+</div>
+<!-- Featured Visual Element -->
+<div class="mt-12 rounded-3xl overflow-hidden h-48 relative border border-outline-variant/20">
+<div class="w-full h-full bg-cover bg-center opacity-40" data-alt="A cinematic, high-contrast digital rendering of an industrial server room with glowing blue fiber optic cables and brushed steel textures. The atmosphere is professional and mission-critical, with deep midnight blue shadows and sharp cyan highlights. The composition uses a wide-angle perspective to emphasize the scale and systematic complexity of a modern construction operating system." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuAwzFSbCme-4qnZ7mFiA0zvqJyo2t5mpxACAPQyy8QFPTJFG1ExUzklIvuMg3KY14NJrazpRIFn2oJV8rpIi6CeE4kD85sQZnDipyi5cvLE45IWpQpTmf-iMI71XKDXf1OFwmoG4X0K1H1tzRGlOi62mExMl-xuWWviA9eRUYK6xqBx4-u2Nm1FECdQGqy4o0i_aoL_9XehnCQR4N6S-ldRXECCQxBgjQrzfK7s7Cc5G7337wn27S-Kow3K2rh4TY9xhBzYHHvm3IU&quot;);"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+<div class="absolute bottom-6 left-6 right-6">
+<span class="font-label-mobile text-label-mobile text-primary uppercase tracking-widest">Enterprise Ready</span>
+<p class="text-on-surface text-[18px] font-semibold leading-tight">ความปลอดภัยในทุกการเชื่อมต่อ</p>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (from JSON blueprint) -->
+<nav class="fixed bottom-0 w-full pb-safe z-50 bg-surface-container-low dark:bg-surface-container-lowest border-t border-outline-variant/10 shadow-lg flex justify-around items-center h-[72px] px-base">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-label-mobile text-label-mobile">Issues</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-mobile text-label-mobile">Map</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</a>
+<!-- Assuming Profile is active based on "Tenant Admin" context mapping to the closest nav tab -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl p-2 min-w-[64px] active:scale-90 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">person</span>
+<span class="font-label-mobile text-label-mobile">Profile</span>
+</a>
+</nav>
+<!-- Floating Action Button for creation (if applicable, but suppressing for details/settings as per logic) -->
+<script>
+        // Micro-interactions for integration cards
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', function() {
+                this.classList.add('brightness-125');
+            });
+            btn.addEventListener('touchend', function() {
+                this.classList.remove('brightness-125');
+            });
+        });
+
+        // Search highlight logic
+        const searchInput = document.querySelector('input');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('scale-[1.02]');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('scale-[1.02]');
+        });
+    </script>
+
+
+</body></html>
