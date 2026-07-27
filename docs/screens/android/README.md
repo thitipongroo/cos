@@ -173,6 +173,26 @@ Report** are honest first-pass placeholders (PO decision 2026-07-28) — no mobi
 AI-report screen exists yet, so they say so rather than pretending. Left-accent colour follows the
 action (primary / cyan / cyan / sync-gold).
 
+## Tenant Admin — Sync Review Queue (Alerts) — [`32`](32-tenant-admin-alerts.png) · [`33`](33-tenant-admin-alerts-diff.png)
+
+The `TENANT_ADMIN` "Alerts" tab
+([`app/(app)/sync-queue.tsx`](../../../apps/mobile/src/app/(app)/sync-queue.tsx)), implementing
+[`04_tenant_admin/03_alerts/01_sync_queue`](../../../mockup/mobile/04_tenant_admin/03_alerts/01_sync_queue).
+It is the field-sync **review queue** — `GET /site/conflict-records` (the SAME endpoint the Site
+Engineer's ConflictBadge uses; spec §17.5 lets `TENANT_ADMIN` view/resolve), resolved via
+`PATCH /site/conflict-records/:id/resolve`. Real data throughout: the badge + filter chips are the
+actual `conflict_type` enum (**REJECTED / STATUS_CONFLICT / FIELD_CONFLICT**, colour-coded) — the
+mockup's Critical/Medium/Low "severity" is not a field on the record, so it is not invented. `REF` comes
+from `entity_id`, `FAILED AT` from `created_at`, and the **error reason** is a localised description of
+each `conflict_type` (not a fabricated per-record message). `32` shows the populated list; `33` shows
+**Review data** expanded — the real client-vs-server field diff from the two payloads (differing fields
+highlighted). **Mark resolved** is the single real action (the mockup's retry / merge / edit are all one
+`resolve` on the backend).
+
+The five conflicts are demo rows seeded by
+[`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync
+conflicts, like it accumulates issues and reports); the screen renders that real (seed) data.
+
 ## App launch — loading state — [`23-app-launch-loading.png`](23-app-launch-loading.png)
 
 Opening the app now shows the same [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)

@@ -621,5 +621,26 @@
     "syncSub": "Flush the queue and pull updates",
     "syncing": "Syncing…",
     "comingSoon": "Coming soon on mobile — use the web console for now."
+  },
+  "syncQueue": {
+    "title": "Sync Review Queue",
+    "subtitle": "{count} field-sync conflicts awaiting review",
+    "filterAll": "All",
+    "typeRejected": "Rejected",
+    "typeStatus": "Status Conflict",
+    "typeField": "Field Conflict",
+    "reasonLabel": "Error reason",
+    "reasonRejected": "The server rejected this write — the server copy was kept (server wins).",
+    "reasonStatus": "The record's status changed on the server before this update arrived.",
+    "reasonField": "The device and the server edited the same fields — review the differences.",
+    "ref": "REF",
+    "failedAt": "Failed at",
+    "review": "Review data",
+    "resolve": "Mark resolved",
+    "field": "Field",
+    "client": "Device",
+    "server": "Server",
+    "empty": "The sync queue is clear — no conflicts to review.",
+    "error": "Couldn't load the sync queue."
   }
 }

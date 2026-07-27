@@ -1026,6 +1026,58 @@ async function seedProject(tx: Tx, p: SeedProject): Promise<void> {
     VALUES (${uid(`inc/${p.key}`)}::uuid, ${TENANT_ID}::uuid, ${pid}::uuid, 'เกือบเกิดอุบัติเหตุ (Near Miss)', 'MEDIUM', ${U(p.se)}::uuid, 'IN_PROGRESS', ${U('safety')}::uuid, ${ts(addDays(p.start, 12), '15:20')}::timestamptz, ${p.lat}, ${p.lng})
     ON CONFLICT (incident_id) DO NOTHING`;
 
+  // Sync-failure conflict records (site_ops.conflict_records) — the Tenant Admin "Alerts" sync-review
+  // queue (mockup 04_tenant_admin/03_alerts). A realistic tenant accumulates field-sync conflicts, so
+  // seed a handful of varied entity + conflict types (unresolved: reviewed_at NULL) once — they are
+  // tenant-level, not project-scoped — so the review queue is demonstrable. conflict_type is the real
+  // enum (FIELD_CONFLICT | STATUS_CONFLICT | REJECTED); client/server payloads carry the actual diff.
+  if (PROJECTS.indexOf(p) === 0) {
+    const CONFLICTS = [
+      {
+        et: 'site_report',
+        ct: 'FIELD_CONFLICT',
+        hrs: 2,
+        client: { manpower_count: 25, weather: 'sunny', summary: 'เทพื้นชั้น 3 เสร็จ 80%' },
+        server: { manpower_count: 22, weather: 'cloudy', summary: 'เทพื้นชั้น 3 เสร็จ 75%' },
+      },
+      {
+        et: 'issue',
+        ct: 'STATUS_CONFLICT',
+        hrs: 5,
+        client: { status: 'in_progress', title: 'รอยแตกผนังชั้น 2' },
+        server: { status: 'resolved', title: 'รอยแตกผนังชั้น 2' },
+      },
+      {
+        et: 'inspection',
+        ct: 'REJECTED',
+        hrs: 8,
+        client: { result: 'pass', notes: 'ผ่านการตรวจ' },
+        server: { result: 'fail', notes: 'ค่ายุบตัวคอนกรีตเกินพิกัด' },
+      },
+      {
+        et: 'manpower_log',
+        ct: 'FIELD_CONFLICT',
+        hrs: 13,
+        client: { worker_count: 12, trade_type: 'concrete' },
+        server: { worker_count: 10, trade_type: 'concrete' },
+      },
+      {
+        et: 'material_consumption',
+        ct: 'REJECTED',
+        hrs: 26,
+        client: { material_name: 'ปูนซีเมนต์', quantity: 50 },
+        server: { material_name: 'ปูนซีเมนต์', quantity: 45 },
+      },
+    ] as const;
+    for (let ci = 0; ci < CONFLICTS.length; ci++) {
+      const c = CONFLICTS[ci];
+      const createdAt = new Date(Date.now() - c.hrs * 3600 * 1000).toISOString();
+      await tx.$executeRaw`INSERT INTO site_ops.conflict_records (conflict_id, tenant_id, entity_type, entity_id, client_payload, server_payload, conflict_type, created_at)
+        VALUES (${uid(`conflict/${ci}`)}::uuid, ${TENANT_ID}::uuid, ${c.et}, ${uid(`conflict-entity/${ci}`)}::uuid, ${JSON.stringify(c.client)}::jsonb, ${JSON.stringify(c.server)}::jsonb, ${c.ct}, ${createdAt}::timestamptz)
+        ON CONFLICT (conflict_id) DO NOTHING`;
+    }
+  }
+
   // Workforce allocation + attendance + timesheets for a subset of workers.
   const projWorkers = WORKERS.slice(
     (PROJECTS.indexOf(p) * 3) % WORKERS.length,

@@ -76,6 +76,8 @@ async function find(pred, what, tries = 20) {
 }
 
 const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
+// Prefix match — for dynamic testIDs like `review-<uuid>` where the exact id is not known up front.
+const byIdPrefix = (id) => (n) => n.includes(`resource-id="${id}`);
 
 async function tap(pred, what) {
   const c = await find(pred, what);
@@ -203,6 +205,18 @@ async function main() {
   await delay(3000);
   await dismissDevBanners();
   await shot('30-tenant-admin-users');
+
+  // Alerts tab — the sync-review queue (mockup 03_alerts). Capture the populated list, then expand the
+  // first conflict's client-vs-server diff and capture that too.
+  console.log('· Alerts tab (sync queue)');
+  await tap(byId('sync-queue-tab'), 'Alerts tab');
+  await find(byId('tenant-admin-sync-queue'), 'tenant-admin-sync-queue', 20);
+  await delay(2500);
+  await shot('32-tenant-admin-alerts');
+  await tap(byIdPrefix('review-'), 'first "Review data"');
+  await delay(1500);
+  await shot('33-tenant-admin-alerts-diff');
+
   console.log('done.');
 }
 

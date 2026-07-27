@@ -55,13 +55,13 @@ const PROFILE_TAB_ROLES = Object.values(CosRole).filter(
 // and EXECUTIVE's reports stays ahead of its portfolio.
 export const ALL_TABS: TabConfig[] = [
   { name: 'home', titleKey: 'nav.tabs.home', icon: 'home', roles: Object.values(CosRole) },
-  // TENANT_ADMIN bottom nav — Home | Users | Alerts | Settings (PO decision 2026-07-28, mockup
-  // 04_tenant_admin/00_home/01_home_admin). "Alerts" is the notification inbox route and "Settings"
-  // is the notification-preferences route (both already dark, §32.7). For every other role these three
-  // stay href:null — mountable (bell / drawer / router.push) but never a bottom tab.
+  // TENANT_ADMIN bottom nav — Home | Users | Alerts | Settings (PO decision 2026-07-28, mockups
+  // 04_tenant_admin/00_home,02_users,03_alerts,04_settings). "Alerts" is the sync-review queue
+  // (04_tenant_admin/03_alerts — conflict records) and "Settings" is the notification-preferences route
+  // (both dark, §32.7). For every other role these three stay href:null — mountable but never a tab.
   { name: 'users', titleKey: 'nav.tabs.users', icon: 'group', roles: [CosRole.TENANT_ADMIN] },
   {
-    name: 'notifications',
+    name: 'sync-queue',
     titleKey: 'nav.tabs.alerts',
     icon: 'notification-important',
     roles: [CosRole.TENANT_ADMIN],
@@ -219,6 +219,8 @@ export function MobileNav() {
           explicit href:null expo-router auto-registers each remaining (app)/ route file as a visible
           tab (the leak that once put mfa-enrollment / notification-preferences on every bottom bar). */}
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
+      {/* Notification inbox — reached from the top-bar bell (router.push). No role lists it as a tab. */}
+      <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>
