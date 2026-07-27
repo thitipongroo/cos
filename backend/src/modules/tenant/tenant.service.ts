@@ -207,6 +207,26 @@ export class TenantService implements OnModuleDestroy {
     return tenant ?? null;
   }
 
+  /**
+   * The signed-in user's OWN tenant identity — name + code + plan — for the Tenant Admin settings
+   * screen. Self-service (any authenticated role in the tenant); the tenant_id comes from the JWT, so
+   * a caller can only ever read their own tenant. This is NOT the SYSTEM_ADMIN cross-tenant listing.
+   */
+  async getMyTenant(
+    tenantId: string,
+  ): Promise<{ tenant_name: string; tenant_code: string; plan_type: string }> {
+    const [t] = await this.prisma.$queryRaw<
+      Array<{ tenant_name: string; tenant_code: string; plan_type: string }>
+    >`
+      SELECT tenant_name, tenant_code, plan_type::text AS plan_type
+      FROM platform.tenants
+      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!t) throw new NotFoundException({ code: 'COS-TENANT-404', message: 'Tenant not found' });
+    return t;
+  }
+
   private async getTemporalClient(): Promise<Client> {
     const connection = await Connection.connect({
       address: process.env['TEMPORAL_ADDRESS'] ?? 'localhost:7233',

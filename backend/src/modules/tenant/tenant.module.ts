@@ -5,6 +5,7 @@ import { TenantPrismaService } from './prisma/tenant-prisma.service';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
 import { UserMeController } from './user-me.controller';
+import { MyTenantController } from './my-tenant.controller';
 import { TenantSettingsService } from './settings.service';
 import { TenantSettingsRepository } from './settings.repository';
 import { TenantSettingsController } from './settings.controller';
@@ -24,7 +25,13 @@ import { IdentityModule } from '../identity/identity.module';
     TenantSettingsService,
     TenantSettingsRepository,
   ],
-  controllers: [TenantController, UserController, UserMeController, TenantSettingsController],
+  controllers: [
+    TenantController,
+    UserController,
+    UserMeController,
+    MyTenantController,
+    TenantSettingsController,
+  ],
   exports: [TenantService, TenantPrismaService, UserService],
 })
 export class TenantModule {}

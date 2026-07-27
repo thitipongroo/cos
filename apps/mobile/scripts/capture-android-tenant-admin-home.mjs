@@ -213,9 +213,32 @@ async function main() {
   await find(byId('tenant-admin-sync-queue'), 'tenant-admin-sync-queue', 20);
   await delay(2500);
   await shot('32-tenant-admin-alerts');
-  await tap(byIdPrefix('review-'), 'first "Review data"');
-  await delay(1500);
-  await shot('33-tenant-admin-alerts-diff');
+  // The client-vs-server diff needs at least one conflict in the queue to expand. If the queue is empty
+  // (or a transient load error left it blank) there is no `review-` button — skip the diff shot rather
+  // than fail the whole run, since 34–36 (this task's deliverable) come after it.
+  try {
+    await tap(byIdPrefix('review-'), 'first "Review data"');
+    await delay(1500);
+    await shot('33-tenant-admin-alerts-diff');
+  } catch (err) {
+    console.warn(`  (skipped 33 alerts-diff: ${err.message ?? err})`);
+  }
+
+  // Settings tab — System Settings (mockup 04_settings). Org Info (GET /tenant) + LINE toggle/token
+  // (GET /tenant/settings) are real. The screen is taller than the viewport, so capture it in three
+  // scroll positions: top (org + brand), integrations (LINE + BIM 360), and the foot (Others + AI).
+  console.log('· Settings tab (system settings)');
+  await tap(byId('system-settings-tab'), 'Settings tab');
+  await find(byId('tenant-admin-settings'), 'tenant-admin-settings', 20);
+  await delay(2500);
+  await dismissDevBanners();
+  await shot('34-tenant-admin-settings');
+  adb('shell', 'input', 'swipe', '540', '1850', '540', '800', '400');
+  await delay(2000);
+  await shot('35-tenant-admin-settings-integrations');
+  adb('shell', 'input', 'swipe', '540', '1850', '540', '700', '400');
+  await delay(2000);
+  await shot('36-tenant-admin-settings-others');
 
   console.log('done.');
 }

@@ -125,7 +125,7 @@ screen renders its empty states truthfully rather than inventing figures.
 whole shell renders dark to match the dark dashboard: a dark top bar and a dark bottom nav, and the light
 `SyncStatusBar` strip is dropped (as it is for the Site Engineer). The bottom nav is **Home | Users |
 Alerts | Settings** — the per-role tab set for `TENANT_ADMIN` (`components/MobileNav.tsx`): "Alerts" is
-the notification-inbox route and "Settings" is the notification-preferences route (both already dark);
+the sync-review queue and "Settings" is the System Settings route (`system-settings`, both dark);
 Profile is reached from the top-bar avatar, not a fifth tab. The brand icon (no separate hamburger)
 is the drawer trigger. The top bar also carries a small **icon-only sync glyph**
 ([`components/SyncPill.tsx`](../../../apps/mobile/src/components/SyncPill.tsx)) — the dark shell's sync
@@ -192,6 +192,29 @@ highlighted). **Mark resolved** is the single real action (the mockup's retry / 
 The five conflicts are demo rows seeded by
 [`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync
 conflicts, like it accumulates issues and reports); the screen renders that real (seed) data.
+
+## Tenant Admin — System Settings — [`34`](34-tenant-admin-settings.png) · [`35`](35-tenant-admin-settings-integrations.png) · [`36`](36-tenant-admin-settings-others.png)
+
+The `TENANT_ADMIN` "Settings" tab
+([`app/(app)/system-settings.tsx`](../../../apps/mobile/src/app/(app)/system-settings.tsx)), implementing
+[`04_tenant_admin/04_settings/01_system_settings`](../../../mockup/mobile/04_tenant_admin/04_settings/01_system_settings).
+The screen is taller than the viewport, so it is captured in three scroll positions: `34` (Organization
+Info + Brand), `35` (External Integrations), `36` (Others + AI System Insight).
+
+**Real, persisted data:** **Organization Info** — name + code from `GET /tenant`
+([`my-tenant.controller.ts`](../../../backend/src/modules/tenant/my-tenant.controller.ts), a new
+self-service endpoint scoped by the JWT `tenant_id`, so a caller can only read their own tenant). The
+copy button uses the OS's own text-selection (no clipboard dependency) — it selects the code so the
+native Copy affordance appears, never a faked "copied" confirmation. **LINE Notification** — the on/off
+toggle (`notifications_enabled`) and the channel token (`line_channel_token`) are read from
+`GET /tenant/settings` and saved via `PATCH /tenant/settings`; the token here is empty because the seeded
+tenant has none set. **System language** is the real `LanguageSwitcher` (th⇄en).
+
+**Honest placeholders (full mockup layout, no fabricated data — PO decision 2026-07-28):** Brand logo
+upload + primary-colour picker, Autodesk BIM 360 sync, Security policy, and Delete-tenant each open an
+"not available yet" notice rather than dead-ending. The mockup's **AI System Insight** showed an invented
+"LINE token expires in 3 days / 98 % confidence" — there is no such signal, so the card renders its shell
+with an honest empty state (**"No AI insights available yet."**), never the fabricated prediction.
 
 ## App launch — loading state — [`23-app-launch-loading.png`](23-app-launch-loading.png)
 
