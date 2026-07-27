@@ -45,9 +45,12 @@ export default function AppLayout() {
       });
   }, []);
 
-  // The Site Engineer's shell is dark (§32.7 Mobile Dark Surfaces); every other role is light.
-  const isSiteEngineer = role === CosRole.SITE_ENGINEER;
-  const variant = isSiteEngineer ? 'dark' : 'light';
+  // Dark-shell roles (§32.7 Mobile Dark Surfaces): their signed-in Home is a dark dashboard, so the
+  // whole shell — top bar + bottom nav — renders dark to match the content (a light shell over dark
+  // content is the mismatch this fixes). SITE_ENGINEER + TENANT_ADMIN (PO decision 2026-07-28 adds
+  // the Tenant Admin Home to the §32.7 dark list). Every other role keeps the light field palette.
+  const darkShell = role === CosRole.SITE_ENGINEER || role === CosRole.TENANT_ADMIN;
+  const variant = darkShell ? 'dark' : 'light';
 
   return (
     <View style={styles.root}>
@@ -55,10 +58,11 @@ export default function AppLayout() {
           background. Then the offline/sync banners, then the tab content. */}
       <TopBar variant={variant} />
       <OfflineBanner />
-      {/* The SITE_ENGINEER dashboard matches its mockup, which has no persistent sync strip (PO
-          decision 2026-07-25, "full parity"); the bar stays for every other role — including its
-          E2E assertions. OfflineBanner is kept for all roles (it only appears while offline). */}
-      {isSiteEngineer ? null : <SyncStatusBar />}
+      {/* The dark-shell dashboards (SITE_ENGINEER, TENANT_ADMIN) match their mockups, which have no
+          persistent light sync strip (PO decision 2026-07-25 "full parity", extended 2026-07-28); the
+          bar stays for every other role — including its E2E assertions (all field-role flows).
+          OfflineBanner is kept for all roles (it only appears while offline). */}
+      {darkShell ? null : <SyncStatusBar />}
       <View style={styles.tabs}>
         <MobileNav />
       </View>

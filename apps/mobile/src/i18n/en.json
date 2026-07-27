@@ -34,7 +34,9 @@
       "orders": "Orders",
       "deliveries": "Deliveries",
       "incidents": "Incidents",
-      "profile": "Profile"
+      "profile": "Profile",
+      "users": "Users",
+      "settings": "Settings"
     }
   },
   "auth": {
@@ -247,6 +249,12 @@
       "field": "Field",
       "client": "Client",
       "server": "Server"
+    },
+    "pill": {
+      "synced": "SYNCED",
+      "syncing": "SYNCING",
+      "pending": "{count} PENDING",
+      "error": "SYNC ERROR"
     }
   },
   "photos": {
@@ -570,5 +578,31 @@
     "insightsAllClear": "AI usage is within budget — no alerts.",
     "insightWarning": "AI token usage at {percent}% of your monthly quota.",
     "insightCritical": "AI token quota reached ({percent}%). New AI requests are paused."
+  },
+  "adminUsers": {
+    "title": "Users",
+    "count": "{count} members",
+    "invite": "Invite user",
+    "inviteTitle": "Invite user",
+    "inviteSoon": "The mobile invite flow is coming soon — use the web console to invite users for now.",
+    "error": "Couldn't load users.",
+    "empty": "No users yet.",
+    "mfaOn": "MFA enabled"
+  },
+  "quickAdd": {
+    "title": "Quick Commands",
+    "subtitle": "Choose an action to create or update",
+    "close": "Close",
+    "fab": "Quick add",
+    "inviteTitle": "Invite New User",
+    "inviteSub": "Add a phone or email account",
+    "integrationTitle": "New System Integration",
+    "integrationSub": "Connect an external system",
+    "reportTitle": "Generate Usage Report",
+    "reportSub": "AI report generation",
+    "syncTitle": "Force System Sync",
+    "syncSub": "Flush the queue and pull updates",
+    "syncing": "Syncing…",
+    "comingSoon": "Coming soon on mobile — use the web console for now."
   }
 }

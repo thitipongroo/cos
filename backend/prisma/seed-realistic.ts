@@ -10,7 +10,7 @@
 // app.current_tenant_id for correctness.
 //
 // Run:  DATABASE_URL=<direct pg url> pnpm exec ts-node prisma/seed-realistic.ts
-import 'dotenv/config';
+import './load-root-env';
 import { createHash } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';

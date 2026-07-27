@@ -3209,6 +3209,20 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         Profile:   account settings
       Offline:    lists cached, delivery recording works fully offline
 
+    TENANT_ADMIN:
+      Bottom nav: Home | Users | Alerts | Settings  (dark tab bar — the role's landing is the dark
+                  admin dashboard; product-owner decision 2026-07-28, from
+                  mockup/mobile/04_tenant_admin/00_home/01_home_admin/)
+      Screens:
+        Home:      admin dashboard — system status, AI token usage vs quota (§26 / §31.3),
+                   pending approvals (payments + POs), AI insights
+        Users:     tenant user list with role + MFA status (GET /users, TENANT_ADMIN-only, §14.3);
+                   Invite action — full mobile invite flow is a follow-up (web console for now)
+        Alerts:    notification inbox (the top-bar bell route, promoted to a tab for this role)
+        Settings:  notification preferences (§19.6; the notification-preferences route)
+      Profile:    NOT a bottom-nav tab — reached from the avatar in the top bar (as SITE_ENGINEER).
+                  Four tabs is within the 4–5 spec §32.7 allows for <MobileNav />.
+
     RBAC enforcement: JWT role claim → bottom nav + screen access
     Shared components: PhotoCapture, VoiceNoteButton, OfflineBanner, SyncStatusBar
 

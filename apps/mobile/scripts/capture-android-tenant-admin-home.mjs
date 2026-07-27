@@ -1,20 +1,23 @@
-// Site Engineer Home screenshot capture — adb/uiautomator only, same approach as
-// capture-android-login.mjs (see that file for why Detox cannot drive these flows).
+// Tenant Admin Home screenshot capture — adb/uiautomator only, same approach as
+// capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/21-site-engineer-home.png: the SITE_ENGINEER landing dashboard
-// (mockup/site-engineer/dashboard-mobile/) with live data — BOQ-value-weighted project progress
-// (§32.12), open issues, and upcoming tasks — reached through a real Path A (SMS OTP) login.
+// Writes docs/screens/android/29-tenant-admin-home.png: the TENANT_ADMIN landing dashboard
+// (mockup/mobile/04_tenant_admin/00_home/01_home_admin/) with live data — system status, pending
+// approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
+// the seeded TENANT_ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
+// browser (Path B); the Direct-Grant OTP path used here provisions a phone username + password with
+// no TOTP required action, so the same account logs in either way (provision-keycloak-demo.ts).
 //
 // Prerequisites (all must already be running):
 //   - emulator booted, debug app installed. A debug APK loads its JS from Metro, so it does NOT need
 //     rebuilding when only JS/asset code changed.
-//   - Metro:    EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1 npx expo start
+//   - Metro:    npx expo start   (the app targets EXPO_PUBLIC_API_URL, default http://localhost:3000/api/v1)
 //   - backend with E2E_AUTH_BYPASS=true on :3000 (fixed OTP), Kafka up (the backend exits without it)
 //   - database seeded with backend/prisma/seed-realistic.ts and users provisioned into Keycloak with
 //     backend/prisma/provision-keycloak-demo.ts (that script gives phone-holders a phone username,
 //     which is what makes Path A possible at all)
 //   - adb reverse tcp:8081/tcp:3000/tcp:8090 (this script re-asserts them)
-// Run: node scripts/capture-android-home.mjs
+// Run: node scripts/capture-android-tenant-admin-home.mjs
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -25,9 +28,9 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(HERE, '../../../docs/screens/android');
 const PKG = 'com.constructionos.cos';
 
-// Waraporn Klinhom — SITE_ENGINEER at Ekachai (seed-realistic.ts), the engineer the R9CT tasks are
-// assigned to. National format: the login screen prefixes +66 from the country picker.
-const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000009';
+// Suphaporn Rattanakul — TENANT_ADMIN at Ekachai (seed-realistic.ts). National format: the login
+// screen prefixes +66 from the country picker, so +66811000002 is typed as 0811000002.
+const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
 // The dashboard now matches its mockup (PO 2026-07-25 full parity), which has no project picker — the
 // screen auto-selects the active project from the offline cache, so there is no chip to tap.
@@ -38,12 +41,7 @@ const ADB = SDK
   : 'adb';
 
 const adb = (...args) => execFileSync(ADB, args, { maxBuffer: 16 * 1024 * 1024 }).toString();
-const docker = (...args) => execFileSync('docker', args).toString();
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-
-// CAPTURE_LOADING=1 → capture the dashboard's <LoadingState /> skeletons (ADR-055) instead of the
-// loaded screen: pause Postgres so the data fetches hang, relaunch, and photograph the skeletons.
-const LOADING_MODE = process.env['CAPTURE_LOADING'] === '1';
 
 /**
  * A dump only succeeds once the window is idle; mid-transition it fails with
@@ -78,11 +76,6 @@ async function find(pred, what, tries = 20) {
 }
 
 const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
-const byText = (t) => (n) => n.includes(`text="${t}"`);
-
-async function present(pred) {
-  return (await dump()).some((n) => pred(n) && n.includes('bounds='));
-}
 
 async function tap(pred, what) {
   const c = await find(pred, what);
@@ -174,59 +167,42 @@ async function main() {
   await hideKeyboard();
   await tap(byId('verify-otp-button'), 'verify OTP button');
 
-  console.log('· waiting for the Site Engineer Home');
+  console.log('· waiting for the Tenant Admin Home');
   // Asserting the testID (not a fixed sleep) is what stops a mis-tap from being photographed: if the
   // app landed anywhere else, this throws instead of saving a screenshot of the wrong screen.
-  await find(byId('site-engineer-home'), 'site-engineer-home', 40);
+  await find(byId('tenant-admin-home'), 'tenant-admin-home', 40);
   await dismissDevBanners();
 
-  if (LOADING_MODE) {
-    // Hold the loading state for the screenshot: pause Postgres so the dashboard's data fetches hang,
-    // then relaunch. The session survives a force-stop (only `pm clear` wipes it), so the app opens
-    // straight to the dashboard, whose GET /projects/mine + progress calls now hang — leaving the
-    // LoadingState skeletons (ADR-055) on screen to photograph.
-    console.log('· pausing postgres + relaunching to hold the loading state');
-    docker('pause', 'cos-postgres');
-    try {
-      adb('shell', 'am', 'force-stop', PKG);
-      adb('shell', 'monkey', '-p', PKG, '-c', 'android.intent.category.LAUNCHER', '1');
-      // The dashboard re-mounts with GET /projects/mine hanging (postgres paused), so its
-      // <LoadingState /> skeletons (ADR-055) show for ~15s (the app's HTTP timeout) before the fetch
-      // errors and the empty state replaces them. The skeletons animate continuously, so uiautomator
-      // cannot dump them ("could not get idle state") — screencap the framebuffer directly on a fixed
-      // delay that lands after the JS bundle + mount but well inside the ~15s skeleton window.
-      await delay(15_000);
-      // Dismiss the debug-only LogBox toast ("Open debugger to view warnings.") by tapping its X.
-      // uiautomator can't be used here (the skeleton animates → "could not get idle state"), so the
-      // coordinate is fixed for this AVD (Medium_Phone 1080×2400): the toast X sits bottom-right.
-      adb('shell', 'input', 'tap', '1012', '2236');
-      await delay(1500);
-      await shot('22-site-engineer-loading');
-    } finally {
-      docker('unpause', 'cos-postgres');
-    }
-    console.log('done (loading).');
-    return;
-  }
-
-  // No picker anymore: the screen auto-selects the active project from local_projects (populated by
-  // the shell's delta-sync + the screen's own refreshProjectsCache), then fetches its progress /
-  // issues / tasks. Give the cache + auto-select + those fetches time to land.
-  console.log('· waiting for the auto-selected project data');
+  // TenantAdminHome fetches system status, pending approvals (payments + POs) and AI token usage
+  // (TenantAdminHome.tsx). Give those fetches time to land after the landing testID appears.
+  console.log('· waiting for the admin dashboard data');
   await delay(6000);
   await dismissDevBanners();
 
-  // The card only renders a figure when the metric is computable (§32.12). If the placeholder is on
-  // screen the data is wrong, and a screenshot of an empty card documents nothing — fail loudly.
-  if (await present(byId('progress-empty'))) {
-    throw new Error(
-      'capture: progress card shows the "no BOQ-linked task" placeholder — check that ' +
-        'seed-realistic.ts linked tasks to BOQ items and that the picked project has them',
-    );
-  }
-  await find(byId('progress-pct'), 'progress percentage');
+  // Assert the system-status card actually rendered — a mis-tap or an empty dashboard then fails
+  // loudly instead of being photographed.
+  await find(byId('admin-system-status'), 'admin system-status card');
 
-  await shot('21-site-engineer-home');
+  await shot('29-tenant-admin-home');
+
+  // Quick-Add menu — the FAB target (mockup 02_quick_add_menu). Open it, assert the sheet, capture it,
+  // then close it before moving on.
+  console.log('· Quick-Add menu (FAB)');
+  await tap(byId('quick-add-fab'), 'quick-add FAB');
+  await find(byId('quick-add-menu'), 'quick-add-menu', 15);
+  await delay(1500);
+  await shot('31-tenant-admin-quick-add');
+  await tap(byId('quick-add-close'), 'quick-add close');
+  await delay(1000);
+
+  // Users tab — the tenant admin's team-management screen (GET /users). Tap the tab, assert the list
+  // rendered (not a mis-tap or an empty state), then capture it too.
+  console.log('· Users tab');
+  await tap(byId('users-tab'), 'Users tab');
+  await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
+  await delay(3000);
+  await dismissDevBanners();
+  await shot('30-tenant-admin-users');
   console.log('done.');
 }
 

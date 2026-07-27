@@ -18,8 +18,8 @@
 //   - AI Token Usage / AI Insights → GET /ai/usage (§26 metering, §31.3 >80% signal). Until the LLM
 //     gateway records real consumption the figure is genuinely 0 %, never the mockup's 78 %.
 //
-// The mockup's FAB opens the Quick-Add menu (mockup 00_home/02_quick_add_menu) — a separate screen not
-// in this scope — so the FAB is omitted rather than wired to a dead target.
+// The FAB opens the Quick-Add menu (mockup 00_home/02_quick_add_menu, <QuickAddMenu />): Force System
+// Sync is wired for real; the other actions are honest first-pass placeholders (PO decision 2026-07-28).
 
 import { useEffect, useState } from 'react';
 import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
@@ -28,6 +28,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { get } from '../api/client';
 import { checkBackendHealth } from '../api/health';
 import { getAiUsage, type AiUsage } from '../api/ai';
+import { QuickAddMenu } from './QuickAddMenu';
 import { useT } from '../i18n';
 import { darkColors, fontFamily, spacing, typography, touchTarget } from '../theme/tokens';
 
@@ -43,6 +44,7 @@ export default function TenantAdminHome(): React.JSX.Element {
   const [healthy, setHealthy] = useState<boolean | null>(null);
   const [pendingPayments, setPendingPayments] = useState<number | null>(null);
   const [pendingPos, setPendingPos] = useState<number | null>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   useEffect(() => {
     getAiUsage()
@@ -90,89 +92,107 @@ export default function TenantAdminHome(): React.JSX.Element {
         : t('adminHome.insightsAllClear');
 
   return (
-    <ScrollView
-      style={styles.root}
-      contentContainerStyle={styles.content}
-      testID="tenant-admin-home"
-    >
-      {/* ── System Overview ─────────────────────────────────────────────── */}
-      <Text style={styles.sectionLabel}>{t('adminHome.systemOverview')}</Text>
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        testID="tenant-admin-home"
+      >
+        {/* ── System Overview ─────────────────────────────────────────────── */}
+        <Text style={styles.sectionLabel}>{t('adminHome.systemOverview')}</Text>
 
-      {/* AI Token Usage */}
-      <View style={[styles.card, styles.cardAccentCyan]} testID="admin-ai-tokens">
-        <MaterialIcons name="bolt" size={40} color={darkColors.cyan} style={styles.cardWatermark} />
-        <Text style={styles.cardLabel}>{t('adminHome.aiTokens')}</Text>
-        <View style={styles.pctRow}>
-          <Text style={styles.pctValue}>{pct === null ? '—' : String(Math.round(pct))}</Text>
-          <Text style={styles.pctUnit}>%</Text>
-        </View>
-        <View style={styles.track}>
-          <View
-            style={[styles.trackFill, { width: `${pct === null ? 0 : Math.min(100, pct)}%` }]}
+        {/* AI Token Usage */}
+        <View style={[styles.card, styles.cardAccentCyan]} testID="admin-ai-tokens">
+          <MaterialIcons
+            name="bolt"
+            size={40}
+            color={darkColors.cyan}
+            style={styles.cardWatermark}
           />
-        </View>
-      </View>
-
-      {/* System Status */}
-      <View
-        style={[styles.card, styles.cardRow, styles.cardAccentGreen]}
-        testID="admin-system-status"
-      >
-        <View style={styles.flex1}>
-          <Text style={styles.cardLabel}>{t('adminHome.systemStatus')}</Text>
-          <View style={styles.statusRow}>
-            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-            <Text style={[styles.statusValue, { color: statusColor }]}>{statusText}</Text>
+          <Text style={styles.cardLabel}>{t('adminHome.aiTokens')}</Text>
+          <View style={styles.pctRow}>
+            <Text style={styles.pctValue}>{pct === null ? '—' : String(Math.round(pct))}</Text>
+            <Text style={styles.pctUnit}>%</Text>
+          </View>
+          <View style={styles.track}>
+            <View
+              style={[styles.trackFill, { width: `${pct === null ? 0 : Math.min(100, pct)}%` }]}
+            />
           </View>
         </View>
-        <View style={styles.iconPlate}>
-          <MaterialIcons name="dns" size={22} color={statusColor} />
-        </View>
-      </View>
 
-      {/* ── Pending Approvals ───────────────────────────────────────────── */}
-      <View style={styles.sectionHeaderRow}>
-        <Text style={styles.sectionLabel}>{t('adminHome.pendingApprovals')}</Text>
-        {approvalsTotal !== null ? (
-          <View style={styles.countBadge}>
-            <Text style={styles.countBadgeText}>
-              {t('adminHome.itemsBadge', { count: approvalsTotal })}
-            </Text>
+        {/* System Status */}
+        <View
+          style={[styles.card, styles.cardRow, styles.cardAccentGreen]}
+          testID="admin-system-status"
+        >
+          <View style={styles.flex1}>
+            <Text style={styles.cardLabel}>{t('adminHome.systemStatus')}</Text>
+            <View style={styles.statusRow}>
+              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+              <Text style={[styles.statusValue, { color: statusColor }]}>{statusText}</Text>
+            </View>
           </View>
-        ) : null}
-      </View>
-
-      <ApprovalRow
-        testID="admin-approval-payments"
-        icon="payments"
-        tint={darkColors.warning}
-        title={t('adminHome.paymentsAwaiting')}
-        count={pendingPayments}
-        reviewLabel={t('adminHome.review')}
-        onReview={() => router.push('/payments')}
-      />
-      <ApprovalRow
-        testID="admin-approval-pos"
-        icon="receipt-long"
-        tint={darkColors.primary}
-        title={t('adminHome.posAwaiting')}
-        count={pendingPos}
-        reviewLabel={t('adminHome.review')}
-        onReview={() => router.push('/orders')}
-      />
-
-      {/* ── AI Insights ─────────────────────────────────────────────────── */}
-      <View
-        style={[styles.card, styles.cardAccentCyan, styles.insightCard]}
-        testID="admin-ai-insights"
-      >
-        <View style={styles.insightHead}>
-          <MaterialIcons name="insights" size={18} color={darkColors.cyan} />
-          <Text style={styles.insightTitle}>{t('adminHome.aiInsights')}</Text>
+          <View style={styles.iconPlate}>
+            <MaterialIcons name="dns" size={22} color={statusColor} />
+          </View>
         </View>
-        <Text style={styles.insightBody}>{insightText}</Text>
-      </View>
-    </ScrollView>
+
+        {/* ── Pending Approvals ───────────────────────────────────────────── */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionLabel}>{t('adminHome.pendingApprovals')}</Text>
+          {approvalsTotal !== null ? (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>
+                {t('adminHome.itemsBadge', { count: approvalsTotal })}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <ApprovalRow
+          testID="admin-approval-payments"
+          icon="payments"
+          tint={darkColors.warning}
+          title={t('adminHome.paymentsAwaiting')}
+          count={pendingPayments}
+          reviewLabel={t('adminHome.review')}
+          onReview={() => router.push('/payments')}
+        />
+        <ApprovalRow
+          testID="admin-approval-pos"
+          icon="receipt-long"
+          tint={darkColors.primary}
+          title={t('adminHome.posAwaiting')}
+          count={pendingPos}
+          reviewLabel={t('adminHome.review')}
+          onReview={() => router.push('/orders')}
+        />
+
+        {/* ── AI Insights ─────────────────────────────────────────────────── */}
+        <View
+          style={[styles.card, styles.cardAccentCyan, styles.insightCard]}
+          testID="admin-ai-insights"
+        >
+          <View style={styles.insightHead}>
+            <MaterialIcons name="insights" size={18} color={darkColors.cyan} />
+            <Text style={styles.insightTitle}>{t('adminHome.aiInsights')}</Text>
+          </View>
+          <Text style={styles.insightBody}>{insightText}</Text>
+        </View>
+      </ScrollView>
+
+      <Pressable
+        style={styles.fab}
+        onPress={() => setQuickAddOpen(true)}
+        testID="quick-add-fab"
+        accessibilityRole="button"
+        accessibilityLabel={t('quickAdd.fab')}
+      >
+        <MaterialIcons name="add" size={32} color={darkColors.onPrimary} />
+      </Pressable>
+      <QuickAddMenu visible={quickAddOpen} onClose={() => setQuickAddOpen(false)} />
+    </View>
   );
 }
 
@@ -216,7 +236,25 @@ function ApprovalRow({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
-  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+  scroll: { flex: 1 },
+  // Extra bottom room so the last card clears the floating action button when scrolled to the end.
+  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: 96 },
+  fab: {
+    position: 'absolute',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: darkColors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
   flex1: { flex: 1 },
   sectionLabel: {
     fontFamily: fontFamily.bold,

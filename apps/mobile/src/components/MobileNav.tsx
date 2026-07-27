@@ -13,7 +13,10 @@
 //   FINANCE:                Home | Payments | Budget | Invoices | Profile
 //   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries | Profile
 //   SAFETY_OFFICER:         Home | Incidents | Profile (PO ruling D1/D2 — §17.4)
-//   TENANT_ADMIN/VIEWER/others: Home | Profile (minimal access)
+//   TENANT_ADMIN:           Home | Users | Alerts | Settings   (dark tab bar; no Profile tab — reached
+//                           via the top-bar avatar. PO decision 2026-07-28, mockup 01_home_admin;
+//                           Alerts = notifications inbox, Settings = notification-preferences.)
+//   VIEWER/others:          Home | Profile (minimal access)
 //
 // SITE_ENGINEER reaches Profile through the avatar in its Home header instead of a fifth tab
 // (product-owner decision 2026-07-16 — master §Phase 10 updated to match). The route stays mounted
@@ -37,8 +40,11 @@ type TabConfig = {
   roles: CosRole[];
 };
 
-/** Every role except SITE_ENGINEER, whose Profile lives in the Home header avatar instead. */
-const PROFILE_TAB_ROLES = Object.values(CosRole).filter((r) => r !== CosRole.SITE_ENGINEER);
+// Every role except SITE_ENGINEER (Profile lives in its Home header avatar) and TENANT_ADMIN (whose
+// bottom nav is Home|Users|Alerts|Settings — Profile is reached via the top-bar avatar instead).
+const PROFILE_TAB_ROLES = Object.values(CosRole).filter(
+  (r) => r !== CosRole.SITE_ENGINEER && r !== CosRole.TENANT_ADMIN,
+);
 
 // Authoritative per-role tab set (spec §Phase 10). Exported for reuse/testing.
 // Icons are MaterialIcons glyph names, type-checked against the set's glyphMap. None of them are
@@ -49,6 +55,23 @@ const PROFILE_TAB_ROLES = Object.values(CosRole).filter((r) => r !== CosRole.SIT
 // and EXECUTIVE's reports stays ahead of its portfolio.
 export const ALL_TABS: TabConfig[] = [
   { name: 'home', titleKey: 'nav.tabs.home', icon: 'home', roles: Object.values(CosRole) },
+  // TENANT_ADMIN bottom nav — Home | Users | Alerts | Settings (PO decision 2026-07-28, mockup
+  // 04_tenant_admin/00_home/01_home_admin). "Alerts" is the notification inbox route and "Settings"
+  // is the notification-preferences route (both already dark, §32.7). For every other role these three
+  // stay href:null — mountable (bell / drawer / router.push) but never a bottom tab.
+  { name: 'users', titleKey: 'nav.tabs.users', icon: 'group', roles: [CosRole.TENANT_ADMIN] },
+  {
+    name: 'notifications',
+    titleKey: 'nav.tabs.alerts',
+    icon: 'notification-important',
+    roles: [CosRole.TENANT_ADMIN],
+  },
+  {
+    name: 'notification-preferences',
+    titleKey: 'nav.tabs.settings',
+    icon: 'settings',
+    roles: [CosRole.TENANT_ADMIN],
+  },
   { name: 'tasks', titleKey: 'nav.tabs.tasks', icon: 'checklist', roles: [CosRole.SITE_WORKER] },
   { name: 'report', titleKey: 'nav.tabs.report', icon: 'edit-note', roles: [CosRole.SITE_WORKER] },
   {
@@ -144,10 +167,11 @@ export function MobileNav() {
   const role = useAuthStore((s) => s.role) as CosRole | null;
   const t = useT();
 
-  // SITE_ENGINEER's landing is the dark dashboard (§32.7 Mobile Dark Surfaces), so its whole tab bar
-  // is dark for a consistent shell — product-owner decision 2026-07-16. Every other role keeps the
-  // light field-app tab bar. A light tab bar under this role's dark Home is the mismatch this fixes.
-  const dark = role === CosRole.SITE_ENGINEER;
+  // Dark-shell roles' landing is a dark dashboard (§32.7 Mobile Dark Surfaces), so their whole tab bar
+  // is dark for a consistent shell — SITE_ENGINEER (PO decision 2026-07-16) + TENANT_ADMIN (PO decision
+  // 2026-07-28). Every other role keeps the light field-app tab bar. A light tab bar under a dark Home
+  // is the mismatch this fixes.
+  const dark = role === CosRole.SITE_ENGINEER || role === CosRole.TENANT_ADMIN;
 
   return (
     <Tabs
@@ -189,13 +213,14 @@ export function MobileNav() {
           />
         );
       })}
-      {/* Reachable via ConflictBadge (router.push), never shown as a bottom tab. */}
+      {/* Routes reached via router.push (ConflictBadge / quick actions / drawer), never bottom tabs.
+          `notifications` + `notification-preferences` are intentionally NOT here — they are declared in
+          ALL_TABS above (bottom tabs for TENANT_ADMIN, href:null for every other role). Without an
+          explicit href:null expo-router auto-registers each remaining (app)/ route file as a visible
+          tab (the leak that once put mfa-enrollment / notification-preferences on every bottom bar). */}
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
-      {/* Reachable via the Site Engineer Home's bell (router.push). Not a tab: master §Phase 10
-          fixes each role's tab set, and none of them list notifications. */}
-      <Tabs.Screen name="notifications" options={{ href: null }} />
-      {/* Material requisition — reached from the Site Engineer Home's quick actions. */}
       <Tabs.Screen name="material-request" options={{ href: null }} />
+      <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>
   );
 }

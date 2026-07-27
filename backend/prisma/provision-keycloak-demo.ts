@@ -10,7 +10,7 @@
 // Idempotent: existing Keycloak users are reused (409 → fetch id), password + attributes re-applied.
 //
 // Run: DATABASE_URL=<direct pg url> pnpm exec ts-node prisma/provision-keycloak-demo.ts
-import 'dotenv/config';
+import './load-root-env';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';

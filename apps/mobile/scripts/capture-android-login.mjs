@@ -17,9 +17,9 @@
 //
 // Prerequisites (all must already be running):
 //   - emulator booted, debug app installed (android/app/build/outputs/apk/debug/app-debug.apk)
-//   - Metro:    EXPO_PUBLIC_API_URL=http://localhost:3001/api/v1 npx expo start
-//   - backend with E2E_AUTH_BYPASS=true on :3001, Keycloak on :8090, realm seeded+provisioned
-//   - adb reverse tcp:8081/tcp:3001/tcp:8090 (this script re-asserts them)
+//   - Metro:    EXPO_PUBLIC_API_URL=http://localhost:3000/api/v1 npx expo start
+//   - backend with E2E_AUTH_BYPASS=true on :3000, Keycloak on :8090, realm seeded+provisioned
+//   - adb reverse tcp:8081/tcp:3000/tcp:8090 (this script re-asserts them)
 //   - Chrome's first-run screens dismissed once on the emulator
 // Run: node scripts/capture-android-login.mjs
 
@@ -243,7 +243,7 @@ async function freshApp() {
 }
 
 async function main() {
-  for (const port of ['tcp:8081', 'tcp:3001', 'tcp:8090']) {
+  for (const port of ['tcp:8081', 'tcp:3000', 'tcp:8090']) {
     adb('reverse', port, port); // Metro, backend, Keycloak — all reached as localhost on-device
   }
 

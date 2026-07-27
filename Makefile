@@ -21,7 +21,7 @@ help: ## Show this help
 setup: ## Initial local setup (copies .env, installs deps, starts Docker)
 	@bash scripts/setup/local-dev.sh
 
-env-init: ## Create .env from .env.example if missing (two-file scheme — spec §08)
+env-init: ## Create .env (root) + apps/mobile/.env from their templates if missing (two-file scheme — spec §08)
 	@if [ -f .env ]; then \
 	  echo "$(GREEN)==> .env already exists$(RESET) — leaving it untouched (edit it directly for this environment)."; \
 	else \
@@ -29,6 +29,13 @@ env-init: ## Create .env from .env.example if missing (two-file scheme — spec 
 	  echo "$(GREEN)==> Created .env from .env.example$(RESET)"; \
 	  echo "    Dev defaults already work. For staging/production set the values shown in the"; \
 	  echo "    '# staging:/production:' comments and pull secrets from Vault/SM (never commit .env)."; \
+	fi
+	@# apps/mobile keeps its own .env — Expo inlines EXPO_PUBLIC_* from the mobile package (spec §08).
+	@if [ -f apps/mobile/.env ]; then \
+	  echo "$(GREEN)==> apps/mobile/.env already exists$(RESET) — leaving it untouched."; \
+	else \
+	  cp apps/mobile/.env.example apps/mobile/.env; \
+	  echo "$(GREEN)==> Created apps/mobile/.env from apps/mobile/.env.example$(RESET)"; \
 	fi
 
 dev: dev-clean dev-infra-ready dev-ports-free ## Start all services in development mode

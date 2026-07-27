@@ -22,3 +22,26 @@ export async function getMe(): Promise<Me> {
 export async function updateMyPhoto(photoUrl: string | null): Promise<void> {
   await mutate<Me>('PATCH', '/users/me/photo', { photo_url: photoUrl }, 'user-photo', 'me');
 }
+
+// ─── Tenant admin — user management (GET /users, TENANT_ADMIN only; spec §14.3) ───
+
+export interface TenantUser {
+  user_id: string;
+  email: string | null;
+  display_name: string;
+  photo_url: string | null;
+  role: string;
+  mfa_enabled: boolean;
+  is_active: boolean;
+}
+
+interface PaginatedUsers {
+  data: TenantUser[];
+  pagination: { limit: number; offset: number; page: number; total: number };
+}
+
+/** List the signed-in tenant's active users (newest first) — the TENANT_ADMIN "Users" tab. */
+export async function getUsers(): Promise<TenantUser[]> {
+  const res = await get<PaginatedUsers>('/users');
+  return res.data;
+}

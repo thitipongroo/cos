@@ -12,8 +12,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import appIcon from '../../assets/icon.png';
 import { Avatar } from './Avatar';
+import { SyncPill } from './SyncPill';
 import { listNotifications, unreadCount } from '../api/notifications';
 import { useUiStore } from '../store/uiStore';
+import { useAuthStore } from '../store/authStore';
+import { CosRole } from '@cos/types';
 import { useT } from '../i18n';
 import { colors, darkColors, fontFamily, spacing, touchTarget, typography } from '../theme/tokens';
 
@@ -28,9 +31,15 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   const insets = useSafeAreaInsets();
   const t = useT();
   const openDrawer = useUiStore((s) => s.openDrawer);
+  const role = useAuthStore((s) => s.role);
   const [unread, setUnread] = useState(0);
   const dark = variant === 'dark';
-  const showBack = BACK_ROUTES.has(pathname);
+  // notification-preferences is a pushed detail route (Back arrow) for every role EXCEPT TENANT_ADMIN,
+  // where it is the "Settings" bottom tab — a top-level destination, so it shows the drawer hamburger,
+  // not a Back arrow that would pop to whatever tab preceded it.
+  const showBack =
+    BACK_ROUTES.has(pathname) &&
+    !(role === CosRole.TENANT_ADMIN && pathname === '/notification-preferences');
 
   useEffect(() => {
     listNotifications()
@@ -52,16 +61,28 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
     >
       <View style={styles.brand}>
         {showBack ? (
-          <TouchableOpacity
-            testID="topbar-back"
-            accessibilityRole="button"
-            accessibilityLabel={t('common.back')}
-            style={styles.menuButton}
-            onPress={() => router.back()}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={fg} />
-          </TouchableOpacity>
+          // Pushed detail routes keep a Back affordance; the brand icon rides alongside it.
+          <>
+            <TouchableOpacity
+              testID="topbar-back"
+              accessibilityRole="button"
+              accessibilityLabel={t('common.back')}
+              style={styles.menuButton}
+              onPress={() => router.back()}
+            >
+              <MaterialIcons name="arrow-back" size={24} color={fg} />
+            </TouchableOpacity>
+            <Image
+              testID="brand-logo"
+              source={appIcon}
+              style={styles.brandIcon}
+              resizeMode="contain"
+              accessibilityLabel={t('common.appName')}
+            />
+          </>
         ) : (
+          // No hamburger — the brand icon itself is the drawer trigger (§32.7 Standard Top Bar:
+          // Left = "App icon + CONSTRUCTION OS wordmark"; the icon carries the menu affordance).
           <TouchableOpacity
             testID="drawer-menu-button"
             accessibilityRole="button"
@@ -69,19 +90,20 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
             style={styles.menuButton}
             onPress={openDrawer}
           >
-            <MaterialIcons name="menu" size={24} color={fg} />
+            <Image
+              testID="brand-logo"
+              source={appIcon}
+              style={styles.brandIcon}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         )}
-        <Image
-          testID="brand-logo"
-          source={appIcon}
-          style={styles.brandIcon}
-          resizeMode="contain"
-          accessibilityLabel={t('common.appName')}
-        />
         <Text style={[styles.appName, { color: colors.primary }]}>{t('common.appName')}</Text>
       </View>
       <View style={styles.actions}>
+        {/* Sync-status pill (mockup 01_home_admin) — Tenant Admin only: its dark shell drops the
+            full-width SyncStatusBar, so the pill is this role's sync indicator. */}
+        {role === CosRole.TENANT_ADMIN ? <SyncPill /> : null}
         <TouchableOpacity
           testID="notifications-bell"
           accessibilityRole="button"

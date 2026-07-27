@@ -11,7 +11,7 @@
 
 // Load .env before reading DATABASE_URL: Prisma 7's driver adapter (createPrismaClient) reads
 // process.env directly and — unlike the old @prisma/client — does not auto-load .env (ADR-041).
-import 'dotenv/config';
+import './load-root-env';
 import { PrismaClient } from '@prisma/client';
 import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';

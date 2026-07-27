@@ -12,7 +12,7 @@
 // Postgres (no events), so this derives the same graph directly. Idempotent (MERGE).
 //
 // Run: DATABASE_URL=<direct pg url> NEO4J_PASSWORD=... pnpm exec ts-node prisma/populate-neo4j.ts
-import 'dotenv/config';
+import './load-root-env';
 import neo4j from 'neo4j-driver';
 import { createPrismaClient } from '../src/shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';

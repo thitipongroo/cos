@@ -707,14 +707,18 @@ Dark screens (exhaustive — do not extend this list without a product-owner dec
 | OTP verify                              | `mockup/00_login_flow/mobile/`                              |
 | Session-securing overlay                | `mockup/00_login_flow/mobile/`                              |
 | Site Engineer Home                      | `mockup/site-engineer/dashboard-mobile/`                    |
+| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/00_home/01_home_admin/`      |
 | Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/01_notification_preferences/` |
 | Navigation drawer                       | `mockup/mobile/04_tenant_admin/04_navigation_drawer/`       |
 
-The last two were added by product-owner decision (2026-07-26): the Tenant-Admin notification control
-panel and the navigation drawer ship on the dark surface as their mockups define, continuing the
-signed-in dark identity rather than the light task palette. They are control surfaces (configure /
-navigate), not all-day outdoor task screens, so the sunlight-visibility rationale for the light palette
-does not apply.
+The Tenant-Admin notification control panel and the navigation drawer were added by product-owner
+decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28). All
+ship on the dark surface as their mockups define, continuing the signed-in dark identity rather than the
+light task palette. They are control / dashboard surfaces (configure / navigate / monitor), not all-day
+outdoor task screens, so the sunlight-visibility rationale for the light palette does not apply. A
+dark-shell role renders the **whole** shell dark — top bar AND bottom nav, and it drops the light
+`SyncStatusBar` strip — so no light chrome ever sits over dark content (the Site Engineer Home already
+works this way).
 
 | Surface            | Token                 | Hex       |
 | ------------------ | --------------------- | --------- |

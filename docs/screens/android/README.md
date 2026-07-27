@@ -1,6 +1,6 @@
 ---
 title: Construction OS — Android Screen Capture
-last_updated: 2026-07-16
+last_updated: 2026-07-27
 ---
 
 # Construction OS — Android App Screens
@@ -13,7 +13,7 @@ Screenshots of the Construction OS mobile app (Expo / React Native, Android), ca
 | Device  | `Medium_Phone` AVD — Android 37 (`google_apis_playstore`), x86_64, 1080×2400     |
 | ------- | -------------------------------------------------------------------------------- |
 | App     | Debug build (`android/app/build/outputs/apk/debug/app-debug.apk`) + Metro        |
-| Backend | NestJS @ `localhost:3001` (`E2E_AUTH_BYPASS=true`) · Keycloak @ `localhost:8090` |
+| Backend | NestJS @ `localhost:3000` (`E2E_AUTH_BYPASS=true`) · Keycloak @ `localhost:8090` |
 | Project | `DEMO-001` — _Bangkok Tower — Phase 1_                                           |
 
 ## Login flow — [`_public/`](_public/)
@@ -99,6 +99,67 @@ Captured by the same script with `CAPTURE_LOADING=1`
 fetches hang, relaunches so the screen re-mounts into its loading state, and screencaps the framebuffer
 directly — uiautomator cannot dump the screen because the skeletons animate continuously ("could not
 get idle state").
+
+## Tenant Admin dashboard — [`29-tenant-admin-home.png`](29-tenant-admin-home.png)
+
+The `TENANT_ADMIN` Home ([`components/TenantAdminHome.tsx`](../../../apps/mobile/src/components/TenantAdminHome.tsx),
+implementing [`mockup/mobile/04_tenant_admin/00_home/01_home_admin`](../../../mockup/mobile/04_tenant_admin/00_home/01_home_admin)),
+captured against the `seed-realistic.ts` dataset through a real Path A (SMS OTP) login as `+66811000002` —
+Suphaporn Rattanakul, the TENANT_ADMIN at Ekachai. The header avatar reads **"SR"** (her initials — no
+photo set), confirming the signed-in role.
+
+Everything is live, never fabricated: **System Status** is `Operational` (green) from the backend health
+probe; **AI Token Usage** shows a dash because this tenant has logged no AI usage yet (`ai.ai_usage_logs`
+is empty for it), and **AI System Insights** correspondingly reads "AI usage is within budget — no alerts"
+(the `alertLevel: none` state from `GET /ai/usage`); **Pending Approvals** is `0 items` — Payments awaiting
+approval `0` and Purchase orders awaiting approval `0` — because `seed-realistic.ts` seeds no `PENDING`
+payments or `PENDING_APPROVAL` POs for this tenant. These zeros are the real data, not placeholders; the
+screen renders its empty states truthfully rather than inventing figures.
+
+> **On the office role logging in via Path A:** `TENANT_ADMIN` normally signs in through the browser
+> (Path B OIDC, where Keycloak enforces MFA). `provision-keycloak-demo.ts` gives every seeded phone-holder
+> a phone username + password with no TOTP required action, so the Direct-Grant OTP path works for office
+> roles too — which is what makes this dashboard capturable without driving the undrivable browser MFA flow.
+
+**Shell — dark, like the Site Engineer Home (§32.7 Mobile Dark Surfaces; PO decision 2026-07-28).** The
+whole shell renders dark to match the dark dashboard: a dark top bar and a dark bottom nav, and the light
+`SyncStatusBar` strip is dropped (as it is for the Site Engineer). The bottom nav is **Home | Users |
+Alerts | Settings** — the per-role tab set for `TENANT_ADMIN` (`components/MobileNav.tsx`): "Alerts" is
+the notification-inbox route and "Settings" is the notification-preferences route (both already dark);
+Profile is reached from the top-bar avatar, not a fifth tab. The brand icon (no separate hamburger)
+is the drawer trigger. The top bar also carries a small **icon-only sync glyph**
+([`components/SyncPill.tsx`](../../../apps/mobile/src/components/SyncPill.tsx)) — the dark shell's sync
+indicator in place of the dropped strip: a green check when synced, gold while syncing (glyph shape +
+colour, no label, so it stays balanced beside the brand and never crowds it). It sits on the shared top
+bar, so it shows the same on every Tenant Admin screen. The mockup's **+ FAB** (bottom-right) opens the
+Quick-Add menu (below).
+
+Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../../apps/mobile/scripts/capture-android-tenant-admin-home.mjs)
+(`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
+`tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
+an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
+Quick-Add menu (`31-tenant-admin-quick-add.png`) and the Users tab (`30-tenant-admin-users.png`).
+
+## Tenant Admin — Users — [`30-tenant-admin-users.png`](30-tenant-admin-users.png)
+
+The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)) —
+the tenant's active users from `GET /users` (TENANT_ADMIN-only, spec §14.3), captured against the
+`seed-realistic.ts` dataset (12 members). Each dark card shows the initials monogram (or `photo_url`
+photo), display name, email, the role from `tenant_memberships`, and a green shield when `mfa_enabled`
+(here Pimchanok Thongchai — FINANCE). Everything is live, never fabricated. **Invite user** is a
+first-pass placeholder (PO-approved 2026-07-28): it surfaces the action but the full mobile invite flow
+(mockup `04_tenant_admin/00_home/03_invite_user`) is a follow-up — for now it points admins at the web
+console rather than pretending the flow exists.
+
+## Tenant Admin — Quick-Add menu — [`31-tenant-admin-quick-add.png`](31-tenant-admin-quick-add.png)
+
+The FAB's Quick-Add sheet ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx),
+mockup `04_tenant_admin/00_home/02_quick_add_menu`) — a dark bottom-sheet of quick actions over the
+dimmed dashboard. **Force System Sync** is wired for real (`runPushSync()` then `runDeltaSync()`, §17.6
+flush + pull); **Invite New User** opens the Users tab; **New System Integration** and **Generate Usage
+Report** are honest first-pass placeholders (PO decision 2026-07-28) — no mobile integrations surface or
+AI-report screen exists yet, so they say so rather than pretending. Left-accent colour follows the
+action (primary / cyan / cyan / sync-gold).
 
 ## App launch — loading state — [`23-app-launch-loading.png`](23-app-launch-loading.png)
 
