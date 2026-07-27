@@ -553,5 +553,20 @@
     "searchUnavailable": "Voice search is not available yet",
     "unknownScreen": "That screen isn't available",
     "unrecognized": "Sorry, I didn't catch a command"
+  },
+  "adminHome": {
+    "systemOverview": "System Overview",
+    "aiTokens": "AI Token Usage",
+    "systemStatus": "System Status",
+    "statusChecking": "Checking…",
+    "statusOperational": "Operational",
+    "statusUnavailable": "Unavailable",
+    "pendingApprovals": "Pending Approvals",
+    "itemsBadge": "{count} items",
+    "paymentsAwaiting": "Payments awaiting approval",
+    "posAwaiting": "Purchase orders awaiting approval",
+    "review": "Review",
+    "aiInsights": "AI System Insights",
+    "insightsAllClear": "AI usage is within budget — no alerts."
   }
 }

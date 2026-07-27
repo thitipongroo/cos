@@ -28,6 +28,7 @@ import { useAuthStore } from '../../store/authStore';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { QuickActionCard } from '../../components/QuickActionCard';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
+import TenantAdminHome from '../../components/TenantAdminHome';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -382,6 +383,8 @@ export default function HomeScreen() {
       return <PmHome />;
     case CosRole.SITE_ENGINEER:
       return <SiteEngineerHome />;
+    case CosRole.TENANT_ADMIN:
+      return <TenantAdminHome />;
     case CosRole.SITE_WORKER:
       return <FieldHome />;
     default:

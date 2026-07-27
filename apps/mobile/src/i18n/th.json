@@ -553,5 +553,20 @@
     "searchUnavailable": "ยังไม่รองรับการค้นหาด้วยเสียง",
     "unknownScreen": "ไม่พบหน้าจอที่ต้องการ",
     "unrecognized": "ขออภัย ไม่เข้าใจคำสั่ง"
+  },
+  "adminHome": {
+    "systemOverview": "ภาพรวมระบบ",
+    "aiTokens": "ปริมาณการใช้ AI Token",
+    "systemStatus": "สถานะระบบ",
+    "statusChecking": "กำลังตรวจสอบ…",
+    "statusOperational": "ปกติ",
+    "statusUnavailable": "ใช้งานไม่ได้",
+    "pendingApprovals": "งานที่รอการอนุมัติ",
+    "itemsBadge": "{count} รายการ",
+    "paymentsAwaiting": "การชำระเงินที่รออนุมัติ",
+    "posAwaiting": "ใบสั่งซื้อที่รออนุมัติ",
+    "review": "ตรวจสอบ",
+    "aiInsights": "ข้อมูลเชิงลึกระบบ AI",
+    "insightsAllClear": "การใช้ AI อยู่ในงบประมาณ — ไม่มีการแจ้งเตือน"
   }
 }
