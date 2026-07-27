@@ -43,12 +43,16 @@ export interface UserRow {
   keycloak_user_id: string;
   // @pdpa(category: "contact") — email is PII
   email: string;
+  // @pdpa(category: "contact") — phone_number is PII (Path A users only); NULL for email-only accounts
+  phone_number: string | null;
   // @pdpa(category: "identity") — display_name is PII
   display_name: string;
   // @pdpa(category: "identity") — a profile photo identifies the person; NULL until one is uploaded
   photo_url: string | null;
   is_active: boolean;
   mfa_enabled: boolean;
+  // Last authenticated request (throttled) — drives the Tenant Admin User Audit (dormant users).
+  last_seen_at: Date;
   created_at: Date;
   updated_at: Date;
   role: string; // joined from platform.tenant_memberships
@@ -92,10 +96,12 @@ export class UserService implements OnModuleDestroy {
           u.tenant_id,
           u.keycloak_user_id,
           u.email,
+          u.phone_number,
           u.display_name,
           u.photo_url,
           u.is_active,
           u.mfa_enabled,
+          u.last_seen_at,
           u.created_at,
           u.updated_at,
           m.role
@@ -136,8 +142,8 @@ export class UserService implements OnModuleDestroy {
   async getMe(tenantId: string, userId: string): Promise<UserRow> {
     const rows = await this.prisma.$queryRaw<UserRow[]>`
       SELECT
-        u.user_id, u.tenant_id, u.keycloak_user_id, u.email, u.display_name, u.photo_url,
-        u.is_active, u.mfa_enabled, u.created_at, u.updated_at, m.role
+        u.user_id, u.tenant_id, u.keycloak_user_id, u.email, u.phone_number, u.display_name,
+        u.photo_url, u.is_active, u.mfa_enabled, u.last_seen_at, u.created_at, u.updated_at, m.role
       FROM platform.users u
       JOIN platform.tenant_memberships m
         ON m.user_id = u.user_id AND m.tenant_id = u.tenant_id
@@ -234,8 +240,8 @@ export class UserService implements OnModuleDestroy {
             (${userIdPlaceholder}::uuid, ${tenantId}::uuid, ${keycloakUserId},
              ${isPathA ? dto.phone_number! : null}, ${emailValue}, ${dto.display_name})
           RETURNING
-            user_id, tenant_id, keycloak_user_id, email, display_name,
-            is_active, mfa_enabled, created_at, updated_at
+            user_id, tenant_id, keycloak_user_id, email, phone_number, display_name,
+            photo_url, is_active, mfa_enabled, last_seen_at, created_at, updated_at
         `;
 
         await tx.$queryRaw`

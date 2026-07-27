@@ -580,14 +580,31 @@
     "insightCritical": "AI token quota reached ({percent}%). New AI requests are paused."
   },
   "adminUsers": {
-    "title": "Users",
+    "title": "User Management",
     "count": "{count} members",
     "invite": "Invite user",
     "inviteTitle": "Invite user",
     "inviteSoon": "The mobile invite flow is coming soon — use the web console to invite users for now.",
     "error": "Couldn't load users.",
     "empty": "No users yet.",
-    "mfaOn": "MFA enabled"
+    "mfaOn": "MFA enabled",
+    "subtitle": "Manage roles and data access across projects",
+    "searchPlaceholder": "Search users…",
+    "filterAll": "All",
+    "roleLabel": "Role",
+    "statusLabel": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "emailLogin": "Email Login",
+    "otpLogin": "OTP Login",
+    "uid": "UID",
+    "auditTitle": "User Audit",
+    "auditFlagged": "{count} users haven't signed in for 30+ days — review them for project security.",
+    "auditClear": "All active users have signed in within the last 30 days.",
+    "auditReview": "Review flagged users",
+    "auditSource": "Source: last-seen activity",
+    "actionsTitle": "User actions",
+    "actionsSoon": "Edit role / deactivate is coming to mobile — use the web console for now."
   },
   "quickAdd": {
     "title": "Quick Commands",

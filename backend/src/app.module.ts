@@ -7,6 +7,7 @@ import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
 import { ClsModule } from 'nestjs-cls';
 import { HealthController } from './health.controller';
 import { IdentityModule } from './modules/identity/identity.module';
+import { LastSeenModule } from './modules/identity/last-seen.module';
 import { TenantModule } from './modules/tenant/tenant.module';
 import { ProjectModule } from './modules/project/project.module';
 import { BoqModule } from './modules/boq/boq.module';
@@ -66,6 +67,7 @@ import { TracingShutdownService } from './shared/tracing-shutdown.service';
     }),
     TerminusModule,
     FeatureFlagsModule, // QM-15 / ADR-049 — Unleash-backed flags + GET /api/v1/flags
+    LastSeenModule, // @Global — last_seen_at touch used by JwtAuthGuard in every module (User Audit)
     IdentityModule,
     TenantModule,
     ProjectModule,

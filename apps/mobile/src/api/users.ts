@@ -28,11 +28,15 @@ export async function updateMyPhoto(photoUrl: string | null): Promise<void> {
 export interface TenantUser {
   user_id: string;
   email: string | null;
+  /** Path A (phone OTP) accounts have a phone; email-only (Path B) accounts do not. */
+  phone_number: string | null;
   display_name: string;
   photo_url: string | null;
   role: string;
   mfa_enabled: boolean;
   is_active: boolean;
+  /** Last authenticated request — ISO timestamp. Drives the User Audit (dormant > 30 days). */
+  last_seen_at: string;
 }
 
 interface PaginatedUsers {

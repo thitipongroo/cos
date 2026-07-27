@@ -10,6 +10,7 @@ import {
 } from '../../../shared/context/cls-context';
 import type { AuthenticatedUser } from '../strategies/keycloak-jwt.strategy';
 import { enforceMfaForPrivilegedRoles } from '../../../shared/guards/mfa-enforcement';
+import { LastSeenService } from '../last-seen.service';
 
 /**
  * Validates the Keycloak RS256 JWT on every protected endpoint.
@@ -22,7 +23,10 @@ import { enforceMfaForPrivilegedRoles } from '../../../shared/guards/mfa-enforce
  */
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('keycloak-jwt') {
-  constructor(private readonly cls: ClsService) {
+  constructor(
+    private readonly cls: ClsService,
+    private readonly lastSeen: LastSeenService,
+  ) {
     super();
   }
 
@@ -47,6 +51,9 @@ export class JwtAuthGuard extends AuthGuard('keycloak-jwt') {
         this.cls.set(CLS_TENANT_CODE, u.tenantCode);
         this.cls.set(CLS_DEDICATED_DB_URL, u.dedicatedDbUrl);
       }
+      // Record activity for the Tenant Admin User Audit — fire-and-forget + throttled, so it never
+      // blocks the request. Runs on every authenticated request → captures Path A and Path B alike.
+      this.lastSeen.touch(u.user_id, u.tenant_id);
     }
     return result;
   }

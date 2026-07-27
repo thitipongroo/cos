@@ -142,14 +142,26 @@ Quick-Add menu (`31-tenant-admin-quick-add.png`) and the Users tab (`30-tenant-a
 
 ## Tenant Admin — Users — [`30-tenant-admin-users.png`](30-tenant-admin-users.png)
 
-The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)) —
-the tenant's active users from `GET /users` (TENANT_ADMIN-only, spec §14.3), captured against the
-`seed-realistic.ts` dataset (12 members). Each dark card shows the initials monogram (or `photo_url`
-photo), display name, email, the role from `tenant_memberships`, and a green shield when `mfa_enabled`
-(here Pimchanok Thongchai — FINANCE). Everything is live, never fabricated. **Invite user** is a
-first-pass placeholder (PO-approved 2026-07-28): it surfaces the action but the full mobile invite flow
-(mockup `04_tenant_admin/00_home/03_invite_user`) is a follow-up — for now it points admins at the web
-console rather than pretending the flow exists.
+The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
+implementing the
+[`02_users/01_user_management`](../../../mockup/mobile/04_tenant_admin/02_users/01_user_management)
+mockup — the tenant's active users from `GET /users` (TENANT_ADMIN-only, spec §14.3), captured against the
+`seed-realistic.ts` dataset (12 members). A header + subtitle, a **search box** (name/email), and
+**role filter chips** derived from the roles actually present in the data (never a hardcoded list).
+Each dark card carries a status strip, the initials monogram (or `photo_url`), name, a short **UID**
+(from `user_id`), a `⋮` actions button, the role from `tenant_memberships`, the **status** (`is_active`),
+and the **login method** — `OTP Login` when the account has a phone (Path A), `Email Login` otherwise
+(Path B). Everything is live, never fabricated.
+
+The cyan **User Audit** card is a real, deterministic count: active users whose `last_seen_at` is older
+than 30 days. `last_seen_at` is a new `platform.users` column
+([migration](../../../backend/prisma/migrations/20260728000001_add_last_seen_to_users/migration.sql))
+written fire-and-forget + throttled (15 min/user) by `JwtAuthGuard` on every authenticated request, so
+it captures both auth paths. No fabricated "95 % confidence" — it is a count, not a prediction, and it
+reads **"all clear"** here because every seeded user was just seen (the column backfills to `now()` at
+migration; the signal grows meaningful as real dormancy accrues). **Invite user** (FAB) and the per-user
+`⋮` actions are first-pass placeholders (PO decision 2026-07-28) — create/edit/deactivate exist on the
+web console; the mobile flows are a follow-up, and the buttons say so rather than dead-ending.
 
 ## Tenant Admin — Quick-Add menu — [`31-tenant-admin-quick-add.png`](31-tenant-admin-quick-add.png)
 

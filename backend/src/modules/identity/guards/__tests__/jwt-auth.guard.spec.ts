@@ -18,6 +18,7 @@ jest.mock('@nestjs/passport', () => ({
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { JwtAuthGuard } from '../jwt-auth.guard';
+import { LastSeenService } from '../../last-seen.service';
 import {
   CLS_TENANT_ID,
   CLS_USER_ID,
@@ -36,10 +37,16 @@ const FULL_USER = {
   dedicatedDbUrl: 'postgresql://app@dedicated/ent',
 };
 
-function makeGuard(isActive: boolean): { guard: JwtAuthGuard; set: jest.Mock } {
+function makeGuard(isActive: boolean): {
+  guard: JwtAuthGuard;
+  set: jest.Mock;
+  touch: jest.Mock;
+} {
   const set = jest.fn();
   const cls = { isActive: () => isActive, set } as unknown as ClsService;
-  return { guard: new JwtAuthGuard(cls), set };
+  const touch = jest.fn();
+  const lastSeen = { touch } as unknown as LastSeenService;
+  return { guard: new JwtAuthGuard(cls, lastSeen), set, touch };
 }
 
 describe('JwtAuthGuard.handleRequest', () => {
@@ -47,11 +54,12 @@ describe('JwtAuthGuard.handleRequest', () => {
 
   it('publishes the full tenant context into CLS when a user is present and CLS is active', () => {
     mockSuperHandleRequest.mockReturnValue(FULL_USER);
-    const { guard, set } = makeGuard(true);
+    const { guard, set, touch } = makeGuard(true);
 
     const result = guard.handleRequest(null, FULL_USER, null, CONTEXT);
 
     expect(result).toBe(FULL_USER);
+    expect(touch).toHaveBeenCalledWith('user-1', 'tenant-1');
     expect(set).toHaveBeenCalledWith(CLS_TENANT_ID, 'tenant-1');
     expect(set).toHaveBeenCalledWith(CLS_USER_ID, 'user-1');
     expect(set).toHaveBeenCalledWith(CLS_USER_ROLE, 'SITE_WORKER');
