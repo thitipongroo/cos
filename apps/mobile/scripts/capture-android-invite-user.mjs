@@ -114,20 +114,23 @@ async function main() {
   await delay(1500);
   await shot('05-invite-user');
 
-  // Fill the form so the captures show a real, valid invitation (name + phone + a selected role).
-  console.log('· fill name + phone + role');
+  // Fill the form so the captures show a real, valid invitation (name + phone).
+  console.log('· fill name + phone');
   await tap(byId('invite-name'), 'name');
   await type('Somchai Jaidee');
   await hideKeyboard();
   await tap(byId('invite-contact'), 'contact');
   await type('812345678');
   await hideKeyboard();
-  await tap(byId('invite-role-PROJECT_MANAGER'), 'role PROJECT_MANAGER');
-  await delay(600);
 
   // Scroll down to reveal the role cards, projects, AI panel and the footer buttons.
   adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '400');
   await delay(1500);
+  // Select a role now that its card is on-screen (a pre-scroll adb tap missed the below-fold card),
+  // so the capture shows the selected state AND the role-aware CORE_AI banner ("…for the Project
+  // Manager role") rather than the no-role default copy.
+  await tap(byId('invite-role-PROJECT_MANAGER'), 'role PROJECT_MANAGER');
+  await delay(700);
   await shot('05-invite-user-roles');
 
   // Email method (toggle) — scroll back to the top first.

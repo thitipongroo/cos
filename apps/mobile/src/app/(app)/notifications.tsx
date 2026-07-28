@@ -71,7 +71,6 @@ export default function NotificationsScreen() {
   return (
     <View testID="notifications-screen" style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{t('notifications.title')}</Text>
         {unread > 0 ? (
           <TouchableOpacity testID="mark-all-read" style={styles.readAll} onPress={onReadAll}>
             <Text style={styles.readAllText}>{t('notifications.markAllRead')}</Text>

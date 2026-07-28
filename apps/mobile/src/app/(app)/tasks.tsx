@@ -92,7 +92,6 @@ export default function TasksScreen() {
 
   return (
     <View testID="tasks-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('tasks.list.title')}</Text>
       <FlatList
         testID="task-list"
         data={tasks}

@@ -103,8 +103,6 @@ export default function DeliveriesScreen() {
 
   return (
     <View testID="deliveries-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('procurement.deliveries.title')}</Text>
-
       {/* PO picker */}
       <Text style={styles.label}>{t('procurement.deliveries.selectPo')}</Text>
       <View testID="po-picker" style={styles.poRow}>

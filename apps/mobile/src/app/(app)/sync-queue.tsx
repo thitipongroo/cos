@@ -114,7 +114,6 @@ export default function SyncQueueScreen(): React.JSX.Element {
   return (
     <View style={styles.root} testID="tenant-admin-sync-queue">
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>{t('syncQueue.title')}</Text>
         <Text style={styles.subtitle}>
           {t('syncQueue.subtitle', { count: records ? records.length : 0 })}
         </Text>

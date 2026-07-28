@@ -81,7 +81,6 @@ export default function PortfolioScreen() {
 
   return (
     <View testID="portfolio-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('exec.portfolio.title')}</Text>
       <FlatList
         testID="portfolio-list"
         data={projects}

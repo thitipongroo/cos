@@ -219,7 +219,6 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
   }
 
   // ── Intro (native chrome; launches the Keycloak AIA) ──────────────────────────────────────────────
-  const introTitle = isRecovery ? t('mfa.recovery.title') : t('mfa.enroll.title');
   const introBody = isRecovery ? t('mfa.recovery.body') : t('mfa.enroll.body');
   const introCta = isRecovery ? t('mfa.recovery.cta') : t('mfa.enroll.cta');
 
@@ -233,7 +232,6 @@ export default function MfaEnrollmentScreen(): React.JSX.Element {
             color={darkColors.primary}
           />
         </View>
-        <Text style={styles.title}>{introTitle}</Text>
         <Text style={styles.body}>{introBody}</Text>
 
         {!isRecovery ? (

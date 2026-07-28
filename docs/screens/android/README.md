@@ -152,7 +152,17 @@ is the drawer trigger. The top bar also carries a small **icon-only sync glyph**
 ([`components/SyncPill.tsx`](../../../apps/mobile/src/components/SyncPill.tsx)) — the dark shell's sync
 indicator in place of the dropped strip: a green check when synced, gold while syncing (glyph shape +
 colour, no label, so it stays balanced beside the brand and never crowds it). It sits on the shared top
-bar, so it shows the same on every Tenant Admin screen. The mockup's **+ FAB** (bottom-right) opens the
+bar, so it shows the same on every Tenant Admin screen.
+
+**Title-aware top bar + standard Help (PO decision 2026-07-29).** The shared bar shows the **CONSTRUCTION
+OS** wordmark only on a role's top-level destinations (its bottom-nav tabs — for Tenant Admin: Home /
+Users / Alerts / Settings, where the brand icon is the drawer trigger). On a **child** screen (a pushed
+route such as Invite user, Notifications, System-settings detail, Profile-via-avatar) the bar instead
+shows that **screen's name + a Back arrow** before the brand icon, and the screen no longer draws its own
+in-content page heading (main screens dropped theirs too — the active bottom-nav tab names the screen).
+Long titles truncate with "…" so they never crowd the sync pill. A **Help "?"** now sits beside the bell
+on **every** authenticated screen (`testID="topbar-help"`); with no in-app help centre yet it opens an
+honest "coming soon" note. The mockup's **+ FAB** (bottom-right) opens the
 Quick-Add menu (below).
 
 Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../../apps/mobile/scripts/capture-android-tenant-admin-home.mjs)
@@ -207,23 +217,30 @@ follows the action (primary / cyan / cyan / sync-gold). Real vs honest placehold
 ## Tenant Admin — Invite user — [`05`](TENANT_ADMIN/05-invite-user.png) · [`roles`](TENANT_ADMIN/05-invite-user-roles.png) · [`email`](TENANT_ADMIN/05-invite-user-email.png)
 
 The Quick Commands "Invite New User" target
-([`app/(app)/invite-user.tsx`](../../../apps/mobile/src/app/(app)/invite-user.tsx), mockup
-`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/01_invite_user_via_phone`). A real,
-wired form: **SEND INVITATION** calls `POST /users` (createUser, TENANT_ADMIN §14.3) with the chosen
-method — **Path A phone** (E.164, the default `+66` prefix) or **Path B email** — the selected role,
-and the recipient's name.
+([`app/(app)/invite-user.tsx`](../../../apps/mobile/src/app/(app)/invite-user.tsx), mockups
+`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/{01_invite_user_via_phone,02_invite_user_via_email}`
+— one screen with a phone/email toggle covers both). A real, wired form: **SEND INVITATION** calls
+`POST /users` (createUser, TENANT_ADMIN §14.3) with the chosen method — **Path A phone** (E.164, the
+default `+66` prefix) or **Path B email** — the selected role, and the recipient's name.
 
+- **One header, not two.** The screen renders no top bar of its own; it uses the app's global TopBar
+  (brand · SYNCED pill · bell · avatar). A second "INVITE USER" bar stacked under the global one was a
+  duplicate (PO decision 2026-07-29 — remove it). For this route the global bar shows a **Back arrow**
+  (added to `TopBar` `BACK_ROUTES`) and a **Help "?"** beside the bell; **CANCEL** and the Back arrow
+  both `router.back()` to Home.
 - **Full name** — added on top of the mockup because `POST /users` requires `display_name`, which the
   mockup's contact-only form never collected (PO decision 2026-07-29). `05` = phone method (top),
-  `email` = the EMAIL toggle (the contact field clears on switch).
+  `email` = the EMAIL toggle (the contact field clears on switch); `roles` shows a selected role.
 - **Role assignment** is the real assignable `CosRole` set — everything except the cross-tenant
   `SYSTEM_ADMIN` (`assertRoleAssignableByTenant`), four shown with **"Show more roles (7)"** (the real
   remaining count, not the mockup's "4"); the selected role is what `createUser` receives.
-- **SYNCED pill** is the real `useSyncStatus()`. **Assign projects** is a UI-only search over the
-  tenant's projects (`createUser` takes no project list, so it is applied after the account is created,
-  not submitted here) — no fabricated "Skyline Plaza / Central Hub" chips.
-- The **CORE_AI ASSISTANT** panel is kept as the mockup drew it, **including its "94 % CONFIDENCE"
-  badge** (PO decision 2026-07-29: "ทำ full ไม่ตัด").
+- **SYNCED pill** is the global TopBar's real `useSyncStatus()` (TENANT_ADMIN `SyncPill`). **Assign
+  projects** is a UI-only search over the tenant's projects (`createUser` takes no project list, so it
+  is applied after the account is created, not submitted here) — no fabricated "Skyline Tower A /
+  Central Hub" chips (PO decision 2026-07-29 — real search only).
+- The **CORE_AI ASSISTANT** panel keeps its **"94 % CONFIDENCE"** badge, and its copy is **role-aware**
+  ("…pre-applied for the _Project Manager_ role") but **drops the mockup's fabricated permission
+  specifics** ("approval rights for Payouts and Daily Reports") — PO decision 2026-07-29.
 
 ## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 

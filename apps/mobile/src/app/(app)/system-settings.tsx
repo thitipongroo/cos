@@ -110,10 +110,8 @@ export default function SystemSettingsScreen(): React.JSX.Element {
   return (
     <View style={styles.root} testID="tenant-admin-settings">
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <Text style={styles.title}>{t('systemSettings.title')}</Text>
-        <Text style={styles.subtitle}>{t('systemSettings.subtitle')}</Text>
-
+        {/* Title lives in the global TopBar (PO decision 2026-07-29 — main screens drop their in-content
+            page header). */}
         {/* ── Organization Info (REAL: GET /tenant) ── */}
         <SectionHeader icon="business" label={t('systemSettings.orgSection')} />
         <View style={[styles.card, styles.cardLeftPrimary]}>

@@ -193,7 +193,6 @@ export default function InspectionsScreen() {
 
   return (
     <View testID="inspection-list" style={screen.container}>
-      <Text style={screen.heading}>{t('site.inspections.title')}</Text>
       <TouchableOpacity
         testID="new-inspection-button"
         style={[screen.primaryButton, checklists.length === 0 && screen.buttonDisabled]}

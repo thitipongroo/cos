@@ -22,7 +22,6 @@ export default function ProjectsScreen() {
 
   return (
     <View testID="projects-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('pm.projects.title')}</Text>
       <FlatList
         testID="projects-list"
         data={projects}

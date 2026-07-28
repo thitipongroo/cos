@@ -72,7 +72,6 @@ export default function BudgetScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <Text style={screen.heading}>{t('finance.budget.title')}</Text>
       <ProjectPicker selectedId={projectId} onSelect={onSelect} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {data ? (

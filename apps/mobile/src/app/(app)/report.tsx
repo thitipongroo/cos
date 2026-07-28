@@ -64,8 +64,6 @@ export default function ReportScreen() {
 
   return (
     <View testID="report-screen" style={screen.container}>
-      <Text style={styles.heading}>{t('site.report.title')}</Text>
-
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="report-manpower-input"

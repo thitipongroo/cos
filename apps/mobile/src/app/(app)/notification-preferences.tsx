@@ -242,11 +242,8 @@ export default function NotificationPreferencesScreen(): React.JSX.Element {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xl }]}
         testID="notification-preferences"
       >
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>{t('notifications.preferences.title')}</Text>
-          <Text style={styles.subtitle}>{t('notifications.preferences.subtitle')}</Text>
-        </View>
-
+        {/* Title lives in the global TopBar (PO decision 2026-07-29 — child screens show their name in
+            the bar, not an in-content heading). */}
         {/* Critical infrastructure — locked, required (§19.6) */}
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.sectionLabel, { color: darkColors.cyan }]}>

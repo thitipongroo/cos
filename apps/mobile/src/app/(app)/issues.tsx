@@ -60,8 +60,6 @@ export default function IssuesScreen() {
 
   return (
     <View testID="issues-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('site.issues.title')}</Text>
-
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="issue-title-input"

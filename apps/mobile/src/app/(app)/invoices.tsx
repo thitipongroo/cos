@@ -120,8 +120,6 @@ export default function InvoicesScreen() {
 
   return (
     <View testID="invoices-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('finance.invoices.title')}</Text>
-
       <View testID="invoice-status-filter" style={styles.filterRow}>
         <TouchableOpacity
           testID="filter-ALL"

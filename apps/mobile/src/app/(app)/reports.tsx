@@ -84,7 +84,6 @@ function SiteEngineerReports() {
   return (
     <View testID="reports-screen" style={screen.container}>
       <View style={styles.headerRow}>
-        <Text style={screen.heading}>{t('site.reports.title')}</Text>
         <ConflictBadge onPress={() => router.push('/conflict-review')} />
       </View>
       <FlatList
@@ -201,8 +200,6 @@ function ExecReports() {
 
   return (
     <View testID="exec-reports-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('exec.reports.title')}</Text>
-
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TouchableOpacity
         testID="generate-report-button"

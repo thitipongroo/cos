@@ -103,10 +103,8 @@ export default function UsersScreen(): React.JSX.Element {
   return (
     <View style={styles.root} testID="tenant-admin-users">
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <Text style={styles.title}>{t('adminUsers.title')}</Text>
-        <Text style={styles.subtitle}>{t('adminUsers.subtitle')}</Text>
-
+        {/* Title lives in the global TopBar (PO decision 2026-07-29 — main screens drop their in-content
+            page header). */}
         {/* Search */}
         <View style={styles.searchBox}>
           <MaterialIcons name="search" size={20} color={darkColors.muted} />

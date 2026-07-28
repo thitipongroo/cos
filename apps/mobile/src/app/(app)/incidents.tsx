@@ -51,8 +51,6 @@ export default function IncidentsScreen() {
 
   return (
     <View testID="incidents-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('safety.incidents.title')}</Text>
-
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} />
       <TextInput
         testID="incident-type-input"

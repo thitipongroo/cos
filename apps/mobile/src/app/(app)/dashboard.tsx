@@ -47,7 +47,6 @@ export default function DashboardScreen() {
       style={styles.container}
       contentContainerStyle={styles.content}
     >
-      <Text style={screen.heading}>{t('pm.dashboard.title')}</Text>
       <ProjectPicker selectedId={projectId} onSelect={onSelect} />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}

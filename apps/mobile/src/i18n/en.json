@@ -710,6 +710,7 @@
     "aiTitle": "CORE_AI ASSISTANT",
     "aiConfidence": "94% CONFIDENCE",
     "aiBody": "Permission templates are applied automatically based on the selected role.",
+    "aiBodyRole": "Permission templates have been pre-applied for the {role} role.",
     "send": "SEND INVITATION",
     "cancel": "CANCEL",
     "permTitle": "Role permissions",
@@ -738,5 +739,9 @@
       "TENANT_ADMIN": "User management, settings, and tenant administration.",
       "VIEWER": "Read-only access to shared data."
     }
+  },
+  "help": {
+    "title": "Help & Support",
+    "comingSoon": "In-app help & support is coming soon."
   }
 }

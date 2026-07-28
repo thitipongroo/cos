@@ -48,7 +48,6 @@ export default function AlertsScreen() {
 
   return (
     <View testID="alerts-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('exec.alerts.title')}</Text>
       <FlatList
         testID="alerts-list"
         data={rows}

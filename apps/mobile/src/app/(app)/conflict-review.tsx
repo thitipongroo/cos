@@ -76,7 +76,6 @@ export default function ConflictReviewScreen() {
 
   return (
     <View testID="conflict-review-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('sync.conflictReview.title')}</Text>
       <FlatList
         data={records}
         keyExtractor={(r) => r.conflict_id}

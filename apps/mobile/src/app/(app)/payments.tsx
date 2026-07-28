@@ -49,7 +49,6 @@ export default function PaymentsScreen() {
 
   return (
     <View testID="payments-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('finance.payments.title')}</Text>
       <FlatList
         testID="payments-list"
         data={payments}

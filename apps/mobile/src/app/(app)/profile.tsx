@@ -83,8 +83,6 @@ export default function ProfileScreen() {
 
   return (
     <View testID="profile-screen" style={screen.container}>
-      <Text style={styles.heading}>{t('profile.main.title')}</Text>
-
       <View style={screen.kvRow}>
         <Text style={screen.kvKey}>{t('profile.main.userId')}</Text>
         <Text testID="profile-user-id" style={styles.value}>

@@ -1,14 +1,17 @@
-// Invite user (mockup 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
-// 01_invite_user_via_phone; §32.7 dark). Reached from the Quick Commands overlay's "Invite New User".
+// Invite user (mockups 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
+// {01_invite_user_via_phone,02_invite_user_via_email}; §32.7 dark — one screen, phone/email toggle,
+// covers both). Reached from the Quick Commands overlay's "Invite New User".
 //
 // Real, wired: SEND INVITATION calls POST /users (createUser, TENANT_ADMIN §14.3) with the chosen
 // method — Path A phone (E.164, default) or Path B email — the selected role, and the recipient's name.
 // A **Full name** field is added on top of the mockup because the backend requires display_name; the
 // mockup collected only a contact + role (PO decision 2026-07-29). Roles are the real assignable
-// CosRole set (everything except the cross-tenant SYSTEM_ADMIN); the SYNCED pill is the real
-// useSyncStatus. ASSIGN PROJECTS is a UI-only search over the tenant's projects — createUser does not
-// take a project list, so it is applied afterwards, not submitted here. The AI-assistant panel is kept
-// as the mockup drew it (PO decision 2026-07-29: "ทำ full ไม่ตัด").
+// CosRole set (everything except the cross-tenant SYSTEM_ADMIN). This screen renders NO top bar of its
+// own — it uses the app's global TopBar (brand · SYNCED pill · bell), which for this route also shows a
+// Back arrow + a Help "?" (PO decision 2026-07-29 — a second "INVITE USER" bar was a duplicate header).
+// ASSIGN PROJECTS is a UI-only search over the tenant's projects — createUser does not take a project
+// list, so it is applied afterwards, not submitted here. The CORE_AI panel keeps its "94% CONFIDENCE"
+// badge but its copy is role-aware without the mockup's fabricated permission specifics (PO 2026-07-29).
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -26,13 +29,10 @@ import { useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
 import { createUser } from '../../api/users';
 import { getMyProjects, type MyProject } from '../../api/projects';
-import { useSyncStatus } from '../../hooks/useSyncStatus';
-import { usePendingCount } from '../../hooks/usePendingCount';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
 type Method = 'phone' | 'email';
-type IconName = keyof typeof MaterialIcons.glyphMap;
 
 // Assignable roles (POST /users rejects SYSTEM_ADMIN — a cross-tenant platform role). Field-facing
 // roles first so the default four cover the common invites; the rest expand behind "Show more".
@@ -57,30 +57,6 @@ function formatRole(role: string): string {
     .split('_')
     .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
     .join(' ');
-}
-
-function StatusPill(): React.JSX.Element {
-  const status = useSyncStatus();
-  const pending = usePendingCount();
-  const t = useT();
-  const v: { icon: IconName; color: string; label: string } =
-    status === 'error'
-      ? { icon: 'sync-problem', color: darkColors.danger, label: t('sync.pill.error') }
-      : status === 'syncing'
-        ? { icon: 'sync', color: darkColors.syncing, label: t('sync.pill.syncing') }
-        : pending > 0
-          ? {
-              icon: 'cloud-upload',
-              color: darkColors.syncing,
-              label: t('sync.pill.pending', { count: pending }),
-            }
-          : { icon: 'check-circle', color: darkColors.success, label: t('sync.pill.synced') };
-  return (
-    <View style={[styles.pill, { backgroundColor: `${v.color}1A` }]}>
-      <MaterialIcons name={v.icon} size={14} color={v.color} accessibilityLabel={v.label} />
-      <Text style={[styles.pillText, { color: v.color }]}>{v.label.toUpperCase()}</Text>
-    </View>
-  );
 }
 
 export default function InviteUserScreen(): React.JSX.Element {
@@ -170,29 +146,11 @@ export default function InviteUserScreen(): React.JSX.Element {
   };
 
   return (
+    // The screen relies on the app's global TopBar (§32.7 — brand · SYNCED pill · bell · avatar, with a
+    // Back arrow + Help "?" for this route). It renders no header of its own: a second "INVITE USER" bar
+    // stacked under the global one was a duplicate top bar (PO decision 2026-07-29 — remove it, move Help
+    // next to the bell). Help + Back now live in TopBar; CANCEL / the Back arrow both router.back() home.
     <View style={styles.root} testID="invite-user">
-      {/* Top bar */}
-      <View style={styles.topbar}>
-        <View style={styles.topLeft}>
-          <Pressable
-            style={styles.iconBtn}
-            onPress={back}
-            testID="invite-back"
-            accessibilityRole="button"
-            accessibilityLabel={t('inviteUser.cancel')}
-          >
-            <MaterialIcons name="arrow-back" size={24} color={darkColors.primary} />
-          </Pressable>
-          <Text style={styles.topTitle}>{t('inviteUser.title')}</Text>
-        </View>
-        <View style={styles.topRight}>
-          <StatusPill />
-          <Pressable style={styles.iconBtn} onPress={viewPermissions} accessibilityRole="button">
-            <MaterialIcons name="help-outline" size={22} color={darkColors.muted} />
-          </Pressable>
-        </View>
-      </View>
-
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Method toggle */}
         <View style={styles.sectionHeaderRow}>
@@ -378,7 +336,13 @@ export default function InviteUserScreen(): React.JSX.Element {
           </View>
           <View style={styles.aiBody}>
             <Text style={styles.aiTitle}>{t('inviteUser.aiTitle')}</Text>
-            <Text style={styles.aiText}>{t('inviteUser.aiBody')}</Text>
+            {/* Role-aware, but no fabricated permission specifics (PO decision 2026-07-29 — name the
+                selected role, drop the mockup's invented "approval rights for Payouts/Daily Reports"). */}
+            <Text style={styles.aiText}>
+              {role
+                ? t('inviteUser.aiBodyRole', { role: formatRole(role) })
+                : t('inviteUser.aiBody')}
+            </Text>
           </View>
         </View>
       </ScrollView>
@@ -411,41 +375,6 @@ export default function InviteUserScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
-  topbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 56,
-    paddingHorizontal: spacing.md,
-    backgroundColor: darkColors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: darkColors.border,
-  },
-  topLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1, minWidth: 0 },
-  topRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  iconBtn: {
-    width: touchTarget.iconButton,
-    height: touchTarget.iconButton,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topTitle: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.title.fontSize,
-    color: darkColors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: 999,
-  },
-  pillText: { fontFamily: fontFamily.bold, fontSize: 10, letterSpacing: 1 },
-
   content: { padding: spacing.lg, paddingBottom: 160 },
   sectionHeaderRow: {
     flexDirection: 'row',

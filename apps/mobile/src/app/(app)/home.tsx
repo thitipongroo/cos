@@ -43,18 +43,9 @@ function KpiCard({ testID, value, label }: { testID: string; value: string; labe
   );
 }
 
-function Screen({
-  testID,
-  title,
-  children,
-}: {
-  testID: string;
-  title: string;
-  children: React.ReactNode;
-}) {
+function Screen({ testID, children }: { testID: string; children: React.ReactNode }) {
   return (
     <View testID={testID} style={styles.container}>
-      <Text style={screen.heading}>{title}</Text>
       {children}
     </View>
   );
@@ -103,7 +94,7 @@ function FieldHome() {
   };
 
   return (
-    <Screen testID="home-screen" title={t('home.main.title')}>
+    <Screen testID="home-screen">
       <View style={styles.kpiRow}>
         <KpiCard
           testID="kpi-open-issues"
@@ -198,7 +189,7 @@ function ExecHome() {
   const money = (n: number | null): string => (n === null ? '—' : n.toLocaleString());
 
   return (
-    <Screen testID="home-screen" title={t('home.exec.title')}>
+    <Screen testID="home-screen">
       <View style={styles.kpiRow}>
         <KpiCard
           testID="kpi-active-projects"
@@ -241,7 +232,7 @@ function FinanceHome() {
   const n = (v: number | null): string => (v === null ? '—' : String(v));
 
   return (
-    <Screen testID="home-screen" title={t('home.finance.title')}>
+    <Screen testID="home-screen">
       <View style={styles.kpiRow}>
         <KpiCard
           testID="kpi-pending-payments"
@@ -289,7 +280,7 @@ function ProcurementHome() {
   const n = (v: number | null): string => (v === null ? '—' : String(v));
 
   return (
-    <Screen testID="home-screen" title={t('home.procurement.title')}>
+    <Screen testID="home-screen">
       <View style={styles.kpiRow}>
         <KpiCard
           testID="kpi-open-rfqs"
@@ -334,7 +325,7 @@ function PmHome() {
   }, []);
 
   return (
-    <Screen testID="home-screen" title={t('home.pm.title')}>
+    <Screen testID="home-screen">
       <View style={styles.kpiRow}>
         <KpiCard
           testID="kpi-active-projects"
@@ -356,7 +347,7 @@ function MinimalHome() {
   const pending = usePendingCount();
   const t = useT();
   return (
-    <Screen testID="home-screen" title={t('home.main.title')}>
+    <Screen testID="home-screen">
       <View style={styles.kpiRow}>
         <KpiCard
           testID="pending-sync-count"

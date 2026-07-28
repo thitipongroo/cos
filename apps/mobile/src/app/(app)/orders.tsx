@@ -84,7 +84,6 @@ export default function OrdersScreen() {
 
   return (
     <View testID="orders-screen" style={screen.container}>
-      <Text style={screen.heading}>{t('procurement.orders.title')}</Text>
       <FlatList
         testID="orders-list"
         data={rows}

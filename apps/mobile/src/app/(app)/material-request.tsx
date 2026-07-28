@@ -75,8 +75,6 @@ export default function MaterialRequestScreen() {
       style={styles.screen}
       contentContainerStyle={styles.content}
     >
-      <Text style={styles.heading}>{t('materialRequest.title')}</Text>
-
       <ProjectPicker selectedId={projectId} onSelect={setProjectId} variant="dark" />
 
       {drafts.map((d, i) => (
