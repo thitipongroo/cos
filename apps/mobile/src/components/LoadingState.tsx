@@ -258,11 +258,6 @@ export function LoadingState({
   // The dashboard tile: icon plate, text skeletons, label + percentage, progress bar.
   return (
     <View testID={testID} style={styles.card} {...a11yProps}>
-      {/* Technical corner brackets (mockup A) — token-coloured, no glow/gradient (§32.7-safe). */}
-      <View style={[styles.corner, styles.cornerTL]} />
-      <View style={[styles.corner, styles.cornerTR]} />
-      <View style={[styles.corner, styles.cornerBL]} />
-      <View style={[styles.corner, styles.cornerBR]} />
       <View style={styles.widgetBody}>
         {/* Mark: a caller-supplied brand image (static, for the branded launch use), else the
             pulsing circular skeleton with an analytics glyph inside (mockup A). */}
@@ -343,24 +338,6 @@ const makeStyles = (palette: LoadingPalette) =>
       padding: spacing.md,
       gap: spacing.sm,
       overflow: 'hidden',
-    },
-    // Corner brackets (mockup A) — 16×16 L-shapes in the primary hue at low alpha.
-    corner: { position: 'absolute', width: 16, height: 16, borderColor: `${palette.primary}66` },
-    cornerTL: { top: 0, left: 0, borderTopWidth: 2, borderLeftWidth: 2, borderTopLeftRadius: 2 },
-    cornerTR: { top: 0, right: 0, borderTopWidth: 2, borderRightWidth: 2, borderTopRightRadius: 2 },
-    cornerBL: {
-      bottom: 0,
-      left: 0,
-      borderBottomWidth: 2,
-      borderLeftWidth: 2,
-      borderBottomLeftRadius: 2,
-    },
-    cornerBR: {
-      bottom: 0,
-      right: 0,
-      borderBottomWidth: 2,
-      borderRightWidth: 2,
-      borderBottomRightRadius: 2,
     },
     // Icon plate (mockup A) — a circular skeleton with a glyph centred inside.
     iconPlate: {

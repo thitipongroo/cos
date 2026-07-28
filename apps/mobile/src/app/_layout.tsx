@@ -2,7 +2,7 @@
 // Guards all (app) routes: redirects unauthenticated users to (auth)/login.
 
 import { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, LogBox } from 'react-native';
 import { Slot, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
@@ -22,6 +22,14 @@ import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
 import { LoadingState } from '../components/LoadingState';
 import { darkColors } from '../theme/tokens';
 import appFavicon from '../../assets/favicon.png';
+
+// Screenshot builds (Metro started with EXPO_PUBLIC_CAPTURE=1) suppress the dev-only LogBox toast
+// ("Open debugger to view warnings.") so it never lands in a documentation screenshot — including the
+// transient app-launch loading state, which is too brief to dismiss the toast by hand. Red-box errors
+// still surface, and normal `expo start` is unaffected (the flag is set only by the capture workflow).
+if (process.env.EXPO_PUBLIC_CAPTURE === '1') {
+  LogBox.ignoreAllLogs(true);
+}
 
 // Brand tagline shown on the app-launch loading state. This renders BEFORE I18nProvider mounts and
 // before the persisted locale is known, so it cannot come from i18n — it is the English brand

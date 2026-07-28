@@ -106,7 +106,7 @@ component (ADR-055 — the implementation of
 [`mockup/mobile/imp_002_universal_loading_component_mobile_view`](../../../mockup/mobile/imp_002_universal_loading_component_mobile_view))
 now stands in for the content instead of the "no data" empty states: a `micro` strip (spinner +
 "Loading…" + %) where the picker goes — so the picker's "no projects cached" message never reads as a
-failure during load — the `widget` variant (corner brackets + an analytics icon-plate + a "Loading…"
+failure during load — the `widget` variant (an analytics icon-plate + a "Loading…"
 label + % + bar) for the command card, and the `list` variant (ragged skeleton rows + a sync-active
 spinner and % on the first row) under both Active Issues and Upcoming Tasks. The percentage is honest,
 not simulated (ADR-055 caller-owns-progress): the dashboard's caller derives it from how many of its
@@ -243,7 +243,7 @@ with an honest empty state (**"No AI insights available yet."**), never the fabr
 
 Opening the app now shows the same [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
 `widget` ("loading A", ADR-055) on a dark ground while the persisted session hydrates and the brand
-font resolves ([`src/app/_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx)) — corner brackets, the
+font resolves ([`src/app/_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx)) — the
 **app favicon** (the hexagon mark) in place of the icon-plate skeleton, the **brand tagline** ("AI-NATIVE
 / Construction Platform") in place of the top skeleton bar, then a two-step (hydration + font) percentage
 and a matching bar (`50%` here: session hydrated, font still loading). This mirrors the login hero, and
@@ -254,8 +254,10 @@ The favicon + tagline are passed by the caller through the new opt-in `iconSourc
 neither, is unchanged). The tagline is the English brand default, not i18n: this renders before
 `I18nProvider` mounts and before the persisted locale is known (QM-3's system default); the interactive
 `label` is still omitted for the same reason. Captured by cold-launching (`pm clear` wipes the font
-cache, widening the font-load window) and screencapping the framebuffer. (LogBox toast at the very bottom
-is a dev-build artifact.)
+cache, widening the font-load window) and screencapping the framebuffer. The dev-only LogBox toast
+("Open debugger to view warnings.") is suppressed for capture builds — Metro started with
+`EXPO_PUBLIC_CAPTURE=1` runs `LogBox.ignoreAllLogs()` in [`_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx),
+so it never lands in a documentation screenshot; normal `expo start` is unaffected.
 
 ## Native splash — [`_public/00-native-splash.png`](_public/00-native-splash.png)
 
@@ -272,6 +274,12 @@ shown for the ~1 s before the JS bundle mounts. Two changes from the original:
   ~192 dp, and the **"CONSTRUCTION OS" wordmark** (cropped out of `splash-logo.png` and scaled per
   density into `drawable-*/splashscreen_branding.png`) moves to `android:windowSplashScreenBrandingImage`,
   centred at the bottom.
+- **Branding fix.** The `drawable-*/splashscreen_branding.png` set was regenerated from
+  `assets/splash-logo.png`: the committed drawables had the final **"S" of "OS" cropped off** (the
+  wordmark touched the canvas edge), so the splash rendered a half-cut S. The wordmark is now re-cropped
+  with the complete "OS", centred with margin so nothing touches an edge, and the fine-print
+  **"AI-NATIVE CONSTRUCTION PLATFORM"** tagline is re-rendered crisply in Inter Tight (it was soft).
+  Needs a native rebuild.
 
 This is **native config** (drawables + theme in `android/`), hand-maintained beyond what the
 `expo-splash-screen` plugin generates (the plugin has no branding-image option), so it changes only on a
