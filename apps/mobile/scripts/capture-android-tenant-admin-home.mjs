@@ -1,7 +1,7 @@
 // Tenant Admin Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/29-tenant-admin-home.png: the TENANT_ADMIN landing dashboard
+// Writes docs/screens/android/TENANT_ADMIN/00-tenant-admin-home.png: the TENANT_ADMIN landing dashboard
 // (mockup/mobile/04_tenant_admin/00_home/01_home_admin/) with live data — system status, pending
 // approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
 // the seeded TENANT_ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
@@ -25,7 +25,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android');
+// Grouped by role (mirrors docs/screens/web/): every TENANT_ADMIN shot (29–36) lives under TENANT_ADMIN/.
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
 const PKG = 'com.constructionos.cos';
 
 // Suphaporn Rattanakul — TENANT_ADMIN at Ekachai (seed-realistic.ts). National format: the login
@@ -185,7 +186,7 @@ async function main() {
   // loudly instead of being photographed.
   await find(byId('admin-system-status'), 'admin system-status card');
 
-  await shot('29-tenant-admin-home');
+  await shot('00-tenant-admin-home');
 
   // Quick-Add menu — the FAB target (mockup 02_quick_add_menu). Open it, assert the sheet, capture it,
   // then close it before moving on.
@@ -193,7 +194,7 @@ async function main() {
   await tap(byId('quick-add-fab'), 'quick-add FAB');
   await find(byId('quick-add-menu'), 'quick-add-menu', 15);
   await delay(1500);
-  await shot('31-tenant-admin-quick-add');
+  await shot('01-tenant-admin-quick-add');
   await tap(byId('quick-add-close'), 'quick-add close');
   await delay(1000);
 
@@ -204,7 +205,7 @@ async function main() {
   await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
   await delay(3000);
   await dismissDevBanners();
-  await shot('30-tenant-admin-users');
+  await shot('02-tenant-admin-users');
 
   // Alerts tab — the sync-review queue (mockup 03_alerts). Capture the populated list, then expand the
   // first conflict's client-vs-server diff and capture that too.
@@ -212,14 +213,14 @@ async function main() {
   await tap(byId('sync-queue-tab'), 'Alerts tab');
   await find(byId('tenant-admin-sync-queue'), 'tenant-admin-sync-queue', 20);
   await delay(2500);
-  await shot('32-tenant-admin-alerts');
+  await shot('03-tenant-admin-alerts');
   // The client-vs-server diff needs at least one conflict in the queue to expand. If the queue is empty
   // (or a transient load error left it blank) there is no `review-` button — skip the diff shot rather
   // than fail the whole run, since 34–36 (this task's deliverable) come after it.
   try {
     await tap(byIdPrefix('review-'), 'first "Review data"');
     await delay(1500);
-    await shot('33-tenant-admin-alerts-diff');
+    await shot('03-tenant-admin-alerts-diff');
   } catch (err) {
     console.warn(`  (skipped 33 alerts-diff: ${err.message ?? err})`);
   }
@@ -232,13 +233,13 @@ async function main() {
   await find(byId('tenant-admin-settings'), 'tenant-admin-settings', 20);
   await delay(2500);
   await dismissDevBanners();
-  await shot('34-tenant-admin-settings');
+  await shot('04-tenant-admin-settings');
   adb('shell', 'input', 'swipe', '540', '1850', '540', '800', '400');
   await delay(2000);
-  await shot('35-tenant-admin-settings-integrations');
+  await shot('04-tenant-admin-settings-integrations');
   adb('shell', 'input', 'swipe', '540', '1850', '540', '700', '400');
   await delay(2000);
-  await shot('36-tenant-admin-settings-others');
+  await shot('04-tenant-admin-settings-others');
 
   console.log('done.');
 }

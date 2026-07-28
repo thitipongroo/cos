@@ -1,12 +1,12 @@
 // Android login-flow screenshot capture — adb/uiautomator only, deliberately NOT Detox.
 //
-// Writes the four public login screens to docs/screens/android/_public/, mirroring the web set
-// (docs/screens/web/_public/00-login.png … 03-login-loading.png) so both platforms document the same
-// flow under the same numbering:
-//   00-login             landing (Path A phone form + Path B "Login with Email" secondary action)
-//   01-login-otp-verify  OTP-verify step, reached by requesting a passcode from the landing
-//   02-login-password    Keycloak's hosted email/password page (Path B, §20.6.1 / QM-4)
-//   03-login-loading     VerifyingOverlay, shown while the Path B code→token exchange is in flight
+// Writes the four public login screens to docs/screens/android/_public/ — the same flow as the web set
+// (docs/screens/web/_public/00-login.png … 03-login-loading.png). Android's _public/ also holds the
+// native splash (00) and app-launch loading (01), so the login screens sit at 02–04 here:
+//   02-login             landing (Path A phone form + Path B "Login with Email" secondary action)
+//   03-login-otp-verify  OTP-verify step, reached by requesting a passcode from the landing
+//   03-login-password    Keycloak's hosted email/password page (Path B, §20.6.1 / QM-4)
+//   04-login-loading     VerifyingOverlay, shown while the Path B code→token exchange is in flight
 //
 // WHY NOT DETOX: Path B hands off to Keycloak in a Chrome Custom Tab. While Detox holds the
 // UiAutomation connection, `uiautomator dump` only ever returns the instrumented app's window — a
@@ -167,7 +167,7 @@ const STALL_PROXY_PORT = 8099;
  * Keycloak proxy that answers everything normally except the OIDC token endpoint, whose request it
  * accepts and then simply never replies to.
  *
- * 03-login-loading is the VerifyingOverlay, and login.tsx only raises oidcBusy for the duration of
+ * 04-login-loading is the VerifyingOverlay, and login.tsx only raises oidcBusy for the duration of
  * exchangeCodeAsync — against a local Keycloak that is a couple hundred milliseconds, so the frame is
  * gone long before a screencap lands. Two simpler tricks failed: a fixed sleep before pulling the
  * port forward always lost the race (the app reached Home), and pulling the forward at all makes the
@@ -247,12 +247,12 @@ async function main() {
     adb('reverse', port, port); // Metro, backend, Keycloak — all reached as localhost on-device
   }
 
-  console.log('00-login — landing');
+  console.log('02-login — landing');
   await freshApp();
   await dismissDevBanners();
-  shot('00-login');
+  shot('02-login');
 
-  console.log('01-login-otp-verify — passcode step');
+  console.log('03-login-otp-verify — passcode step');
   await tap(byId('country-picker'), 'country picker');
   await tap(byId('country-option-th'), 'Thailand option');
   await tap(byId('phone-input'), 'phone input');
@@ -262,11 +262,11 @@ async function main() {
   await find(byId('otp-input'), 'OTP input'); // proves the step actually rendered
   await hideKeyboard();
   await dismissDevBanners();
-  shot('01-login-otp-verify');
+  shot('03-login-otp-verify');
 
-  console.log('02-login-password — Keycloak hosted page');
+  console.log('03-login-password — Keycloak hosted page');
   // Route the app's Keycloak traffic through the stall proxy for the rest of the run, so the token
-  // exchange below hangs and 03's overlay stays on screen long enough to photograph.
+  // exchange below hangs and 04's overlay stays on screen long enough to photograph.
   const proxy = startStallProxy();
   await proxy.listen();
   adb('reverse', `tcp:${KEYCLOAK_PORT}`, `tcp:${STALL_PROXY_PORT}`);
@@ -288,9 +288,9 @@ async function capturePathB() {
   await find(byText('Sign In'), 'Keycloak Sign In button');
   await hideKeyboard();
   await delay(1000);
-  shot('02-login-password');
+  shot('03-login-password');
 
-  console.log('03-login-loading — token exchange');
+  console.log('04-login-loading — token exchange');
   // Re-locate the fields before every tap, with the keyboard down. Raising the IME scrolls the page,
   // so coordinates read once go stale: doing it the other way put both strings in the email box
   // ("wichai.e@ekachai.co.thEkachai@2026") and Keycloak answered "Invalid username or password."
@@ -311,7 +311,7 @@ async function capturePathB() {
   // animation settle a beat, and shoot the frame directly.
   await waitForForeground(PKG);
   await delay(1200);
-  shot('03-login-loading');
+  shot('04-login-loading');
 }
 
 main().catch((e) => {

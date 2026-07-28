@@ -16,6 +16,27 @@ Screenshots of the Construction OS mobile app (Expo / React Native, Android), ca
 | Backend | NestJS @ `localhost:3000` (`E2E_AUTH_BYPASS=true`) · Keycloak @ `localhost:8090` |
 | Project | `DEMO-001` — _Bangkok Tower — Phase 1_                                           |
 
+## Structure — grouped by role
+
+Like [`../web/`](../web), the committed Android captures are grouped into role / flow folders (not a
+flat numbered dump). Each folder holds the screens one audience sees, numbered from `00` within the
+folder — one screen can span several shots that share a number (e.g. the multi-state Settings view).
+
+| Folder | What it holds |
+| --- | --- |
+| [`_public/`](_public/) | Pre-auth — the native splash (`00`), app-launch loading (`01`) and the login flow (`02`–`04`). |
+| [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
+| [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
+| [`SITE_ENGINEER/`](SITE_ENGINEER/) | The Site Engineer loading state + dashboard (`00`, `01`). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, and System Settings (`00`–`04`). |
+
+The two adb dashboard scripts write straight into their role folder —
+[`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/`,
+[`capture-android-tenant-admin-home.mjs`](../../../apps/mobile/scripts/capture-android-tenant-admin-home.mjs)
+→ `TENANT_ADMIN/` — and [`capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
+writes `_public/`. The `_mfa-flow/` and `_shared/` shots are captured by hand (the Keycloak browser flow
+and the shared app-shell routes), not by these scripts.
+
 ## Login flow — [`_public/`](_public/)
 
 English UI (matching [`mockup/00_login_flow/mobile/`](../../../mockup/00_login_flow/mobile)); the
@@ -23,10 +44,10 @@ login header's language switcher is used to leave the th-TH default (QM-3).
 
 | #   | Screen                                            | What it shows                                                                  |
 | --- | ------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 00  | [Login](_public/00-login.png)                     | Landing — Path A phone form, Path B "Login with Email" as the secondary action |
-| 01  | [OTP verify](_public/01-login-otp-verify.png)     | Passcode step for `+66 •••• 0010`, requested from the landing                  |
-| 02  | [Email + password](_public/02-login-password.png) | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)    |
-| 03  | [Securing session](_public/03-login-loading.png)  | `VerifyingOverlay`, shown while the Path B code→token exchange runs            |
+| 02  | [Login](_public/02-login.png)                          | Landing — Path A phone form, Path B "Login with Email" as the secondary action |
+| 03  | [OTP verify](_public/03-login-otp-verify.png)          | Passcode step for `+66 •••• 0010`, requested from the landing                  |
+| 03  | [Email + password](_public/03-login-password.png)      | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)    |
+| 04  | [Securing session](_public/04-login-loading.png)       | `VerifyingOverlay`, shown while the Path B code→token exchange runs            |
 
 Captured by [`apps/mobile/scripts/capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
 (`cd apps/mobile && pnpm capture:android` — it installs standalone, see the root `pnpm-workspace.yaml`)
@@ -36,7 +57,7 @@ connection a `uiautomator dump` only ever returns the instrumented app's own win
 browser undrivable. The script asserts the screen it expects (e.g. `verifying-overlay`) before saving
 each frame, so a mis-tap fails the run instead of writing a screenshot of the wrong thing.
 
-## Site Engineer dashboard — [`21-site-engineer-home.png`](21-site-engineer-home.png)
+## Site Engineer dashboard — [`SITE_ENGINEER/01-site-engineer-home.png`](SITE_ENGINEER/01-site-engineer-home.png)
 
 The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`), captured against the `seed-realistic.ts`
 dataset through a real Path A (SMS OTP) login as `+66811000009` — Waraporn Klinhom, a SITE_ENGINEER at
@@ -78,7 +99,7 @@ below. It asserts the `site-engineer-home` testID before saving, and fails outri
 card is showing its "no BOQ-linked task" placeholder, so a screenshot of an empty card cannot be
 committed by accident.
 
-## Site Engineer dashboard — loading state — [`22-site-engineer-loading.png`](22-site-engineer-loading.png)
+## Site Engineer dashboard — loading state — [`SITE_ENGINEER/00-site-engineer-loading.png`](SITE_ENGINEER/00-site-engineer-loading.png)
 
 The same dashboard while its data is still loading: the reusable [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
 component (ADR-055 — the implementation of
@@ -100,7 +121,7 @@ fetches hang, relaunches so the screen re-mounts into its loading state, and scr
 directly — uiautomator cannot dump the screen because the skeletons animate continuously ("could not
 get idle state").
 
-## Tenant Admin dashboard — [`29-tenant-admin-home.png`](29-tenant-admin-home.png)
+## Tenant Admin dashboard — [`TENANT_ADMIN/00-tenant-admin-home.png`](TENANT_ADMIN/00-tenant-admin-home.png)
 
 The `TENANT_ADMIN` Home ([`components/TenantAdminHome.tsx`](../../../apps/mobile/src/components/TenantAdminHome.tsx),
 implementing [`mockup/mobile/04_tenant_admin/00_home/01_home_admin`](../../../mockup/mobile/04_tenant_admin/00_home/01_home_admin)),
@@ -138,9 +159,10 @@ Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../
 (`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
 `tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
 an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
-Quick-Add menu (`31-tenant-admin-quick-add.png`) and the Users tab (`30-tenant-admin-users.png`).
+Quick-Add menu (`TENANT_ADMIN/01-tenant-admin-quick-add.png`) and the Users tab
+(`TENANT_ADMIN/02-tenant-admin-users.png`).
 
-## Tenant Admin — Users — [`30-tenant-admin-users.png`](30-tenant-admin-users.png)
+## Tenant Admin — Users — [`TENANT_ADMIN/02-tenant-admin-users.png`](TENANT_ADMIN/02-tenant-admin-users.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
 implementing the
@@ -163,7 +185,7 @@ migration; the signal grows meaningful as real dormancy accrues). **Invite user*
 `⋮` actions are first-pass placeholders (PO decision 2026-07-28) — create/edit/deactivate exist on the
 web console; the mobile flows are a follow-up, and the buttons say so rather than dead-ending.
 
-## Tenant Admin — Quick-Add menu — [`31-tenant-admin-quick-add.png`](31-tenant-admin-quick-add.png)
+## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-tenant-admin-quick-add.png`](TENANT_ADMIN/01-tenant-admin-quick-add.png)
 
 The FAB's Quick-Add sheet ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx),
 mockup `04_tenant_admin/00_home/02_quick_add_menu`) — a dark bottom-sheet of quick actions over the
@@ -173,7 +195,7 @@ Report** are honest first-pass placeholders (PO decision 2026-07-28) — no mobi
 AI-report screen exists yet, so they say so rather than pretending. Left-accent colour follows the
 action (primary / cyan / cyan / sync-gold).
 
-## Tenant Admin — Sync Review Queue (Alerts) — [`32`](32-tenant-admin-alerts.png) · [`33`](33-tenant-admin-alerts-diff.png)
+## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 
 The `TENANT_ADMIN` "Alerts" tab
 ([`app/(app)/sync-queue.tsx`](../../../apps/mobile/src/app/(app)/sync-queue.tsx)), implementing
@@ -184,22 +206,23 @@ Engineer's ConflictBadge uses; spec §17.5 lets `TENANT_ADMIN` view/resolve), re
 actual `conflict_type` enum (**REJECTED / STATUS_CONFLICT / FIELD_CONFLICT**, colour-coded) — the
 mockup's Critical/Medium/Low "severity" is not a field on the record, so it is not invented. `REF` comes
 from `entity_id`, `FAILED AT` from `created_at`, and the **error reason** is a localised description of
-each `conflict_type` (not a fabricated per-record message). `32` shows the populated list; `33` shows
-**Review data** expanded — the real client-vs-server field diff from the two payloads (differing fields
-highlighted). **Mark resolved** is the single real action (the mockup's retry / merge / edit are all one
-`resolve` on the backend).
+each `conflict_type` (not a fabricated per-record message). `03-tenant-admin-alerts` shows the populated
+list; `03-tenant-admin-alerts-diff` shows **Review data** expanded — the real client-vs-server field diff
+from the two payloads (differing fields highlighted). **Mark resolved** is the single real action (the
+mockup's retry / merge / edit are all one `resolve` on the backend).
 
 The five conflicts are demo rows seeded by
 [`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync
 conflicts, like it accumulates issues and reports); the screen renders that real (seed) data.
 
-## Tenant Admin — System Settings — [`34`](34-tenant-admin-settings.png) · [`35`](35-tenant-admin-settings-integrations.png) · [`36`](36-tenant-admin-settings-others.png)
+## Tenant Admin — System Settings — [`04`](TENANT_ADMIN/04-tenant-admin-settings.png) · [`04-integrations`](TENANT_ADMIN/04-tenant-admin-settings-integrations.png) · [`04-others`](TENANT_ADMIN/04-tenant-admin-settings-others.png)
 
 The `TENANT_ADMIN` "Settings" tab
 ([`app/(app)/system-settings.tsx`](../../../apps/mobile/src/app/(app)/system-settings.tsx)), implementing
 [`04_tenant_admin/04_settings/01_system_settings`](../../../mockup/mobile/04_tenant_admin/04_settings/01_system_settings).
-The screen is taller than the viewport, so it is captured in three scroll positions: `34` (Organization
-Info + Brand), `35` (External Integrations), `36` (Others + AI System Insight).
+The screen is taller than the viewport, so it is captured in three scroll positions:
+`04-tenant-admin-settings` (Organization Info + Brand), `04-…-integrations` (External Integrations),
+`04-…-others` (Others + AI System Insight).
 
 **Real, persisted data:** **Organization Info** — name + code from `GET /tenant`
 ([`my-tenant.controller.ts`](../../../backend/src/modules/tenant/my-tenant.controller.ts), a new
@@ -216,7 +239,7 @@ upload + primary-colour picker, Autodesk BIM 360 sync, Security policy, and Dele
 "LINE token expires in 3 days / 98 % confidence" — there is no such signal, so the card renders its shell
 with an honest empty state (**"No AI insights available yet."**), never the fabricated prediction.
 
-## App launch — loading state — [`23-app-launch-loading.png`](23-app-launch-loading.png)
+## App launch — loading state — [`_public/01-app-launch-loading.png`](_public/01-app-launch-loading.png)
 
 Opening the app now shows the same [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
 `widget` ("loading A", ADR-055) on a dark ground while the persisted session hydrates and the brand
@@ -224,7 +247,7 @@ font resolves ([`src/app/_layout.tsx`](../../../apps/mobile/src/app/_layout.tsx)
 **app favicon** (the hexagon mark) in place of the icon-plate skeleton, the **brand tagline** ("AI-NATIVE
 / Construction Platform") in place of the top skeleton bar, then a two-step (hydration + font) percentage
 and a matching bar (`50%` here: session hydrated, font still loading). This mirrors the login hero, and
-continues the native splash's identity into the JS layer so `24-native-splash.png` → this state is one
+continues the native splash's identity into the JS layer so `_public/00-native-splash.png` → this state is one
 continuous branded dark hold (same `#020617` ground, same mark + wordmark), not a colour or content jump.
 The favicon + tagline are passed by the caller through the new opt-in `iconSource` / `heading` props
 (ADR-055 — the component bakes no brand asset or copy; the dashboard's `widget` skeleton, which passes
@@ -234,7 +257,7 @@ neither, is unchanged). The tagline is the English brand default, not i18n: this
 cache, widening the font-load window) and screencapping the framebuffer. (LogBox toast at the very bottom
 is a dev-build artifact.)
 
-## Native splash — [`24-native-splash.png`](24-native-splash.png)
+## Native splash — [`_public/00-native-splash.png`](_public/00-native-splash.png)
 
 The Android 12+ system splash (`android/app/src/main/res/values/styles.xml`, `Theme.App.SplashScreen`)
 shown for the ~1 s before the JS bundle mounts. Two changes from the original:
@@ -263,10 +286,11 @@ framebuffer inside the splash window. The launcher app icon is untouched: it rea
 The 21 flat files are the same route set as [iOS](../ios/README.md), captured by
 [`apps/mobile/e2e/capture.spec.ts`](../../../apps/mobile/e2e/capture.spec.ts) from **one
 `PROJECT_MANAGER` session** (`+66800000002` — the role with the widest data access), deep-linking
-each route via `cos:///<route>`. They are not per-role views: unlike [`../web/`](../web), which is
-grouped into role folders, this set documents routes as one user sees them — matching the iOS layout.
+each route via `cos:///<route>`. That flat dump documents routes as one user sees them, matching the iOS
+layout — a different thing from the **committed** per-role captures here, which are grouped into role
+folders (see [Structure](#structure--grouped-by-role) above), like [`../web/`](../web).
 
-`00-login.png` here predates the login redesign — `_public/00-login.png` is the current landing.
+`00-login.png` from that dump predated the login redesign — `_public/02-login.png` is the current landing.
 
 ## Known gaps
 
@@ -276,8 +300,8 @@ grouped into role folders, this set documents routes as one user sees them — m
   and [`provision-keycloak-demo.ts`](../../../backend/prisma/provision-keycloak-demo.ts) used to
   provision every demo user with the email as username, so no seeded role could complete an OTP login.
   It now uses the phone number as the username whenever the account has one; Path B still works
-  because the realm sets `loginWithEmailAllowed`. `21-site-engineer-home.png` is the first screen
-  captured through a real per-role OTP login.
+  because the realm sets `loginWithEmailAllowed`. `SITE_ENGINEER/01-site-engineer-home.png` is the first
+  screen captured through a real per-role OTP login.
   - Accounts provisioned before this change cannot simply be renamed — the realm sets
     `editUsernameAllowed: false`, and Keycloak rejects a username change with
     `400 error-user-attribute-read-only` — so the script deletes and recreates them, then re-links

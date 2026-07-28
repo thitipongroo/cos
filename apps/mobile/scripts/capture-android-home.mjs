@@ -1,7 +1,7 @@
 // Site Engineer Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-login.mjs (see that file for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/21-site-engineer-home.png: the SITE_ENGINEER landing dashboard
+// Writes docs/screens/android/SITE_ENGINEER/01-site-engineer-home.png: the SITE_ENGINEER landing dashboard
 // (mockup/site-engineer/dashboard-mobile/) with live data — BOQ-value-weighted project progress
 // (§32.12), open issues, and upcoming tasks — reached through a real Path A (SMS OTP) login.
 //
@@ -22,7 +22,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android');
+// Grouped by role (mirrors docs/screens/web/): SITE_ENGINEER's two shots live under SITE_ENGINEER/.
+const OUT = resolve(HERE, '../../../docs/screens/android/SITE_ENGINEER');
 const PKG = 'com.constructionos.cos';
 
 // Waraporn Klinhom — SITE_ENGINEER at Ekachai (seed-realistic.ts), the engineer the R9CT tasks are
@@ -201,7 +202,7 @@ async function main() {
       // coordinate is fixed for this AVD (Medium_Phone 1080×2400): the toast X sits bottom-right.
       adb('shell', 'input', 'tap', '1012', '2236');
       await delay(1500);
-      await shot('22-site-engineer-loading');
+      await shot('00-site-engineer-loading');
     } finally {
       docker('unpause', 'cos-postgres');
     }
@@ -226,7 +227,7 @@ async function main() {
   }
   await find(byId('progress-pct'), 'progress percentage');
 
-  await shot('21-site-engineer-home');
+  await shot('01-site-engineer-home');
   console.log('done.');
 }
 
