@@ -348,18 +348,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
   center: { alignItems: 'center', justifyContent: 'center' },
   content: { padding: spacing.lg, paddingBottom: 96 },
-  title: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-    color: darkColors.text,
-  },
-  subtitle: {
-    fontFamily: fontFamily.regular,
-    fontSize: typography.caption.fontSize,
-    color: darkColors.muted,
-    marginBottom: spacing.lg,
-  },
   empty: {
     color: darkColors.muted,
     fontFamily: fontFamily.regular,

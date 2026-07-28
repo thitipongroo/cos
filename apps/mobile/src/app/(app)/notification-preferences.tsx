@@ -375,19 +375,6 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
   center: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.lg },
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
-  titleBlock: { gap: 2, marginBottom: spacing.xs },
-  title: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.title.fontSize,
-    lineHeight: typography.title.lineHeight,
-    color: darkColors.text,
-  },
-  subtitle: {
-    fontFamily: fontFamily.medium,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight,
-    color: darkColors.muted,
-  },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -126,12 +126,6 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
   value: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.medium,

@@ -116,12 +116,6 @@ export default function ReportScreen() {
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
   input: {
     minHeight: 48,
     borderWidth: 1,

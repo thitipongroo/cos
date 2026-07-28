@@ -159,11 +159,6 @@ export default function MaterialRequestScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: darkColors.text,
-  },
   card: {
     backgroundColor: darkColors.surface,
     borderRadius: 8,

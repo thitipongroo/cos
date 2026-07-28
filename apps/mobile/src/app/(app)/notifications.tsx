@@ -123,11 +123,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-  title: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: darkColors.text,
-  },
   readAll: {
     minHeight: touchTarget.secondaryButton,
     justifyContent: 'center',

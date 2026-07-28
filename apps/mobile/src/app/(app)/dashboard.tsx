@@ -95,5 +95,4 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.regular,
     fontSize: typography.caption.fontSize,
   },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
 });

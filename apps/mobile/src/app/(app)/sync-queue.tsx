@@ -247,12 +247,6 @@ export default function SyncQueueScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
   content: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xl },
-  title: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-    color: darkColors.text,
-  },
   subtitle: {
     fontFamily: fontFamily.regular,
     fontSize: typography.caption.fontSize,
