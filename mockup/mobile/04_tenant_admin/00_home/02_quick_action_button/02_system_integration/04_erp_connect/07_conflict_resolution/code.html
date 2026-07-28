@@ -1,0 +1,290 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .mono-font { font-family: 'JetBrains+Mono', monospace; }
+        
+        /* Industrial Corner Brackets */
+        .industrial-border {
+            position: relative;
+        }
+        .industrial-border::before, .industrial-border::after {
+            content: "";
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-color: #434655; /* outline-variant */
+        }
+        .industrial-border::before { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+        .industrial-border::after { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+
+        @keyframes pulse-sync {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(0.95); }
+        }
+        .animate-sync { animation: pulse-sync 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-surface": "#d3e4fe",
+                      "secondary-container": "#03b5d3",
+                      "on-secondary-fixed": "#001f26",
+                      "inverse-primary": "#0053db",
+                      "tertiary-container": "#686c80",
+                      "primary-fixed": "#dbe1ff",
+                      "error-container": "#93000a",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "sync-pending": "#94A3B8",
+                      "outline-variant": "#434655",
+                      "dark-surface": "#0F172A",
+                      "surface-tint": "#b4c5ff",
+                      "on-primary-fixed": "#00174b",
+                      "on-background": "#d3e4fe",
+                      "primary-container": "#2563eb",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "error": "#ffb4ab",
+                      "mobile-warning": "#FF9500",
+                      "on-secondary": "#003640",
+                      "tertiary": "#c1c5dc",
+                      "outline": "#8d90a0",
+                      "on-primary": "#002a78",
+                      "surface-container-lowest": "#000f21",
+                      "on-tertiary-fixed": "#161b2b",
+                      "surface-dim": "#031427",
+                      "secondary-fixed": "#acedff",
+                      "surface": "#031427",
+                      "on-primary-container": "#eeefff",
+                      "dark-bg": "#020617",
+                      "on-tertiary": "#2b3041",
+                      "on-error": "#690005",
+                      "on-surface": "#d3e4fe",
+                      "mobile-primary": "#0066FF",
+                      "sync-active": "#FFD60A",
+                      "on-surface-variant": "#c3c6d7",
+                      "inverse-on-surface": "#213145",
+                      "secondary": "#4cd7f6",
+                      "tertiary-fixed": "#dee1f9",
+                      "surface-bright": "#2a3a4f",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "primary": "#b4c5ff",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "surface-container-high": "#1b2b3f",
+                      "surface-variant": "#26364a",
+                      "mobile-danger": "#FF3B30",
+                      "surface-container": "#102034",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-highest": "#26364a",
+                      "surface-container-low": "#0b1c30",
+                      "mobile-success": "#00C853",
+                      "on-tertiary-container": "#eeefff",
+                      "on-secondary-container": "#00424e",
+                      "background": "#031427",
+                      "on-tertiary-fixed-variant": "#414658"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "edge-mobile": "24px",
+                      "space-4": "16px",
+                      "web-margin": "32px",
+                      "space-3": "12px",
+                      "space-1": "4px",
+                      "space-2": "8px",
+                      "touch-target": "52px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "display-web": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "tiny-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-dark-bg text-on-background font-body-mobile text-body-mobile selection:bg-primary/30">
+<!-- Top AppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container dark:bg-surface-container-highest border-b border-outline-variant/10 shadow-sm flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-space-3">
+<button class="active:scale-95 transition-transform duration-150 p-1 -ml-2">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<img alt="Construction OS Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6U88CQG-UbIbdOtF2U6gXg5aKrU-Chs2VpN6VjQP9Eot0YCVMeupoU8nbWQmffm4bPH9kLcFObhKbmVYsToV77W68AFxRNwwKBzDylXTmAIK1HdjgoO0901DHKuvtzlxxhyBKieygxpA_lBTp7Rp06kz649U64NuUtE6u6_8lEOMWBU1RNrjAzKMet02ayBKGdtnOwDuK3Fp_hr4s0Ke7LQZ0U12sWQOvuoYt6IiQO9AmFkRYkrPFat83M0OwxckbTO63Wu7nous">
+<h1 class="font-hero-mobile text-[18px] text-primary tracking-tight uppercase leading-none">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-2 bg-surface-variant/50 px-2 py-1 rounded-full border border-outline-variant/20">
+<span class="material-symbols-outlined text-sync-active text-[14px] animate-sync">sync</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest">Syncing</span>
+</div>
+</header>
+<main class="pt-20 pb-32 px-edge-mobile min-h-screen">
+<!-- Header Info -->
+<section class="mb-8">
+<h2 class="font-hero-mobile text-hero-mobile text-primary mb-1">CONFLICT RESOLUTION</h2>
+<p class="text-on-surface-variant font-label-mobile text-label-mobile uppercase tracking-wider">Technical Field Mapping</p>
+</section>
+<!-- Mapping Container -->
+<div class="space-y-6">
+<!-- Comparison Card 1 -->
+<div class="industrial-border bg-surface-container p-space-4 rounded-lg border border-outline-variant/30">
+<div class="flex justify-between items-center mb-4">
+<span class="bg-mobile-warning/20 text-mobile-warning px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tighter border border-mobile-warning/30">Type Mismatch</span>
+<span class="text-on-surface-variant font-tiny-web uppercase">Field: Vendor_ID</span>
+</div>
+<div class="grid grid-cols-1 gap-4 mb-4">
+<!-- Source -->
+<div class="space-y-1">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">database</span> 
+                            Construction OS Data
+                        </label>
+<div class="bg-surface-variant/40 p-3 rounded border border-outline-variant/20">
+<code class="mono-font text-primary text-body-mobile">VND-092</code>
+</div>
+</div>
+<!-- Arrow -->
+<div class="flex justify-center -my-2 relative z-10">
+<div class="bg-surface-container-high p-1 rounded-full border border-outline-variant/40 shadow-inner">
+<span class="material-symbols-outlined text-outline">south</span>
+</div>
+</div>
+<!-- Target -->
+<div class="space-y-1">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+                            SAP S/4HANA Required
+                        </label>
+<div class="bg-surface-variant/40 p-3 rounded border border-mobile-warning/40 border-dashed">
+<code class="mono-font text-mobile-warning text-body-mobile">10-digit numeric</code>
+</div>
+</div>
+</div>
+<!-- AI Suggestion Module -->
+<div class="bg-secondary-container/5 border-l-4 border-secondary-container p-3 rounded-r-lg">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-1.5 text-secondary">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<span class="font-label-mobile text-label-mobile uppercase">AI Suggestion</span>
+</div>
+<span class="text-secondary font-tiny-web bg-secondary/10 px-2 py-0.5 rounded-full">98% CONFIDENCE</span>
+</div>
+<button class="w-full flex items-center justify-between bg-secondary-container/20 hover:bg-secondary-container/30 active:scale-[0.98] transition-all p-3 rounded border border-secondary-container/30">
+<code class="mono-font text-secondary text-sm">Convert to 0000000092</code>
+<span class="material-symbols-outlined text-secondary text-[20px]">check_circle</span>
+</button>
+</div>
+</div>
+<!-- Comparison Card 2 -->
+<div class="industrial-border bg-surface-container p-space-4 rounded-lg border border-outline-variant/30 opacity-80">
+<div class="flex justify-between items-center mb-4">
+<span class="bg-sync-pending/20 text-sync-pending px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-tighter border border-sync-pending/30">Formatting</span>
+<span class="text-on-surface-variant font-tiny-web uppercase">Field: Cost_Center</span>
+</div>
+<div class="grid grid-cols-1 gap-4 mb-4">
+<div class="space-y-1">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant">Source Value</label>
+<div class="bg-surface-variant/40 p-3 rounded border border-outline-variant/20">
+<code class="mono-font text-primary text-body-mobile">CC-BLDG-A12</code>
+</div>
+</div>
+<div class="flex justify-center -my-2 relative z-10">
+<div class="bg-surface-container-high p-1 rounded-full border border-outline-variant/40">
+<span class="material-symbols-outlined text-outline">south</span>
+</div>
+</div>
+<div class="space-y-1">
+<label class="font-label-mobile text-label-mobile text-on-surface-variant">SAP Format (Alphanumeric 8)</label>
+<div class="bg-surface-variant/40 p-3 rounded border border-mobile-warning/40 border-dashed">
+<code class="mono-font text-mobile-warning text-body-mobile">BLDG_A12</code>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex-1 bg-surface-variant text-on-surface py-2 rounded font-label-mobile text-label-mobile uppercase border border-outline-variant/30 active:scale-95 transition-all">Manual Edit</button>
+<button class="flex-1 bg-secondary-container/10 text-secondary py-2 rounded font-label-mobile text-label-mobile uppercase border border-secondary-container/30 active:scale-95 transition-all">Use AI</button>
+</div>
+</div>
+</div>
+<!-- Technical Metadata -->
+<div class="mt-8 p-4 border-t border-outline-variant/20">
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">terminal</span>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest">Log Summary</p>
+</div>
+<div class="space-y-2 opacity-60">
+<div class="flex justify-between text-tiny-web font-mono text-on-surface-variant">
+<span class="">[SYNC_ERR_402]</span>
+<span class="">14:02:11</span>
+</div>
+<div class="flex justify-between text-tiny-web font-mono text-on-surface-variant">
+<span class="">[DB_MAP_OVERRIDE]</span>
+<span class="">Waiting for user input...</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Bottom Actions -->
+<div class="fixed bottom-0 w-full bg-surface-container-low border-t border-outline-variant/20 pb-safe z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.4)]">
+<div class="p-edge-mobile space-y-3">
+<div class="flex items-center justify-center gap-2 mb-2">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="text-on-surface-variant font-tiny-web uppercase tracking-widest">2 of 2 conflicts addressed</span>
+</div>
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-hero-mobile text-[16px] uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.97] transition-all duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+                CONFIRM MAPPING &amp; RE-SYNC
+            </button>
+
+</div>
+</div>
+<!-- Micro-interaction script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const aiButton = document.querySelector('.bg-secondary-container\\/20');
+            aiButton.addEventListener('click', function() {
+                this.classList.toggle('bg-mobile-success/20');
+                this.classList.toggle('border-mobile-success/40');
+                const icon = this.querySelector('.material-symbols-outlined');
+                icon.innerHTML = 'check_circle';
+                icon.className = 'material-symbols-outlined text-mobile-success text-[20px]';
+                this.querySelector('code').className = 'mono-font text-mobile-success text-sm';
+            });
+        });
+    </script>
+
+
+</body></html>

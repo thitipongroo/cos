@@ -1,0 +1,276 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Success - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Theme Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#031427",
+                    "background": "#031427",
+                    "tertiary": "#c1c5dc",
+                    "surface-container-lowest": "#000f21",
+                    "on-tertiary-container": "#eeefff",
+                    "on-primary": "#002a78",
+                    "sync-pending": "#94A3B8",
+                    "on-primary-fixed": "#00174b",
+                    "on-tertiary-fixed": "#161b2b",
+                    "dark-surface": "#0F172A",
+                    "mobile-success": "#00C853",
+                    "error-container": "#93000a",
+                    "surface-container-highest": "#26364a",
+                    "outline-variant": "#434655",
+                    "surface": "#031427",
+                    "inverse-surface": "#d3e4fe",
+                    "secondary": "#4cd7f6",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "secondary-fixed": "#acedff",
+                    "secondary-container": "#03b5d3",
+                    "tertiary-container": "#686c80",
+                    "on-secondary": "#003640",
+                    "sync-active": "#FFD60A",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-variant": "#26364a",
+                    "surface-tint": "#b4c5ff",
+                    "error": "#ffb4ab",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-bright": "#2a3a4f",
+                    "mobile-danger": "#FF3B30",
+                    "on-tertiary": "#2b3041",
+                    "mobile-primary": "#0066FF",
+                    "outline": "#8d90a0",
+                    "on-error-container": "#ffdad6",
+                    "mobile-warning": "#FF9500",
+                    "dark-bg": "#020617",
+                    "surface-container": "#102034",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-primary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "on-secondary-container": "#00424e",
+                    "primary": "#b4c5ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-surface": "#d3e4fe",
+                    "on-background": "#d3e4fe",
+                    "primary-container": "#2563eb",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-fixed": "#dee1f9",
+                    "inverse-primary": "#0053db",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-container-low": "#0b1c30",
+                    "on-secondary-fixed": "#001f26",
+                    "primary-fixed": "#dbe1ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-2": "8px",
+                    "space-3": "12px",
+                    "space-4": "16px",
+                    "base": "4px",
+                    "touch-target": "52px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "web-margin": "32px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            color: #d3e4fe;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .bento-card {
+            background: #102034;
+            border-left: 4px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bento-card:hover {
+            background: #1b2b3f;
+            transform: translateY(-2px);
+        }
+        .status-strip-green { border-left-color: #00C853; }
+        .status-strip-cyan { border-left-color: #06B6D4; }
+        
+        .success-checkmark-container {
+            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes scaleIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .shimmer {
+            background: linear-gradient(90deg, #102034 25%, #1b2b3f 50%, #102034 75%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center">
+<!-- Top Navigation Anchor -->
+<header class="w-full h-touch-target flex justify-between items-center px-edge-mobile bg-surface-dim border-b border-white/10 fixed top-0 z-50">
+<div class="flex items-center gap-space-2">
+<img alt="Construction OS Icon" class="w-8 h-8 rounded-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqdyvQ2vY4EMQqHUJH0NP-etRMd6NRTYWqwpkfp0Ji-N_tsruXpAfaib3hTqUMYAU3WD44_Elxwd_WGR4yTs9AjqLYqA1XYvfAPTDGSYxbyJxeMG5usy0dmLSCy9V6JhDhwmPMSesYGicVgM_2TUBK7f_cPLkzGp4We9zWl5Pkslf0SdOd_IlvR8EXqqvHxGi0ZW9oifGSBev7DPzZJgJ48Yduhu5yM9Btm889D7tmja7bEko07l8DrriVYgGYW2vFKA">
+<h1 class="font-h1-web text-h1-web-mobile font-extrabold tracking-tight text-primary uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-surface-container-high px-3 py-1 rounded-full">
+<span class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">SYNCED</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 w-full max-w-lg mt-24 px-edge-mobile pb-32 flex flex-col items-center">
+<!-- Success Animation -->
+<div class="success-checkmark-container flex flex-col items-center mt-8 mb-10">
+<div class="w-24 h-24 rounded-full border-[6px] border-mobile-success flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-[64px] text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<div class="text-center">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-2">แชร์รายงานสำเร็จ</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">Shared via Email Successfully</p>
+</div>
+</div>
+<!-- Report Summary Bento Card -->
+<div class="bento-card status-strip-green w-full p-space-4 rounded-xl mb-space-4 shadow-lg border border-white/5">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="font-tiny-web text-tiny-web text-primary uppercase tracking-widest block mb-1">WEEKLY AI USAGE REPORT</span>
+<h3 class="font-h2-web text-h2-web text-on-surface">รายงานการใช้งาน AI รายสัปดาห์</h3>
+</div>
+<div class="bg-surface-container-highest p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">picture_as_pdf</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center gap-3 py-2 border-b border-white/10">
+<span class="material-symbols-outlined text-on-surface-variant">calendar_today</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">สรุปข้อมูล: 01 ต.ค. - 07 ต.ค. 2023</p>
+<p class="text-[11px] text-on-surface-variant uppercase">Period Summary</p>
+</div>
+</div>
+<div class="flex items-center gap-3 py-2">
+<span class="material-symbols-outlined text-on-surface-variant">description</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">UsageSummary_v2.pdf</p>
+<p class="text-[11px] text-on-surface-variant uppercase">4.2 MB • Generated by System</p>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Verification Block -->
+<div class="w-full bg-[#031427] border-l-4 border-[#06B6D4] bg-gradient-to-r from-[#06B6D4]/5 to-transparent p-space-4 rounded-xl mb-space-4 border border-white/5">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-[#06B6D4] animate-pulse">verified_user</span>
+<span class="font-tiny-web text-tiny-web text-[#06B6D4] font-bold tracking-widest uppercase">AI VERIFICATION ACTIVE</span>
+</div>
+<div class="flex justify-between items-end">
+<div>
+<p class="font-body-mobile text-body-mobile text-on-surface">ตรวจสอบความถูกต้องอัตโนมัติแล้ว</p>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant italic">Consistency check completed</p>
+</div>
+<div class="text-right">
+<span class="text-2xl font-bold text-[#06B6D4]">99.4%</span>
+<p class="text-[10px] text-on-surface-variant uppercase">Confidence Score</p>
+</div>
+</div>
+</div>
+<!-- Action Buttons Cluster -->
+<div class="w-full space-y-space-3 mt-4">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container rounded-lg font-bold flex flex-col items-center justify-center transition-transform active:scale-95 shadow-lg">
+<span class="text-[15px] leading-tight">กลับสู่หน้าหลักผู้ดูแล</span>
+
+</button>
+<button class="w-full h-touch-target border border-outline text-on-surface rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-surface-bright/10 transition-colors active:scale-95">
+<span class="material-symbols-outlined">share</span>
+<span class="text-[15px]">แชร์ไปยังช่องทางอื่น</span>
+</button>
+</div>
+</main>
+<!-- Navigation Shell Support (Bottom NavBar Filter applied - suppressed for Success State) -->
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.transform = 'scale(0.98)';
+            });
+            btn.addEventListener('touchend', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simple atmospheric effect: faint floating particles
+        const container = document.body;
+        for (let i = 0; i < 15; i++) {
+            const particle = document.createElement('div');
+            particle.style.position = 'fixed';
+            particle.style.width = '2px';
+            particle.style.height = '2px';
+            particle.style.backgroundColor = '#b4c5ff';
+            particle.style.opacity = Math.random() * 0.2;
+            particle.style.left = Math.random() * 100 + 'vw';
+            particle.style.top = Math.random() * 100 + 'vh';
+            particle.style.pointerEvents = 'none';
+            particle.style.borderRadius = '50%';
+            
+            const animation = particle.animate([
+                { transform: 'translateY(0)', opacity: 0 },
+                { transform: 'translateY(-100px)', opacity: 0.3 },
+                { transform: 'translateY(-200px)', opacity: 0 }
+            ], {
+                duration: 5000 + Math.random() * 5000,
+                iterations: Infinity,
+                delay: Math.random() * 5000
+            });
+            
+            container.appendChild(particle);
+        }
+    </script><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0810288; left: 24.085vw; top: 85.5659vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0812419; left: 34.0361vw; top: 47.1968vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.17512; left: 76.3379vw; top: 69.5361vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.166375; left: 5.17016vw; top: 76.4793vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0386021; left: 15.5944vw; top: 79.4023vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0757349; left: 49.8831vw; top: 53.4166vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0943847; left: 21.5991vw; top: 3.04077vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0312093; left: 67.961vw; top: 36.9047vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.102646; left: 46.95vw; top: 99.2309vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.166621; left: 13.5865vw; top: 36.8567vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.159825; left: 44.8257vw; top: 65.8169vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0899933; left: 97.7679vw; top: 20.2324vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.187326; left: 38.5418vw; top: 68.9687vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.0474197; left: 87.3676vw; top: 60.0815vh; pointer-events: none; border-radius: 50%;"></div><div style="position: fixed; width: 2px; height: 2px; background-color: rgb(180, 197, 255); opacity: 0.00586705; left: 25.3563vw; top: 12.6544vh; pointer-events: none; border-radius: 50%;"></div>
+
+
+</body></html>

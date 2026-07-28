@@ -1,0 +1,356 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Budget Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#acedff",
+                        "primary-container": "#2563eb",
+                        "on-secondary": "#003640",
+                        "tertiary-container": "#686c80",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary": "#2b3041",
+                        "outline-variant": "#434655",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-surface-variant": "#c3c6d7",
+                        "primary": "#b4c5ff",
+                        "on-primary-container": "#eeefff",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-error": "#690005",
+                        "inverse-on-surface": "#213145",
+                        "secondary-container": "#03b5d3",
+                        "outline": "#8d90a0",
+                        "tertiary": "#c1c5dc",
+                        "surface-bright": "#2a3a4f",
+                        "on-primary": "#002a78",
+                        "mobile-danger": "#FF3B30",
+                        "surface-container-lowest": "#000f21",
+                        "sync-pending": "#94A3B8",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-primary": "#0053db",
+                        "primary-fixed": "#dbe1ff",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-secondary-container": "#00424e",
+                        "mobile-primary": "#0066FF",
+                        "on-background": "#d3e4fe",
+                        "secondary": "#4cd7f6",
+                        "on-tertiary-container": "#eeefff",
+                        "background": "#031427",
+                        "surface-dim": "#031427",
+                        "mobile-success": "#00C853",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface": "#031427",
+                        "surface-container": "#102034",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-container-highest": "#26364a",
+                        "sync-active": "#FFD60A",
+                        "mobile-warning": "#FF9500",
+                        "surface-container-high": "#1b2b3f",
+                        "error": "#ffb4ab",
+                        "dark-surface": "#0F172A",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-variant": "#26364a",
+                        "dark-bg": "#020617",
+                        "on-surface": "#d3e4fe",
+                        "surface-tint": "#b4c5ff",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-secondary-fixed": "#001f26"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-3": "12px",
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "base": "4px",
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "edge-mobile": "24px",
+                        "space-2": "8px"
+                    },
+                    "fontFamily": {
+                        "hero-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .safe-pb { padding-bottom: env(safe-area-inset-bottom); }
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .industrial-card {
+            border-radius: 8px; /* ROUND_EIGHT */
+            border: 1px solid rgba(141, 144, 160, 0.2);
+        }
+    </style>
+</head>
+<body class="text-on-surface select-none">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-low border-b border-white/5 transition-all duration-200 flex justify-between items-center px-edge-mobile h-14">
+<div class="flex items-center gap-3">
+<button aria-label="Back" class="flex items-center justify-center w-[52px] h-[52px] -ml-3 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined text-on-surface-variant">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBw3sU1ppE1wt95QZFr31gyQfNQMAKVWyt0cLpityN5MU5SMgDNh_nE6HllXIa1-XQQPKNzjZWwuX6J0sDocl7STrhxET87FPwOmnbCEoiSgrkHV2l-5GLpY1yLKHYmSO3OyL02fsvPza5xjp20zkeJ1L99rf_l-tq2xsFx80tlgKFqk8Q2wsDywsSFw73B-rlSIIhnP24vRNKeBrSDaaEGwAV6H-OWA4yvXmfj5aN_U_p0UazNFGWpreec4Yh8UniNNx7nXGWtlnc" alt="Construction OS Logo" class="w-6 h-6 object-contain">
+<h1 class="font-bold text-primary text-label-mobile uppercase tracking-tight">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-highest px-3 py-1 rounded-full">
+<div class="w-2 h-2 bg-mobile-success rounded-full animate-pulse"></div>
+<span class="text-tiny-web font-tiny-web text-on-surface uppercase">SYNCED</span>
+</div>
+</header>
+<main class="pt-20 pb-32 px-edge-mobile space-y-6">
+<!-- Project Context -->
+<section>
+<p class="text-secondary font-label-mobile text-label-mobile uppercase tracking-widest mb-1">Current Environment</p>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">Skybridge Central - PH1</h2>
+</section>
+<!-- AI Financial Insight Module -->
+<section class="relative overflow-hidden industrial-card bg-surface-container p-5 shadow-lg border-l-4 border-secondary-container" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="relative z-10">
+<div class="flex justify-between items-start mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary-container" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<span class="font-label-mobile text-label-mobile text-secondary-container uppercase tracking-wider">ERP AI ANALYSIS</span>
+</div>
+<div class="bg-secondary-container/10 px-2 py-0.5 rounded border border-secondary-container/20">
+<span class="text-tiny-web font-bold text-secondary-container uppercase">96% CONFIDENCE</span>
+</div>
+</div>
+<h3 class="font-display-web text-h1-web text-on-surface mb-2 leading-tight">98% MATCHING ACCURACY</h3>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mb-4">
+<span class="text-on-surface font-semibold">420 BOQ items</span> mapped successfully. Predicted <span class="text-secondary font-bold">12% margin optimization</span> based on current procurement rates.
+                </p>
+<div class="pt-3 border-t border-white/5 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[14px]">database</span>
+<span class="text-tiny-web font-tiny-web text-outline uppercase">Source: SAP S/4HANA Ledger &amp; Historical PO Patterns</span>
+</div>
+</div>
+</section>
+<!-- Financial Overview Bento Grid -->
+<section class="grid grid-cols-2 gap-4">
+<div class="col-span-2 glass-panel industrial-card p-5 flex flex-col justify-between h-32 border-l-4 border-primary" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase">Total Project Budget</span>
+<div class="flex items-end justify-between">
+<span class="font-display-web text-display-web text-primary drop-shadow-sm">฿ 142.5M</span>
+<span class="material-symbols-outlined text-on-surface-variant opacity-30 text-4xl">payments</span>
+</div>
+</div>
+<div class="glass-panel industrial-card p-4 space-y-2" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase">Committed</span>
+<p class="font-h1-web text-h1-web text-on-surface font-bold">฿ 89.2M</p>
+<div class="text-tiny-web text-on-surface-variant">62.6% of total</div>
+</div>
+<div class="glass-panel industrial-card p-4 space-y-2" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase">Actuals</span>
+<p class="font-h1-web text-h1-web text-on-surface font-bold">฿ 41.8M</p>
+<div class="text-tiny-web text-on-surface-variant">29.3% of total</div>
+</div>
+</section>
+<!-- Alert Banner -->
+<section class="bg-mobile-warning/10 border border-mobile-warning/40 rounded-lg p-4 flex items-start gap-4">
+<span class="material-symbols-outlined text-mobile-warning mt-0.5">warning</span>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-mobile-warning uppercase font-bold">Threshold Warning</h4>
+<p class="text-tiny-web font-body-web text-on-surface-variant">Structural and MEP categories have exceeded 85% allocation. Review required for Phase 2 procurement.</p>
+</div>
+</section>
+<!-- Budget Categories -->
+<section class="space-y-4">
+<div class="flex justify-between items-center">
+<h3 class="font-h2-web text-h2-web text-on-surface">Budget Categories</h3>
+<button class="text-primary font-label-mobile text-label-mobile flex items-center justify-center min-w-[52px] min-h-[52px] -mr-4">
+<span class="mr-1">VIEW ALL</span>
+<span class="material-symbols-outlined text-sm">open_in_new</span>
+</button>
+</div>
+<!-- Category Card: Structural -->
+<div class="glass-panel industrial-card p-5 space-y-4 border-l-4 border-mobile-danger" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-h1-web text-h1-web text-on-surface font-bold">Structural</h4>
+<p class="text-tiny-web font-tiny-web text-on-surface-variant uppercase">Code: 1000-STR</p>
+</div>
+<div class="text-right">
+<p class="font-label-mobile text-label-mobile text-mobile-danger font-bold">+14.2% Variance</p>
+<p class="text-tiny-web font-tiny-web text-on-surface-variant">Over Budget</p>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-tiny-web font-tiny-web text-on-surface uppercase">
+<span class="">Utilization</span>
+<span class="font-bold">89%</span>
+</div>
+<div class="w-full h-2 bg-surface-container-highest rounded-sm overflow-hidden">
+<div class="h-full bg-mobile-danger" style="width: 89%;"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+<div>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase block">Actual</span>
+<span class="font-label-mobile text-label-mobile text-on-surface font-bold">฿ 28.4M</span>
+</div>
+<div class="text-right">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase block">Budgeted</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">฿ 32.0M</span>
+</div>
+</div>
+</div>
+<!-- Category Card: MEP -->
+<div class="glass-panel industrial-card p-5 space-y-4 border-l-4 border-mobile-warning" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-h1-web text-h1-web text-on-surface font-bold">MEP Services</h4>
+<p class="text-tiny-web font-tiny-web text-on-surface-variant uppercase">Code: 2000-MEP</p>
+</div>
+<div class="text-right">
+<p class="font-label-mobile text-label-mobile text-mobile-warning font-bold">+2.1% Variance</p>
+<p class="text-tiny-web font-tiny-web text-on-surface-variant">Warning Zone</p>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-tiny-web font-tiny-web text-on-surface uppercase">
+<span class="">Utilization</span>
+<span class="font-bold">86%</span>
+</div>
+<div class="w-full h-2 bg-surface-container-highest rounded-sm overflow-hidden">
+<div class="h-full bg-mobile-warning" style="width: 86%;"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+<div>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase block">Actual</span>
+<span class="font-label-mobile text-label-mobile text-on-surface font-bold">฿ 12.1M</span>
+</div>
+<div class="text-right">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase block">Budgeted</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">฿ 14.0M</span>
+</div>
+</div>
+</div>
+<!-- Category Card: Finishes -->
+<div class="glass-panel industrial-card p-5 space-y-4 border-l-4 border-mobile-success" style="opacity: 1; transform: translateY(0px); transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-h1-web text-h1-web text-on-surface font-bold">Finishes</h4>
+<p class="text-tiny-web font-tiny-web text-on-surface-variant uppercase">Code: 3000-FIN</p>
+</div>
+<div class="text-right">
+<p class="font-label-mobile text-label-mobile text-mobile-success font-bold">-8.5% Variance</p>
+<p class="text-tiny-web font-tiny-web text-on-surface-variant">On Track</p>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-tiny-web font-tiny-web text-on-surface uppercase">
+<span class="">Utilization</span>
+<span class="font-bold">12%</span>
+</div>
+<div class="w-full h-2 bg-surface-container-highest rounded-sm overflow-hidden">
+<div class="h-full bg-mobile-success" style="width: 12%;"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+<div>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase block">Actual</span>
+<span class="font-label-mobile text-label-mobile text-on-surface font-bold">฿ 1.3M</span>
+</div>
+<div class="text-right">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase block">Budgeted</span>
+<span class="font-label-mobile text-label-mobile text-on-surface">฿ 10.5M</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB for Site Action -->
+<button aria-label="Add Budget Item" class="fixed bottom-24 right-6 w-[52px] h-[52px] bg-mobile-primary text-white rounded-full shadow-2xl flex items-center justify-center z-40 transition-transform active:scale-90">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: &quot;FILL&quot; 1;">add</span>
+</button>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container shadow-lg flex justify-around items-center h-20 px-2 border-t border-white/5">
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 transition-transform duration-200 active:scale-90 min-w-[64px] min-h-[52px]">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">foundation</span>
+<span class="font-label-mobile text-label-mobile">Projects</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-200 active:scale-90 min-w-[64px] min-h-[52px]">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label-mobile text-label-mobile">BIM Sync</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-200 active:scale-90 min-w-[64px] min-h-[52px]">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-mobile text-label-mobile">AI Audit</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant transition-transform duration-200 active:scale-90 min-w-[64px] min-h-[52px]">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</button>
+</nav>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.industrial-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(12px)';
+                setTimeout(() => {
+                    card.style.transition = 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 80 * index);
+            });
+        });
+    </script>
+
+
+</body></html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Publish Success - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed": "#acedff",
+                    "secondary-container": "#03b5d3",
+                    "mobile-warning": "#FF9500",
+                    "error-container": "#93000a",
+                    "surface-container": "#102034",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-bright": "#2a3a4f",
+                    "surface-container-highest": "#26364a",
+                    "on-tertiary-container": "#eeefff",
+                    "surface": "#031427",
+                    "on-background": "#d3e4fe",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "dark-surface": "#0F172A",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-error-container": "#ffdad6",
+                    "sync-active": "#FFD60A",
+                    "outline": "#8d90a0",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "sync-pending": "#94A3B8",
+                    "mobile-primary": "#0066FF",
+                    "surface-container-high": "#1b2b3f",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-success": "#00C853",
+                    "on-surface": "#d3e4fe",
+                    "inverse-primary": "#0053db",
+                    "inverse-surface": "#d3e4fe",
+                    "outline-variant": "#434655",
+                    "on-primary-fixed": "#00174b",
+                    "on-secondary-container": "#00424e",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "primary-container": "#2563eb",
+                    "dark-bg": "#020617",
+                    "on-primary-container": "#eeefff",
+                    "on-error": "#690005",
+                    "on-surface-variant": "#c3c6d7",
+                    "secondary": "#4cd7f6",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary": "#002a78",
+                    "surface-variant": "#26364a",
+                    "surface-dim": "#031427",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "primary": "#b4c5ff",
+                    "tertiary": "#c1c5dc",
+                    "mobile-danger": "#FF3B30",
+                    "surface-container-lowest": "#000f21",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-secondary": "#003640",
+                    "background": "#031427",
+                    "cos-blue": "#2563eb"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "space-2": "8px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "web-margin": "32px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "h1-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #031427;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(180, 197, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .success-check-pulse {
+            animation: success-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+        }
+        @keyframes success-pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="dark text-on-surface min-h-screen flex flex-col overflow-x-hidden bg-surface-container-low">
+<!-- TopNavBar (Derived from JSON) -->
+<header class="flex justify-between items-center h-12 px-space-4 w-full sticky top-0 z-50 bg-surface border-b border-outline-variant/30">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="construction"></span>
+<span class="font-h1-web text-h1-web text-cos-blue tracking-tight">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-1.5 px-2 py-0.5 bg-mobile-success/10 border border-mobile-success/20 rounded">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<span class="text-[10px] font-bold tracking-widest uppercase text-mobile-success">SYNCED</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer" data-icon="help"></span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow flex flex-col items-center justify-center px-edge-mobile py-web-margin relative">
+<!-- Ambient Atmosphere -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden">
+<div class="absolute top-1/4 -left-20 w-64 h-64 bg-primary/5 blur-[100px] rounded-full"></div>
+<div class="absolute bottom-1/4 -right-20 w-80 h-80 bg-secondary/5 blur-[120px] rounded-full"></div>
+</div>
+<div class="w-full max-w-md flex flex-col items-center text-center z-10">
+<!-- Success Industrial Icon -->
+<div class="relative mb-8">
+<div class="absolute inset-0 bg-mobile-success/20 blur-2xl rounded-full"></div>
+<div class="relative w-24 h-24 bg-surface-container border-2 border-mobile-success flex items-center justify-center success-check-pulse shadow-[0_0_40px_rgba(0,200,83,0.15)] rounded"><span class="material-symbols-outlined text-mobile-success text-6xl" data-icon="check_circle">check_circle</span></div>
+</div>
+<!-- Confirmation Text -->
+<div class="space-y-2 mb-8">
+
+<p class="font-body-mobile text-body-mobile text-on-surface-variant px-4">
+                    Report Published Successfully.
+                </p>
+</div>
+<!-- Bento Status Card -->
+<div class="w-full bg-surface-container border-l-4 border-mobile-success p-space-4 mb-8 text-left shadow-lg rounded">
+<div class="flex flex-col gap-space-3">
+<div class="flex items-start gap-space-3">
+<span class="material-symbols-outlined text-primary mt-0.5" data-icon="feed"></span>
+<div>
+
+<p class="text-tiny-web text-on-surface-variant uppercase tracking-wider">Broadcast to Org Feed</p>
+</div>
+</div>
+<div class="h-px bg-outline-variant/10 w-full"></div>
+<div class="flex items-start gap-space-3">
+<span class="material-symbols-outlined text-primary mt-0.5" data-icon="mail"></span>
+<div>
+
+<p class="text-tiny-web text-on-surface-variant uppercase tracking-wider">Emails sent to stakeholders</p>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Transparency Badge -->
+<div class="inline-flex items-center gap-space-2 px-3 py-1.5 bg-secondary/5 border border-secondary/20 rounded-full mb-12">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="verified_user"></span>
+<span class="font-tiny-web text-tiny-web text-secondary uppercase tracking-widest">AI Metadata Verified • Confidence: 99.4%</span>
+</div>
+<!-- Action Buttons Stack -->
+<div class="w-full space-y-4">
+<button class="w-full h-[52px] bg-primary text-on-primary font-bold uppercase tracking-[0.05em] flex items-center justify-center gap-2 active:scale-95 transition-transform rounded">
+<span class="">RETURN TO ADMIN HOME</span>
+<span class="material-symbols-outlined" data-icon="home"></span>
+</button>
+<button class="w-full h-[52px] border border-outline text-on-surface-variant font-bold uppercase tracking-[0.05em] flex items-center justify-center gap-2 hover:bg-surface-container-high transition-colors rounded">
+<span class="">SHARE LINK</span>
+<span class="material-symbols-outlined" data-icon="share"></span>
+</button>
+</div>
+</div>
+</main>
+<!-- SideNav (Invisible on Mobile, mapped from JSON) -->
+<aside class="hidden md:flex flex-col h-full border-r border-outline-variant w-64 bg-surface-container-low fixed left-0 top-12 bottom-0">
+<div class="p-space-4 border-b border-outline-variant/20">
+<h2 class="font-web-text-h2 text-web-text-h2 text-on-surface">Tenant Admin</h2>
+<p class="text-tiny-web text-on-surface-variant uppercase">Enterprise Tier</p>
+</div>
+<nav class="flex-grow py-space-4">
+<div class="py-2 px-web-space-4 text-on-surface-variant hover:bg-surface-container-highest cursor-pointer flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="group"></span>
+<span class="font-web-text-small text-web-text-small">User Management</span>
+</div>
+<div class="bg-primary-container/10 text-cos-blue font-semibold border-r-2 border-cos-blue py-2 px-web-space-4 flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="monitoring"></span>
+<span class="font-web-text-small text-web-text-small">Usage Dashboards</span>
+</div>
+<div class="py-2 px-web-space-4 text-on-surface-variant hover:bg-surface-container-highest cursor-pointer flex items-center gap-3">
+<span class="material-symbols-outlined" data-icon="settings"></span>
+<span class="font-web-text-small text-web-text-small">System Settings</span>
+</div>
+</nav>
+<div class="p-space-4 border-t border-outline-variant/20">
+<div class="flex items-center gap-3 text-on-surface-variant mb-4 cursor-pointer">
+<span class="material-symbols-outlined" data-icon="description"></span>
+<span class="font-web-text-small text-web-text-small">Documentation</span>
+</div>
+<button class="w-full py-2 bg-cos-blue text-white font-bold uppercase text-[12px] tracking-wider rounded">Upgrade Plan</button>
+</div>
+</aside>
+<!-- Script for Micro-interactions -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle haptic-like feel for buttons
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.addEventListener('touchstart', () => {
+                    btn.style.opacity = '0.8';
+                });
+                btn.addEventListener('touchend', () => {
+                    btn.style.opacity = '1';
+                });
+            });
+            
+            // Log interaction
+            console.log("Publish Success UI Initialized - construction-os v1.4.2");
+        });
+    </script>
+
+
+</body></html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Construction OS - การซิงค์ข้อมูล</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .animate-pulse-sync {
+            animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.1), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#b4c5ff",
+                        "surface-container-low": "#0b1c30",
+                        "on-primary-fixed": "#00174b",
+                        "sync-active": "#FFD60A",
+                        "tertiary-fixed": "#dee1f9",
+                        "error-container": "#93000a",
+                        "inverse-surface": "#d3e4fe",
+                        "dark-surface": "#0F172A",
+                        "background": "#0B1020",
+                        "secondary": "#06B6D4",
+                        "dark-bg": "#020617",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "surface-container-lowest": "#000f21",
+                        "on-background": "#d3e4fe",
+                        "on-tertiary-fixed": "#161b2b",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-bright": "#2a3a4f",
+                        "mobile-warning": "#FF9500",
+                        "inverse-on-surface": "#213145",
+                        "tertiary-container": "#686c80",
+                        "secondary-fixed": "#acedff",
+                        "on-surface-variant": "#c3c6d7",
+                        "mobile-primary": "#0066FF",
+                        "tertiary": "#c1c5dc",
+                        "on-secondary-container": "#00424e",
+                        "outline": "#8d90a0",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-tertiary": "#2b3041",
+                        "surface-dim": "#031427",
+                        "on-primary-container": "#eeefff",
+                        "outline-variant": "#434655",
+                        "inverse-primary": "#0053db",
+                        "surface": "#0B1020",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-highest": "#1c2636",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-secondary": "#003640",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-container": "#141d2b",
+                        "secondary-container": "#06B6D4",
+                        "primary-container": "#2563eb",
+                        "on-primary": "#002a78",
+                        "sync-pending": "#94A3B8",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "mobile-danger": "#FF3B30",
+                        "surface-container-high": "#1b2b3f",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "mobile-success": "#00C853",
+                        "on-error": "#690005",
+                        "surface-variant": "#26364a",
+                        "on-surface": "#d3e4fe",
+                        "ai-cyan": "#06B6D4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0px",
+                        "lg": "0px",
+                        "xl": "0px",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-3": "12px",
+                        "base": "4px",
+                        "web-margin": "32px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "space-4": "16px",
+                        "touch-target": "52px",
+                        "space-1": "4px"
+                    },
+                    "fontFamily": {
+                        "body-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+        /* Override for sharp corners in industrial aesthetic */
+        .rounded-xl, .rounded-lg, .rounded-r-xl { border-radius: 0px !important; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-mobile text-body-mobile selection:bg-primary/30 min-h-screen flex flex-col">
+<!-- Standardized Branding Header -->
+<header class="fixed top-0 w-full z-50 bg-surface-container border-b border-outline-variant/20 flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-3">
+<img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_JzbN7HiTbwcmOb2tP0w9d1dHZso_YpsIiqFpd_FCSSHf4OIP9b0TNxhyO2lcCfrfX4YB9E-Sj4O0_WlxAJNvpmoS4NYSvudxdsb5XPbAfg_i-Ulf3wunafjRjf0eRzMIQFum1xXhH-V1erSbZt70t1dnHnsyCD_FY1U87CHaoh33fmZnmFnlsR_Cw5Ww1z1OZBqs9MOZU-jQ0R-XMNNW5HzUYnZ_920N7v6zScueDhSZpSNQvdwm3HEWLrF_mQpXZA"/>
+<h1 class="font-hero-mobile text-[18px] font-bold text-primary tracking-tight whitespace-nowrap">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1 rounded-full animate-pulse-sync">
+<span class="material-symbols-outlined text-[14px] text-primary" style="font-variation-settings: 'FILL' 1;">sync</span>
+<span class="font-tiny-web text-tiny-web text-primary font-bold">SYNCING...</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 mt-14 mb-24 px-edge-mobile pt-8 space-y-6">
+<!-- Progress Indicator -->
+<section class="flex flex-col items-center justify-center py-6">
+<div class="relative w-48 h-48 flex items-center justify-center">
+<!-- Background track -->
+<svg class="absolute w-full h-full" viewbox="0 0 100 100">
+<circle class="text-surface-container-highest" cx="50" cy="50" fill="transparent" r="45" stroke="currentColor" stroke-width="8"></circle>
+</svg>
+<!-- Progress circle -->
+<svg class="absolute w-full h-full" viewbox="0 0 100 100">
+<circle class="progress-ring__circle" cx="50" cy="50" fill="transparent" id="progress-circle" r="45" stroke="#b4c5ff" stroke-dasharray="282.7" stroke-dashoffset="231.8" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<!-- Percentage text -->
+<div class="text-center z-10">
+<span class="font-display-web text-display-web text-primary">18%</span>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest mt-1">SAP ERP</p>
+</div>
+</div>
+<p class="mt-6 font-h1-web text-h1-web text-on-surface text-center">กำลังซิงค์ข้อมูลใหม่...</p>
+<p class="font-body-mobile text-label-mobile text-on-surface-variant text-center mt-1">กำลังนำกฎการจับคู่ใหม่ไปใช้กับ S/4HANA</p>
+</section>
+<!-- AI Transparency (CORE_AI) -->
+<section class="bg-ai-cyan/5 border-l-4 border-ai-cyan p-space-4 space-y-2 relative overflow-hidden">
+<div class="shimmer absolute inset-0 opacity-20 pointer-events-none"></div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-ai-cyan text-[18px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-tiny-web text-tiny-web text-ai-cyan uppercase tracking-widest font-bold">AI Core Engine</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface">
+                การประมวลผล: <span class="font-mono text-primary">0000000092</span>
+<span class="text-ai-cyan font-bold ml-1">100% Precision.</span>
+</p>
+<div class="flex justify-between items-center">
+<p class="font-tiny-web text-tiny-web text-on-surface-variant/70 italic">อ้างอิงข้อมูล: ERP Gateway Analysis</p>
+<div class="w-1.5 h-1.5 bg-ai-cyan animate-pulse"></div>
+</div>
+</section>
+<!-- Sync Streams List -->
+<section class="space-y-3">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest px-1">กระแสการซิงค์ข้อมูล</h3>
+<!-- Updating Financial Ledger -->
+<div class="bg-surface-container p-space-4 border-l-4 border-sync-active flex items-center justify-between group active:scale-[0.98] transition-transform duration-150">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-sync-active">account_balance</span>
+</div>
+<div>
+<p class="font-body-mobile text-[15px] font-semibold">อัปเดตบัญชีแยกประเภท</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">Transactional integrity check</p>
+</div>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="font-tiny-web text-tiny-web text-sync-active font-bold">IN PROGRESS</span>
+<div class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></div>
+</div>
+</div>
+<!-- Validating Vendor Metadata -->
+<div class="bg-surface-container p-space-4 border-l-4 border-sync-pending flex items-center justify-between group opacity-60">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-sync-pending">badge</span>
+</div>
+<div>
+<p class="font-body-mobile text-[15px] font-semibold">ตรวจสอบข้อมูลผู้จำหน่าย</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">Schema synchronization</p>
+</div>
+</div>
+<span class="font-tiny-web text-tiny-web text-sync-pending font-bold">PENDING</span>
+</div>
+<!-- Asset Registry -->
+<div class="bg-surface-container p-space-4 border-l-4 border-on-surface-variant/20 flex items-center justify-between group opacity-40">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant">inventory_2</span>
+</div>
+<div>
+<p class="font-body-mobile text-[15px] font-semibold">ซิงค์ทะเบียนสินทรัพย์</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">S/4HANA Asset Module</p>
+</div>
+</div>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant font-bold">QUEUED</span>
+</div>
+</section>
+<!-- Informational Prompt -->
+<div class="bg-surface-container-low p-space-3 flex gap-3 items-start border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary text-[20px]">info</span>
+<p class="text-on-surface-variant text-[13px] leading-snug">
+                กระบวนการนี้อาจใช้เวลา 2-4 นาที ขึ้นอยู่กับความล่าช้าของเครือข่ายกับ SAP Gateway กรุณาอย่าปิดแอปพลิเคชัน
+            </p>
+</div>
+</main>
+<!-- Footer Action -->
+<footer class="fixed bottom-0 w-full bg-surface-container-lowest border-t border-outline-variant/10 px-edge-mobile pt-space-3 pb-8 z-50">
+<button class="w-full h-[52px] border-2 border-mobile-danger text-mobile-danger flex items-center justify-center gap-2 font-label-mobile text-label-mobile uppercase tracking-widest active:bg-mobile-danger/10 transition-all duration-200">
+<span class="material-symbols-outlined">cancel</span>
+            ยกเลิกการซิงค์
+        </button>
+</footer>
+<script>
+        let progress = 18;
+        const progressText = document.querySelector('.text-display-web');
+        const circle = document.getElementById('progress-circle');
+        const radius = circle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100 * circumference);
+            circle.style.strokeDashoffset = offset;
+        }
+
+        setProgress(progress);
+
+        setInterval(() => {
+            if (progress < 99) {
+                progress += Math.random() * 0.4;
+                const displayVal = Math.floor(progress);
+                progressText.textContent = `${displayVal}%`;
+                setProgress(displayVal);
+            }
+        }, 2500);
+    </script>
+</body></html>

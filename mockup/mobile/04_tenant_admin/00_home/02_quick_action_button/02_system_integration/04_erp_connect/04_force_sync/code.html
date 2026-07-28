@@ -1,0 +1,271 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Force Sync</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Theme Configuration Verbatim -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "dark-surface": "#0F172A",
+                    "on-secondary-fixed": "#001f26",
+                    "on-surface-variant": "#c3c6d7",
+                    "primary-container": "#2563eb",
+                    "primary-fixed": "#dbe1ff",
+                    "sync-pending": "#94A3B8",
+                    "sync-active": "#FFD60A",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "secondary-fixed": "#acedff",
+                    "on-secondary-container": "#00424e",
+                    "surface-container-highest": "#26364a",
+                    "surface-container": "#102034",
+                    "on-error": "#690005",
+                    "mobile-success": "#00C853",
+                    "on-surface": "#d3e4fe",
+                    "on-primary-fixed": "#00174b",
+                    "surface-dim": "#031427",
+                    "on-tertiary": "#2b3041",
+                    "mobile-danger": "#FF3B30",
+                    "surface": "#031427",
+                    "on-background": "#d3e4fe",
+                    "surface-container-high": "#1b2b3f",
+                    "mobile-warning": "#FF9500",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-secondary": "#003640",
+                    "on-tertiary-container": "#eeefff",
+                    "dark-bg": "#020617",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-bright": "#2a3a4f",
+                    "inverse-primary": "#0053db",
+                    "primary": "#b4c5ff",
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary-fixed": "#161b2b",
+                    "secondary-container": "#03b5d3",
+                    "mobile-primary": "#0066FF",
+                    "error": "#ffb4ab",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-primary-container": "#eeefff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "tertiary": "#c1c5dc",
+                    "outline": "#8d90a0",
+                    "surface-tint": "#b4c5ff",
+                    "secondary": "#4cd7f6",
+                    "on-primary": "#002a78",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "surface-container-lowest": "#000f21",
+                    "outline-variant": "#47464C",
+                    "background": "#020617",
+                    "error-container": "#93000a",
+                    "inverse-surface": "#d3e4fe",
+                    "inverse-on-surface": "#213145",
+                    "surface-variant": "#26364a",
+                    "ai-cyan": "#22D3EE"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "touch-target": "52px",
+                    "base": "4px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "space-4": "16px",
+                    "space-2": "8px"
+            },
+            "fontFamily": {
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+            animation: spin-slow 12s linear infinite;
+        }
+
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        body {
+            min-height: 100dvh;
+            background-color: #020617;
+        }
+
+        /* Sharp linear geometric containers per Modern Industrial Aesthetic */
+        .industrial-card {
+            background-color: #0F172A;
+            border: 1px solid #47464C;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="text-on-background flex flex-col font-body-mobile text-body-mobile overflow-hidden selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#0F172A] border-b border-[#47464C] flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-3">
+<img alt="COS Icon" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCm10gSnMyTBPt3wQ9JIVkiCL4ShSxt9zLbwGau9eRT4AzX61vLB2n2CA-mb21W3l-Yn89QCJ6ImHd-I7QC0JTUl4iGueH5YfkmTvyLFggWjbqVj_2gs1yckf1hVmCt0KDQQQmLLYGG3UbBK9EZfAVqXKlRWcwF4z3lhXdG7tUxL4d2oUXhuE3tQPXPy7uey8iOpg7fEos0kZdpokedaKvhKKmB0OXTs4rN9m9mskxX_QhGzSRfCg4ACef_MY807iEWV2tVxKcuIOY">
+<h1 class="font-hero-mobile text-[18px] font-extrabold text-white tracking-tight uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-mobile-warning/5 rounded-full border border-mobile-warning/20">
+<span class="w-2 h-2 rounded-full bg-mobile-warning animate-pulse shadow-[0_0_8px_rgba(255,149,0,0.5)]"></span>
+<span class="font-tiny-web text-[10px] text-mobile-warning uppercase font-bold tracking-widest">SYNCING...</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col items-center justify-start pt-24 pb-40 px-edge-mobile overflow-y-auto w-full max-w-2xl mx-auto">
+<!-- Hero Section: Progress Circular -->
+<section class="w-full flex flex-col items-center mb-10">
+<div class="relative w-64 h-64 flex items-center justify-center">
+<!-- High-contrast professional progress ring -->
+<svg class="w-full h-full transform">
+<circle class="text-surface-container-highest/30" cx="128" cy="128" fill="transparent" r="100" stroke="currentColor" stroke-width="14"></circle>
+<circle class="text-primary progress-ring__circle" cx="128" cy="128" fill="transparent" id="progress-circle" r="100" stroke="currentColor" stroke-dasharray="628.32" stroke-dashoffset="175.93" stroke-linecap="butt" stroke-width="14" style="stroke-dashoffset: 100.842;"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-display-web text-[48px] text-white tracking-tighter font-extrabold" id="progress-text">83%</span>
+<span class="font-tiny-web text-[11px] text-on-surface-variant uppercase tracking-[0.2em] mt-0.5 font-semibold">COMPLETED</span>
+</div>
+</div>
+<div class="mt-10 text-center space-y-3">
+<h2 class="font-h1-web text-[22px] text-white tracking-tight font-bold">กำลังซิงค์ข้อมูลระบบ...</h2>
+<p class="font-body-web text-[14px] text-on-surface-variant max-w-[280px] mx-auto leading-relaxed">ประสานข้อมูลภาคสนามแบบเรียลไทม์เข้ากับระบบ ERP</p>
+</div>
+</section>
+<!-- Status List -->
+<section class="w-full space-y-3">
+<!-- Item 1: Synced -->
+<div class="industrial-card p-4 border-l-4 border-l-mobile-success flex items-center justify-between transition-colors hover:bg-[#1E293B]">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center text-mobile-success">
+<span class="material-symbols-outlined text-[28px]" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<div>
+<p class="font-body-web text-white font-semibold">กำลังซิงค์ Master BOQ...</p>
+<p class="font-tiny-web text-[11px] text-on-surface-variant uppercase tracking-wide">ตรวจสอบแล้ว 4,202 รายการ</p>
+</div>
+</div>
+<span class="font-label-mobile text-[12px] text-mobile-success font-bold bg-mobile-success/10 px-2 py-0.5 rounded">ซิงค์แล้ว</span>
+</div>
+<!-- Item 2: Syncing -->
+<div class="industrial-card p-4 border-l-4 border-l-mobile-warning flex items-center justify-between bg-[#1E293B]/50">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center text-mobile-warning">
+<span class="material-symbols-outlined text-[28px] animate-spin" style="font-variation-settings: &quot;wght&quot; 300;">sync</span>
+</div>
+<div>
+<p class="font-body-web text-white font-semibold">กำลังอัปเดตบัญชีผู้รับเหมา...</p>
+<p class="font-tiny-web text-[11px] text-on-surface-variant uppercase tracking-wide">กำลังประมวลผลสตรีมที่ 8/12</p>
+</div>
+</div>
+<span class="font-label-mobile text-[12px] text-mobile-warning font-bold bg-mobile-warning/10 px-2 py-0.5 rounded">กำลังซิงค์</span>
+</div>
+<!-- Item 3: Pending -->
+<div class="industrial-card p-4 border-l-4 border-l-gray-600 flex items-center justify-between opacity-60">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 flex items-center justify-center text-gray-400">
+<span class="material-symbols-outlined text-[28px]">hourglass_empty</span>
+</div>
+<div>
+<p class="font-body-web text-white font-semibold">กำลังดึงข้อมูลอสังหาริมทรัพย์...</p>
+<p class="font-tiny-web text-[11px] text-on-surface-variant uppercase tracking-wide">เข้าคิวรอการประมวลผล</p>
+</div>
+</div>
+<span class="font-label-mobile text-[12px] text-gray-400 font-bold bg-gray-400/10 px-2 py-0.5 rounded">รอดำเนินการ</span>
+</div>
+</section>
+</main>
+<!-- Footer Action Area -->
+<footer class="fixed bottom-0 w-full z-50 bg-[#020617] border-t border-[#47464C]">
+<!-- AI Module -->
+<div class="bg-ai-cyan/5 border-b border-ai-cyan/20 py-2.5 px-edge-mobile flex items-start gap-3">
+<span class="material-symbols-outlined text-ai-cyan text-sm mt-0.5" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<p class="font-tiny-web text-[10px] text-ai-cyan font-medium uppercase leading-tight tracking-wider">
+                ระบบ CORE_AI กำลังวิเคราะห์ 12 Delta Streams เพื่อความสอดคล้อง | ความเชื่อมั่น 99% | แหล่งข้อมูล: ERP Connector Gateway
+            </p>
+</div>
+<!-- Action Button -->
+<div class="p-edge-mobile pb-8">
+<button class="h-[52px] w-full bg-transparent border border-[#47464C] text-white font-h2-web text-[16px] font-bold uppercase tracking-widest hover:bg-white/5 active:bg-white/10 transition-all flex items-center justify-center gap-3">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;wght&quot; 300;">close</span>STOP PROCESS</button>
+</div>
+</footer>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const circle = document.getElementById('progress-circle');
+            const text = document.getElementById('progress-text');
+            const radius = 100;
+            const circumference = 2 * Math.PI * radius;
+            
+            let currentProgress = 72;
+            
+            function setProgress(percent) {
+                const offset = circumference - (percent / 100 * circumference);
+                circle.style.strokeDashoffset = offset;
+                text.textContent = `${Math.floor(percent)}%`;
+            }
+
+            // Initialize
+            setProgress(currentProgress);
+
+            // Subtle drift
+            setInterval(() => {
+                if (currentProgress < 99.5) {
+                    currentProgress += (Math.random() * 0.2);
+                    setProgress(currentProgress);
+                }
+            }, 2500);
+
+            // Button interaction
+            const stopBtn = document.querySelector('button');
+            stopBtn.addEventListener('click', () => {
+                if (confirm('คุณต้องการหยุดการประมวลผลระบบใช่หรือไม่?')) {
+                    stopBtn.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="sync">sync</span> ยุติการทำงาน...';
+                    stopBtn.classList.add('opacity-50', 'pointer-events-none');
+                }
+            });
+        });
+    </script>
+
+
+</body></html>
