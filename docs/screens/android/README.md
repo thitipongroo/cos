@@ -187,13 +187,22 @@ web console; the mobile flows are a follow-up, and the buttons say so rather tha
 
 ## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-tenant-admin-quick-add.png`](TENANT_ADMIN/01-tenant-admin-quick-add.png)
 
-The FAB's Quick-Add sheet ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx),
-mockup `04_tenant_admin/00_home/02_quick_add_menu`) — a dark bottom-sheet of quick actions over the
-dimmed dashboard. **Force System Sync** is wired for real (`runPushSync()` then `runDeltaSync()`, §17.6
-flush + pull); **Invite New User** opens the Users tab; **New System Integration** and **Generate Usage
-Report** are honest first-pass placeholders (PO decision 2026-07-28) — no mobile integrations surface or
-AI-report screen exists yet, so they say so rather than pretending. Left-accent colour follows the
-action (primary / cyan / cyan / sync-gold).
+The FAB's full-screen **Quick Commands** overlay
+([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx), mockup
+`04_tenant_admin/00_home/02_quick_action_button/00_quick_add_menu`) — a dark surface with its own top
+bar (brand + SYNCED pill + close), four action cards, and a small stats bento. Left-accent colour
+follows the action (primary / cyan / cyan / sync-gold). Real vs honest placeholder:
+
+- **Force System Sync** — real (`runPushSync()` then `runDeltaSync()`, §17.6 flush + pull); tapping it
+  spins the icon and the sub-label reads **SYNCING…** while it runs.
+- **SYNCED pill** (top bar) — real `useSyncStatus()` (the SyncStatusBar's source; green check when idle).
+- **Active Projects** / **System Health** bento — real: the project count from `GET /projects/mine`
+  (0 for this admin, who is a member of none) and liveness from `GET /health/live` shown as a word
+  (**Optimal**), **not** the mockup's invented "98.4 %".
+- **Invite New User** opens the Users tab; **New System Integration** + **Generate Usage Report** are
+  honest placeholders (no mobile integrations surface / AI-report screen yet). The AI-report card keeps
+  the mockup's richer layout but **drops the fabricated "94 % CONFIDENCE / Source"** — no such signal
+  exists — and the decorative blueprint/server photos (external AI images) become local icon tiles.
 
 ## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 

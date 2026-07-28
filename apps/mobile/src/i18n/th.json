@@ -620,7 +620,14 @@
     "syncTitle": "บังคับซิงค์ระบบ",
     "syncSub": "ส่งคิวที่ค้างและดึงข้อมูลล่าสุด",
     "syncing": "กำลังซิงค์…",
-    "comingSoon": "กำลังจะมาบนมือถือ — ใช้ web console ไปก่อน"
+    "comingSoon": "เร็ว ๆ นี้บนมือถือ — ใช้ web console ไปก่อน",
+    "reportDesc": "ประมวลผลข้อมูลการทำงานรายสัปดาห์ด้วย AI เพื่อสรุปประสิทธิภาพโครงการ",
+    "reportCta": "ดำเนินการทันที",
+    "activeProjects": "โครงการที่ดำเนินการ",
+    "systemHealth": "สุขภาพระบบ",
+    "healthChecking": "กำลังตรวจสอบ…",
+    "healthOptimal": "ปกติดี",
+    "healthDown": "มีปัญหา"
   },
   "syncQueue": {
     "title": "คิวตรวจสอบการซิงค์",
