@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Manual Mapping Review - CONSTRUCTION OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#b4c5ff",
+                    "primary-fixed": "#dbe1ff",
+                    "secondary-fixed": "#acedff",
+                    "secondary": "#4cd7f6",
+                    "surface-dim": "#031427",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-container": "#102034",
+                    "surface-bright": "#2a3a4f",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-background": "#d3e4fe",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-tertiary-fixed": "#161b2b",
+                    "outline-variant": "#434655",
+                    "on-primary-fixed": "#00174b",
+                    "surface-variant": "#26364a",
+                    "mobile-primary": "#0066FF",
+                    "sync-pending": "#94A3B8",
+                    "tertiary": "#c1c5dc",
+                    "surface": "#031427",
+                    "on-secondary": "#003640",
+                    "on-primary": "#002a78",
+                    "surface-container-low": "#0b1c30",
+                    "primary-container": "#2563eb",
+                    "on-secondary-container": "#00424e",
+                    "inverse-primary": "#0053db",
+                    "mobile-warning": "#FF9500",
+                    "error-container": "#93000a",
+                    "outline": "#8d90a0",
+                    "sync-active": "#FFD60A",
+                    "dark-surface": "#0F172A",
+                    "on-primary-container": "#eeefff",
+                    "mobile-danger": "#FF3B30",
+                    "surface-container-high": "#1b2b3f",
+                    "on-surface": "#d3e4fe",
+                    "on-error": "#690005",
+                    "inverse-surface": "#d3e4fe",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-secondary-fixed": "#001f26",
+                    "surface-tint": "#b4c5ff",
+                    "secondary-container": "#03b5d3",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "tertiary-container": "#686c80",
+                    "error": "#ffb4ab",
+                    "surface-container-lowest": "#000f21",
+                    "surface-container-highest": "#26364a",
+                    "mobile-success": "#00C853",
+                    "background": "#031427",
+                    "tertiary-fixed": "#dee1f9",
+                    "dark-bg": "#020617",
+                    "inverse-on-surface": "#213145",
+                    "on-error-container": "#ffdad6",
+                    "ai-cyan": "#06B6D4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "base": "4px",
+                    "touch-target": "52px",
+                    "edge-mobile": "24px",
+                    "space-2": "8px",
+                    "space-3": "12px",
+                    "space-1": "4px",
+                    "space-4": "16px"
+            },
+            "fontFamily": {
+                    "h1-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background-color: #031427; /* Infrastructure Navy */
+        font-family: 'Inter Tight', sans-serif;
+        color: #d3e4fe;
+        -webkit-font-smoothing: antialiased;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .industrial-border {
+        border-left: 4px solid #0066FF;
+      }
+      .ai-accent-card {
+        border: 1px solid rgba(6, 182, 212, 0.3);
+        background: rgba(6, 182, 212, 0.05);
+      }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-highest border-b border-outline-variant/10 shadow-sm flex items-center justify-between px-edge-mobile h-14">
+<div class="flex items-center gap-space-3">
+<button class="active:scale-95 transition-transform duration-150 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<img alt="CONSTRUCTION OS" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-yaatlL-pNZHypSHk9EJ0AhIdHiHL9h3mFv6gFEIM7bXhfeUY63wof80Nw9FxA4g0UQXqhvNO4zDirDU08UwpR7Buf4ir1zciPQolGb9WvtbLV9rv4-D6T0yFYebkCNcHyUI4ainCQUbpNct5bFXI1B99-JQT2h_X9nAwhoXIdTK3oFth906b0tmj4tQ-vT2Xt9ejCbseAhsJqFvMGJDZ7AnEBf6qGZvFCwnXal4OO3WhSSdEAynGPRXA1qoSqeeKXA"/>
+<h1 class="font-hero-mobile text-[16px] text-on-surface tracking-tight uppercase">CONSTRUCTION OS</h1>
+</div>
+</div>
+<div class="flex items-center gap-space-2 px-3 py-1 bg-sync-active/10 rounded-full border border-sync-active/20">
+<span class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></span>
+<span class="font-tiny-web text-sync-active uppercase font-bold" id="sync-text">SYNCING...</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 pt-20 pb-32 px-edge-mobile space-y-space-4">
+<!-- Headline Section -->
+<section class="space-y-1">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface leading-tight">ตรวจสอบข้อมูลการแก้ไข</h2>
+<p class="font-tiny-web text-on-surface-variant tracking-wider uppercase opacity-70">
+                การตรวจสอบความถูกต้องก่อนการซิงค์
+            </p>
+</section>
+<!-- Main Conflict Resolution -->
+<div class="space-y-space-4">
+<!-- Primary Review Card: COST_CENTER -->
+<div class="bg-surface-container rounded-none industrial-border p-space-4 shadow-lg">
+<div class="flex justify-between items-start mb-space-3">
+<span class="font-tiny-web text-outline uppercase tracking-widest font-semibold">รหัสฟิลด์: COST_CENTER</span>
+<span class="bg-primary/10 text-primary-fixed border border-primary/20 px-2 py-0.5 rounded-none font-tiny-web uppercase">Manual Override</span>
+</div>
+<div class="grid grid-cols-1 gap-space-3">
+<!-- Source State -->
+<div class="bg-surface-container-low p-space-3 border border-outline-variant/10">
+<p class="font-tiny-web text-outline uppercase mb-1">ค่าต้นทาง (ข้อขัดแย้ง ERP)</p>
+<p class="font-body-mobile text-error font-mono">CC-BLDG-A12</p>
+</div>
+<!-- Transition Arrow -->
+<div class="flex justify-center -my-2 z-10">
+<div class="bg-surface-bright p-1 border border-outline-variant/20">
+<span class="material-symbols-outlined text-primary text-sm">south</span>
+</div>
+</div>
+<!-- New Manual Value -->
+<div class="bg-surface-container-high p-space-3 border border-primary/20">
+<p class="font-tiny-web text-secondary uppercase mb-1">ค่าที่แก้ไขแล้ว</p>
+<div class="flex items-center gap-space-2">
+<p class="font-h1-web text-on-surface font-bold">BLDG_A12</p>
+</div>
+</div>
+</div>
+<!-- AI Integrity Badge -->
+<div class="mt-space-4 flex items-center gap-space-3 p-space-3 ai-accent-card">
+<span class="material-symbols-outlined text-ai-cyan" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<div>
+<p class="font-label-mobile text-ai-cyan font-bold">การตรวจสอบโดย AI: ถูกต้อง 100%</p>
+<p class="text-[11px] text-on-surface-variant">ตรวจสอบกับข้อกำหนดของ ERP Schema แล้ว</p>
+</div>
+</div>
+</div>
+<!-- Secondary Context Card: VENDOR_ID -->
+<div class="bg-surface-container border border-outline-variant/10 p-space-4">
+<div class="flex justify-between items-center mb-space-2">
+<p class="font-tiny-web text-outline uppercase">ข้อมูลอ้างอิงที่เชื่อมโยง: VENDOR_ID</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary text-[14px]">auto_awesome</span>
+<span class="font-tiny-web text-secondary uppercase">Resolved by AI</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-mobile text-on-surface font-mono">VND-GLOBAL-882</span>
+<span class="material-symbols-outlined text-mobile-success text-sm">check_circle</span>
+</div>
+</div>
+<!-- Informational Message -->
+<div class="bg-surface-container-lowest p-space-4 border border-outline-variant/10">
+<div class="flex gap-space-3">
+<span class="material-symbols-outlined text-primary shrink-0">info</span>
+<p class="font-body-mobile text-[14px] leading-relaxed text-on-surface-variant">
+                        การยืนยันข้อมูลนี้จะทำการอัปเดต Mapping Table ในระบบ ERP ทันที ข้อมูลที่แก้ไขแบบ Manual จะถูกบันทึกใน Audit Log สำหรับการตรวจสอบย้อนหลัง
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Fixed Footer Actions -->
+<footer class="fixed bottom-0 w-full bg-surface-container-low border-t border-outline-variant/10 p-edge-mobile space-y-space-3 shadow-[0_-8px_24px_rgba(0,0,0,0.3)] z-50">
+<button class="w-full h-[52px] bg-mobile-primary text-white font-label-mobile uppercase tracking-widest flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">sync</span>
+            ยืนยันและซิงค์ข้อมูลใหม่
+        </button>
+<button class="w-full h-[52px] border border-outline text-on-surface-variant font-label-mobile uppercase tracking-widest flex items-center justify-center active:bg-surface-bright/20 transition-colors duration-200">
+            แก้ไขอีกครั้ง
+        </button>
+<div class="h-[env(safe-area-inset-bottom)]"></div>
+</footer>
+<script>
+        // Sync Status simulation
+        const syncText = document.getElementById('sync-text');
+        let dots = 3;
+        setInterval(() => {
+            dots = (dots % 3) + 1;
+            syncText.innerText = 'SYNCING' + '.'.repeat(dots);
+        }, 800);
+
+        // Industrial button touch feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('brightness-90'));
+            btn.addEventListener('touchend', () => btn.classList.remove('brightness-90'));
+        });
+    </script>
+</body></html>

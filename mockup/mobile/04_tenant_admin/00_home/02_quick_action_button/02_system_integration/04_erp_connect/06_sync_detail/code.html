@@ -1,0 +1,272 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - รายละเอียดเชิงเทคนิค</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "sync-active": "#FFD60A",
+                    "on-primary-fixed": "#00174b",
+                    "background": "#0B1020",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container": "#102034",
+                    "on-secondary": "#003640",
+                    "surface-dim": "#031427",
+                    "outline-variant": "#64748B",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "mobile-warning": "#FF9500",
+                    "on-primary-container": "#eeefff",
+                    "surface": "#0B1020",
+                    "on-secondary-fixed": "#001f26",
+                    "secondary-fixed": "#acedff",
+                    "on-tertiary-container": "#eeefff",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-surface": "#d3e4fe",
+                    "on-primary": "#002a78",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "outline": "#64748B",
+                    "inverse-primary": "#0053db",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-secondary-container": "#00424e",
+                    "on-error-container": "#ffdad6",
+                    "on-error": "#690005",
+                    "sync-pending": "#94A3B8",
+                    "dark-bg": "#0B1020",
+                    "secondary": "#4cd7f6",
+                    "on-background": "#d3e4fe",
+                    "primary-container": "#2563eb",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-tertiary": "#2b3041",
+                    "mobile-primary": "#0066FF",
+                    "surface-variant": "#26364a",
+                    "secondary-container": "#03b5d3",
+                    "surface-bright": "#2a3a4f",
+                    "tertiary": "#c1c5dc",
+                    "surface-container-highest": "#26364a",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "dark-surface": "#0B1020",
+                    "primary": "#b4c5ff",
+                    "mobile-success": "#00C853",
+                    "mobile-danger": "#FF3B30",
+                    "tertiary-container": "#686c80",
+                    "error": "#ffb4ab",
+                    "error-container": "#93000a",
+                    "tertiary-fixed": "#dee1f9",
+                    "inverse-on-surface": "#213145",
+                    "inverse-surface": "#d3e4fe",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-lowest": "#050914",
+                    "surface-tint": "#b4c5ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "primary-fixed": "#dbe1ff",
+                    "ai-cyan": "#22D3EE"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0px",
+                    "lg": "0px",
+                    "xl": "0px",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "web-margin": "32px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "space-3": "12px",
+                    "space-4": "16px",
+                    "space-2": "8px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { background-color: #0B1020; color: #d3e4fe; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .code-glow { text-shadow: 0 0 8px rgba(255, 59, 48, 0.4); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #64748B; border-radius: 2px; }
+        * { border-radius: 0 !important; }
+        .rounded-full { border-radius: 9999px !important; }
+        header, footer { border-radius: 0 !important; }
+    </style>
+</head>
+<body class="font-body-mobile text-body-mobile pb-40">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-container-lowest border-b border-outline-variant/30">
+<div class="flex items-center gap-3">
+<button class="w-8 h-8 flex items-center justify-center active:opacity-70 transition-opacity">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<img alt="COS Logo" class="w-6 h-6 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGfQ7xJkF9JFYrTQgE69lrCnp-HHc8ZgPRgGeTBYPPc3uTMl3EWpDlLCkMVLA-hpfKSVlRWXAsYzsBe5hhjECh1Vi-EP_s6GExbOSFqRFgAv9nGO2pMqXVC3g0AXCrEHg_BSrdMKJV7qyAHpJvv9EVkqLU-RF27zOy_Efg3r3V1pHSrGNSqD7zGms-D1BjXUVZxIA9tV_Ws3op-mC85MkndE2BWzhvKbFSTbN_am-x8bNHRe0SWwmd1UZbbhwv8UjQkiLis1yHMn4">
+<span class="font-bold tracking-tighter text-on-surface">CONSTRUCTION OS</span>
+</div>
+</div>
+<div class="flex items-center">
+<div class="flex items-center gap-1.5 bg-mobile-success/10 px-2 py-1 rounded-full border border-mobile-success/20">
+<div class="w-1.5 h-1.5 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="text-[10px] font-bold text-mobile-success uppercase">SYNCED</span>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="mt-[52px] px-edge-mobile pt-space-4 space-y-space-4">
+<!-- Page Title -->
+<div class="py-2">
+<h2 class="font-h1-web text-h1-web text-primary">รายละเอียดเชิงเทคนิค</h2>
+<p class="text-tiny-web text-on-surface-variant tracking-widest uppercase">ID: #PAY-8820</p>
+</div>
+<!-- Status Card -->
+<section class="bg-surface-container border-l-4 border-mobile-danger border border-y-outline-variant/20 border-r-outline-variant/20">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase tracking-widest">Current Status</p>
+<span class="inline-flex items-center px-3 py-1 bg-mobile-danger/10 text-mobile-danger font-bold text-xs border border-mobile-danger/20">
+<span class="material-symbols-outlined text-sm mr-1" style="font-variation-settings: &quot;FILL&quot; 1;">error</span>
+                        SYNC ERROR
+                    </span>
+</div>
+<div class="text-right">
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase tracking-widest">Event Time</p>
+<p class="font-label-mobile text-label-mobile">23/10/2026 22:00</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-4 pt-space-3 border-t border-outline-variant/20">
+<div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase tracking-widest">Source</p>
+<p class="font-label-mobile text-label-mobile text-primary">Construction OS</p>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant mb-1 uppercase tracking-widest">Destination</p>
+<p class="font-label-mobile text-label-mobile text-secondary">SAP S/4HANA</p>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Diagnostic Module -->
+<section class="bg-ai-cyan/5 border border-ai-cyan/30">
+<div class="bg-ai-cyan/10 px-space-4 py-2 border-b border-ai-cyan/30 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-cyan text-xl" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<span class="font-label-mobile text-label-mobile text-ai-cyan uppercase tracking-tighter">CORE_AI DIAGNOSTIC</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="text-[10px] font-bold text-ai-cyan">98% CONFIDENCE</span>
+<span class="text-[8px] text-ai-cyan/60 uppercase">SOURCE: ERP Connector Gateway</span>
+</div>
+</div>
+<div class="p-space-4">
+<p class="font-body-mobile text-body-mobile text-on-surface leading-relaxed">
+<span class="text-ai-cyan font-bold">การวิเคราะห์:</span> การซิงค์ล้มเหลวเนื่องจากข้อมูลไม่ตรงกับโครงสร้าง (Schema Mismatch) ในฟิลด์ <code class="bg-black/30 px-1 text-secondary">'VendorID'</code> โดย SAP ต้องการสตริงตัวเลข 10 หลัก แต่ได้รับค่า <code class="bg-black/30 px-1 text-mobile-danger">'VND-092'</code> จำเป็นต้องทำการแก้ไขการจับคู่ข้อมูล (Mapping) ด้วยตนเอง
+            </p>
+<div class="mt-4 flex items-center gap-2 text-tiny-web text-ai-cyan/80 font-bold uppercase">
+<span class="material-symbols-outlined text-xs">auto_fix_high</span>
+                การดำเนินการที่แนะนำ: ปรับปรุงโครงสร้างข้อมูลหรือแมปปิ้งด้วยตนเอง
+            </div>
+</div>
+</section>
+<!-- Technical Payload -->
+<section class="space-y-space-2">
+<div class="flex justify-between items-center px-1">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">terminal</span>
+                Payload ข้อมูลทางเทคนิค
+            </h3>
+<button class="text-tiny-web text-primary flex items-center gap-1 font-bold active:opacity-60">
+<span class="material-symbols-outlined text-xs">content_copy</span> คัดลอก (COPY)
+            </button>
+</div>
+<div class="bg-surface-container-lowest p-space-4 border border-outline-variant/30 font-mono text-[13px] leading-6 overflow-x-auto h-64 overflow-y-auto custom-scrollbar">
+<div class="flex gap-4">
+<div class="text-outline-variant/40 select-none text-right">
+                    01<br>02<br>03<br>04<br>05<br>06<br>07<br>08<br>09<br>10<br>11<br>12
+                </div>
+<div class="whitespace-pre text-on-surface-variant">
+{
+  "transaction_id": "PAY-8820",
+  "entity": "Payment_Instruction",
+  "payload": {
+    "amount": 450000.00,
+    "currency": "THB",
+    <span class="bg-mobile-danger/20 text-mobile-danger px-1 font-bold code-glow">"vendor_id": "VND-092",</span> <span class="text-mobile-danger">// ERROR_SCHEMA_MISMATCH</span>
+    "bank_code": "004",
+    "status": "QUEUED"
+  },
+  "metadata": {
+    "origin": "ConstructionOS_API_V2",
+    "timestamp": "2026-10-23T22:00:01Z"
+  }
+}
+                </div>
+</div>
+</div>
+</section>
+</main>
+<!-- Action Bar (Sticky Bottom) -->
+<footer class="fixed bottom-0 left-0 w-full bg-background/90 backdrop-blur-md p-edge-mobile border-t border-outline-variant/30 z-50 flex flex-col gap-space-3">
+<button class="w-full h-[52px] bg-mobile-primary text-white font-bold text-body-mobile flex items-center justify-center gap-2 active:brightness-90 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">refresh</span>RETRY SYNC</button>
+<button class="w-full h-[52px] border border-outline text-on-surface font-bold text-body-mobile flex items-center justify-center gap-2 active:bg-white/5 transition-all">
+<span class="material-symbols-outlined">rule</span>CONFLICT RESOLUTION</button>
+</footer>
+<script>
+    // Micro-interaction for the Retry button
+    const retryBtn = document.querySelector('button.bg-mobile-primary');
+    retryBtn.addEventListener('click', function() {
+        const originalContent = this.innerHTML;
+        this.innerHTML = `
+            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>กำลังเชื่อมต่อใหม่...</span>
+        `;
+        setTimeout(() => {
+            this.innerHTML = originalContent;
+        }, 2000);
+    });
+
+    // Toggle shadow on scroll
+    const header = document.querySelector('header');
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 10) {
+            header.classList.add('shadow-lg', 'bg-surface-container-lowest');
+        } else {
+            header.classList.remove('shadow-lg');
+        }
+    });
+</script>
+
+
+</body></html>
