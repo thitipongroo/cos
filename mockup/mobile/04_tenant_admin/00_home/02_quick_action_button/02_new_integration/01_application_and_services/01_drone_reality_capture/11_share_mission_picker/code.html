@@ -1,0 +1,323 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Share Mission Picker - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary-fixed": "#dee1f9",
+                    "surface": "#031427",
+                    "background": "#031427",
+                    "on-surface-variant": "#c3c6d7",
+                    "inverse-surface": "#d3e4fe",
+                    "primary-fixed": "#dbe1ff",
+                    "inverse-on-surface": "#213145",
+                    "secondary": "#4cd7f6",
+                    "mobile-danger": "#FF3B30",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container-lowest": "#000f21",
+                    "error-container": "#93000a",
+                    "secondary-container": "#03b5d3",
+                    "on-error": "#690005",
+                    "surface-dim": "#031427",
+                    "surface-variant": "#26364a",
+                    "on-tertiary-container": "#eeefff",
+                    "on-primary": "#002a78",
+                    "mobile-success": "#00C853",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-container": "#00424e",
+                    "on-secondary": "#003640",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-bright": "#2a3a4f",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "inverse-primary": "#0053db",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "mobile-primary": "#0066FF",
+                    "surface-tint": "#b4c5ff",
+                    "outline": "#8d90a0",
+                    "on-primary-container": "#eeefff",
+                    "tertiary": "#c1c5dc",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-tertiary": "#2b3041",
+                    "on-background": "#d3e4fe",
+                    "sync-pending": "#94A3B8",
+                    "error": "#ffb4ab",
+                    "dark-surface": "#0F172A",
+                    "sync-active": "#FFD60A",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container": "#102034",
+                    "outline-variant": "#434655",
+                    "dark-bg": "#020617",
+                    "tertiary-container": "#686c80",
+                    "secondary-fixed": "#acedff",
+                    "on-surface": "#d3e4fe",
+                    "surface-container-highest": "#26364a",
+                    "primary-container": "#2563eb",
+                    "primary": "#b4c5ff",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container-high": "#1b2b3f",
+                    "mobile-warning": "#FF9500",
+                    "infra-navy": "#0B1020"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "base": "4px",
+                    "space-1": "4px",
+                    "web-margin": "32px",
+                    "space-4": "16px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "h2-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0B1020; /* Infrastructure Navy as requested */
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .thai-subtitle {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: -2px;
+            letter-spacing: 0.02em;
+        }
+        .glass-card {
+            background: rgba(16, 32, 52, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="font-body-mobile text-body-mobile selection:bg-primary-container">
+<!-- Top App Bar (Shared Component Strategy) -->
+<header class="w-full top-0 sticky z-50 bg-surface-container-low dark:bg-surface-container-lowest flex items-center justify-between px-edge-mobile h-touch-target">
+<div class="flex items-center gap-space-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-white/5 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCQ3pDotNbqi3CxODWf9weTfuTcP02FX1YKvAmloYN_tBtm8KFBucPOA3PyY9XWPltHlWFylQzfwJjwf_0BXac8_Yg0bj_R0pMkvlTdK1ZkvlSqA1YoFFhKORYFSpAAVLPaHoAuHgqy7l3uyuT5HTPUT2T9Oh3rNZ4y-pb_HhBqnNPMBrHGUXUufZ9AQJ3eRXHQesadNygu7ypgiue9jmTPtMgr-sWPORw4deFRBI8KvTsvSTEkNodtN0IrJKIXkqWkZ97ITOzz02M" alt="COS Logo" class="w-8 h-8 rounded-lg"><span class="font-h1-web font-bold text-on-surface tracking-tight text-[16px]">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-2 bg-mobile-success/10 px-space-3 py-1 rounded-full border border-mobile-success/20">
+<span class="material-symbols-outlined text-[14px] text-mobile-success" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="text-[11px] font-bold text-mobile-success tracking-wider uppercase">Synced</span>
+</div>
+</header>
+<main class="px-edge-mobile pt-space-4 pb-32 max-w-md mx-auto">
+<!-- Mission Summary Card (Top Section) -->
+<section class="mb-space-4">
+<div class="glass-card rounded-xl p-space-4 relative overflow-hidden">
+<!-- Status color strip -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div class="flex justify-between items-start mb-space-3">
+<div>
+<h2 class="font-h2-web text-h2-web text-on-surface mb-0.5">Sector 7B Mesh Gen</h2>
+<div class="thai-subtitle">การสร้างตาข่ายสามมิติ เซกเตอร์ 7B</div>
+</div>
+<div class="p-2 bg-secondary/10 rounded-lg">
+<span class="material-symbols-outlined text-secondary">share</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-3 mt-space-4">
+<div class="bg-white/5 p-space-3 rounded-lg border border-white/5"><span class="text-tiny-web text-on-surface-variant block mb-1">วันที่ • DATE</span><span class="font-label-mobile text-on-surface">24 ต.ค. 2569</span></div>
+<div class="bg-secondary/5 p-space-3 rounded-lg border border-secondary/20">
+<span class="text-tiny-web text-secondary block mb-1 uppercase">ความแม่นยำ • ACCURACY</span>
+<div class="flex items-baseline gap-1">
+<span class="font-h2-web text-secondary">98.2%</span>
+<span class="material-symbols-outlined text-[12px] text-secondary">bolt</span>
+</div>
+</div>
+</div>
+<div class="mt-space-4 flex items-center gap-space-2 text-tiny-web text-outline">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="">Lat: 13.7563° N, Lon: 100.5018° E</span>
+</div>
+</div>
+</section>
+<!-- Main Content: Share Options -->
+<section>
+<div class="flex items-center justify-between mb-space-3">
+<h3 class="font-label-mobile text-on-surface-variant uppercase tracking-widest">ตัวเลือกการแชร์ • SHARE OPTIONS</h3>
+<span class="text-[10px] text-outline font-bold">V 2.4.0-DRC</span>
+</div>
+<!-- Primary Sharing Grid -->
+<div class="grid grid-cols-1 gap-space-3">
+<!-- 1. SHARE VIA LINE (Primary) -->
+<button class="group w-full h-touch-target flex items-center justify-between px-space-4 rounded-xl bg-[#06C755] text-white active:scale-[0.98] transition-transform duration-150">
+<div class="flex items-center gap-space-4">
+<div class="w-8 h-8 flex items-center justify-center bg-white/20 rounded-full">
+<span class="material-symbols-outlined">chat</span>
+</div>
+<div class="text-left"><div class="font-label-mobile font-bold leading-none">แชร์ผ่าน LINE</div><div class="thai-subtitle opacity-90">SHARE VIA LINE</div></div>
+</div>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- 2. SHARE VIA EMAIL -->
+<button class="group w-full h-touch-target flex items-center justify-between px-space-4 rounded-xl bg-surface-container hover:bg-surface-container-high border border-white/5 active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-space-4">
+<div class="w-8 h-8 flex items-center justify-center bg-primary/10 rounded-full">
+<span class="material-symbols-outlined text-primary">mail</span>
+</div>
+<div class="text-left"><div class="font-label-mobile text-on-surface leading-none uppercase">แชร์ผ่านอีเมล</div><div class="thai-subtitle">SHARE VIA EMAIL</div></div>
+</div>
+<span class="material-symbols-outlined text-outline">alternate_email</span>
+</button>
+<!-- 3. DOWNLOAD IFC FILE -->
+<button class="group w-full h-touch-target flex items-center justify-between px-space-4 rounded-xl bg-surface-container border border-white/5 active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-space-4">
+<div class="w-8 h-8 flex items-center justify-center bg-secondary/10 rounded-full">
+<span class="material-symbols-outlined text-secondary">download</span>
+</div>
+<div class="text-left"><div class="font-label-mobile text-on-surface leading-none uppercase">ดาวน์โหลดไฟล์ IFC</div><div class="thai-subtitle">DOWNLOAD IFC FILE</div></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-mono text-outline">342MB</span>
+<span class="material-symbols-outlined text-outline">deployed_code</span>
+</div>
+</button>
+<!-- 4. COPY DATA LINK -->
+<button class="group w-full h-touch-target flex items-center justify-between px-space-4 rounded-xl bg-surface-container border border-white/5 active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-space-4">
+<div class="w-8 h-8 flex items-center justify-center bg-tertiary/10 rounded-full">
+<span class="material-symbols-outlined text-tertiary">link</span>
+</div>
+<div class="text-left"><div class="font-label-mobile text-on-surface leading-none uppercase">คัดลอกลิงก์ข้อมูล</div><div class="thai-subtitle">COPY DATA LINK</div></div>
+</div>
+<span class="material-symbols-outlined text-outline">content_copy</span>
+</button>
+<!-- 5. EXPORT AS PDF -->
+<button class="group w-full h-touch-target flex items-center justify-between px-space-4 rounded-xl bg-surface-container border border-white/5 active:scale-[0.98] transition-transform">
+<div class="flex items-center gap-space-4">
+<div class="w-8 h-8 flex items-center justify-center bg-error-container/20 rounded-full">
+<span class="material-symbols-outlined text-error">picture_as_pdf</span>
+</div>
+<div class="text-left"><div class="font-label-mobile text-on-surface leading-none uppercase">ส่งออกเป็น PDF</div><div class="thai-subtitle">EXPORT AS PDF</div></div>
+</div>
+<span class="material-symbols-outlined text-outline">print</span>
+</button>
+<!-- AI Feature Divider -->
+<div class="py-space-2 flex items-center gap-space-4">
+<div class="h-px flex-1 bg-gradient-to-r from-transparent via-secondary/30 to-transparent"></div>
+<span class="text-[10px] font-black text-secondary tracking-[0.2em] uppercase">AI Advanced Export</span>
+<div class="h-px flex-1 bg-gradient-to-r from-transparent via-secondary/30 to-transparent"></div>
+</div>
+<!-- 6. SMART ANNOTATION EXPORT (AI Highlight) -->
+<button class="group w-full p-space-4 rounded-xl bg-secondary/5 border border-secondary/20 relative overflow-hidden active:scale-[0.98] transition-transform">
+<div class="shimmer absolute inset-0 opacity-30 pointer-events-none"></div>
+<div class="flex items-center justify-between relative z-10">
+<div class="flex items-center gap-space-4">
+<div class="w-10 h-10 flex items-center justify-center bg-secondary/20 rounded-full border border-secondary/40">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="text-left"><div class="font-label-mobile text-secondary leading-none font-bold uppercase">สร้างรายงานสรุปโดย AI</div><div class="thai-subtitle text-secondary/80">GENERATE AI SUMMARY REPORT</div><div class="text-[10px] text-secondary/60 mt-1">ความมั่นใจ 96% | วิเคราะห์จาก Site Logs</div></div>
+</div>
+<span class="material-symbols-outlined text-secondary">bolt</span>
+</div>
+</button>
+</div>
+</section>
+<!-- More Options -->
+<div class="mt-space-4 flex justify-center">
+<button class="text-tiny-web text-outline uppercase tracking-widest flex items-center gap-1 hover:text-on-surface transition-colors">
+<span class="">View More Sharing Protocols</span>
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation (Shared Component Strategy) -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-high shadow-lg flex justify-around items-center h-[72px] px-space-2">
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 hover:opacity-80 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 hover:opacity-80 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-space-4 py-space-1 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 hover:opacity-80 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-1 hover:opacity-80 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</button>
+</nav>
+<!-- Interactive Layer for Feedback -->
+<div class="fixed bottom-24 left-1/2 -translate-x-1/2 bg-on-surface text-surface py-2 px-6 rounded-full font-bold text-[12px] opacity-0 pointer-events-none transition-all duration-300 transform translate-y-4" id="toast">
+        COPIED TO CLIPBOARD
+    </div>
+<script>
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const btnText = btn.innerText;
+                if (btnText.includes('COPY')) {
+                    const toast = document.getElementById('toast');
+                    toast.classList.remove('opacity-0', 'translate-y-4');
+                    toast.classList.add('opacity-100', 'translate-y-0');
+                    setTimeout(() => {
+                        toast.classList.add('opacity-0', 'translate-y-4');
+                        toast.classList.remove('opacity-100', 'translate-y-0');
+                    }, 2000);
+                }
+            });
+        });
+    </script>
+
+
+</body></html>

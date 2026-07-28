@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        @keyframes success-check {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-success {
+            animation: success-check 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .shimmer-text {
+            background: linear-gradient(90deg, #d3e4fe 0%, #ffffff 50%, #d3e4fe 100%);
+            background-size: 200% auto;
+            animation: shimmer 3s linear infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        @keyframes shimmer {
+            to { background-position: 200% center; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-primary-fixed": "#00174b",
+                        "mobile-warning": "#FF9500",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "tertiary-fixed": "#dee1f9",
+                        "tertiary-container": "#686c80",
+                        "surface-variant": "#26364a",
+                        "on-secondary-fixed": "#001f26",
+                        "dark-bg": "#020617",
+                        "outline-variant": "#434655",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-background": "#d3e4fe",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#000f21",
+                        "on-secondary": "#003640",
+                        "tertiary": "#c1c5dc",
+                        "primary-container": "#2563eb",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary": "#2b3041",
+                        "error": "#ffb4ab",
+                        "surface": "#031427",
+                        "secondary": "#4cd7f6",
+                        "mobile-danger": "#FF3B30",
+                        "surface-dim": "#031427",
+                        "secondary-fixed": "#acedff",
+                        "on-primary-container": "#eeefff",
+                        "on-primary": "#002a78",
+                        "inverse-on-surface": "#213145",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "inverse-primary": "#0053db",
+                        "surface-bright": "#2a3a4f",
+                        "sync-active": "#FFD60A",
+                        "secondary-container": "#03b5d3",
+                        "outline": "#8d90a0",
+                        "surface-tint": "#b4c5ff",
+                        "primary": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "on-surface": "#d3e4fe",
+                        "mobile-success": "#00C853",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-container": "#102034",
+                        "background": "#031427",
+                        "on-secondary-container": "#00424e",
+                        "mobile-primary": "#0066FF",
+                        "sync-pending": "#94A3B8",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "on-error": "#690005"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "web-margin": "32px",
+                        "space-2": "8px",
+                        "space-4": "16px",
+                        "space-1": "4px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "edge-mobile": "24px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "h1-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col selection:bg-primary/30">
+<!-- Top Navigation Anchor (Suppressing active states as this is a focused success screen) -->
+<header class="w-full top-0 sticky z-50 bg-surface-container-low dark:bg-surface-container-lowest transition-colors duration-200 ease-in-out flex items-center justify-between px-edge-mobile h-touch-target">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer">arrow_back</span>
+<h1 class="font-h1-web text-h1-web font-bold text-on-surface tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-space-1 bg-surface-variant/20 px-space-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-sync-active text-[14px]" style="font-variation-settings: 'FILL' 1;">sensors</span>
+<span class="font-tiny-web text-tiny-web text-sync-active uppercase">SYNCED</span>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col px-edge-mobile pt-space-4 pb-24 max-w-md mx-auto w-full relative">
+<!-- Background Atmospheric Shader -->
+<div class="absolute inset-0 -z-10 opacity-30">
+
+</div>
+<!-- Success Hero Section -->
+<div class="flex flex-col items-center justify-center py-12 text-center">
+<div class="relative mb-space-4">
+<!-- Outer Ring Glow -->
+<div class="absolute inset-0 bg-mobile-success/20 blur-2xl rounded-full scale-150"></div>
+<div class="w-24 h-24 rounded-full bg-surface-container-highest border-4 border-mobile-success flex items-center justify-center animate-success shadow-[0_0_40px_rgba(0,200,83,0.3)]">
+<span class="material-symbols-outlined text-[48px] text-mobile-success" style="font-variation-settings: 'wght' 700;">check_circle</span>
+</div>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface mb-2">Download Complete</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant max-w-[280px]">File synchronization with local device storage finalized successfully.</p>
+</div>
+<!-- AI Integrity Badge -->
+<div class="mb-space-4">
+<div class="bg-secondary/5 border-l-4 border-secondary rounded-r-xl p-space-3 flex items-center gap-space-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<div>
+<p class="font-label-mobile text-label-mobile text-secondary uppercase tracking-wider">File Verified &amp; Secure</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant/80">AI check: SHA-256 Hash Match. No anomalies detected.</p>
+</div>
+</div>
+</div>
+<!-- File Summary Bento Card -->
+<div class="bg-surface-container rounded-2xl overflow-hidden border border-white/5 shadow-xl mb-space-4">
+<div class="bg-surface-container-high px-space-4 py-space-3 border-b border-white/5 flex justify-between items-center">
+<span class="font-label-mobile text-label-mobile text-on-surface-variant uppercase">Local Metadata</span>
+<span class="font-tiny-web text-tiny-web bg-primary-container/20 text-primary px-2 py-0.5 rounded">IFC 4.0</span>
+</div>
+<div class="p-space-4 space-y-space-3">
+<div class="flex items-center gap-space-4">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[28px]">view_in_ar</span>
+</div>
+<div class="flex-1">
+<p class="font-h2-web text-h2-web text-on-surface leading-tight">Sector_7B_Final.ifc</p>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant text-[15px]">342.8 MB • Downloaded 2m ago</p>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-2 mt-space-2 pt-space-2 border-t border-white/5">
+<div class="bg-surface-container-low p-space-2 rounded-lg">
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase opacity-60">Status</p>
+<p class="font-label-mobile text-label-mobile text-mobile-success">Offline Ready</p>
+</div>
+<div class="bg-surface-container-low p-space-2 rounded-lg">
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase opacity-60">Path</p>
+<p class="font-label-mobile text-label-mobile truncate text-on-surface">/Storage/Models/...</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Visual Context Card -->
+<div class="relative group rounded-2xl overflow-hidden aspect-video shadow-2xl mb-space-4 border border-white/10">
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10"></div>
+<div class="absolute bottom-4 left-4 z-20">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></span>
+<p class="font-label-mobile text-label-mobile text-white shadow-sm">BIM Engine Preview Ready</p>
+</div>
+</div>
+<div class="w-full h-full bg-cover bg-center grayscale-[0.5] group-hover:scale-105 transition-transform duration-700" data-alt="A sophisticated 3D architectural wireframe model of a large industrial complex, showing complex structural piping and steel beams. The rendering uses a dark theme with neon cyan and deep blue accents. Cinematic lighting highlights the precision of the construction data, reflecting a high-end BIM software interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAtLVHDsN9OgvTAMeub7hatF18dA61z59QkxCU9TVBwJ_gTOrQiIOjHrlKs6usSyo1DnvpRYKs10JA9yNSQB32LBoGgNB01zfoIm16XWpVoxB07a1IYWVmxleDcuqJWk3k7WExavnTUBH7A1nq3j5ZW0wnfqpMeYOGdejDN5-S1HkWYQQ8KOyovbBRCx_qtRZs1B3E3ZKofLXywdb0cT9IuvzzyNhR4Ko4qgsq6VAwHKsuwCf5EqgtuYno9xElHmv7VazFIgCfjijI')"></div>
+</div>
+<!-- Primary Actions -->
+<div class="mt-auto space-y-space-3">
+<button class="w-full h-touch-target bg-primary text-on-primary font-label-mobile text-label-mobile font-bold uppercase tracking-[0.05em] rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">launch</span>
+                OPEN FILE
+            </button>
+<button class="w-full h-touch-target bg-transparent border border-outline-variant text-on-surface-variant font-label-mobile text-label-mobile font-bold uppercase tracking-[0.05em] rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150 hover:bg-white/5">
+                RETURN TO MISSION
+            </button>
+</div>
+</main>
+<!-- Bottom Navigation (Suppressing for this focused success screen per rules) -->
+<!-- Shell Visibility Filter: Suppressed because page intent is Transactional/Success -->
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                let ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+</body></html>
