@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>คลังบันทึกการตรวจสอบย้อนหลัง | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1b2b3f;
+            border-radius: 10px;
+        }
+        .log-entry-border {
+            border-left: 4px solid transparent;
+        }
+        .log-entry-border.success { border-left-color: #00C853; }
+        .log-entry-border.info { border-left-color: #06B6D4; }
+        .log-entry-border.system { border-left-color: #FFD60A; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#00174b",
+                      "mobile-success": "#00C853",
+                      "surface-container-highest": "#26364a",
+                      "on-tertiary-container": "#eeefff",
+                      "primary-fixed": "#dbe1ff",
+                      "mobile-danger": "#FF3B30",
+                      "dark-bg": "#020617",
+                      "on-background": "#d3e4fe",
+                      "secondary": "#4cd7f6",
+                      "outline-variant": "#434655",
+                      "surface-container-high": "#1b2b3f",
+                      "tertiary-fixed-dim": "#c1c5dc",
+                      "outline": "#8d90a0",
+                      "on-error-container": "#ffdad6",
+                      "sync-active": "#00C853",
+                      "surface-container-lowest": "#000f21",
+                      "tertiary-container": "#686c80",
+                      "primary-container": "#2563eb",
+                      "on-tertiary": "#2b3041",
+                      "surface-dim": "#031427",
+                      "error-container": "#93000a",
+                      "on-surface": "#d3e4fe",
+                      "secondary-container": "#03b5d3",
+                      "on-secondary-fixed-variant": "#004e5c",
+                      "on-tertiary-fixed": "#161b2b",
+                      "surface-container-low": "#0b1c30",
+                      "tertiary": "#c1c5dc",
+                      "surface-container": "#102034",
+                      "inverse-surface": "#d3e4fe",
+                      "sync-pending": "#94A3B8",
+                      "on-secondary-container": "#00424e",
+                      "on-primary-container": "#eeefff",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "inverse-primary": "#0053db",
+                      "on-surface-variant": "#c3c6d7",
+                      "surface-tint": "#b4c5ff",
+                      "dark-surface": "#0F172A",
+                      "surface-bright": "#2a3a4f",
+                      "mobile-primary": "#0066FF",
+                      "secondary-fixed-dim": "#4cd7f6",
+                      "secondary-fixed": "#acedff",
+                      "on-error": "#690005",
+                      "mobile-warning": "#FF9500",
+                      "surface-variant": "#26364a",
+                      "tertiary-fixed": "#dee1f9",
+                      "primary": "#b4c5ff",
+                      "inverse-on-surface": "#213145",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "on-primary": "#002a78",
+                      "surface": "#031427",
+                      "error": "#ffb4ab",
+                      "background": "#031427",
+                      "on-tertiary-fixed-variant": "#414658",
+                      "on-secondary": "#003640",
+                      "on-secondary-fixed": "#001f26",
+                      "ai-cyan": "#06B6D4"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "space-4": "16px",
+                      "edge-mobile": "24px",
+                      "web-margin": "32px",
+                      "space-3": "12px",
+                      "space-1": "4px",
+                      "touch-target": "52px",
+                      "space-2": "8px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "tiny-web": ["Inter Tight"],
+                      "label-mobile": ["Inter Tight"],
+                      "body-web": ["Inter Tight"],
+                      "display-web": ["Inter Tight"],
+                      "body-mobile": ["Inter Tight"],
+                      "h1-web": ["Inter Tight"],
+                      "h2-web": ["Inter Tight"],
+                      "hero-mobile": ["Inter Tight"]
+              },
+              "fontSize": {
+                      "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                      "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface-container dark:bg-surface-container fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-[64px] border-b border-outline-variant/10">
+<div class="flex items-center gap-space-2">
+<img alt="COS Logo" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB6sjYk0Ir4ENakmjpkLqCNDZ1GqTNu4CNi2bQWOcg8qR1VIJEsnU-wjRcLZqJPjCVfjz0R5LE_gymp4RnKJwrSIeA9wT893c7X7P-e3DJ8_sfJm_IMN0FNArrsNhTmsNvM_mf9WmfqZ_xD22cMq0_BLw0qVUCoJC1Bv5Hti91LI8oTnv9Lj0a2ZDDzl0NPw9xjBGodHMazWMl3Dd81HFqwBDwGIG9t2y0HALaIqU7f15THXP00wLLIzecOzM5CulN9WU3L2wgsBVI"/>
+<h1 class="font-bold tracking-tighter text-on-surface text-[18px]">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-1.5 bg-mobile-success/10 px-3 py-1.5 rounded-full border border-mobile-success/20">
+<span class="material-symbols-outlined text-mobile-success text-[16px] font-bold" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-mobile text-[12px] font-bold text-mobile-success tracking-wider uppercase">SYNCED</span>
+</div>
+</header>
+<main class="flex-grow pt-[64px] pb-[100px]">
+<!-- Search & Utility Section -->
+<section class="px-edge-mobile pt-space-4 space-y-space-4">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-space-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-touch-target bg-surface-container-high border border-outline-variant/20 rounded-xl pl-12 pr-4 text-on-surface placeholder:text-on-surface-variant focus:ring-2 focus:ring-primary-container transition-all" placeholder="ค้นหาบันทึกย้อนหลัง..." type="text"/>
+</div>
+<!-- Date Range Selection (Bento Style) -->
+<div class="grid grid-cols-2 gap-space-3">
+<div class="bg-surface-container p-space-3 rounded-xl border border-outline-variant/10 h-touch-target flex flex-col justify-center">
+<label class="text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider">จากวันที่</label>
+<div class="flex items-center justify-between">
+<span class="text-label-mobile font-label-mobile text-on-surface">01-08-2024</span>
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+</div>
+</div>
+<div class="bg-surface-container p-space-3 rounded-xl border border-outline-variant/10 h-touch-target flex flex-col justify-center">
+<label class="text-[10px] font-bold text-on-surface-variant block uppercase tracking-wider">ถึงวันที่</label>
+<div class="flex items-center justify-between">
+<span class="text-label-mobile font-label-mobile text-on-surface">12-09-2024</span>
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Archive Header -->
+<div class="px-edge-mobile py-space-4 flex justify-between items-center">
+<h2 class="font-h2-web text-h2-web text-on-surface">บันทึกข้อมูลทางเทคนิค</h2>
+<div class="bg-surface-container-highest px-3 py-1 rounded-full flex items-center gap-1 border border-outline-variant/20">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">history</span>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant uppercase">Archive &gt; 30d</span>
+</div>
+</div>
+<!-- Log Feed (Mobile Stack) -->
+<section class="px-edge-mobile space-y-space-3">
+<!-- Entry 1 -->
+<div class="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:bg-surface-bright transition-colors log-entry-border success min-h-touch-target">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex flex-col">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">2024-09-12 10:45:22</span>
+<h3 class="text-body-mobile font-body-mobile font-semibold text-on-surface">Database Indexing Completed</h3>
+</div>
+<span class="bg-mobile-success/20 text-mobile-success px-2 py-0.5 rounded text-[10px] font-bold tracking-widest border border-mobile-success/30 uppercase">สำเร็จ</span>
+</div>
+<div class="flex items-center gap-2 mt-2 bg-surface-container-low px-2 py-1 rounded w-fit border border-outline-variant/10">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">terminal</span>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">SYS_AUTO_CRON</span>
+</div>
+</div>
+</div>
+<!-- Entry 2 -->
+<div class="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:bg-surface-bright transition-colors log-entry-border system min-h-touch-target">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex flex-col">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">2024-09-11 23:15:01</span>
+<h3 class="text-body-mobile font-body-mobile font-semibold text-on-surface">System Kernel Update</h3>
+</div>
+<span class="bg-yellow-400/20 text-yellow-400 px-2 py-0.5 rounded text-[10px] font-bold tracking-widest border border-yellow-400/30 uppercase">ระบบ</span>
+</div>
+<div class="flex items-center gap-2 mt-2 bg-surface-container-low px-2 py-1 rounded w-fit border border-outline-variant/10">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">memory</span>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">ROOT_OVERRIDE</span>
+</div>
+</div>
+</div>
+<!-- Entry 3 (AI Highlighted) -->
+<div class="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:bg-surface-bright transition-colors log-entry-border info min-h-touch-target">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex flex-col">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">2024-09-11 14:22:56</span>
+<h3 class="text-body-mobile font-body-mobile font-semibold text-on-surface">Tenant Config Reload</h3>
+</div>
+<span class="bg-ai-cyan/20 text-ai-cyan px-2 py-0.5 rounded text-[10px] font-bold tracking-widest border border-ai-cyan/30 uppercase">ข้อมูล</span>
+</div>
+<div class="flex items-center gap-2 mt-2 bg-surface-container-low px-2 py-1 rounded w-fit border border-outline-variant/10">
+<span class="material-symbols-outlined text-[14px] text-ai-cyan">psychology</span>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">TENANT_ADMIN_88</span>
+</div>
+</div>
+</div>
+<!-- Entry 4 -->
+<div class="bg-surface-container rounded-xl overflow-hidden shadow-sm hover:bg-surface-bright transition-colors log-entry-border success min-h-touch-target">
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex flex-col">
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">2024-09-10 09:00:00</span>
+<h3 class="text-body-mobile font-body-mobile font-semibold text-on-surface">Cloud Backup Sync</h3>
+</div>
+<span class="bg-mobile-success/20 text-mobile-success px-2 py-0.5 rounded text-[10px] font-bold tracking-widest border border-mobile-success/30 uppercase">สำเร็จ</span>
+</div>
+<div class="flex items-center gap-2 mt-2 bg-surface-container-low px-2 py-1 rounded w-fit border border-outline-variant/10">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">cloud_sync</span>
+<span class="text-tiny-web font-tiny-web text-on-surface-variant">S3_GATEWAY</span>
+</div>
+</div>
+</div>
+<!-- Shimmer Loading / Placeholder for more entries -->
+<div class="pt-space-4 flex flex-col items-center gap-space-2 pb-space-4">
+<div class="w-10 h-1 bg-surface-container-high rounded-full animate-pulse"></div>
+<p class="text-tiny-web font-tiny-web text-on-surface-variant uppercase tracking-widest">กำลังโหลดข้อมูลเพิ่มเติม</p>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-edge-mobile pb-safe h-[72px] bg-surface-container-lowest border-t border-outline-variant/30 shadow-2xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-mobile text-[11px] mt-1">Dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-mobile text-[11px] mt-1">Modules</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-ai-cyan/10 text-ai-cyan rounded-full px-5 py-2 transition-transform duration-150 active:scale-90 border border-ai-cyan/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-mobile text-[11px] mt-1 font-bold">AI Logs</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-transform duration-150 active:scale-90">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-[11px] mt-1">Settings</span>
+</button>
+</nav>
+<!-- Floating Action Button for download -->
+<button class="fixed right-edge-mobile bottom-[88px] w-[56px] h-[56px] bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-2xl shadow-primary/20 transition-all active:scale-95 z-40">
+<span class="material-symbols-outlined text-[24px]">download</span>
+</button>
+<script>
+        // Micro-interaction for entries
+        document.querySelectorAll('.bg-surface-container').forEach(card => {
+            card.addEventListener('touchstart', () => {
+                card.style.transform = 'scale(0.98)';
+                card.style.transition = 'transform 0.1s ease-out';
+            });
+            card.addEventListener('touchend', () => {
+                card.style.transform = 'scale(1)';
+            });
+        });
+
+        // Search highlight mock logic
+        const searchInput = document.querySelector('input');
+        searchInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            document.querySelectorAll('.log-entry-border').forEach(card => {
+                const text = card.innerText.toLowerCase();
+                if (text.includes(val)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body></html>

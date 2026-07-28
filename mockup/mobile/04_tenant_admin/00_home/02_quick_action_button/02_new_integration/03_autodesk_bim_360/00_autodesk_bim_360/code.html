@@ -1,0 +1,255 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Autodesk BIM 360 Integration | Construction OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#eeefff",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary": "#2b3041",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "dark-surface": "#0F172A",
+                        "surface-container-highest": "#26364a",
+                        "surface-container-lowest": "#000f21",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-primary": "#002a78",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-tertiary-fixed": "#161b2b",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#acedff",
+                        "primary-container": "#2563eb",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-secondary": "#003640",
+                        "tertiary-fixed": "#dee1f9",
+                        "surface-dim": "#031427",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-tint": "#b4c5ff",
+                        "mobile-success": "#00C853",
+                        "primary": "#b4c5ff",
+                        "background": "#031427",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-container": "#686c80",
+                        "dark-bg": "#020617",
+                        "sync-active": "#FFD60A",
+                        "surface-bright": "#2a3a4f",
+                        "on-background": "#d3e4fe",
+                        "mobile-primary": "#0066FF",
+                        "sync-pending": "#94A3B8",
+                        "on-secondary-container": "#00424e",
+                        "secondary-container": "#03b5d3",
+                        "inverse-primary": "#0053db",
+                        "surface": "#031427",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-container": "#eeefff",
+                        "tertiary": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "surface-variant": "#26364a",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-container": "#102034",
+                        "secondary": "#4cd7f6",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-on-surface": "#213145",
+                        "mobile-danger": "#FF3B30",
+                        "on-surface": "#d3e4fe",
+                        "outline": "#8d90a0",
+                        "outline-variant": "#434655",
+                        "mobile-warning": "#FF9500",
+                        "cos-cyan": "#06B6D4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-2": "8px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "web-margin": "32px",
+                        "space-1": "4px",
+                        "edge-mobile": "24px",
+                        "base": "4px",
+                        "space-4": "16px"
+                    },
+                    "fontFamily": {
+                        "h1-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .bento-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        .industrial-shimmer {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+        body { min-height: max(884px, 100dvh); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen pb-[100px]">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-md flex justify-between items-center px-edge-mobile h-touch-target border-b border-outline-variant/30">
+<div class="flex items-center gap-2">
+<img alt="Construction OS Icon" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDilM-MxyaVHYeQOI-xKCT9AZnX-bY5VNUzWe2wDmKS0jJuK7UKcrgfqOml6S70FDiQgEnnGJ5_3GVX5jM_8KY9FzBCshgPHndf-n5C_1Qp1dnUhSMbv_5SC5nY394cnrrSPdXm_RCars5ddnq4ynIMKCTNBrn9_C53I_AedMr8iy_vxC54wO3cTUaFtdvbgTnUZ-YUi_5r4ml2tT05FfoPU2zs5vlGqRjbkeojjQHbzhNiKeflQ9-G1ZWLkDGOEFCO5jWRkWA5CJU">
+<h1 class="font-h1-web text-h1-web font-bold text-primary tracking-tight uppercase leading-none text-body-mobile">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-mobile-success/10 rounded-full border border-mobile-success/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="text-tiny-web text-mobile-success font-bold tracking-widest uppercase">SYNCED</span>
+</div>
+</header>
+<main class="pt-[72px] px-edge-mobile space-y-6">
+<!-- Screen Title -->
+<section class="space-y-1">
+<h2 class="font-h1-web text-h1-web text-on-background">การเชื่อมต่อ Autodesk BIM 360</h2>
+
+</section>
+<!-- CORE_AI Assist Module -->
+<div class="relative overflow-hidden rounded-xl bg-cos-cyan/5 border-l-4 border-cos-cyan p-space-4 space-y-3 industrial-shimmer">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-cos-cyan text-[20px]" data-icon="smart_toy">smart_toy</span>
+<span class="font-label-mobile text-label-mobile text-cos-cyan uppercase font-bold tracking-widest">Integration Assist</span>
+</div>
+<div class="bg-cos-cyan/20 px-2 py-0.5 rounded text-[10px] font-bold text-cos-cyan border border-cos-cyan/30">98% CONFIDENCE</div>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface leading-relaxed italic">
+                "Sign in to your Autodesk account to authorize access to BIM 360 models. Source: <span class="underline decoration-cos-cyan/50 text-cos-cyan">Integration Docs</span>"
+            </p>
+</div>
+<!-- Authorization Section -->
+<section class="space-y-4">
+<button class="w-full h-[52px] bg-on-primary-container text-background font-bold flex items-center justify-center gap-3 rounded-lg active:scale-95 transition-transform duration-150 shadow-lg shadow-black/20">
+<span class="material-symbols-outlined" data-icon="login">login</span>
+<span class="uppercase tracking-wider">SIGN IN TO AUTODESK</span>
+</button>
+<p class="text-center font-tiny-web text-tiny-web text-on-surface-variant px-4 leading-normal">
+                คุณจะถูกเปลี่ยนเส้นทางไปหน้าเว็บ Autodesk เพื่อยืนยันตัวตน
+            </p>
+</section>
+<!-- Project Selection (Disabled) -->
+<section class="space-y-3 opacity-40 grayscale pointer-events-none">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-widest font-bold">Select BIM Projects</h3>
+<div class="bento-grid">
+<div class="bg-surface-container border border-outline-variant rounded-xl p-space-4 flex justify-between items-center">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="folder_zip">folder_zip</span>
+<div>
+<p class="font-label-mobile text-label-mobile">ค้นหาโครงการจาก BIM 360...</p>
+<p class="font-tiny-web text-tiny-web opacity-70">โปรดเชื่อมต่อบัญชีก่อน</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="expand_more">expand_more</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div class="bg-surface-container border border-outline-variant rounded-xl p-space-3 flex flex-col gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="layers">layers</span>
+<p class="font-tiny-web text-tiny-web font-bold uppercase tracking-tight">Auto-Sync Layers</p>
+</div>
+<div class="bg-surface-container border border-outline-variant rounded-xl p-space-3 flex flex-col gap-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="history">history</span>
+<p class="font-tiny-web text-tiny-web font-bold uppercase tracking-tight">Version History</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Security & Compliance -->
+<div class="bg-surface-container-low border border-outline-variant/20 rounded-xl p-space-4 space-y-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-mobile-warning mt-1" data-icon="security">security</span>
+<div class="space-y-1.5">
+<h4 class="font-label-mobile text-label-mobile text-on-surface uppercase font-bold tracking-wider">Compliance &amp; Security</h4>
+<p class="font-body-mobile text-[13px] text-on-surface-variant leading-relaxed">
+                        ระบบเชื่อมต่อผ่านโปรโตคอล <span class="text-secondary font-mono font-bold">OIDC/OAuth2</span> มาตรฐานความปลอดภัยสูงสุด ข้อมูลทั้งหมดจะถูกเข้ารหัสด้วย <span class="text-secondary font-mono font-bold">AES-256</span></p>
+</div>
+</div>
+</div>
+<!-- Call to Action -->
+<div class="pt-4">
+<button class="w-full h-[52px] bg-surface-container-highest text-on-surface-variant/40 font-bold flex items-center justify-center gap-2 rounded-lg cursor-not-allowed border border-outline-variant/10">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span class="uppercase tracking-wider">LINK BIM MODELS</span>
+</button>
+</div>
+</main>
+<!-- Bottom Nav Bar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container flex justify-around items-center h-[72px] pb-safe px-4 rounded-t-2xl border-t border-outline-variant/20 shadow-2xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-full px-4 py-1 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]" data-icon="home">home</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-full px-4 py-1 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]" data-icon="group">group</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Users</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors rounded-full px-4 py-1 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]" data-icon="notifications">notifications</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Alerts</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]" data-icon="settings" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
+<span class="font-label-mobile text-[10px] mt-0.5">Settings</span>
+</button>
+</nav>
+<!-- Visual Polish: Noise Overlays and Light Leak -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.02] z-[60]" style="background-image: url(&quot;https://www.transparenttextures.com/patterns/carbon-fibre.png&quot;);"></div>
+<div class="fixed -top-24 -left-24 w-64 h-64 bg-primary/5 blur-[100px] pointer-events-none"></div>
+<script>
+        // Micro-interactions for button scale
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.transform = 'scale(0.96)';
+            });
+            btn.addEventListener('touchend', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simple mock behavior for sign-in
+        const signInBtn = document.querySelector('button.bg-on-primary-container');
+        signInBtn.addEventListener('click', () => {
+            signInBtn.innerHTML = '<span class="material-symbols-outlined animate-spin" data-icon="sync">sync</span><span class="uppercase tracking-wider">AUTHORIZING...</span>';
+            setTimeout(() => {
+                alert('Mock Redirect: Autodesk OAuth Flow Triggered');
+                signInBtn.innerHTML = '<span class="material-symbols-outlined" data-icon="login">login</span><span class="uppercase tracking-wider">SIGN IN TO AUTODESK</span>';
+            }, 1500);
+        });
+    </script>
+
+
+</body></html>

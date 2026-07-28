@@ -1,0 +1,309 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>AUDIT-SEC-2024v2.pdf - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "sync-pending": "#94A3B8",
+                    "on-tertiary-fixed": "#161b2b",
+                    "secondary": "#4cd7f6",
+                    "outline-variant": "#434655",
+                    "surface-container-high": "#1b2b3f",
+                    "on-surface": "#d3e4fe",
+                    "background": "#031427",
+                    "on-tertiary-container": "#eeefff",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-tint": "#b4c5ff",
+                    "on-background": "#d3e4fe",
+                    "tertiary": "#c1c5dc",
+                    "surface-variant": "#26364a",
+                    "surface": "#031427",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-secondary-container": "#00424e",
+                    "primary-fixed": "#dbe1ff",
+                    "error": "#ffb4ab",
+                    "sync-active": "#FFD60A",
+                    "surface-dim": "#031427",
+                    "dark-surface": "#0F172A",
+                    "surface-bright": "#2a3a4f",
+                    "primary": "#b4c5ff",
+                    "tertiary-fixed": "#dee1f9",
+                    "on-secondary": "#003640",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "primary-container": "#2563eb",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary-container": "#eeefff",
+                    "on-tertiary": "#2b3041",
+                    "mobile-warning": "#FF9500",
+                    "on-primary": "#002a78",
+                    "surface-container-highest": "#26364a",
+                    "error-container": "#93000a",
+                    "inverse-on-surface": "#213145",
+                    "mobile-primary": "#0066FF",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container": "#102034",
+                    "inverse-surface": "#d3e4fe",
+                    "dark-bg": "#020617",
+                    "inverse-primary": "#0053db",
+                    "on-error": "#690005",
+                    "secondary-fixed": "#acedff",
+                    "outline": "#8d90a0",
+                    "secondary-container": "#03b5d3",
+                    "mobile-success": "#00C853",
+                    "surface-container-lowest": "#000f21",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-primary-fixed": "#00174b",
+                    "mobile-danger": "#FF3B30",
+                    "tertiary-container": "#686c80",
+                    "on-error-container": "#ffdad6",
+                    "ai-cyan": "#06B6D4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "space-3": "12px",
+                    "space-4": "16px",
+                    "web-margin": "32px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight", "sans-serif"],
+                    "display-web": ["Inter Tight", "sans-serif"],
+                    "hero-mobile": ["Inter Tight", "sans-serif"],
+                    "body-web": ["Inter Tight", "sans-serif"],
+                    "body-mobile": ["Inter Tight", "sans-serif"],
+                    "label-mobile": ["Inter Tight", "sans-serif"],
+                    "h2-web": ["Inter Tight", "sans-serif"],
+                    "h1-web": ["Inter Tight", "sans-serif"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .pdf-canvas {
+            background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.01) 1px, transparent 0);
+            background-size: 32px 32px;
+        }
+        .touch-target { min-height: 52px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-low border-b border-outline-variant px-edge-mobile h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button class="active:scale-95 transition-transform duration-200 text-primary -ml-2 p-2">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 flex items-center justify-center">
+  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6GgnrnKeL7qP9SEESTzZubOkqjgKyEtWADIyf8pchQ-P8IGEWcKMZFYaizLyS-ehe0LhZQzoSYlPzlB-VGA5HZn83JGxUDuaLEMz85DXNy32vHaMAXR5XCt7C5v3lk90xxOqo7AYttkUZZW2DLqarJai97OuZzUbrrhtDJYIEnn7E8Y2WNDtuLNKDPo7RDtRebynZZpolXLo44d8BYBqKwc2BKN7pWMip8zHfvxd0btqr4nvvTj2ZNyiPyOVKx1lnIeSdsycGSgo" alt="Construction OS Logo" class="w-full h-full object-cover">
+</div>
+<div>
+<h1 class="font-bold text-[14px] leading-tight text-on-surface tracking-tight uppercase">CONSTRUCTION OS</h1>
+<div class="flex items-center gap-1.5 mt-0.5">
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+<span class="text-[9px] font-bold text-mobile-success uppercase tracking-wider">SYNCED</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="active:scale-95 transition-transform duration-200 text-on-surface-variant p-2">
+<span class="material-symbols-outlined">share</span>
+</button>
+<div class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden">
+<img alt="Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpduWCEMlIVkt2M6aLYZ7PyzhWTrLfnqHJAjlOKAJaoqUQiO5GWH5bXTA_e11cvOolRTfqGKWChZhJ-I_VywBDpJCqXG6HIk5COvzApnysXfr5R6H81fvPS_QlmxaM822r252ZUJ1cBCsmvgdRoa5NH1OV997GpODBh_b8m3NH2ArwIeCzE5KuWHBgjfFvOp__twT8xzI7H9N9TngzoxeWkSwUD4VDjBKA15IZuQei77wnLoAnbZ3nLsFdKUyMdZiBGrIM2TO8g6Y">
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="pt-16 pb-safe min-h-screen bg-surface-dim flex flex-col items-center">
+<!-- PDF Document Preview Wrapper -->
+<div class="w-full max-w-md px-4 py-6">
+<!-- Document Controls Bar -->
+<div class="flex justify-between items-center mb-4 px-2">
+<span class="text-[11px] font-medium text-on-surface-variant">AUDIT-SEC-2024v2.pdf</span>
+<button class="text-primary flex items-center gap-1 text-[11px] font-bold">
+<span class="material-symbols-outlined text-sm">edit</span>
+<span class="">แก้ไขรายงาน</span>
+</button>
+</div>
+<div class="pdf-canvas bg-surface-bright rounded shadow-2xl border border-outline-variant overflow-hidden flex flex-col min-h-[720px]">
+<!-- Document Header Section -->
+<div class="p-8 border-b border-outline-variant bg-surface-container-low/30">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 bg-primary rounded-sm flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary text-3xl" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div>
+<p class="text-[10px] uppercase tracking-[0.15em] text-secondary font-bold">การตรวจสอบที่เป็นความลับ</p>
+<h2 class="font-h1-web text-[22px] leading-none mt-1">SECURITY PROTOCOL AUDIT</h2>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<p class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wide">รายงานทางเทคนิคที่สร้างโดยระบบ</p>
+<!-- Metadata Grid -->
+<div class="grid grid-cols-2 gap-y-4 pt-4 border-t border-outline-variant/30">
+<div>
+<p class="text-[9px] uppercase font-bold text-on-surface-variant/60 tracking-wider">ผู้ดำเนินการ</p>
+<p class="font-bold text-[14px]">สมชาย ส.</p>
+<p class="text-[10px] text-primary/70">ผู้ดูแลระบบ (Tenant Admin)</p>
+</div>
+<div>
+<p class="text-[9px] uppercase font-bold text-on-surface-variant/60 tracking-wider">วันเวลาที่บันทึก</p>
+<p class="font-bold text-[14px]">24/05/2024 14:22</p>
+</div>
+<div class="col-span-2">
+<p class="text-[9px] uppercase font-bold text-on-surface-variant/60 tracking-wider">ที่อยู่ IP</p>
+<p class="font-mono text-xs text-on-surface">104.28.15.221</p>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Verification Module -->
+<div class="px-8 py-6 bg-surface-container-low/20">
+<div class="bg-ai-cyan/5 border-l-4 border-ai-cyan p-5 rounded-r transition-opacity duration-1000" style="opacity: 1;">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-ai-cyan text-base" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="text-[11px] font-bold text-ai-cyan uppercase tracking-[0.1em]">AI VERIFIED</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[9px] font-bold bg-ai-cyan/20 text-ai-cyan px-2 py-0.5 rounded">98% CONFIDENCE</span>
+</div>
+</div>
+<p class="font-body-mobile text-[15px] leading-relaxed text-on-surface">
+                            การวิเคราะห์อัตโนมัติยืนยันว่าการเปิดใช้งาน <span class="text-ai-cyan font-semibold">MFA</span> ในทุกโหนดช่วยลดความเสี่ยงจากการโจมตีแบบ brute-force ได้ <span class="text-ai-cyan font-bold">100%</span> การตั้งค่าระบบสอดคล้องกับ NIST-800-171 Rev 2.
+                        </p>
+<p class="mt-3 text-[9px] text-on-surface-variant font-bold tracking-widest uppercase opacity-60">SOURCE: AUDIT ENGINE V2</p>
+</div>
+</div>
+<!-- Configuration Delta -->
+<div class="px-8 py-4 flex-grow">
+<h3 class="text-[11px] font-bold text-on-surface-variant uppercase tracking-[0.1em] mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">compare_arrows</span>
+                        CONFIGURATION DELTA (การเปลี่ยนแปลงการตั้งค่า)
+                    </h3>
+<div class="space-y-3">
+<!-- Item 1 -->
+<div class="bg-surface-container p-4 border border-outline-variant/30 rounded-sm">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[12px] font-bold text-primary">Default MFA Status</span>
+<span class="text-[9px] font-bold text-on-surface-variant">รายการที่ 1</span>
+</div>
+<div class="flex items-center gap-6 mt-2">
+<div class="flex-1">
+<span class="text-[9px] uppercase font-bold text-on-surface-variant/50 block">ก่อนหน้า</span>
+<span class="text-mobile-danger font-extrabold text-lg leading-tight">OFF</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/30">arrow_forward</span>
+<div class="flex-1 text-right">
+<span class="text-[9px] uppercase font-bold text-on-surface-variant/50 block">ภายหลัง</span>
+<span class="text-mobile-success font-extrabold text-lg leading-tight">ON</span>
+</div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="bg-surface-container p-4 border border-outline-variant/30 rounded-sm">
+<div class="flex justify-between items-center mb-2">
+<span class="text-[12px] font-bold text-primary">Session Timeout</span>
+<span class="text-[9px] font-bold text-on-surface-variant">รายการที่ 2</span>
+</div>
+<div class="flex items-center gap-6 mt-2">
+<div class="flex-1">
+<span class="text-[9px] uppercase font-bold text-on-surface-variant/50 block">ก่อนหน้า</span>
+<span class="font-extrabold text-lg leading-tight">15m</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/30">arrow_forward</span>
+<div class="flex-1 text-right">
+<span class="text-[9px] uppercase font-bold text-on-surface-variant/50 block">ภายหลัง</span>
+<span class="text-ai-cyan font-extrabold text-lg leading-tight">30m</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer of Document Area -->
+<div class="px-8 py-6 border-t border-outline-variant/30 flex justify-between items-end bg-surface-container-lowest">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg text-primary">verified_user</span>
+<span class="text-[11px] font-extrabold tracking-tight">COS SECURE LEDGER</span>
+</div>
+<p class="text-[9px] font-mono text-on-surface-variant/70 uppercase">HASH: 8f92-a12b-e4c1-902x-511v</p>
+</div>
+<div class="text-[11px] font-bold text-on-surface-variant">
+                        หน้า 1 จาก 1
+                    </div>
+</div>
+</div>
+<!-- Bottom Action Toolbar -->
+<div class="mt-8 grid grid-cols-3 gap-1 px-2">
+<button class="touch-target flex flex-col items-center justify-center gap-1 active:bg-surface-bright rounded-lg transition-colors group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">zoom_in</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">ขยาย (Zoom)</span>
+</button>
+<button class="touch-target flex flex-col items-center justify-center gap-1 active:bg-surface-bright rounded-lg transition-colors group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">download</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">บันทึก (Save)</span>
+</button>
+<button class="touch-target flex flex-col items-center justify-center gap-1 active:bg-surface-bright rounded-lg transition-colors group">
+<span class="material-symbols-outlined group-active:scale-90 transition-transform">print</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">พิมพ์ (Print)</span>
+</button>
+</div>
+</div>
+</main>
+<script>
+        // Subtle micro-interaction: Pulse the AI badge subtly
+        document.addEventListener('DOMContentLoaded', () => {
+            const aiBadge = document.querySelector('.bg-ai-cyan\\/5');
+            if (aiBadge) {
+                setInterval(() => {
+                    aiBadge.classList.add('transition-opacity', 'duration-1000');
+                    aiBadge.style.opacity = '0.7';
+                    setTimeout(() => {
+                        aiBadge.style.opacity = '1';
+                    }, 1000);
+                }, 4000);
+            }
+        });
+    </script>
+
+
+</body></html>

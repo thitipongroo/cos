@@ -1,0 +1,311 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - System Health</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-surface": "#d3e4fe",
+                    "outline-variant": "#434655",
+                    "mobile-danger": "#FF3B30",
+                    "on-background": "#d3e4fe",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "outline": "#8d90a0",
+                    "on-tertiary-container": "#eeefff",
+                    "surface-variant": "#26364a",
+                    "on-secondary-fixed": "#001f26",
+                    "tertiary-container": "#686c80",
+                    "sync-active": "#FFD60A",
+                    "secondary-container": "#03b5d3",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "mobile-success": "#00C853",
+                    "surface-container": "#102034",
+                    "mobile-primary": "#0066FF",
+                    "background": "#031427",
+                    "surface": "#031427",
+                    "on-primary": "#002a78",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "secondary": "#4cd7f6",
+                    "on-secondary": "#003640",
+                    "on-error": "#690005",
+                    "sync-pending": "#94A3B8",
+                    "surface-container-low": "#0b1c30",
+                    "surface-container-highest": "#26364a",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-bright": "#2a3a4f",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed": "#acedff",
+                    "on-error-container": "#ffdad6",
+                    "mobile-warning": "#FF9500",
+                    "primary-container": "#2563eb",
+                    "primary": "#b4c5ff",
+                    "surface-container-high": "#1b2b3f",
+                    "inverse-on-surface": "#213145",
+                    "dark-surface": "#0F172A",
+                    "inverse-surface": "#d3e4fe",
+                    "on-secondary-container": "#00424e",
+                    "dark-bg": "#020617",
+                    "tertiary": "#c1c5dc",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-primary": "#0053db",
+                    "error": "#ffb4ab",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-lowest": "#000f21",
+                    "primary-fixed": "#dbe1ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-primary-container": "#eeefff",
+                    "error-container": "#93000a",
+                    "surface-dim": "#031427",
+                    "ai-cyan": "#06B6D4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "edge-mobile": "24px",
+                    "touch-target": "52px",
+                    "web-margin": "32px",
+                    "space-1": "4px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-2": "8px",
+                    "space-3": "12px"
+            },
+            "fontFamily": {
+                    "label-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h1-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h1-mobile": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #031427;
+        }
+        .radial-progress {
+            transition: stroke-dashoffset 1s ease-in-out;
+        }
+        body {
+          min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary selection:text-on-primary">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-high h-touch-target flex justify-between items-center px-edge-mobile border-b border-outline-variant/10">
+<div class="flex items-center gap-space-2">
+<img alt="COS Logo" class="w-8 h-8 rounded-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMPplQ9RNeQEQ7Hs97dpC_lPuyuBneDNFdtjvzMPT6n7-2uLqMs1ePlxyIXP8nlPndzvRtMnGlc7rLT2RhqXJabdyAdwcLNk3TI4IOHNlDKtIne5wJV6piiP2iuIY9pfH4UBJPNHiSrfFNtoNwUdU0k3rBBO5dASnUF0E0vpYNT1Xs-3c5rcjPxCtslZt5fZueQtOE3IYBekG1U5if_EXN3nAHxCEJlrcJqEB3acq_-kOJ3cPOWPWE-D83OXAZ0oXN1Ob6pZ9LeWg">
+<h1 class="font-h1-mobile text-[18px] font-bold tracking-tight text-on-surface uppercase">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-1.5 bg-surface-container-highest px-space-2 py-1 rounded-lg border border-mobile-success/20">
+<span class="material-symbols-outlined text-[14px] text-mobile-success font-bold" style="font-variation-settings: &quot;wght&quot; 700;">check</span>
+<span class="font-label-mobile text-[10px] text-mobile-success tracking-widest uppercase">SYNCED</span>
+</div>
+</header>
+<main class="pt-20 pb-32 px-edge-mobile space-y-6">
+<!-- Header Thai -->
+<div class="flex flex-col gap-1">
+
+
+</div>
+<!-- Overall Health Score -->
+<section class="bg-surface-container rounded-lg p-space-4 border-l-4 border-mobile-success flex flex-col items-center">
+<div class="relative w-40 h-40">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-variant" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-width="12"></circle>
+<circle class="text-mobile-success radial-progress" cx="80" cy="80" fill="transparent" r="70" stroke="currentColor" stroke-dasharray="440" stroke-dashoffset="8.8" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-hero-mobile text-[40px] text-on-surface leading-none">98%</span>
+<span class="font-label-mobile text-mobile-success uppercase tracking-widest text-[11px]">OPTIMAL</span>
+</div>
+</div>
+<p class="mt-space-4 font-label-mobile text-on-surface-variant text-center uppercase tracking-wider">System Health Status</p>
+</section>
+<!-- Real-time Metrics Grid -->
+<section class="grid grid-cols-2 gap-space-3">
+<!-- CPU -->
+<div class="bg-surface-container p-space-3 rounded-lg border border-outline-variant/20">
+<div class="flex justify-between items-start mb-space-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="memory">memory</span>
+<span class="font-label-mobile text-mobile-success">9%</span>
+</div>
+<div class="font-label-mobile text-on-surface text-[12px]">CPU USAGE</div>
+<div class="w-full bg-surface-variant h-1 mt-space-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 12%"></div>
+</div>
+</div>
+<!-- Memory -->
+<div class="bg-surface-container p-space-3 rounded-lg border border-outline-variant/20">
+<div class="flex justify-between items-start mb-space-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="database">database</span>
+<span class="font-label-mobile text-on-surface">4.2GB</span>
+</div>
+<div class="font-label-mobile text-on-surface text-[12px]">MEMORY / 16 GB</div>
+<div class="w-full bg-surface-variant h-1 mt-space-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 26.25%"></div>
+</div>
+</div>
+<!-- Latency -->
+<div class="bg-surface-container p-space-3 rounded-lg border border-outline-variant/20">
+<div class="flex justify-between items-start mb-space-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="speed">speed</span>
+<span class="font-label-mobile text-mobile-success">42ms</span>
+</div>
+<div class="font-label-mobile text-on-surface text-[12px]">API LATENCY</div>
+</div>
+<!-- DB Connections -->
+<div class="bg-surface-container p-space-3 rounded-lg border border-outline-variant/20">
+<div class="flex justify-between items-start mb-space-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="hub">hub</span>
+<span class="font-label-mobile text-on-surface">124</span>
+</div>
+<div class="font-label-mobile text-on-surface text-[12px]">ACTIVE DB CONNECTION</div>
+</div>
+</section>
+<!-- Service Status List -->
+<section class="space-y-space-2">
+<h3 class="font-label-mobile text-on-surface-variant uppercase tracking-widest px-1">สถานะบริการ</h3>
+<div class="bg-surface-container rounded-lg overflow-hidden border border-outline-variant/20">
+<!-- Row -->
+<div class="flex items-center justify-between p-space-3 border-b border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="engineering">engineering</span>
+<span class="font-body-mobile text-[15px]">BIM Engin</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-mobile text-mobile-success text-[12px]">ออนไลน์</span>
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+</div>
+</div>
+<!-- Row -->
+<div class="flex items-center justify-between p-space-3 border-b border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="sensors">sensors</span>
+<span class="font-body-mobile text-[15px]">IoT Telemetry</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-mobile text-mobile-success text-[12px]">ออนไลน์</span>
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+</div>
+</div>
+<!-- Row -->
+<div class="flex items-center justify-between p-space-3 border-b border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="sync_alt">sync_alt</span>
+<span class="font-body-mobile text-[15px]">ERP Sync</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-mobile text-mobile-warning text-[12px]">สแตนด์บาย</span>
+<span class="w-2 h-2 rounded-full bg-mobile-warning"></span>
+</div>
+</div>
+<!-- Row -->
+<div class="flex items-center justify-between p-space-3">
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="key">key</span>
+<span class="font-body-mobile text-[15px]">Authentication</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-mobile text-mobile-success text-[12px]">ออนไลน์</span>
+<span class="w-2 h-2 rounded-full bg-mobile-success"></span>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Diagnostics Card -->
+<section class="bg-surface-container border-l-4 border-ai-cyan p-space-4 rounded-lg relative overflow-hidden">
+<div class="absolute top-0 right-0 p-space-2 opacity-10">
+<span class="material-symbols-outlined text-[48px] text-ai-cyan" data-icon="psychology">psychology</span>
+</div>
+<div class="flex justify-between items-center mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-ai-cyan text-[18px]" data-icon="bolt">bolt</span>
+<span class="font-label-mobile text-ai-cyan uppercase tracking-widest text-[11px]">Core AI Diagnostics</span>
+</div>
+<span class="bg-ai-cyan/10 text-ai-cyan text-[10px] px-1.5 py-0.5 rounded font-bold">CONFIDENCE 98%</span>
+</div>
+<p class="font-body-mobile text-[14px] leading-relaxed text-on-surface mb-space-3">
+                CORE_AI: ความเสถียรของโครงสร้างพื้นฐานคาดว่าจะอยู่ในระดับสูงในอีก 72 ชั่วโมงข้างหน้า ไม่พบความผิดปกติในรูปแบบการรับส่งข้อมูลปัจจุบัน
+            </p>
+<div class="flex items-center gap-1.5 opacity-60">
+<span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+<span class="text-[10px] font-label-mobile uppercase">แหล่งที่มา: ระบบโทรมาตร และ ข้อมูลจาก IoT</span>
+</div>
+</section>
+<!-- Action Buttons -->
+<section class="grid grid-cols-1 gap-space-3 pt-space-2 pb-4">
+<button class="h-touch-target bg-primary text-on-primary font-label-mobile uppercase tracking-[0.05em] rounded-lg shadow-lg active:scale-[0.98] transition-transform text-[14px] px-6">
+                VIEW FULL LOGS</button>
+<button class="h-touch-target border border-outline-variant text-on-surface font-label-mobile uppercase tracking-[0.05em] rounded-lg active:bg-surface-bright transition-colors text-[14px] px-6">REFRESH DATA</button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-surface-container-lowest border-t border-outline-variant/10 px-edge-mobile h-[80px] flex items-center justify-around pb-safe">
+<a class="flex flex-col items-center justify-center text-on-surface-variant group" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-mobile text-[10px] mt-1">รายงาน</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant group" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-[10px] mt-1">คลังสินค้า</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant group" href="#">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-label-mobile text-[10px] mt-1">BIM</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant group" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-[10px] mt-1">ผู้ใช้</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-space-4 py-space-1 group" href="#">
+<span class="material-symbols-outlined" data-icon="settings" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">settings</span>
+<span class="font-label-mobile text-[10px] mt-1">ตั้งค่า</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const originalText = this.innerText;
+                if(originalText === 'รีเฟรชข้อมูล') {
+                    this.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span>';
+                    setTimeout(() => { this.innerText = originalText; }, 1500);
+                }
+            });
+        });
+
+        // Simulating real-time metric fluctuations
+        setInterval(() => {
+            const cpu = Math.floor(Math.random() * (18 - 8) + 8);
+            const cpuLabel = document.querySelector('[data-icon="memory"] + span');
+            if(cpuLabel) cpuLabel.innerText = cpu + '%';
+        }, 3000);
+    </script>
+
+
+</body></html>

@@ -1,0 +1,267 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>ส่งคำขอสำเร็จ | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .success-shimmer {
+            background: linear-gradient(90deg, rgba(0, 200, 83, 0) 0%, rgba(0, 200, 83, 0.2) 50%, rgba(0, 200, 83, 0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .bento-glow {
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.1);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error": "#ffb4ab",
+                        "dark-surface": "#0F172A",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "mobile-danger": "#FF3B30",
+                        "sync-active": "#FFD60A",
+                        "surface-container": "#102034",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-tint": "#b4c5ff",
+                        "background": "#031427",
+                        "inverse-on-surface": "#213145",
+                        "on-tertiary-container": "#eeefff",
+                        "outline-variant": "#434655",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary-fixed": "#001f26",
+                        "secondary-container": "#03b5d3",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "secondary": "#4cd7f6",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#0b1c30",
+                        "on-surface": "#d3e4fe",
+                        "on-error": "#690005",
+                        "surface-container-high": "#1b2b3f",
+                        "surface": "#031427",
+                        "mobile-primary": "#0066FF",
+                        "outline": "#8d90a0",
+                        "mobile-success": "#00C853",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-primary": "#002a78",
+                        "on-error-container": "#ffdad6",
+                        "dark-bg": "#020617",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary-container": "#00424e",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-surface-variant": "#c3c6d7",
+                        "primary-container": "#2563eb",
+                        "mobile-warning": "#FF9500",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "surface-bright": "#2a3a4f",
+                        "surface-dim": "#031427",
+                        "tertiary": "#c1c5dc",
+                        "inverse-primary": "#0053db",
+                        "on-secondary": "#003640",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-highest": "#26364a",
+                        "tertiary-container": "#686c80",
+                        "secondary-fixed": "#acedff",
+                        "surface-variant": "#26364a",
+                        "tertiary-fixed": "#dee1f9",
+                        "primary": "#b4c5ff",
+                        "on-tertiary": "#2b3041",
+                        "inverse-surface": "#d3e4fe",
+                        "sync-pending": "#94A3B8",
+                        "on-background": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "space-3": "12px",
+                        "web-margin": "32px",
+                        "space-2": "8px",
+                        "base": "4px",
+                        "edge-mobile": "24px",
+                        "space-1": "4px"
+                    },
+                    "fontFamily": {
+                        "body-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-body-mobile min-h-screen flex flex-col">
+<!-- Top AppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest border-b border-outline-variant/10">
+<div class="flex items-center gap-space-2">
+<img alt="COS Icon" class="w-8 h-8 object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOZpT5nTePk-2nae7nI3zpOn7izzD4Lkq0DZP7W6ECyKHUwaNKW-bnJiEMgF6mkEwQAASZaq6wLpZI96L_xdgqzY1lC1x1EwR39rftacC5pN9pppIqLEBOXG0Qh80sF1vTgNbKYZNr--KhHl2QS5T0F_zUGTdxjGW82zsMV6aD63XIXiMFFsXOzdYqzTxyIORaNXazEPJ35xajEZgwQQHLVWNJL8RBjblmG5FOH1oPWCOsSBEptmMptwl6OD_dUjzsWqqLJmUxbTA">
+<h1 class="font-display-web text-[16px] font-bold text-primary tracking-wide uppercase whitespace-nowrap">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-1 bg-surface-container-high px-space-2 py-1 rounded-full border border-outline-variant/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web text-sync-active uppercase">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center border border-primary/30 overflow-hidden">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxtsGLw9E81vI5jJI4mrpGQo8E7RBYrIOtyPDuEgmmzI-5mTteQQZIw7YjI8XTPeSMmzdSMG-l1AHbw5SLYLyQEmmtDMt2060BYncq8khc89jzFoW53M3Dpb78w8pVPN9amTU9jjzTzDy2yUuM3toG3QrBRny3kan82dKz5y3MR7yamHypP9YlldLAfY11ts6W_nr428bKVQFrf-gurTMyJgW8FI0EANFR1vhfKyA1Af_TKl4giLwgAMByFD8ykgo5pqcJATh_7iE">
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-touch-target mb-[72px] px-edge-mobile py-space-4 flex flex-col items-center justify-center space-y-space-4">
+<!-- Success Visual Section -->
+<div class="relative flex flex-col items-center py-space-4 w-full">
+<div class="w-24 h-24 rounded-full bg-mobile-success/10 flex items-center justify-center border-2 border-mobile-success relative overflow-hidden group">
+<div class="absolute inset-0 success-shimmer"></div>
+<span class="material-symbols-outlined text-6xl text-mobile-success" data-icon="check_circle" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+<div class="mt-space-4 text-center">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">ส่งคำขอสำเร็จ</h2>
+
+</div>
+</div>
+<!-- Details Bento Card -->
+<div class="w-full bg-surface-container border-l-4 border-mobile-primary rounded-xl overflow-hidden shadow-lg bento-glow">
+<div class="p-space-4 space-y-space-3">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider mb-1">REFERENCE ID</p>
+<p class="font-h2-web text-h2-web text-primary">#REV-442-ANOMALY</p>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer active:scale-90 transition-transform" data-icon="content_copy">content_copy</span>
+</div>
+<div class="h-px bg-outline-variant/10 w-full"></div>
+<div class="grid grid-cols-2 gap-space-3">
+<div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider mb-1">Status</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-mobile-warning text-sm" data-icon="hourglass_empty">hourglass_empty</span>
+<p class="font-label-mobile text-label-mobile text-on-surface">Awaiting Expert Review</p>
+</div>
+</div>
+<div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-wider mb-1">ETA</p>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="schedule">schedule</span>
+<p class="font-label-mobile text-label-mobile text-on-surface">&lt; 4 hours</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Module Card -->
+<div class="w-full bg-secondary-container/5 border-l-4 border-secondary rounded-xl overflow-hidden p-space-4 relative">
+<div class="absolute top-0 right-0 p-2">
+<div class="flex items-center gap-1 bg-secondary/10 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[10px] text-secondary" data-icon="bolt" style="font-variation-settings: &quot;FILL&quot; 1;">bolt</span>
+<span class="text-[10px] font-bold text-secondary uppercase">99% CONFIDENCE</span>
+</div>
+</div>
+<div class="flex gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-secondary" data-icon="psychology">psychology</span>
+</div>
+<div class="flex flex-col">
+<p class="font-label-mobile text-label-mobile text-secondary font-bold">CORE_AI INSIGHT</p>
+<p class="font-body-web text-body-web text-on-surface-variant mt-1 leading-relaxed">
+                        Request queued in <span class="text-secondary font-bold">Priority Alpha</span> stream. You will be notified via Push and LINE once the investigation is complete.
+                    </p>
+<div class="mt-2 pt-2 border-t border-secondary/10">
+<p class="text-[11px] text-on-surface-variant/70 italic">แหล่งข้อมูล: บันทึกความปลอดภัย, ฐานข้อมูลเหตุการณ์, ทะเบียนสินทรัพย์</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="w-full flex flex-col gap-space-3 pt-space-2">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-h1-web text-h1-web rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150 shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>RETURN TO AUDIT LOGS</button>
+<button class="w-full h-touch-target border-2 border-outline-variant text-on-surface font-h1-web text-h1-web rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+                VIEW SYSTEM HEALTH</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe h-[72px] bg-surface-container dark:bg-surface-container-high shadow-lg border-t border-outline-variant/10">
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 scale-95 transition-all duration-200">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-label-mobile">รายงาน</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200 px-space-4 py-space-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">คลังสินค้า</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200 px-space-4 py-space-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200 px-space-4 py-space-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile">ผู้ใช้</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200 px-space-4 py-space-2 rounded-xl">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile">ตั้งค่า</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for the Case ID copy action
+        document.querySelector('[data-icon="content_copy"]').addEventListener('click', function() {
+            this.textContent = 'check';
+            this.classList.add('text-mobile-success');
+            setTimeout(() => {
+                this.textContent = 'content_copy';
+                this.classList.remove('text-mobile-success');
+            }, 2000);
+        });
+
+        // Simple tactile feedback for buttons
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('scale-95'));
+            btn.addEventListener('touchend', () => btn.classList.remove('scale-95'));
+        });
+    </script>
+
+
+</body></html>
