@@ -236,6 +236,10 @@ export function MobileNav() {
       <Tabs.Screen name="role-permissions" options={{ href: null }} />
       {/* Roles selection — reached from Invite-user's "Show more roles" picker (router.push). */}
       <Tabs.Screen name="roles-selection" options={{ href: null }} />
+      {/* Invitation success — terminal screen after SEND INVITATION (router.replace). Not in the
+          TopBar CHILD_TITLE_KEY map on purpose: it shows the CONSTRUCTION OS wordmark with no Back
+          arrow, matching the mockup (there is no form to return to). */}
+      <Tabs.Screen name="invitation-success" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

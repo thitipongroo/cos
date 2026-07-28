@@ -28,7 +28,7 @@ folder — one screen can span several shots that share a number (e.g. the multi
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | The Site Engineer loading state + dashboard (`00`, `01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`), the Role-permissions breakdown (`06`) and the Roles-selection picker (`07`). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`), the Role-permissions breakdown (`06`), the Roles-selection picker (`07`) and the Invitation-success confirmation (`08`). |
 
 The two adb dashboard scripts write straight into their role folder —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/`,
@@ -285,6 +285,28 @@ single-select (createUser takes one role).
   being switched to **`backBehavior="history"`** (`components/MobileNav.tsx`): these pushed screens are
   hidden `Tabs.Screen` siblings, and the React Navigation default (`firstRoute`) would send Back to Home
   instead of the screen that opened the picker — this also fixes Role-permissions' "Back to invitation".
+
+## Tenant Admin — Invitation success — [`08`](TENANT_ADMIN/08-invitation-success.png)
+
+The terminal confirmation shown after Invite-user's **SEND INVITATION** succeeds
+([`app/(app)/invitation-success.tsx`](../../../apps/mobile/src/app/(app)/invitation-success.tsx), mockup
+`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/04_invitation_success`). It **replaces the
+old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
+
+- **Real submitted data.** Recipient shows the **contact exactly as entered, unmasked** (PO decision
+  2026-07-29 — the mockup's `+66 81-xxx-9921` mask is dropped); Role is the chosen role. The **Projects
+  row only appears when the admin actually picked projects** (createUser takes no project list, so it is
+  usually absent) — no fabricated "Skyline Plaza / Central Hub". "Status: Awaiting response" is truthful
+  (the invite is pending until the recipient verifies).
+- The **CORE_AI** banner is kept as drawn, **including "98 % Confidence | RBAC policy v4.2"** (PO decision
+  2026-07-29 — "full"). No top bar of its own — the global TopBar shows the CONSTRUCTION OS wordmark with
+  **no Back arrow** (terminal screen; reached via `router.replace`). **Invite another member** →
+  `router.replace('/invite-user')`; **Go to dashboard** → `router.replace('/home')`.
+- **Backend fix (required for this flow to work at all).** `POST /users` was returning **500** —
+  `user.service.ts` cast the role to an unqualified `::"CosRoleEnum"`, but the type lives in the
+  `platform` schema and the connection's `search_path` excludes it (`type "CosRoleEnum" does not exist`).
+  Qualified to `::platform."CosRoleEnum"` in both `createUser` and `changeRole`; `POST /users` now returns
+  **201** and the real SEND → success flow is reachable.
 
 ## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 

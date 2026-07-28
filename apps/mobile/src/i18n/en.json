@@ -831,5 +831,18 @@
       "field": "Field",
       "hse": "HSE"
     }
+  },
+  "invitationSuccess": {
+    "heading": "Invitation sent!",
+    "summaryTitle": "Invitation summary",
+    "recipient": "Recipient",
+    "role": "Role",
+    "projects": "Projects",
+    "aiTitle": "CORE_AI",
+    "aiMeta": "98% Confidence | RBAC policy v4.2",
+    "aiBody": "Access has been provisioned and activates the moment the recipient verifies their identity.",
+    "status": "Status: Awaiting response",
+    "inviteAnother": "Invite another member",
+    "goToDashboard": "Go to dashboard"
   }
 }

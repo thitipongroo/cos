@@ -129,28 +129,37 @@ export default function InviteUserScreen(): React.JSX.Element {
     if (role === null) return void Alert.alert(t('inviteUser.title'), t('inviteUser.errRole'));
 
     let payload: Parameters<typeof createUser>[0];
+    let contactDisplay = ''; // shown verbatim on the success screen (no masking — PO 2026-07-29)
     if (method === 'phone') {
       const e164 = '+66' + contact.replace(/\D/g, '').replace(/^0/, '');
       if (!/^\+[1-9]\d{7,14}$/.test(e164)) {
         return void Alert.alert(t('inviteUser.title'), t('inviteUser.errPhone'));
       }
       payload = { display_name: nm, role, phone_number: e164 };
+      contactDisplay = e164;
     } else {
       const em = contact.trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) {
         return void Alert.alert(t('inviteUser.title'), t('inviteUser.errEmail'));
       }
       payload = { display_name: nm, role, email: em };
+      contactDisplay = em;
     }
 
     setSending(true);
     createUser(payload)
       .then(() => {
-        Alert.alert(
-          t('inviteUser.successTitle'),
-          t('inviteUser.successBody', { name: nm, role: formatRole(role) }),
-        );
-        router.back();
+        // Success → the confirmation screen (mockup 04_invitation_success), carrying the real submitted
+        // data. router.replace so Back / the form is gone; the success screen owns what happens next.
+        router.replace({
+          pathname: '/invitation-success',
+          params: {
+            method,
+            contact: contactDisplay,
+            role,
+            projects: picked.map((p) => p.project_name).join(', '),
+          },
+        });
       })
       .catch((err: unknown) => {
         // 409 → identity already exists; anything else is a generic failure.

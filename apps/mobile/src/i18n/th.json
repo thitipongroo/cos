@@ -831,5 +831,18 @@
       "field": "Field",
       "hse": "HSE"
     }
+  },
+  "invitationSuccess": {
+    "heading": "ส่งคำเชิญเรียบร้อยแล้ว!",
+    "summaryTitle": "สรุปการส่งคำเชิญ",
+    "recipient": "ผู้รับ",
+    "role": "บทบาท",
+    "projects": "โครงการ",
+    "aiTitle": "CORE_AI",
+    "aiMeta": "98% CONFIDENCE | ข้อมูลจากนโยบาย RBAC v4.2",
+    "aiBody": "ระบบได้เตรียมสิทธิ์การเข้าถึงไว้แล้ว และจะเปิดใช้งานทันทีหลังจากผู้รับยืนยันตัวตนสำเร็จ",
+    "status": "สถานะ: รอการตอบรับ",
+    "inviteAnother": "เชิญสมาชิกเพิ่ม",
+    "goToDashboard": "ไปที่หน้าแดชบอร์ด"
   }
 }

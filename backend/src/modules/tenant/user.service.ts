@@ -246,7 +246,7 @@ export class UserService implements OnModuleDestroy {
 
         await tx.$queryRaw`
           INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
-          VALUES (${tenantId}::uuid, ${created!.user_id}::uuid, ${dto.role}::"CosRoleEnum")
+          VALUES (${tenantId}::uuid, ${created!.user_id}::uuid, ${dto.role}::platform."CosRoleEnum")
         `;
 
         return created!;
@@ -291,7 +291,7 @@ export class UserService implements OnModuleDestroy {
     const oldRole = membership.role;
     await this.prisma.$queryRaw`
       UPDATE platform.tenant_memberships
-      SET role = ${dto.role}::"CosRoleEnum"
+      SET role = ${dto.role}::platform."CosRoleEnum"
       WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
     `;
 
