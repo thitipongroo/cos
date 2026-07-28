@@ -743,5 +743,74 @@
   "help": {
     "title": "Help & Support",
     "comingSoon": "In-app help & support is coming soon."
+  },
+  "rolePermissions": {
+    "title": "Role permissions",
+    "aiTitle": "CORE_AI Assistant",
+    "aiBody": "These permissions follow recommended safety standards for industrial operations.",
+    "aiConfidence": "98% Confidence",
+    "aiVerified": "Verified against RBAC v4.2",
+    "backToInvite": "Back to invitation",
+    "error": "Couldn't load permissions. Check your connection and try again.",
+    "empty": "This role has no module permissions.",
+    "level": {
+      "full": "Full access",
+      "rw": "Read / Write",
+      "r": "Read only"
+    }
+  },
+  "res": {
+    "project": {
+      "label": "Projects",
+      "desc": "Schedules, documents & project data"
+    },
+    "boq": {
+      "label": "BOQ",
+      "desc": "Bills of quantities & costing"
+    },
+    "procurement": {
+      "label": "Procurement",
+      "desc": "Purchase requests & deliveries"
+    },
+    "finance": {
+      "label": "Finance",
+      "desc": "Budgets, invoices & payments"
+    },
+    "siteOps": {
+      "label": "Site Operations",
+      "desc": "Daily logs & on-site work"
+    },
+    "inspection": {
+      "label": "Inspections",
+      "desc": "Checklists & QA sign-off"
+    },
+    "issue": {
+      "label": "Issues",
+      "desc": "Site issues & defects"
+    },
+    "task": {
+      "label": "Tasks",
+      "desc": "Assigned tasks & progress"
+    },
+    "safety": {
+      "label": "Safety",
+      "desc": "Safety reports & incidents"
+    },
+    "vendor": {
+      "label": "Vendors",
+      "desc": "Vendor directory & records"
+    },
+    "crm": {
+      "label": "CRM",
+      "desc": "Leads & customer records"
+    },
+    "analytics": {
+      "label": "Analytics",
+      "desc": "Dashboards & reporting"
+    },
+    "ai": {
+      "label": "AI Assistant",
+      "desc": "CORE_AI insights & suggestions"
+    }
   }
 }

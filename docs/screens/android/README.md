@@ -28,7 +28,7 @@ folder — one screen can span several shots that share a number (e.g. the multi
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | The Site Engineer loading state + dashboard (`00`, `01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`) and the Invite-user form (`05`). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`) and the Role-permissions breakdown (`06`). |
 
 The two adb dashboard scripts write straight into their role folder —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/`,
@@ -241,6 +241,28 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
 - The **CORE_AI ASSISTANT** panel keeps its **"94 % CONFIDENCE"** badge, and its copy is **role-aware**
   ("…pre-applied for the _Project Manager_ role") but **drops the mockup's fabricated permission
   specifics** ("approval rights for Payouts and Daily Reports") — PO decision 2026-07-29.
+
+## Tenant Admin — Role permissions — [`06`](TENANT_ADMIN/06-role-permissions.png) · [`scroll`](TENANT_ADMIN/06-role-permissions-scroll.png)
+
+Reached from Invite-user's **"View permissions"** link
+([`app/(app)/role-permissions.tsx`](../../../apps/mobile/src/app/(app)/role-permissions.tsx), mockup
+`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/02_role_permissions`). A read-only access
+breakdown for the role being invited.
+
+- **Real RBAC, not the mockup's values.** The module → access rows are **derived from the authoritative
+  permission matrix** (`ROLE_PERMISSIONS`, spec §6.4) fetched over a new endpoint
+  **`GET /auth/roles/:role/permissions`** — so they show what the role can _actually_ do. Level is
+  derived per resource: any `*`/`approve` grant → **FULL**, else `write` → **RW**, else read → **R**. For
+  `PROJECT_MANAGER` that is Projects RW · BOQ RW · Procurement **FULL** (it holds `procurement:approve`)
+  · Finance R · Site Operations RW · Analytics R · AI R — deliberately different from the mockup's
+  illustrative Procurement RW / Site FULL / Safety R (PO decision 2026-07-29 — honest RBAC over the
+  drawn values; only the modules a role really holds are listed).
+- **Hero** reuses the role's real name + `inviteUser.roleDesc` copy. Per-module descriptions are generic,
+  role-independent resource summaries (not the mockup's role-specific narratives).
+- The **CORE_AI ASSISTANT** banner is kept as the mockup drew it, **including "98 % Confidence" and
+  "Verified against RBAC v4.2"** (PO decision 2026-07-29 — "full ตาม mockup"). The screen has no top bar
+  of its own: the global TopBar shows "Role permissions" + a Back arrow; the footer **"Back to
+  invitation"** and that arrow both `router.back()`.
 
 ## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 

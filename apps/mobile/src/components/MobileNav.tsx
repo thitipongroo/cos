@@ -226,6 +226,8 @@ export function MobileNav() {
       <Tabs.Screen name="notification-preferences" options={{ href: null }} />
       {/* Invite user — reached from the Quick Commands overlay (router.push), never a bottom tab. */}
       <Tabs.Screen name="invite-user" options={{ href: null }} />
+      {/* Role permissions — reached from Invite-user's "View permissions" (router.push). */}
+      <Tabs.Screen name="role-permissions" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

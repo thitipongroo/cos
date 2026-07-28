@@ -28,6 +28,7 @@ import { colors, darkColors, fontFamily, spacing, touchTarget, typography } from
 // Titles come from each screen's existing i18n key.
 const CHILD_TITLE_KEY: Record<string, string> = {
   '/invite-user': 'inviteUser.title',
+  '/role-permissions': 'rolePermissions.title',
   '/notifications': 'notifications.title',
   '/notification-preferences': 'notifications.preferences.title',
   '/mfa-enrollment': 'mfa.enroll.title',

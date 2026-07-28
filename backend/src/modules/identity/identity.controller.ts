@@ -14,10 +14,13 @@ import {
   HttpStatus,
   UseGuards,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
+import { ROLE_PERMISSIONS } from '@cos/rbac';
+import { CosRole } from '@cos/types';
 import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
 import { MfaService } from './mfa/mfa.service';
@@ -134,6 +137,22 @@ export class IdentityController {
   async revokeDevice(@Req() req: Request, @Param('deviceId') deviceId: string) {
     const user = req.user as JwtPayload;
     await this.deviceTrust.revokeDevice(user.user_id, deviceId);
+  }
+
+  // The authoritative RBAC matrix (spec §6.4) is the single source of truth for what a role may do.
+  // Exposing it read-only lets clients (the mobile invite flow's "role permissions" screen) show a
+  // real access breakdown instead of a hard-coded one — no tenant/user state, just the static grant set.
+  @Get('roles/:role/permissions')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List the resource:action permissions granted to a role (RBAC §6.4)' })
+  @ApiResponse({ status: 200, description: 'Granted permissions for the role' })
+  @ApiResponse({ status: 400, description: 'Unknown role' })
+  getRolePermissions(@Param('role') role: string): { role: CosRole; permissions: string[] } {
+    if (!Object.values(CosRole).includes(role as CosRole)) {
+      throw new BadRequestException(`Unknown role: ${role}`);
+    }
+    return { role: role as CosRole, permissions: ROLE_PERMISSIONS[role as CosRole] };
   }
 
   // ─── Path B: Keycloak OIDC ─────────────────────────────────────────────

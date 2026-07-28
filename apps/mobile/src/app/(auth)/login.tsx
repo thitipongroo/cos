@@ -235,6 +235,14 @@ export default function LoginScreen() {
             {/* Auth card — Path A primary, Path B secondary */}
             <View style={styles.card}>
               <Text style={styles.label}>{t('auth.login.fieldWorkerAccess')}</Text>
+              {/* Phone-step error sits directly above the phone field it refers to (PO decision
+                  2026-07-29), mirroring the OTP-step error shown above the code boxes. The card's
+                  `gap` spaces it from the label and the input. */}
+              {error && step === 'phone' ? (
+                <Text testID="login-error" style={styles.error}>
+                  {error}
+                </Text>
+              ) : null}
               <View style={styles.phoneRow}>
                 <TouchableOpacity
                   testID="country-picker"
@@ -501,13 +509,6 @@ export default function LoginScreen() {
               <Text style={styles.footerLink}>{t('auth.login.privacyData')}</Text>
             </View>
           </View>
-        ) : null}
-
-        {/* Phone-step errors stay at the bottom; the OTP-step error is shown above the code boxes. */}
-        {error && step === 'phone' ? (
-          <Text testID="login-error" style={styles.error}>
-            {error}
-          </Text>
         ) : null}
       </ScrollView>
 

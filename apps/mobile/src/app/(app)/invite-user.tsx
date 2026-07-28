@@ -101,8 +101,15 @@ export default function InviteUserScreen(): React.JSX.Element {
     setContact('');
   };
   const back = (): void => router.back();
-  const viewPermissions = (): void =>
-    Alert.alert(t('inviteUser.permTitle'), t('inviteUser.permBody'));
+  // Open the role-permissions breakdown for the selected role (mockup 02_role_permissions). It needs a
+  // role to describe, so prompt to pick one first when none is selected.
+  const viewPermissions = (): void => {
+    if (role === null) {
+      Alert.alert(t('inviteUser.permTitle'), t('inviteUser.errRole'));
+      return;
+    }
+    router.push({ pathname: '/role-permissions', params: { role } });
+  };
 
   const onSend = (): void => {
     if (sending) return;
