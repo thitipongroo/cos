@@ -98,7 +98,7 @@ export function QuickAddMenu({
 
   const goInvite = (): void => {
     onClose();
-    router.push('/users');
+    router.push('/invite-user');
   };
   const comingSoon = (): void => Alert.alert(t('quickAdd.title'), t('quickAdd.comingSoon'));
   const forceSync = (): void => {

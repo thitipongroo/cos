@@ -3,7 +3,7 @@
 // Not cached offline: the header avatar's initials come from the persisted session (authStore
 // displayName), so a failed fetch here costs the photo, never the whole header.
 
-import { get, mutate } from './client';
+import { get, mutate, post } from './client';
 
 export interface Me {
   user_id: string;
@@ -48,4 +48,18 @@ interface PaginatedUsers {
 export async function getUsers(): Promise<TenantUser[]> {
   const res = await get<PaginatedUsers>('/users');
   return res.data;
+}
+
+/** Create/invite a user in the signed-in tenant (POST /users, TENANT_ADMIN only; §14.3). Path A
+ *  supplies phone_number, Path B supplies email — mutually exclusive. Online-required (the backend
+ *  provisions Keycloak + emits identity.user.created.v1); 409 if the identity already exists. */
+export interface CreateUserInput {
+  display_name: string;
+  role: string;
+  phone_number?: string;
+  email?: string;
+}
+
+export async function createUser(input: CreateUserInput): Promise<TenantUser> {
+  return post<TenantUser>('/users', input);
 }

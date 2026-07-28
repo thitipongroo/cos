@@ -224,6 +224,8 @@ export function MobileNav() {
       {/* Notification preferences — reached from the Settings screen / notifications inbox (router.push).
           It was briefly the TENANT_ADMIN "Settings" tab; that tab is now `system-settings`. */}
       <Tabs.Screen name="notification-preferences" options={{ href: null }} />
+      {/* Invite user — reached from the Quick Commands overlay (router.push), never a bottom tab. */}
+      <Tabs.Screen name="invite-user" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

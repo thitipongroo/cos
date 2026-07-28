@@ -28,7 +28,7 @@ folder — one screen can span several shots that share a number (e.g. the multi
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | The Site Engineer loading state + dashboard (`00`, `01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, and System Settings (`00`–`04`). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`) and the Invite-user form (`05`). |
 
 The two adb dashboard scripts write straight into their role folder —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/`,
@@ -199,10 +199,31 @@ follows the action (primary / cyan / cyan / sync-gold). Real vs honest placehold
 - **Active Projects** / **System Health** bento — real: the project count from `GET /projects/mine`
   (0 for this admin, who is a member of none) and liveness from `GET /health/live` shown as a word
   (**Optimal**), **not** the mockup's invented "98.4 %".
-- **Invite New User** opens the Users tab; **New System Integration** + **Generate Usage Report** are
-  honest placeholders (no mobile integrations surface / AI-report screen yet). The AI-report card keeps
-  the mockup's richer layout but **drops the fabricated "94 % CONFIDENCE / Source"** — no such signal
-  exists — and the decorative blueprint/server photos (external AI images) become local icon tiles.
+- **Invite New User** opens the Invite-user form (below); **New System Integration** + **Generate Usage
+  Report** are honest placeholders (no mobile integrations surface / AI-report screen yet). The AI-report
+  card keeps the mockup's richer layout but **drops the fabricated "94 % CONFIDENCE / Source"** — no such
+  signal exists — and the decorative blueprint/server photos (external AI images) become local icon tiles.
+
+## Tenant Admin — Invite user — [`05`](TENANT_ADMIN/05-invite-user.png) · [`roles`](TENANT_ADMIN/05-invite-user-roles.png) · [`email`](TENANT_ADMIN/05-invite-user-email.png)
+
+The Quick Commands "Invite New User" target
+([`app/(app)/invite-user.tsx`](../../../apps/mobile/src/app/(app)/invite-user.tsx), mockup
+`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/01_invite_user_via_phone`). A real,
+wired form: **SEND INVITATION** calls `POST /users` (createUser, TENANT_ADMIN §14.3) with the chosen
+method — **Path A phone** (E.164, the default `+66` prefix) or **Path B email** — the selected role,
+and the recipient's name.
+
+- **Full name** — added on top of the mockup because `POST /users` requires `display_name`, which the
+  mockup's contact-only form never collected (PO decision 2026-07-29). `05` = phone method (top),
+  `email` = the EMAIL toggle (the contact field clears on switch).
+- **Role assignment** is the real assignable `CosRole` set — everything except the cross-tenant
+  `SYSTEM_ADMIN` (`assertRoleAssignableByTenant`), four shown with **"Show more roles (7)"** (the real
+  remaining count, not the mockup's "4"); the selected role is what `createUser` receives.
+- **SYNCED pill** is the real `useSyncStatus()`. **Assign projects** is a UI-only search over the
+  tenant's projects (`createUser` takes no project list, so it is applied after the account is created,
+  not submitted here) — no fabricated "Skyline Plaza / Central Hub" chips.
+- The **CORE_AI ASSISTANT** panel is kept as the mockup drew it, **including its "94 % CONFIDENCE"
+  badge** (PO decision 2026-07-29: "ทำ full ไม่ตัด").
 
 ## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 
