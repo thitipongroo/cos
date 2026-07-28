@@ -29,6 +29,7 @@ import { colors, darkColors, fontFamily, spacing, touchTarget, typography } from
 const CHILD_TITLE_KEY: Record<string, string> = {
   '/invite-user': 'inviteUser.title',
   '/role-permissions': 'rolePermissions.title',
+  '/roles-selection': 'rolesSelection.title',
   '/notifications': 'notifications.title',
   '/notification-preferences': 'notifications.preferences.title',
   '/mfa-enrollment': 'mfa.enroll.title',

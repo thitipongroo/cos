@@ -175,6 +175,12 @@ export function MobileNav() {
 
   return (
     <Tabs
+      // Pushed child screens (invite-user, roles-selection, role-permissions, notifications…) are hidden
+      // Tabs.Screen siblings, so router.back() from one is a tab "goBack". The React Navigation default
+      // (`firstRoute`) would jump straight to Home; `history` makes Back return to the previously focused
+      // screen instead — so, e.g., Roles-selection → CONFIRM pops back to the Invite-user form it came
+      // from (PO decision 2026-07-29), keeping that form's state.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         // Active tab: a filled rounded rectangle behind icon+label, per the mockup's
@@ -228,6 +234,8 @@ export function MobileNav() {
       <Tabs.Screen name="invite-user" options={{ href: null }} />
       {/* Role permissions — reached from Invite-user's "View permissions" (router.push). */}
       <Tabs.Screen name="role-permissions" options={{ href: null }} />
+      {/* Roles selection — reached from Invite-user's "Show more roles" picker (router.push). */}
+      <Tabs.Screen name="roles-selection" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

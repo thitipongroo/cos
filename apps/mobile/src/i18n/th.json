@@ -812,5 +812,24 @@
       "label": "ผู้ช่วย AI",
       "desc": "ข้อมูลเชิงลึกและคำแนะนำจาก CORE_AI"
     }
+  },
+  "rolesSelection": {
+    "title": "เลือกบทบาท",
+    "searchPlaceholder": "ค้นหาบทบาท...",
+    "available": "เทมเพลตที่พร้อมใช้งาน ({count})",
+    "supportRoles": "บทบาทสนับสนุน",
+    "confirm": "ยืนยันบทบาท",
+    "noMatch": "ไม่พบบทบาทที่ค้นหา",
+    "infoPickFirst": "เลือกบทบาทก่อนเพื่อดูสิทธิ์การเข้าถึง",
+    "aiTitle": "CORE_AI Context",
+    "aiConfidence": "98% CONFIDENCE",
+    "aiBody": "เทมเพลต RBAC ถูกซิงโครไนซ์โดยอัตโนมัติ การเลือกบทบาทเหล่านี้ช่วยให้มั่นใจว่าแดชบอร์ดและสิทธิ์การเข้าถึงจะถูกจัดเตรียมให้เหมาะสมกับตำแหน่งงานทันที",
+    "aiSource": "Source: Tenant Policy v4.2",
+    "badge": {
+      "chief": "Chief",
+      "lead": "Lead",
+      "field": "Field",
+      "hse": "HSE"
+    }
   }
 }

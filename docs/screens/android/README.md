@@ -28,7 +28,7 @@ folder — one screen can span several shots that share a number (e.g. the multi
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | The Site Engineer loading state + dashboard (`00`, `01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`) and the Role-permissions breakdown (`06`). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`), the Role-permissions breakdown (`06`) and the Roles-selection picker (`07`). |
 
 The two adb dashboard scripts write straight into their role folder —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/`,
@@ -263,6 +263,28 @@ breakdown for the role being invited.
   "Verified against RBAC v4.2"** (PO decision 2026-07-29 — "full ตาม mockup"). The screen has no top bar
   of its own: the global TopBar shows "Role permissions" + a Back arrow; the footer **"Back to
   invitation"** and that arrow both `router.back()`.
+
+## Tenant Admin — Roles selection — [`07`](TENANT_ADMIN/07-roles-selection.png) · [`scroll`](TENANT_ADMIN/07-roles-selection-scroll.png) · [`ai`](TENANT_ADMIN/07-roles-selection-ai.png)
+
+The full-screen role picker opened from Invite-user's **"Show more roles"**
+([`app/(app)/roles-selection.tsx`](../../../apps/mobile/src/app/(app)/roles-selection.tsx), mockup
+`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/03_roles_selection`). Searchable,
+single-select (createUser takes one role).
+
+- **All 11 real assignable roles**, not the mockup's curated 7 — the `AVAILABLE TEMPLATES (11)` count and
+  the list are the assignable `CosRole` set (everything except the cross-tenant `SYSTEM_ADMIN`), with
+  real `inviteUser.roleDesc` copy (PO decision 2026-07-29). The **primary/support grouping** and the
+  **Chief/Lead/Field/HSE tier badges** are decorative and follow the mockup; roles the mockup did not
+  badge (Proc Manager, Site Worker, Tenant Admin, Viewer) stay unbadged rather than inventing tiers.
+- The **CORE_AI Context** banner is kept as drawn, **including "98 % Confidence" / "Source: Tenant Policy
+  v4.2"** (PO decision 2026-07-29 — "full ตาม mockup"). The info "ⓘ" opens the real role-permissions
+  breakdown for the selected role.
+- **CONFIRM ROLES** hands the pick back to the Invite-user form through an ephemeral store
+  ([`store/inviteRoleStore.ts`](../../../apps/mobile/src/store/inviteRoleStore.ts)) and pops — the inline
+  role card there becomes selected and the AI copy turns role-aware. The pop relies on the Tabs navigator
+  being switched to **`backBehavior="history"`** (`components/MobileNav.tsx`): these pushed screens are
+  hidden `Tabs.Screen` siblings, and the React Navigation default (`firstRoute`) would send Back to Home
+  instead of the screen that opened the picker — this also fixes Role-permissions' "Back to invitation".
 
 ## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 

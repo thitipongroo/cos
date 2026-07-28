@@ -812,5 +812,24 @@
       "label": "AI Assistant",
       "desc": "CORE_AI insights & suggestions"
     }
+  },
+  "rolesSelection": {
+    "title": "Select roles",
+    "searchPlaceholder": "Search roles...",
+    "available": "Available templates ({count})",
+    "supportRoles": "Support roles",
+    "confirm": "Confirm roles",
+    "noMatch": "No roles match your search.",
+    "infoPickFirst": "Select a role first to view its permissions.",
+    "aiTitle": "CORE_AI Context",
+    "aiConfidence": "98% Confidence",
+    "aiBody": "RBAC templates are synced automatically — choosing these roles provisions the right dashboards and access for each position instantly.",
+    "aiSource": "Source: Tenant Policy v4.2",
+    "badge": {
+      "chief": "Chief",
+      "lead": "Lead",
+      "field": "Field",
+      "hse": "HSE"
+    }
   }
 }

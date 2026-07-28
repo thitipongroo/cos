@@ -29,6 +29,7 @@ import { useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
 import { createUser } from '../../api/users';
 import { getMyProjects, type MyProject } from '../../api/projects';
+import { useInviteRoleStore } from '../../store/inviteRoleStore';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -67,12 +68,22 @@ export default function InviteUserScreen(): React.JSX.Element {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [role, setRole] = useState<CosRole | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [sending, setSending] = useState(false);
 
   const [projects, setProjects] = useState<MyProject[]>([]);
   const [projQuery, setProjQuery] = useState('');
   const [picked, setPicked] = useState<MyProject[]>([]);
+
+  // Role chosen on the full-screen roles-selection picker (mockup 03) is handed back via this store;
+  // apply it to the form, then clear so it isn't re-applied on the next render.
+  const pendingRole = useInviteRoleStore((s) => s.pendingRole);
+  const clearPendingRole = useInviteRoleStore((s) => s.clearPendingRole);
+  useEffect(() => {
+    if (pendingRole) {
+      setRole(pendingRole as CosRole);
+      clearPendingRole();
+    }
+  }, [pendingRole, clearPendingRole]);
 
   useEffect(() => {
     let active = true;
@@ -84,7 +95,7 @@ export default function InviteUserScreen(): React.JSX.Element {
     };
   }, []);
 
-  const visibleRoles = showAll ? ROLES : ROLES.slice(0, DEFAULT_VISIBLE);
+  const visibleRoles = ROLES.slice(0, DEFAULT_VISIBLE);
   const projectMatches = useMemo(() => {
     const q = projQuery.trim().toLowerCase();
     if (q === '') return [];
@@ -266,13 +277,13 @@ export default function InviteUserScreen(): React.JSX.Element {
         {ROLES.length > DEFAULT_VISIBLE ? (
           <Pressable
             style={styles.showMore}
-            onPress={() => setShowAll((s) => !s)}
+            onPress={() =>
+              router.push({ pathname: '/roles-selection', params: { role: role ?? '' } })
+            }
             testID="invite-show-more-roles"
           >
             <Text style={styles.showMoreText}>
-              {showAll
-                ? t('inviteUser.showLess')
-                : t('inviteUser.showMore', { count: ROLES.length - DEFAULT_VISIBLE })}
+              {t('inviteUser.showMore', { count: ROLES.length - DEFAULT_VISIBLE })}
             </Text>
           </Pressable>
         ) : null}
