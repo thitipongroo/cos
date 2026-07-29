@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>User Activity Log | Construction OS</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Inter Tight -->
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed": "#001f26",
+                    "error-container": "#93000a",
+                    "primary-container": "#2563eb",
+                    "dark-bg": "#020617",
+                    "sync-active": "#FFD60A",
+                    "surface-container-lowest": "#000f21",
+                    "on-background": "#d3e4fe",
+                    "surface-container": "#102034",
+                    "on-secondary-container": "#00424e",
+                    "surface": "#031427",
+                    "on-error-container": "#ffdad6",
+                    "mobile-warning": "#FF9500",
+                    "on-tertiary-container": "#eeefff",
+                    "tertiary-fixed": "#dee1f9",
+                    "secondary-fixed": "#acedff",
+                    "tertiary-container": "#686c80",
+                    "secondary": "#4cd7f6",
+                    "primary": "#b4c5ff",
+                    "inverse-on-surface": "#213145",
+                    "sync-pending": "#94A3B8",
+                    "on-secondary": "#003640",
+                    "mobile-success": "#00C853",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-high": "#1b2b3f",
+                    "on-tertiary": "#2b3041",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "mobile-danger": "#FF3B30",
+                    "background": "#031427",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-error": "#690005",
+                    "surface-bright": "#2a3a4f",
+                    "outline-variant": "#434655",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "dark-surface": "#0F172A",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "secondary-container": "#03b5d3",
+                    "surface-container-low": "#0b1c30",
+                    "error": "#ffb4ab",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "inverse-primary": "#0053db",
+                    "tertiary": "#c1c5dc",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "primary-fixed": "#dbe1ff",
+                    "on-primary-fixed": "#00174b",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-dim": "#031427",
+                    "surface-variant": "#26364a",
+                    "surface-container-highest": "#26364a",
+                    "on-surface": "#d3e4fe",
+                    "outline": "#8d90a0",
+                    "mobile-primary": "#0066FF"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "web-margin": "32px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "space-1": "4px"
+            },
+            "fontFamily": {
+                    "display-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-pill {
+            font-variation-settings: 'FILL' 1;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(180, 197, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h1 class="font-display-web text-display-web-mobile font-bold text-primary">Construction OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-space-1 px-space-2 py-0.5 rounded-full bg-surface-container-high">
+<div class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web uppercase tracking-wider text-sync-active">Synced</span>
+</div>
+<div class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A high-quality professional portrait of a senior project manager in a dark navy suit against a soft industrial blurred background. The lighting is dramatic and moody, reflecting a corporate tech aesthetic with cool blue tones and sharp clarity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFYrnFHLVrdR19J5ghQPFW1JawKVt7nCS3n0A-CsoLsQq5cHU8wctCU_6bANK-r9Xi3LCgkEXtt55jXmpc_I6r5R8_R582IGgb59wNTXoisvgyA27Gay-xp-DDtFSILGPc4qRBxEkY074KowsYtLdgMKmX-c9cphb6whlSe2TaGVW_Dc7NVEMq00Zexy7yQi3GX4FN_rtuqvCHZ6w3v-QsgzO8M8nt8tBHZJZ-skJEheM4qJueuszs"/>
+</div>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="flex-1 pt-[52px] pb-[72px] px-edge-mobile space-y-space-4">
+<!-- User Identity Context -->
+<section class="mt-space-4 p-space-4 rounded-xl bg-surface-container border-l-4 border-primary">
+<div class="flex items-center gap-space-4">
+<div class="relative w-16 h-16 rounded-xl overflow-hidden ring-2 ring-primary/20">
+<img class="w-full h-full object-cover" data-alt="A portrait of Somchai Wisawakorn, a Thai civil engineer in his 40s wearing a high-visibility vest and a smart digital watch. The image has an industrial dark mode aesthetic with deep shadows and sharp blue rim lighting, capturing a focused and professional mission-critical persona." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7KTVUlDU1baqBNDF-wT8IGLij0jhxGYPdzLyzM75Y-1JLsY1Rb89TrhKAVnqAuRyNtj17ATqJuydd9pg943OOJOiaYZbk9DJAg2zXsfKNRZAT3R9yvisX3gcYowN8JmDdrYL3tvuknDOkDo8eHtwVN77xio0x9ewa7_LArsKO3Bp6llh9UMUSCB7_N35L_UHmYFoS0ai11AQ0KdyqIT9IJ_8UfMyrF1ZGWJ34kh26At8PynyX6mC2"/>
+</div>
+<div class="flex flex-col">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">Somchai Wisawakorn</h2>
+<div class="flex items-center gap-space-2">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase tracking-widest bg-surface-variant px-space-2 py-0.5 rounded">UID: COS-9921-TH</span>
+<span class="w-1.5 h-1.5 rounded-full bg-mobile-success"></span>
+<span class="font-label-mobile text-label-mobile text-mobile-success">Active Now</span>
+</div>
+</div>
+</div>
+</section>
+<!-- AI Intelligence Layer -->
+<section class="rounded-xl overflow-hidden bg-surface-container border-l-4 border-secondary/50 relative">
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+
+</div>
+<div class="p-space-4 space-y-space-2 relative z-10 bg-secondary/5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary" data-icon="neurology" style="font-variation-settings: 'FILL' 1;">neurology</span>
+<h3 class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">AI Usage Pattern</h3>
+</div>
+<span class="font-tiny-web text-tiny-web text-secondary bg-secondary/10 px-space-2 py-1 rounded-full border border-secondary/20">98% Confidence</span>
+</div>
+<p class="font-body-mobile text-body-mobile text-on-surface leading-snug">
+                    Activity consistency is high. No unauthorized access attempts detected. Pattern matches "Lead Site Engineer" profile across 4 active nodes.
+                </p>
+<div class="pt-space-2 flex gap-space-2">
+<div class="flex-1 h-1 rounded-full bg-secondary/20 overflow-hidden">
+<div class="h-full bg-secondary w-[98%] rounded-full shadow-[0_0_8px_rgba(76,215,246,0.6)]"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Filtering -->
+<section class="flex gap-space-2 overflow-x-auto no-scrollbar py-space-1">
+<button class="flex-none px-space-4 py-space-2 rounded-full bg-primary text-on-primary font-label-mobile text-label-mobile shadow-lg active:scale-95 transition-transform">All Activities</button>
+<button class="flex-none px-space-4 py-space-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-mobile text-label-mobile hover:bg-surface-bright/20 active:scale-95 transition-transform">Security</button>
+<button class="flex-none px-space-4 py-space-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-mobile text-label-mobile hover:bg-surface-bright/20 active:scale-95 transition-transform">Operations</button>
+<button class="flex-none px-space-4 py-space-2 rounded-full bg-surface-container-high text-on-surface-variant font-label-mobile text-label-mobile hover:bg-surface-bright/20 active:scale-95 transition-transform">Financials</button>
+</section>
+<!-- Chronological Timeline -->
+<section class="space-y-space-2 pb-space-4">
+<!-- Timeline Item: Login -->
+<div class="h-touch-target flex items-center gap-space-4 p-space-3 rounded-xl bg-surface-container-high hover:bg-surface-bright/10 active:scale-[0.98] transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant text-primary">
+<span class="material-symbols-outlined" data-icon="login">login</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<p class="font-label-mobile text-label-mobile text-on-surface truncate">System Login - Mobile Node</p>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">24/05/2024 08:30</span>
+</div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Security • IP: 182.25.10.11</p>
+</div>
+</div>
+<!-- Timeline Item: PR Approved -->
+<div class="h-touch-target flex items-center gap-space-4 p-space-3 rounded-xl bg-surface-container-high hover:bg-surface-bright/10 active:scale-[0.98] transition-all cursor-pointer border-l-4 border-mobile-success">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant text-mobile-success">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<p class="font-label-mobile text-label-mobile text-on-surface truncate">PR #902-X Approved</p>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">24/05/2024 10:15</span>
+</div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Financials • ฿450,000.00 Steel Supply</p>
+</div>
+</div>
+<!-- Timeline Item: Issue Resolved -->
+<div class="h-touch-target flex items-center gap-space-4 p-space-3 rounded-xl bg-surface-container-high hover:bg-surface-bright/10 active:scale-[0.98] transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant text-secondary">
+<span class="material-symbols-outlined" data-icon="build">build</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<p class="font-label-mobile text-label-mobile text-on-surface truncate">Site Issue #112 Closed</p>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">24/05/2024 13:45</span>
+</div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Operations • Concrete Pour Delay</p>
+</div>
+</div>
+<!-- Timeline Item: Document Uploaded -->
+<div class="h-touch-target flex items-center gap-space-4 p-space-3 rounded-xl bg-surface-container-high hover:bg-surface-bright/10 active:scale-[0.98] transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant text-tertiary">
+<span class="material-symbols-outlined" data-icon="upload_file">upload_file</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<p class="font-label-mobile text-label-mobile text-on-surface truncate">Safety Log Uploaded</p>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">24/05/2024 17:00</span>
+</div>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Operations • daily_safety_2405.pdf</p>
+</div>
+</div>
+<!-- Timeline Item: Anomaly (Warning Style) -->
+<div class="h-touch-target flex items-center gap-space-4 p-space-3 rounded-xl bg-error-container/20 border border-error/30 hover:bg-error-container/30 transition-all cursor-pointer">
+<div class="w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline">
+<p class="font-label-mobile text-label-mobile text-error truncate">Unauthorized Module Access</p>
+<span class="font-tiny-web text-tiny-web text-error/80">23/05/2024 22:10</span>
+</div>
+<p class="font-tiny-web text-tiny-web text-error/60 uppercase">Security • Financial Admin Panel</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container dark:bg-surface-container-high h-[72px] shadow-lg">
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2">
+<span class="material-symbols-outlined active-pill" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant px-space-4 py-space-2">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</div>
+</nav>
+<script>
+        // Simple Micro-interaction for list items
+        document.querySelectorAll('div[class*="cursor-pointer"]').forEach(item => {
+            item.addEventListener('click', function() {
+                const icon = this.querySelector('.material-symbols-outlined');
+                icon.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    icon.style.transform = 'scale(1)';
+                }, 200);
+            });
+        });
+    </script>
+</body></html>

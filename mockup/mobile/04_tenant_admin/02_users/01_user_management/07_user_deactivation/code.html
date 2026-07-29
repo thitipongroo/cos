@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Confirm User Deactivation | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Load Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#26364a",
+                    "surface-container-highest": "#26364a",
+                    "mobile-danger": "#FF3B30",
+                    "dark-bg": "#020617",
+                    "on-secondary-fixed": "#001f26",
+                    "mobile-primary": "#0066FF",
+                    "tertiary": "#c1c5dc",
+                    "on-error-container": "#ffdad6",
+                    "primary": "#b4c5ff",
+                    "secondary-fixed": "#acedff",
+                    "primary-container": "#2563eb",
+                    "mobile-warning": "#FF9500",
+                    "tertiary-container": "#686c80",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-primary-container": "#eeefff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "mobile-success": "#00C853",
+                    "surface": "#031427",
+                    "inverse-primary": "#0053db",
+                    "secondary": "#4cd7f6",
+                    "error-container": "#93000a",
+                    "on-primary": "#002a78",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "background": "#031427",
+                    "surface-bright": "#2a3a4f",
+                    "on-tertiary": "#2b3041",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-dim": "#031427",
+                    "on-secondary-container": "#00424e",
+                    "on-tertiary-container": "#eeefff",
+                    "on-background": "#d3e4fe",
+                    "inverse-on-surface": "#213145",
+                    "surface-container-lowest": "#000f21",
+                    "outline-variant": "#434655",
+                    "surface-container-high": "#1b2b3f",
+                    "on-primary-fixed": "#00174b",
+                    "secondary-container": "#03b5d3",
+                    "outline": "#8d90a0",
+                    "on-secondary": "#003640",
+                    "surface-container": "#102034",
+                    "surface-container-low": "#0b1c30",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "error": "#ffb4ab",
+                    "sync-pending": "#94A3B8",
+                    "primary-fixed": "#dbe1ff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-tint": "#b4c5ff",
+                    "on-surface": "#d3e4fe",
+                    "on-error": "#690005",
+                    "tertiary-fixed": "#dee1f9",
+                    "sync-active": "#FFD60A",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "dark-surface": "#0F172A",
+                    "inverse-surface": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "touch-target": "52px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "space-1": "4px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "space-2": "8px"
+            },
+            "fontFamily": {
+                    "body-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
+
+        .status-shimmer {
+            background: linear-gradient(90deg, #FFD60A 0%, #FFF0A5 50%, #FFD60A 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .bento-border {
+            border-left: 4px solid transparent;
+        }
+
+        .ai-pulse {
+            animation: ai-glow 3s infinite ease-in-out;
+        }
+
+        @keyframes ai-glow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Glass effect for industrial cards */
+        .glass-panel {
+            background: rgba(16, 32, 52, 0.8);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="font-body-mobile text-body-mobile">
+<!-- TopAppBar (Based on Shared Components) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-edge-mobile h-touch-target bg-surface dark:bg-surface transition-all">
+<div class="flex items-center gap-space-2">
+<button class="transition-transform active:scale-95 duration-200 text-on-surface">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<h1 class="font-display-web text-[16px] leading-tight font-bold text-on-surface uppercase tracking-tight">CONSTRUCTION OS</h1>
+<div class="flex items-center gap-space-1">
+<div class="w-2 h-2 rounded-full bg-sync-active shadow-[0_0_8px_rgba(255,214,10,0.6)]"></div>
+<span class="font-tiny-web text-tiny-web text-sync-active uppercase">SYNCED</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-space-3">
+<span class="material-symbols-outlined text-on-surface-variant">chevron_left</span>
+<span class="material-symbols-outlined text-on-surface">more_vert</span>
+</div>
+</header>
+<main class="pt-[72px] pb-32 px-edge-mobile min-h-screen flex flex-col gap-space-4">
+<!-- User Identity Header -->
+<section class="mt-space-4">
+<h2 class="font-h1-web-mobile text-h1-web-mobile text-on-surface mb-1">Confirm Deactivation</h2>
+<p class="text-on-surface-variant font-body-web opacity-80">Final verification required for system-wide access removal.</p>
+</section>
+<!-- High Visibility Warning Card -->
+<div class="surface-container bg-surface-container rounded-xl overflow-hidden border-l-4 border-mobile-danger shadow-lg">
+<div class="p-space-4 bg-mobile-danger/10">
+<div class="flex items-center gap-space-2 mb-space-3 text-mobile-danger">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-mobile uppercase tracking-wider">Mission Critical Action</span>
+</div>
+<div class="flex items-center gap-space-4 mb-space-4">
+<div class="w-16 h-16 rounded-lg bg-surface-variant flex items-center justify-center relative">
+<img class="w-full h-full object-cover rounded-lg opacity-80" data-alt="A gritty, industrial close-up portrait of a male construction engineer named Somchai, wearing a weathered hard hat and safety vest. The lighting is dramatic and low-key with high-contrast shadows, emphasizing a serious, mission-critical mood. Deep blue and charcoal tones dominate the background, consistent with a high-end dark mode SaaS interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0qiplcWpG7L-mNolgnXRBjFZKp_u9hxQ6zsBTs699vH62saMGT0WlPpYfyHSJR1yX68h9msQ5k6eUdZIaO_tdB9bPoggklOJzYA1qE5UuVox5IMK1LJ9TIwD0KmtdtF2y2978gApY1AguXvbpeOuvjGm5x_FuEiCwi8OIrE9WRIsemjEssTJI0W40DtScOpAfGz2CdN-Tc8HJ_s33U8omWRkEEttWo8knV7oaFUVxuiGNUMIjlpax"/>
+<div class="absolute -top-1 -right-1 bg-mobile-danger rounded-full p-0.5">
+<span class="material-symbols-outlined text-[14px] text-white" style="font-variation-settings: 'FILL' 1;">block</span>
+</div>
+</div>
+<div>
+<p class="font-h2-web text-on-surface">Somchai Wisawakorn</p>
+<p class="font-tiny-web text-on-primary-container bg-primary-container/20 px-2 py-0.5 rounded-full inline-block">OS-99210</p>
+</div>
+</div>
+<div class="space-y-space-3 font-body-web text-on-surface-variant">
+<div class="flex items-start gap-space-2">
+<span class="material-symbols-outlined text-mobile-danger text-[18px]">remove_moderator</span>
+<p>All active login credentials and field-tablet access will be <span class="text-on-surface font-bold">revoked immediately.</span></p>
+</div>
+<div class="flex items-start gap-space-2">
+<span class="material-symbols-outlined text-mobile-warning text-[18px]">pending_actions</span>
+<p>14 pending structural inspections require <span class="text-on-surface font-bold">immediate reassignment</span> to maintain project velocity.</p>
+</div>
+</div>
+</div>
+<div class="h-[1px] w-full bg-white/10"></div>
+<div class="p-space-4 bg-surface-container-high/40">
+<div class="flex justify-between items-center mb-space-2">
+<span class="font-tiny-web text-secondary uppercase tracking-widest flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+                        AI REASSIGNMENT LOGIC
+                    </span>
+<span class="font-tiny-web text-secondary font-bold">94% CONFIDENCE</span>
+</div>
+<!-- AI Logic Module -->
+<div class="bg-secondary/5 border-l-2 border-secondary p-space-3 rounded-r-lg relative overflow-hidden">
+<div class="absolute inset-0 bg-secondary/5 ai-pulse pointer-events-none"></div>
+<div class="relative z-10">
+<p class="text-secondary font-label-mobile mb-1">Recommended Successor:</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-secondary/30 flex items-center justify-center text-[12px] font-bold">AK</div>
+<span class="font-body-web text-on-surface">Anan Komsan (OS-88214)</span>
+</div>
+<span class="material-symbols-outlined text-secondary">check_circle</span>
+</div>
+<p class="text-[11px] text-on-surface-variant mt-space-2 leading-relaxed italic opacity-70">
+                            Logic: Current proximity to "Sector 7-B" and valid Structural Grade C certification.
+                        </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Secondary Information Details -->
+<section class="grid grid-cols-1 gap-space-3 mt-space-2">
+<div class="glass-panel p-space-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<div class="p-2 bg-surface-variant rounded-lg">
+<span class="material-symbols-outlined text-on-surface-variant">history</span>
+</div>
+<div>
+<p class="font-label-mobile text-on-surface">Retention Policy</p>
+<p class="text-tiny-web text-on-surface-variant">365 Days Archive</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-40">info</span>
+</div>
+<div class="glass-panel p-space-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-space-3">
+<div class="p-2 bg-surface-variant rounded-lg">
+<span class="material-symbols-outlined text-on-surface-variant">vpn_key</span>
+</div>
+<div>
+<p class="font-label-mobile text-on-surface">Keycard Access</p>
+<p class="text-tiny-web text-on-surface-variant">Gate 4, Site Office A</p>
+</div>
+</div>
+<span class="text-mobile-danger font-bold text-tiny-web">DISCONNECT</span>
+</div>
+</section>
+</main>
+<!-- Fixed Action Buttons Footer -->
+<div class="fixed bottom-0 w-full p-edge-mobile bg-gradient-to-t from-surface via-surface/90 to-transparent pb-safe z-50">
+<div class="flex flex-col gap-space-3">
+<button class="w-full h-touch-target bg-mobile-danger text-white rounded-xl font-h2-web uppercase tracking-wider flex items-center justify-center gap-space-2 shadow-lg active:scale-[0.97] transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person_remove</span>
+                CONFIRM DEACTIVATION
+            </button>
+<button class="w-full h-touch-target border border-outline/30 text-on-surface rounded-xl font-label-mobile uppercase tracking-widest active:bg-surface-variant transition-colors">
+                CANCEL
+            </button>
+</div>
+</div>
+<!-- Background Decor (Minimalist Dark Industrial) -->
+<div class="fixed inset-0 pointer-events-none z-[-1] opacity-20">
+<div class="absolute top-1/4 -right-20 w-64 h-64 bg-primary/10 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-1/4 -left-20 w-64 h-64 bg-mobile-danger/5 rounded-full blur-[120px]"></div>
+</div>
+<script>
+        // Micro-interactions for button tactile feedback
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('touchstart', () => {
+                button.classList.add('scale-95');
+            });
+            button.addEventListener('touchend', () => {
+                button.classList.remove('scale-95');
+            });
+        });
+
+        // Simulating the high-precision AI pulse sync
+        const aiModule = document.querySelector('.ai-pulse');
+        let opacity = 0.3;
+        let direction = 0.005;
+        
+        function animatePulse() {
+            opacity += direction;
+            if (opacity > 0.6 || opacity < 0.2) direction *= -1;
+            if(aiModule) aiModule.style.opacity = opacity;
+            requestAnimationFrame(animatePulse);
+        }
+        animatePulse();
+    </script>
+</body></html>

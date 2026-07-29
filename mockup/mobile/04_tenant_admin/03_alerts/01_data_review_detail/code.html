@@ -1,0 +1,273 @@
+<!DOCTYPE html><html class="dark" lang="th"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Review Sync Data - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#031427",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-surface": "#d3e4fe",
+                    "secondary": "#4cd7f6",
+                    "surface-container": "#102034",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "error-container": "#93000a",
+                    "surface": "#031427",
+                    "secondary-container": "#03b5d3",
+                    "on-primary-fixed": "#00174b",
+                    "inverse-on-surface": "#213145",
+                    "on-tertiary-container": "#eeefff",
+                    "on-secondary": "#003640",
+                    "mobile-primary": "#0066FF",
+                    "on-surface-variant": "#c3c6d7",
+                    "tertiary": "#c1c5dc",
+                    "tertiary-container": "#686c80",
+                    "outline-variant": "#434655",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "inverse-primary": "#0053db",
+                    "on-tertiary-fixed": "#161b2b",
+                    "primary": "#b4c5ff",
+                    "mobile-success": "#00C853",
+                    "inverse-surface": "#d3e4fe",
+                    "surface-tint": "#b4c5ff",
+                    "primary-container": "#2563eb",
+                    "mobile-danger": "#FF3B30",
+                    "surface-container-lowest": "#000f21",
+                    "surface-container-low": "#0b1c30",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-variant": "#26364a",
+                    "on-error": "#690005",
+                    "on-background": "#d3e4fe",
+                    "secondary-fixed": "#acedff",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-primary-container": "#eeefff",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "dark-bg": "#020617",
+                    "error": "#ffb4ab",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed": "#dbe1ff",
+                    "on-tertiary": "#2b3041",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-fixed": "#001f26",
+                    "on-primary": "#002a78",
+                    "surface-container-highest": "#26364a",
+                    "sync-active": "#FFD60A",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "surface-container-high": "#1b2b3f",
+                    "dark-surface": "#0F172A",
+                    "on-secondary-container": "#00424e",
+                    "sync-pending": "#94A3B8",
+                    "outline": "#8d90a0",
+                    "mobile-warning": "#FF9500",
+                    "background": "#031427"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-3": "12px",
+                    "touch-target": "52px",
+                    "web-margin": "32px",
+                    "edge-mobile": "24px",
+                    "space-1": "4px",
+                    "base": "4px",
+                    "space-4": "16px",
+                    "space-2": "8px"
+            },
+            "fontFamily": {
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      body {
+        background-color: #031427;
+        font-family: 'Inter Tight', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(16, 32, 52, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(195, 198, 215, 0.1);
+      }
+      .shimmer {
+        background: linear-gradient(90deg, transparent, rgba(180, 197, 255, 0.05), transparent);
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite linear;
+      }
+      @keyframes shimmer {
+        0% { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+    </style>
+</head>
+<body class="text-on-surface pb-32">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="construction">construction</span>
+<h1 class="font-display-web text-[20px] font-extrabold text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-mobile-success/10 px-space-2 py-space-1 rounded-full border border-mobile-success/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-mobile-success text-[10px] uppercase tracking-widest">SYNCED</span>
+</div>
+</header>
+<main class="pt-20 px-edge-mobile space-y-space-4">
+<!-- Header Info -->
+<div class="flex items-start justify-between">
+<div>
+
+<p class="font-body-mobile text-on-surface-variant">Incident Report #SI-2024-089</p>
+</div>
+<div class="bg-error-container/20 text-error px-space-3 py-space-1 rounded border border-error/30">
+<span class="font-label-mobile text-[12px]">CONFLICT</span>
+</div>
+</div>
+<!-- AI Module -->
+<section class="relative overflow-hidden rounded-xl bg-surface-container border-l-4 border-secondary p-space-4 shadow-lg">
+<div class="absolute top-0 right-0 w-32 h-32 opacity-10 pointer-events-none">
+
+</div>
+<div class="flex items-center gap-space-2 mb-space-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">smart_toy</span>
+<span class="font-label-mobile text-secondary tracking-widest">CORE_AI: Conflict Resolution Proposal</span>
+</div>
+<p class="font-body-mobile text-on-surface mb-space-3 leading-snug">
+                ตรวจพบความแตกต่างระหว่างข้อมูลในเครื่องและเซิร์ฟเวอร์ ระบบแนะนำให้ใช้ข้อมูลจากเซิร์ฟเวอร์เนื่องจากมีการอนุมัติระดับสูงแล้ว
+            </p>
+<div class="flex items-center justify-between bg-surface-bright/20 p-space-2 rounded-lg border border-outline-variant/30">
+<span class="font-label-mobile text-on-surface-variant">Confidence Score</span>
+<div class="flex items-center gap-space-2">
+<div class="w-24 h-1.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[95%]"></div>
+</div>
+<span class="font-label-mobile text-secondary text-[15px]">95%</span>
+</div>
+</div>
+</section>
+<!-- Data Comparison -->
+<div class="grid grid-cols-1 gap-space-3">
+<!-- Labels -->
+<div class="flex justify-between px-space-2">
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-widest">Field Name</span>
+<div class="flex gap-12">
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-widest w-24 text-center">Local</span>
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-widest w-24 text-center">Server</span>
+</div>
+</div>
+<!-- Field Item: Severity -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20 hover:border-secondary/40 transition-colors">
+<div class="flex justify-between items-center mb-space-1">
+<span class="font-label-mobile text-on-surface-variant">ความรุนแรง (Severity)</span>
+<span class="material-symbols-outlined text-mobile-warning text-[18px]" data-icon="warning">warning</span>
+</div>
+<div class="flex justify-between mt-space-2 gap-space-2">
+<div class="flex-1 p-space-2 bg-surface-dim/50 rounded border border-mobile-warning/30 text-center">
+<span class="font-body-mobile text-mobile-warning">High</span>
+</div>
+<div class="flex items-center">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</div>
+<div class="flex-1 p-space-2 bg-secondary-container/20 rounded border border-secondary/30 text-center">
+<span class="font-body-mobile text-secondary font-bold">Critical</span>
+</div>
+</div>
+</div>
+<!-- Field Item: Description -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/20">
+<div class="flex justify-between items-center mb-space-2">
+<span class="font-label-mobile text-on-surface-variant">รายละเอียด (Description)</span>
+<span class="material-symbols-outlined text-mobile-warning text-[18px]" data-icon="warning">warning</span>
+</div>
+<div class="space-y-space-2">
+<div class="p-space-3 bg-surface-dim/50 rounded border border-outline-variant/30 relative">
+<span class="absolute top-2 right-2 font-tiny-web text-on-surface-variant opacity-50 uppercase">Local</span>
+<p class="font-body-mobile text-on-surface line-clamp-2">พบคราบน้ำมันรั่วไหลบริเวณโซน C ฝั่งตะวันออก...</p>
+</div>
+<div class="p-space-3 bg-secondary-container/10 rounded border border-secondary/20 relative">
+<span class="absolute top-2 right-2 font-tiny-web text-secondary opacity-50 uppercase">Server</span>
+<p class="font-body-mobile text-secondary font-medium">พบคราบน้ำมันไฮดรอลิกปริมาณ 50 ลิตร รั่วไหลรุนแรงบริเวณโซน C4...</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Technical Trace -->
+<section class="bg-surface-container-lowest rounded-xl p-space-4 border border-outline-variant/10 font-mono">
+<div class="flex items-center gap-space-2 mb-space-3">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="terminal">terminal</span>
+<span class="font-label-mobile text-on-surface-variant uppercase tracking-widest text-[11px]">Technical Diagnostics</span>
+</div>
+<div class="grid grid-cols-2 gap-space-2 text-[12px]">
+<div class="space-y-1">
+<p class="text-on-surface-variant opacity-60">Error Code</p>
+<p class="text-error font-bold">COS-SYNC-4009</p>
+</div>
+<div class="space-y-1">
+<p class="text-on-surface-variant opacity-60">Trace ID</p>
+<p class="text-on-surface truncate">TX-8821-XP-091A-S</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Action Bar (Sticky Bottom) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-high border-t border-outline-variant/20 px-edge-mobile pt-space-4 pb-safe flex flex-col gap-space-3 z-50">
+<button class="w-full h-touch-target bg-mobile-primary text-white font-label-mobile uppercase tracking-[0.05em] rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150 shadow-lg shadow-mobile-primary/20">
+<span class="material-symbols-outlined text-[20px]" data-icon="cloud_download" style="font-variation-settings: &quot;FILL&quot; 1;">cloud_download</span>
+            USE SERVER VERSION
+        </button>
+<button class="w-full h-touch-target border border-outline text-on-surface font-label-mobile uppercase tracking-[0.05em] rounded-xl flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined text-[20px]" data-icon="sync">sync</span>
+            KEEP LOCAL &amp; RE-SYNC
+        </button>
+<button class="w-full py-space-2 text-on-surface-variant font-label-mobile uppercase tracking-[0.05em] flex items-center justify-center active:opacity-60 transition-opacity">
+            CANCEL
+        </button>
+</div>
+<!-- Navigation Drawer Suppression (Contextual Check) -->
+<!-- Navigation Drawer is hidden on this Task-Focused screen to prioritize focus -->
+<script>
+        // Micro-interaction for the data field highlighting
+        document.querySelectorAll('.bg-surface-container').forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('ring-2');
+                card.classList.toggle('ring-secondary/50');
+            });
+        });
+    </script>
+
+
+</body></html>

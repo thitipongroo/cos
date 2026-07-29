@@ -1,0 +1,231 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Bulk Dismiss Confirmation | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "mobile-danger": "#FF3B30",
+                "secondary": "#4cd7f6",
+                "on-tertiary-fixed": "#161b2b",
+                "on-surface": "#d3e4fe",
+                "error-container": "#93000a",
+                "tertiary-fixed": "#dee1f9",
+                "on-primary-fixed-variant": "#003ea8",
+                "on-secondary-fixed-variant": "#004e5c",
+                "surface-container-lowest": "#000f21",
+                "secondary-container": "#03b5d3",
+                "surface-container-high": "#1b2b3f",
+                "on-secondary-fixed": "#001f26",
+                "outline-variant": "#434655",
+                "primary-fixed-dim": "#b4c5ff",
+                "secondary-fixed": "#acedff",
+                "surface-container-low": "#0b1c30",
+                "on-primary": "#002a78",
+                "on-secondary-container": "#00424e",
+                "sync-pending": "#94A3B8",
+                "sync-active": "#FFD60A",
+                "on-primary-container": "#eeefff",
+                "on-error": "#690005",
+                "mobile-success": "#00C853",
+                "tertiary-container": "#686c80",
+                "on-tertiary-container": "#eeefff",
+                "mobile-warning": "#FF9500",
+                "inverse-on-surface": "#213145",
+                "secondary-fixed-dim": "#4cd7f6",
+                "mobile-primary": "#0066FF",
+                "on-surface-variant": "#c3c6d7",
+                "error": "#ffb4ab",
+                "dark-surface": "#0F172A",
+                "primary": "#b4c5ff",
+                "on-tertiary": "#2b3041",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "surface-container": "#102034",
+                "outline": "#8d90a0",
+                "inverse-surface": "#d3e4fe",
+                "on-background": "#d3e4fe",
+                "background": "#031427",
+                "dark-bg": "#020617",
+                "surface-container-highest": "#26364a",
+                "surface-tint": "#b4c5ff",
+                "on-primary-fixed": "#00174b",
+                "on-error-container": "#ffdad6",
+                "tertiary": "#c1c5dc",
+                "on-secondary": "#003640",
+                "surface-variant": "#26364a",
+                "primary-fixed": "#dbe1ff",
+                "on-tertiary-fixed-variant": "#414658",
+                "surface": "#031427",
+                "inverse-primary": "#0053db",
+                "surface-bright": "#2a3a4f",
+                "surface-dim": "#031427",
+                "primary-container": "#2563eb"
+            },
+            "spacing": {
+                "space-2": "8px",
+                "base": "4px",
+                "web-margin": "32px",
+                "touch-target": "52px",
+                "space-4": "16px",
+                "space-3": "12px",
+                "edge-mobile": "24px",
+                "space-1": "4px"
+            },
+            "fontFamily": {
+                "display-web": ["Inter Tight"],
+                "body-web": ["Inter Tight"],
+                "tiny-web": ["Inter Tight"],
+                "body-mobile": ["Inter Tight"],
+                "label-mobile": ["Inter Tight"],
+                "h2-web": ["Inter Tight"],
+                "hero-mobile": ["Inter Tight"],
+                "h1-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(6,182,212,0) 0%, rgba(6,182,212,0.1) 50%, rgba(6,182,212,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="construction">construction</span>
+<h1 class="font-display-web text-h1-web-mobile font-bold text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-1 bg-surface-container-high px-space-2 py-0.5 rounded-full border border-outline-variant/30">
+<span class="material-symbols-outlined text-sync-active text-[14px]" data-icon="sync" style="font-variation-settings: &quot;FILL&quot; 1;">sync</span>
+<span class="text-tiny-web text-on-surface-variant uppercase tracking-widest">Synced</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="A professional high-resolution headshot of a female Thai project engineer wearing a safety vest and hardhat, set against a blurred industrial construction site with steel beams and heavy machinery. The lighting is bright and crisp, emphasizing a corporate professional yet field-ready aesthetic. The color palette is dominated by deep blues and safety yellows, reflecting a mission-critical industrial environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAiH6LIocIsCLT41zkcVqNdGI6xZ0m6peSvq-DAcbQlWlASMXSlcMUl-Ugn9mZSfXrEP62G4dODkOGJUP1fXJTnRCvi9YOcvv_LY2qXra-Jit1LmNaW58NLF4eAkE1mcdcd-S8NajiGbY2zpnpibtRz5UNh0jYXJ01nIeJF73p9BmlTAASGfAgE9aRGdy6gIUDBwwt4r8uHpUmtA7ZSE7rNtf1YcI3omCgr-qQmTOJMikgMZOvLFt6h">
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 pt-[72px] pb-[180px] px-edge-mobile flex flex-col gap-space-4">
+<!-- Header Section -->
+
+<!-- Warning Card -->
+<div class="bg-surface-container-high rounded-xl p-space-4 border-l-4 border-mobile-warning relative overflow-hidden">
+<div class="flex gap-space-3">
+<span class="material-symbols-outlined text-mobile-warning" data-icon="warning" style="font-variation-settings: &quot;FILL&quot; 1;">warning</span>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">
+                    คุณกำลังจะยกเลิกการตรวจสอบผู้ใช้ที่ AI แนะนำทั้ง <span class="text-on-surface font-bold">3 รายการ</span> บัญชีเหล่านี้จะถูกถอนออกจากรายการเฝ้าระวังชั่วคราว
+                </p>
+</div>
+</div>
+<!-- Summary List (Bento-lite) -->
+<div class="grid grid-cols-1 gap-space-2 mt-space-2">
+<div class="bg-surface-container rounded-xl p-space-4 flex items-center justify-between border border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="person_off">person_off</span>
+</div>
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">Abandoned User</p>
+<p class="text-tiny-web text-on-surface-variant">ความเสี่ยง: ระดับกลาง</p>
+</div>
+</div>
+<span class="font-h2-web text-h2-web text-primary">1</span>
+</div>
+<div class="bg-surface-container rounded-xl p-space-4 flex items-center justify-between border border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="timer_off">timer_off</span>
+</div>
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">Inactive User</p>
+<p class="text-tiny-web text-on-surface-variant">ความเสี่ยง: ต่ำ</p>
+</div>
+</div>
+<span class="font-h2-web text-h2-web text-primary">1</span>
+</div>
+<div class="bg-surface-container rounded-xl p-space-4 flex items-center justify-between border border-outline-variant/10">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center"><span class="material-symbols-outlined text-on-surface-variant" data-icon="person_off">person_off</span></div>
+<div>
+<p class="font-label-mobile text-label-mobile text-on-surface">Ghost Account</p>
+<p class="text-tiny-web text-on-surface-variant">ความเสี่ยง: สูง</p>
+</div>
+</div>
+<span class="font-h2-web text-h2-web text-primary">1</span>
+</div>
+</div>
+<!-- AI Audit Logic Module -->
+<div class="bg-surface-container-low border-l-4 border-secondary rounded-xl p-space-4 mt-space-4 relative ai-shimmer">
+<div class="flex items-center justify-between mb-space-2">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-secondary text-[20px]" data-icon="psychology" style="font-variation-settings: &quot;FILL&quot; 1;">psychology</span>
+<span class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">AI Audit Logic</span>
+</div>
+<span class="bg-secondary/10 text-secondary text-tiny-web px-space-2 py-0.5 rounded-full font-bold">95% Confidence</span>
+</div>
+<p class="font-body-mobile text-label-mobile text-on-surface-variant leading-relaxed">
+                การยกเลิกรายการแนะนำนี้จะถูกบันทึกใน <span class="text-secondary font-bold">System Audit Trail</span> โดยอัตโนมัติ เพื่อใช้ในการปรับปรุงโมเดลการตรวจสอบในอนาคต
+            </p>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<footer class="fixed bottom-0 left-0 w-full bg-surface-container-highest/90 backdrop-blur-md px-edge-mobile pt-space-4 pb-safe flex flex-col gap-space-3 z-[100] border-t border-outline-variant/20">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container font-bold uppercase tracking-widest rounded-xl active:scale-95 transition-all duration-150 flex items-center justify-center gap-space-2">
+<span class="material-symbols-outlined text-[20px]" data-icon="check_circle">check_circle</span>
+            ยืนยันยกเลิกรายการทั้งหมด
+        </button>
+<button class="w-full h-touch-target border-2 border-outline text-on-surface-variant font-bold uppercase tracking-widest rounded-xl active:scale-95 transition-all duration-150 flex items-center justify-center gap-space-2 mb-space-4">
+            กลับไปตรวจสอบ
+        </button>
+</footer>
+<!-- Background Elements -->
+<div class="fixed inset-0 pointer-events-none z-[-1] opacity-20">
+
+</div>
+<script>
+        // Micro-interaction: Active state feedback for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => btn.classList.add('scale-95'));
+            btn.addEventListener('touchend', () => btn.classList.remove('scale-95'));
+        });
+    </script>
+
+
+</body></html>
