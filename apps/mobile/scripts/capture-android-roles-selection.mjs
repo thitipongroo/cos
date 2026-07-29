@@ -2,9 +2,9 @@
 // Quick Commands → Invite New User, scrolls to the ROLE ASSIGNMENT list and taps "Show more roles" to
 // open the full-screen role picker (mockup 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
 // 03_roles_selection). Captures:
-//   docs/screens/android/TENANT_ADMIN/07-roles-selection.png        — search + primary roles
-//   docs/screens/android/TENANT_ADMIN/07-roles-selection-scroll.png — support roles + AI banner + Confirm
-// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true.
+//   docs/screens/android/TENANT_ADMIN/01-Home/04-roles-selection.png — ONE full-page (search → all roles →
+//   CORE_AI Context banner → Confirm), stitched from scrolling viewports via scripts/stitch-fullpage.py.
+// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -12,7 +12,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
+const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
@@ -73,12 +75,36 @@ async function type(text) {
   adb('shell', 'input', 'text', text);
   await delay(600);
 }
-async function shot(name) {
+function grab(path) {
   const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
-  if (png.length < 20_000) throw new Error(`capture: ${name} screenshot looks empty`);
+  if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
+  writeFileSync(path, png);
+}
+/**
+ * Rewind to the top, then shoot descending viewports and stitch one full-page PNG. bot=1930 sits just
+ * above the FIXED "Confirm roles" footer so the scroll window never re-includes it; the footer is
+ * appended once from the last shot's [bot:] slice.
+ */
+async function stitchFull(name, top = 180, bot = 1930) {
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, `${name}.png`), png);
-  console.log(`  saved ${name}.png (${png.length} bytes)`);
+  for (let i = 0; i < 5; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(500);
+  }
+  await delay(700);
+  const shots = [];
+  for (let i = 0; i < 6; i++) {
+    const p = join(TMP, `rs_${i}.png`);
+    grab(p);
+    shots.push(p);
+    if (i < 5) {
+      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
+      await delay(1200);
+    }
+  }
+  const out = join(OUT, `${name}.png`);
+  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  console.log(`  stitched ${name}.png`);
 }
 
 async function main() {
@@ -119,12 +145,10 @@ async function main() {
   await find(byId('roles-selection'), 'roles-selection', 20);
   await dismissDevBanners();
   await delay(1500);
-  await shot('07-roles-selection');
 
-  // Scroll to reveal the support roles + AI banner + Confirm.
-  adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '400');
-  await delay(1200);
-  await shot('07-roles-selection-scroll');
+  // One full-page: search → all assignable roles → CORE_AI Context banner → Confirm.
+  console.log('· full-page roles-selection');
+  await stitchFull('04-roles-selection');
 
   console.log('done.');
 }

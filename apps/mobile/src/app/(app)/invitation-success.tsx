@@ -40,7 +40,7 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
 
   return (
     <View style={styles.root} testID="invitation-success">
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {/* Success indicator */}
         <View style={styles.hero}>
           <View style={styles.checkCircle}>
@@ -125,9 +125,10 @@ export default function InvitationSuccessScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
-  content: { padding: spacing.lg, paddingBottom: 160, gap: spacing.md },
+  scroll: { flex: 1 },
+  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
 
-  hero: { alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.md },
+  hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.md },
   checkCircle: {
     width: 80,
     height: 80,
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     borderColor: `${darkColors.success}4D`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   heading: {
     fontFamily: fontFamily.bold,
@@ -225,11 +226,9 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
   },
 
+  // In normal flow below the ScrollView (not absolute): this is a fixed-height terminal screen whose
+  // content never scrolls, so an absolute footer only risked overlapping the last row (Status).
   footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     padding: spacing.lg,
     gap: spacing.sm,
     backgroundColor: darkColors.surface,

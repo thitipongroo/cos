@@ -19,22 +19,29 @@ Screenshots of the Construction OS mobile app (Expo / React Native, Android), ca
 ## Structure — grouped by role
 
 Like [`../web/`](../web), the committed Android captures are grouped into role / flow folders (not a
-flat numbered dump). Each folder holds the screens one audience sees, numbered from `00` within the
-folder — one screen can span several shots that share a number (e.g. the multi-state Settings view).
+flat numbered dump). **Within each role folder the screens are grouped again by the role's main-menu
+tab** (its bottom-nav destinations) — a screen lives under the tab it is reached from, and screens
+opened from the Home FAB's Quick Commands (Invite user, System integration, Apps & Services, …) sit
+under `Home/`. Each menu subfolder is numbered from `00` within itself. **Every committed screen is ONE full-page
+image** — where a screen is taller than the phone it is stitched from scrolling viewports
+(`scripts/stitch-fullpage.py`) — except where a screen has a genuinely distinct alternate state, which
+gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-expanded view).
 
 | Folder | What it holds |
 | --- | --- |
 | [`_public/`](_public/) | Pre-auth — the native splash (`00`), app-launch loading (`01`) and the login flow (`02`–`04`). |
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
-| [`SITE_ENGINEER/`](SITE_ENGINEER/) | The Site Engineer loading state + dashboard (`00`, `01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`), the Role-permissions breakdown (`06`), the Roles-selection picker (`07`), the Invitation-success confirmation (`08`) and the System-integration picker (`09`). |
+| [`SITE_ENGINEER/`](SITE_ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE_ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`00`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
 
-The two adb dashboard scripts write straight into their role folder —
-[`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/`,
+The two adb dashboard scripts write straight into their role's menu subfolders —
+[`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/01-Home/`,
 [`capture-android-tenant-admin-home.mjs`](../../../apps/mobile/scripts/capture-android-tenant-admin-home.mjs)
-→ `TENANT_ADMIN/` — and [`capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
-writes `_public/`. The `_mfa-flow/` and `_shared/` shots are captured by hand (the Keycloak browser flow
+→ `TENANT_ADMIN/{01-Home,02-Users,03-Alerts,04-Settings}/` — and the FAB-flow scripts (`capture-android-invite-user.mjs`,
+`…-role-permissions.mjs`, `…-roles-selection.mjs`, `…-invitation-success.mjs`, `…-system-integration.mjs`)
+each write into `TENANT_ADMIN/01-Home/`. [`capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
+writes `_public/`; the `_mfa-flow/` and `_shared/` shots are captured by hand (the Keycloak browser flow
 and the shared app-shell routes), not by these scripts.
 
 ## Login flow — [`_public/`](_public/)
@@ -57,7 +64,7 @@ connection a `uiautomator dump` only ever returns the instrumented app's own win
 browser undrivable. The script asserts the screen it expects (e.g. `verifying-overlay`) before saving
 each frame, so a mis-tap fails the run instead of writing a screenshot of the wrong thing.
 
-## Site Engineer dashboard — [`SITE_ENGINEER/01-site-engineer-home.png`](SITE_ENGINEER/01-site-engineer-home.png)
+## Site Engineer dashboard — [`SITE_ENGINEER/01-Home/01-home.png`](SITE_ENGINEER/01-Home/01-home.png)
 
 The `SITE_ENGINEER` Home (`components/SiteEngineerHome.tsx`), captured against the `seed-realistic.ts`
 dataset through a real Path A (SMS OTP) login as `+66811000009` — Waraporn Klinhom, a SITE_ENGINEER at
@@ -99,7 +106,7 @@ below. It asserts the `site-engineer-home` testID before saving, and fails outri
 card is showing its "no BOQ-linked task" placeholder, so a screenshot of an empty card cannot be
 committed by accident.
 
-## Site Engineer dashboard — loading state — [`SITE_ENGINEER/00-site-engineer-loading.png`](SITE_ENGINEER/00-site-engineer-loading.png)
+## Site Engineer dashboard — loading state — [`SITE_ENGINEER/01-Home/00-loading.png`](SITE_ENGINEER/01-Home/00-loading.png)
 
 The same dashboard while its data is still loading: the reusable [`LoadingState`](../../../apps/mobile/src/components/LoadingState.tsx)
 component (ADR-055 — the implementation of
@@ -117,11 +124,14 @@ hang, so the honest value is `0%`.)
 
 Captured by the same script with `CAPTURE_LOADING=1`
 (`CAPTURE_LOADING=1 node scripts/capture-android-home.mjs`): it pauses Postgres so the dashboard's
-fetches hang, relaunches so the screen re-mounts into its loading state, and screencaps the framebuffer
-directly — uiautomator cannot dump the screen because the skeletons animate continuously ("could not
-get idle state").
+fetches hang, relaunches so the screen re-mounts into its loading state, and stitches a couple of
+scrolling framebuffers into ONE full-page image (so Upcoming Tasks below the fold is included too).
+uiautomator can't dump the animating skeletons, so the shots are screencapped directly — and to keep
+the shimmer from defeating the stitch's overlap match, `LoadingState` **freezes every skeleton loop at
+a mid-frame in capture builds** (`EXPO_PUBLIC_CAPTURE`, the same flag that mutes the LogBox toast);
+production and normal dev animate as usual.
 
-## Tenant Admin dashboard — [`TENANT_ADMIN/00-tenant-admin-home.png`](TENANT_ADMIN/00-tenant-admin-home.png)
+## Tenant Admin dashboard — [`TENANT_ADMIN/01-Home/00-home.png`](TENANT_ADMIN/01-Home/00-home.png)
 
 The `TENANT_ADMIN` Home ([`components/TenantAdminHome.tsx`](../../../apps/mobile/src/components/TenantAdminHome.tsx),
 implementing [`mockup/mobile/04_tenant_admin/00_home/01_home_admin`](../../../mockup/mobile/04_tenant_admin/00_home/01_home_admin)),
@@ -169,10 +179,10 @@ Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../
 (`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
 `tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
 an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
-Quick-Add menu (`TENANT_ADMIN/01-tenant-admin-quick-add.png`) and the Users tab
-(`TENANT_ADMIN/02-tenant-admin-users.png`).
+Quick-Add menu (`TENANT_ADMIN/01-Home/01-quick-add.png`) and the Users tab
+(`TENANT_ADMIN/02-Users/00-users.png`).
 
-## Tenant Admin — Users — [`TENANT_ADMIN/02-tenant-admin-users.png`](TENANT_ADMIN/02-tenant-admin-users.png)
+## Tenant Admin — Users — [`TENANT_ADMIN/02-Users/00-users.png`](TENANT_ADMIN/02-Users/00-users.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
 implementing the
@@ -195,13 +205,15 @@ migration; the signal grows meaningful as real dormancy accrues). **Invite user*
 `⋮` actions are first-pass placeholders (PO decision 2026-07-28) — create/edit/deactivate exist on the
 web console; the mobile flows are a follow-up, and the buttons say so rather than dead-ending.
 
-## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-tenant-admin-quick-add.png`](TENANT_ADMIN/01-tenant-admin-quick-add.png)
+## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/01-quick-add.png`](TENANT_ADMIN/01-Home/01-quick-add.png)
 
 The FAB's full-screen **Quick Commands** overlay
 ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx), mockup
 `04_tenant_admin/00_home/02_quick_action_button/00_quick_add_menu`) — a dark surface with its own top
-bar (brand + SYNCED pill + close), four action cards, and a small stats bento. Left-accent colour
-follows the action (primary / cyan / cyan / sync-gold). Real vs honest placeholder:
+bar (brand + SYNCED pill + close), **five action cards** (Invite · New System Integration · Apps &
+Services · Generate Usage Report · Force System Sync), and a small stats bento. Left-accent colour
+follows the action. With the fifth card the overlay now scrolls, so `01` is captured as **one full-page
+stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
 
 - **Force System Sync** — real (`runPushSync()` then `runDeltaSync()`, §17.6 flush + pull); tapping it
   spins the icon and the sub-label reads **SYNCING…** while it runs.
@@ -213,11 +225,11 @@ follows the action (primary / cyan / cyan / sync-gold). Real vs honest placehold
   `assets/tenant-admin/micro_server.jpg`. Each tile follows the mockup layout — a dimmed photo banner on
   top, then the label + real value stacked below on the card surface.
 - **Invite New User** opens the Invite-user form (below); **New System Integration** opens the
-  connector picker (`09`). **Generate Usage Report** is an honest placeholder (no AI-report screen yet) —
-  the AI-report card keeps the mockup's richer layout but **drops the fabricated "94 % CONFIDENCE /
-  Source"** (no such signal exists).
+  connector picker (`06`); **Apps & Services** opens the module hub (`07`). **Generate Usage Report** is an
+  honest placeholder (no AI-report screen yet) — the AI-report card keeps the mockup's richer layout but
+  **drops the fabricated "94 % CONFIDENCE / Source"** (no such signal exists).
 
-## Tenant Admin — Invite user — [`05`](TENANT_ADMIN/05-invite-user.png) · [`roles`](TENANT_ADMIN/05-invite-user-roles.png) · [`email`](TENANT_ADMIN/05-invite-user-email.png)
+## Tenant Admin — Invite user — [`phone`](TENANT_ADMIN/01-Home/02-invite-user-phone.png) · [`email`](TENANT_ADMIN/01-Home/02-invite-user-email.png)
 
 The Quick Commands "Invite New User" target
 ([`app/(app)/invite-user.tsx`](../../../apps/mobile/src/app/(app)/invite-user.tsx), mockups
@@ -232,8 +244,9 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
   (added to `TopBar` `BACK_ROUTES`) and a **Help "?"** beside the bell; **CANCEL** and the Back arrow
   both `router.back()` to Home.
 - **Full name** — added on top of the mockup because `POST /users` requires `display_name`, which the
-  mockup's contact-only form never collected (PO decision 2026-07-29). `05` = phone method (top),
-  `email` = the EMAIL toggle (the contact field clears on switch); `roles` shows a selected role.
+  mockup's contact-only form never collected (PO decision 2026-07-29). Each method is one
+  full-page image (header → role cards → AI panel → footer): `phone` = the phone method, `email` = the
+  EMAIL toggle (the contact field clears on switch). Both show a role selected so the AI copy is role-aware.
 - **Role assignment** is the real assignable `CosRole` set — everything except the cross-tenant
   `SYSTEM_ADMIN` (`assertRoleAssignableByTenant`), four shown with **"Show more roles (7)"** (the real
   remaining count, not the mockup's "4"); the selected role is what `createUser` receives.
@@ -245,7 +258,7 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
   ("…pre-applied for the _Project Manager_ role") but **drops the mockup's fabricated permission
   specifics** ("approval rights for Payouts and Daily Reports") — PO decision 2026-07-29.
 
-## Tenant Admin — Role permissions — [`06`](TENANT_ADMIN/06-role-permissions.png) · [`scroll`](TENANT_ADMIN/06-role-permissions-scroll.png)
+## Tenant Admin — Role permissions — [`03`](TENANT_ADMIN/01-Home/03-role-permissions.png)
 
 Reached from Invite-user's **"View permissions"** link
 ([`app/(app)/role-permissions.tsx`](../../../apps/mobile/src/app/(app)/role-permissions.tsx), mockup
@@ -267,7 +280,7 @@ breakdown for the role being invited.
   of its own: the global TopBar shows "Role permissions" + a Back arrow; the footer **"Back to
   invitation"** and that arrow both `router.back()`.
 
-## Tenant Admin — Roles selection — [`07`](TENANT_ADMIN/07-roles-selection.png) · [`scroll`](TENANT_ADMIN/07-roles-selection-scroll.png) · [`ai`](TENANT_ADMIN/07-roles-selection-ai.png)
+## Tenant Admin — Roles selection — [`04`](TENANT_ADMIN/01-Home/04-roles-selection.png)
 
 The full-screen role picker opened from Invite-user's **"Show more roles"**
 ([`app/(app)/roles-selection.tsx`](../../../apps/mobile/src/app/(app)/roles-selection.tsx), mockup
@@ -289,7 +302,7 @@ single-select (createUser takes one role).
   hidden `Tabs.Screen` siblings, and the React Navigation default (`firstRoute`) would send Back to Home
   instead of the screen that opened the picker — this also fixes Role-permissions' "Back to invitation".
 
-## Tenant Admin — Invitation success — [`08`](TENANT_ADMIN/08-invitation-success.png)
+## Tenant Admin — Invitation success — [`05`](TENANT_ADMIN/01-Home/05-invitation-success.png)
 
 The terminal confirmation shown after Invite-user's **SEND INVITATION** succeeds
 ([`app/(app)/invitation-success.tsx`](../../../apps/mobile/src/app/(app)/invitation-success.tsx), mockup
@@ -311,7 +324,7 @@ old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
   Qualified to `::platform."CosRoleEnum"` in both `createUser` and `changeRole`; `POST /users` now returns
   **201** and the real SEND → success flow is reachable.
 
-## Tenant Admin — System integration — [`09`](TENANT_ADMIN/09-system-integration.png)
+## Tenant Admin — System integration — [`06`](TENANT_ADMIN/01-Home/06-system-integration.png)
 
 The connector picker opened from Quick Commands → **New System Integration**
 ([`app/(app)/system-integration.tsx`](../../../apps/mobile/src/app/(app)/system-integration.tsx), mockup
@@ -327,12 +340,29 @@ The connector picker opened from Quick Commands → **New System Integration**
   "full"). The **"Enterprise ready" band uses a bundled server-room photo asset**
   (`assets/tenant-admin/server_room.jpg`, provided by the PO) under an SVG scrim that keeps the caption
   legible (no external image). The global TopBar shows the screen title + a Back arrow.
-- **`09` is one full-page image** (PO decision 2026-07-29 — "one page, not split"): the capture shoots
+- **`06` is one full-page image** (PO decision 2026-07-29 — "one page, not split"): the capture shoots
   several scrolling viewports and stitches them with `scripts/stitch-fullpage.py`. Also visible here: the
   **brand icon in the TopBar is now a rounded-square tile** (`brandIcon` `borderRadius`, Linear/Palantir
   aesthetic) — a global TopBar change, so every screen's header picks it up.
 
-## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
+## Tenant Admin — Apps & Services — [`07`](TENANT_ADMIN/01-Home/07-apps-services.png)
+
+The module / tools / extensions hub, opened from Quick Commands → **Apps & Services** (a new action card
+there — `router.push`)
+([`app/(app)/apps-services.tsx`](../../../apps/mobile/src/app/(app)/apps-services.tsx), mockup
+`04_tenant_admin/00_home/02_quick_action_button/02_system_integration/01_application_and_services/00_apps_and_services`).
+
+- **Honest wiring:** every card is a catalogue entry with no built screen yet (the core modules are
+  field-role features; the extensions have no backend integration API; Audit Logs has no screen), so
+  **tapping opens a per-item "coming soon"**. The decorative **"AI Enhanced" / "Phase 5"** tier badges
+  follow the mockup; search filters every section by name.
+- Sections (PO decision 2026-07-29): **Core Modules** (Site Reports · Issue Management · Inventory · BIM
+  Viewer · Drone Reality Capture), **Admin Tools** (Audit Logs only — User Management / System Settings
+  removed), **Extensions** — the three connectors, ordered **LINE Messaging API · Autodesk BIM 360 · ERP
+  Connect**. `07` is one full-page stitch; no top bar of its own (global TopBar shows the title + Back
+  arrow).
+
+## Tenant Admin — Sync Review Queue (Alerts) — [`00`](TENANT_ADMIN/03-Alerts/00-alerts.png)
 
 The `TENANT_ADMIN` "Alerts" tab
 ([`app/(app)/sync-queue.tsx`](../../../apps/mobile/src/app/(app)/sync-queue.tsx)), implementing
@@ -343,23 +373,21 @@ Engineer's ConflictBadge uses; spec §17.5 lets `TENANT_ADMIN` view/resolve), re
 actual `conflict_type` enum (**REJECTED / STATUS_CONFLICT / FIELD_CONFLICT**, colour-coded) — the
 mockup's Critical/Medium/Low "severity" is not a field on the record, so it is not invented. `REF` comes
 from `entity_id`, `FAILED AT` from `created_at`, and the **error reason** is a localised description of
-each `conflict_type` (not a fabricated per-record message). `03-tenant-admin-alerts` shows the populated
-list; `03-tenant-admin-alerts-diff` shows **Review data** expanded — the real client-vs-server field diff
-from the two payloads (differing fields highlighted). **Mark resolved** is the single real action (the
+each `conflict_type` (not a fabricated per-record message). `00-alerts` shows the populated
+list as one full-page image. **Mark resolved** is the single real action (the
 mockup's retry / merge / edit are all one `resolve` on the backend).
 
 The five conflicts are demo rows seeded by
 [`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync
 conflicts, like it accumulates issues and reports); the screen renders that real (seed) data.
 
-## Tenant Admin — System Settings — [`04`](TENANT_ADMIN/04-tenant-admin-settings.png) · [`04-integrations`](TENANT_ADMIN/04-tenant-admin-settings-integrations.png) · [`04-others`](TENANT_ADMIN/04-tenant-admin-settings-others.png)
+## Tenant Admin — System Settings — [`00`](TENANT_ADMIN/04-Settings/00-settings.png)
 
 The `TENANT_ADMIN` "Settings" tab
 ([`app/(app)/system-settings.tsx`](../../../apps/mobile/src/app/(app)/system-settings.tsx)), implementing
 [`04_tenant_admin/04_settings/01_system_settings`](../../../mockup/mobile/04_tenant_admin/04_settings/01_system_settings).
-The screen is taller than the viewport, so it is captured in three scroll positions:
-`04-tenant-admin-settings` (Organization Info + Brand), `04-…-integrations` (External Integrations),
-`04-…-others` (Others + AI System Insight).
+The screen is taller than the viewport, so it is captured as ONE full-page image (stitched from
+scrolling viewports): Organization Info → Brand & Identity → External Integrations → Others → AI System Insight.
 
 **Real, persisted data:** **Organization Info** — name + code from `GET /tenant`
 ([`my-tenant.controller.ts`](../../../backend/src/modules/tenant/my-tenant.controller.ts), a new
@@ -445,7 +473,7 @@ folders (see [Structure](#structure--grouped-by-role) above), like [`../web/`](.
   and [`provision-keycloak-demo.ts`](../../../backend/prisma/provision-keycloak-demo.ts) used to
   provision every demo user with the email as username, so no seeded role could complete an OTP login.
   It now uses the phone number as the username whenever the account has one; Path B still works
-  because the realm sets `loginWithEmailAllowed`. `SITE_ENGINEER/01-site-engineer-home.png` is the first
+  because the realm sets `loginWithEmailAllowed`. `SITE_ENGINEER/01-Home/01-home.png` is the first
   screen captured through a real per-role OTP login.
   - Accounts provisioned before this change cannot simply be renamed — the realm sets
     `editUsernameAllowed: false`, and Keycloak rejects a username change with

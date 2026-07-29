@@ -627,7 +627,9 @@
     "systemHealth": "System Health",
     "healthChecking": "Checking…",
     "healthOptimal": "Optimal",
-    "healthDown": "Degraded"
+    "healthDown": "Degraded",
+    "appsTitle": "Apps & Services",
+    "appsSub": "BROWSE MODULES & TOOLS"
   },
   "syncQueue": {
     "title": "Sync Review Queue",
@@ -870,6 +872,39 @@
       "name": "ERP Connect",
       "desc": "Connect financial and budget data",
       "badge": "Financial"
+    }
+  },
+  "appsServices": {
+    "title": "Apps & Services",
+    "searchPlaceholder": "Search modules...",
+    "coreModules": "Core Modules",
+    "adminTools": "Admin Tools",
+    "extensions": "Extensions",
+    "noMatch": "No modules match your search.",
+    "comingSoon": "This module is coming soon.",
+    "module": {
+      "siteReports": "Site Reports",
+      "issueManagement": "Issue Management",
+      "inventory": "Inventory",
+      "bimViewer": "BIM Viewer",
+      "drone": "Drone Reality Capture",
+      "userManagement": "User Management",
+      "systemSettings": "System Settings",
+      "auditLogs": "Audit Logs",
+      "droneExt": "Drone Reality Capture",
+      "erp": "ERP Connect",
+      "line": "LINE Messaging API",
+      "bim360Ext": "Autodesk BIM 360"
+    },
+    "badge": {
+      "aiEnhanced": "AI Enhanced",
+      "phase5": "Phase 5"
+    },
+    "ext": {
+      "droneExt": "Autonomous inspection & mapping",
+      "erp": "SAP & Oracle direct integration",
+      "line": "Field-office coordination",
+      "bim360Ext": "Access 3D models and building data"
     }
   }
 }

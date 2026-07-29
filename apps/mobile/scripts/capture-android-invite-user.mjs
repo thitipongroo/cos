@@ -1,12 +1,13 @@
 // Invite-user screenshot capture — adb/uiautomator only (same approach as capture-android-home.mjs).
 // Logs in as the TENANT_ADMIN (+66811000002), opens the FAB's Quick Commands overlay → Invite New User,
 // and captures the invite form (mockup 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
-// 01_invite_user_via_phone) in three states:
-//   docs/screens/android/TENANT_ADMIN/05-invite-user.png        — phone method, top of the form
-//   docs/screens/android/TENANT_ADMIN/05-invite-user-roles.png  — scrolled: role cards + AI panel + footer
-//   docs/screens/android/TENANT_ADMIN/05-invite-user-email.png  — the EMAIL method toggle
+// 01_invite_user_via_phone) as ONE full-page image per method (each stitched from scrolling viewports
+// via scripts/stitch-fullpage.py):
+//   docs/screens/android/TENANT_ADMIN/01-Home/02-invite-user-phone.png  — phone method, complete filled form
+//   docs/screens/android/TENANT_ADMIN/01-Home/02-invite-user-email.png  — the EMAIL method, complete form
 // Prereqs are the same as capture-android-home.mjs, plus Metro started with EXPO_PUBLIC_CAPTURE=1 so the
-// dev LogBox toast is suppressed. Run: node scripts/capture-android-invite-user.mjs
+// dev LogBox toast is suppressed, plus Python (Pillow/numpy) for the stitch. Run:
+//   node scripts/capture-android-invite-user.mjs
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -14,7 +15,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
+const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002'; // Suphaporn Rattanakul — TENANT_ADMIN
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
@@ -75,12 +78,41 @@ async function type(text) {
   adb('shell', 'input', 'text', text);
   await delay(500);
 }
-async function shot(name) {
+function grab(path) {
   const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
-  if (png.length < 20_000) throw new Error(`capture: ${name} screenshot looks empty`);
+  if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
+  writeFileSync(path, png);
+}
+/**
+ * Rewind the form to the top, then shoot several descending viewports and stitch them into ONE
+ * full-page PNG via scripts/stitch-fullpage.py (TOP/BOT = the fixed top-bar / bottom boundaries kept
+ * once). This screen is a pushed child route (global TopBar, no bottom-nav), so BOT sits near the
+ * screen bottom — same crop the system-integration full-page uses.
+ */
+// bot=1780 sits just above the FIXED footer (SEND / CANCEL) so the scroll window never re-includes it;
+// the footer + bottom-nav are appended once from the last shot's [bot:] slice.
+async function stitchFull(name, top = 180, bot = 1780) {
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, `${name}.png`), png);
-  console.log(`  saved ${name}.png (${png.length} bytes)`);
+  // Rewind to the top. Start the drag mid-scrollview (y=700) — a drag begun over the fixed footer
+  // buttons (CANCEL / SEND, ~y1900) is swallowed and never scrolls.
+  for (let i = 0; i < 5; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(500);
+  }
+  await delay(700);
+  const shots = [];
+  for (let i = 0; i < 6; i++) {
+    const p = join(TMP, `iu_${name.replace(/[^a-z0-9]/gi, '_')}_${i}.png`);
+    grab(p);
+    shots.push(p);
+    if (i < 5) {
+      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
+      await delay(1200);
+    }
+  }
+  const out = join(OUT, `${name}.png`);
+  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  console.log(`  stitched ${name}.png`);
 }
 
 async function main() {
@@ -112,34 +144,39 @@ async function main() {
   await find(byId('invite-user'), 'invite-user', 20);
   await dismissDevBanners();
   await delay(1500);
-  await shot('05-invite-user');
 
-  // Fill the form so the captures show a real, valid invitation (name + phone).
-  console.log('· fill name + phone');
+  // Fill the form so the full page shows a real, valid invitation (name + phone) and select a role so
+  // the CORE_AI banner is role-aware ("…for the Project Manager role") rather than the no-role default.
+  console.log('· fill name + phone + role (phone method)');
   await tap(byId('invite-name'), 'name');
   await type('Somchai Jaidee');
   await hideKeyboard();
   await tap(byId('invite-contact'), 'contact');
   await type('812345678');
   await hideKeyboard();
-
-  // Scroll down to reveal the role cards, projects, AI panel and the footer buttons.
+  // Reveal the role card (below the fold) and select it — a pre-scroll adb tap misses it.
   adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '400');
   await delay(1500);
-  // Select a role now that its card is on-screen (a pre-scroll adb tap missed the below-fold card),
-  // so the capture shows the selected state AND the role-aware CORE_AI banner ("…for the Project
-  // Manager role") rather than the no-role default copy.
   await tap(byId('invite-role-PROJECT_MANAGER'), 'role PROJECT_MANAGER');
   await delay(700);
-  await shot('05-invite-user-roles');
 
-  // Email method (toggle) — scroll back to the top first.
-  console.log('· EMAIL method');
-  adb('shell', 'input', 'swipe', '540', '700', '540', '1800', '400');
-  await delay(1200);
+  // Full page: the complete phone-method form (header → role cards → AI panel → footer) in one image.
+  console.log('· full-page phone method');
+  await stitchFull('02-invite-user-phone');
+
+  // Switch to the EMAIL method and capture that state full-page too (the contact field clears on
+  // switch; type a sample address so the field is shown filled).
+  console.log('· full-page EMAIL method');
+  for (let i = 0; i < 3; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1800', '300');
+    await delay(500);
+  }
   await tap(byId('invite-method-email'), 'email tab');
   await delay(800);
-  await shot('05-invite-user-email');
+  await tap(byId('invite-contact'), 'contact');
+  await type('somchai@example.com');
+  await hideKeyboard();
+  await stitchFull('02-invite-user-email');
 
   console.log('done.');
 }

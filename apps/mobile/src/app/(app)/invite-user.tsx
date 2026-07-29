@@ -402,7 +402,9 @@ export default function InviteUserScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
-  content: { padding: spacing.lg, paddingBottom: 160 },
+  // paddingBottom clears the absolute footer (~164px: two buttons + padding) with a comfortable margin
+  // so the last card (CORE_AI) can scroll fully clear of it instead of sitting under its edge.
+  content: { padding: spacing.lg, paddingBottom: 210 },
   sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

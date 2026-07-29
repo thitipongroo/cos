@@ -49,9 +49,20 @@ for idx, s in enumerate(shots[1:], 1):
         print(f"  shot {idx}: bottom reached (scroll~{best_scroll}, sad={best_sad:.1f}) — skip")
         prev, prev_g = c, c_g
         continue
-    new_part = c[content_h - best_scroll:]
+    overlap = content_h - best_scroll
+    # Feather the join: base's bottom `feather` rows are the SAME content as the current shot's
+    # rows [overlap-feather:overlap], so cross-fade from the base (previous-shot) pixels into the
+    # current-shot pixels over that band. Without this, the hard concatenation leaves a faint grey
+    # seam line wherever a card/text sits exactly on the cut (e.g. across a role card).
+    feather = int(min(48, overlap, base.shape[0]))
+    if feather > 0:
+        band_base = base[-feather:].astype(np.float32)
+        band_cur = c[overlap - feather:overlap].astype(np.float32)
+        alpha = np.linspace(0.0, 1.0, feather, dtype=np.float32)[:, None, None]
+        base[-feather:] = (band_base * (1.0 - alpha) + band_cur * alpha).astype(np.uint8)
+    new_part = c[overlap:]
     base = np.vstack([base, new_part])
-    print(f"  shot {idx}: scroll={best_scroll} sad={best_sad:.1f} +{new_part.shape[0]}px")
+    print(f"  shot {idx}: scroll={best_scroll} sad={best_sad:.1f} +{new_part.shape[0]}px (feather {feather})")
     prev, prev_g = c, c_g
 
 final = np.vstack([top_bar, base, bottom_nav])

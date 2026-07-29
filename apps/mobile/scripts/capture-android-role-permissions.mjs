@@ -2,9 +2,9 @@
 // Logs in as the TENANT_ADMIN (+66811000002), opens the FAB's Quick Commands → Invite New User, selects a
 // role (Project Manager), then taps "View permissions" to open the role-permissions breakdown (mockup
 // 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/02_role_permissions). Captures:
-//   docs/screens/android/TENANT_ADMIN/06-role-permissions.png        — hero + CORE_AI banner + first modules
-//   docs/screens/android/TENANT_ADMIN/06-role-permissions-scroll.png — scrolled: remaining modules + Back
-// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true. Run:
+//   docs/screens/android/TENANT_ADMIN/01-Home/03-role-permissions.png — ONE full-page (hero → CORE_AI
+//   banner → all module rows → Back-to-invitation), stitched from scrolling viewports via stitch-fullpage.py.
+// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python. Run:
 //   node scripts/capture-android-role-permissions.mjs
 
 import { execFileSync } from 'node:child_process';
@@ -13,7 +13,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
+const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002'; // TENANT_ADMIN
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
@@ -74,12 +76,36 @@ async function type(text) {
   adb('shell', 'input', 'text', text);
   await delay(600);
 }
-async function shot(name) {
+function grab(path) {
   const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
-  if (png.length < 20_000) throw new Error(`capture: ${name} screenshot looks empty`);
+  if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
+  writeFileSync(path, png);
+}
+/**
+ * Rewind to the top, then shoot descending viewports and stitch one full-page PNG. bot=1930 sits just
+ * above the FIXED "Back to invitation" footer so the scroll window never re-includes it; the footer +
+ * bottom-nav are appended once from the last shot's [bot:] slice.
+ */
+async function stitchFull(name, top = 180, bot = 1930) {
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, `${name}.png`), png);
-  console.log(`  saved ${name}.png (${png.length} bytes)`);
+  for (let i = 0; i < 5; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(500);
+  }
+  await delay(700);
+  const shots = [];
+  for (let i = 0; i < 6; i++) {
+    const p = join(TMP, `rp_${i}.png`);
+    grab(p);
+    shots.push(p);
+    if (i < 5) {
+      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
+      await delay(1200);
+    }
+  }
+  const out = join(OUT, `${name}.png`);
+  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  console.log(`  stitched ${name}.png`);
 }
 
 async function main() {
@@ -126,12 +152,10 @@ async function main() {
   await find(byId('role-permissions'), 'role-permissions', 20);
   await dismissDevBanners();
   await delay(1500);
-  await shot('06-role-permissions');
 
-  // Scroll to reveal the remaining modules + the Back-to-invitation footer.
-  adb('shell', 'input', 'swipe', '540', '1700', '540', '700', '400');
-  await delay(1200);
-  await shot('06-role-permissions-scroll');
+  // One full-page: hero → CORE_AI banner → every module row → Back-to-invitation.
+  console.log('· full-page role-permissions');
+  await stitchFull('03-role-permissions');
 
   console.log('done.');
 }

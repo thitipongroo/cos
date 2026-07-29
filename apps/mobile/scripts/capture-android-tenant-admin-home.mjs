@@ -1,7 +1,7 @@
 // Tenant Admin Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/TENANT_ADMIN/00-tenant-admin-home.png: the TENANT_ADMIN landing dashboard
+// Writes docs/screens/android/TENANT_ADMIN/01-Home/00-home.png: the TENANT_ADMIN landing dashboard
 // (mockup/mobile/04_tenant_admin/00_home/01_home_admin/) with live data — system status, pending
 // approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
 // the seeded TENANT_ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
@@ -25,8 +25,12 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// Grouped by role (mirrors docs/screens/web/): every TENANT_ADMIN shot (29–36) lives under TENANT_ADMIN/.
+// Grouped by main-menu tab: each capture's name carries its menu subfolder (Home / Users / Alerts /
+// Settings) under TENANT_ADMIN/, so stitchFull() writes e.g. TENANT_ADMIN/01-Home/00-home.png.
+// Every screen is captured as ONE full-page image (scrolling viewports stitched via stitch-fullpage.py).
 const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
+const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 
 // Suphaporn Rattanakul — TENANT_ADMIN at Ekachai (seed-realistic.ts). National format: the login
@@ -77,8 +81,6 @@ async function find(pred, what, tries = 20) {
 }
 
 const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
-// Prefix match — for dynamic testIDs like `review-<uuid>` where the exact id is not known up front.
-const byIdPrefix = (id) => (n) => n.includes(`resource-id="${id}`);
 
 async function tap(pred, what) {
   const c = await find(pred, what);
@@ -137,12 +139,37 @@ async function type(text) {
   await dismissImeOnboarding();
 }
 
-async function shot(name) {
+function grab(path) {
   const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
-  // A PNG that small is a black/blank frame, not a screen.
-  if (png.length < 20_000) throw new Error(`capture: ${name} screenshot looks empty`);
-  writeFileSync(join(OUT, `${name}.png`), png);
-  console.log(`  saved ${name}.png (${png.length} bytes)`);
+  if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
+  writeFileSync(path, png);
+}
+/**
+ * Rewind to the top, then shoot descending viewports and stitch ONE full-page PNG via
+ * scripts/stitch-fullpage.py. `bot` sits just above whatever is pinned to the bottom on that screen so
+ * it is appended once (never repeated down the page): 1970 for dashboards/lists with a floating FAB,
+ * 2196 (bottom-nav top) for screens whose only fixed element is the nav. `name` carries its subfolder.
+ */
+async function stitchFull(name, top, bot) {
+  const dest = join(OUT, `${name}.png`);
+  mkdirSync(dirname(dest), { recursive: true });
+  for (let i = 0; i < 5; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(500);
+  }
+  await delay(700);
+  const shots = [];
+  for (let i = 0; i < 6; i++) {
+    const p = join(TMP, `ta_${name.replace(/[^a-z0-9]/gi, '_')}_${i}.png`);
+    grab(p);
+    shots.push(p);
+    if (i < 5) {
+      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
+      await delay(1200);
+    }
+  }
+  process.stdout.write(execFileSync('python', [STITCH, dest, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  console.log(`  stitched ${name}.png`);
 }
 
 async function main() {
@@ -186,60 +213,49 @@ async function main() {
   // loudly instead of being photographed.
   await find(byId('admin-system-status'), 'admin system-status card');
 
-  await shot('00-tenant-admin-home');
+  // One full-page per screen (stitched from scrolling viewports). `bot` excludes the element pinned to
+  // the bottom so it appears once: 1970 for the dashboard/list floating FABs, 2196 (bottom-nav top) for
+  // screens whose only fixed element is the nav.
+  console.log('· full-page Home dashboard');
+  await stitchFull('01-Home/00-home', 180, 1970);
 
-  // Quick-Add menu — the FAB target (mockup 02_quick_add_menu). Open it, assert the sheet, capture it,
-  // then close it before moving on.
-  console.log('· Quick-Add menu (FAB)');
+  // Quick-Add menu — the FAB target (mockup 02_quick_add_menu). A scrolling modal, so capture it
+  // full-page too (top=150: its own top bar is shorter, no bottom nav); then scroll back up and close.
+  console.log('· full-page Quick-Add menu (FAB)');
   await tap(byId('quick-add-fab'), 'quick-add FAB');
   await find(byId('quick-add-menu'), 'quick-add-menu', 15);
   await delay(1500);
-  await shot('01-tenant-admin-quick-add');
+  await stitchFull('01-Home/01-quick-add', 150, 2300);
+  for (let i = 0; i < 4; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(400);
+  }
   await tap(byId('quick-add-close'), 'quick-add close');
   await delay(1000);
 
-  // Users tab — the tenant admin's team-management screen (GET /users). Tap the tab, assert the list
-  // rendered (not a mis-tap or an empty state), then capture it too.
-  console.log('· Users tab');
+  // Users tab — the tenant admin's team screen (GET /users), full-page (list + the Invite-user FAB).
+  console.log('· full-page Users tab');
   await tap(byId('users-tab'), 'Users tab');
   await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
   await delay(3000);
   await dismissDevBanners();
-  await shot('02-tenant-admin-users');
+  await stitchFull('02-Users/00-users', 180, 1970);
 
-  // Alerts tab — the sync-review queue (mockup 03_alerts). Capture the populated list, then expand the
-  // first conflict's client-vs-server diff and capture that too.
-  console.log('· Alerts tab (sync queue)');
+  // Alerts tab — the sync-review queue (mockup 03_alerts), one full-page.
+  console.log('· full-page Alerts tab (sync queue)');
   await tap(byId('sync-queue-tab'), 'Alerts tab');
   await find(byId('tenant-admin-sync-queue'), 'tenant-admin-sync-queue', 20);
   await delay(2500);
-  await shot('03-tenant-admin-alerts');
-  // The client-vs-server diff needs at least one conflict in the queue to expand. If the queue is empty
-  // (or a transient load error left it blank) there is no `review-` button — skip the diff shot rather
-  // than fail the whole run, since 34–36 (this task's deliverable) come after it.
-  try {
-    await tap(byIdPrefix('review-'), 'first "Review data"');
-    await delay(1500);
-    await shot('03-tenant-admin-alerts-diff');
-  } catch (err) {
-    console.warn(`  (skipped 33 alerts-diff: ${err.message ?? err})`);
-  }
+  await stitchFull('03-Alerts/00-alerts', 180, 2196);
 
-  // Settings tab — System Settings (mockup 04_settings). Org Info (GET /tenant) + LINE toggle/token
-  // (GET /tenant/settings) are real. The screen is taller than the viewport, so capture it in three
-  // scroll positions: top (org + brand), integrations (LINE + BIM 360), and the foot (Others + AI).
-  console.log('· Settings tab (system settings)');
+  // Settings tab — System Settings (mockup 04_settings), ONE full-page (Org Info + Brand + External
+  // Integrations + Others + AI). Org Info (GET /tenant) + LINE toggle/token (GET /tenant/settings) are real.
+  console.log('· full-page Settings tab (system settings)');
   await tap(byId('system-settings-tab'), 'Settings tab');
   await find(byId('tenant-admin-settings'), 'tenant-admin-settings', 20);
   await delay(2500);
   await dismissDevBanners();
-  await shot('04-tenant-admin-settings');
-  adb('shell', 'input', 'swipe', '540', '1850', '540', '800', '400');
-  await delay(2000);
-  await shot('04-tenant-admin-settings-integrations');
-  adb('shell', 'input', 'swipe', '540', '1850', '540', '700', '400');
-  await delay(2000);
-  await shot('04-tenant-admin-settings-others');
+  await stitchFull('04-Settings/00-settings', 180, 2196);
 
   console.log('done.');
 }

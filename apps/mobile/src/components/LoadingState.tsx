@@ -109,6 +109,16 @@ export function LoadingState({
   const scanValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Capture builds (EXPO_PUBLIC_CAPTURE, same flag that mutes the LogBox toast) FREEZE every loop at a
+    // natural mid-frame: a full-page screenshot of the loading state is stitched from several scrolling
+    // viewports, and a moving shimmer between frames defeats the stitch's overlap match. Production and
+    // normal dev are unaffected — the loops run as usual.
+    if (process.env['EXPO_PUBLIC_CAPTURE']) {
+      pulseValue.setValue(0.6);
+      spinValue.setValue(0);
+      scanValue.setValue(0);
+      return;
+    }
     // One breathing pulse drives every skeleton bar, so the whole card reads as a single surface
     // rather than a field of independently blinking rectangles.
     const breathe = Animated.loop(

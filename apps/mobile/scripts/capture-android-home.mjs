@@ -1,7 +1,7 @@
 // Site Engineer Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-login.mjs (see that file for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/SITE_ENGINEER/01-site-engineer-home.png: the SITE_ENGINEER landing dashboard
+// Writes docs/screens/android/SITE_ENGINEER/01-Home/01-home.png: the SITE_ENGINEER landing dashboard
 // (mockup/site-engineer/dashboard-mobile/) with live data — BOQ-value-weighted project progress
 // (§32.12), open issues, and upcoming tasks — reached through a real Path A (SMS OTP) login.
 //
@@ -22,8 +22,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// Grouped by role (mirrors docs/screens/web/): SITE_ENGINEER's two shots live under SITE_ENGINEER/.
-const OUT = resolve(HERE, '../../../docs/screens/android/SITE_ENGINEER');
+// Grouped by main-menu tab: SITE_ENGINEER's loading + landing shots are its Home tab → SITE_ENGINEER/01-Home/.
+const OUT = resolve(HERE, '../../../docs/screens/android/SITE_ENGINEER/01-Home');
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
+const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 
 // Waraporn Klinhom — SITE_ENGINEER at Ekachai (seed-realistic.ts), the engineer the R9CT tasks are
@@ -79,7 +81,6 @@ async function find(pred, what, tries = 20) {
 }
 
 const byId = (id) => (n) => n.includes(`resource-id="${id}"`);
-const byText = (t) => (n) => n.includes(`text="${t}"`);
 
 async function present(pred) {
   return (await dump()).some((n) => pred(n) && n.includes('bounds='));
@@ -142,12 +143,36 @@ async function type(text) {
   await dismissImeOnboarding();
 }
 
-async function shot(name) {
+function grab(path) {
   const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
-  // A PNG that small is a black/blank frame, not a screen.
-  if (png.length < 20_000) throw new Error(`capture: ${name} screenshot looks empty`);
-  writeFileSync(join(OUT, `${name}.png`), png);
-  console.log(`  saved ${name}.png (${png.length} bytes)`);
+  if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
+  writeFileSync(path, png);
+}
+/**
+ * Rewind to the top, then shoot descending viewports and stitch one full-page PNG via
+ * scripts/stitch-fullpage.py. bot=1970 sits above the floating mic FAB + bottom nav, so those fixed
+ * elements are appended once from the last shot's [bot:] slice instead of repeating down the page.
+ */
+async function stitchFull(name, top = 180, bot = 1970) {
+  mkdirSync(OUT, { recursive: true });
+  for (let i = 0; i < 5; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(500);
+  }
+  await delay(700);
+  const shots = [];
+  for (let i = 0; i < 6; i++) {
+    const p = join(TMP, `se_${i}.png`);
+    grab(p);
+    shots.push(p);
+    if (i < 5) {
+      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
+      await delay(1200);
+    }
+  }
+  const out = join(OUT, `${name}.png`);
+  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  console.log(`  stitched ${name}.png`);
 }
 
 async function main() {
@@ -193,16 +218,32 @@ async function main() {
       adb('shell', 'monkey', '-p', PKG, '-c', 'android.intent.category.LAUNCHER', '1');
       // The dashboard re-mounts with GET /projects/mine hanging (postgres paused), so its
       // <LoadingState /> skeletons (ADR-055) show for ~15s (the app's HTTP timeout) before the fetch
-      // errors and the empty state replaces them. The skeletons animate continuously, so uiautomator
-      // cannot dump them ("could not get idle state") — screencap the framebuffer directly on a fixed
-      // delay that lands after the JS bundle + mount but well inside the ~15s skeleton window.
-      await delay(15_000);
-      // Dismiss the debug-only LogBox toast ("Open debugger to view warnings.") by tapping its X.
-      // uiautomator can't be used here (the skeleton animates → "could not get idle state"), so the
-      // coordinate is fixed for this AVD (Medium_Phone 1080×2400): the toast X sits bottom-right.
-      adb('shell', 'input', 'tap', '1012', '2236');
-      await delay(1500);
-      await shot('00-site-engineer-loading');
+      // errors and the empty state replaces them. The screen is taller than the viewport (Upcoming Tasks
+      // sits below the fold), so capture it as ONE full-page image — but FAST, to stay inside that
+      // window: no rewind (it re-mounts at the top) and only a couple of scroll steps (the dashboard is
+      // ~1.3 viewports). The skeletons animate, so uiautomator can't dump them — screencap the
+      // framebuffer directly and let the stitch match on the static skeleton structure.
+      await delay(14_000); // bundle re-mounted + skeletons showing (mount takes ~12s on relaunch)
+      // No LogBox dismiss here: capture Metro (EXPO_PUBLIC_CAPTURE=1) mutes the toast, and the old fixed
+      // tap at (1012,2236) actually lands on the Reports nav tab — it navigated away from Home.
+      mkdirSync(OUT, { recursive: true });
+      // Only two shots (top + one scroll): the dashboard is ~1.3 viewports, so one moderate swipe reveals
+      // Upcoming Tasks. Let the scroll settle before the grab so screencap never catches a mid-fling frame.
+      const loadShots = [];
+      for (let i = 0; i < 2; i++) {
+        const p = join(TMP, `load_${i}.png`);
+        grab(p);
+        loadShots.push(p);
+        if (i < 1) {
+          adb('shell', 'input', 'swipe', '540', '1700', '540', '700', '450');
+          await delay(1300);
+        }
+      }
+      const loadOut = join(OUT, '00-loading.png');
+      process.stdout.write(
+        execFileSync('python', [STITCH, loadOut, '180', '1970', ...loadShots], { encoding: 'utf-8' }),
+      );
+      console.log('  stitched 00-loading.png');
     } finally {
       docker('unpause', 'cos-postgres');
     }
@@ -227,7 +268,9 @@ async function main() {
   }
   await find(byId('progress-pct'), 'progress percentage');
 
-  await shot('01-site-engineer-home');
+  // One full-page: progress card → quick-action tiles → Active Issues → Upcoming Tasks.
+  console.log('· full-page site-engineer home');
+  await stitchFull('01-home');
   console.log('done.');
 }
 

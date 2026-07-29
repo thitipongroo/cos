@@ -108,6 +108,10 @@ export function QuickAddMenu({
     onClose();
     router.push('/system-integration');
   };
+  const goApps = (): void => {
+    onClose();
+    router.push('/apps-services');
+  };
   const comingSoon = (): void => Alert.alert(t('quickAdd.title'), t('quickAdd.comingSoon'));
   const forceSync = (): void => {
     if (syncing) return;
@@ -176,6 +180,14 @@ export function QuickAddMenu({
               sub={t('quickAdd.integrationSub')}
               onPress={goIntegration}
               testID="quick-add-integration"
+            />
+            <ActionCard
+              icon="grid-view"
+              accent={darkColors.success}
+              title={t('quickAdd.appsTitle')}
+              sub={t('quickAdd.appsSub')}
+              onPress={goApps}
+              testID="quick-add-apps"
             />
 
             {/* AI Report — richer layout; NO fabricated confidence/source (honest placeholder). */}

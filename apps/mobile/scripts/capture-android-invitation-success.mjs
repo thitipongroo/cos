@@ -2,7 +2,7 @@
 // Commands → Invite New User, fills a real invitation (name + a random unique phone + Project Manager),
 // taps SEND INVITATION and captures the success screen (mockup 04_tenant_admin/00_home/
 // 02_quick_action_button/01_invite_user/04_invitation_success):
-//   docs/screens/android/TENANT_ADMIN/08-invitation-success.png
+//   docs/screens/android/TENANT_ADMIN/01-Home/05-invitation-success.png
 // A random phone is used so each run creates a fresh user (no 409). Prereqs: emulator + Metro
 // (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true.
 
@@ -12,7 +12,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
+const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
@@ -75,12 +77,36 @@ async function type(text) {
   adb('shell', 'input', 'text', text);
   await delay(600);
 }
-async function shot(name) {
+function grab(path) {
   const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
-  if (png.length < 20_000) throw new Error(`capture: ${name} screenshot looks empty`);
+  if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
+  writeFileSync(path, png);
+}
+/**
+ * Rewind to the top, then shoot descending viewports and stitch one full-page PNG. bot=1780 sits just
+ * above the FIXED footer (Invite another / Go to dashboard); the footer + bottom-nav are appended once
+ * from the last shot's [bot:] slice. If the screen fits one viewport the stitch bottoms out at shot 0.
+ */
+async function stitchFull(name, top = 180, bot = 1780) {
   mkdirSync(OUT, { recursive: true });
-  writeFileSync(join(OUT, `${name}.png`), png);
-  console.log(`  saved ${name}.png (${png.length} bytes)`);
+  for (let i = 0; i < 5; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(500);
+  }
+  await delay(700);
+  const shots = [];
+  for (let i = 0; i < 6; i++) {
+    const p = join(TMP, `is_${i}.png`);
+    grab(p);
+    shots.push(p);
+    if (i < 5) {
+      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
+      await delay(1200);
+    }
+  }
+  const out = join(OUT, `${name}.png`);
+  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
+  console.log(`  stitched ${name}.png`);
 }
 
 async function main() {
@@ -132,7 +158,8 @@ async function main() {
   await find(byId('invitation-success'), 'invitation-success', 30);
   await dismissDevBanners();
   await delay(1500);
-  await shot('08-invitation-success');
+  console.log('· full-page invitation-success');
+  await stitchFull('05-invitation-success');
 
   console.log('done.');
 }
