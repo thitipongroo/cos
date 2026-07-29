@@ -3212,7 +3212,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     TENANT_ADMIN:
       Bottom nav: Home | Users | Alerts | Settings  (dark tab bar — the role's landing is the dark
                   admin dashboard; product-owner decision 2026-07-28, from
-                  mockup/mobile/04_tenant_admin/00_home/01_home_admin/)
+                  mockup/mobile/04_tenant_admin/01_home/01_main/)
       Screens:
         Home:      admin dashboard — system status, AI token usage vs quota (§26 / §31.3),
                    pending approvals (payments + POs), AI insights

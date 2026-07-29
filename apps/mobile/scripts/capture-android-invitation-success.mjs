@@ -1,6 +1,6 @@
 // Invitation-success screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens Quick
 // Commands → Invite New User, fills a real invitation (name + a random unique phone + Project Manager),
-// taps SEND INVITATION and captures the success screen (mockup 04_tenant_admin/00_home/
+// taps SEND INVITATION and captures the success screen (mockup 04_tenant_admin/01_home/
 // 02_quick_action_button/01_invite_user/04_invitation_success):
 //   docs/screens/android/TENANT_ADMIN/01-Home/05-invitation-success.png
 // A random phone is used so each run creates a fresh user (no 409). Prereqs: emulator + Metro

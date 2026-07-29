@@ -1,4 +1,4 @@
-// Role permissions (mockup 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
+// Role permissions (mockup 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
 // 02_role_permissions; §32.7 dark). Reached from the Invite-user "View permissions" link.
 //
 // Real data: the module → access breakdown is DERIVED from the backend's authoritative RBAC matrix

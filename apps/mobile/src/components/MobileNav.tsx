@@ -14,7 +14,7 @@
 //   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries | Profile
 //   SAFETY_OFFICER:         Home | Incidents | Profile (PO ruling D1/D2 — §17.4)
 //   TENANT_ADMIN:           Home | Users | Alerts | Settings   (dark tab bar; no Profile tab — reached
-//                           via the top-bar avatar. PO decision 2026-07-28, mockup 01_home_admin;
+//                           via the top-bar avatar. PO decision 2026-07-28, mockup 01_main;
 //                           Alerts = sync-review queue, Settings = system-settings.)
 //   VIEWER/others:          Home | Profile (minimal access)
 //
@@ -56,7 +56,7 @@ const PROFILE_TAB_ROLES = Object.values(CosRole).filter(
 export const ALL_TABS: TabConfig[] = [
   { name: 'home', titleKey: 'nav.tabs.home', icon: 'home', roles: Object.values(CosRole) },
   // TENANT_ADMIN bottom nav — Home | Users | Alerts | Settings (PO decision 2026-07-28, mockups
-  // 04_tenant_admin/00_home,02_users,03_alerts,04_settings). "Alerts" is the sync-review queue
+  // 04_tenant_admin/01_home,02_users,03_alerts,04_settings). "Alerts" is the sync-review queue
   // (04_tenant_admin/03_alerts — conflict records) and "Settings" is the system-settings route
   // (both dark, §32.7). For every other role these three stay href:null — mountable but never a tab.
   { name: 'users', titleKey: 'nav.tabs.users', icon: 'group', roles: [CosRole.TENANT_ADMIN] },

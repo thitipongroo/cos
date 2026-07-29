@@ -134,7 +134,7 @@ production and normal dev animate as usual.
 ## Tenant Admin dashboard — [`TENANT_ADMIN/01-Home/00-home.png`](TENANT_ADMIN/01-Home/00-home.png)
 
 The `TENANT_ADMIN` Home ([`components/TenantAdminHome.tsx`](../../../apps/mobile/src/components/TenantAdminHome.tsx),
-implementing [`mockup/mobile/04_tenant_admin/00_home/01_home_admin`](../../../mockup/mobile/04_tenant_admin/00_home/01_home_admin)),
+implementing [`mockup/mobile/04_tenant_admin/01_home/01_main`](../../../mockup/mobile/04_tenant_admin/01_home/01_main)),
 captured against the `seed-realistic.ts` dataset through a real Path A (SMS OTP) login as `+66811000002` —
 Suphaporn Rattanakul, the TENANT_ADMIN at Ekachai. The header avatar reads **"SR"** (her initials — no
 photo set), confirming the signed-in role.
@@ -209,7 +209,7 @@ web console; the mobile flows are a follow-up, and the buttons say so rather tha
 
 The FAB's full-screen **Quick Commands** overlay
 ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx), mockup
-`04_tenant_admin/00_home/02_quick_action_button/00_quick_add_menu`) — a dark surface with its own top
+`04_tenant_admin/01_home/02_quick_action_button/00_quick_add_menu`) — a dark surface with its own top
 bar (brand + SYNCED pill + close), **five action cards** (Invite · New System Integration · Apps &
 Services · Generate Usage Report · Force System Sync), and a small stats bento. Left-accent colour
 follows the action. With the fifth card the overlay now scrolls, so `01` is captured as **one full-page
@@ -233,7 +233,7 @@ stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
 
 The Quick Commands "Invite New User" target
 ([`app/(app)/invite-user.tsx`](../../../apps/mobile/src/app/(app)/invite-user.tsx), mockups
-`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/{01_invite_user_via_phone,02_invite_user_via_email}`
+`04_tenant_admin/01_home/02_quick_action_button/01_invite_user/{01_invite_user_via_phone,02_invite_user_via_email}`
 — one screen with a phone/email toggle covers both). A real, wired form: **SEND INVITATION** calls
 `POST /users` (createUser, TENANT_ADMIN §14.3) with the chosen method — **Path A phone** (E.164, the
 default `+66` prefix) or **Path B email** — the selected role, and the recipient's name.
@@ -262,7 +262,7 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
 
 Reached from Invite-user's **"View permissions"** link
 ([`app/(app)/role-permissions.tsx`](../../../apps/mobile/src/app/(app)/role-permissions.tsx), mockup
-`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/02_role_permissions`). A read-only access
+`04_tenant_admin/01_home/02_quick_action_button/01_invite_user/02_role_permissions`). A read-only access
 breakdown for the role being invited.
 
 - **Real RBAC, not the mockup's values.** The module → access rows are **derived from the authoritative
@@ -284,7 +284,7 @@ breakdown for the role being invited.
 
 The full-screen role picker opened from Invite-user's **"Show more roles"**
 ([`app/(app)/roles-selection.tsx`](../../../apps/mobile/src/app/(app)/roles-selection.tsx), mockup
-`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/03_roles_selection`). Searchable,
+`04_tenant_admin/01_home/02_quick_action_button/01_invite_user/03_roles_selection`). Searchable,
 single-select (createUser takes one role).
 
 - **All 11 real assignable roles**, not the mockup's curated 7 — the `AVAILABLE ROLES (11)` count and
@@ -306,7 +306,7 @@ single-select (createUser takes one role).
 
 The terminal confirmation shown after Invite-user's **SEND INVITATION** succeeds
 ([`app/(app)/invitation-success.tsx`](../../../apps/mobile/src/app/(app)/invitation-success.tsx), mockup
-`04_tenant_admin/00_home/02_quick_action_button/01_invite_user/04_invitation_success`). It **replaces the
+`04_tenant_admin/01_home/02_quick_action_button/01_invite_user/04_invitation_success`). It **replaces the
 old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
 
 - **Real submitted data.** Recipient shows the **contact exactly as entered, unmasked** (PO decision
@@ -328,7 +328,7 @@ old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
 
 The connector picker opened from Quick Commands → **New System Integration**
 ([`app/(app)/system-integration.tsx`](../../../apps/mobile/src/app/(app)/system-integration.tsx), mockup
-`04_tenant_admin/00_home/02_quick_action_button/02_system_integration/00_tenant_new_integration`). It
+`04_tenant_admin/01_home/02_quick_action_button/02_system_integration/00_tenant_new_integration`). It
 **replaces the Integration action's `coming soon` alert** — QuickAdd now `router.push`es here.
 
 - A **catalogue of the integration types** the platform offers (LINE Messaging API · Autodesk BIM 360 ·
@@ -350,7 +350,7 @@ The connector picker opened from Quick Commands → **New System Integration**
 The module / tools / extensions hub, opened from Quick Commands → **Apps & Services** (a new action card
 there — `router.push`)
 ([`app/(app)/apps-services.tsx`](../../../apps/mobile/src/app/(app)/apps-services.tsx), mockup
-`04_tenant_admin/00_home/02_quick_action_button/02_system_integration/01_application_and_services/00_apps_and_services`).
+`04_tenant_admin/01_home/02_quick_action_button/02_system_integration/01_application_and_services/00_apps_and_services`).
 
 - **Honest wiring:** every card is a catalogue entry with no built screen yet (the core modules are
   field-role features; the extensions have no backend integration API; Audit Logs has no screen), so

@@ -1,4 +1,4 @@
-// Apps & Services (mockup 04_tenant_admin/00_home/02_quick_action_button/02_system_integration/
+// Apps & Services (mockup 04_tenant_admin/01_home/02_quick_action_button/02_system_integration/
 // 01_application_and_services/00_apps_and_services; §32.7 dark). A catalogue of the platform's app
 // modules, admin tools and integration extensions, opened from the Quick Commands overlay.
 //

@@ -1,6 +1,6 @@
 // Roles-selection screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the FAB's
 // Quick Commands → Invite New User, scrolls to the ROLE ASSIGNMENT list and taps "Show more roles" to
-// open the full-screen role picker (mockup 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
+// open the full-screen role picker (mockup 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
 // 03_roles_selection). Captures:
 //   docs/screens/android/TENANT_ADMIN/01-Home/04-roles-selection.png — ONE full-page (search → all roles →
 //   CORE_AI Context banner → Confirm), stitched from scrolling viewports via scripts/stitch-fullpage.py.

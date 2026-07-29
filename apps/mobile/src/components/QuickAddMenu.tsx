@@ -1,5 +1,5 @@
 // QuickAddMenu — the Tenant Admin FAB target, a full-screen "Quick Commands" overlay
-// (mockup 04_tenant_admin/00_home/02_quick_action_button/00_quick_add_menu). Replaces the earlier
+// (mockup 04_tenant_admin/01_home/02_quick_action_button/00_quick_add_menu). Replaces the earlier
 // bottom-sheet with the mockup's full-screen surface (top bar + close, header, action cards, a small
 // stats bento).
 //

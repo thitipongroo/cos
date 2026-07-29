@@ -1,4 +1,4 @@
-// Invitation success (mockup 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
+// Invitation success (mockup 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
 // 04_invitation_success; §32.7 dark). Terminal screen shown after Invite-user's SEND INVITATION
 // succeeds (createUser 201). Replaces the old success Alert.
 //

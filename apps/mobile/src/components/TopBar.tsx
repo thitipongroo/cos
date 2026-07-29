@@ -131,7 +131,7 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
         )}
       </View>
       <View style={styles.actions}>
-        {/* Sync-status pill (mockup 01_home_admin) — Tenant Admin only: its dark shell drops the
+        {/* Sync-status pill (mockup 01_main) — Tenant Admin only: its dark shell drops the
             full-width SyncStatusBar, so the pill is this role's sync indicator. */}
         {role === CosRole.TENANT_ADMIN ? <SyncPill /> : null}
         {/* Standard Help "?" — on every authenticated screen, beside the bell (PO decision 2026-07-29).

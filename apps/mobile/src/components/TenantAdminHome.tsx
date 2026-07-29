@@ -1,5 +1,5 @@
 // Tenant Admin Home — the role's landing "command view".
-// Reference mockup: mockup/mobile/04_tenant_admin/00_home/01_home_admin/ (code.html).
+// Reference mockup: mockup/mobile/04_tenant_admin/01_main/ (code.html).
 //
 // Rendered by (app)/home.tsx for CosRole.TENANT_ADMIN; it lives here (not under app/) because
 // everything in app/ is a route and this is the Home tab's CONTENT — the shared shell owns the top
@@ -18,7 +18,7 @@
 //   - AI Token Usage / AI Insights → GET /ai/usage (§26 metering, §31.3 >80% signal). Until the LLM
 //     gateway records real consumption the figure is genuinely 0 %, never the mockup's 78 %.
 //
-// The FAB opens the Quick-Add menu (mockup 00_home/02_quick_add_menu, <QuickAddMenu />): Force System
+// The FAB opens the Quick-Add menu (mockup 01_home/02_quick_add_menu, <QuickAddMenu />): Force System
 // Sync is wired for real; the other actions are honest first-pass placeholders (PO decision 2026-07-28).
 
 import { useEffect, useState } from 'react';

@@ -1,4 +1,4 @@
-// Roles selection (mockup 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/
+// Roles selection (mockup 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
 // 03_roles_selection; §32.7 dark). Full-screen role picker opened from Invite-user's "Show more roles".
 //
 // Shows the REAL assignable CosRole set (everything except the cross-tenant SYSTEM_ADMIN — 11 roles),

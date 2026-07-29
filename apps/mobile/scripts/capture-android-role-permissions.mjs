@@ -1,7 +1,7 @@
 // Role-permissions screenshot capture — adb/uiautomator only (same approach as capture-android-invite-user.mjs).
 // Logs in as the TENANT_ADMIN (+66811000002), opens the FAB's Quick Commands → Invite New User, selects a
 // role (Project Manager), then taps "View permissions" to open the role-permissions breakdown (mockup
-// 04_tenant_admin/00_home/02_quick_action_button/01_invite_user/02_role_permissions). Captures:
+// 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/02_role_permissions). Captures:
 //   docs/screens/android/TENANT_ADMIN/01-Home/03-role-permissions.png — ONE full-page (hero → CORE_AI
 //   banner → all module rows → Back-to-invitation), stitched from scrolling viewports via stitch-fullpage.py.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python. Run:
