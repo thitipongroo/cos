@@ -39,6 +39,20 @@ export async function getMyProjects(): Promise<MyProject[]> {
   return res.items;
 }
 
+/** A project a specific user is a member of — the TENANT_ADMIN user-profile "projects" section. */
+export interface UserProject {
+  project_id: string;
+  project_code: string;
+  project_name: string;
+  status: string;
+}
+
+/** The projects a specific user is a member of (GET /projects/user/:userId — TENANT_ADMIN, tenant-scoped). */
+export async function getUserProjects(userId: string): Promise<UserProject[]> {
+  const res = await get<{ items: UserProject[] }>(`/projects/user/${userId}`);
+  return res.items;
+}
+
 export type ScheduleStatus = 'ahead' | 'on_track' | 'behind';
 
 /**

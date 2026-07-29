@@ -93,6 +93,8 @@ model User {
   displayName    String   @map("display_name") @db.VarChar(255)
   isActive       Boolean  @default(true) @map("is_active")
   mfaEnabled     Boolean  @default(false) @map("mfa_enabled")
+  // Org unit for HR (nullable — set by seed/HR, not required at account creation).
+  department     String?  @map("department") @db.VarChar(255)
   mfaTotpSecret  String?  @map("mfa_totp_secret") @db.VarChar(255)
   // Last authenticated request (throttled 15 min in JwtAuthGuard) — powers the Tenant Admin User Audit.
   lastSeenAt     DateTime @default(now()) @map("last_seen_at") @db.Timestamptz()

@@ -49,6 +49,8 @@ export interface UserRow {
   display_name: string;
   // @pdpa(category: "identity") — a profile photo identifies the person; NULL until one is uploaded
   photo_url: string | null;
+  // Org unit for HR (nullable — set by seed/HR, not required at account creation).
+  department: string | null;
   is_active: boolean;
   mfa_enabled: boolean;
   // Last authenticated request (throttled) — drives the Tenant Admin User Audit (dormant users).
@@ -99,6 +101,7 @@ export class UserService implements OnModuleDestroy {
           u.phone_number,
           u.display_name,
           u.photo_url,
+          u.department,
           u.is_active,
           u.mfa_enabled,
           u.last_seen_at,

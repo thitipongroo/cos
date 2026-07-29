@@ -32,6 +32,8 @@ export interface TenantUser {
   phone_number: string | null;
   display_name: string;
   photo_url: string | null;
+  /** Org unit for HR (nullable — set by seed/HR, not required at account creation). */
+  department: string | null;
   role: string;
   mfa_enabled: boolean;
   is_active: boolean;

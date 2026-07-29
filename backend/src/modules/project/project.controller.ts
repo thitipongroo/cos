@@ -60,6 +60,18 @@ export class ProjectController {
     return this.projectService.listMine();
   }
 
+  // Declared before @Get(':id') so the literal segment "user" is not captured as an :id param.
+  @Get('user/:userId')
+  @Roles(CosRole.TENANT_ADMIN)
+  @ApiOperation({
+    summary: "A specific user's projects (project_members) — TENANT_ADMIN, tenant-scoped",
+  })
+  @ApiParam({ name: 'userId', format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'The projects that user is a member of' })
+  listForUser(@Param('userId', ParseUUIDPipe) userId: string) {
+    return this.projectService.listForUser(userId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get project by ID' })
   @ApiParam({ name: 'id', format: 'uuid' })

@@ -126,6 +126,14 @@ export class ProjectService {
     return { items: await this.repo.listByMember(this.userId) };
   }
 
+  /**
+   * A specific user's projects — used by the TENANT_ADMIN user-profile screen. The repository scopes
+   * `WHERE tenant_id = <caller's tenant>`, so an admin only ever sees projects inside their own tenant.
+   */
+  async listForUser(userId: string): Promise<{ items: ProjectRow[] }> {
+    return { items: await this.repo.listByMember(userId) };
+  }
+
   async update(projectId: string, dto: UpdateProjectDto): Promise<ProjectRow> {
     const existing = await this.findById(projectId);
 

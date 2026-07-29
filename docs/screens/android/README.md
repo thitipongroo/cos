@@ -33,7 +33,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE_ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`00`) + the per-user action sheet (`00-actions`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`00`), the per-user action sheet (`00-actions`) + the user profile (`01`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/01-Home/`,
@@ -182,7 +182,7 @@ an unrendered dashboard fails the run instead of writing the wrong screenshot; i
 Quick-Add menu (`TENANT_ADMIN/01-Home/01-quick-add.png`) and the Users tab
 (`TENANT_ADMIN/02-Users/00-users.png`).
 
-## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/00-users.png) · [`actions`](TENANT_ADMIN/02-Users/00-users-actions.png)
+## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/00-users.png) · [`actions`](TENANT_ADMIN/02-Users/00-users-actions.png) · [`profile`](TENANT_ADMIN/02-Users/01-user-profile.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
 implementing the
@@ -209,7 +209,31 @@ migration; the signal grows meaningful as real dormancy accrues). **Invite user*
 sheet headed by the selected user, with **Edit permissions · Reset password · View activity · Deactivate
 account** (the last in red). Each targets a sub-flow not built on mobile yet (mockups `02_edit_permission`
 / `04_reset_password` / `06_user_activity` / `07_user_deactivation`), so it opens an honest "not available
-on mobile yet" note rather than dead-ending.
+on mobile yet" note rather than dead-ending. **Tapping the card itself (or its chevron)** opens the
+**user profile** (below); only the ⋮ opens the sheet.
+
+## Tenant Admin — User profile — [`01`](TENANT_ADMIN/02-Users/01-user-profile.png)
+
+The per-user detail ([`app/(app)/user-profile.tsx`](../../../apps/mobile/src/app/(app)/user-profile.tsx)),
+implementing [`02_users/01_user_management/01_user_profile`](../../../mockup/mobile/04_tenant_admin/02_users/01_user_management/01_user_profile).
+Pushed from the Users list (a card tap), carrying the tapped row as params. No top bar of its own — the
+global TopBar shows "User Profile" + a Back arrow.
+
+Everything is real, never the mockup's placeholders:
+
+- **Hero** — the ringed avatar (photo or initials) with a live status dot, name, `UID · ROLE`, and the
+  Active/Inactive badge — all from the `GET /users` row.
+- **AI Analytics Engine** — kept as a shell but **drops the mockup's fabricated "98 % confidence"**;
+  it shows the account's real **last-seen** (`Last active: …` from `last_seen_at`), sourced honestly.
+- **Personal Information** — real Email, Phone, and **Department**. `department` is a new nullable
+  `platform.users` column (migration `20260730000001`, added to support HR) seeded per role by
+  `seed-realistic.ts`; each field shows a dash when the account has no value.
+- **Projects** — the projects the user is a member of, from a new endpoint **`GET /projects/user/:id`**
+  (TENANT_ADMIN-only, tenant-scoped via `project_members`); an honest "not a member of any project" when
+  the list is empty. Real rows (the seeded EXECUTIVE belongs to all five), replacing the mockup's
+  fabricated "Skyline Tower A / Metro Bridge".
+- **Edit permissions / Reset password** target sub-flows not built on mobile yet, so each opens the same
+  honest "not available on mobile yet" note.
 
 ## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/01-quick-add.png`](TENANT_ADMIN/01-Home/01-quick-add.png)
 

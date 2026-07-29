@@ -27,6 +27,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { getUsers, type TenantUser } from '../../api/users';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -55,6 +56,7 @@ function isDormant(u: TenantUser): boolean {
 
 export default function UsersScreen(): React.JSX.Element {
   const t = useT();
+  const router = useRouter();
   const [users, setUsers] = useState<TenantUser[] | null>(null);
   const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
@@ -98,6 +100,23 @@ export default function UsersScreen(): React.JSX.Element {
   const dormant = useMemo(() => (users ? users.filter(isDormant) : []), [users]);
 
   const onInvite = (): void => Alert.alert(t('adminUsers.inviteTitle'), t('adminUsers.inviteSoon'));
+  // Tapping a card (or its chevron) opens the user's profile; the ⋮ opens the quick-action sheet.
+  const openProfile = (u: TenantUser): void => {
+    router.push({
+      pathname: '/user-profile',
+      params: {
+        user_id: u.user_id,
+        display_name: u.display_name,
+        email: u.email ?? '',
+        phone_number: u.phone_number ?? '',
+        role: u.role,
+        is_active: String(u.is_active),
+        photo_url: u.photo_url ?? '',
+        last_seen_at: u.last_seen_at,
+        department: u.department ?? '',
+      },
+    });
+  };
   const closeSheet = (): void => setSelected(null);
   // Every sheet action targets a sub-flow that is not built on mobile yet (mockups 02/04/06/07), so it
   // closes the sheet and shows an honest "not available on mobile yet" note rather than dead-ending.
@@ -204,7 +223,13 @@ export default function UsersScreen(): React.JSX.Element {
           </Text>
         ) : (
           filtered.map((u) => (
-            <UserCard key={u.user_id} user={u} t={t} onActions={() => setSelected(u)} />
+            <UserCard
+              key={u.user_id}
+              user={u}
+              t={t}
+              onOpen={() => openProfile(u)}
+              onActions={() => setSelected(u)}
+            />
           ))
         )}
       </ScrollView>
@@ -340,17 +365,19 @@ function FilterChip({
 function UserCard({
   user: u,
   t,
+  onOpen,
   onActions,
 }: {
   user: TenantUser;
   t: (k: string, v?: Record<string, unknown>) => string;
+  onOpen: () => void;
   onActions: () => void;
 }): React.JSX.Element {
   const otp = u.phone_number != null; // Path A (phone) → OTP; otherwise email (Path B)
   return (
     <Pressable
       style={[styles.card, !u.is_active && styles.cardInactive]}
-      onPress={onActions}
+      onPress={onOpen}
       testID={`user-row-${u.user_id}`}
       accessibilityRole="button"
     >

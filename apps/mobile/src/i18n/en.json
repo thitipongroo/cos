@@ -913,5 +913,18 @@
       "line": "Field-office coordination",
       "bim360Ext": "Access 3D models and building data"
     }
+  },
+  "userProfile": {
+    "title": "User Profile",
+    "aiTitle": "AI ANALYTICS ENGINE",
+    "lastActive": "Last active",
+    "aiSource": "Source: last-seen activity",
+    "personalInfo": "Personal Information",
+    "email": "Email",
+    "phone": "Phone",
+    "projects": "Projects",
+    "projectCode": "Project code",
+    "noProjects": "Not a member of any project.",
+    "department": "Department"
   }
 }

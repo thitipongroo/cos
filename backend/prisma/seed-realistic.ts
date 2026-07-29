@@ -148,6 +148,33 @@ const USERS: SeedUser[] = [
 ];
 const U = (k: string): string => uid(`user/${k}`);
 
+// Demo HR department per role (platform.users.department — supports future HR features).
+function deptFor(role: string): string {
+  switch (role) {
+    case 'EXECUTIVE':
+      return 'Executive Office';
+    case 'TENANT_ADMIN':
+      return 'Administration';
+    case 'PROJECT_MANAGER':
+      return 'Project Management';
+    case 'PROCUREMENT_OFFICER':
+    case 'PROC_MANAGER':
+      return 'Procurement';
+    case 'FINANCE':
+      return 'Finance';
+    case 'SAFETY_OFFICER':
+      return 'Safety & Compliance';
+    case 'SITE_ENGINEER':
+      return 'Structural Engineering';
+    case 'SITE_WORKER':
+      return 'Field Operations';
+    case 'CRM_SALES_MANAGER':
+      return 'Sales & CRM';
+    default:
+      return 'General';
+  }
+}
+
 // ─── Projects ────────────────────────────────────────────────────────────────
 type SeedProject = {
   key: string;
@@ -437,10 +464,10 @@ async function run(): Promise<void> {
     ON CONFLICT (tenant_id) DO NOTHING`;
   for (const u of USERS) {
     await prisma.$executeRaw`
-      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled)
+      INSERT INTO platform.users (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled, department)
       VALUES (${U(u.key)}::uuid, ${TENANT_ID}::uuid, ${uid(`kc/${u.key}`)}, ${u.email}, ${u.name}, ${u.phone ?? null}, true,
-              ${u.role === 'TENANT_ADMIN' || u.role === 'FINANCE'})
-      ON CONFLICT (user_id) DO NOTHING`;
+              ${u.role === 'TENANT_ADMIN' || u.role === 'FINANCE'}, ${deptFor(u.role)})
+      ON CONFLICT (user_id) DO UPDATE SET department = EXCLUDED.department`;
     await prisma.$executeRaw`
       INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
       VALUES (${TENANT_ID}::uuid, ${U(u.key)}::uuid, ${u.role}::platform."CosRoleEnum")
