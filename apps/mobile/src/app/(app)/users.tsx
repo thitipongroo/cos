@@ -7,8 +7,11 @@
 //   - The User Audit card is a real, deterministic count: active users whose last_seen_at is older than
 //     30 days (last_seen_at is written by JwtAuthGuard on every authenticated request). No fabricated
 //     "95% confidence" — it is a count, not a prediction; it reads "all clear" when none are dormant.
-//   - Invite (FAB) + the per-user more-actions are first-pass placeholders (PO decision 2026-07-28):
-//     the create/edit/deactivate flows exist on the web console; the mobile flows are a follow-up.
+//   - Invite (FAB) is a first-pass placeholder (PO decision 2026-07-28): create exists on the web
+//     console; the mobile invite flow is a follow-up.
+//   - The per-user ⋮ opens the action sheet (mockup 01_user_management/00_main): Edit permissions /
+//     Reset password / View activity / Deactivate. Each targets a sub-flow (mockups 02/04/06/07) that
+//     is not built on mobile yet, so every action opens an honest "not available on mobile yet" note.
 
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -19,6 +22,7 @@ import {
   ActivityIndicator,
   Pressable,
   Image,
+  Modal,
   StyleSheet,
   Alert,
 } from 'react-native';
@@ -55,6 +59,8 @@ export default function UsersScreen(): React.JSX.Element {
   const [error, setError] = useState(false);
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('ALL');
+  // The user whose ⋮ action sheet is open (null = closed).
+  const [selected, setSelected] = useState<TenantUser | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -92,8 +98,13 @@ export default function UsersScreen(): React.JSX.Element {
   const dormant = useMemo(() => (users ? users.filter(isDormant) : []), [users]);
 
   const onInvite = (): void => Alert.alert(t('adminUsers.inviteTitle'), t('adminUsers.inviteSoon'));
-  const onUserActions = (): void =>
-    Alert.alert(t('adminUsers.actionsTitle'), t('adminUsers.actionsSoon'));
+  const closeSheet = (): void => setSelected(null);
+  // Every sheet action targets a sub-flow that is not built on mobile yet (mockups 02/04/06/07), so it
+  // closes the sheet and shows an honest "not available on mobile yet" note rather than dead-ending.
+  const sheetAction = (titleKey: string): void => {
+    closeSheet();
+    Alert.alert(t(titleKey), t('adminUsers.sheetSoon'));
+  };
   const onAuditReview = (): void =>
     Alert.alert(
       t('adminUsers.auditTitle'),
@@ -143,23 +154,39 @@ export default function UsersScreen(): React.JSX.Element {
           ))}
         </ScrollView>
 
-        {/* User Audit (real dormant-user count) */}
+        {/* AI User Audit — mockup 00_main layout, but every figure is REAL (a deterministic count over
+            last_seen_at), never the mockup's fabricated "95% confidence". */}
         {users ? (
           <View style={styles.auditCard} testID="users-audit">
+            <MaterialIcons
+              name="psychology"
+              size={72}
+              color={darkColors.cyan}
+              style={styles.auditBgIcon}
+            />
             <View style={styles.auditHead}>
-              <MaterialIcons name="fact-check" size={18} color={darkColors.cyan} />
-              <Text style={styles.auditTitle}>{t('adminUsers.auditTitle')}</Text>
+              <View style={styles.auditHeadLeft}>
+                <MaterialIcons name="auto-awesome" size={18} color={darkColors.cyan} />
+                <Text style={styles.auditTitle}>{t('adminUsers.auditTitle')}</Text>
+              </View>
+              <View style={styles.auditBadge}>
+                <Text style={styles.auditBadgeText}>
+                  {dormant.length > 0
+                    ? t('adminUsers.auditBadgeFlagged', { count: dormant.length })
+                    : t('adminUsers.auditBadgeClear')}
+                </Text>
+              </View>
             </View>
             <Text style={styles.auditBody}>
               {dormant.length > 0
                 ? t('adminUsers.auditFlagged', { count: dormant.length })
                 : t('adminUsers.auditClear')}
             </Text>
-            {dormant.length > 0 ? (
-              <Pressable style={styles.auditBtn} onPress={onAuditReview} testID="audit-review">
-                <Text style={styles.auditBtnText}>{t('adminUsers.auditReview')}</Text>
-              </Pressable>
-            ) : null}
+            {/* Always shown (mockup 00_main): opens the audit review — the flagged list when there are
+                dormant accounts, or an honest "all clear" when there are none. */}
+            <Pressable style={styles.auditBtn} onPress={onAuditReview} testID="audit-review">
+              <Text style={styles.auditBtnText}>{t('adminUsers.auditReview')}</Text>
+            </Pressable>
             <Text style={styles.auditSource}>{t('adminUsers.auditSource')}</Text>
           </View>
         ) : null}
@@ -176,7 +203,9 @@ export default function UsersScreen(): React.JSX.Element {
             {t('adminUsers.empty')}
           </Text>
         ) : (
-          filtered.map((u) => <UserCard key={u.user_id} user={u} t={t} onActions={onUserActions} />)
+          filtered.map((u) => (
+            <UserCard key={u.user_id} user={u} t={t} onActions={() => setSelected(u)} />
+          ))
         )}
       </ScrollView>
 
@@ -188,9 +217,100 @@ export default function UsersScreen(): React.JSX.Element {
         accessibilityRole="button"
         accessibilityLabel={t('adminUsers.invite')}
       >
-        <MaterialIcons name="person-add" size={28} color={darkColors.onPrimary} />
+        <MaterialIcons name="add" size={30} color={darkColors.onPrimary} />
       </Pressable>
+
+      {/* Per-user action sheet (mockup 01_user_management/00_main). Opens on a card's ⋮. */}
+      <Modal
+        visible={selected !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={closeSheet}
+      >
+        <Pressable style={styles.backdrop} onPress={closeSheet} testID="user-actions-backdrop">
+          {/* Inner Pressable swallows taps so pressing the sheet itself never closes it. */}
+          <Pressable style={styles.sheet} onPress={() => {}} testID="user-actions-sheet">
+            <View style={styles.sheetHandle} />
+            {selected ? (
+              <>
+                <View style={styles.sheetHeader}>
+                  {selected.photo_url ? (
+                    <Image source={{ uri: selected.photo_url }} style={styles.sheetAvatar} />
+                  ) : (
+                    <View style={styles.sheetAvatarFallback}>
+                      <Text style={styles.sheetAvatarText}>{initials(selected.display_name)}</Text>
+                    </View>
+                  )}
+                  <View style={styles.sheetIdentity}>
+                    <Text style={styles.sheetName} numberOfLines={1}>
+                      {selected.display_name}
+                    </Text>
+                    <Text style={styles.sheetUid}>
+                      {t('adminUsers.uid')}: {selected.user_id.slice(0, 8).toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.sheetActions}>
+                  <SheetRow
+                    icon="edit"
+                    label={t('adminUsers.sheetEdit')}
+                    onPress={() => sheetAction('adminUsers.sheetEdit')}
+                    testID="sheet-edit"
+                  />
+                  <SheetRow
+                    icon="lock-reset"
+                    label={t('adminUsers.sheetReset')}
+                    onPress={() => sheetAction('adminUsers.sheetReset')}
+                    testID="sheet-reset"
+                  />
+                  <SheetRow
+                    icon="history"
+                    label={t('adminUsers.sheetActivity')}
+                    onPress={() => sheetAction('adminUsers.sheetActivity')}
+                    testID="sheet-activity"
+                  />
+                  <View style={styles.sheetDivider} />
+                  <SheetRow
+                    icon="person-off"
+                    label={t('adminUsers.sheetDeactivate')}
+                    onPress={() => sheetAction('adminUsers.sheetDeactivate')}
+                    testID="sheet-deactivate"
+                    danger
+                  />
+                </View>
+              </>
+            ) : null}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
+  );
+}
+
+function SheetRow({
+  icon,
+  label,
+  onPress,
+  testID,
+  danger = false,
+}: {
+  icon: React.ComponentProps<typeof MaterialIcons>['name'];
+  label: string;
+  onPress: () => void;
+  testID: string;
+  danger?: boolean;
+}): React.JSX.Element {
+  const tint = danger ? darkColors.danger : darkColors.muted;
+  return (
+    <Pressable style={styles.sheetRow} onPress={onPress} testID={testID} accessibilityRole="button">
+      <MaterialIcons name={icon} size={22} color={tint} />
+      <Text style={[styles.sheetRowText, danger && { color: darkColors.danger }]}>{label}</Text>
+      <MaterialIcons
+        name={danger ? 'warning' : 'chevron-right'}
+        size={danger ? 18 : 20}
+        color={tint}
+      />
+    </Pressable>
   );
 }
 
@@ -228,9 +348,11 @@ function UserCard({
 }): React.JSX.Element {
   const otp = u.phone_number != null; // Path A (phone) → OTP; otherwise email (Path B)
   return (
-    <View
+    <Pressable
       style={[styles.card, !u.is_active && styles.cardInactive]}
+      onPress={onActions}
       testID={`user-row-${u.user_id}`}
+      accessibilityRole="button"
     >
       <View
         style={[
@@ -302,7 +424,7 @@ function UserCard({
           </View>
         </View>
 
-        {/* Footer: login method + mfa */}
+        {/* Footer: login method + a chevron (active, card opens the action sheet) or lock (inactive). */}
         <View style={styles.cardFooter}>
           <View style={styles.loginMethod}>
             <MaterialIcons
@@ -314,17 +436,14 @@ function UserCard({
               {otp ? t('adminUsers.otpLogin') : t('adminUsers.emailLogin')}
             </Text>
           </View>
-          {u.mfa_enabled ? (
-            <MaterialIcons
-              name="verified-user"
-              size={16}
-              color={darkColors.success}
-              accessibilityLabel={t('adminUsers.mfaOn')}
-            />
-          ) : null}
+          <MaterialIcons
+            name={u.is_active ? 'chevron-right' : 'lock'}
+            size={u.is_active ? 22 : 16}
+            color={darkColors.muted}
+          />
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -367,7 +486,9 @@ const styles = StyleSheet.create({
   },
   chipTextActive: { color: darkColors.onPrimary },
   auditCard: {
-    backgroundColor: darkColors.surface,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: darkColors.elevated,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -377,7 +498,28 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     marginBottom: spacing.xs,
   },
-  auditHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  auditBgIcon: { position: 'absolute', top: -6, right: 2, opacity: 0.08 },
+  auditHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  auditHeadLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  auditBadge: {
+    backgroundColor: `${darkColors.cyan}1A`,
+    borderWidth: 1,
+    borderColor: `${darkColors.cyan}4D`,
+    borderRadius: 6,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: 2,
+  },
+  auditBadgeText: {
+    color: darkColors.cyan,
+    fontFamily: fontFamily.bold,
+    fontSize: 10,
+    letterSpacing: 0.5,
+  },
   auditTitle: {
     fontFamily: fontFamily.bold,
     fontSize: 12,
@@ -392,10 +534,11 @@ const styles = StyleSheet.create({
     color: darkColors.text,
   },
   auditBtn: {
-    alignSelf: 'flex-start',
     minHeight: touchTarget.secondaryButton,
+    alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: `${darkColors.cyan}55`,
@@ -433,11 +576,19 @@ const styles = StyleSheet.create({
   cardInner: { flex: 1, padding: spacing.md, gap: spacing.sm },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
+  avatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: `${darkColors.primary}4D`,
+  },
   avatarFallback: {
     width: 44,
     height: 44,
     borderRadius: 22,
+    borderWidth: 2,
+    borderColor: `${darkColors.primary}4D`,
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -522,5 +673,84 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
+  },
+
+  // Action sheet (mockup 00_main): dim backdrop + a bottom sheet pinned to the bottom.
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: darkColors.surface,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderColor: darkColors.border,
+    paddingBottom: spacing.xl,
+    overflow: 'hidden',
+  },
+  sheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: darkColors.muted,
+    opacity: 0.5,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: darkColors.border,
+  },
+  sheetAvatar: { width: 52, height: 52, borderRadius: 14 },
+  sheetAvatarFallback: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: darkColors.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetAvatarText: {
+    color: darkColors.primary,
+    fontFamily: fontFamily.bold,
+    fontSize: typography.title.fontSize,
+  },
+  sheetIdentity: { flex: 1, minWidth: 0 },
+  sheetName: {
+    fontFamily: fontFamily.semibold,
+    fontSize: typography.title.fontSize,
+    color: darkColors.text,
+  },
+  sheetUid: {
+    fontFamily: fontFamily.medium,
+    fontSize: 11,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: darkColors.muted,
+    marginTop: 2,
+  },
+  sheetActions: { paddingVertical: spacing.xs },
+  sheetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    height: touchTarget.listItem,
+    paddingHorizontal: spacing.lg,
+  },
+  sheetRowText: {
+    flex: 1,
+    fontFamily: fontFamily.medium,
+    fontSize: typography.body.fontSize,
+    color: darkColors.text,
+  },
+  sheetDivider: {
+    height: 1,
+    backgroundColor: darkColors.border,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.xs,
   },
 });

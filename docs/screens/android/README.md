@@ -33,7 +33,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE_ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`00`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`00`) + the per-user action sheet (`00-actions`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/01-Home/`,
@@ -182,7 +182,7 @@ an unrendered dashboard fails the run instead of writing the wrong screenshot; i
 Quick-Add menu (`TENANT_ADMIN/01-Home/01-quick-add.png`) and the Users tab
 (`TENANT_ADMIN/02-Users/00-users.png`).
 
-## Tenant Admin — Users — [`TENANT_ADMIN/02-Users/00-users.png`](TENANT_ADMIN/02-Users/00-users.png)
+## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/00-users.png) · [`actions`](TENANT_ADMIN/02-Users/00-users-actions.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
 implementing the
@@ -193,17 +193,23 @@ mockup — the tenant's active users from `GET /users` (TENANT_ADMIN-only, spec 
 Each dark card carries a status strip, the initials monogram (or `photo_url`), name, a short **UID**
 (from `user_id`), a `⋮` actions button, the role from `tenant_memberships`, the **status** (`is_active`),
 and the **login method** — `OTP Login` when the account has a phone (Path A), `Email Login` otherwise
-(Path B). Everything is live, never fabricated.
+(Path B). The avatar is a ringed circle; the footer ends in a **chevron** (active — the whole card taps
+to open the action sheet) or a **lock** (inactive). Everything is live, never fabricated.
 
-The cyan **User Audit** card is a real, deterministic count: active users whose `last_seen_at` is older
+The cyan **AI User Audit** card (mockup `00_main` layout — sparkle title, corner glyph, a top-right
+badge) is a real, deterministic count: active users whose `last_seen_at` is older
 than 30 days. `last_seen_at` is a new `platform.users` column
 ([migration](../../../backend/prisma/migrations/20260728000001_add_last_seen_to_users/migration.sql))
 written fire-and-forget + throttled (15 min/user) by `JwtAuthGuard` on every authenticated request, so
 it captures both auth paths. No fabricated "95 % confidence" — it is a count, not a prediction, and it
-reads **"all clear"** here because every seeded user was just seen (the column backfills to `now()` at
-migration; the signal grows meaningful as real dormancy accrues). **Invite user** (FAB) and the per-user
-`⋮` actions are first-pass placeholders (PO decision 2026-07-28) — create/edit/deactivate exist on the
-web console; the mobile flows are a follow-up, and the buttons say so rather than dead-ending.
+reads **"all clear"** here because every seeded user was just seen (the badge shows **ALL CLEAR**, or
+**N FLAGGED** once dormant accounts accrue — a real count, not the mockup's invented "95 % confidence") (the column backfills to `now()` at
+migration; the signal grows meaningful as real dormancy accrues). **Invite user** (FAB) is a first-pass placeholder (create exists on the web console). The per-user
+**`⋮` opens the action sheet** (mockup `01_user_management/00_main`, `00-users-actions.png`): a bottom
+sheet headed by the selected user, with **Edit permissions · Reset password · View activity · Deactivate
+account** (the last in red). Each targets a sub-flow not built on mobile yet (mockups `02_edit_permission`
+/ `04_reset_password` / `06_user_activity` / `07_user_deactivation`), so it opens an honest "not available
+on mobile yet" note rather than dead-ending.
 
 ## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/01-quick-add.png`](TENANT_ADMIN/01-Home/01-quick-add.png)
 

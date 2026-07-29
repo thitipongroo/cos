@@ -598,13 +598,20 @@
     "emailLogin": "Email Login",
     "otpLogin": "OTP Login",
     "uid": "UID",
-    "auditTitle": "User Audit",
+    "auditTitle": "AI User Audit",
     "auditFlagged": "{count} users haven't signed in for 30+ days — review them for project security.",
     "auditClear": "All active users have signed in within the last 30 days.",
     "auditReview": "Review flagged users",
     "auditSource": "Source: last-seen activity",
     "actionsTitle": "User actions",
-    "actionsSoon": "Edit role / deactivate is coming to mobile — use the web console for now."
+    "actionsSoon": "Edit role / deactivate is coming to mobile — use the web console for now.",
+    "sheetEdit": "Edit permissions",
+    "sheetReset": "Reset password",
+    "sheetActivity": "View activity",
+    "sheetDeactivate": "Deactivate account",
+    "sheetSoon": "This action isn't available on mobile yet.",
+    "auditBadgeFlagged": "{count} FLAGGED",
+    "auditBadgeClear": "ALL CLEAR"
   },
   "quickAdd": {
     "title": "Quick Commands",

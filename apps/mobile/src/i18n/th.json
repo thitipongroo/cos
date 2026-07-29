@@ -598,13 +598,20 @@
     "emailLogin": "เข้าระบบด้วยอีเมล",
     "otpLogin": "เข้าระบบด้วย OTP",
     "uid": "UID",
-    "auditTitle": "ตรวจสอบผู้ใช้งาน",
+    "auditTitle": "AI ตรวจสอบผู้ใช้งาน",
     "auditFlagged": "พบผู้ใช้ {count} รายไม่ได้เข้าระบบเกิน 30 วัน แนะนำให้ตรวจสอบเพื่อความปลอดภัยของโครงการ",
     "auditClear": "ผู้ใช้ที่ใช้งานทั้งหมดเข้าระบบภายใน 30 วันที่ผ่านมา",
     "auditReview": "ดูรายการที่แนะนำ",
     "auditSource": "ที่มา: กิจกรรมล่าสุด",
     "actionsTitle": "จัดการผู้ใช้",
-    "actionsSoon": "แก้บทบาท/ปิดใช้งาน กำลังจะมาบนมือถือ — ใช้ web console ไปก่อน"
+    "actionsSoon": "แก้บทบาท/ปิดใช้งาน กำลังจะมาบนมือถือ — ใช้ web console ไปก่อน",
+    "sheetEdit": "แก้ไขสิทธิ์การใช้งาน",
+    "sheetReset": "รีเซ็ตรหัสผ่าน",
+    "sheetActivity": "ดูประวัติกิจกรรม",
+    "sheetDeactivate": "ระงับบัญชีผู้ใช้",
+    "sheetSoon": "ยังไม่พร้อมใช้งานบนมือถือ",
+    "auditBadgeFlagged": "พบ {count} ราย",
+    "auditBadgeClear": "ปกติทั้งหมด"
   },
   "quickAdd": {
     "title": "คำสั่งด่วน",
