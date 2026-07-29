@@ -1,0 +1,259 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom shimmer for industrial look */
+        @keyframes subtle-shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .shimmer-effect {
+            background: linear-gradient(90deg, transparent, rgba(180, 197, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: subtle-shimmer 3s infinite linear;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "dark-bg": "#020617",
+                        "tertiary-container": "#686c80",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-primary": "#0053db",
+                        "surface-container-highest": "#26364a",
+                        "on-secondary": "#003640",
+                        "secondary-fixed": "#acedff",
+                        "mobile-success": "#00C853",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary-container": "#00424e",
+                        "on-tertiary-container": "#eeefff",
+                        "on-error": "#690005",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-low": "#0b1c30",
+                        "surface-variant": "#26364a",
+                        "primary": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "on-tertiary": "#2b3041",
+                        "on-surface": "#d3e4fe",
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#031427",
+                        "mobile-warning": "#FF9500",
+                        "secondary-container": "#03b5d3",
+                        "outline-variant": "#434655",
+                        "surface-container-high": "#1b2b3f",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-container": "#eeefff",
+                        "on-primary": "#002a78",
+                        "tertiary-fixed": "#dee1f9",
+                        "background": "#031427",
+                        "on-background": "#d3e4fe",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "sync-pending": "#94A3B8",
+                        "surface": "#031427",
+                        "on-surface-variant": "#c3c6d7",
+                        "error-container": "#93000a",
+                        "dark-surface": "#0F172A",
+                        "surface-container": "#102034",
+                        "primary-container": "#2563eb",
+                        "surface-bright": "#2a3a4f",
+                        "mobile-primary": "#0066FF",
+                        "outline": "#8d90a0",
+                        "tertiary": "#c1c5dc",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "error": "#ffb4ab",
+                        "mobile-danger": "#FF3B30",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-container-lowest": "#000f21",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-fixed": "#161b2b",
+                        "sync-active": "#FFD60A",
+                        "inverse-on-surface": "#213145",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "secondary": "#4cd7f6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-4": "16px",
+                        "base": "4px",
+                        "touch-target": "52px",
+                        "space-1": "4px",
+                        "edge-mobile": "24px",
+                        "space-2": "8px",
+                        "web-margin": "32px",
+                        "space-3": "12px"
+                    },
+                    "fontFamily": {
+                        "h2-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background dark:bg-dark-bg text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface-container dark:bg-surface-container z-50 flex justify-between items-center px-edge-mobile h-touch-target">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim cursor-pointer">arrow_back</span>
+<h1 class="font-h1-web text-h1-web-mobile font-bold text-on-surface dark:text-on-background">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-1 bg-surface-container-high px-space-2 py-1 rounded-full border border-outline-variant/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-tiny-web uppercase text-on-surface-variant">SYNCED</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-edge-mobile pt-space-4 pb-24 overflow-y-auto">
+<!-- Success Animation & Icon -->
+<div class="flex flex-col items-center justify-center pt-8 pb-6">
+<div class="relative w-32 h-32 flex items-center justify-center">
+<!-- Background Glow -->
+<div class="absolute inset-0 bg-mobile-success/20 blur-3xl rounded-full scale-110"></div>
+<!-- Main Icon -->
+<div class="z-10 bg-surface-container-highest rounded-full p-6 shadow-[0_0_40px_rgba(0,200,83,0.3)] border border-mobile-success/30">
+<span class="material-symbols-outlined text-[64px] text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 1;">check_circle</span>
+</div>
+</div>
+<h2 class="mt-8 font-hero-mobile text-hero-mobile text-center text-white">ดาวน์โหลดรายงานสำเร็จ</h2>
+<p class="mt-2 font-body-mobile text-label-mobile text-on-surface-variant text-center max-w-[280px]">
+                รายงาน #SI-2024-089 ถูกบันทึกลงในเครื่องเรียบร้อยแล้ว
+            </p>
+</div>
+<!-- File Details Card (Bento Style) -->
+<div class="mt-6 bg-surface-container rounded-xl border-l-4 border-mobile-success overflow-hidden relative group">
+<div class="shimmer-effect absolute inset-0 opacity-40 pointer-events-none"></div>
+<div class="p-space-4">
+<div class="flex justify-between items-start mb-space-3">
+<div class="bg-surface-container-high p-3 rounded-lg border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">picture_as_pdf</span>
+</div>
+<div class="text-right">
+<span class="block font-tiny-web text-tiny-web uppercase text-on-surface-variant">Status</span>
+<span class="inline-flex items-center gap-1 font-label-mobile text-label-mobile text-mobile-success">
+<span class="material-symbols-outlined text-sm">verified</span>
+                            LOCAL SAVED
+                        </span>
+</div>
+</div>
+<div class="space-y-4">
+<div>
+<span class="block font-tiny-web text-tiny-web uppercase text-on-surface-variant mb-1">File Name</span>
+<p class="font-h2-web text-h2-web text-primary-fixed-dim break-all">SI-2024-089_Structural.pdf</p>
+</div>
+<div class="grid grid-cols-2 gap-space-4 pt-4 border-t border-outline-variant/10">
+<div>
+<span class="block font-tiny-web text-tiny-web uppercase text-on-surface-variant">File Size</span>
+<p class="font-label-mobile text-label-mobile text-on-surface">4.2 MB</p>
+</div>
+<div>
+<span class="block font-tiny-web text-tiny-web uppercase text-on-surface-variant">Format</span>
+<p class="font-label-mobile text-label-mobile text-on-surface">PDF (Standard)</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Project Context (Small Bento) -->
+<div class="mt-4 grid grid-cols-1 gap-4">
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant/10 flex items-center gap-space-3">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-high flex-shrink-0">
+<div class="w-full h-full bg-cover bg-center" data-alt="A top-down architectural blueprint of a large industrial warehouse with structural support markings in cyan and orange highlights on a dark blueprint background. Professional, high-contrast, engineering aesthetic." style="background-image: url(&quot;https://lh3.googleusercontent.com/aida-public/AB6AXuDM5_oSGrSkBQnh7NPGPV0Z0f2zE40WQLi1b52qRwc3smz99ZoEK6ITFUToU2XEnvsXpm0VDE6Nq2m7jOjYXPmqisXJjt1iBpnKNJqXFCxii7JP1KfOzPik7mLwU_tB-Mh4RHguzVtxE88JOEhK22yJWOeKkiI493OLOtWP8ZE089urRFGIh-5Zvxx-CopRDzGpY7lmENBwW-KB9Aih_fZUwqVgaNLfyx-hoLMhEF_I750lnHRlma1p&quot;);"></div>
+</div>
+<div>
+<span class="block font-tiny-web text-tiny-web uppercase text-on-surface-variant">Project Category</span>
+<p class="font-label-mobile text-label-mobile text-on-surface">Structural Audit • Site-B</p>
+</div>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="mt-8 space-y-4">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container rounded-lg font-label-mobile text-label-mobile flex items-center justify-center gap-space-2 shadow-lg active:scale-[0.98] transition-transform duration-150">
+<span class="">OPEN FILE</span>
+<span class="material-symbols-outlined">open_in_new</span>
+</button>
+<button class="w-full h-touch-target border border-outline text-on-surface rounded-lg font-label-mobile text-label-mobile flex items-center justify-center gap-space-2 active:scale-[0.98] transition-transform duration-150">
+<span class="material-symbols-outlined">share</span>
+<span class="">SHARE TO OTHERS</span>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe bg-surface-container dark:bg-surface-container shadow-lg h-[72px] border-t border-outline-variant/10">
+<!-- Projects -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-4 py-space-1 transition-transform duration-200 active:scale-90">
+<span class="material-symbols-outlined">construction</span>
+<span class="font-label-mobile text-[10px] mt-1">Projects</span>
+</div>
+<!-- Reports - ACTIVE -->
+<div class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container dark:text-on-primary-container rounded-full px-space-4 py-space-1 transition-transform duration-200 active:scale-90">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+<span class="font-label-mobile text-[10px] mt-1">Reports</span>
+</div>
+<!-- Tasks -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-4 py-space-1 transition-transform duration-200 active:scale-90">
+<span class="material-symbols-outlined">assignment_turned_in</span>
+<span class="font-label-mobile text-[10px] mt-1">Tasks</span>
+</div>
+<!-- Team -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-4 py-space-1 transition-transform duration-200 active:scale-90">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-mobile text-[10px] mt-1">Team</span>
+</div>
+<!-- Settings -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-space-4 py-space-1 transition-transform duration-200 active:scale-90">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-mobile text-[10px] mt-1">Settings</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function() {
+                const ripple = document.createElement('span');
+                ripple.classList.add('absolute', 'inset-0', 'bg-white/10', 'animate-pulse', 'rounded-lg');
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    </script>
+
+
+</body></html>

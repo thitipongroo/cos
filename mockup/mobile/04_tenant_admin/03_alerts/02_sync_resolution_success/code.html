@@ -1,0 +1,235 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Resolution Successful</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-background": "#d3e4fe",
+                    "surface-variant": "#26364a",
+                    "on-tertiary-container": "#eeefff",
+                    "on-secondary-container": "#00424e",
+                    "mobile-success": "#00C853",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "primary-fixed": "#dbe1ff",
+                    "secondary-container": "#03b5d3",
+                    "secondary-fixed": "#acedff",
+                    "primary": "#b4c5ff",
+                    "on-primary": "#002a78",
+                    "on-error": "#690005",
+                    "on-primary-container": "#eeefff",
+                    "surface-container-low": "#0b1c30",
+                    "surface": "#031427",
+                    "sync-active": "#FFD60A",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-bright": "#2a3a4f",
+                    "on-secondary-fixed": "#001f26",
+                    "on-secondary": "#003640",
+                    "surface-container": "#102034",
+                    "on-error-container": "#ffdad6",
+                    "inverse-on-surface": "#213145",
+                    "outline": "#8d90a0",
+                    "tertiary": "#c1c5dc",
+                    "error": "#ffb4ab",
+                    "on-surface": "#d3e4fe",
+                    "inverse-surface": "#d3e4fe",
+                    "primary-container": "#2563eb",
+                    "surface-container-lowest": "#000f21",
+                    "outline-variant": "#434655",
+                    "mobile-danger": "#FF3B30",
+                    "mobile-primary": "#0066FF",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "mobile-warning": "#FF9500",
+                    "inverse-primary": "#0053db",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "tertiary-fixed": "#dee1f9",
+                    "tertiary-container": "#686c80",
+                    "surface-container-highest": "#26364a",
+                    "sync-pending": "#94A3B8",
+                    "surface-tint": "#b4c5ff",
+                    "on-primary-fixed": "#00174b",
+                    "on-tertiary-fixed": "#161b2b",
+                    "background": "#031427",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "error-container": "#93000a",
+                    "on-surface-variant": "#c3c6d7",
+                    "dark-surface": "#0F172A",
+                    "secondary": "#4cd7f6",
+                    "on-tertiary": "#2b3041",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "dark-bg": "#020617",
+                    "surface-dim": "#031427"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target": "52px",
+                    "web-margin": "32px",
+                    "space-2": "8px",
+                    "space-1": "4px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "base": "4px",
+                    "edge-mobile": "24px"
+            },
+            "fontFamily": {
+                    "hero-mobile": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .success-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(0, 200, 83, 0.2), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .scale-in {
+            animation: scaleIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes scaleIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-mobile text-body-mobile select-none overflow-hidden">
+<!-- Top AppBar (from JSON guidance) -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="construction">construction</span>
+<h1 class="font-display-web text-[18px] font-bold text-primary tracking-tight uppercase">Construction OS</h1>
+</div>
+<div class="flex items-center gap-space-2 bg-surface-container-high px-space-2 py-1 rounded">
+<span class="material-symbols-outlined text-sync-active text-[14px]" style="font-variation-settings: &quot;FILL&quot; 1;">sync</span>
+<span class="font-tiny-web text-sync-active uppercase">Synced</span>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex flex-col items-center justify-center min-h-screen px-edge-mobile pt-touch-target pb-[144px] text-center">
+<!-- Success Animation/Graphic -->
+<div class="relative mb-space-4">
+<div class="absolute inset-0 bg-mobile-success/10 blur-[60px] rounded-full"></div>
+<div class="relative w-24 h-24 flex items-center justify-center scale-in">
+<span class="material-symbols-outlined text-[96px] text-mobile-success" style="font-variation-settings: &quot;FILL&quot; 0, &quot;wght&quot; 200;">check_circle</span>
+</div>
+</div>
+<!-- Headline -->
+<div class="mb-space-2">
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">Resolution Successful</h2>
+
+</div>
+<!-- Sub-text -->
+<div class="max-w-[280px] mb-space-4">
+<p class="font-body-mobile text-on-surface-variant mb-2">
+                Record <span class="font-bold text-on-surface">#SI-2024-089</span> has been updated with the server version.
+            </p>
+
+</div>
+<!-- AI Insight Module -->
+<div class="w-full bg-surface-container border-l-4 border-secondary/50 p-space-3 text-left mb-space-4 relative overflow-hidden">
+<div class="success-shimmer absolute inset-0 pointer-events-none opacity-30"></div>
+<div class="flex items-start gap-space-3 relative z-10">
+<span class="material-symbols-outlined text-secondary" data-icon="auto_awesome">auto_awesome</span>
+<div>
+<p class="font-label-mobile text-secondary font-bold tracking-tight">CORE_AI: Data integrity verified</p>
+<p class="text-[12px] text-on-surface-variant leading-tight mt-1">Cross-referenced against Cloud Ledger with a <span class="text-secondary font-bold">99% confidence score</span>. Integrity secure.</p>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full space-y-space-3 mt-auto">
+<!-- Primary Action -->
+<button class="w-full h-touch-target bg-mobile-primary text-white font-bold rounded-lg flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150 shadow-lg shadow-mobile-primary/20">
+<span class="material-symbols-outlined" data-icon="assignment_return">assignment_return</span>
+<span class="flex flex-col items-center">
+<span class="leading-none">RETURN TO QUEUE</span>
+
+</span>
+</button>
+<!-- Secondary Action -->
+<button class="w-full h-touch-target border-2 border-outline-variant text-on-surface font-bold rounded-lg flex items-center justify-center gap-space-2 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+<span class="flex flex-col items-center">
+<span class="leading-none uppercase">View Updated Record</span>
+
+</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Bar (from JSON guidance) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container dark:bg-surface-container-high h-[72px] shadow-lg">
+<!-- Home (Active state logic: This is a success screen, usually landing back to a flow, but technically it sits under alerts/reports) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-mobile text-label-mobile mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile mt-1">Users</span>
+</a>
+<!-- Alerts (Active) -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="notification_important" style="font-variation-settings: &quot;FILL&quot; 1;">notification_important</span>
+<span class="font-label-mobile text-label-mobile mt-1">Alerts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 px-space-4 py-space-2" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile mt-1">Settings</span>
+</a>
+</nav>
+<!-- Visual Polish: Subtle industrial scanline overlay -->
+<div class="fixed inset-0 pointer-events-none opacity-[0.03] z-[100]" style="background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); background-size: 100% 4px, 3px 100%;"></div>
+<script>
+        // Micro-interaction for feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                window.navigator.vibrate?.(10);
+            });
+        });
+
+        // Simulating the server communication finished
+        console.log("Success state rendered for #SI-2024-089 using server version.");
+    </script>
+
+
+</body></html>

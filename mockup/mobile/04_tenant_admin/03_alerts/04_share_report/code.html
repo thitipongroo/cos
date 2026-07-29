@@ -1,0 +1,252 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Construction OS - Share Report</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#434655",
+                    "dark-bg": "#020617",
+                    "mobile-success": "#00C853",
+                    "on-background": "#d3e4fe",
+                    "inverse-primary": "#0053db",
+                    "dark-surface": "#0F172A",
+                    "on-secondary-fixed": "#001f26",
+                    "on-tertiary": "#2b3041",
+                    "on-primary": "#002a78",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "surface-container-lowest": "#000f21",
+                    "tertiary": "#c1c5dc",
+                    "surface-container-highest": "#26364a",
+                    "secondary-fixed": "#acedff",
+                    "on-tertiary-container": "#eeefff",
+                    "on-primary-fixed": "#00174b",
+                    "surface-container": "#102034",
+                    "sync-pending": "#94A3B8",
+                    "mobile-primary": "#0066FF",
+                    "on-secondary-container": "#00424e",
+                    "inverse-surface": "#d3e4fe",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "surface-bright": "#2a3a4f",
+                    "primary-container": "#2563eb",
+                    "mobile-warning": "#FF9500",
+                    "on-primary-container": "#eeefff",
+                    "error": "#ffb4ab",
+                    "inverse-on-surface": "#213145",
+                    "surface-container-low": "#0b1c30",
+                    "surface-tint": "#b4c5ff",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "on-surface": "#d3e4fe",
+                    "error-container": "#93000a",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "on-surface-variant": "#c3c6d7",
+                    "tertiary-container": "#686c80",
+                    "surface-dim": "#031427",
+                    "secondary": "#4cd7f6",
+                    "secondary-container": "#03b5d3",
+                    "primary-fixed": "#dbe1ff",
+                    "mobile-danger": "#FF3B30",
+                    "background": "#031427",
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "on-error-container": "#ffdad6",
+                    "surface-variant": "#26364a",
+                    "primary": "#b4c5ff",
+                    "on-error": "#690005",
+                    "surface": "#031427",
+                    "ai-cyan": "#06B6D4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "space-1": "4px",
+                    "edge-mobile": "24px",
+                    "base": "4px",
+                    "web-margin": "32px",
+                    "space-4": "16px",
+                    "space-3": "12px",
+                    "space-2": "8px",
+                    "touch-target": "52px"
+            },
+            "fontFamily": {
+                    "tiny-web": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "label-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; background-color: #031427; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glove-touch { min-height: 52px; min-width: 52px; }
+        .bento-cell { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bento-cell:active { transform: scale(0.96); }
+        .industrial-border { border-left: 4px solid; }
+        .ai-shimmer {
+            background: linear-gradient(90deg, #06B6D433 25%, #06B6D466 50%, #06B6D433 75%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+</head>
+<body class="bg-background text-on-surface flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface z-[100] flex items-center justify-between px-edge-mobile h-touch-target">
+<div class="flex items-center gap-space-3">
+<button class="transition-transform duration-200 active:scale-95 text-primary">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h1 class="font-h1-web text-h1-web-mobile font-bold tracking-tight text-primary">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-2 text-mobile-success">
+<span class="text-tiny-web uppercase font-bold tracking-widest">SYNCED</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">cloud_done</span>
+</div>
+</header>
+<main class="flex-1 px-edge-mobile pt-space-4 pb-32 space-y-space-4">
+<!-- Section Label -->
+<div>
+
+
+</div>
+<!-- Context Card (Bento Style) -->
+<div class="bg-surface-container rounded-xl overflow-hidden industrial-border border-mobile-danger shadow-lg">
+<div class="p-space-4 space-y-space-2">
+<div class="flex justify-between items-start">
+<div>
+<span class="text-tiny-web text-on-surface-variant font-bold">REPORT ID</span>
+<h3 class="font-h1-web text-[22px] font-bold text-on-surface">#SI-2024-089</h3>
+</div>
+<div class="px-space-2 py-space-1 bg-error-container text-on-error-container rounded font-label-mobile text-[11px] uppercase tracking-tighter">
+                        CRITICAL
+                    </div>
+</div>
+<div class="flex items-center gap-space-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span class="font-body-mobile text-[15px]">Sector 7G - Construction Zone</span>
+</div>
+</div>
+<!-- AI Transparency Module -->
+<div class="bg-ai-cyan/5 border-t border-outline-variant/20 p-space-3 flex items-center justify-between ai-shimmer">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-ai-cyan" style="font-variation-settings: &quot;FILL&quot; 1;">verified</span>
+<span class="font-label-mobile text-ai-cyan text-[12px] font-extrabold tracking-tight uppercase">99% CORE_AI VERIFIED</span>
+</div>
+<span class="material-symbols-outlined text-ai-cyan text-[16px]">info</span>
+</div>
+</div>
+<!-- Share Actions Grid -->
+<div class="grid grid-cols-2 gap-space-3">
+<!-- Priority Action: LINE -->
+<button class="bento-cell col-span-2 glove-touch bg-primary-container text-on-primary-container rounded-xl flex items-center justify-between px-space-4 shadow-md">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 bg-on-primary-container/20 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[24px]">chat</span>
+</div>
+<div class="text-left">
+<div class="font-label-mobile text-[16px]">แชร์ผ่าน LINE</div>
+<div class="text-tiny-web opacity-80">Priority Channel</div>
+</div>
+</div>
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+<!-- Secondary: Email -->
+<button class="bento-cell glove-touch bg-surface-container rounded-xl flex flex-col items-start justify-end p-space-4 border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-space-2">mail</span>
+
+<span class="text-tiny-web text-on-surface-variant uppercase">Email</span>
+</button>
+<!-- Secondary: PDF -->
+<button class="bento-cell glove-touch bg-surface-container rounded-xl flex flex-col items-start justify-end p-space-4 border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-space-2">picture_as_pdf</span>
+
+<span class="text-tiny-web text-on-surface-variant uppercase">Download PDF</span>
+</button>
+<!-- Secondary: Copy Link -->
+<button class="bento-cell glove-touch bg-surface-container rounded-xl flex flex-col items-start justify-end p-space-4 border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-space-2">link</span>
+
+<span class="text-tiny-web text-on-surface-variant uppercase">Copy Link</span>
+</button>
+<!-- Secondary: More -->
+<button class="bento-cell glove-touch bg-surface-container rounded-xl flex flex-col items-start justify-end p-space-4 border border-outline-variant/10">
+<span class="material-symbols-outlined text-primary mb-space-2">more_horiz</span>
+
+<span class="text-tiny-web text-on-surface-variant uppercase">More</span>
+</button>
+</div>
+<!-- Cancel Footer Trigger Area -->
+<div class="pt-space-4">
+<button class="w-full glove-touch border-2 border-outline-variant text-on-surface-variant rounded-xl font-label-mobile text-[16px] uppercase tracking-widest active:bg-surface-variant transition-colors">
+                ยกเลิก (CANCEL)
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-xl bg-surface-container border-t border-outline-variant/10 shadow-lg flex justify-around items-center px-space-2 pb-safe h-[72px]">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-space-2 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]">home</span>
+<span class="font-label-mobile text-label-mobile">หน้าหลัก</span>
+</a>
+<!-- Reports -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-space-4 py-space-1 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: &quot;FILL&quot; 1;">description</span>
+<span class="font-label-mobile text-label-mobile">รายงาน</span>
+</a>
+<!-- Log -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-space-2 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]">assignment</span>
+<span class="font-label-mobile text-label-mobile">บันทึก</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-space-2 transition-all duration-200 active:scale-95" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="font-label-mobile text-label-mobile">ตั้งค่า</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for the share buttons
+        document.querySelectorAll('.bento-cell').forEach(button => {
+            button.addEventListener('click', () => {
+                // Visual feedback only for demo
+                const originalBg = button.style.backgroundColor;
+                button.classList.add('ring-2', 'ring-primary/50');
+                setTimeout(() => {
+                    button.classList.remove('ring-2', 'ring-primary/50');
+                }, 200);
+            });
+        });
+    </script>
+
+
+</body></html>

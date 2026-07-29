@@ -1,0 +1,295 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error": "#690005",
+                        "surface-container": "#102034",
+                        "surface-tint": "#b4c5ff",
+                        "mobile-primary": "#0066FF",
+                        "mobile-warning": "#FF9500",
+                        "dark-surface": "#0F172A",
+                        "tertiary-container": "#686c80",
+                        "tertiary-fixed": "#dee1f9",
+                        "on-primary": "#002a78",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "error-container": "#93000a",
+                        "tertiary": "#c1c5dc",
+                        "on-surface": "#d3e4fe",
+                        "secondary-container": "#03b5d3",
+                        "surface-container-lowest": "#000f21",
+                        "dark-bg": "#020617",
+                        "surface-dim": "#031427",
+                        "inverse-primary": "#0053db",
+                        "on-surface-variant": "#c3c6d7",
+                        "mobile-danger": "#FF3B30",
+                        "sync-pending": "#94A3B8",
+                        "on-tertiary": "#2b3041",
+                        "outline-variant": "#434655",
+                        "on-secondary-container": "#00424e",
+                        "on-secondary": "#003640",
+                        "on-primary-container": "#eeefff",
+                        "inverse-surface": "#d3e4fe",
+                        "secondary": "#4cd7f6",
+                        "mobile-success": "#00C853",
+                        "surface": "#031427",
+                        "on-tertiary-fixed": "#161b2b",
+                        "on-primary-fixed": "#00174b",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "surface-container-highest": "#26364a",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "primary": "#b4c5ff",
+                        "surface-container-low": "#0b1c30",
+                        "surface-bright": "#2a3a4f",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "error": "#ffb4ab",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "sync-active": "#FFD60A",
+                        "primary-container": "#2563eb",
+                        "on-background": "#d3e4fe",
+                        "inverse-on-surface": "#213145",
+                        "secondary-fixed": "#acedff",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-container": "#eeefff",
+                        "background": "#031427",
+                        "primary-fixed": "#dbe1ff",
+                        "outline": "#8d90a0",
+                        "surface-variant": "#26364a",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-secondary-fixed": "#001f26"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-4": "16px",
+                        "space-3": "12px",
+                        "web-margin": "32px",
+                        "base": "4px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px",
+                        "space-2": "8px",
+                        "space-1": "4px"
+                    },
+                    "fontFamily": {
+                        "h2-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter Tight', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(180, 197, 255, 0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="bg-surface-dim text-on-surface selection:bg-primary/30">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-dark-bg">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<h1 class="font-display-web text-h1-web-mobile font-bold text-primary tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-space-1 bg-mobile-success/10 px-space-2 py-0.5 rounded-full border border-mobile-success/20">
+<div class="w-2 h-2 rounded-full bg-mobile-success animate-pulse"></div>
+<span class="font-tiny-web text-mobile-success">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A close-up professional headshot of a site engineer wearing a white hard hat and safety glasses, against a blurred background of a construction site with steel beams and a clear blue sky. High-contrast, cinematic lighting with a focus on professional reliability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFXqQk26RXVOjadO7Vzn6kNtgXgUTcf1UElhqSxXwqwhSrxBOQiKKYsjzxY8k7McUa6jZ0uhOrr_PI3lgPk4GThwsa-bMZY3-g5Q4HybAfYgi74N_SVV17DeEHkdyKbs2dRo1zuIbtftiJoHU0fT828IA_DjNFUF-XH7jrNkoj1NuIaE2LjdxbcOhnXUZDFC5JcJpkvwnKsvreWxqXSyafEX0TxvyXXd_EZBVg5v1QfzEN2K8Ns1Nl">
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-edge-mobile min-h-screen">
+<!-- Screen Title -->
+<div class="mb-space-4">
+
+
+</div>
+<!-- AI Insight Banner -->
+<div class="mb-space-4 bg-secondary-container/5 border-l-4 border-secondary-container p-space-3 rounded-r-xl flex items-start gap-space-3">
+<span class="material-symbols-outlined text-secondary-container mt-0.5" data-icon="psychology">psychology</span>
+<div>
+<p class="font-label-mobile text-secondary-container tracking-wider">CORE_AI INSIGHT</p>
+<p class="font-body-mobile text-on-surface text-sm">Network conditions optimal. Estimated completion for queue: <span class="font-bold">4m 20s</span></p>
+</div>
+</div>
+<!-- Active Printer Card -->
+<div class="bg-surface-container rounded-xl p-space-4 border border-outline-variant mb-space-4 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-mobile-success"></div>
+<div class="flex justify-between items-start mb-space-2">
+<div class="flex flex-col">
+<span class="font-tiny-web text-on-surface-variant uppercase tracking-widest">Active Device</span>
+<h3 class="font-h1-web text-on-surface mt-1">EPSON WF-C879R Series</h3>
+</div>
+<div class="bg-mobile-success/20 text-mobile-success px-space-2 py-1 rounded-md font-label-mobile flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+                    READY
+                </div>
+</div>
+<div class="flex gap-space-4 mt-space-3">
+<div class="flex flex-col">
+<span class="font-tiny-web text-on-surface-variant">Ink Levels</span>
+<div class="flex gap-1 mt-1">
+<div class="w-4 h-6 bg-cyan-400 rounded-sm"></div>
+<div class="w-4 h-6 bg-magenta-400 bg-fuchsia-500 rounded-sm"></div>
+<div class="w-4 h-6 bg-yellow-400 rounded-sm"></div>
+<div class="w-4 h-6 bg-black rounded-sm border border-outline"></div>
+</div>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-tiny-web text-on-surface-variant">Paper Tray</span>
+<div class="h-6 w-full bg-surface-container-highest rounded-sm mt-1 overflow-hidden">
+<div class="h-full bg-primary-container w-[85%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Queue Section -->
+<div class="flex items-center justify-between mb-space-3 px-1">
+<h4 class="font-label-mobile text-on-surface-variant uppercase tracking-widest">Job Queue (3)</h4>
+<button class="text-primary font-label-mobile hover:underline">View History</button>
+</div>
+<div class="space-y-space-3">
+<!-- Printing Item -->
+<div class="bg-surface-container-high rounded-xl p-space-4 border border-primary/20 shadow-lg scale-[1.02] transition-transform">
+<div class="flex justify-between items-center mb-space-3">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="print">print</span>
+</div>
+<div>
+<p class="font-h2-web text-on-surface">#SI-2024-089</p>
+<p class="font-tiny-web text-on-surface-variant">Safety Inspection Report.pdf</p>
+</div>
+</div>
+<span class="font-label-mobile text-primary flex items-center gap-1 animate-pulse">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                        PRINTING
+                    </span>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between font-tiny-web text-on-surface-variant">
+<span class="">Progress</span>
+<span class="">75%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[75%] rounded-full shadow-[0_0_8px_rgba(180,197,255,0.5)]"></div>
+</div>
+</div>
+</div>
+<!-- Pending Item 1 -->
+<div class="bg-surface-container-low rounded-xl p-space-4 border border-outline-variant flex justify-between items-center opacity-80">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="description">description</span>
+</div>
+<div>
+<p class="font-h2-web text-on-surface">#REBAR-042</p>
+<p class="font-tiny-web text-on-surface-variant">Bending Schedule_V2.dwg</p>
+</div>
+</div>
+<span class="font-label-mobile text-on-surface-variant">PENDING</span>
+</div>
+<!-- Pending Item 2 -->
+<div class="bg-surface-container-low rounded-xl p-space-4 border border-outline-variant flex justify-between items-center opacity-80">
+<div class="flex items-center gap-space-3">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="image">image</span>
+</div>
+<div>
+<p class="font-h2-web text-on-surface">#SITE-INS-001</p>
+<p class="font-tiny-web text-on-surface-variant">Foundation_Photo_Log.zip</p>
+</div>
+</div>
+<span class="font-label-mobile text-on-surface-variant">PENDING</span>
+</div>
+</div>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-28 right-edge-mobile w-touch-target h-touch-target rounded-full bg-mobile-danger text-white shadow-xl flex items-center justify-center active:scale-95 transition-transform z-40">
+<span class="material-symbols-outlined" data-icon="block">block</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-base pb-safe bg-surface-container dark:bg-surface-container-high h-[72px] shadow-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-mobile text-label-mobile">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="font-label-mobile text-label-mobile">Inventory</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="view_in_ar">view_in_ar</span>
+<span class="font-label-mobile text-label-mobile">BIM</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-bright/20 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-mobile text-label-mobile">Users</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-space-4 py-space-2 active:scale-95 transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile">Settings</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions for printer status
+        document.addEventListener('DOMContentLoaded', () => {
+            const printingCard = document.querySelector('.bg-surface-container-high');
+            if(printingCard) {
+                printingCard.addEventListener('touchstart', () => {
+                    printingCard.classList.add('scale-[0.98]');
+                });
+                printingCard.addEventListener('touchend', () => {
+                    printingCard.classList.remove('scale-[0.98]');
+                });
+            }
+        });
+    </script>
+
+
+</body></html>

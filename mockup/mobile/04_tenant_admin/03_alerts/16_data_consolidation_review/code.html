@@ -1,0 +1,274 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Data Consolidation Review - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary": "#003640",
+                        "surface-container-low": "#0b1c30",
+                        "outline": "#8d90a0",
+                        "primary-container": "#2563eb",
+                        "error-container": "#93000a",
+                        "on-primary-fixed": "#00174b",
+                        "on-primary-container": "#eeefff",
+                        "on-secondary-container": "#00424e",
+                        "on-error": "#690005",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "tertiary": "#c1c5dc",
+                        "surface-variant": "#26364a",
+                        "on-background": "#d3e4fe",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "secondary": "#4cd7f6",
+                        "background": "#031427",
+                        "on-primary": "#002a78",
+                        "on-tertiary-fixed": "#161b2b",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "surface-bright": "#2a3a4f",
+                        "on-surface": "#d3e4fe",
+                        "mobile-danger": "#FF3B30",
+                        "on-tertiary": "#2b3041",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-fixed": "#dee1f9",
+                        "secondary-fixed": "#acedff",
+                        "surface-container-high": "#1b2b3f",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "error": "#ffb4ab",
+                        "surface": "#031427",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-container-highest": "#26364a",
+                        "primary": "#b4c5ff",
+                        "dark-surface": "#0F172A",
+                        "surface-tint": "#b4c5ff",
+                        "mobile-warning": "#FF9500",
+                        "sync-pending": "#94A3B8",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#0053db",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "surface-container-lowest": "#000f21",
+                        "on-surface-variant": "#c3c6d7",
+                        "outline-variant": "#434655",
+                        "on-secondary-fixed": "#001f26",
+                        "mobile-success": "#00C853",
+                        "surface-container": "#102034",
+                        "surface-dim": "#031427",
+                        "dark-bg": "#020617",
+                        "sync-active": "#FFD60A",
+                        "secondary-container": "#03b5d3",
+                        "tertiary-container": "#686c80",
+                        "inverse-on-surface": "#213145"
+                    },
+                    "spacing": {
+                        "space-2": "8px",
+                        "base": "4px",
+                        "edge-mobile": "24px",
+                        "touch-target": "52px",
+                        "web-margin": "32px",
+                        "space-3": "12px",
+                        "space-1": "4px",
+                        "space-4": "16px"
+                    },
+                    "fontFamily": {
+                        "body-mobile": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "display-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .bento-card {
+            background-color: #102034;
+            border-left: 4px solid transparent;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .active-scale:active {
+            transform: scale(0.96);
+        }
+        .custom-scroll::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-mobile min-h-screen pb-40">
+<!-- Top AppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim shadow-none">
+<div class="flex items-center gap-space-3">
+<button class="active-scale h-10 w-10 flex items-center justify-center rounded-full hover:bg-surface-bright/10">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<div class="flex flex-col">
+<span class="font-display-web text-[18px] font-bold text-primary tracking-tight">CONSTRUCTION OS</span>
+<div class="flex items-center gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-mobile-success" style="opacity: 1;"></div>
+<span class="text-[10px] uppercase font-bold tracking-widest text-mobile-success">SYNCED</span>
+</div>
+</div>
+</div>
+<div class="h-8 w-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-sm">person</span>
+</div>
+</header>
+<main class="mt-[60px] px-edge-mobile space-y-space-4 pt-space-4">
+<!-- Screen Title -->
+
+<!-- AI Insight Section -->
+<section class="relative overflow-hidden rounded-xl bg-secondary-container/5 border-l-4 border-secondary p-space-4 space-y-space-2">
+<div class="absolute top-0 right-0 p-2 opacity-10">
+<span class="material-symbols-outlined text-6xl">psychology</span>
+</div>
+<div class="flex items-center gap-space-2 text-secondary">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<span class="font-label-mobile text-label-mobile uppercase tracking-wider">Duplicate Resolution Suggestion</span>
+</div>
+<div class="flex items-baseline gap-space-2">
+<span class="font-hero-mobile text-secondary">96% CONFIDENCE.</span>
+
+</div>
+<p class="font-body-mobile text-on-surface text-[15px] leading-relaxed">
+                ตรวจพบข้อมูลซ้ำสำหรับ <span class="font-bold text-secondary">Excavator 02</span> แนะนำให้รวมข้อมูลโดยยึดตาม <span class="underline">Metadata ล่าสุด</span> เพื่อความถูกต้องของประวัติการซ่อมบำรุง
+            </p>
+</section>
+<!-- Side-by-Side Comparison Bento -->
+<div class="space-y-space-3">
+<h2 class="font-label-mobile text-on-surface-variant uppercase tracking-widest px-1">Comparison</h2>
+<!-- Comparison Table Labels -->
+<div class="grid grid-cols-2 gap-space-3 text-center mb-space-1">
+<div class="font-tiny-web text-on-surface-variant opacity-60">LOCAL ENTRY</div>
+<div class="font-tiny-web text-on-surface-variant opacity-60">SERVER ENTRY</div>
+</div>
+<!-- Bento Rows -->
+<div class="space-y-space-2">
+<!-- Field: Asset Name (Consistent) -->
+<div class="grid grid-cols-2 gap-space-2">
+<div class="bento-card p-space-3 rounded-lg border-l-primary/20">
+<span class="text-[11px] text-on-surface-variant block mb-1">Asset</span>
+<div class="font-body-mobile text-primary">Excavator 02</div>
+</div>
+<div class="bento-card p-space-3 rounded-lg border-l-primary/20">
+<span class="text-[11px] text-on-surface-variant block mb-1">Asset</span>
+<div class="font-body-mobile text-primary">Excavator 02</div>
+</div>
+</div>
+<!-- Field: Operator (Conflict Highlighted) -->
+<div class="grid grid-cols-2 gap-space-2">
+<div class="bento-card p-space-3 rounded-lg border-l-mobile-warning bg-mobile-warning/5">
+<span class="text-[11px] text-mobile-warning block mb-1">Operator (Conflict)</span>
+<div class="font-body-mobile text-on-surface">สมชาย สายลุย</div>
+</div>
+<div class="bento-card p-space-3 rounded-lg border-l-outline">
+<span class="text-[11px] text-on-surface-variant block mb-1">Operator</span>
+<div class="font-body-mobile text-on-surface-variant">วิชัย งานดี</div>
+</div>
+</div>
+<!-- Field: Odometer (Conflict Highlighted) -->
+<div class="grid grid-cols-2 gap-space-2">
+<div class="bento-card p-space-3 rounded-lg border-l-outline">
+<span class="text-[11px] text-on-surface-variant block mb-1">Odometer</span>
+<div class="font-body-mobile text-on-surface-variant">12,450 km</div>
+</div>
+<div class="bento-card p-space-3 rounded-lg border-l-mobile-warning bg-mobile-warning/5">
+<span class="text-[11px] text-mobile-warning block mb-1">Odometer (Newer)</span>
+<div class="font-body-mobile text-on-surface font-bold">12,505 km</div>
+</div>
+</div>
+<!-- Field: Timestamp -->
+<div class="grid grid-cols-2 gap-space-2">
+<div class="bento-card p-space-3 rounded-lg border-l-outline">
+<span class="text-[11px] text-on-surface-variant block mb-1">Sync Date</span>
+<div class="font-tiny-web text-on-surface-variant">24 ต.ค. 66, 09:15</div>
+</div>
+<div class="bento-card p-space-3 rounded-lg border-l-outline">
+<span class="text-[11px] text-on-surface-variant block mb-1">Server Date</span>
+<div class="font-tiny-web text-on-surface-variant">24 ต.ค. 66, 11:20</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Merged Result Preview (AI Suggestion) -->
+<div class="p-space-4 rounded-xl border border-secondary/20 bg-surface-container-highest/50 relative">
+<div class="absolute -top-3 left-4 px-2 bg-background font-tiny-web text-secondary uppercase tracking-tighter">AI Result Preview</div>
+<div class="flex justify-between items-center">
+<div>
+<div class="font-body-mobile text-on-surface">Excavator 02 <span class="text-secondary-fixed text-sm ml-2"> (Merged)</span></div>
+<div class="text-[12px] text-on-surface-variant">Operator: สมชาย | Odometer: 12,505 km</div>
+</div>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">verified</span>
+</div>
+</div>
+</main>
+<!-- Bottom Actions Bar -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-high/95 backdrop-blur-md p-edge-mobile space-y-space-3 border-t border-outline-variant/10 z-40">
+<button class="w-full h-touch-target bg-mobile-primary text-on-primary-container rounded-xl flex items-center justify-center gap-space-2 active-scale transition-all shadow-lg shadow-mobile-primary/20">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<span class="font-label-mobile uppercase">USE AI MERGE</span>
+</button>
+<div class="grid grid-cols-2 gap-space-3">
+<button class="h-touch-target border border-outline text-on-surface rounded-xl flex items-center justify-center active-scale transition-all hover:bg-surface-bright/10">
+<span class="font-label-mobile uppercase">KEEP SERVER</span>
+</button>
+<button class="h-touch-target border border-outline text-on-surface rounded-xl flex items-center justify-center active-scale transition-all hover:bg-surface-bright/10">
+<span class="font-label-mobile uppercase">KEEP LOCAL</span>
+</button>
+</div>
+<!-- Safe area padding for modern phones -->
+<div class="h-4"></div>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.transform = 'scale(0.95)';
+            });
+            btn.addEventListener('touchend', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simulating high-urgency status pulse
+        const syncDot = document.querySelector('.bg-mobile-success');
+        setInterval(() => {
+            syncDot.style.opacity = syncDot.style.opacity === '0.5' ? '1' : '0.5';
+        }, 1500);
+    </script>
+
+
+</body></html>
