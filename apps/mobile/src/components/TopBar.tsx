@@ -30,6 +30,7 @@ const CHILD_TITLE_KEY: Record<string, string> = {
   '/invite-user': 'inviteUser.title',
   '/role-permissions': 'rolePermissions.title',
   '/roles-selection': 'rolesSelection.title',
+  '/system-integration': 'systemIntegration.title',
   '/notifications': 'notifications.title',
   '/notification-preferences': 'notifications.preferences.title',
   '/mfa-enrollment': 'mfa.enroll.title',
@@ -192,7 +193,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandIcon: { width: 28, height: 28 },
+  // Rounded-square tile (≈26% radius) for a crisp, professional enterprise-tool look (Linear/Palantir
+  // aesthetic — PO decision 2026-07-29). overflow:hidden so the dark icon art clips to the rounded corners.
+  brandIcon: { width: 28, height: 28, borderRadius: 7, overflow: 'hidden' },
   appName: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.bold,

@@ -816,7 +816,7 @@
   "rolesSelection": {
     "title": "Select roles",
     "searchPlaceholder": "Search roles...",
-    "available": "Available templates ({count})",
+    "available": "Available roles ({count})",
     "supportRoles": "Support roles",
     "confirm": "Confirm roles",
     "noMatch": "No roles match your search.",
@@ -844,5 +844,32 @@
     "status": "Status: Awaiting response",
     "inviteAnother": "Invite another member",
     "goToDashboard": "Go to dashboard"
+  },
+  "systemIntegration": {
+    "title": "New integration",
+    "subtitle": "Select a connector to link your project data.",
+    "searchPlaceholder": "Search connectors...",
+    "aiTitle": "CORE_AI",
+    "aiBody": "Ready to help you configure tokens securely",
+    "aiConfidence": "98% Confidence",
+    "comingSoon": "This integration is coming soon.",
+    "noMatch": "No connectors match your search.",
+    "enterpriseTag": "Enterprise ready",
+    "enterpriseText": "Security in every connection",
+    "line": {
+      "name": "LINE Messaging API",
+      "desc": "Send key event alerts and project status via LINE",
+      "badge": "Notifications"
+    },
+    "bim360": {
+      "name": "Autodesk BIM 360",
+      "desc": "Access 3D models and building data",
+      "badge": "3D Models"
+    },
+    "erp": {
+      "name": "ERP Connect",
+      "desc": "Connect financial and budget data",
+      "badge": "Financial"
+    }
   }
 }

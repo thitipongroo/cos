@@ -240,6 +240,8 @@ export function MobileNav() {
           TopBar CHILD_TITLE_KEY map on purpose: it shows the CONSTRUCTION OS wordmark with no Back
           arrow, matching the mockup (there is no form to return to). */}
       <Tabs.Screen name="invitation-success" options={{ href: null }} />
+      {/* System integration — connector picker from the Quick Commands overlay (router.push). */}
+      <Tabs.Screen name="system-integration" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

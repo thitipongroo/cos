@@ -816,7 +816,7 @@
   "rolesSelection": {
     "title": "เลือกบทบาท",
     "searchPlaceholder": "ค้นหาบทบาท...",
-    "available": "เทมเพลตที่พร้อมใช้งาน ({count})",
+    "available": "บทบาทหน้าที่ ({count})",
     "supportRoles": "บทบาทสนับสนุน",
     "confirm": "ยืนยันบทบาท",
     "noMatch": "ไม่พบบทบาทที่ค้นหา",
@@ -844,5 +844,32 @@
     "status": "สถานะ: รอการตอบรับ",
     "inviteAnother": "เชิญสมาชิกเพิ่ม",
     "goToDashboard": "ไปที่หน้าแดชบอร์ด"
+  },
+  "systemIntegration": {
+    "title": "เพิ่มการเชื่อมต่อระบบ",
+    "subtitle": "เลือกคอนเนคเตอร์เพื่อเชื่อมต่อข้อมูลโครงการ",
+    "searchPlaceholder": "ค้นหาคอนเนคเตอร์...",
+    "aiTitle": "CORE_AI",
+    "aiBody": "พร้อมช่วยเหลือในการกำหนดค่า Token อย่างปลอดภัย",
+    "aiConfidence": "98% Confidence",
+    "comingSoon": "การเชื่อมต่อนี้กำลังจะมาเร็ว ๆ นี้",
+    "noMatch": "ไม่พบคอนเนคเตอร์ที่ค้นหา",
+    "enterpriseTag": "ENTERPRISE READY",
+    "enterpriseText": "ความปลอดภัยในทุกการเชื่อมต่อ",
+    "line": {
+      "name": "LINE Messaging API",
+      "desc": "ส่งการแจ้งเตือนเหตุการณ์สำคัญและสถานะโครงการผ่าน LINE",
+      "badge": "Notifications"
+    },
+    "bim360": {
+      "name": "Autodesk BIM 360",
+      "desc": "เข้าถึงโมเดล 3 มิติและข้อมูลอาคาร",
+      "badge": "3D Models"
+    },
+    "erp": {
+      "name": "ERP Connect",
+      "desc": "เชื่อมต่อข้อมูลการเงินและงบประมาณ",
+      "badge": "Financial"
+    }
   }
 }

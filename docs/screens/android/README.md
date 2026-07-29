@@ -28,7 +28,7 @@ folder — one screen can span several shots that share a number (e.g. the multi
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | The Site Engineer loading state + dashboard (`00`, `01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`), the Role-permissions breakdown (`06`), the Roles-selection picker (`07`) and the Invitation-success confirmation (`08`). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | The Tenant Admin dashboard, Quick-Add, Users, Sync queue, System Settings (`00`–`04`), the Invite-user form (`05`), the Role-permissions breakdown (`06`), the Roles-selection picker (`07`), the Invitation-success confirmation (`08`) and the System-integration picker (`09`). |
 
 The two adb dashboard scripts write straight into their role folder —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/`,
@@ -206,13 +206,16 @@ follows the action (primary / cyan / cyan / sync-gold). Real vs honest placehold
 - **Force System Sync** — real (`runPushSync()` then `runDeltaSync()`, §17.6 flush + pull); tapping it
   spins the icon and the sub-label reads **SYNCING…** while it runs.
 - **SYNCED pill** (top bar) — real `useSyncStatus()` (the SyncStatusBar's source; green check when idle).
-- **Active Projects** / **System Health** bento — real: the project count from `GET /projects/mine`
-  (0 for this admin, who is a member of none) and liveness from `GET /health/live` shown as a word
-  (**Optimal**), **not** the mockup's invented "98.4 %".
-- **Invite New User** opens the Invite-user form (below); **New System Integration** + **Generate Usage
-  Report** are honest placeholders (no mobile integrations surface / AI-report screen yet). The AI-report
-  card keeps the mockup's richer layout but **drops the fabricated "94 % CONFIDENCE / Source"** — no such
-  signal exists — and the decorative blueprint/server photos (external AI images) become local icon tiles.
+- **Active Projects** / **System Health** bento — real figures over **bundled photo backdrops** (PO
+  decision 2026-07-29): the project count from `GET /projects/mine` (0 for this admin, who is a member of
+  none) on `assets/tenant-admin/digital_archectural_blueprint.jpg`, and liveness from `GET /health/live`
+  shown as a word (**Optimal**), **not** the mockup's invented "98.4 %", on
+  `assets/tenant-admin/micro_server.jpg`. Each tile follows the mockup layout — a dimmed photo banner on
+  top, then the label + real value stacked below on the card surface.
+- **Invite New User** opens the Invite-user form (below); **New System Integration** opens the
+  connector picker (`09`). **Generate Usage Report** is an honest placeholder (no AI-report screen yet) —
+  the AI-report card keeps the mockup's richer layout but **drops the fabricated "94 % CONFIDENCE /
+  Source"** (no such signal exists).
 
 ## Tenant Admin — Invite user — [`05`](TENANT_ADMIN/05-invite-user.png) · [`roles`](TENANT_ADMIN/05-invite-user-roles.png) · [`email`](TENANT_ADMIN/05-invite-user-email.png)
 
@@ -271,7 +274,7 @@ The full-screen role picker opened from Invite-user's **"Show more roles"**
 `04_tenant_admin/00_home/02_quick_action_button/01_invite_user/03_roles_selection`). Searchable,
 single-select (createUser takes one role).
 
-- **All 11 real assignable roles**, not the mockup's curated 7 — the `AVAILABLE TEMPLATES (11)` count and
+- **All 11 real assignable roles**, not the mockup's curated 7 — the `AVAILABLE ROLES (11)` count and
   the list are the assignable `CosRole` set (everything except the cross-tenant `SYSTEM_ADMIN`), with
   real `inviteUser.roleDesc` copy (PO decision 2026-07-29). The **primary/support grouping** and the
   **Chief/Lead/Field/HSE tier badges** are decorative and follow the mockup; roles the mockup did not
@@ -307,6 +310,27 @@ old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
   `platform` schema and the connection's `search_path` excludes it (`type "CosRoleEnum" does not exist`).
   Qualified to `::platform."CosRoleEnum"` in both `createUser` and `changeRole`; `POST /users` now returns
   **201** and the real SEND → success flow is reachable.
+
+## Tenant Admin — System integration — [`09`](TENANT_ADMIN/09-system-integration.png)
+
+The connector picker opened from Quick Commands → **New System Integration**
+([`app/(app)/system-integration.tsx`](../../../apps/mobile/src/app/(app)/system-integration.tsx), mockup
+`04_tenant_admin/00_home/02_quick_action_button/02_system_integration/00_tenant_new_integration`). It
+**replaces the Integration action's `coming soon` alert** — QuickAdd now `router.push`es here.
+
+- A **catalogue of the integration types** the platform offers (LINE Messaging API · Autodesk BIM 360 ·
+  ERP Connect), each with its brand accent + badge. There is **no backend integration API yet**, and each
+  connector's configuration flow is a separate not-yet-built mockup (`02_line…` / `03_autodesk…` /
+  `04_erp…`), so **tapping a card opens an honest per-connector "coming soon"** (PO decision 2026-07-29);
+  the sub-flows get wired as they are implemented. Search filters the connectors.
+- The **CORE_AI** banner is kept as drawn, **including "98% Confidence"** (PO decision 2026-07-29 —
+  "full"). The **"Enterprise ready" band uses a bundled server-room photo asset**
+  (`assets/tenant-admin/server_room.jpg`, provided by the PO) under an SVG scrim that keeps the caption
+  legible (no external image). The global TopBar shows the screen title + a Back arrow.
+- **`09` is one full-page image** (PO decision 2026-07-29 — "one page, not split"): the capture shoots
+  several scrolling viewports and stitches them with `scripts/stitch-fullpage.py`. Also visible here: the
+  **brand icon in the TopBar is now a rounded-square tile** (`brandIcon` `borderRadius`, Linear/Palantir
+  aesthetic) — a global TopBar change, so every screen's header picks it up.
 
 ## Tenant Admin — Sync Review Queue (Alerts) — [`03`](TENANT_ADMIN/03-tenant-admin-alerts.png) · [`03-diff`](TENANT_ADMIN/03-tenant-admin-alerts-diff.png)
 

@@ -9,11 +9,11 @@
 //   • Active Projects     → REAL: count from GET /projects/mine.
 //   • System Health       → REAL: GET /health/live liveness (checkBackendHealth) shown as a status word,
 //                           NOT the mockup's invented "98.4 %".
-//   • Invite New User     → opens the Users tab (its Invite is itself a first-pass placeholder).
-//   • New System Integration + AI Report → honest placeholders (no mobile surface yet). The AI card
-//     keeps the mockup's layout but drops the fabricated "94 % CONFIDENCE / Source" — no such signal
-//     exists. The mockup's decorative blueprint/server photos are external AI images, replaced with
-//     local icon tiles.
+//   • Invite New User        → opens the Invite-user form. New System Integration → the connector picker.
+//   • AI Report              → honest placeholder (no AI-report screen yet); the card keeps the mockup's
+//     layout but drops the fabricated "94 % CONFIDENCE / Source" — no such signal exists.
+// The two bento tiles lay their REAL value over a bundled photo backdrop (digital_archectural_blueprint /
+// micro_server, PO decision 2026-07-29) under a dark scrim — the mockup's external stock photos, local.
 
 import { useEffect, useState } from 'react';
 import {
@@ -26,6 +26,7 @@ import {
   StyleSheet,
   Alert,
   Image,
+  type ImageSourcePropType,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -36,6 +37,9 @@ import { checkBackendHealth } from '../api/health';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { usePendingCount } from '../hooks/usePendingCount';
 import appIcon from '../../assets/icon.png';
+// Bento-tile background photos (PO decision 2026-07-29).
+import activeProjectsBg from '../../assets/tenant-admin/digital_archectural_blueprint.jpg';
+import systemHealthBg from '../../assets/tenant-admin/micro_server.jpg';
 import { useT } from '../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../theme/tokens';
 
@@ -99,6 +103,10 @@ export function QuickAddMenu({
   const goInvite = (): void => {
     onClose();
     router.push('/invite-user');
+  };
+  const goIntegration = (): void => {
+    onClose();
+    router.push('/system-integration');
   };
   const comingSoon = (): void => Alert.alert(t('quickAdd.title'), t('quickAdd.comingSoon'));
   const forceSync = (): void => {
@@ -166,7 +174,7 @@ export function QuickAddMenu({
               accent={darkColors.cyan}
               title={t('quickAdd.integrationTitle')}
               sub={t('quickAdd.integrationSub')}
-              onPress={comingSoon}
+              onPress={goIntegration}
               testID="quick-add-integration"
             />
 
@@ -205,16 +213,16 @@ export function QuickAddMenu({
             />
           </View>
 
-          {/* Stats bento — real figures; decorative photos replaced with local icon tiles. */}
+          {/* Stats bento — real figures over a bundled photo backdrop (PO decision 2026-07-29). */}
           <View style={styles.bento}>
             <BentoTile
-              glyph="architecture"
+              image={activeProjectsBg}
               label={t('quickAdd.activeProjects')}
               value={projectCount === null ? '—' : String(projectCount)}
               valueColor={darkColors.text}
             />
             <BentoTile
-              glyph="dns"
+              image={systemHealthBg}
               label={t('quickAdd.systemHealth')}
               value={healthLabel}
               valueColor={healthColor}
@@ -275,21 +283,21 @@ function ActionCard({
 }
 
 function BentoTile({
-  glyph,
+  image,
   label,
   value,
   valueColor,
 }: {
-  glyph: IconName;
+  image: ImageSourcePropType;
   label: string;
   value: string;
   valueColor: string;
 }): React.JSX.Element {
   return (
     <View style={styles.bentoTile}>
-      <View style={styles.bentoArt}>
-        <MaterialIcons name={glyph} size={26} color={darkColors.muted} />
-      </View>
+      {/* Photo banner on top (mockup: w-full h-24 rounded, dimmed to 60%), then the label + real value
+          stacked below on the card surface — not overlaid on the image. */}
+      <Image source={image} style={styles.bentoImage} resizeMode="cover" />
       <Text style={styles.bentoLabel}>{label}</Text>
       <Text style={[styles.bentoValue, { color: valueColor }]} numberOfLines={1}>
         {value}
@@ -426,15 +434,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
-    gap: 6,
+    gap: 2,
   },
-  bentoArt: {
-    height: 56,
+  // Photo banner at the top of the tile (mockup: full-width, h-24 ≈ 96, rounded, dimmed to 60%).
+  bentoImage: {
+    width: '100%',
+    height: 96,
     borderRadius: 8,
-    backgroundColor: `${darkColors.muted}14`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 2,
+    marginBottom: spacing.sm,
+    opacity: 0.6,
   },
   bentoLabel: {
     fontFamily: fontFamily.medium,
