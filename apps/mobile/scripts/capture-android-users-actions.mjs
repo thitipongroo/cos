@@ -1,6 +1,6 @@
 // Users screen capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab and captures:
 //   docs/screens/android/TENANT_ADMIN/02-Users/01-dashboard.png          — the full-page list (mockup
-//     04_tenant_admin/02_users/01_dashboard), stitched from scrolling viewports via stitch-fullpage.py
+//     04_tenant_admin/02_users/01_users_dashboard), stitched from scrolling viewports via stitch-fullpage.py
 //   docs/screens/android/TENANT_ADMIN/02-Users/02-users-more.png  — the per-user ⋮ action sheet
 //     (mockup 02_user_management/01_management); a bottom sheet that fits one viewport → a single grab.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.

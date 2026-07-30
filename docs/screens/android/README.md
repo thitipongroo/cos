@@ -196,7 +196,7 @@ and the **login method** — `OTP Login` when the account has a phone (Path A), 
 (Path B). The avatar is a ringed circle; the footer ends in a **chevron** (active — the whole card taps
 to open the action sheet) or a **lock** (inactive). Everything is live, never fabricated.
 
-The cyan **AI User Audit** card (mockup `01_dashboard` layout — sparkle title, corner glyph, a top-right
+The cyan **AI User Audit** card (mockup `01_users_dashboard` layout — sparkle title, corner glyph, a top-right
 badge) is a real, deterministic count: active users whose `last_seen_at` is older
 than 30 days. `last_seen_at` is a new `platform.users` column
 ([migration](../../../backend/prisma/migrations/20260728000001_add_last_seen_to_users/migration.sql))

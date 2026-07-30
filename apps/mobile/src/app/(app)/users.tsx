@@ -173,7 +173,7 @@ export default function UsersScreen(): React.JSX.Element {
           ))}
         </ScrollView>
 
-        {/* AI User Audit — mockup 01_dashboard layout, but every figure is REAL (a deterministic count over
+        {/* AI User Audit — mockup 01_users_dashboard layout, but every figure is REAL (a deterministic count over
             last_seen_at), never the mockup's fabricated "95% confidence". */}
         {users ? (
           <View style={styles.auditCard} testID="users-audit">
@@ -201,7 +201,7 @@ export default function UsersScreen(): React.JSX.Element {
                 ? t('adminUsers.auditFlagged', { count: dormant.length })
                 : t('adminUsers.auditClear')}
             </Text>
-            {/* Always shown (mockup 01_dashboard): opens the audit review — the flagged list when there are
+            {/* Always shown (mockup 01_users_dashboard): opens the audit review — the flagged list when there are
                 dormant accounts, or an honest "all clear" when there are none. */}
             <Pressable style={styles.auditBtn} onPress={onAuditReview} testID="audit-review">
               <Text style={styles.auditBtnText}>{t('adminUsers.auditReview')}</Text>
