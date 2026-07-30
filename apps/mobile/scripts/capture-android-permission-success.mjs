@@ -1,10 +1,10 @@
-// Edit-permission capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab, opens
-// the profile of a MULTI-ROLE user (Thanawat Boonmee — primary PROJECT_MANAGER + additional
-// SAFETY_OFFICER), taps "Edit permissions" and captures the multi-role editor as ONE full-page image
-// (mockup 04_tenant_admin/02_users/02_user_management/03_edit_permission):
-//   docs/screens/android/TENANT_ADMIN/02-Users/04-edit-permission.png
-// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python +
-// seed-realistic (Thanawat's additional SAFETY_OFFICER role).
+// Permission-success capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab →
+// Thanawat Boonmee's profile → Edit permissions, toggles an additional role to enable Save, taps SAVE
+// CHANGES and captures the success screen (mockup 04_tenant_admin/02_users/02_user_management/
+// 04_success_permission):
+//   docs/screens/android/TENANT_ADMIN/02-Users/05-success-permission.png
+// It adds FINANCE as an additional role; the caller reverts Thanawat back to PM + Safety afterwards.
+// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -85,8 +85,8 @@ async function hideKeyboard() {
   adb('shell', 'input', 'keyevent', '111');
   await delay(1000);
 }
-// Gboard's one-time "Try out your stylus" onboarding covers the screen the first time the keyboard
-// opens on a fresh emulator; dismiss it after typing so it never hides the login form.
+// Gboard shows one-time "Try out your stylus" onboarding the first time it opens on a fresh emulator,
+// covering the screen (it silently replaces the login form). Dismiss it after opening the keyboard.
 async function dismissImeOnboarding() {
   for (const label of ['Cancel', 'Got it', 'No thanks', 'Done']) {
     const node = (await dump()).find((n) => n.includes(`text="${label}"`) && n.includes('bounds='));
@@ -108,20 +108,20 @@ function grab(path) {
   writeFileSync(path, png);
 }
 /** Rewind to the top, shoot descending viewports, stitch one full-page PNG. bot=1780 sits above the
- *  fixed footer (Save changes / Cancel); footer + bottom-nav appended once. */
+ *  in-flow footer / bottom nav; a short terminal screen simply bottoms out at shot 0. */
 async function stitchFull(name, top = 180, bot = 1780) {
   mkdirSync(OUT, { recursive: true });
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 4; i++) {
     adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
     await delay(500);
   }
   await delay(700);
   const shots = [];
-  for (let i = 0; i < 7; i++) {
-    const p = join(TMP, `ep_${i}.png`);
+  for (let i = 0; i < 5; i++) {
+    const p = join(TMP, `ps_${i}.png`);
     grab(p);
     shots.push(p);
-    if (i < 6) {
+    if (i < 4) {
       adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
       await delay(1200);
     }
@@ -154,7 +154,7 @@ async function main() {
   await dismissDevBanners();
   await delay(2000);
 
-  console.log('· Users tab → Thanawat Boonmee (PM + Safety) → profile → Edit permissions');
+  console.log('· Users → Thanawat → profile → Edit permissions');
   await tap(byId('users-tab'), 'Users tab');
   await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
   await delay(3000);
@@ -165,10 +165,18 @@ async function main() {
   await tap(byId('profile-edit-permissions'), 'Edit permissions');
   await find(byId('edit-permission'), 'edit-permission', 20);
   await dismissDevBanners();
-  await delay(2000); // let role permissions load + the union matrix render
+  await delay(2500); // roles + union matrix loaded
 
-  console.log('· full-page edit permission');
-  await stitchFull('04-edit-permission');
+  console.log('· toggle an additional role (Finance) → SAVE → success');
+  await tap(byId('add-role-FINANCE'), 'Finance chip');
+  await delay(700);
+  await tap(byId('save-roles'), 'Save changes');
+  await find(byId('permission-success'), 'permission-success', 25);
+  await dismissDevBanners();
+  await delay(1500);
+
+  console.log('· full-page permission success');
+  await stitchFull('05-success-permission');
 
   console.log('done.');
 }

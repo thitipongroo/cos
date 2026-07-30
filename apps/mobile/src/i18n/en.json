@@ -946,5 +946,14 @@
     "savedBody": "The user's roles have been saved.",
     "errorTitle": "Couldn't save",
     "errorBody": "Please try again."
+  },
+  "permissionSuccess": {
+    "heading": "Permissions saved",
+    "body": "{name}'s access has been updated.",
+    "bodyGeneric": "The user's access has been updated.",
+    "aiTitle": "AI SYNC LOG",
+    "aiBody": "The change applies to the account's effective permissions and is recorded in the audit log.",
+    "backToUsers": "Back to user management",
+    "viewProfile": "View user profile"
   }
 }

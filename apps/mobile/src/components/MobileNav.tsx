@@ -246,6 +246,9 @@ export function MobileNav() {
       <Tabs.Screen name="apps-services" options={{ href: null }} />
       <Tabs.Screen name="user-profile" options={{ href: null }} />
       <Tabs.Screen name="edit-permission" options={{ href: null }} />
+      {/* permission-success is intentionally absent from TopBar CHILD_TITLE_KEY — a terminal screen
+          reached via router.replace, it shows the CONSTRUCTION OS wordmark with no Back arrow. */}
+      <Tabs.Screen name="permission-success" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

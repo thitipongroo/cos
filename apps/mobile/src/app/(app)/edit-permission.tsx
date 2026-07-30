@@ -188,9 +188,12 @@ export default function EditPermissionScreen(): React.JSX.Element {
     setSaving(true);
     setUserRoles(userId, primary, additional)
       .then(() => {
-        Alert.alert(t('editPermission.savedTitle'), t('editPermission.savedBody'), [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
+        // Terminal success screen (mockup 04_success_permission). router.replace so Back / the editor is
+        // gone — the success screen owns what happens next.
+        router.replace({
+          pathname: '/permission-success',
+          params: { user_id: userId, display_name: name },
+        });
       })
       .catch(() => Alert.alert(t('editPermission.errorTitle'), t('editPermission.errorBody')))
       .finally(() => setSaving(false));

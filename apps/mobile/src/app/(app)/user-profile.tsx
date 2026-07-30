@@ -24,6 +24,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserProjects, type UserProject } from '../../api/projects';
+import { getUsers, type TenantUser } from '../../api/users';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -71,14 +72,27 @@ export default function UserProfileScreen(): React.JSX.Element {
   const str = (v: string | string[] | undefined): string =>
     typeof v === 'string' ? v : Array.isArray(v) ? (v[0] ?? '') : '';
   const userId = str(params.user_id);
-  const name = str(params.display_name);
-  const email = str(params.email);
-  const phone = str(params.phone_number);
-  const role = str(params.role);
-  const photo = str(params.photo_url);
-  const lastSeen = str(params.last_seen_at);
-  const dept = str(params.department);
-  const active = str(params.is_active) === 'true';
+
+  // Detail fields normally arrive as params (from the Users list). When we're pushed here with only an
+  // id (e.g. from the permission-success screen), fetch the row so the profile still shows real data.
+  const [fetched, setFetched] = useState<TenantUser | null>(null);
+  useEffect(() => {
+    if (userId !== '' && str(params.email) === '' && str(params.phone_number) === '') {
+      getUsers()
+        .then((rows) => setFetched(rows.find((u) => u.user_id === userId) ?? null))
+        .catch(() => {});
+    }
+  }, [userId, params.email, params.phone_number]);
+
+  const name = str(params.display_name) || fetched?.display_name || '';
+  const email = str(params.email) || fetched?.email || '';
+  const phone = str(params.phone_number) || fetched?.phone_number || '';
+  const role = str(params.role) || fetched?.role || '';
+  const photo = str(params.photo_url) || fetched?.photo_url || '';
+  const lastSeen = str(params.last_seen_at) || fetched?.last_seen_at || '';
+  const dept = str(params.department) || fetched?.department || '';
+  const active =
+    str(params.is_active) !== '' ? str(params.is_active) === 'true' : (fetched?.is_active ?? true);
 
   const [projects, setProjects] = useState<UserProject[] | null>(null);
   const [projErr, setProjErr] = useState(false);
