@@ -108,6 +108,20 @@ export class UserController {
     await this.userService.setUserRoles(userId, dto, req.tenantId!, req.userId ?? 'system');
   }
 
+  @Post(':userId/reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Reset a user's password — issues a one-time temporary password (TENANT_ADMIN only)",
+    description:
+      'Sets a temporary password on the Keycloak account (user must change it at next sign-in) and ' +
+      'returns the plaintext ONCE for secure manual hand-off. Emits identity.user.password_reset.v1.',
+  })
+  @ApiResponse({ status: 200, description: 'Temporary password issued' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async resetPassword(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: TenantRequest) {
+    return this.userService.resetPassword(userId, req.tenantId!, req.userId ?? 'system');
+  }
+
   @Patch(':userId/deactivate')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

@@ -7,8 +7,8 @@
 // from the passed row (GET /users), and the projects list from GET /projects/user/:id. The mockup's "AI
 // ANALYTICS ENGINE: 98% confidence / 5 min ago" is fabricated — the card is kept as a shell but shows the
 // account's real **last-seen** time (last_seen_at) with no invented confidence score. The mockup's
-// "department" has no backing field, so that row is dropped. Edit permissions / Reset password target
-// sub-flows not built on mobile yet, so they open an honest "not available on mobile yet" note.
+// "department" has no backing field, so that row is dropped. Edit permissions → the multi-role editor;
+// Reset password → the temporary-password reset flow (both are real, backed sub-flows).
 
 import { useEffect, useState } from 'react';
 import {
@@ -19,7 +19,6 @@ import {
   Image,
   ActivityIndicator,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -106,8 +105,6 @@ export default function UserProfileScreen(): React.JSX.Element {
       on = false;
     };
   }, [userId]);
-
-  const soon = (titleKey: string): void => Alert.alert(t(titleKey), t('adminUsers.sheetSoon'));
 
   return (
     <View style={styles.root} testID="user-profile">
@@ -224,7 +221,7 @@ export default function UserProfileScreen(): React.JSX.Element {
         </View>
       </ScrollView>
 
-      {/* Footer actions (mockup): Edit permissions + Reset password — both open a coming-soon note. */}
+      {/* Footer actions (mockup): Edit permissions → multi-role editor, Reset password → reset flow. */}
       <View style={styles.footer}>
         <Pressable
           style={styles.primaryBtn}
@@ -242,7 +239,19 @@ export default function UserProfileScreen(): React.JSX.Element {
         </Pressable>
         <Pressable
           style={styles.secondaryBtn}
-          onPress={() => soon('adminUsers.sheetReset')}
+          onPress={() =>
+            router.push({
+              pathname: '/reset-password',
+              params: {
+                user_id: userId,
+                display_name: name,
+                email,
+                role,
+                photo_url: photo,
+                is_active: String(active),
+              },
+            })
+          }
           testID="profile-reset-password"
           accessibilityRole="button"
         >

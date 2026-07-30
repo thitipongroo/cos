@@ -118,8 +118,8 @@ export default function UsersScreen(): React.JSX.Element {
     });
   };
   const closeSheet = (): void => setSelected(null);
-  // Edit permissions opens the real multi-role editor; the other sheet actions target sub-flows not
-  // built on mobile yet, so they show an honest "not available on mobile yet" note.
+  // Edit permissions opens the real multi-role editor; Reset password opens the real reset flow; the
+  // remaining sheet actions target sub-flows not built on mobile yet, so they show an honest note.
   const openEditPermission = (): void => {
     const u = selected;
     closeSheet();
@@ -127,6 +127,23 @@ export default function UsersScreen(): React.JSX.Element {
       router.push({
         pathname: '/edit-permission',
         params: { user_id: u.user_id, display_name: u.display_name },
+      });
+    }
+  };
+  const openResetPassword = (): void => {
+    const u = selected;
+    closeSheet();
+    if (u) {
+      router.push({
+        pathname: '/reset-password',
+        params: {
+          user_id: u.user_id,
+          display_name: u.display_name,
+          email: u.email ?? '',
+          role: u.role,
+          photo_url: u.photo_url ?? '',
+          is_active: String(u.is_active),
+        },
       });
     }
   };
@@ -295,7 +312,7 @@ export default function UsersScreen(): React.JSX.Element {
                   <SheetRow
                     icon="lock-reset"
                     label={t('adminUsers.sheetReset')}
-                    onPress={() => sheetAction('adminUsers.sheetReset')}
+                    onPress={openResetPassword}
                     testID="sheet-reset"
                   />
                   <SheetRow

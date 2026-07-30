@@ -955,5 +955,34 @@
     "aiBody": "The change applies to the account's effective permissions and is recorded in the audit log.",
     "backToUsers": "Back to user management",
     "viewProfile": "View user profile"
+  },
+  "resetPassword": {
+    "title": "Password reset",
+    "aiTitle": "AI SECURITY CHECK",
+    "aiBody": "This reset is recorded in the audit log for review — no risk score is inferred.",
+    "deliveryMethod": "Delivery method",
+    "emailTitle": "Send reset link (email)",
+    "emailNone": "No email on file",
+    "emailUnavailable": "Email server not configured in this deployment",
+    "tempTitle": "Generate temporary password",
+    "tempSub": "For manual hand-off — the user sets a new password at next sign-in",
+    "authLevel": "Auth level",
+    "authTenantAdmin": "TENANT ADMIN",
+    "confirm": "Confirm reset",
+    "cancel": "Cancel",
+    "errorTitle": "Reset failed",
+    "errorBody": "Could not reset the password. Please try again."
+  },
+  "resetSuccess": {
+    "heading": "Temporary password created",
+    "body": "{name}'s account now has a temporary password. Share it securely — they'll be asked to set a new one at next sign-in.",
+    "bodyGeneric": "The account now has a temporary password. Share it securely — the user sets a new one at next sign-in.",
+    "tempLabel": "Temporary password",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "tempNote": "Shown once — it isn't stored and can't be displayed again.",
+    "logTitle": "SYSTEM SECURITY LOG",
+    "logBody": "Password reset recorded — event identity.user.password_reset.v1.",
+    "returnToUsers": "Return to user list"
   }
 }

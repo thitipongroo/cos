@@ -87,3 +87,16 @@ export interface CreateUserInput {
 export async function createUser(input: CreateUserInput): Promise<TenantUser> {
   return post<TenantUser>('/users', input);
 }
+
+/** Result of an admin password reset — the plaintext temporary password is returned ONCE. */
+export interface PasswordResetResult {
+  temporary_password: string;
+  display_name: string;
+}
+
+/** Admin-reset a user's password (POST /users/:id/reset-password, TENANT_ADMIN only; §14.3). Online-only
+ *  (not offline-queued): the backend sets a temporary password on the Keycloak account — the user must
+ *  choose a new one at next sign-in — and returns the plaintext ONCE for secure manual hand-off. */
+export async function resetUserPassword(userId: string): Promise<PasswordResetResult> {
+  return post<PasswordResetResult>(`/users/${userId}/reset-password`, {});
+}

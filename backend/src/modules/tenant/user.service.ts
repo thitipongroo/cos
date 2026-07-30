@@ -2,7 +2,7 @@
 // TENANT_ADMIN manages users within their own tenant.
 // Operates on platform schema (cross-tenant tables: platform.users, platform.tenant_memberships).
 // Source: spec §14.3 User Management APIs, §6.4 RBAC matrix.
-// Emits: identity.user.created.v1, identity.user.role_changed.v1
+// Emits: identity.user.created.v1, identity.user.role_changed.v1, identity.user.password_reset.v1
 
 import {
   Injectable,
@@ -37,6 +37,21 @@ function assertRoleAssignableByTenant(role: CosRole): void {
 }
 
 const logger = createLogger('user-service');
+
+// A readable, complexity-satisfying one-time password for admin-triggered resets. Fixed shape
+// (4 upper · 4 lower · 3 digit, hyphen-grouped, e.g. "KMNP-qrst-234") guarantees mixed case + digit +
+// symbol for any Keycloak password policy; ambiguous glyphs (0/O, 1/l/I) are excluded for hand-off by
+// voice or paper. Randomness is from the platform CSPRNG. Keycloak stores it as temporary=true, so it
+// is single-use — never persisted or logged by COS.
+function generateTempPassword(): string {
+  const pick = (set: string, n: number, rnd: Uint8Array, off: number): string =>
+    Array.from({ length: n }, (_, i) => set[rnd[off + i]! % set.length]).join('');
+  const rnd = globalThis.crypto.getRandomValues(new Uint8Array(11));
+  const upper = pick('ABCDEFGHJKLMNPQRSTUVWXYZ', 4, rnd, 0);
+  const lower = pick('abcdefghijkmnpqrstuvwxyz', 4, rnd, 4);
+  const digit = pick('23456789', 3, rnd, 8);
+  return `${upper}-${lower}-${digit}`;
+}
 
 export interface UserRow {
   user_id: string;
@@ -385,6 +400,54 @@ export class UserService implements OnModuleDestroy {
         new_role: dto.primary_role,
       });
     }
+  }
+
+  /**
+   * Admin-triggered password reset (TENANT_ADMIN). Sets a fresh temporary password on the target's
+   * Keycloak account and returns the plaintext ONCE for secure manual hand-off; Keycloak forces the
+   * user to choose a new password at next sign-in (temporary=true). COS never stores the plaintext.
+   * Emits identity.user.password_reset.v1 for the audit trail (no credential in the event).
+   *
+   * Note: for Path A (phone/OTP) users the ephemeral login credential is re-set on each OTP exchange,
+   * so this temporary password is chiefly meaningful for Path B (email/password) sign-in.
+   */
+  async resetPassword(
+    userId: string,
+    tenantId: string,
+    actorId: string,
+  ): Promise<{ temporary_password: string; display_name: string }> {
+    const [user] = await this.prisma.$queryRaw<
+      Array<{ keycloak_user_id: string; display_name: string }>
+    >`
+      SELECT keycloak_user_id, display_name FROM platform.users
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found in tenant`);
+    }
+    const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
+      SELECT keycloak_realm FROM platform.tenants
+      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+
+    const tempPassword = generateTempPassword();
+    await this.keycloakAdmin.setTemporaryPassword(
+      user.keycloak_user_id,
+      tenant.keycloak_realm,
+      tempPassword,
+    );
+
+    logger.info({ userId, tenantId, actorId }, 'user.password_reset');
+    await this.publishEvent('identity.user.password_reset.v1', {
+      tenant_id: tenantId,
+      user_id: userId,
+      reset_by: actorId,
+    });
+
+    return { temporary_password: tempPassword, display_name: user.display_name };
   }
 
   async deactivateUser(userId: string, tenantId: string, actorId: string): Promise<void> {
