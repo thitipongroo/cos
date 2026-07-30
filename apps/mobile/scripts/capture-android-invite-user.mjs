@@ -1,7 +1,7 @@
 // Invite-user screenshot capture — adb/uiautomator only (same approach as capture-android-home.mjs).
 // Logs in as the TENANT_ADMIN (+66811000002), opens the FAB's Quick Commands overlay → Invite New User,
-// and captures the invite form (mockup 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
-// 01_invite_user_via_phone) as ONE full-page image per method (each stitched from scrolling viewports
+// and captures the invite form (mockup 04_tenant_admin/01_home/02_quick_action_button/02_invite_user/
+// 02_invite_user_via_phone) as ONE full-page image per method (each stitched from scrolling viewports
 // via scripts/stitch-fullpage.py):
 //   docs/screens/android/TENANT_ADMIN/01-Home/03-invite-user-phone.png  — phone method, complete filled form
 //   docs/screens/android/TENANT_ADMIN/01-Home/03-invite-user-email.png  — the EMAIL method, complete form

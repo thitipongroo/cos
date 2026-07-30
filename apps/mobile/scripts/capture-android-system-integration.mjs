@@ -1,6 +1,6 @@
 // System-integration screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens Quick
 // Commands → New System Integration, and captures the connector picker (mockup 04_tenant_admin/01_home/
-// 02_quick_action_button/02_system_integration/00_tenant_new_integration) as ONE full-page image
+// 02_quick_action_button/03_system_integration/00_tenant_new_integration) as ONE full-page image
 // (PO decision 2026-07-29 — one page, not split): it shoots several scrolling viewports and stitches
 // them into a single tall PNG via scripts/stitch-fullpage.py (Python + Pillow/numpy):
 //   docs/screens/android/TENANT_ADMIN/01-Home/07-system-integration.png

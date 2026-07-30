@@ -1,5 +1,5 @@
 // System integration — connector picker (mockup 04_tenant_admin/01_home/02_quick_action_button/
-// 02_system_integration/00_tenant_new_integration; §32.7 dark). Opened from the Quick Commands
+// 03_system_integration/00_tenant_new_integration; §32.7 dark). Opened from the Quick Commands
 // "New System Integration" action.
 //
 // A catalogue of the integration TYPES the platform offers (LINE Messaging API, Autodesk BIM 360,

@@ -1,5 +1,5 @@
 // Tenant Admin Home — the role's landing "command view".
-// Reference mockup: mockup/mobile/04_tenant_admin/01_main/ (code.html).
+// Reference mockup: mockup/mobile/04_tenant_admin/01_home_dashboard/ (code.html).
 //
 // Rendered by (app)/home.tsx for CosRole.TENANT_ADMIN; it lives here (not under app/) because
 // everything in app/ is a route and this is the Home tab's CONTENT — the shared shell owns the top

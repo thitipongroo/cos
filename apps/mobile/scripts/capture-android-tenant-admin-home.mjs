@@ -2,7 +2,7 @@
 // capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
 // Writes docs/screens/android/TENANT_ADMIN/01-Home/01-home-dashboard.png: the TENANT_ADMIN landing dashboard
-// (mockup/mobile/04_tenant_admin/01_home/01_main/) with live data — system status, pending
+// (mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/) with live data — system status, pending
 // approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
 // the seeded TENANT_ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
 // browser (Path B); the Direct-Grant OTP path used here provisions a phone username + password with

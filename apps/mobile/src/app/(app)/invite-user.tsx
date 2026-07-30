@@ -1,4 +1,4 @@
-// Invite user (mockups 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
+// Invite user (mockups 04_tenant_admin/01_home/02_quick_action_button/02_invite_user/
 // {01_invite_user_via_phone,02_invite_user_via_email}; §32.7 dark — one screen, phone/email toggle,
 // covers both). Reached from the Quick Commands overlay's "Invite New User".
 //

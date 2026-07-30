@@ -14,7 +14,7 @@
 //   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries | Profile
 //   SAFETY_OFFICER:         Home | Incidents | Profile (PO ruling D1/D2 — §17.4)
 //   TENANT_ADMIN:           Home | Users | Alerts | Settings   (dark tab bar; no Profile tab — reached
-//                           via the top-bar avatar. PO decision 2026-07-28, mockup 01_main;
+//                           via the top-bar avatar. PO decision 2026-07-28, mockup 01_home_dashboard;
 //                           Alerts = sync-review queue, Settings = system-settings.)
 //   VIEWER/others:          Home | Profile (minimal access)
 //
