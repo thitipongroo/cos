@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Print Settings - Custom Page Range</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for dark theme */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #031427; }
+        ::-webkit-scrollbar-thumb { background: #26364a; border-radius: 2px; }
+        
+        .numeric-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        @keyframes subtle-shimmer {
+            0% { opacity: 0.8; }
+            50% { opacity: 1; }
+            100% { opacity: 0.8; }
+        }
+        .shimmer-bg {
+            animation: subtle-shimmer 3s ease-in-out infinite;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#2563eb",
+                        "on-secondary": "#003640",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "surface-variant": "#26364a",
+                        "surface-container-lowest": "#000f21",
+                        "mobile-primary": "#0066FF",
+                        "primary-fixed": "#dbe1ff",
+                        "mobile-danger": "#FF3B30",
+                        "outline-variant": "#434655",
+                        "outline": "#8d90a0",
+                        "on-primary-fixed": "#00174b",
+                        "inverse-on-surface": "#213145",
+                        "tertiary": "#c1c5dc",
+                        "on-primary-container": "#eeefff",
+                        "on-tertiary": "#2b3041",
+                        "surface-bright": "#2a3a4f",
+                        "mobile-warning": "#FF9500",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "on-tertiary-container": "#eeefff",
+                        "on-error": "#690005",
+                        "on-tertiary-fixed": "#161b2b",
+                        "surface-container-highest": "#26364a",
+                        "background": "#031427",
+                        "on-secondary-fixed": "#001f26",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-container-low": "#0b1c30",
+                        "secondary-fixed": "#acedff",
+                        "inverse-primary": "#0053db",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#d3e4fe",
+                        "on-secondary-container": "#00424e",
+                        "surface": "#031427",
+                        "surface-tint": "#b4c5ff",
+                        "sync-active": "#FFD60A",
+                        "dark-bg": "#020617",
+                        "sync-pending": "#94A3B8",
+                        "secondary": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "primary": "#b4c5ff",
+                        "surface-container": "#102034",
+                        "dark-surface": "#0F172A",
+                        "tertiary-fixed": "#dee1f9",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "tertiary-container": "#686c80",
+                        "surface-container-high": "#1b2b3f",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "mobile-success": "#00C853",
+                        "on-primary": "#002a78",
+                        "on-background": "#d3e4fe",
+                        "error-container": "#93000a",
+                        "surface-dim": "#031427",
+                        "on-surface": "#d3e4fe",
+                        "secondary-container": "#03b5d3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "space-2": "8px",
+                        "touch-target": "52px",
+                        "space-3": "12px",
+                        "space-1": "4px",
+                        "base": "4px",
+                        "space-4": "16px",
+                        "web-margin": "32px",
+                        "edge-mobile": "24px"
+                    },
+                    "fontFamily": {
+                        "hero-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "label-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background overflow-hidden h-screen flex flex-col">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-edge-mobile h-14 w-full bg-background">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">foundation</span>
+<h1 class="font-h1-mobile text-h1-mobile text-primary font-bold tracking-tight">CONSTRUCTION OS</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined text-on-surface-variant">more_vert</span>
+</button>
+</header>
+<!-- Main Content Canvas (Background behind bottom sheet) -->
+<main class="flex-1 pt-14 px-edge-mobile">
+<div class="mt-8">
+<div class="flex items-center gap-3 mb-6">
+<div class="w-12 h-12 bg-surface-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl">description</span>
+</div>
+<div>
+<h2 class="font-h2-web text-h2-web text-on-surface">Security Policy 2024.pdf</h2>
+<p class="font-body-mobile text-label-mobile text-outline">12 Pages • 2.4 MB</p>
+</div>
+</div>
+<!-- Fake Content List to simulate the page -->
+<div class="space-y-4 opacity-40 select-none">
+<div class="p-4 bg-surface-container rounded-xl border-l-4 border-primary">
+<div class="h-4 w-24 bg-surface-variant rounded mb-2"></div>
+<div class="h-3 w-full bg-surface-container-highest rounded"></div>
+</div>
+<div class="p-4 bg-surface-container rounded-xl border-l-4 border-outline">
+<div class="h-4 w-32 bg-surface-variant rounded mb-2"></div>
+<div class="h-3 w-4/5 bg-surface-container-highest rounded"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Overlay Backdrop -->
+<div class="fixed inset-0 bg-black/60 z-[60] backdrop-blur-sm"></div>
+<!-- Bottom Sheet -->
+<div class="fixed bottom-0 left-0 w-full z-[70] bg-surface-container rounded-t-[32px] overflow-hidden flex flex-col max-h-[90vh] shadow-2xl border-t border-white/5">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center py-3">
+<div class="w-10 h-1 bg-outline/20 rounded-full"></div>
+</div>
+<!-- Header -->
+<div class="px-edge-mobile flex items-center justify-between pb-4">
+<div class="flex flex-col">
+<span class="text-secondary font-label-mobile text-[10px] uppercase tracking-widest mb-1">Print Settings</span>
+<h3 class="font-hero-mobile text-hero-mobile text-on-surface">Select Page Range</h3>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-high hover:bg-surface-container-highest transition-colors active:scale-95">
+<span class="material-symbols-outlined text-on-surface">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-edge-mobile space-y-6 pb-8">
+<!-- Page Range Input Area -->
+<div class="space-y-3">
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors">tag</span>
+</div>
+<input class="w-full h-[64px] bg-background border-2 border-surface-variant focus:border-primary-container rounded-xl pl-12 pr-4 text-h2-web font-h2-web text-on-surface outline-none transition-all placeholder:text-outline/50" id="pageRangeInput" placeholder="e.g. 1, 2, 5-8" readonly="" type="text" value="1-4"/>
+</div>
+<!-- AI Module -->
+<div class="p-4 bg-secondary/5 border-l-4 border-secondary rounded-r-lg flex gap-3">
+<span class="material-symbols-outlined text-secondary text-xl">auto_awesome</span>
+<p class="font-label-mobile text-label-mobile text-on-surface-variant">
+                        Valid range: <span class="text-on-surface font-bold">1 - 12</span>. Use commas for individual pages and hyphens for ranges.
+                    </p>
+</div>
+</div>
+<!-- Summary Badge -->
+<div class="flex justify-between items-center">
+<span class="font-label-mobile text-label-mobile text-outline uppercase tracking-wider">Current Selection</span>
+<div class="px-4 py-1.5 bg-primary-container/20 border border-primary-container/40 rounded-full flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary shimmer-bg"></div>
+<span class="text-primary font-bold font-label-mobile" id="selectionSummary">4 Pages Selected</span>
+</div>
+</div>
+<!-- Industrial Numeric Keypad Overlay -->
+<div class="numeric-grid pb-2">
+<!-- 1-9 -->
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('1')">1</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('2')">2</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('3')">3</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('4')">4</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('5')">5</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('6')">6</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('7')">7</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('8')">8</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('9')">9</button>
+<!-- Special Symbols -->
+<button class="h-[60px] bg-surface-container-highest/50 hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-secondary active:scale-95 duration-75 border border-white/5 font-bold" onclick="appendVal(',')">,</button>
+<button class="h-[60px] bg-surface-container-high hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-on-surface active:scale-95 duration-75 border border-white/5" onclick="appendVal('0')">0</button>
+<button class="h-[60px] bg-surface-container-highest/50 hover:bg-surface-container-highest rounded-xl flex items-center justify-center text-h2-web font-h2-web text-secondary active:scale-95 duration-75 border border-white/5 font-bold" onclick="appendVal('-')">-</button>
+<!-- Full Width Row for Backspace -->
+<button class="col-span-3 h-[52px] bg-surface-container-highest hover:bg-on-error/20 hover:text-error rounded-xl flex items-center justify-center gap-2 text-label-mobile font-label-mobile text-outline active:scale-95 duration-75 border border-white/5 transition-colors" onclick="backspace()">
+<span class="material-symbols-outlined">backspace</span>
+                    CLEAR LAST
+                </button>
+</div>
+<!-- Final Actions -->
+<div class="flex flex-col gap-3 pt-4">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container rounded-xl font-bold font-label-mobile uppercase tracking-[0.05em] flex items-center justify-center hover:bg-blue-600 transition-colors active:scale-95 duration-200">
+                    APPLY SELECTION
+                </button>
+<button class="w-full h-touch-target bg-transparent border border-outline-variant text-outline rounded-xl font-bold font-label-mobile uppercase tracking-[0.05em] flex items-center justify-center hover:bg-surface-container-high transition-colors active:scale-95 duration-200">
+                    CANCEL
+                </button>
+</div>
+<!-- Safe Area Spacer -->
+<div class="h-6"></div>
+</div>
+</div>
+<script>
+        const input = document.getElementById('pageRangeInput');
+        const summary = document.getElementById('selectionSummary');
+
+        function appendVal(char) {
+            if (input.value === '1-4') input.value = ''; // Clear default for interaction
+            input.value += char;
+            updateSummary();
+        }
+
+        function backspace() {
+            input.value = input.value.slice(0, -1);
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const val = input.value;
+            if (!val) {
+                summary.innerText = "0 Pages Selected";
+                return;
+            }
+
+            // Simple logic to simulate page counting for UI feedback
+            try {
+                let count = 0;
+                const parts = val.split(',');
+                parts.forEach(part => {
+                    if (part.includes('-')) {
+                        const [start, end] = part.split('-').map(Number);
+                        if (start && end && end >= start) {
+                            count += (end - start + 1);
+                        } else if (start) {
+                            count += 1;
+                        }
+                    } else if (part.trim() !== '') {
+                        count += 1;
+                    }
+                });
+                
+                // Limit to max pages for demo
+                const finalCount = Math.min(count, 12);
+                summary.innerText = `${finalCount} Page${finalCount === 1 ? '' : 's'} Selected`;
+            } catch(e) {
+                summary.innerText = "Invalid Range";
+            }
+        }
+    </script>
+</body></html>

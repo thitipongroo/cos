@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>Language Settings - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-fixed-dim": "#4cd7f6",
+                    "tertiary": "#c1c5dc",
+                    "sync-active": "#FFD60A",
+                    "primary-container": "#2563eb",
+                    "background": "#031427",
+                    "on-primary-fixed": "#00174b",
+                    "mobile-success": "#00C853",
+                    "on-secondary-fixed-variant": "#004e5c",
+                    "on-primary": "#002a78",
+                    "mobile-primary": "#0066FF",
+                    "mobile-danger": "#FF3B30",
+                    "inverse-primary": "#0053db",
+                    "secondary-container": "#03b5d3",
+                    "surface-container-high": "#1b2b3f",
+                    "on-tertiary-fixed-variant": "#414658",
+                    "primary": "#b4c5ff",
+                    "mobile-warning": "#FF9500",
+                    "on-tertiary-container": "#eeefff",
+                    "on-secondary-fixed": "#001f26",
+                    "error-container": "#93000a",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "surface-container-low": "#0b1c30",
+                    "sync-pending": "#94A3B8",
+                    "on-error-container": "#ffdad6",
+                    "error": "#ffb4ab",
+                    "on-error": "#690005",
+                    "on-secondary": "#003640",
+                    "surface-dim": "#031427",
+                    "surface": "#031427",
+                    "surface-variant": "#26364a",
+                    "surface-tint": "#b4c5ff",
+                    "outline-variant": "#434655",
+                    "outline": "#8d90a0",
+                    "dark-surface": "#0F172A",
+                    "surface-bright": "#2a3a4f",
+                    "on-surface": "#d3e4fe",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "surface-container": "#102034",
+                    "primary-fixed": "#dbe1ff",
+                    "surface-container-lowest": "#000f21",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-container": "#686c80",
+                    "dark-bg": "#020617",
+                    "secondary-fixed": "#acedff",
+                    "on-tertiary-fixed": "#161b2b",
+                    "on-surface-variant": "#c3c6d7",
+                    "on-tertiary": "#2b3041",
+                    "tertiary-fixed": "#dee1f9",
+                    "surface-container-highest": "#26364a",
+                    "inverse-surface": "#d3e4fe",
+                    "on-secondary-container": "#00424e",
+                    "tertiary-fixed-dim": "#c1c5dc",
+                    "secondary": "#06B6D4", /* Adjusted to AI Cyan as per prompt */
+                    "on-primary-container": "#eeefff",
+                    "on-background": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "web-margin": "32px",
+                    "space-2": "8px",
+                    "edge-mobile": "24px",
+                    "space-1": "4px",
+                    "space-3": "12px",
+                    "touch-target": "52px",
+                    "space-4": "16px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "label-mobile": ["Inter Tight"],
+                    "h1-web": ["Inter Tight"],
+                    "display-web": ["Inter Tight"],
+                    "body-mobile": ["Inter Tight"],
+                    "hero-mobile": ["Inter Tight"],
+                    "tiny-web": ["Inter Tight"],
+                    "h2-web": ["Inter Tight"],
+                    "body-web": ["Inter Tight"]
+            },
+            "fontSize": {
+                    "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                    "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                    "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter Tight', sans-serif;
+            background-color: #031427;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-ring {
+            box-shadow: 0 0 0 2px #b4c5ff;
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .selection-active {
+            background-color: rgba(37, 99, 235, 0.1);
+            border-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="text-on-surface antialiased flex flex-col min-h-screen">
+<!-- Top App Bar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest border-b border-white/5">
+<div class="flex items-center gap-space-3">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-bright/10 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary text-[24px]" style="font-variation-settings: 'FILL' 1;">construction</span>
+<span class="font-display-web text-[14px] font-extrabold tracking-tighter text-primary uppercase">Construction OS</span>
+</div>
+</div>
+<div class="flex items-center bg-mobile-success/10 px-space-2 py-1 rounded-full border border-mobile-success/20">
+<span class="w-2 h-2 rounded-full bg-mobile-success mr-2 animate-pulse"></span>
+<span class="font-tiny-web text-mobile-success uppercase">Synced</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-[80px] px-edge-mobile pb-32">
+<!-- Headline Section -->
+<section class="mb-space-4">
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface mb-2">ภาษาของระบบ</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant leading-relaxed">
+                จัดการการตั้งค่าภาษาหลักสำหรับองค์กรของคุณ เพื่อให้ทีมงานสามารถเข้าถึงข้อมูลในภาษาที่ถนัดที่สุด
+            </p>
+</section>
+<!-- AI Insights Module -->
+<section class="mb-space-4 relative overflow-hidden group">
+<div class="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
+<div class="border-l-4 border-secondary bg-surface-container p-space-4 rounded-r-xl">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-xl" style="font-variation-settings: 'FILL' 1;">psychology</span>
+<span class="font-label-mobile text-secondary uppercase tracking-wider">AI System Insight</span>
+</div>
+<div class="bg-secondary/20 px-2 py-0.5 rounded text-[11px] font-bold text-secondary border border-secondary/30">
+                        98% CONFIDENCE
+                    </div>
+</div>
+<p class="font-body-web text-on-surface text-sm leading-snug">
+                    Based on your workforce data, <span class="font-bold text-secondary">85% of users</span> prefer Thai. Setting Thai as the primary language is recommended for optimal field efficiency.
+                </p>
+</div>
+</section>
+<!-- Language Selection List -->
+<section class="space-y-space-2">
+<!-- Thai Option (Active) -->
+<label class="block cursor-pointer group">
+<input checked="" class="hidden peer" name="lang" type="radio" value="th"/>
+<div class="flex items-center justify-between p-space-4 bg-surface-container border border-transparent rounded-xl peer-checked:border-primary-container peer-checked:bg-primary-container/5 transition-all active:scale-[0.98]">
+<div class="flex items-center gap-space-4">
+<div class="w-10 h-10 rounded-full bg-surface-bright flex items-center justify-center font-bold text-primary">TH</div>
+<div>
+<p class="font-label-mobile text-on-surface text-base">ภาษาไทย (Thai)</p>
+<p class="font-tiny-web text-on-surface-variant">Recommended for your region</p>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full border-2 border-outline flex items-center justify-center peer-checked:border-primary-container peer-checked:bg-primary-container transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-white scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+</div>
+</label>
+<!-- English US Option -->
+<label class="block cursor-pointer group">
+<input class="hidden peer" name="lang" type="radio" value="en-us"/>
+<div class="flex items-center justify-between p-space-4 bg-surface-container border border-transparent rounded-xl peer-checked:border-primary-container peer-checked:bg-primary-container/5 transition-all active:scale-[0.98]">
+<div class="flex items-center gap-space-4">
+<div class="w-10 h-10 rounded-full bg-surface-bright flex items-center justify-center font-bold text-on-surface-variant">US</div>
+<div>
+<p class="font-label-mobile text-on-surface text-base">English (US)</p>
+<p class="font-tiny-web text-on-surface-variant">Standard corporate format</p>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full border-2 border-outline flex items-center justify-center peer-checked:border-primary-container peer-checked:bg-primary-container transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-white scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+</div>
+</label>
+<!-- English UK Option -->
+<label class="block cursor-pointer group">
+<input class="hidden peer" name="lang" type="radio" value="en-uk"/>
+<div class="flex items-center justify-between p-space-4 bg-surface-container border border-transparent rounded-xl peer-checked:border-primary-container peer-checked:bg-primary-container/5 transition-all active:scale-[0.98]">
+<div class="flex items-center gap-space-4">
+<div class="w-10 h-10 rounded-full bg-surface-bright flex items-center justify-center font-bold text-on-surface-variant">UK</div>
+<div>
+<p class="font-label-mobile text-on-surface text-base">English (UK)</p>
+<p class="font-tiny-web text-on-surface-variant">Metric system alignment</p>
+</div>
+</div>
+<div class="w-6 h-6 rounded-full border-2 border-outline flex items-center justify-center peer-checked:border-primary-container peer-checked:bg-primary-container transition-colors">
+<div class="w-2.5 h-2.5 rounded-full bg-white scale-0 peer-checked:scale-100 transition-transform"></div>
+</div>
+</div>
+</label>
+</section>
+<!-- Illustration / Mood Decor -->
+<div class="mt-10 rounded-2xl overflow-hidden h-40 relative">
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10"></div>
+<div class="w-full h-full bg-surface-container-high opacity-40">
+<div class="shimmer w-full h-full"></div>
+</div>
+<div class="absolute bottom-4 left-4 z-20 flex flex-col">
+<span class="font-tiny-web text-primary uppercase mb-1">Infrastructure Focus</span>
+<span class="font-label-mobile text-on-surface-variant">Enterprise-wide deployment ready</span>
+</div>
+</div>
+</main>
+<!-- Fixed Bottom Actions -->
+<footer class="fixed bottom-0 left-0 w-full p-edge-mobile bg-gradient-to-t from-background via-background to-transparent pt-10">
+<button class="w-full h-touch-target bg-primary-container text-on-primary-container rounded-xl font-label-mobile text-base uppercase tracking-[0.05em] flex items-center justify-center gap-2 active:scale-95 transition-all shadow-xl hover:bg-primary-container/90">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">save</span>
+            Save Changes
+        </button>
+<!-- Device safe area padding -->
+<div class="h-safe pb-4"></div>
+</footer>
+<!-- Interactive Layer: Radio Logic Visual Refinement -->
+<script>
+        const radioInputs = document.querySelectorAll('input[type="radio"]');
+        radioInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                // Potential for adding subtle haptic vibration simulation or sound
+                console.log('Language changed to:', input.value);
+            });
+        });
+
+        // Simple micro-interaction for the back button
+        document.querySelector('button span[data-icon="arrow_back"]')?.parentElement.addEventListener('click', () => {
+            window.history.back();
+        });
+    </script>
+</body></html>

@@ -1,0 +1,285 @@
+<!DOCTYPE html><html class="dark" lang="th" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>System Color Settings - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100..900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#b4c5ff",
+                        "on-surface": "#d3e4fe",
+                        "on-secondary": "#003640",
+                        "surface-bright": "#2a3a4f",
+                        "secondary-container": "#03b5d3",
+                        "surface": "#031427",
+                        "on-primary-fixed": "#00174b",
+                        "dark-bg": "#020617",
+                        "inverse-on-surface": "#213145",
+                        "primary-container": "#2563eb",
+                        "inverse-surface": "#d3e4fe",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#c1c5dc",
+                        "on-surface-variant": "#c3c6d7",
+                        "on-error": "#690005",
+                        "tertiary-container": "#686c80",
+                        "mobile-success": "#00C853",
+                        "on-secondary-container": "#00424e",
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#031427",
+                        "on-secondary-fixed": "#001f26",
+                        "on-tertiary-container": "#eeefff",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-fixed-variant": "#414658",
+                        "secondary": "#4cd7f6",
+                        "outline-variant": "#434655",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "mobile-primary": "#0066FF",
+                        "on-background": "#d3e4fe",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "sync-pending": "#94A3B8",
+                        "mobile-warning": "#FF9500",
+                        "surface-tint": "#b4c5ff",
+                        "on-primary": "#002a78",
+                        "tertiary-fixed": "#dee1f9",
+                        "secondary-fixed-dim": "#4cd7f6",
+                        "on-tertiary-fixed": "#161b2b",
+                        "dark-surface": "#0F172A",
+                        "error": "#ffb4ab",
+                        "background": "#031427",
+                        "on-secondary-fixed-variant": "#004e5c",
+                        "mobile-danger": "#FF3B30",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-high": "#1b2b3f",
+                        "primary-fixed": "#dbe1ff",
+                        "surface-variant": "#26364a",
+                        "surface-container": "#102034",
+                        "surface-container-highest": "#26364a",
+                        "inverse-primary": "#0053db",
+                        "on-primary-container": "#eeefff",
+                        "tertiary": "#c1c5dc",
+                        "secondary-fixed": "#acedff",
+                        "on-tertiary": "#2b3041",
+                        "sync-active": "#FFD60A",
+                        "outline": "#8d90a0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target": "52px",
+                        "space-4": "16px",
+                        "space-2": "8px",
+                        "edge-mobile": "24px",
+                        "space-1": "4px",
+                        "web-margin": "32px",
+                        "base": "4px",
+                        "space-3": "12px"
+                    },
+                    "fontFamily": {
+                        "label-mobile": ["Inter Tight"],
+                        "tiny-web": ["Inter Tight"],
+                        "h1-web": ["Inter Tight"],
+                        "body-web": ["Inter Tight"],
+                        "hero-mobile": ["Inter Tight"],
+                        "body-mobile": ["Inter Tight"],
+                        "h2-web": ["Inter Tight"],
+                        "display-web": ["Inter Tight"]
+                    },
+                    "fontSize": {
+                        "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}],
+                        "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bento-card {
+            background-color: #102034;
+            border-left: 4px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .bento-card.active {
+            border-left-color: #b4c5ff;
+            background-color: #1b2b3f;
+        }
+        .ai-accent {
+            border-left: 4px solid #03b5d3;
+            background: linear-gradient(90deg, rgba(3, 181, 211, 0.05) 0%, rgba(3, 181, 211, 0) 100%);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col pb-safe" style="opacity: 1; transition: opacity 0.4s;">
+<!-- Header / TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-edge-mobile h-touch-target bg-surface-dim dark:bg-surface-container-lowest">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: &quot;FILL&quot; 1;">construction</span>
+<h1 class="font-display-web text-h1-web-mobile font-bold text-primary tracking-tight">Construction OS</h1>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-space-1 px-space-2 py-0.5 rounded-full bg-sync-active/10 border border-sync-active/20">
+<span class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></span>
+<span class="font-tiny-web text-tiny-web text-sync-active">SYNCED</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a senior project manager in a dark blue construction uniform, looking confident against a blurred industrial shipyard background. High-contrast lighting with a dark-mode professional aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5luimBn0z-VfSbE1mDS8InrdvRMHvZnKmlsra9bNvTH5mrUmB7x-__WAF0xRapKv8mLaHPv9H7ygz4jK7Bz_6ppqN-QvMYmY2YZKCx6PNcpvoCBBsh_9VYnAFAvrzvYCpmhtG2Jh_1B14w-mJbUsYRar94IevdkR3q-_cCwSWERdlE3lBu75lLy0tgqhLgnkTLj5bfU5KDUNs1zQI78atOv3dT2_4se6eyNtvq6ShxN5uenQI0_9Q">
+</div>
+</div>
+</header>
+<main class="mt-[52px] px-edge-mobile py-space-4 flex-1">
+<div class="mb-space-4">
+<div class="flex items-center gap-space-2 text-on-surface-variant mb-space-1">
+<button class="material-symbols-outlined text-[20px] active:scale-90 transition-transform">arrow_back</button>
+<span class="font-label-mobile text-label-mobile">System Settings</span>
+</div>
+<h2 class="font-hero-mobile text-hero-mobile text-on-surface">Color Settings</h2>
+</div>
+<!-- AI Recommendation Section -->
+<section class="ai-accent rounded-xl p-space-4 mb-space-4 flex gap-space-3 items-start">
+<span class="material-symbols-outlined text-secondary pt-1" style="font-variation-settings: &quot;FILL&quot; 1;">auto_awesome</span>
+<div>
+<h3 class="font-label-mobile text-label-mobile text-secondary uppercase tracking-wider">CORE_AI Insight</h3>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mt-space-1">
+<span class="text-on-surface font-semibold">Blue Industrial</span> แนะนำสำหรับการใช้งานภายนอก (Outdoor) 100% มีค่าความเปรียบต่างสูงที่สุดภายใต้แสงแดดจัด
+                </p>
+</div>
+</section>
+<!-- Color Grid Selection -->
+<section class="grid grid-cols-2 gap-space-3 mb-space-6">
+<!-- Active Card -->
+<button class="bento-card active rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left relative overflow-hidden group">
+<div class="w-full h-12 bg-[#b4c5ff] rounded-lg shadow-inner"></div>
+<div>
+<span class="font-label-mobile text-label-mobile text-on-surface block">Blue Industrial</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Default Utility</span>
+</div>
+<div class="absolute top-2 right-2 bg-primary text-on-primary rounded-full p-0.5">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: &quot;wght&quot; 700;">check</span>
+</div>
+</button>
+<!-- Steel Gray -->
+<button class="bento-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left hover:bg-surface-bright/10 active:scale-95 transition-all">
+<div class="w-full h-12 bg-[#94A3B8] rounded-lg opacity-80"></div>
+<div>
+<span class="font-label-mobile text-label-mobile text-on-surface block">Steel Gray</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">High Precision</span>
+</div>
+</button>
+<!-- Safety Orange -->
+<button class="bento-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left hover:bg-surface-bright/10 active:scale-95 transition-all">
+<div class="w-full h-12 bg-[#FF9500] rounded-lg opacity-80"></div>
+<div>
+<span class="font-label-mobile text-label-mobile text-on-surface block">Safety Orange</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Field Critical</span>
+</div>
+</button>
+<!-- Caution Yellow -->
+<button class="bento-card rounded-xl p-space-3 flex flex-col items-start gap-space-2 text-left hover:bg-surface-bright/10 active:scale-95 transition-all">
+<div class="w-full h-12 bg-[#FFD60A] rounded-lg opacity-80"></div>
+<div>
+<span class="font-label-mobile text-label-mobile text-on-surface block">Caution Yellow</span>
+<span class="font-tiny-web text-tiny-web text-on-surface-variant">Warning Active</span>
+</div>
+</button>
+</section>
+<!-- Preview Module -->
+<section class="bg-surface-container-low rounded-xl border border-outline-variant/30 p-space-4 mb-space-8 overflow-hidden relative">
+<div class="absolute top-0 right-0 p-space-2 opacity-20">
+<span class="material-symbols-outlined text-[48px]">visibility</span>
+</div>
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant mb-space-3 uppercase tracking-widest">UI Preview</h3>
+<div class="space-y-space-3">
+<!-- Header Preview -->
+<div class="bg-[#b4c5ff] h-8 rounded flex items-center px-space-2 gap-space-2">
+<div class="w-4 h-4 bg-on-primary rounded-full"></div>
+<div class="w-20 h-2 bg-on-primary/30 rounded"></div>
+</div>
+<!-- Button Preview -->
+<div class="flex gap-space-2">
+<div class="flex-1 h-touch-target bg-[#b4c5ff] rounded-lg flex items-center justify-center font-label-mobile text-on-primary">
+                        PRIMARY BUTTON
+                    </div>
+<div class="flex-1 h-touch-target border-2 border-[#b4c5ff] text-[#b4c5ff] rounded-lg flex items-center justify-center font-label-mobile">
+                        OUTLINE
+                    </div>
+</div>
+</div>
+</section>
+</main>
+<!-- Navigation Drawer & Bottom actions (Responsive) -->
+<footer class="fixed bottom-0 left-0 w-full p-edge-mobile bg-surface-container-highest/90 backdrop-blur-md flex flex-col gap-space-3 border-t border-outline-variant/20">
+<button class="h-touch-target w-full bg-primary text-on-primary font-label-mobile text-label-mobile font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-space-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: &quot;FILL&quot; 1;">save</span>SAVE CHANGES
+        </button>
+<button class="h-touch-target w-full bg-transparent border border-outline text-on-surface-variant font-label-mobile text-label-mobile rounded-xl active:scale-[0.98] transition-all">CANCEL
+        </button>
+</footer>
+<!-- Interactive Layer: Ripple simulation -->
+<script>
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (this.classList.contains('bento-card')) {
+                    document.querySelectorAll('.bento-card').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Visual feedback for "Selection"
+                    const color = this.querySelector('div').style.backgroundColor || 
+                                 window.getComputedStyle(this.querySelector('div')).backgroundColor;
+                    
+                    document.querySelectorAll('.bg-\\[\\#b4c5ff\\]').forEach(el => {
+                        el.style.backgroundColor = color;
+                    });
+                    document.querySelectorAll('.border-\\[\\#b4c5ff\\]').forEach(el => {
+                        el.style.borderColor = color;
+                    });
+                    document.querySelectorAll('.text-\\[\\#b4c5ff\\]').forEach(el => {
+                        el.style.color = color;
+                    });
+                }
+            });
+        });
+
+        // Simple subtle entrance animation
+        window.addEventListener('DOMContentLoaded', () => {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.4s ease';
+            requestAnimationFrame(() => {
+                document.body.style.opacity = '1';
+            });
+        });
+    </script>
+
+
+</body></html>

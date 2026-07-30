@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="th"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>ตั้งค่าโลโก้องค์กร | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "mobile-warning": "#FF9500",
+                "tertiary-fixed": "#dee1f9",
+                "surface-bright": "#2a3a4f",
+                "on-tertiary": "#2b3041",
+                "tertiary-fixed-dim": "#c1c5dc",
+                "outline-variant": "#434655",
+                "surface-container-lowest": "#000f21",
+                "mobile-success": "#00C853",
+                "primary-fixed": "#dbe1ff",
+                "on-secondary-fixed": "#001f26",
+                "sync-active": "#FFD60A",
+                "surface-container-high": "#1b2b3f",
+                "on-tertiary-container": "#eeefff",
+                "surface-dim": "#031427",
+                "secondary-container": "#03b5d3",
+                "primary-fixed-dim": "#b4c5ff",
+                "surface-variant": "#26364a",
+                "inverse-surface": "#d3e4fe",
+                "mobile-danger": "#FF3B30",
+                "primary-container": "#2563eb",
+                "surface-container": "#102034",
+                "surface-container-highest": "#26364a",
+                "mobile-primary": "#0066FF",
+                "dark-surface": "#0F172A",
+                "dark-bg": "#020617",
+                "on-secondary": "#003640",
+                "sync-pending": "#94A3B8",
+                "on-tertiary-fixed-variant": "#414658",
+                "error": "#ffb4ab",
+                "on-background": "#d3e4fe",
+                "secondary": "#4cd7f6",
+                "surface": "#031427",
+                "background": "#031427",
+                "on-primary-fixed": "#00174b",
+                "on-error-container": "#ffdad6",
+                "on-surface": "#d3e4fe",
+                "secondary-fixed-dim": "#4cd7f6",
+                "on-secondary-container": "#00424e",
+                "inverse-primary": "#0053db",
+                "on-primary": "#002a78",
+                "inverse-on-surface": "#213145",
+                "outline": "#8d90a0",
+                "on-error": "#690005",
+                "tertiary-container": "#686c80",
+                "on-primary-container": "#eeefff",
+                "primary": "#b4c5ff",
+                "error-container": "#93000a",
+                "on-tertiary-fixed": "#161b2b",
+                "tertiary": "#c1c5dc",
+                "on-surface-variant": "#c3c6d7",
+                "on-secondary-fixed-variant": "#004e5c",
+                "secondary-fixed": "#acedff",
+                "on-primary-fixed-variant": "#003ea8",
+                "surface-container-low": "#0b1c30",
+                "surface-tint": "#b4c5ff"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "space-4": "16px",
+                "edge-mobile": "24px",
+                "base": "4px",
+                "space-1": "4px",
+                "touch-target": "52px",
+                "space-2": "8px",
+                "web-margin": "32px",
+                "space-3": "12px"
+            },
+            "fontFamily": {
+                "h2-web": ["Inter Tight"],
+                "tiny-web": ["Inter Tight"],
+                "body-web": ["Inter Tight"],
+                "hero-mobile": ["Inter Tight"],
+                "h1-web": ["Inter Tight"],
+                "display-web": ["Inter Tight"],
+                "body-mobile": ["Inter Tight"],
+                "label-mobile": ["Inter Tight"]
+            },
+            "fontSize": {
+                "h2-web": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                "tiny-web": ["11px", {"lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                "body-web": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "hero-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                "h1-web": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "display-web": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-mobile": ["17px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "label-mobile": ["13px", {"lineHeight": "18px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            font-family: 'Inter Tight', sans-serif;
+            color: #d3e4fe;
+            -webkit-font-smoothing: antialiased;
+        }
+        .tonal-layering {
+            background: linear-gradient(180deg, rgba(16, 32, 52, 1) 0%, rgba(11, 28, 48, 1) 100%);
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, rgba(6, 181, 211, 0.05) 25%, rgba(6, 181, 211, 0.15) 50%, rgba(6, 181, 211, 0.05) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 3s infinite linear;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="flex flex-col min-h-screen">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface-dim border-b border-white/10 flex justify-between items-center px-edge-mobile h-touch-target">
+<div class="flex items-center gap-space-2">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<span class="font-h1-web text-h1-web-mobile font-bold text-primary tracking-tight">CONSTRUCTION OS</span>
+</div>
+<div class="flex items-center gap-space-3">
+<div class="flex items-center gap-space-1 bg-surface-container-high px-2 py-1 rounded-full border border-white/5">
+<span class="w-2 h-2 rounded-full bg-sync-active animate-pulse"></span>
+<span class="font-tiny-web text-tiny-web uppercase text-on-surface-variant">SYNCED</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<!-- Content Canvas -->
+<main class="flex-1 mt-touch-target pb-32 px-edge-mobile pt-space-4">
+<!-- Header Section -->
+<section class="mb-space-4">
+<h1 class="font-hero-mobile text-hero-mobile text-on-surface mb-1">ตั้งค่าโลโก้องค์กร</h1>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant">Tenant Administrator Access Only</p>
+</section>
+<!-- Current Logo Preview & Management -->
+<div class="tonal-layering rounded-xl p-space-4 border border-white/5 mb-space-4 shadow-lg overflow-hidden relative">
+<div class="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+<div class="flex justify-between items-start mb-space-3">
+<h3 class="font-label-mobile text-label-mobile text-on-surface-variant uppercase tracking-wider">โลโก้ปัจจุบัน</h3>
+<span class="font-tiny-web text-tiny-web text-mobile-success bg-mobile-success/10 px-2 py-0.5 rounded">ACTIVE</span>
+</div>
+<div class="flex items-center gap-space-4">
+<div class="w-24 h-24 bg-surface-container-highest rounded-lg border border-white/10 flex items-center justify-center p-4">
+<img class="max-w-full max-h-full object-contain" data-alt="A clean, minimalist vector corporate logo featuring a stylized blue 'C' shape with industrial geometric precision, presented on a dark navy blue architectural background with soft studio lighting. The aesthetic is modern, professional, and high-tech, fitting for a global infrastructure software platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzm5jX3flCvRvsfYALkdT-3SujR7eQd-XteKmYGNQP2RXY_Ub_IlNLqdAXwWMzbV9CYEsFVwl_-ftnw95MMMphMi9_WYNlNmpaCG3pBulazkUCkP085gqpKh5gvqYIX7qMBKdEObaTpMtSyxboCEpTMwQuvN3V5KmqBzquq6V0eFTemIh1tXrBsQOFf7L8-XJDoH9xx3JnDYnwfvHUTXQg9-uQroW4N97FkOQdevTKryzz26IvzR3f"/>
+</div>
+<div class="flex flex-col gap-space-2 flex-1">
+<p class="font-label-mobile text-label-mobile text-on-surface">corporate-identity-v2.svg</p>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">42 KB • Updated 12 Oct 2023</p>
+<div class="flex gap-space-2 mt-1">
+<button class="bg-surface-bright/20 hover:bg-surface-bright/40 text-on-surface px-3 py-1 rounded font-tiny-web transition-colors">ลบออก</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Logo Upload Area -->
+<div class="border-2 border-dashed border-outline-variant hover:border-primary-container rounded-xl p-space-4 flex flex-col items-center justify-center text-center py-10 transition-all duration-300 mb-space-4 cursor-pointer" id="drop-zone">
+<div class="w-14 h-14 bg-primary-container/10 rounded-full flex items-center justify-center mb-space-3 text-primary-container">
+<span class="material-symbols-outlined text-4xl" data-icon="cloud_upload">cloud_upload</span>
+</div>
+<h2 class="font-h2-web text-h2-web mb-1">อัปโหลดโลโก้</h2>
+<p class="font-body-mobile text-body-mobile text-on-surface-variant mb-space-3 px-4">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์ PNG หรือ SVG (สูงสุด 2MB)</p>
+<button class="bg-primary-container text-on-primary-container px-6 py-3 rounded-lg font-label-mobile transition-transform active:scale-95 shadow-md">
+                เลือกไฟล์
+            </button>
+</div>
+<!-- AI Logo Analyzer (CORE_AI) -->
+<div class="bg-secondary-container/5 border-l-4 border-secondary-container rounded-xl p-space-4 mb-space-4 ai-shimmer">
+<div class="flex items-center gap-space-2 mb-space-3">
+<span class="material-symbols-outlined text-secondary" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-mobile text-label-mobile text-secondary uppercase tracking-widest">AI LOGO ANALYZER</span>
+</div>
+<div class="space-y-space-3">
+<div class="flex justify-between items-end">
+<div class="flex flex-col">
+<span class="font-tiny-web text-tiny-web text-on-surface-variant uppercase">Visibility Confidence</span>
+<span class="font-display-web text-display-web text-on-surface leading-none">94<span class="text-h1-web">%</span></span>
+</div>
+<div class="text-right">
+<span class="font-tiny-web text-tiny-web text-mobile-success uppercase">Optimal Contrast</span>
+<div class="flex gap-1 justify-end mt-1">
+<div class="w-4 h-1 bg-mobile-success rounded-full"></div>
+<div class="w-4 h-1 bg-mobile-success rounded-full"></div>
+<div class="w-4 h-1 bg-mobile-success rounded-full"></div>
+<div class="w-4 h-1 bg-on-surface-variant/20 rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="pt-space-2 border-t border-white/5">
+<p class="font-body-mobile text-body-mobile text-on-surface-variant leading-relaxed">
+                        วิเคราะห์แล้ว: โลโก้มีสัดส่วนคอนทราสต์ที่เหมาะสมกับพื้นหลังโหมดมืด (4.5:1) และโหมดสว่าง (7.2:1) แนะนำให้ใช้เวอร์ชัน SVG เพื่อความคมชัดสูงสุดบนทุกขนาดหน้าจอ
+                    </p>
+</div>
+</div>
+</div>
+<!-- Action Buttons Footer -->
+<div class="flex flex-col gap-space-3 mt-space-4">
+<button class="h-touch-target bg-primary-container text-on-primary-container font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-primary-container/20 active:scale-[0.98] transition-all">
+                บันทึกการเปลี่ยนแปลง
+            </button>
+<button class="h-touch-target border border-outline text-on-surface font-bold uppercase tracking-wider rounded-xl active:bg-surface-bright/10 transition-all">
+                CANCEL
+            </button>
+</div>
+</main>
+<!-- NavigationDrawer (Mobile suppressed by logic but provided for structure) -->
+<aside class="fixed inset-y-0 left-0 z-[60] flex flex-col py-space-4 bg-surface-container-low w-[280px] rounded-r-xl shadow-xl -translate-x-full transition-transform duration-300 lg:translate-x-0 lg:static hidden" id="nav-drawer">
+<div class="px-space-4 mb-space-4 flex items-center gap-space-3">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-primary">
+<img class="w-full h-full object-cover" data-alt="Close-up professional portrait of a senior system administrator in a dark polo shirt, neutral background, high-contrast industrial lighting. The subject has a confident expression, conveying precision and expertise within a systematic corporate environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtPa6-HVBWg3lLspKCGKa6AM1lM0e5FfE3J0IX4Gn5t1nThE5WaJr5Sw6WXQBj3BGRKxNay3iXA1z1AWWNDKf37fZeLdRAgYargYyKW86RwYYU5sy9wUUlSrdezc87YGiwPQVgYe_rNEKlDbiS-D7kaxmWEvBDCqMATnzZCp9d0AcnliflccOtRDrNifNjrFPcRsCk0S9TYlQneOVQAliEqkIXUAgq780ELr5J-9KO24Jh9NIsC2Gj"/>
+</div>
+<div>
+<h4 class="font-label-mobile text-label-mobile text-on-surface">สมชาย วิศวกรรม</h4>
+<p class="font-tiny-web text-tiny-web text-on-surface-variant">ผู้ดูแลระบบอาวุโส</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<div class="mx-2 px-space-4 py-3 text-on-surface-variant hover:bg-surface-bright/10 flex items-center gap-3 rounded-lg">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-body-mobile text-body-mobile">หน้าหลัก</span>
+</div>
+<!-- More nav items as per JSON... -->
+</nav>
+</aside>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-safe h-[72px] bg-surface-container border-t border-white/5 shadow-lg rounded-t-xl">
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-mobile text-label-mobile mt-1">แดชบอร์ด</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="construction">construction</span>
+<span class="font-label-mobile text-label-mobile mt-1">โครงการ</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="font-label-mobile text-label-mobile mt-1">สถานะ</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-4 py-1">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-mobile text-label-mobile mt-1">การตั้งค่า</span>
+</div>
+</nav>
+<script>
+        // Micro-interactions for Upload Zone
+        const dropZone = document.getElementById('drop-zone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.add('border-primary-container', 'bg-primary-container/5');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.classList.remove('border-primary-container', 'bg-primary-container/5');
+            }, false);
+        });
+
+        // Simple button active state simulation
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.opacity = '0.7';
+            });
+            btn.addEventListener('touchend', () => {
+                btn.style.opacity = '1';
+            });
+        });
+    </script>
+</body></html>
