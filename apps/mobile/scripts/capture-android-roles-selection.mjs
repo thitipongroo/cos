@@ -2,7 +2,7 @@
 // Quick Commands → Invite New User, scrolls to the ROLE ASSIGNMENT list and taps "Show more roles" to
 // open the full-screen role picker (mockup 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
 // 03_roles_selection). Captures:
-//   docs/screens/android/TENANT_ADMIN/01-Home/04-roles-selection.png — ONE full-page (search → all roles →
+//   docs/screens/android/TENANT_ADMIN/01-Home/05-roles-selection.png — ONE full-page (search → all roles →
 //   CORE_AI Context banner → Confirm), stitched from scrolling viewports via scripts/stitch-fullpage.py.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
@@ -148,7 +148,7 @@ async function main() {
 
   // One full-page: search → all assignable roles → CORE_AI Context banner → Confirm.
   console.log('· full-page roles-selection');
-  await stitchFull('04-roles-selection');
+  await stitchFull('05-roles-selection');
 
   console.log('done.');
 }

@@ -3,7 +3,7 @@
 // 02_quick_action_button/02_system_integration/00_tenant_new_integration) as ONE full-page image
 // (PO decision 2026-07-29 — one page, not split): it shoots several scrolling viewports and stitches
 // them into a single tall PNG via scripts/stitch-fullpage.py (Python + Pillow/numpy):
-//   docs/screens/android/TENANT_ADMIN/01-Home/06-system-integration.png
+//   docs/screens/android/TENANT_ADMIN/01-Home/07-system-integration.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
-const OUT = join(OUT_DIR, '06-system-integration.png');
+const OUT = join(OUT_DIR, '07-system-integration.png');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate shots
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';

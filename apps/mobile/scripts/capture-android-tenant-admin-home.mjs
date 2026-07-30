@@ -1,7 +1,7 @@
 // Tenant Admin Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/TENANT_ADMIN/01-Home/00-home.png: the TENANT_ADMIN landing dashboard
+// Writes docs/screens/android/TENANT_ADMIN/01-Home/01-home-dashboard.png: the TENANT_ADMIN landing dashboard
 // (mockup/mobile/04_tenant_admin/01_home/01_main/) with live data — system status, pending
 // approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
 // the seeded TENANT_ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Grouped by main-menu tab: each capture's name carries its menu subfolder (Home / Users / Alerts /
-// Settings) under TENANT_ADMIN/, so stitchFull() writes e.g. TENANT_ADMIN/01-Home/00-home.png.
+// Settings) under TENANT_ADMIN/, so stitchFull() writes e.g. TENANT_ADMIN/01-Home/01-home-dashboard.png.
 // Every screen is captured as ONE full-page image (scrolling viewports stitched via stitch-fullpage.py).
 const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
@@ -217,7 +217,7 @@ async function main() {
   // the bottom so it appears once: 1970 for the dashboard/list floating FABs, 2196 (bottom-nav top) for
   // screens whose only fixed element is the nav.
   console.log('· full-page Home dashboard');
-  await stitchFull('01-Home/00-home', 180, 1970);
+  await stitchFull('01-Home/01-home-dashboard', 180, 1970);
 
   // Quick-Add menu — the FAB target (mockup 02_quick_add_menu). A scrolling modal, so capture it
   // full-page too (top=150: its own top bar is shorter, no bottom nav); then scroll back up and close.
@@ -225,7 +225,7 @@ async function main() {
   await tap(byId('quick-add-fab'), 'quick-add FAB');
   await find(byId('quick-add-menu'), 'quick-add-menu', 15);
   await delay(1500);
-  await stitchFull('01-Home/01-quick-add', 150, 2300);
+  await stitchFull('01-Home/02-quick-action', 150, 2300);
   for (let i = 0; i < 4; i++) {
     adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
     await delay(400);

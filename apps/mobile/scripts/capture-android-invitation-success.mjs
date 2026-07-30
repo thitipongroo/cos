@@ -2,7 +2,7 @@
 // Commands → Invite New User, fills a real invitation (name + a random unique phone + Project Manager),
 // taps SEND INVITATION and captures the success screen (mockup 04_tenant_admin/01_home/
 // 02_quick_action_button/01_invite_user/04_invitation_success):
-//   docs/screens/android/TENANT_ADMIN/01-Home/05-invitation-success.png
+//   docs/screens/android/TENANT_ADMIN/01-Home/06-invitation-success.png
 // A random phone is used so each run creates a fresh user (no 409). Prereqs: emulator + Metro
 // (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true.
 
@@ -159,7 +159,7 @@ async function main() {
   await dismissDevBanners();
   await delay(1500);
   console.log('· full-page invitation-success');
-  await stitchFull('05-invitation-success');
+  await stitchFull('06-invitation-success');
 
   console.log('done.');
 }

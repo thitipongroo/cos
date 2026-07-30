@@ -3,8 +3,8 @@
 // and captures the invite form (mockup 04_tenant_admin/01_home/02_quick_action_button/01_invite_user/
 // 01_invite_user_via_phone) as ONE full-page image per method (each stitched from scrolling viewports
 // via scripts/stitch-fullpage.py):
-//   docs/screens/android/TENANT_ADMIN/01-Home/02-invite-user-phone.png  — phone method, complete filled form
-//   docs/screens/android/TENANT_ADMIN/01-Home/02-invite-user-email.png  — the EMAIL method, complete form
+//   docs/screens/android/TENANT_ADMIN/01-Home/03-invite-user-phone.png  — phone method, complete filled form
+//   docs/screens/android/TENANT_ADMIN/01-Home/03-invite-user-email.png  — the EMAIL method, complete form
 // Prereqs are the same as capture-android-home.mjs, plus Metro started with EXPO_PUBLIC_CAPTURE=1 so the
 // dev LogBox toast is suppressed, plus Python (Pillow/numpy) for the stitch. Run:
 //   node scripts/capture-android-invite-user.mjs
@@ -162,7 +162,7 @@ async function main() {
 
   // Full page: the complete phone-method form (header → role cards → AI panel → footer) in one image.
   console.log('· full-page phone method');
-  await stitchFull('02-invite-user-phone');
+  await stitchFull('03-invite-user-phone');
 
   // Switch to the EMAIL method and capture that state full-page too (the contact field clears on
   // switch; type a sample address so the field is shown filled).
@@ -176,7 +176,7 @@ async function main() {
   await tap(byId('invite-contact'), 'contact');
   await type('somchai@example.com');
   await hideKeyboard();
-  await stitchFull('02-invite-user-email');
+  await stitchFull('03-invite-user-email');
 
   console.log('done.');
 }

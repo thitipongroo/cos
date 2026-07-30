@@ -131,7 +131,7 @@ the shimmer from defeating the stitch's overlap match, `LoadingState` **freezes 
 a mid-frame in capture builds** (`EXPO_PUBLIC_CAPTURE`, the same flag that mutes the LogBox toast);
 production and normal dev animate as usual.
 
-## Tenant Admin dashboard — [`TENANT_ADMIN/01-Home/00-home.png`](TENANT_ADMIN/01-Home/00-home.png)
+## Tenant Admin dashboard — [`TENANT_ADMIN/01-Home/01-home-dashboard.png`](TENANT_ADMIN/01-Home/01-home-dashboard.png)
 
 The `TENANT_ADMIN` Home ([`components/TenantAdminHome.tsx`](../../../apps/mobile/src/components/TenantAdminHome.tsx),
 implementing [`mockup/mobile/04_tenant_admin/01_home/01_main`](../../../mockup/mobile/04_tenant_admin/01_home/01_main)),
@@ -179,7 +179,7 @@ Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../
 (`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
 `tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
 an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
-Quick-Add menu (`TENANT_ADMIN/01-Home/01-quick-add.png`) and the Users tab
+Quick-Add menu (`TENANT_ADMIN/01-Home/02-quick-action.png`) and the Users tab
 (`TENANT_ADMIN/02-Users/01-users-dashboard.png`).
 
 ## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png)
@@ -235,7 +235,7 @@ Everything is real, never the mockup's placeholders:
 - **Edit permissions / Reset password** target sub-flows not built on mobile yet, so each opens the same
   honest "not available on mobile yet" note.
 
-## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/01-quick-add.png`](TENANT_ADMIN/01-Home/01-quick-add.png)
+## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/02-quick-action.png`](TENANT_ADMIN/01-Home/02-quick-action.png)
 
 The FAB's full-screen **Quick Commands** overlay
 ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx), mockup
@@ -259,7 +259,7 @@ stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
   honest placeholder (no AI-report screen yet) — the AI-report card keeps the mockup's richer layout but
   **drops the fabricated "94 % CONFIDENCE / Source"** (no such signal exists).
 
-## Tenant Admin — Invite user — [`phone`](TENANT_ADMIN/01-Home/02-invite-user-phone.png) · [`email`](TENANT_ADMIN/01-Home/02-invite-user-email.png)
+## Tenant Admin — Invite user — [`phone`](TENANT_ADMIN/01-Home/03-invite-user-phone.png) · [`email`](TENANT_ADMIN/01-Home/03-invite-user-email.png)
 
 The Quick Commands "Invite New User" target
 ([`app/(app)/invite-user.tsx`](../../../apps/mobile/src/app/(app)/invite-user.tsx), mockups
@@ -288,7 +288,7 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
   ("…pre-applied for the _Project Manager_ role") but **drops the mockup's fabricated permission
   specifics** ("approval rights for Payouts and Daily Reports") — PO decision 2026-07-29.
 
-## Tenant Admin — Role permissions — [`03`](TENANT_ADMIN/01-Home/03-role-permissions.png)
+## Tenant Admin — Role permissions — [`03`](TENANT_ADMIN/01-Home/04-role-permissions.png)
 
 Reached from Invite-user's **"View permissions"** link
 ([`app/(app)/role-permissions.tsx`](../../../apps/mobile/src/app/(app)/role-permissions.tsx), mockup
@@ -310,7 +310,7 @@ breakdown for the role being invited.
   of its own: the global TopBar shows "Role permissions" + a Back arrow; the footer **"Back to
   invitation"** and that arrow both `router.back()`.
 
-## Tenant Admin — Roles selection — [`04`](TENANT_ADMIN/01-Home/04-roles-selection.png)
+## Tenant Admin — Roles selection — [`04`](TENANT_ADMIN/01-Home/05-roles-selection.png)
 
 The full-screen role picker opened from Invite-user's **"Show more roles"**
 ([`app/(app)/roles-selection.tsx`](../../../apps/mobile/src/app/(app)/roles-selection.tsx), mockup
@@ -332,7 +332,7 @@ single-select (createUser takes one role).
   hidden `Tabs.Screen` siblings, and the React Navigation default (`firstRoute`) would send Back to Home
   instead of the screen that opened the picker — this also fixes Role-permissions' "Back to invitation".
 
-## Tenant Admin — Invitation success — [`05`](TENANT_ADMIN/01-Home/05-invitation-success.png)
+## Tenant Admin — Invitation success — [`05`](TENANT_ADMIN/01-Home/06-invitation-success.png)
 
 The terminal confirmation shown after Invite-user's **SEND INVITATION** succeeds
 ([`app/(app)/invitation-success.tsx`](../../../apps/mobile/src/app/(app)/invitation-success.tsx), mockup
@@ -354,7 +354,7 @@ old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
   Qualified to `::platform."CosRoleEnum"` in both `createUser` and `changeRole`; `POST /users` now returns
   **201** and the real SEND → success flow is reachable.
 
-## Tenant Admin — System integration — [`06`](TENANT_ADMIN/01-Home/06-system-integration.png)
+## Tenant Admin — System integration — [`06`](TENANT_ADMIN/01-Home/07-system-integration.png)
 
 The connector picker opened from Quick Commands → **New System Integration**
 ([`app/(app)/system-integration.tsx`](../../../apps/mobile/src/app/(app)/system-integration.tsx), mockup
@@ -375,7 +375,7 @@ The connector picker opened from Quick Commands → **New System Integration**
   **brand icon in the TopBar is now a rounded-square tile** (`brandIcon` `borderRadius`, Linear/Palantir
   aesthetic) — a global TopBar change, so every screen's header picks it up.
 
-## Tenant Admin — Apps & Services — [`07`](TENANT_ADMIN/01-Home/07-apps-services.png)
+## Tenant Admin — Apps & Services — [`07`](TENANT_ADMIN/01-Home/08-apps-services.png)
 
 The module / tools / extensions hub, opened from Quick Commands → **Apps & Services** (a new action card
 there — `router.push`)
