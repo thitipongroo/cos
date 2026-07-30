@@ -12,6 +12,7 @@ import { checkLocalDbLimit } from '../../db/database';
 import { OfflineBanner } from '../../components/OfflineBanner';
 import { SyncStatusBar } from '../../components/SyncStatusBar';
 import { TopBar } from '../../components/TopBar';
+import { Breadcrumb } from '../../components/Breadcrumb';
 import { MobileNav } from '../../components/MobileNav';
 import { NavigationDrawer } from '../../components/NavigationDrawer';
 import { useAuthStore } from '../../store/authStore';
@@ -57,6 +58,8 @@ export default function AppLayout() {
       {/* Standard top bar (§32.7) owns the safe-area top inset and gives the header its surface
           background. Then the offline/sync banners, then the tab content. */}
       <TopBar variant={variant} />
+      {/* Clickable breadcrumb for pushed child screens (null on main tabs / terminal screens). */}
+      <Breadcrumb variant={variant} />
       <OfflineBanner />
       {/* The dark-shell dashboards (SITE_ENGINEER, TENANT_ADMIN) match their mockups, which have no
           persistent light sync strip (PO decision 2026-07-25 "full parity", extended 2026-07-28); the

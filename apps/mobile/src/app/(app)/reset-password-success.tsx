@@ -1,15 +1,20 @@
-// Reset-password success (mockup 04_tenant_admin/02_users/02_user_management/06_reset_password_success;
+// Reset-password success (mockup 04_tenant_admin/02_users/02_user_management/07_temp_password_success;
 // §32.7 dark). Terminal screen shown after Reset-password's CONFIRM succeeds — reached via router.replace
-// with the target user's id/name + the one-time temporary password. No top bar of its own; the global
-// TopBar shows the CONSTRUCTION OS wordmark with no Back (terminal, nothing to go back to).
+// with the target user's id/name + the one-time temporary password. No top bar of its own (global TopBar
+// shows the wordmark, no Back).
 //
-// Honest data: the mockup's heading "ส่งลิงก์รีเซ็ตรหัสผ่านสำเร็จ / link sent to somchai@const-os.com"
-// describes an EMAIL delivery that this deployment cannot perform (no SMTP). What actually happened is a
-// temporary-password reset, so the copy says exactly that. The password is the real value the backend
-// returned — shown MASKED by default (reveal to read for hand-off) so a plaintext credential is never
-// left on screen or committed in a screenshot; it is never persisted and cannot be shown again. The
-// mockup's SYSTEM SECURITY LOG with fabricated UIDs (OS-001 / OS-99210) is replaced with the truthful
-// audit fact (recorded via identity.user.password_reset.v1).
+// Honest data (informed by NIST 800-63B Rev.4 / OWASP Forgot-Password / Okta — see the reset-password
+// memory):
+//  • The mockup's "This password will expire in 60 minutes" is NOT achievable with Keycloak temporary=true
+//    (it has no timed expiry — it stays valid until the user signs in and changes it). PO chose the honest
+//    no-expiry copy, so the CORE_AI card states exactly that.
+//  • The password is the real value the backend returned — shown MASKED (Reveal to read for hand-off) so a
+//    live credential is never left on screen or committed into a screenshot; it is never persisted.
+//  • Delivery model = HYBRID (PO decision): the admin hand-off is the working path; the "send" buttons send
+//    a secure reset LINK (a token, per OWASP — never the plaintext password). Neither channel is wired yet
+//    (no realm SMTP; no SMS-token pipeline), so both are honest-DISABLED with a truthful note.
+//  • The mockup's fabricated TICKET ID / TERMINAL ID footer is dropped; the audit fact
+//    (identity.user.password_reset.v1) is kept.
 
 import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
@@ -34,18 +39,20 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <View style={styles.checkCircle}>
-            <MaterialIcons name="check-circle" size={48} color={darkColors.success} />
+            <MaterialIcons name="check-circle" size={44} color={darkColors.success} />
           </View>
           <Text style={styles.heading}>{t('resetSuccess.heading')}</Text>
-          <View style={styles.accentLine} />
-          <Text style={styles.body}>
-            {name !== '' ? t('resetSuccess.body', { name }) : t('resetSuccess.bodyGeneric')}
-          </Text>
+          {name !== '' && <Text style={styles.forUser}>{t('resetSuccess.forUser', { name })}</Text>}
         </View>
 
         {/* One-time temporary password — masked until revealed for hand-off. */}
         <View style={styles.pwCard}>
-          <Text style={styles.pwLabel}>{t('resetSuccess.tempLabel')}</Text>
+          <View style={styles.pwHead}>
+            <Text style={styles.pwLabel}>{t('resetSuccess.tempLabel')}</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{t('resetSuccess.badge')}</Text>
+            </View>
+          </View>
           <View style={styles.pwRow}>
             <Text style={styles.pwValue} numberOfLines={1} selectable={revealed}>
               {revealed && tempPassword !== '' ? tempPassword : '••••••••••'}
@@ -69,10 +76,19 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
           <Text style={styles.pwNote}>{t('resetSuccess.tempNote')}</Text>
         </View>
 
-        {/* System security log — honest audit fact (no fabricated confidence / UIDs). */}
+        {/* CORE_AI insight — honest shell (no fabricated 60-minute expiry). */}
+        <View style={styles.aiCard}>
+          <View style={styles.aiHead}>
+            <MaterialIcons name="auto-awesome" size={18} color={darkColors.cyan} />
+            <Text style={styles.aiTitle}>{t('resetSuccess.aiTitle')}</Text>
+          </View>
+          <Text style={styles.aiBody}>{t('resetSuccess.aiBody')}</Text>
+        </View>
+
+        {/* System security log — honest audit fact. */}
         <View style={styles.logCard}>
           <View style={styles.logHead}>
-            <MaterialIcons name="terminal" size={18} color={darkColors.cyan} />
+            <MaterialIcons name="terminal" size={16} color={darkColors.cyan} />
             <Text style={styles.logTitle}>{t('resetSuccess.logTitle')}</Text>
           </View>
           <Text style={styles.logBody}>{t('resetSuccess.logBody')}</Text>
@@ -83,11 +99,10 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
         <Pressable
           style={styles.primaryBtn}
           onPress={() => router.replace('/users')}
-          testID="reset-success-users"
+          testID="reset-success-done"
           accessibilityRole="button"
         >
-          <Text style={styles.primaryText}>{t('resetSuccess.returnToUsers')}</Text>
-          <MaterialIcons name="arrow-forward" size={20} color={darkColors.onPrimary} />
+          <Text style={styles.primaryText}>{t('resetSuccess.done')}</Text>
         </Pressable>
       </View>
     </View>
@@ -97,56 +112,60 @@ export default function ResetPasswordSuccessScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
   scroll: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm },
 
-  hero: { alignItems: 'center', marginTop: spacing.sm, marginBottom: spacing.sm },
+  hero: { alignItems: 'center', marginTop: spacing.xs, marginBottom: spacing.xs, gap: spacing.xs },
   checkCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: `${darkColors.success}1A`,
     borderWidth: 1,
     borderColor: `${darkColors.success}4D`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.md,
   },
   heading: {
     fontFamily: fontFamily.bold,
     fontSize: typography.hero.fontSize,
     color: darkColors.text,
     textAlign: 'center',
-    marginBottom: spacing.sm,
   },
-  accentLine: {
-    width: 48,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: `${darkColors.success}80`,
-    marginBottom: spacing.md,
-  },
-  body: {
+  forUser: {
     fontFamily: fontFamily.regular,
     fontSize: typography.body.fontSize,
-    lineHeight: typography.body.fontSize * 1.5,
     color: darkColors.muted,
     textAlign: 'center',
   },
 
   pwCard: {
     backgroundColor: darkColors.surface,
-    borderWidth: 1,
-    borderColor: darkColors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: darkColors.success,
     borderRadius: 12,
     padding: spacing.md,
     gap: spacing.sm,
   },
+  pwHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pwLabel: {
     fontFamily: fontFamily.bold,
     fontSize: typography.label.fontSize,
     letterSpacing: 1,
     textTransform: 'uppercase',
     color: darkColors.muted,
+  },
+  badge: {
+    backgroundColor: `${darkColors.success}1A`,
+    borderRadius: 6,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  badgeText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: darkColors.success,
   },
   pwRow: {
     flexDirection: 'row',
@@ -162,7 +181,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     fontFamily: 'monospace',
-    fontSize: 20,
+    fontSize: 22,
     letterSpacing: 2,
     color: darkColors.text,
   },
@@ -174,6 +193,28 @@ const styles = StyleSheet.create({
   },
   pwNote: { fontFamily: fontFamily.regular, fontSize: 12, lineHeight: 18, color: darkColors.muted },
 
+  aiCard: {
+    backgroundColor: `${darkColors.cyan}0D`,
+    borderLeftWidth: 4,
+    borderLeftColor: darkColors.cyan,
+    borderRadius: 8,
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  aiTitle: {
+    fontFamily: fontFamily.bold,
+    fontSize: typography.label.fontSize,
+    letterSpacing: 1,
+    color: darkColors.cyan,
+  },
+  aiBody: {
+    fontFamily: fontFamily.regular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: darkColors.muted,
+  },
+
   logCard: {
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
@@ -181,6 +222,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: spacing.md,
     gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   logHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   logTitle: {

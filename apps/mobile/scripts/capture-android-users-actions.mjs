@@ -1,6 +1,7 @@
 // Users screen capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab and captures:
-//   docs/screens/android/TENANT_ADMIN/02-Users/01-dashboard.png          — the full-page list (mockup
-//     04_tenant_admin/02_users/01_users_dashboard), stitched from scrolling viewports via stitch-fullpage.py
+//   docs/screens/android/TENANT_ADMIN/02-Users/01-users-dashboard.png    — the users list (mockup
+//     04_tenant_admin/02_users/01_users_dashboard) as a SINGLE top viewport: header + AI audit + the
+//     first ~2 user cards (not the whole scrolled list).
 //   docs/screens/android/TENANT_ADMIN/02-Users/02-users-more.png  — the per-user ⋮ action sheet
 //     (mockup 02_user_management/01_management); a bottom sheet that fits one viewport → a single grab.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
@@ -12,8 +13,6 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/02-Users');
-const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
-const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
@@ -82,34 +81,6 @@ function grab(name) {
   writeFileSync(join(OUT, `${name}.png`), png);
   console.log(`  saved ${name}.png (${png.length} bytes)`);
 }
-function grabTmp(path) {
-  const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
-  if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
-  writeFileSync(path, png);
-}
-/** Rewind to the top, then shoot descending viewports and stitch one full-page PNG. bot=1970 sits above
- *  the floating Invite FAB + bottom nav, so those fixed elements are appended once. */
-async function stitchFull(name, top = 180, bot = 1970) {
-  mkdirSync(OUT, { recursive: true });
-  for (let i = 0; i < 5; i++) {
-    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
-    await delay(500);
-  }
-  await delay(700);
-  const shots = [];
-  for (let i = 0; i < 8; i++) {
-    const p = join(TMP, `us_${i}.png`);
-    grabTmp(p);
-    shots.push(p);
-    if (i < 7) {
-      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
-      await delay(1200);
-    }
-  }
-  const out = join(OUT, `${name}.png`);
-  process.stdout.write(execFileSync('python', [STITCH, out, String(top), String(bot), ...shots], { encoding: 'utf-8' }));
-  console.log(`  stitched ${name}.png`);
-}
 
 async function main() {
   for (const p of ['tcp:8081', 'tcp:3000', 'tcp:8090']) adb('reverse', p, p);
@@ -140,8 +111,15 @@ async function main() {
   await delay(3000);
   await dismissDevBanners();
 
-  console.log('· full-page users list');
-  await stitchFull('01-dashboard', 180, 1970);
+  // Users list — a SINGLE top viewport (header + AI audit + the first ~2 user cards), not the whole
+  // scrolled list (PO 2026-07-31: "แสดง list user แค่ 2 การ์ดก็พอ ไม่ต้อง scroll มาทั้งหมด").
+  console.log('· users list — single top viewport (~2 cards)');
+  for (let i = 0; i < 6; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1700', '300');
+    await delay(400);
+  }
+  await delay(700);
+  grab('01-users-dashboard');
 
   // Rewind to the top so the first card's ⋮ is on screen, then open its action sheet.
   for (let i = 0; i < 6; i++) {

@@ -100,3 +100,10 @@ export interface PasswordResetResult {
 export async function resetUserPassword(userId: string): Promise<PasswordResetResult> {
   return post<PasswordResetResult>(`/users/${userId}/reset-password`, {});
 }
+
+/** Email the user a standards-compliant password-reset link (POST /users/:id/reset-password/email,
+ *  TENANT_ADMIN only; §14.3). Keycloak sends a single-use, 15-minute UPDATE_PASSWORD action-token email —
+ *  the user sets their own password. Online-only; 400 if the user has no email on file. */
+export async function sendResetLinkEmail(userId: string): Promise<{ email: string }> {
+  return post<{ email: string }>(`/users/${userId}/reset-password/email`, {});
+}

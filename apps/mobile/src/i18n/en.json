@@ -73,7 +73,7 @@
       "copyright": "© {year} CONSTRUCTION OS.",
       "getSupport": "Get Support",
       "privacyData": "Privacy Data",
-      "statusOk": "System operational",
+      "statusOk": "System",
       "statusError": "Error",
       "footerStatus": "{status} : Version {version}",
       "securityNoteTrusted": "This device is verified as trusted",
@@ -971,10 +971,14 @@
     "confirm": "Confirm reset",
     "cancel": "Cancel",
     "errorTitle": "Reset failed",
-    "errorBody": "Could not reset the password. Please try again."
+    "errorBody": "Could not reset the password. Please try again.",
+    "crumbParent": "User management",
+    "crumbCurrent": "Password reset",
+    "recommended": "Recommended",
+    "emailLinkNote": "Single-use link — expires in 15 minutes"
   },
   "resetSuccess": {
-    "heading": "Temporary password created",
+    "heading": "Temp password created",
     "body": "{name}'s account now has a temporary password. Share it securely — they'll be asked to set a new one at next sign-in.",
     "bodyGeneric": "The account now has a temporary password. Share it securely — the user sets a new one at next sign-in.",
     "tempLabel": "Temporary password",
@@ -983,6 +987,27 @@
     "tempNote": "Shown once — it isn't stored and can't be displayed again.",
     "logTitle": "SYSTEM SECURITY LOG",
     "logBody": "Password reset recorded — event identity.user.password_reset.v1.",
+    "returnToUsers": "Return to user list",
+    "forUser": "For {name}",
+    "badge": "Shown once",
+    "aiTitle": "CORE_AI INSIGHT",
+    "aiBody": "Hand this password to the user through a secure channel. It stays valid until they sign in and set a new one.",
+    "deliveryTitle": "Or send a reset link instead",
+    "sendEmail": "Send reset link — Email",
+    "sendEmailNote": "Email server not configured in this deployment",
+    "sendSms": "Send reset link — SMS",
+    "sendSmsNote": "SMS delivery not available yet",
+    "done": "Done"
+  },
+  "resetLinkSent": {
+    "title": "Reset link sent",
+    "heading": "Reset link sent",
+    "body": "A password-reset link was sent to {email}. The link is single-use and expires in 15 minutes.",
+    "logTitle": "SYSTEM SECURITY LOG",
+    "logBody": "Password reset link sent — event identity.user.password_reset.v1 (method: email_link).",
     "returnToUsers": "Return to user list"
+  },
+  "breadcrumb": {
+    "userManagement": "User management"
   }
 }

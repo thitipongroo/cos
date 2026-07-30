@@ -434,6 +434,19 @@ services:
     networks:
       - cos-network
 
+  # ─── MailHog — dev SMTP catcher (admin password-reset emails, §14) ─────────
+  # Keycloak sends UPDATE_PASSWORD action-token emails here (realm smtpServer host=mailhog:1025). Nothing
+  # leaves the host — read the messages at the web UI on :8025. Dev only; production uses a real SMTP relay.
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: cos-mailhog
+    profiles: ['full']
+    ports:
+      - '${MAILHOG_SMTP_PORT:-1025}:1025'
+      - '${MAILHOG_UI_PORT:-8025}:8025'
+    networks:
+      - cos-network
+
   # ─── Kafka UI (dev convenience) ───────────────────────────────────────────
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2

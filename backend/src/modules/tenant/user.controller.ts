@@ -122,6 +122,22 @@ export class UserController {
     return this.userService.resetPassword(userId, req.tenantId!, req.userId ?? 'system');
   }
 
+  @Post(':userId/reset-password/email')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Email the user a password-reset link — standards-compliant reset (TENANT_ADMIN only)',
+    description:
+      'Sends a single-use, 15-minute Keycloak UPDATE_PASSWORD action-token email (NIST 800-63B Rev.4). ' +
+      'The user sets their own password; COS never handles the plaintext. Requires an email on file. ' +
+      'Emits identity.user.password_reset.v1 (method=email_link).',
+  })
+  @ApiResponse({ status: 200, description: 'Reset link emailed' })
+  @ApiResponse({ status: 400, description: 'User has no email on file' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async sendResetEmail(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: TenantRequest) {
+    return this.userService.sendPasswordResetLink(userId, req.tenantId!, req.userId ?? 'system');
+  }
+
   @Patch(':userId/deactivate')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

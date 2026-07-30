@@ -33,7 +33,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE_ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its done screen (`07`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/01-Home/`,
@@ -182,7 +182,7 @@ an unrendered dashboard fails the run instead of writing the wrong screenshot; i
 Quick-Add menu (`TENANT_ADMIN/01-Home/02-quick-action.png`) and the Users tab
 (`TENANT_ADMIN/02-Users/01-users-dashboard.png`).
 
-## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT_ADMIN/02-Users/04-edit-permission.png) · [`success`](TENANT_ADMIN/02-Users/05-success-permission.png) · [`reset`](TENANT_ADMIN/02-Users/06-reset-password.png) · [`reset-done`](TENANT_ADMIN/02-Users/07-reset-password-success.png)
+## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT_ADMIN/02-Users/04-edit-permission.png) · [`success`](TENANT_ADMIN/02-Users/05-success-permission.png) · [`reset`](TENANT_ADMIN/02-Users/06-reset-password.png) · [`temp-done`](TENANT_ADMIN/02-Users/07-temp-password-create.png) · [`link-sent`](TENANT_ADMIN/02-Users/08-reset-link-sent.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
 implementing the
@@ -283,46 +283,67 @@ name. No top bar of its own — the global TopBar shows the CONSTRUCTION OS word
 The admin-triggered password-reset form
 ([`app/(app)/reset-password.tsx`](../../../apps/mobile/src/app/(app)/reset-password.tsx), mockup
 [`02_users/02_user_management/05_reset_password`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/05_reset_password)).
-Opened from a user's profile **Reset password** button or the Users-list ⋮ sheet, carrying the target's
-row. Backed by `POST /users/:id/reset-password` (TENANT_ADMIN) → `KeycloakAdminService.setTemporaryPassword`
-(sets a temporary password, `temporary=true`) → emits `identity.user.password_reset.v1`.
+Opened from a user's profile **Reset password** button or the Users-list ⋮ sheet, carrying the target's row.
+The **breadcrumb** (`USER MANAGEMENT › PASSWORD RESET`) sits under the TopBar (mockup).
 
-- **Real target** — the card shows the actual user (`Somchai`, `PROJECT MANAGER`) from the passed row.
+**Delivery model** (PO decision informed by research — NIST 800-63B Rev.4, OWASP Forgot-Password Cheat
+Sheet, Okta): the **email reset link is the standards-compliant primary method**; the temporary password is
+the fallback for phone-only accounts.
+
+- **Real target** — the card shows the actual user from the passed row (`Chalermsak Nithat`, `CRM SALES
+  MANAGER` in the capture).
 - **AI Security Check → honest shell** — the mockup's _"99 % Confidence · No suspicious activity detected"_
   is **fabricated**; the card is kept but states the truth (the reset is recorded in the audit log; no risk
   score is inferred).
-- **Delivery method** — **Send reset link (email)** needs a configured Keycloak SMTP server, which this
-  deployment does not have (realm `smtpServer` is empty), so it is shown **disabled** with a truthful note
-  (_"Email server not configured"_) and is never selectable. **Generate temporary password** is the real,
-  working method (selected). The mockup's _"expires in 1hr"_ is dropped — `temporary=true` forces a change
-  at next sign-in, it is not a timed expiry.
+- **Send reset link (email)** — the **recommended, preselected** method when the user has an email. Backed by
+  `POST /users/:id/reset-password/email` → `KeycloakAdminService.sendPasswordResetEmail` →
+  `executeActionsEmail(['UPDATE_PASSWORD'], lifespan=900)`: Keycloak emails a **single-use link that expires
+  in 15 minutes** (NIST 800-63B Rev.4 — single-use, short-lived, separate channel), and the user sets their
+  OWN password — COS never handles the plaintext. Requires realm SMTP (a `mailhog` dev service; §docker-compose).
+  If the user has **no email**, this row is disabled (_"No email on file"_) and the temp method is selected.
+- **Generate temporary password** — the fallback: `POST /users/:id/reset-password` →
+  `setTemporaryPassword` (`temporary=true`). The mockup's _"expires in 1hr"_ is dropped — `temporary=true`
+  forces a change at next sign-in, it is not a timed expiry.
 - **Footer** — the mockup's **"REQUEST ORIGIN: TERMINAL 04-HQ" is fabricated** (no terminal concept) and
   dropped; **AUTH LEVEL: TENANT ADMIN** is real (only a TENANT_ADMIN can reach the endpoint) and kept.
-- **Confirm reset** → the endpoint, then `router.replace` to the success screen with the returned
-  one-time password. **Cancel** → `router.back()`.
+- **Confirm reset** branches on the selected method → the email path `router.replace`s to `08`
+  (reset-link-sent), the temp path to `07`. **Cancel** → `router.back()`. Both emit
+  `identity.user.password_reset.v1` (with `method` = `email_link` / `temporary_password`).
 
-## Tenant Admin — Password reset done — [`07`](TENANT_ADMIN/02-Users/07-reset-password-success.png)
+## Tenant Admin — Password reset done (temp) — [`07`](TENANT_ADMIN/02-Users/07-temp-password-create.png)
 
-The terminal confirmation shown after **Confirm reset** succeeds
+The terminal confirmation shown after **Confirm reset** succeeds with the **temporary-password** fallback
 ([`app/(app)/reset-password-success.tsx`](../../../apps/mobile/src/app/(app)/reset-password-success.tsx),
-mockup [`02_users/02_user_management/06_reset_password_success`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/06_reset_password_success)).
+mockup [`02_users/02_user_management/07_temp_password_success`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/07_temp_password_success)).
 Reached via `router.replace` — no top bar of its own (global TopBar shows the wordmark, **no Back**).
 
-- **Honest heading** — the mockup describes an **email** delivery
-  (_"reset link sent to `somchai@const-os.com`"_) that this deployment cannot perform; what actually
-  happened is a **temporary-password** reset, so the copy says exactly that
-  (_"Temporary password created · … set a new one at next sign-in"_).
-- **Password shown masked** — the real one-time password the backend returned is displayed **masked**
-  (`••••••••••`) with a **Reveal** toggle, so a live credential is never left on screen or committed into a
-  screenshot; it is never persisted and cannot be shown again. (No clipboard dependency on mobile, so there
-  is no copy button — the admin reveals it to read for hand-off.)
-- **System security log → honest** — the mockup's fabricated UIDs (`OS-001` / `OS-99210`) are replaced with
-  the truthful audit fact (recorded via `identity.user.password_reset.v1`).
+- **Real temp password, shown masked** — the value the backend returned is displayed **masked**
+  (`••••••••••`) with a **Reveal** toggle + a **SHOWN ONCE** badge, so a live credential is never left on
+  screen or committed into a screenshot; it is never persisted and cannot be shown again.
+- **CORE_AI insight → honest** — the mockup's _"This password will expire in 60 minutes"_ is **not
+  achievable** with Keycloak `temporary=true` (no timed expiry — it stays valid until the user signs in and
+  changes it), so the card states exactly that (PO chose the honest no-expiry copy over faking a timer).
+- **System security log → honest** — the mockup's fabricated `TICKET ID` / `TERMINAL ID` footer is dropped;
+  the truthful audit fact (event `identity.user.password_reset.v1`, which now publishes cleanly) is kept.
+- **Done** → `router.replace('/users')`.
+- **Note (Path A users)** — the temp password is chiefly meaningful for Path B (email/password) sign-in;
+  for phone/OTP users the login credential is re-set on each OTP exchange. `temporary=true` also adds an
+  `UPDATE_PASSWORD` required action in Keycloak, which for an OTP user must be cleared before their next OTP
+  login. This becomes universally meaningful once the planned **unified login** (any user signs in via OTP
+  _or_ email+password) lands.
+
+## Tenant Admin — Reset link sent (email) — [`08`](TENANT_ADMIN/02-Users/08-reset-link-sent.png)
+
+The terminal confirmation for the **standards-compliant email path**
+([`app/(app)/reset-password-email-success.tsx`](../../../apps/mobile/src/app/(app)/reset-password-email-success.tsx),
+mockup [`02_users/02_user_management/06_reset_password_success`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/06_reset_password_success)).
+Reached via `router.replace` — terminal, wordmark TopBar, no Back.
+
+- **Real send** — Keycloak actually emailed the target (verified via the MailHog dev inbox); the body names
+  the real address (`chalermsak.n@ekachai.co.th`) and the real token lifespan. The mockup's _"link valid 24
+  hours"_ is replaced with the true **15 minutes**, and the fabricated `SYSTEM SECURITY LOG` UIDs with the
+  truthful audit fact (`identity.user.password_reset.v1`, `method: email_link`).
 - **Return to user list** → `router.replace('/users')`.
-- **Note (Path A users)** — a temporary password is chiefly meaningful for Path B (email/password) sign-in;
-  for Path A (phone/OTP) users the login credential is re-set on each OTP exchange. Setting `temporary=true`
-  also adds an `UPDATE_PASSWORD` required action in Keycloak, which for an OTP user must be cleared before
-  their next OTP (Direct Grant) login.
 
 ## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/02-quick-action.png`](TENANT_ADMIN/01-Home/02-quick-action.png)
 

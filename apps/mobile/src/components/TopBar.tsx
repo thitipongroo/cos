@@ -21,26 +21,26 @@ import { CosRole } from '@cos/types';
 import { useT } from '../i18n';
 import { colors, darkColors, fontFamily, spacing, touchTarget, typography } from '../theme/tokens';
 
-// Pushed child screens (not a bottom-nav tab of the current role) show their own title + a Back arrow
-// in the bar instead of the CONSTRUCTION OS wordmark (PO decision 2026-07-29). The wordmark is reserved
-// for a role's top-level destinations — its bottom-nav tabs (see ALL_TABS). Every other in-app route is
-// a child: it carries the screen name here (its in-content heading was removed) and a Back affordance.
-// Titles come from each screen's existing i18n key.
-const CHILD_TITLE_KEY: Record<string, string> = {
-  '/invite-user': 'inviteUser.title',
-  '/role-permissions': 'rolePermissions.title',
-  '/roles-selection': 'rolesSelection.title',
-  '/system-integration': 'systemIntegration.title',
-  '/apps-services': 'appsServices.title',
-  '/user-profile': 'userProfile.title',
-  '/edit-permission': 'editPermission.title',
-  '/reset-password': 'resetPassword.title',
-  '/notifications': 'notifications.title',
-  '/notification-preferences': 'notifications.preferences.title',
-  '/mfa-enrollment': 'mfa.enroll.title',
-  '/material-request': 'materialRequest.title',
-  '/conflict-review': 'sync.conflictReview.title',
-  '/profile': 'profile.main.title',
+// The bar shows the CONSTRUCTION OS wordmark on EVERY screen (PO decision 2026-07-31, reverting the
+// 2026-07-29 "child screens show their title in the bar" rule). Pushed child screens additionally get a
+// Back arrow here and a clickable breadcrumb below the bar (components/Breadcrumb) that carries the screen
+// context + navigation. A route is a "child" when it is registered below — the same set that gets a Back
+// affordance and a breadcrumb; main bottom-nav tabs (see ALL_TABS) get neither.
+const CHILD_ROUTES: Record<string, true> = {
+  '/invite-user': true,
+  '/role-permissions': true,
+  '/roles-selection': true,
+  '/system-integration': true,
+  '/apps-services': true,
+  '/user-profile': true,
+  '/edit-permission': true,
+  '/reset-password': true,
+  '/notifications': true,
+  '/notification-preferences': true,
+  '/mfa-enrollment': true,
+  '/material-request': true,
+  '/conflict-review': true,
+  '/profile': true,
 };
 
 export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
@@ -60,9 +60,8 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   const isMainTab =
     routeName === '' ||
     ALL_TABS.some((tab) => tab.name === routeName && role != null && tab.roles.includes(role));
-  const childTitleKey = isMainTab ? undefined : CHILD_TITLE_KEY[pathname];
-  const showBack = childTitleKey != null;
-  const screenTitle = childTitleKey != null ? t(childTitleKey) : null;
+  // Child routes get a Back arrow (+ a breadcrumb below the bar); the wordmark is shown either way.
+  const showBack = !isMainTab && CHILD_ROUTES[pathname] === true;
 
   useEffect(() => {
     listNotifications()
@@ -84,25 +83,17 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
     >
       <View style={styles.brand}>
         {showBack ? (
-          // Pushed detail routes keep a Back affordance; the brand icon rides alongside it.
-          <>
-            <TouchableOpacity
-              testID="topbar-back"
-              accessibilityRole="button"
-              accessibilityLabel={t('common.back')}
-              style={styles.menuButton}
-              onPress={() => router.back()}
-            >
-              <MaterialIcons name="arrow-back" size={24} color={fg} />
-            </TouchableOpacity>
-            <Image
-              testID="brand-logo"
-              source={appIcon}
-              style={styles.brandIcon}
-              resizeMode="contain"
-              accessibilityLabel={t('common.appName')}
-            />
-          </>
+          // Pushed detail routes: a Back arrow is the left anchor (the brand icon is dropped here so the
+          // wordmark + the right-hand actions never crowd on the narrower child bar).
+          <TouchableOpacity
+            testID="topbar-back"
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+            style={styles.menuButton}
+            onPress={() => router.back()}
+          >
+            <MaterialIcons name="arrow-back" size={24} color={fg} />
+          </TouchableOpacity>
         ) : (
           // No hamburger — the brand icon itself is the drawer trigger (§32.7 Standard Top Bar:
           // Left = "App icon + CONSTRUCTION OS wordmark"; the icon carries the menu affordance).
@@ -121,17 +112,11 @@ export function TopBar({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
             />
           </TouchableOpacity>
         )}
-        {showBack ? (
-          // Child screen: its own name (the in-content heading was removed). Truncates with "…" so a
-          // long title never crowds the sync pill / actions on the right (PO decision 2026-07-29 §3).
-          <Text style={[styles.screenTitle, { color: fg }]} numberOfLines={1} ellipsizeMode="tail">
-            {screenTitle}
-          </Text>
-        ) : (
-          <Text style={[styles.appName, { color: colors.primary }]} numberOfLines={1}>
-            {t('common.appName')}
-          </Text>
-        )}
+        {/* The CONSTRUCTION OS wordmark on every screen (PO 2026-07-31); child context lives in the
+            breadcrumb below the bar. */}
+        <Text style={[styles.appName, { color: colors.primary }]} numberOfLines={1}>
+          {t('common.appName')}
+        </Text>
       </View>
       <View style={styles.actions}>
         {/* Sync-status pill (mockup 01_home_dashboard) — Tenant Admin only: its dark shell drops the
@@ -183,13 +168,6 @@ const styles = StyleSheet.create({
   // flex:1 + minWidth:0 lets a long screen title shrink and ellipsize instead of pushing the right-hand
   // actions (sync pill / help / bell / avatar) off-screen.
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1, minWidth: 0 },
-  screenTitle: {
-    flexShrink: 1,
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.bold,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
   menuButton: {
     minWidth: touchTarget.iconButton,
     minHeight: touchTarget.iconButton,
@@ -201,6 +179,7 @@ const styles = StyleSheet.create({
   // aesthetic — PO decision 2026-07-29). overflow:hidden so the dark icon art clips to the rounded corners.
   brandIcon: { width: 28, height: 28, borderRadius: 7, overflow: 'hidden' },
   appName: {
+    flexShrink: 1,
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.bold,
     letterSpacing: 0.5,

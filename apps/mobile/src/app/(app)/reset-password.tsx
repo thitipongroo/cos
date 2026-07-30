@@ -15,7 +15,7 @@
 //  • The mockup footer "REQUEST ORIGIN: TERMINAL 04-HQ" is fabricated (no terminal concept) and dropped;
 //    "AUTH LEVEL: TENANT ADMIN" is real (only a TENANT_ADMIN can reach this endpoint) and kept.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -28,7 +28,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { resetUserPassword } from '../../api/users';
+import { resetUserPassword, sendResetLinkEmail } from '../../api/users';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -64,21 +64,41 @@ export default function ResetPasswordScreen(): React.JSX.Element {
   const photo = str(params.photo_url);
   const active = str(params.is_active) !== '' ? str(params.is_active) === 'true' : true;
 
+  // Email reset link (Keycloak action token) is the standards-compliant primary method (NIST 800-63B
+  // Rev.4) and is preselected when the user has an email; the temporary password is the fallback for
+  // phone-only (Path A) users with no email on file.
+  const hasEmail = email !== '';
+  const [method, setMethod] = useState<'email' | 'temp'>(hasEmail ? 'email' : 'temp');
   const [busy, setBusy] = useState(false);
+  // This route is kept mounted by the Tabs navigator, so it is reused when the admin opens Reset-password
+  // for a different user. Re-seed the selected method (and clear any stale busy state) whenever the target
+  // changes, so a no-email user never inherits the previous target's "email" selection.
+  useEffect(() => {
+    setMethod(hasEmail ? 'email' : 'temp');
+    setBusy(false);
+  }, [userId, hasEmail]);
 
   const onConfirm = async (): Promise<void> => {
     if (userId === '' || busy) return;
     setBusy(true);
     try {
-      const res = await resetUserPassword(userId);
-      router.replace({
-        pathname: '/reset-password-success',
-        params: {
-          user_id: userId,
-          display_name: res.display_name || name,
-          temp_password: res.temporary_password,
-        },
-      });
+      if (method === 'email') {
+        const res = await sendResetLinkEmail(userId);
+        router.replace({
+          pathname: '/reset-password-email-success',
+          params: { display_name: name, email: res.email },
+        });
+      } else {
+        const res = await resetUserPassword(userId);
+        router.replace({
+          pathname: '/reset-password-success',
+          params: {
+            user_id: userId,
+            display_name: res.display_name || name,
+            temp_password: res.temporary_password,
+          },
+        });
+      }
     } catch {
       setBusy(false);
       Alert.alert(t('resetPassword.errorTitle'), t('resetPassword.errorBody'));
@@ -132,43 +152,95 @@ export default function ResetPasswordScreen(): React.JSX.Element {
         {/* Delivery method */}
         <Text style={styles.sectionLabel}>{t('resetPassword.deliveryMethod')}</Text>
 
-        {/* Email reset link — DISABLED: no SMTP configured in this deployment. */}
-        <View style={[styles.methodCard, styles.methodDisabled]} testID="method-email">
-          <View style={styles.methodIcon}>
-            <MaterialIcons name="mail-outline" size={22} color={darkColors.muted} />
+        {/* Email reset link — the standards-compliant primary method; selectable when the user has an
+            email, else disabled (no email on file — a phone-only Path A account). */}
+        {hasEmail ? (
+          <Pressable
+            style={[styles.methodCard, method === 'email' && styles.methodSelected]}
+            onPress={() => setMethod('email')}
+            testID="method-email"
+            accessibilityRole="radio"
+            accessibilityState={{ selected: method === 'email' }}
+          >
+            <View style={[styles.methodIcon, method === 'email' && styles.methodIconActive]}>
+              <MaterialIcons
+                name="mail-outline"
+                size={22}
+                color={method === 'email' ? darkColors.cyan : darkColors.muted}
+              />
+            </View>
+            <View style={styles.methodBody}>
+              <View style={styles.methodTitleRow}>
+                <Text style={styles.methodTitle}>{t('resetPassword.emailTitle')}</Text>
+                <View style={styles.recommendBadge}>
+                  <Text style={styles.recommendText}>{t('resetPassword.recommended')}</Text>
+                </View>
+              </View>
+              <Text style={styles.methodSub} numberOfLines={1}>
+                {email}
+              </Text>
+              <Text style={styles.methodSub}>{t('resetPassword.emailLinkNote')}</Text>
+            </View>
+            {method === 'email' ? (
+              <View style={styles.radioOn}>
+                <View style={styles.radioDot} />
+              </View>
+            ) : (
+              <View style={styles.radioOff} />
+            )}
+          </Pressable>
+        ) : (
+          <View style={[styles.methodCard, styles.methodDisabled]} testID="method-email">
+            <View style={styles.methodIcon}>
+              <MaterialIcons name="mail-outline" size={22} color={darkColors.muted} />
+            </View>
+            <View style={styles.methodBody}>
+              <Text style={[styles.methodTitle, { color: darkColors.muted }]}>
+                {t('resetPassword.emailTitle')}
+              </Text>
+              <Text style={styles.methodUnavailable}>{t('resetPassword.emailNone')}</Text>
+            </View>
+            <MaterialIcons name="block" size={22} color={darkColors.muted} />
           </View>
-          <View style={styles.methodBody}>
-            <Text style={[styles.methodTitle, { color: darkColors.muted }]}>
-              {t('resetPassword.emailTitle')}
-            </Text>
-            <Text style={styles.methodSub} numberOfLines={1}>
-              {email !== '' ? email : t('resetPassword.emailNone')}
-            </Text>
-            <Text style={styles.methodUnavailable}>{t('resetPassword.emailUnavailable')}</Text>
-          </View>
-          <MaterialIcons name="block" size={22} color={darkColors.muted} />
-        </View>
+        )}
 
-        {/* Temporary password — the real, working method (always selected). */}
-        <View style={[styles.methodCard, styles.methodSelected]} testID="method-temp">
-          <View style={[styles.methodIcon, styles.methodIconActive]}>
-            <MaterialIcons name="vpn-key" size={22} color={darkColors.cyan} />
+        {/* Temporary password — the fallback for phone-only accounts / immediate offline hand-off. */}
+        <Pressable
+          style={[styles.methodCard, method === 'temp' && styles.methodSelected]}
+          onPress={() => setMethod('temp')}
+          testID="method-temp"
+          accessibilityRole="radio"
+          accessibilityState={{ selected: method === 'temp' }}
+        >
+          <View style={[styles.methodIcon, method === 'temp' && styles.methodIconActive]}>
+            <MaterialIcons
+              name="vpn-key"
+              size={22}
+              color={method === 'temp' ? darkColors.cyan : darkColors.muted}
+            />
           </View>
           <View style={styles.methodBody}>
             <Text style={styles.methodTitle}>{t('resetPassword.tempTitle')}</Text>
             <Text style={styles.methodSub}>{t('resetPassword.tempSub')}</Text>
           </View>
-          <View style={styles.radioOn}>
-            <View style={styles.radioDot} />
-          </View>
-        </View>
-      </ScrollView>
+          {method === 'temp' ? (
+            <View style={styles.radioOn}>
+              <View style={styles.radioDot} />
+            </View>
+          ) : (
+            <View style={styles.radioOff} />
+          )}
+        </Pressable>
 
-      <View style={styles.footer}>
+        {/* Auth-level meta sits at the end of the scroll content (a buffer above the fixed footer, so the
+            Confirm button is never crowded against the last method card). */}
         <View style={styles.meta}>
           <Text style={styles.metaLabel}>{t('resetPassword.authLevel')}</Text>
           <Text style={styles.metaValue}>{t('resetPassword.authTenantAdmin')}</Text>
         </View>
+      </ScrollView>
+
+      <View style={styles.footer}>
         <Pressable
           style={[styles.primaryBtn, busy && styles.btnBusy]}
           onPress={onConfirm}
@@ -202,7 +274,7 @@ export default function ResetPasswordScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
   scroll: { flex: 1 },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.sm },
 
   userCard: {
     flexDirection: 'row',
@@ -212,7 +284,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: darkColors.primary,
     borderRadius: 12,
-    padding: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   avatarWrap: { width: 64, height: 64 },
   avatar: { width: 64, height: 64, borderRadius: 10, borderWidth: 2, borderColor: darkColors.cyan },
@@ -268,7 +341,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
     borderRadius: 8,
-    padding: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     gap: spacing.xs,
   },
   aiHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
@@ -291,7 +365,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     color: darkColors.muted,
-    marginTop: spacing.xs,
+    marginTop: 2,
   },
 
   methodCard: {
@@ -302,7 +376,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: darkColors.border,
     borderRadius: 12,
-    padding: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   methodDisabled: { opacity: 0.55 },
   methodSelected: { borderColor: darkColors.primary },
@@ -316,10 +391,24 @@ const styles = StyleSheet.create({
   },
   methodIconActive: { backgroundColor: `${darkColors.cyan}1A` },
   methodBody: { flex: 1, minWidth: 0, gap: 2 },
+  methodTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   methodTitle: {
     fontFamily: fontFamily.bold,
     fontSize: typography.body.fontSize,
     color: darkColors.text,
+  },
+  recommendBadge: {
+    backgroundColor: `${darkColors.cyan}1A`,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  recommendText: {
+    fontFamily: fontFamily.bold,
+    fontSize: 9,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: darkColors.cyan,
   },
   methodSub: { fontFamily: fontFamily.regular, fontSize: 12, color: darkColors.muted },
   methodUnavailable: {
@@ -338,6 +427,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: darkColors.primary },
+  radioOff: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: darkColors.border,
+  },
 
   footer: {
     padding: spacing.lg,
@@ -350,7 +446,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: darkColors.border,
   },
   metaLabel: {
     fontFamily: fontFamily.medium,

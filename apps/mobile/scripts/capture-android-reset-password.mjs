@@ -1,14 +1,12 @@
-// Reset-password capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab →
-// Somchai's profile → "Reset password", captures the reset form, then taps CONFIRM RESET and captures
-// the success screen. Two full-page images (mockup 04_tenant_admin/02_users/02_user_management/
-// 05_reset_password + 06_reset_password_success):
-//   docs/screens/android/TENANT_ADMIN/02-Users/06-reset-password.png
-//   docs/screens/android/TENANT_ADMIN/02-Users/07-reset-password-success.png
-// The success screen is captured with the temporary password MASKED (its default state) so no live
-// credential is written into the committed screenshot — the Reveal control is visible but not tapped.
-// Somchai is a Path A (phone/OTP) user, so the temp password is overwritten at their next OTP login;
-// the reset is effectively self-healing for the demo tenant.
-// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
+// Reset-password capture — adb/uiautomator only. Logs in as TENANT_ADMIN and captures BOTH reset paths
+// (mockup 04_tenant_admin/02_users/02_user_management/05_reset_password + 06/07 success screens):
+//   06-reset-password.png       — the form for a user WITH an email (email reset-link recommended)
+//   08-reset-link-sent.png      — email path: standards-compliant Keycloak action-token link sent
+//   07-temp-password-create.png — temp-password fallback for a phone-only (no-email) user, MASKED
+// The temp success is captured with the password MASKED (default state) so no live credential is written
+// into the committed screenshot. Both paths add a Keycloak UPDATE_PASSWORD required action to the target;
+// the caller clears it afterwards (phone-only users also self-heal at their next OTP login).
+// Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend E2E_AUTH_BYPASS=true + MailHog + Python.
 
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -22,7 +20,8 @@ const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
-const TARGET = process.env['RESET_TARGET'] ?? 'Somchai';
+const EMAIL_TARGET = process.env['RESET_EMAIL_TARGET'] ?? 'Chalermsak Nithat';
+const TEMP_TARGET = process.env['RESET_TEMP_TARGET'] ?? 'Somchai';
 
 const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
 const ADB = SDK ? join(SDK, 'platform-tools', process.platform === 'win32' ? 'adb.exe' : 'adb') : 'adb';
@@ -159,12 +158,13 @@ async function main() {
   await dismissDevBanners();
   await delay(2000);
 
-  console.log(`· Users tab → ${TARGET} → profile → Reset password`);
+  // ── Email path (standards-compliant): an email user shows the reset-link method recommended ──
+  console.log(`· Users tab → ${EMAIL_TARGET} (has email) → profile → Reset password`);
   await tap(byId('users-tab'), 'Users tab');
   await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
   await delay(3000);
   await dismissDevBanners();
-  await tapUserByName(TARGET);
+  await tapUserByName(EMAIL_TARGET);
   await find(byId('user-profile'), 'user-profile', 20);
   await delay(1200);
   await tap(byId('profile-reset-password'), 'Reset password');
@@ -172,17 +172,36 @@ async function main() {
   await dismissDevBanners();
   await delay(1500);
 
-  console.log('· full-page reset password form');
+  console.log('· full-page reset password form (email method recommended)');
   await stitchFull('06-reset-password', 180, 1680);
 
-  console.log('· CONFIRM RESET → success (temp password stays masked)');
+  console.log('· CONFIRM RESET (email link) → reset-link-sent');
+  await tap(byId('reset-confirm'), 'Confirm reset');
+  await find(byId('reset-password-email-success'), 'reset-password-email-success', 25);
+  await dismissDevBanners();
+  await delay(1500);
+  await stitchFull('08-reset-link-sent', 180, 1780);
+
+  // ── Temp-password fallback: a phone-only user (no email) → temporary password ──
+  console.log(`· back to Users → ${TEMP_TARGET} (no email) → Reset password → temp`);
+  await tap(byId('reset-link-done'), 'Return to user list');
+  await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
+  await delay(2500);
+  await dismissDevBanners();
+  await tapUserByName(TEMP_TARGET);
+  await find(byId('user-profile'), 'user-profile', 20);
+  await delay(1200);
+  await tap(byId('profile-reset-password'), 'Reset password');
+  await find(byId('reset-password'), 'reset-password', 20);
+  await dismissDevBanners();
+  await delay(1200);
+
+  console.log('· CONFIRM RESET (temp password stays masked) → temp success');
   await tap(byId('reset-confirm'), 'Confirm reset');
   await find(byId('reset-password-success'), 'reset-password-success', 25);
   await dismissDevBanners();
   await delay(1500);
-
-  console.log('· full-page reset success');
-  await stitchFull('07-reset-password-success', 180, 1780);
+  await stitchFull('07-temp-password-create', 180, 1780);
 
   console.log('done.');
 }

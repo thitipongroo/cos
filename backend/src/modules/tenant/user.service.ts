@@ -445,9 +445,62 @@ export class UserService implements OnModuleDestroy {
       tenant_id: tenantId,
       user_id: userId,
       reset_by: actorId,
+      method: 'temporary_password',
     });
 
     return { temporary_password: tempPassword, display_name: user.display_name };
+  }
+
+  /**
+   * Standards-compliant admin-initiated reset (TENANT_ADMIN): email the target a single-use, 15-minute
+   * UPDATE_PASSWORD action-token link (NIST 800-63B Rev.4) so they set their OWN password — no plaintext is
+   * ever handled by COS. Requires the user to have an email on file (Path B / any user once unified-login
+   * gives everyone an email); Path A phone-only users fall back to the temporary-password reset above.
+   * Emits identity.user.password_reset.v1 (method = email_link).
+   */
+  async sendPasswordResetLink(
+    userId: string,
+    tenantId: string,
+    actorId: string,
+  ): Promise<{ email: string }> {
+    const [user] = await this.prisma.$queryRaw<
+      Array<{ keycloak_user_id: string; email: string | null }>
+    >`
+      SELECT keycloak_user_id, email FROM platform.users
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!user) {
+      throw new NotFoundException(`User ${userId} not found in tenant`);
+    }
+    if (!user.email || user.email === '') {
+      throw new BadRequestException(
+        'User has no email on file — use the temporary-password reset instead',
+      );
+    }
+    const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
+      SELECT keycloak_realm FROM platform.tenants
+      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+
+    // 15 minutes — NIST 800-63B Rev.4 wants a short (< 60 min), single-use reset token.
+    await this.keycloakAdmin.sendPasswordResetEmail(
+      user.keycloak_user_id,
+      tenant.keycloak_realm,
+      900,
+    );
+
+    logger.info({ userId, tenantId, actorId }, 'user.password_reset_link_sent');
+    await this.publishEvent('identity.user.password_reset.v1', {
+      tenant_id: tenantId,
+      user_id: userId,
+      reset_by: actorId,
+      method: 'email_link',
+    });
+
+    return { email: user.email };
   }
 
   async deactivateUser(userId: string, tenantId: string, actorId: string): Promise<void> {

@@ -80,6 +80,7 @@ export const EVENT_AVSC_MAP: Record<string, string> = {
   'identity.tenant.deactivated.v1': 'identity.tenant.deactivated.v1.avsc',
   'identity.user.created.v1': 'identity.user.created.v1.avsc',
   'identity.user.role_changed.v1': 'identity.user.role_changed.v1.avsc',
+  'identity.user.password_reset.v1': 'identity.user.password_reset.v1.avsc',
   // Platform
   'platform.enterprise.contract_signed.v1': 'platform.enterprise.contract_signed.v1.avsc',
   'platform.enterprise.db_provisioned.v1': 'platform.enterprise.db_provisioned.v1.avsc',

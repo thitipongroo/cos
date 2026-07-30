@@ -250,9 +250,11 @@ export function MobileNav() {
           reached via router.replace, it shows the CONSTRUCTION OS wordmark with no Back arrow. */}
       <Tabs.Screen name="permission-success" options={{ href: null }} />
       <Tabs.Screen name="reset-password" options={{ href: null }} />
-      {/* reset-password-success is intentionally absent from TopBar CHILD_TITLE_KEY — a terminal screen
-          (reached via router.replace), it shows the wordmark with no Back, like permission-success. */}
+      {/* reset-password-success + reset-password-email-success are intentionally absent from TopBar
+          CHILD_TITLE_KEY — terminal screens (reached via router.replace), they show the wordmark with no
+          Back, like permission-success. */}
       <Tabs.Screen name="reset-password-success" options={{ href: null }} />
+      <Tabs.Screen name="reset-password-email-success" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

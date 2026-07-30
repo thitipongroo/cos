@@ -174,6 +174,26 @@ export class KeycloakAdminService {
     logger.info({ keycloakUserId, realm }, 'keycloak.password.temp_reset');
   }
 
+  /**
+   * Send a Keycloak UPDATE_PASSWORD action-token email — the standards-compliant admin-initiated reset
+   * (NIST 800-63B Rev.4: single-use, short-lived, separate channel). The email carries a one-time link that
+   * expires after `lifespanSec`; the user sets their OWN password, so COS never handles a plaintext
+   * credential. Requires the target to have an email and the realm SMTP (smtpServer) to be configured.
+   */
+  async sendPasswordResetEmail(
+    keycloakUserId: string,
+    realm: string,
+    lifespanSec = 900,
+  ): Promise<void> {
+    const client = await this.getAuthenticatedClient(realm);
+    await client.users.executeActionsEmail({
+      id: keycloakUserId,
+      actions: ['UPDATE_PASSWORD'],
+      lifespan: lifespanSec,
+    });
+    logger.info({ keycloakUserId, realm, lifespanSec }, 'keycloak.password.reset_email_sent');
+  }
+
   /** Delete Keycloak user — rollback on downstream COS DB failure. */
   async deleteUser(keycloakUserId: string, realm: string): Promise<void> {
     const client = await this.getAuthenticatedClient(realm);
