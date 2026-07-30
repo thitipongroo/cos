@@ -16,11 +16,21 @@ function ctx(user: unknown): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
-function guardWith(required: string[] | undefined): PermissionsGuard {
+// The guard only hits the DB (additional-roles union) when the primary role alone is insufficient;
+// inject a fake client so unit tests never touch a real database.
+function guardWith(
+  required: string[] | undefined,
+  additionalRoles: string[] = [],
+): PermissionsGuard {
   const reflector = {
     getAllAndOverride: jest.fn().mockReturnValue(required),
   } as unknown as Reflector;
-  return new PermissionsGuard(reflector);
+  const guard = new PermissionsGuard(reflector);
+  (guard as unknown as { prisma: unknown }).prisma = {
+    $queryRaw: jest.fn().mockResolvedValue(additionalRoles.map((role) => ({ role }))),
+    $disconnect: jest.fn().mockResolvedValue(undefined),
+  };
+  return guard;
 }
 
 describe('permissionGranted', () => {
@@ -37,31 +47,52 @@ describe('permissionGranted', () => {
 });
 
 describe('PermissionsGuard', () => {
-  it('allows when the endpoint has no @RequirePermissions metadata', () => {
-    expect(guardWith(undefined).canActivate(ctx({ role: 'SITE_WORKER' }))).toBe(true);
-    expect(guardWith([]).canActivate(ctx({ role: 'SITE_WORKER' }))).toBe(true);
+  it('allows when the endpoint has no @RequirePermissions metadata', async () => {
+    await expect(guardWith(undefined).canActivate(ctx({ role: 'SITE_WORKER' }))).resolves.toBe(
+      true,
+    );
+    await expect(guardWith([]).canActivate(ctx({ role: 'SITE_WORKER' }))).resolves.toBe(true);
   });
 
-  it('allows when the role grants every required permission', () => {
-    expect(guardWith(['finance:approve']).canActivate(ctx({ role: 'FINANCE' }))).toBe(true);
+  it('allows when the primary role grants every required permission (no DB fallback)', async () => {
+    await expect(
+      guardWith(['finance:approve']).canActivate(ctx({ role: 'FINANCE' })),
+    ).resolves.toBe(true);
     // TENANT_ADMIN holds *:*
-    expect(guardWith(['finance:approve']).canActivate(ctx({ role: 'TENANT_ADMIN' }))).toBe(true);
+    await expect(
+      guardWith(['finance:approve']).canActivate(ctx({ role: 'TENANT_ADMIN' })),
+    ).resolves.toBe(true);
   });
 
-  it('throws ForbiddenException when the role is missing a required permission', () => {
-    // PROJECT_MANAGER has finance:read but not finance:approve
-    expect(() =>
-      guardWith(['finance:approve']).canActivate(ctx({ role: 'PROJECT_MANAGER', user_id: 'u1' })),
-    ).toThrow(ForbiddenException);
+  it('allows when an ADDITIONAL role supplies the missing permission (multi-role union)', async () => {
+    // Primary PROJECT_MANAGER lacks finance:approve; the user also holds FINANCE (which grants it).
+    await expect(
+      guardWith(['finance:approve'], ['FINANCE']).canActivate(
+        ctx({ role: 'PROJECT_MANAGER', user_id: 'u1', tenant_id: 't1' }),
+      ),
+    ).resolves.toBe(true);
   });
 
-  it('throws when no role claim is present', () => {
-    expect(() => guardWith(['finance:approve']).canActivate(ctx({}))).toThrow(ForbiddenException);
+  it('throws ForbiddenException when neither primary nor additional roles grant it', async () => {
+    // PROJECT_MANAGER has finance:read but not finance:approve, and no additional role supplies it.
+    await expect(
+      guardWith(['finance:approve']).canActivate(
+        ctx({ role: 'PROJECT_MANAGER', user_id: 'u1', tenant_id: 't1' }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
   });
 
-  it('denies an unknown role (no permissions granted)', () => {
-    expect(() =>
-      guardWith(['finance:approve']).canActivate(ctx({ role: 'NOT_A_ROLE', user_id: 'u1' })),
-    ).toThrow(ForbiddenException);
+  it('throws when no role claim is present', async () => {
+    await expect(guardWith(['finance:approve']).canActivate(ctx({}))).rejects.toThrow(
+      ForbiddenException,
+    );
+  });
+
+  it('denies an unknown role (no permissions granted)', async () => {
+    await expect(
+      guardWith(['finance:approve']).canActivate(
+        ctx({ role: 'NOT_A_ROLE', user_id: 'u1', tenant_id: 't1' }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
   });
 });

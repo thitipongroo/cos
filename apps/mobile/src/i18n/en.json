@@ -926,5 +926,25 @@
     "projectCode": "Project code",
     "noProjects": "Not a member of any project.",
     "department": "Department"
+  },
+  "editPermission": {
+    "title": "Edit Permissions",
+    "primaryRole": "Primary role",
+    "additionalRoles": "Additional roles",
+    "modules": "Module permissions",
+    "resetAll": "Reset all",
+    "aiTitle": "AI ANALYTICS ENGINE",
+    "aiBody": "Effective access is the union of {count} assigned role(s).",
+    "read": "READ",
+    "write": "WRITE",
+    "approve": "APPROVE",
+    "delete": "DELETE",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "selectPrimary": "Select primary role",
+    "savedTitle": "Permissions updated",
+    "savedBody": "The user's roles have been saved.",
+    "errorTitle": "Couldn't save",
+    "errorBody": "Please try again."
   }
 }

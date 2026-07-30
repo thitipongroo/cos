@@ -245,6 +245,7 @@ export function MobileNav() {
       {/* Apps & Services — module/tools/extensions hub from the Quick Commands overlay (router.push). */}
       <Tabs.Screen name="apps-services" options={{ href: null }} />
       <Tabs.Screen name="user-profile" options={{ href: null }} />
+      <Tabs.Screen name="edit-permission" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
     </Tabs>

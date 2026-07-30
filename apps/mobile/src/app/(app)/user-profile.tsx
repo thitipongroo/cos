@@ -22,7 +22,7 @@ import {
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserProjects, type UserProject } from '../../api/projects';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -56,6 +56,7 @@ function statusTint(status: string): string {
 
 export default function UserProfileScreen(): React.JSX.Element {
   const t = useT();
+  const router = useRouter();
   const params = useLocalSearchParams<{
     user_id: string;
     display_name: string;
@@ -213,7 +214,12 @@ export default function UserProfileScreen(): React.JSX.Element {
       <View style={styles.footer}>
         <Pressable
           style={styles.primaryBtn}
-          onPress={() => soon('adminUsers.sheetEdit')}
+          onPress={() =>
+            router.push({
+              pathname: '/edit-permission',
+              params: { user_id: userId, display_name: name },
+            })
+          }
           testID="profile-edit-permissions"
           accessibilityRole="button"
         >

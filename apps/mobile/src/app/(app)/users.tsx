@@ -118,8 +118,18 @@ export default function UsersScreen(): React.JSX.Element {
     });
   };
   const closeSheet = (): void => setSelected(null);
-  // Every sheet action targets a sub-flow that is not built on mobile yet (mockups 02/04/06/07), so it
-  // closes the sheet and shows an honest "not available on mobile yet" note rather than dead-ending.
+  // Edit permissions opens the real multi-role editor; the other sheet actions target sub-flows not
+  // built on mobile yet, so they show an honest "not available on mobile yet" note.
+  const openEditPermission = (): void => {
+    const u = selected;
+    closeSheet();
+    if (u) {
+      router.push({
+        pathname: '/edit-permission',
+        params: { user_id: u.user_id, display_name: u.display_name },
+      });
+    }
+  };
   const sheetAction = (titleKey: string): void => {
     closeSheet();
     Alert.alert(t(titleKey), t('adminUsers.sheetSoon'));
@@ -279,7 +289,7 @@ export default function UsersScreen(): React.JSX.Element {
                   <SheetRow
                     icon="edit"
                     label={t('adminUsers.sheetEdit')}
-                    onPress={() => sheetAction('adminUsers.sheetEdit')}
+                    onPress={openEditPermission}
                     testID="sheet-edit"
                   />
                   <SheetRow

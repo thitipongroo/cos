@@ -7,6 +7,7 @@ import {
   Get,
   Post,
   Patch,
+  Put,
   Body,
   Param,
   Query,
@@ -24,6 +25,7 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ChangeRoleDto } from './dto/change-role.dto';
+import { SetRolesDto } from './dto/set-roles.dto';
 import type { TenantRequest } from './tenant.middleware';
 
 @ApiTags('users')
@@ -77,6 +79,33 @@ export class UserController {
     @Req() req: TenantRequest,
   ) {
     await this.userService.changeRole(userId, dto, req.tenantId!, req.userId ?? 'system');
+  }
+
+  @Get(':userId/roles')
+  @ApiOperation({
+    summary: "A user's primary + additional roles (multi-role) — TENANT_ADMIN only",
+  })
+  @ApiResponse({ status: 200, description: 'Primary role + additional roles' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async getRoles(@Param('userId', ParseUUIDPipe) userId: string, @Req() req: TenantRequest) {
+    return this.userService.getUserRoles(userId, req.tenantId!);
+  }
+
+  @Put(':userId/roles')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: "Set a user's primary + additional roles (multi-role) — TENANT_ADMIN only",
+    description:
+      'Effective permissions = union of ROLE_PERMISSIONS. Emits identity.user.role_changed.v1.',
+  })
+  @ApiResponse({ status: 204, description: 'Roles updated' })
+  @ApiResponse({ status: 404, description: 'User not found in tenant' })
+  async setRoles(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Body() dto: SetRolesDto,
+    @Req() req: TenantRequest,
+  ) {
+    await this.userService.setUserRoles(userId, dto, req.tenantId!, req.userId ?? 'system');
   }
 
   @Patch(':userId/deactivate')

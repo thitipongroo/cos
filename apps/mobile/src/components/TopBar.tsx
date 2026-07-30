@@ -33,6 +33,7 @@ const CHILD_TITLE_KEY: Record<string, string> = {
   '/system-integration': 'systemIntegration.title',
   '/apps-services': 'appsServices.title',
   '/user-profile': 'userProfile.title',
+  '/edit-permission': 'editPermission.title',
   '/notifications': 'notifications.title',
   '/notification-preferences': 'notifications.preferences.title',
   '/mfa-enrollment': 'mfa.enroll.title',

@@ -926,5 +926,25 @@
     "projectCode": "รหัสโครงการ",
     "noProjects": "ไม่ได้อยู่ในโครงการใด",
     "department": "แผนก"
+  },
+  "editPermission": {
+    "title": "แก้ไขสิทธิ์การใช้งาน",
+    "primaryRole": "บทบาทหลัก",
+    "additionalRoles": "บทบาทเพิ่มเติม",
+    "modules": "สิทธิ์การใช้งานรายโมดูล",
+    "resetAll": "รีเซ็ตทั้งหมด",
+    "aiTitle": "AI ANALYTICS ENGINE",
+    "aiBody": "สิทธิ์ที่ได้คือการรวมของ {count} บทบาทที่กำหนด",
+    "read": "READ",
+    "write": "WRITE",
+    "approve": "APPROVE",
+    "delete": "DELETE",
+    "save": "บันทึกการเปลี่ยนแปลง",
+    "cancel": "ยกเลิก",
+    "selectPrimary": "เลือกบทบาทหลัก",
+    "savedTitle": "อัปเดตสิทธิ์แล้ว",
+    "savedBody": "บันทึกบทบาทของผู้ใช้แล้ว",
+    "errorTitle": "บันทึกไม่สำเร็จ",
+    "errorBody": "ลองใหม่อีกครั้ง"
   }
 }

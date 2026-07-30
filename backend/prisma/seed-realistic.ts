@@ -473,6 +473,13 @@ async function run(): Promise<void> {
       VALUES (${TENANT_ID}::uuid, ${U(u.key)}::uuid, ${u.role}::platform."CosRoleEnum")
       ON CONFLICT (tenant_id, user_id) DO NOTHING`;
   }
+  // Multi-role demo (NIST RBAC / Keycloak union model — one person, several jobs): the Project Manager
+  // Thanawat also serves as the site's Safety Officer, so he holds SAFETY_OFFICER as an additional role
+  // on top of his primary PROJECT_MANAGER. Effective permissions = union of both roles.
+  await prisma.$executeRaw`
+    INSERT INTO platform.user_additional_roles (user_id, tenant_id, role, assigned_by)
+    VALUES (${U('pm1')}::uuid, ${TENANT_ID}::uuid, 'SAFETY_OFFICER'::platform."CosRoleEnum", ${U('admin')}::uuid)
+    ON CONFLICT (user_id, tenant_id, role) DO NOTHING`;
   logger.info({ users: USERS.length }, 'seed-realistic: tenant + users');
 
   await prisma.$transaction(

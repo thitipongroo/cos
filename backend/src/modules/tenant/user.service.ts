@@ -19,6 +19,7 @@ import { CosRole } from '@cos/types';
 import { KeycloakAdminService } from '../identity/keycloak-admin.service';
 import type { CreateUserDto } from './dto/create-user.dto';
 import type { ChangeRoleDto } from './dto/change-role.dto';
+import type { SetRolesDto } from './dto/set-roles.dto';
 
 // SYSTEM_ADMIN is a cross-tenant platform role (spec §6.7 — "NOT provisioned to any tenant"). The
 // user-management endpoints are gated by @Roles(TENANT_ADMIN), and the role field is validated only
@@ -306,6 +307,84 @@ export class UserService implements OnModuleDestroy {
       old_role: oldRole,
       new_role: dto.role,
     });
+  }
+
+  /** A user's primary role (tenant_memberships) + additional roles (multi-role, union model). */
+  async getUserRoles(
+    userId: string,
+    tenantId: string,
+  ): Promise<{ primary_role: string; additional_roles: string[] }> {
+    const [membership] = await this.prisma.$queryRaw<Array<{ role: string }>>`
+      SELECT role FROM platform.tenant_memberships
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      LIMIT 1
+    `;
+    if (!membership) {
+      throw new NotFoundException(`User ${userId} not found in tenant`);
+    }
+    const extra = await this.prisma.$queryRaw<Array<{ role: string }>>`
+      SELECT role FROM platform.user_additional_roles
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      ORDER BY role
+    `;
+    return { primary_role: membership.role, additional_roles: extra.map((r) => r.role) };
+  }
+
+  /**
+   * Set a user's primary + additional roles (multi-role). Primary lands on tenant_memberships; the
+   * additional roles replace platform.user_additional_roles (deduped, primary never duplicated there).
+   * The stateless JWT keeps the OLD primary until the target re-logs in — same as changeRole.
+   */
+  async setUserRoles(
+    userId: string,
+    dto: SetRolesDto,
+    tenantId: string,
+    actorId: string,
+  ): Promise<void> {
+    assertRoleAssignableByTenant(dto.primary_role);
+    dto.additional_roles.forEach((r) => assertRoleAssignableByTenant(r));
+    const additional = [...new Set(dto.additional_roles)].filter((r) => r !== dto.primary_role);
+    const assignedBy = actorId && actorId !== 'system' ? actorId : null;
+
+    const [membership] = await this.prisma.$queryRaw<Array<{ role: string }>>`
+      SELECT role FROM platform.tenant_memberships
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      LIMIT 1
+    `;
+    if (!membership) {
+      throw new NotFoundException(`User ${userId} not found in tenant`);
+    }
+    const oldRole = membership.role;
+
+    await this.prisma.$queryRaw`
+      UPDATE platform.tenant_memberships
+      SET role = ${dto.primary_role}::platform."CosRoleEnum"
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+    `;
+    await this.prisma.$queryRaw`
+      DELETE FROM platform.user_additional_roles
+      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+    `;
+    for (const r of additional) {
+      await this.prisma.$queryRaw`
+        INSERT INTO platform.user_additional_roles (user_id, tenant_id, role, assigned_by)
+        VALUES (${userId}::uuid, ${tenantId}::uuid, ${r}::platform."CosRoleEnum", ${assignedBy}::uuid)
+        ON CONFLICT (user_id, tenant_id, role) DO NOTHING
+      `;
+    }
+
+    logger.info(
+      { userId, tenantId, actorId, primaryRole: dto.primary_role, additionalRoles: additional },
+      'user.roles_set',
+    );
+    if (oldRole !== dto.primary_role) {
+      await this.publishEvent('identity.user.role_changed.v1', {
+        tenant_id: tenantId,
+        user_id: userId,
+        old_role: oldRole,
+        new_role: dto.primary_role,
+      });
+    }
   }
 
   async deactivateUser(userId: string, tenantId: string, actorId: string): Promise<void> {

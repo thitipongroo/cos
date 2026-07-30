@@ -47,6 +47,28 @@ interface PaginatedUsers {
 }
 
 /** List the signed-in tenant's active users (newest first) — the TENANT_ADMIN "Users" tab. */
+/** A user's primary role + additional roles (multi-role, union model). */
+export interface UserRoles {
+  primary_role: string;
+  additional_roles: string[];
+}
+export async function getUserRoles(userId: string): Promise<UserRoles> {
+  return get<UserRoles>(`/users/${userId}/roles`);
+}
+export async function setUserRoles(
+  userId: string,
+  primaryRole: string,
+  additionalRoles: string[],
+): Promise<void> {
+  await mutate<void>(
+    'PUT',
+    `/users/${userId}/roles`,
+    { primary_role: primaryRole, additional_roles: additionalRoles },
+    'user-roles',
+    userId,
+  );
+}
+
 export async function getUsers(): Promise<TenantUser[]> {
   const res = await get<PaginatedUsers>('/users');
   return res.data;

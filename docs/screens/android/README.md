@@ -33,7 +33,7 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
 | [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
 | [`SITE_ENGINEER/`](SITE_ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE_ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`00`), the per-user action sheet (`00-actions`) + the user profile (`01`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`) + the multi-role permission editor (`04`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/01-Home/`,
@@ -182,7 +182,7 @@ an unrendered dashboard fails the run instead of writing the wrong screenshot; i
 Quick-Add menu (`TENANT_ADMIN/01-Home/02-quick-action.png`) and the Users tab
 (`TENANT_ADMIN/02-Users/01-users-dashboard.png`).
 
-## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png)
+## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT_ADMIN/02-Users/04-edit-permission.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
 implementing the
@@ -232,8 +232,33 @@ Everything is real, never the mockup's placeholders:
   (TENANT_ADMIN-only, tenant-scoped via `project_members`); an honest "not a member of any project" when
   the list is empty. Real rows (the seeded EXECUTIVE belongs to all five), replacing the mockup's
   fabricated "Skyline Tower A / Metro Bridge".
-- **Edit permissions / Reset password** target sub-flows not built on mobile yet, so each opens the same
-  honest "not available on mobile yet" note.
+- **Edit permissions** opens the multi-role permission editor (below). **Reset password** targets a
+  sub-flow not built on mobile yet, so it opens an honest "not available on mobile yet" note.
+
+## Tenant Admin — Edit permissions — [`04`](TENANT_ADMIN/02-Users/04-edit-permission.png)
+
+The permission editor ([`app/(app)/edit-permission.tsx`](../../../apps/mobile/src/app/(app)/edit-permission.tsx)),
+implementing [`02_users/02_user_management/03_edit_permission`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/03_edit_permission).
+Reached from the Users action sheet or the profile's **Edit permissions**.
+
+**The real fix for "one person, several jobs" — multi-role, the industry-standard way.** COS enforces
+authorization by role membership (`@Roles`, ~156 endpoints), not per-user permissions, so the mockup's
+editable per-user CRUD toggles have no backing store. Following NIST RBAC and Keycloak's own model
+(researched before deciding — a user with multiple roles gets the **union** of their permissions), this
+screen instead lets a TENANT_ADMIN give a user a **primary role plus additional roles**:
+
+- **Backend** — a new `platform.user_additional_roles` table (migration `20260730000002`); `PUT
+  /users/:id/roles` sets the primary (on `tenant_memberships`) + the additional set. Enforcement is real:
+  `RolesGuard` falls back to a user's additional roles when the JWT's primary role doesn't satisfy an
+  endpoint, and `PermissionsGuard` unions `ROLE_PERMISSIONS` across all of them. Both guards keep a
+  fast path (primary role alone) so the common request never hits the DB.
+- **The module matrix is a READ-ONLY reflection of the effective (union) permissions** — it updates live
+  as roles are toggled. It is derived from the authoritative `GET /auth/roles/:role/permissions` (§6.4),
+  never per-user overrides. The capture shows **Thanawat Boonmee** — primary **Project Manager** + an
+  additional **Safety Officer** (a PM who also runs site safety); the matrix is the union, e.g.
+  **Inspections gains APPROVE** from the Safety Officer role that the Project Manager role alone lacks.
+- The mockup's fabricated **"92 % confidence"** AI recommendation is dropped for an honest shell that
+  simply states the effective access is the union of N roles. **Save** persists via `PUT /users/:id/roles`.
 
 ## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/02-quick-action.png`](TENANT_ADMIN/01-Home/02-quick-action.png)
 

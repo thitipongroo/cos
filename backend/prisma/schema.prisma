@@ -158,6 +158,21 @@ model TenantMembership {
   @@schema("platform")
 }
 
+// Additional roles a user holds beyond their primary tenant_memberships role (multi-role support).
+// Effective roles = primary ∪ additional; effective permissions = union of ROLE_PERMISSIONS.
+model UserAdditionalRole {
+  userId     String      @map("user_id") @db.Uuid
+  tenantId   String      @map("tenant_id") @db.Uuid
+  role       CosRoleEnum @map("role")
+  assignedBy String?     @map("assigned_by") @db.Uuid
+  assignedAt DateTime    @default(now()) @map("assigned_at") @db.Timestamptz()
+
+  @@id([userId, tenantId, role])
+  @@index([userId, tenantId])
+  @@map("user_additional_roles")
+  @@schema("platform")
+}
+
 // Immutable: no UPDATE or DELETE allowed via application (QM-4, Phase 16 RLS)
 // @pdpa(category: "operational") — actor_id traces to user but is not directly PII
 model AuditLog {
