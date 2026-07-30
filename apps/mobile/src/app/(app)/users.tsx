@@ -1,4 +1,4 @@
-// Tenant Admin — User Management (mockup 04_tenant_admin/02_users/01_user_management; §32.7 dark).
+// Tenant Admin — User Management (mockup 04_tenant_admin/02_users/02_user_management; §32.7 dark).
 // Reached from the "Users" bottom-nav tab. Everything is REAL data from GET /users (TENANT_ADMIN-only,
 // spec §14.3), never mockup placeholders:
 //   - Search + role filter chips run client-side over the loaded users (roles derived from the data).
@@ -9,7 +9,7 @@
 //     "95% confidence" — it is a count, not a prediction; it reads "all clear" when none are dormant.
 //   - Invite (FAB) is a first-pass placeholder (PO decision 2026-07-28): create exists on the web
 //     console; the mobile invite flow is a follow-up.
-//   - The per-user ⋮ opens the action sheet (mockup 01_user_management/00_main): Edit permissions /
+//   - The per-user ⋮ opens the action sheet (mockup 02_user_management/01_management): Edit permissions /
 //     Reset password / View activity / Deactivate. Each targets a sub-flow (mockups 02/04/06/07) that
 //     is not built on mobile yet, so every action opens an honest "not available on mobile yet" note.
 
@@ -173,7 +173,7 @@ export default function UsersScreen(): React.JSX.Element {
           ))}
         </ScrollView>
 
-        {/* AI User Audit — mockup 00_main layout, but every figure is REAL (a deterministic count over
+        {/* AI User Audit — mockup 01_dashboard layout, but every figure is REAL (a deterministic count over
             last_seen_at), never the mockup's fabricated "95% confidence". */}
         {users ? (
           <View style={styles.auditCard} testID="users-audit">
@@ -201,7 +201,7 @@ export default function UsersScreen(): React.JSX.Element {
                 ? t('adminUsers.auditFlagged', { count: dormant.length })
                 : t('adminUsers.auditClear')}
             </Text>
-            {/* Always shown (mockup 00_main): opens the audit review — the flagged list when there are
+            {/* Always shown (mockup 01_dashboard): opens the audit review — the flagged list when there are
                 dormant accounts, or an honest "all clear" when there are none. */}
             <Pressable style={styles.auditBtn} onPress={onAuditReview} testID="audit-review">
               <Text style={styles.auditBtnText}>{t('adminUsers.auditReview')}</Text>
@@ -245,7 +245,7 @@ export default function UsersScreen(): React.JSX.Element {
         <MaterialIcons name="add" size={30} color={darkColors.onPrimary} />
       </Pressable>
 
-      {/* Per-user action sheet (mockup 01_user_management/00_main). Opens on a card's ⋮. */}
+      {/* Per-user action sheet (mockup 02_user_management/01_management). Opens on a card's ⋮. */}
       <Modal
         visible={selected !== null}
         transparent
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
   },
 
-  // Action sheet (mockup 00_main): dim backdrop + a bottom sheet pinned to the bottom.
+  // Action sheet (mockup 01_management): dim backdrop + a bottom sheet pinned to the bottom.
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: darkColors.surface,

@@ -180,13 +180,13 @@ Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../
 `tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
 an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
 Quick-Add menu (`TENANT_ADMIN/01-Home/01-quick-add.png`) and the Users tab
-(`TENANT_ADMIN/02-Users/00-users.png`).
+(`TENANT_ADMIN/02-Users/01-users-dashboard.png`).
 
-## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/00-users.png) · [`actions`](TENANT_ADMIN/02-Users/00-users-actions.png) · [`profile`](TENANT_ADMIN/02-Users/01-user-profile.png)
+## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
 implementing the
-[`02_users/01_user_management`](../../../mockup/mobile/04_tenant_admin/02_users/01_user_management)
+[`02_users/02_user_management`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management)
 mockup — the tenant's active users from `GET /users` (TENANT_ADMIN-only, spec §14.3), captured against the
 `seed-realistic.ts` dataset (12 members). A header + subtitle, a **search box** (name/email), and
 **role filter chips** derived from the roles actually present in the data (never a hardcoded list).
@@ -196,7 +196,7 @@ and the **login method** — `OTP Login` when the account has a phone (Path A), 
 (Path B). The avatar is a ringed circle; the footer ends in a **chevron** (active — the whole card taps
 to open the action sheet) or a **lock** (inactive). Everything is live, never fabricated.
 
-The cyan **AI User Audit** card (mockup `00_main` layout — sparkle title, corner glyph, a top-right
+The cyan **AI User Audit** card (mockup `01_dashboard` layout — sparkle title, corner glyph, a top-right
 badge) is a real, deterministic count: active users whose `last_seen_at` is older
 than 30 days. `last_seen_at` is a new `platform.users` column
 ([migration](../../../backend/prisma/migrations/20260728000001_add_last_seen_to_users/migration.sql))
@@ -205,17 +205,17 @@ it captures both auth paths. No fabricated "95 % confidence" — it is a count, 
 reads **"all clear"** here because every seeded user was just seen (the badge shows **ALL CLEAR**, or
 **N FLAGGED** once dormant accounts accrue — a real count, not the mockup's invented "95 % confidence") (the column backfills to `now()` at
 migration; the signal grows meaningful as real dormancy accrues). **Invite user** (FAB) is a first-pass placeholder (create exists on the web console). The per-user
-**`⋮` opens the action sheet** (mockup `01_user_management/00_main`, `00-users-actions.png`): a bottom
+**`⋮` opens the action sheet** (mockup `02_user_management/01_management`, `02-users-more.png`): a bottom
 sheet headed by the selected user, with **Edit permissions · Reset password · View activity · Deactivate
-account** (the last in red). Each targets a sub-flow not built on mobile yet (mockups `02_edit_permission`
-/ `04_reset_password` / `06_user_activity` / `07_user_deactivation`), so it opens an honest "not available
+account** (the last in red). Each targets a sub-flow not built on mobile yet (mockups `03_edit_permission`
+/ `05_reset_password` / `07_user_activity` / `08_user_deactivation`), so it opens an honest "not available
 on mobile yet" note rather than dead-ending. **Tapping the card itself (or its chevron)** opens the
 **user profile** (below); only the ⋮ opens the sheet.
 
-## Tenant Admin — User profile — [`01`](TENANT_ADMIN/02-Users/01-user-profile.png)
+## Tenant Admin — User profile — [`01`](TENANT_ADMIN/02-Users/03-user-profile.png)
 
 The per-user detail ([`app/(app)/user-profile.tsx`](../../../apps/mobile/src/app/(app)/user-profile.tsx)),
-implementing [`02_users/01_user_management/01_user_profile`](../../../mockup/mobile/04_tenant_admin/02_users/01_user_management/01_user_profile).
+implementing [`02_users/02_user_management/02_user_profile`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/02_user_profile).
 Pushed from the Users list (a card tap), carrying the tapped row as params. No top bar of its own — the
 global TopBar shows "User Profile" + a Back arrow.
 
@@ -392,7 +392,7 @@ there — `router.push`)
   Connect**. `07` is one full-page stitch; no top bar of its own (global TopBar shows the title + Back
   arrow).
 
-## Tenant Admin — Sync Review Queue (Alerts) — [`00`](TENANT_ADMIN/03-Alerts/00-alerts.png)
+## Tenant Admin — Sync Review Queue (Alerts) — [`00`](TENANT_ADMIN/03-Alerts/01-alerts-dashboard.png)
 
 The `TENANT_ADMIN` "Alerts" tab
 ([`app/(app)/sync-queue.tsx`](../../../apps/mobile/src/app/(app)/sync-queue.tsx)), implementing
@@ -403,7 +403,7 @@ Engineer's ConflictBadge uses; spec §17.5 lets `TENANT_ADMIN` view/resolve), re
 actual `conflict_type` enum (**REJECTED / STATUS_CONFLICT / FIELD_CONFLICT**, colour-coded) — the
 mockup's Critical/Medium/Low "severity" is not a field on the record, so it is not invented. `REF` comes
 from `entity_id`, `FAILED AT` from `created_at`, and the **error reason** is a localised description of
-each `conflict_type` (not a fabricated per-record message). `00-alerts` shows the populated
+each `conflict_type` (not a fabricated per-record message). `01-alerts-dashboard` shows the populated
 list as one full-page image. **Mark resolved** is the single real action (the
 mockup's retry / merge / edit are all one `resolve` on the backend).
 
@@ -411,7 +411,7 @@ The five conflicts are demo rows seeded by
 [`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync
 conflicts, like it accumulates issues and reports); the screen renders that real (seed) data.
 
-## Tenant Admin — System Settings — [`00`](TENANT_ADMIN/04-Settings/00-settings.png)
+## Tenant Admin — System Settings — [`00`](TENANT_ADMIN/04-Settings/01-system-settings.png)
 
 The `TENANT_ADMIN` "Settings" tab
 ([`app/(app)/system-settings.tsx`](../../../apps/mobile/src/app/(app)/system-settings.tsx)), implementing

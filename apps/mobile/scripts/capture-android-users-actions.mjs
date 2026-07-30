@@ -1,8 +1,8 @@
 // Users screen capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab and captures:
-//   docs/screens/android/TENANT_ADMIN/02-Users/00-users.png          — the full-page list (mockup
-//     04_tenant_admin/02_users/00_main), stitched from scrolling viewports via stitch-fullpage.py
-//   docs/screens/android/TENANT_ADMIN/02-Users/00-users-actions.png  — the per-user ⋮ action sheet
-//     (mockup 01_user_management/00_main); a bottom sheet that fits one viewport → a single grab.
+//   docs/screens/android/TENANT_ADMIN/02-Users/01-dashboard.png          — the full-page list (mockup
+//     04_tenant_admin/02_users/01_dashboard), stitched from scrolling viewports via stitch-fullpage.py
+//   docs/screens/android/TENANT_ADMIN/02-Users/02-users-more.png  — the per-user ⋮ action sheet
+//     (mockup 02_user_management/01_management); a bottom sheet that fits one viewport → a single grab.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
@@ -141,7 +141,7 @@ async function main() {
   await dismissDevBanners();
 
   console.log('· full-page users list');
-  await stitchFull('00-users', 180, 1970);
+  await stitchFull('01-dashboard', 180, 1970);
 
   // Rewind to the top so the first card's ⋮ is on screen, then open its action sheet.
   for (let i = 0; i < 6; i++) {
@@ -153,7 +153,7 @@ async function main() {
   await tap(byIdPrefix('user-actions-'), 'first user ⋮');
   await find(byId('user-actions-sheet'), 'action sheet', 15);
   await delay(1200); // let the slide-up settle
-  grab('00-users-actions');
+  grab('02-users-more');
 
   console.log('done.');
 }

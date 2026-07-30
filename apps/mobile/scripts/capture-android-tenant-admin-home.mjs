@@ -239,14 +239,14 @@ async function main() {
   await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
   await delay(3000);
   await dismissDevBanners();
-  await stitchFull('02-Users/00-users', 180, 1970);
+  await stitchFull('02-Users/01-dashboard', 180, 1970);
 
   // Alerts tab — the sync-review queue (mockup 03_alerts), one full-page.
   console.log('· full-page Alerts tab (sync queue)');
   await tap(byId('sync-queue-tab'), 'Alerts tab');
   await find(byId('tenant-admin-sync-queue'), 'tenant-admin-sync-queue', 20);
   await delay(2500);
-  await stitchFull('03-Alerts/00-alerts', 180, 2196);
+  await stitchFull('03-Alerts/01-alerts-dashboard', 180, 2196);
 
   // Settings tab — System Settings (mockup 04_settings), ONE full-page (Org Info + Brand + External
   // Integrations + Others + AI). Org Info (GET /tenant) + LINE toggle/token (GET /tenant/settings) are real.
@@ -255,7 +255,7 @@ async function main() {
   await find(byId('tenant-admin-settings'), 'tenant-admin-settings', 20);
   await delay(2500);
   await dismissDevBanners();
-  await stitchFull('04-Settings/00-settings', 180, 2196);
+  await stitchFull('04-Settings/01-system-settings', 180, 2196);
 
   console.log('done.');
 }

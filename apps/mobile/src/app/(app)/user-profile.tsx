@@ -1,4 +1,4 @@
-// User profile (mockup 04_tenant_admin/02_users/01_user_management/01_user_profile; §32.7 dark).
+// User profile (mockup 04_tenant_admin/02_users/02_user_management/02_user_profile; §32.7 dark).
 // Reached from the Users list — tapping a user card (or its chevron) pushes here with that user's row
 // passed as params; the ⋮ opens the quick-action sheet instead. NO top bar of its own — the global
 // TopBar shows the title + a Back arrow.

@@ -1,7 +1,7 @@
 // User-profile capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab, taps the
 // first user card (which opens that user's profile) and captures it as ONE full-page image (mockup
-// 04_tenant_admin/02_users/01_user_management/01_user_profile):
-//   docs/screens/android/TENANT_ADMIN/02-Users/01-user-profile.png
+// 04_tenant_admin/02_users/02_user_management/02_user_profile):
+//   docs/screens/android/TENANT_ADMIN/02-Users/03-user-profile.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
@@ -152,7 +152,7 @@ async function main() {
   await delay(1500);
 
   console.log('· full-page user profile');
-  await stitchFull('01-user-profile');
+  await stitchFull('03-user-profile');
 
   console.log('done.');
 }
