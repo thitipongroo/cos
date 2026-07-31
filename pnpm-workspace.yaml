@@ -33,8 +33,11 @@ overrides:
   '@opentelemetry/propagator-jaeger@<2.9.0': '^2.9.0' # GHSA-45rx-2jwx-cxfr — DoS via malformed Jaeger header (via @opentelemetry/sdk-node)
   'fast-uri@>=3.0.0 <3.1.4': '^3.1.4' # GHSA-4c8g-83qw-93j6 + GHSA-v2hh-gcrm-f6hx — host confusion (via ajv / @confluentinc/schemaregistry)
   'sharp@<0.35.0': '^0.35.0' # GHSA-f88m-g3jw-g9cj — inherited libvips CVEs (via next / @serwist/turbopack)
-  'postcss@<8.5.12': '^8.5.12' # GHSA-6g55-p6wh-862q — arbitrary file read via sourceMappingURL (transitive, via next/tailwind toolchain)
+  'postcss@<8.5.18': '^8.5.18' # GHSA-6g55-p6wh-862q (<8.5.12) + GHSA-r28c-9q8g-f849 (<8.5.18) — path traversal / arbitrary .map file read via sourceMappingURL (transitive, via next/tailwind toolchain)
   'find-my-way@<9.6.1': '^9.6.1' # GHSA-c96f-x56v-gq3h — DoS with HTTP/2 (transitive, via fastify)
+  'js-yaml@>=5.0.0 <5.2.2': '^5.2.2' # GHSA-pm4m-ph32-ghv5 — DoS via exponential parsing in flow collections (scoped to the 5.x instance; the js-yaml@3.x from jest tooling is unaffected)
+  '@fastify/static@<10.1.1': '^10.1.1' # GHSA-83w8-p2f5-377r — route-guard bypass via path traversal; patched only in 10.1.1 (major bump, Fastify 5 compatible — via @fastify/swagger-ui / @nestjs/platform-fastify / @nestjs/swagger)
+  'brace-expansion@<5.0.8': '5.0.9' # GHSA-mh99-v99m-4gvg — DoS via unbounded expansion (OOM); env advisory patches only >=5.0.8, so every vulnerable major (1.x/2.x/5.x, all transitive dev/build tooling) is bumped to 5.0.9
 
 auditConfig:
   ignoreCves:

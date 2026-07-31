@@ -8,16 +8,31 @@
 -- design — vendor_identities / vendor_trading_relationships (network tables), otp_audit (pre-auth),
 -- outbox_events (publisher-only). Domain schemas have no such exemptions, so any tenant_id table there
 -- lacking RLS is a bug.
+--
+-- Extension-owned tables are ALSO excluded (pg_depend deptype 'e'): they are not application domain
+-- tables and the app can neither own nor meaningfully enable RLS on an extension's internal catalog.
+-- TimescaleDB 2.29 added `_timescaledb_catalog.continuous_aggs_tenant_tracking`, which carries its own
+-- `tenant_id` column; without this exclusion the invariant fires on the extension's catalog instead of
+-- our schemas (the failure is version-triggered because the test image floats on `:latest`). Excluding
+-- by extension membership — rather than hard-coding TimescaleDB's schema names — keeps the check robust
+-- against any extension while still catching every unprotected tenant_id table in our own schemas.
 DO $$
 DECLARE
   t record;
 BEGIN
   FOR t IN
-    SELECT table_schema, table_name
-    FROM information_schema.columns
-    WHERE column_name = 'tenant_id'
-      AND table_schema NOT IN ('platform', 'pg_catalog', 'information_schema')
-    GROUP BY table_schema, table_name
+    SELECT c.table_schema, c.table_name
+    FROM information_schema.columns c
+    WHERE c.column_name = 'tenant_id'
+      AND c.table_schema NOT IN ('platform', 'pg_catalog', 'information_schema')
+      AND NOT EXISTS (
+        SELECT 1
+        FROM pg_class pc
+        JOIN pg_namespace pn ON pn.oid = pc.relnamespace
+        JOIN pg_depend dep ON dep.objid = pc.oid AND dep.deptype = 'e'
+        WHERE pn.nspname = c.table_schema AND pc.relname = c.table_name
+      )
+    GROUP BY c.table_schema, c.table_name
   LOOP
     IF NOT EXISTS (
       SELECT 1
