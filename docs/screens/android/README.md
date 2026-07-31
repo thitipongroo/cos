@@ -179,7 +179,7 @@ Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../
 (`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
 `tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
 an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
-Quick-Add menu (`TENANT_ADMIN/01-Home/02-quick-action.png`) and the Users tab
+Quick-Add menu (`TENANT_ADMIN/01-Home/01-quick-action.png`) and the Users tab
 (`TENANT_ADMIN/02-Users/01-users-dashboard.png`).
 
 ## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT_ADMIN/02-Users/04-edit-permission.png) · [`success`](TENANT_ADMIN/02-Users/05-success-permission.png) · [`reset`](TENANT_ADMIN/02-Users/06-reset-password.png) · [`temp-done`](TENANT_ADMIN/02-Users/07-temp-password-create.png) · [`link-sent`](TENANT_ADMIN/02-Users/08-reset-link-sent.png)
@@ -345,7 +345,7 @@ Reached via `router.replace` — terminal, wordmark TopBar, no Back.
   truthful audit fact (`identity.user.password_reset.v1`, `method: email_link`).
 - **Return to user list** → `router.replace('/users')`.
 
-## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/02-quick-action.png`](TENANT_ADMIN/01-Home/02-quick-action.png)
+## Tenant Admin — Quick-Add menu — [`TENANT_ADMIN/01-Home/01-quick-action.png`](TENANT_ADMIN/01-Home/01-quick-action.png)
 
 The FAB's full-screen **Quick Commands** overlay
 ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx), mockup

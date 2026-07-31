@@ -117,12 +117,14 @@ async function stitchFull(name, top = 180, bot = 1780) {
   }
   await delay(700);
   const shots = [];
-  for (let i = 0; i < 7; i++) {
+  // ≈700px step for unambiguous overlap on the repeating CRUD matrix, but only enough shots (9) to just
+  // reach the bottom — over-scrolling past it lets a stray bottom shot false-match and duplicate a card.
+  for (let i = 0; i < 9; i++) {
     const p = join(TMP, `ep_${i}.png`);
     grab(p);
     shots.push(p);
-    if (i < 6) {
-      adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
+    if (i < 8) {
+      adb('shell', 'input', 'swipe', '540', '1700', '540', '1000', '400');
       await delay(1200);
     }
   }
@@ -168,7 +170,7 @@ async function main() {
   await delay(2000); // let role permissions load + the union matrix render
 
   console.log('· full-page edit permission');
-  await stitchFull('04-edit-permission');
+  await stitchFull('04-edit-permission', 310);
 
   console.log('done.');
 }

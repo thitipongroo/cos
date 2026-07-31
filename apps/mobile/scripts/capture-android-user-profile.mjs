@@ -152,7 +152,10 @@ async function main() {
   await delay(1500);
 
   console.log('· full-page user profile');
-  await stitchFull('03-user-profile');
+  // top=310 sits below the fixed TopBar + breadcrumb bar (a child screen now has both); keeping the
+  // breadcrumb out of the scrolling content region is required or the pairwise matcher sees it match at
+  // scroll=0 and falsely reports "bottom reached".
+  await stitchFull('03-user-profile', 310);
 
   console.log('done.');
 }

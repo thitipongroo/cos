@@ -155,7 +155,7 @@ async function main() {
 
   // One full-page: hero → CORE_AI banner → every module row → Back-to-invitation.
   console.log('· full-page role-permissions');
-  await stitchFull('04-role-permissions');
+  await stitchFull('04-role-permissions', 310);
 
   console.log('done.');
 }

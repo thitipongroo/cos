@@ -148,7 +148,7 @@ async function main() {
 
   // One full-page: search → all assignable roles → CORE_AI Context banner → Confirm.
   console.log('· full-page roles-selection');
-  await stitchFull('05-roles-selection');
+  await stitchFull('05-roles-selection', 310);
 
   console.log('done.');
 }

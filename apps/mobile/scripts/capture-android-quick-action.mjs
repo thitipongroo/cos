@@ -1,9 +1,7 @@
-// System-integration screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens Quick
-// Commands → New System Integration, and captures the connector picker (mockup 04_tenant_admin/01_home/
-// 02_quick_action_button/03_system_integration/00_tenant_new_integration) as ONE full-page image
-// (PO decision 2026-07-29 — one page, not split): it shoots several scrolling viewports and stitches
-// them into a single tall PNG via scripts/stitch-fullpage.py (Python + Pillow/numpy):
-//   docs/screens/android/TENANT_ADMIN/01-Home/07-system-integration.png
+// Quick-Add overlay screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, taps the Home
+// FAB to open the Quick Commands overlay (components/QuickAddMenu), and captures it as ONE full-page
+// image (the overlay scrolls: action cards + the stats bento), stitched via scripts/stitch-fullpage.py:
+//   docs/screens/android/TENANT_ADMIN/01-Home/01-quick-action.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
@@ -13,8 +11,8 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
-const OUT = join(OUT_DIR, '07-system-integration.png');
-const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate shots
+const OUT = join(OUT_DIR, '01-quick-action.png');
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
@@ -105,18 +103,17 @@ async function main() {
   await dismissDevBanners();
   await delay(2000);
 
-  console.log('· Quick Commands → New System Integration');
+  console.log('· open Quick Commands overlay (Home FAB)');
   await tap(byId('quick-add-fab'), 'quick-add FAB');
-  await tap(byId('quick-add-integration'), 'New System Integration', 20);
-  await find(byId('system-integration'), 'system-integration', 20);
+  await find(byId('quick-add-menu'), 'quick-add overlay', 20);
   await dismissDevBanners();
-  await delay(1500);
+  await delay(1200);
 
-  // Shoot a few scrolling viewports; the stitcher de-dups the overlap and drops the extras once the
-  // content bottoms out. A moderate swipe keeps a healthy overlap for a robust match.
+  // The overlay is a full-screen modal with its own fixed top bar (wordmark + close); its ScrollView
+  // holds the subtitle, the action cards and the stats bento. top=150 sits below that fixed bar.
   const shots = [];
   for (let i = 0; i < 8; i++) {
-    const p = join(TMP, `si_shot_${String(i).padStart(2, '0')}.png`);
+    const p = join(TMP, `qa_shot_${String(i).padStart(2, '0')}.png`);
     shot(p);
     shots.push(p);
     console.log(`  shot ${i}`);
@@ -126,10 +123,8 @@ async function main() {
     }
   }
 
-  // Stitch → one full-page PNG. top=310 sits below the fixed TopBar + breadcrumb bar (a child screen now
-  // has both — keeping the breadcrumb out of the scrolling region or the matcher false-matches at scroll=0).
   console.log('· stitching full page');
-  const res = execFileSync('python', [STITCH, OUT, '310', '2206', ...shots], { encoding: 'utf-8' });
+  const res = execFileSync('python', [STITCH, OUT, '150', '2300', ...shots], { encoding: 'utf-8' });
   process.stdout.write(res);
   console.log('done.');
 }

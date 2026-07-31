@@ -36,7 +36,7 @@ import { getMyProjects } from '../api/projects';
 import { checkBackendHealth } from '../api/health';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { usePendingCount } from '../hooks/usePendingCount';
-import appIcon from '../../assets/icon.png';
+import { BrandLogo } from './BrandLogo';
 // Bento-tile background photos (PO decision 2026-07-29).
 import activeProjectsBg from '../../assets/tenant-admin/digital_archectural_blueprint.jpg';
 import systemHealthBg from '../../assets/tenant-admin/micro_server.jpg';
@@ -141,8 +141,7 @@ export function QuickAddMenu({
         {/* Top bar */}
         <View style={styles.topbar}>
           <View style={styles.brand}>
-            <Image source={appIcon} style={styles.brandIcon} resizeMode="contain" />
-            <Text style={styles.wordmark}>CONSTRUCTION OS</Text>
+            <BrandLogo variant="dark" height={26} />
           </View>
           <View style={styles.topRight}>
             <StatusPill />
@@ -159,8 +158,8 @@ export function QuickAddMenu({
         </View>
 
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {/* Header */}
-          <Text style={styles.title}>{t('quickAdd.title')}</Text>
+          {/* Header (the "Quick Commands" title was removed per PO 2026-07-31 — the wordmark above
+              already identifies the overlay; the subtitle carries the instruction). */}
           <Text style={styles.subtitle}>{t('quickAdd.subtitle')}</Text>
 
           {/* Action cards */}
@@ -356,12 +355,6 @@ const styles = StyleSheet.create({
   },
 
   content: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.xl },
-  title: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-    color: darkColors.text,
-  },
   subtitle: {
     fontFamily: fontFamily.regular,
     fontSize: typography.body.fontSize,

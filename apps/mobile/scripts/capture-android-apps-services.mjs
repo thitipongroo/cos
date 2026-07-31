@@ -1,9 +1,8 @@
-// System-integration screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens Quick
-// Commands → New System Integration, and captures the connector picker (mockup 04_tenant_admin/01_home/
-// 02_quick_action_button/03_system_integration/00_tenant_new_integration) as ONE full-page image
-// (PO decision 2026-07-29 — one page, not split): it shoots several scrolling viewports and stitches
+// Apps & Services screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens Quick
+// Commands → Apps & Services, and captures the module hub (mockup 04_tenant_admin/01_home/
+// 02_quick_action_button) as ONE full-page image: it shoots several scrolling viewports and stitches
 // them into a single tall PNG via scripts/stitch-fullpage.py (Python + Pillow/numpy):
-//   docs/screens/android/TENANT_ADMIN/01-Home/07-system-integration.png
+//   docs/screens/android/TENANT_ADMIN/01-Home/08-apps-services.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
@@ -13,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
-const OUT = join(OUT_DIR, '07-system-integration.png');
+const OUT = join(OUT_DIR, '08-apps-services.png');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate shots
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -105,18 +104,16 @@ async function main() {
   await dismissDevBanners();
   await delay(2000);
 
-  console.log('· Quick Commands → New System Integration');
+  console.log('· Quick Commands → Apps & Services');
   await tap(byId('quick-add-fab'), 'quick-add FAB');
-  await tap(byId('quick-add-integration'), 'New System Integration', 20);
-  await find(byId('system-integration'), 'system-integration', 20);
+  await tap(byId('quick-add-apps'), 'Apps & Services', 20);
+  await find(byId('apps-services'), 'apps-services', 20);
   await dismissDevBanners();
   await delay(1500);
 
-  // Shoot a few scrolling viewports; the stitcher de-dups the overlap and drops the extras once the
-  // content bottoms out. A moderate swipe keeps a healthy overlap for a robust match.
   const shots = [];
   for (let i = 0; i < 8; i++) {
-    const p = join(TMP, `si_shot_${String(i).padStart(2, '0')}.png`);
+    const p = join(TMP, `as_shot_${String(i).padStart(2, '0')}.png`);
     shot(p);
     shots.push(p);
     console.log(`  shot ${i}`);

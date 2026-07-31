@@ -96,6 +96,7 @@ const styles = StyleSheet.create({
   heading: {
     fontFamily: fontFamily.bold,
     fontSize: typography.hero.fontSize,
+    textTransform: 'uppercase',
     color: darkColors.text,
     textAlign: 'center',
     marginBottom: spacing.sm,

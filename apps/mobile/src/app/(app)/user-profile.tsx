@@ -108,7 +108,7 @@ export default function UserProfileScreen(): React.JSX.Element {
 
   return (
     <View style={styles.root} testID="user-profile">
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {/* Hero */}
         <View style={styles.hero}>
           <View style={styles.avatarWrap}>
@@ -265,7 +265,8 @@ export default function UserProfileScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: darkColors.bg },
-  content: { padding: spacing.lg, paddingBottom: 200, gap: spacing.md },
+  scroll: { flex: 1 },
+  content: { padding: spacing.lg, paddingBottom: spacing.md, gap: spacing.md },
 
   hero: {
     alignItems: 'center',
@@ -425,10 +426,6 @@ const styles = StyleSheet.create({
   projectBadgeText: { fontFamily: fontFamily.bold, fontSize: 10, letterSpacing: 0.5 },
 
   footer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
     padding: spacing.lg,
     gap: spacing.sm,
     backgroundColor: darkColors.surface,

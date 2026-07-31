@@ -101,11 +101,14 @@ async function stitchFull(name, top = 180, bot = 1780) {
   }
   await delay(700);
   const shots = [];
-  for (let i = 0; i < 6; i++) {
+  // A ~1050px step is needed to scroll reliably (the fixed breadcrumb shrinks the stitch's match window,
+  // so a small step false-matches at scroll=0 and never advances). Keep the shot count just past the
+  // content bottom (≈5) so the stitcher doesn't over-scroll and re-append the trailing CORE_AI card.
+  for (let i = 0; i < 5; i++) {
     const p = join(TMP, `iu_${name.replace(/[^a-z0-9]/gi, '_')}_${i}.png`);
     grab(p);
     shots.push(p);
-    if (i < 5) {
+    if (i < 4) {
       adb('shell', 'input', 'swipe', '540', '1700', '540', '650', '500');
       await delay(1200);
     }
@@ -162,7 +165,7 @@ async function main() {
 
   // Full page: the complete phone-method form (header → role cards → AI panel → footer) in one image.
   console.log('· full-page phone method');
-  await stitchFull('03-invite-user-phone');
+  await stitchFull('03-invite-user-phone', 310);
 
   // Switch to the EMAIL method and capture that state full-page too (the contact field clears on
   // switch; type a sample address so the field is shown filled).
@@ -176,7 +179,7 @@ async function main() {
   await tap(byId('invite-contact'), 'contact');
   await type('somchai@example.com');
   await hideKeyboard();
-  await stitchFull('03-invite-user-email');
+  await stitchFull('03-invite-user-email', 310);
 
   console.log('done.');
 }
