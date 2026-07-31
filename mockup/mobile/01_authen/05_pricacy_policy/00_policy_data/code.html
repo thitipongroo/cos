@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Privacy Policy | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease;
+        }
+        .accordion-item.active .accordion-content {
+            max-height: 1000px; /* Large enough for content */
+            padding-bottom: 16px;
+        }
+        .accordion-item.active .chevron {
+            transform: rotate(180deg);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-background": "#d3e4fe",
+                        "on-error-container": "#ffdad6",
+                        "error-container": "#93000a",
+                        "offline": "#8E8E93",
+                        "on-secondary-container": "#cdd7ff",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "secondary-fixed": "#dbe1ff",
+                        "surface-variant": "#26364a",
+                        "on-surface": "#d3e4fe",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "surface-container-high": "#1b2b3f",
+                        "primary-fixed": "#dee1f9",
+                        "danger": "#EF4444",
+                        "tertiary-fixed": "#acedff",
+                        "inverse-on-surface": "#213145",
+                        "outline": "#909097",
+                        "surface-container": "#102034",
+                        "tertiary-container": "#001318",
+                        "surface": "#031427",
+                        "outline-variant": "#46464c",
+                        "on-secondary-fixed": "#00174b",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "primary": "#c1c5dc",
+                        "error": "#ffb4ab",
+                        "mobile-primary": "#0066FF",
+                        "surface-tint": "#c1c5dc",
+                        "on-primary": "#2b3041",
+                        "on-surface-variant": "#c7c6cd",
+                        "surface-container-low": "#0b1c30",
+                        "secondary": "#b4c5ff",
+                        "on-secondary": "#002a78",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-tertiary": "#003640",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-highest": "#26364a",
+                        "on-tertiary-container": "#0088a0",
+                        "surface-bright": "#2a3a4f",
+                        "warning": "#F59E0B",
+                        "tertiary": "#4cd7f6",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed": "#001f26",
+                        "secondary-container": "#0053db",
+                        "on-primary-container": "#777c90",
+                        "success": "#10B981",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "inverse-primary": "#595e71",
+                        "primary-container": "#0b1020",
+                        "syncing": "#FFD60A",
+                        "concrete-white": "#F8FAFC",
+                        "background": "#031427",
+                        "on-primary-fixed": "#161b2b",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-dim": "#031427"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "mobile-section-pad": "16px",
+                        "web-margin-component": "32px",
+                        "web-page-gap": "64px",
+                        "mobile-edge-margin": "24px",
+                        "web-base": "4px",
+                        "mobile-icon-pad": "8px",
+                        "web-gap-tight": "4px",
+                        "mobile-card-pad": "12px",
+                        "mobile-base": "8px",
+                        "web-padding-card": "16px",
+                        "touch-target-optimum": "52px",
+                        "touch-target-min": "44px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "mobile-title": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                        "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                        "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md selection:bg-primary/30">
+<!-- Top App Bar -->
+<header class="bg-surface sticky top-0 z-50 flex items-center px-mobile-edge-margin h-touch-target-optimum w-full border-b border-outline-variant">
+<button class="mr-4 flex items-center justify-center w-touch-target-min h-touch-target-min hover:bg-surface-container-high rounded-full transition-colors active:opacity-80" onclick="window.history.back()">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-primary truncate">Privacy Policy</h1>
+<div class="ml-auto flex items-center gap-2">
+<span class="material-symbols-outlined text-syncing" style="font-variation-settings: 'opsz' 20;">sync</span>
+<span class="text-label-tiny font-label-tiny uppercase text-on-surface-variant">Encrypted</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex flex-col min-h-screen pb-web-page-gap">
+<!-- Brand Header Section -->
+<section class="px-mobile-edge-margin pt-10 pb-6 flex flex-col items-center text-center">
+<img alt="Construction OS Logo" class="w-16 h-16 mb-4 drop-shadow-[0_0_15px_rgba(193,197,220,0.3)]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHzlhHw4DWscL1k55mgf-4IcbAeoLZHCOq15vl_mG30cLqw3csX_RiroKwNEEIG_RMeAwDw1LC0LX-xtSNojjeEjZ4w7UI7F58pp14mWZ0wmK7TvSaJuXAPb3RSSiUrDzeyI53-Al8ocpfN2TN59z3nWySUVfovQ5Foju1L5rUqvu6nk08Hnip7cEau4p5FKQGYHE03lZnateubUJcbkkSm9h5ccvCdar_bh7BpwnOkKolUYWahWDKQaXVgTKgg-IR1Vc"/>
+<h2 class="font-mobile-title text-mobile-title text-primary mb-2">Construction OS</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-[280px]">
+                High-Security Mission-Critical Data Protection Framework v2.4.0
+            </p>
+<div class="mt-4 inline-flex items-center gap-2 bg-surface-container px-3 py-1 border border-outline-variant rounded-full">
+<span class="w-2 h-2 rounded-full bg-success"></span>
+<span class="text-label-tiny font-label-tiny uppercase text-success">Compliant with PDPA & GDPR</span>
+</div>
+</section>
+<!-- Divider -->
+<div class="mx-mobile-edge-margin border-t border-outline-variant mb-6"></div>
+<!-- Introductory Text -->
+<section class="px-mobile-edge-margin mb-8">
+<p class="font-mobile-body text-mobile-body text-on-surface leading-relaxed">
+                Your data security is paramount to the integrity of our construction operations. This policy outlines how Construction OS collects, processes, and safeguards technical and personal information across our mission-critical platform.
+            </p>
+<p class="mt-4 font-body-sm text-body-sm text-on-surface-variant">
+                Last Updated: October 24, 2023
+            </p>
+</section>
+<!-- Accordion Section -->
+<section class="px-mobile-edge-margin space-y-3">
+<!-- Accordion Item 1: Data Collection -->
+<div class="accordion-item border border-outline-variant bg-surface-container rounded-lg transition-all overflow-hidden" onclick="toggleAccordion(this)">
+<div class="flex items-center justify-between p-4 cursor-pointer active:bg-surface-container-high transition-colors h-touch-target-min">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">database</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Data Collection</h3>
+</div>
+<span class="material-symbols-outlined text-outline chevron transition-transform">expand_more</span>
+</div>
+<div class="accordion-content px-4">
+<div class="pt-2 text-on-surface-variant space-y-4">
+<p class="font-body-md text-body-md">We collect telemetry, project structural data, and personnel identity markers necessary for site safety and operational transparency.</p>
+<ul class="list-disc pl-5 space-y-2 font-body-md text-body-md">
+<li>GPS/Spatial location data during active duty hours.</li>
+<li>Device metadata and network handshake logs.</li>
+<li>Biometric hash for high-security zone access (if enabled).</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Accordion Item 2: Data Usage -->
+<div class="accordion-item border border-outline-variant bg-surface-container rounded-lg transition-all overflow-hidden" onclick="toggleAccordion(this)">
+<div class="flex items-center justify-between p-4 cursor-pointer active:bg-surface-container-high h-touch-target-min">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">insights</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Data Usage</h3>
+</div>
+<span class="material-symbols-outlined text-outline chevron transition-transform">expand_more</span>
+</div>
+<div class="accordion-content px-4">
+<div class="pt-2 text-on-surface-variant space-y-3 font-body-md text-body-md">
+<p>Usage is strictly limited to project optimization and safety compliance:</p>
+<p class="border-l-2 border-primary pl-3 italic bg-surface-container-low py-2">"Machine intelligence uses non-identifiable telemetry to predict structural risks."</p>
+<p>We do not sell data to third-party marketing entities. All processing occurs within the Construction OS encrypted environment.</p>
+</div>
+</div>
+</div>
+<!-- Accordion Item 3: PDPA / Compliance -->
+<div class="accordion-item border border-outline-variant bg-surface-container rounded-lg transition-all overflow-hidden" onclick="toggleAccordion(this)">
+<div class="flex items-center justify-between p-4 cursor-pointer active:bg-surface-container-high h-touch-target-min">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-success">gavel</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">PDPA & GDPR</h3>
+</div>
+<span class="material-symbols-outlined text-outline chevron transition-transform">expand_more</span>
+</div>
+<div class="accordion-content px-4">
+<div class="pt-2 text-on-surface-variant space-y-3 font-body-md text-body-md">
+<p>In accordance with the Personal Data Protection Act (PDPA) and global GDPR standards, we provide:</p>
+<div class="grid grid-cols-1 gap-2">
+<div class="bg-surface-container-high p-3 rounded flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">verified_user</span>
+<span>Right to Access: Request a copy of all stored personal records.</span>
+</div>
+<div class="bg-surface-container-high p-3 rounded flex items-start gap-2">
+<span class="material-symbols-outlined text-secondary text-sm">delete_forever</span>
+<span>Right to Erasure: Request permanent deletion of identity data.</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Accordion Item 4: Security -->
+<div class="accordion-item border border-outline-variant bg-surface-container rounded-lg transition-all overflow-hidden" onclick="toggleAccordion(this)">
+<div class="flex items-center justify-between p-4 cursor-pointer active:bg-surface-container-high h-touch-target-min">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-warning">shield_lock</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Technical Security</h3>
+</div>
+<span class="material-symbols-outlined text-outline chevron transition-transform">expand_more</span>
+</div>
+<div class="accordion-content px-4">
+<div class="pt-2 text-on-surface-variant font-body-md text-body-md">
+<p class="mb-3">Our industrial-grade architecture includes:</p>
+<div class="bg-surface-container-highest rounded border border-primary/20 p-4 font-mono text-xs text-primary leading-relaxed">
+                            AES-256-GCM Encryption <br/>
+                            TLS 1.3 Secure Handshakes <br/>
+                            Hardware Security Modules (HSM) <br/>
+                            Zero-Trust Network Access (ZTNA)
+                        </div>
+</div>
+</div>
+</div>
+<!-- Accordion Item 5: User Rights -->
+<div class="accordion-item border border-outline-variant bg-surface-container rounded-lg transition-all overflow-hidden" onclick="toggleAccordion(this)">
+<div class="flex items-center justify-between p-4 cursor-pointer active:bg-surface-container-high h-touch-target-min">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary">person_search</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">User Rights</h3>
+</div>
+<span class="material-symbols-outlined text-outline chevron transition-transform">expand_more</span>
+</div>
+<div class="accordion-content px-4">
+<div class="pt-2 text-on-surface-variant font-body-md text-body-md">
+<p>Users may modify their consent settings via the "Security Dashboard" in the main settings menu. Opting out of mandatory safety telemetry may restrict access to high-risk zones on the construction site.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer / Contact -->
+<section class="mt-auto px-mobile-edge-margin pt-12 text-center">
+<p class="font-label-tiny text-label-tiny uppercase tracking-widest text-on-surface-variant mb-4">Contact Data Protection Office</p>
+<div class="flex flex-col gap-3">
+<a class="bg-surface-container-highest border border-outline-variant rounded-lg py-4 px-6 flex items-center justify-center gap-3 text-primary font-bold active:bg-surface-bright transition-all" href="mailto:dpo@construction-os.com">
+<span class="material-symbols-outlined">mail</span>
+                    dpo@construction-os.com
+                </a>
+<button class="bg-primary text-on-primary rounded-lg py-4 px-6 font-bold flex items-center justify-center gap-3 active:scale-95 transition-transform shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined">download</span>
+                    Download PDF Policy
+                </button>
+</div>
+<p class="mt-8 font-body-sm text-body-sm text-outline opacity-50">
+                © 2023 Construction OS Frameworks LLC. <br/>
+                All rights reserved. Industrial Grade Security.
+            </p>
+</section>
+</main>
+<!-- Micro-interaction Script for Accordion -->
+<script>
+        function toggleAccordion(element) {
+            // Close others (optional, for true accordion behavior)
+            const items = document.querySelectorAll('.accordion-item');
+            items.forEach(item => {
+                if (item !== element) {
+                    item.classList.remove('active');
+                }
+            });
+
+            // Toggle current
+            element.classList.toggle('active');
+            
+            // Haptic feedback simulation for mobile
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(5);
+            }
+        }
+    </script>
+</body></html>

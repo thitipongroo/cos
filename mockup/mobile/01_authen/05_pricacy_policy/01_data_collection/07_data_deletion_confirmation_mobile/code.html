@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Deletion Confirmation | Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#1b2b3f",
+                    "tertiary-container": "#001318",
+                    "surface-dim": "#031427",
+                    "surface-container-lowest": "#000f21",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "on-primary": "#2b3041",
+                    "on-tertiary-container": "#0088a0",
+                    "tertiary": "#4cd7f6",
+                    "surface-bright": "#2a3a4f",
+                    "on-primary-container": "#777c90",
+                    "secondary": "#b4c5ff",
+                    "concrete-white": "#F8FAFC",
+                    "surface-tint": "#c1c5dc",
+                    "on-tertiary": "#003640",
+                    "on-primary-fixed": "#161b2b",
+                    "syncing": "#FFD60A",
+                    "on-primary-fixed-variant": "#414658",
+                    "on-surface": "#d3e4fe",
+                    "mobile-primary": "#0066FF",
+                    "tertiary-fixed": "#acedff",
+                    "success": "#10B981",
+                    "secondary-fixed": "#dbe1ff",
+                    "primary-fixed-dim": "#c1c5dc",
+                    "primary": "#c1c5dc",
+                    "on-error": "#690005",
+                    "primary-container": "#0b1020",
+                    "surface-container-low": "#0b1c30",
+                    "outline-variant": "#46464c",
+                    "on-secondary-fixed": "#00174b",
+                    "on-surface-variant": "#c7c6cd",
+                    "offline": "#8E8E93",
+                    "inverse-surface": "#d3e4fe",
+                    "inverse-primary": "#595e71",
+                    "on-background": "#d3e4fe",
+                    "outline": "#909097",
+                    "on-secondary-fixed-variant": "#003ea8",
+                    "danger": "#EF4444",
+                    "on-secondary-container": "#cdd7ff",
+                    "surface": "#031427",
+                    "on-secondary": "#002a78",
+                    "surface-variant": "#26364a",
+                    "error-container": "#93000a",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "surface-container-highest": "#26364a",
+                    "primary-fixed": "#dee1f9",
+                    "inverse-on-surface": "#213145",
+                    "on-tertiary-fixed": "#001f26",
+                    "warning": "#F59E0B",
+                    "secondary-container": "#0053db",
+                    "background": "#031427",
+                    "error": "#ffb4ab",
+                    "on-error-container": "#ffdad6",
+                    "surface-container": "#102034"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-margin-component": "32px",
+                    "web-padding-card": "16px",
+                    "web-base": "4px",
+                    "touch-target-optimum": "52px",
+                    "mobile-edge-margin": "24px",
+                    "mobile-section-pad": "16px",
+                    "mobile-card-pad": "12px",
+                    "web-page-gap": "64px",
+                    "mobile-base": "8px",
+                    "touch-target-min": "44px",
+                    "mobile-icon-pad": "8px",
+                    "web-gap-tight": "4px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "mobile-hero": ["Inter"],
+                    "headline-h1": ["Inter"],
+                    "mobile-body": ["Inter"],
+                    "headline-h2": ["Inter"],
+                    "headline-h3": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "mobile-title": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "label-tiny": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .critical-glow { box-shadow: 0 0 15px rgba(239, 68, 68, 0.15); }
+        input:focus { outline: none; border-color: #06B6D4 !important; ring: 2px solid #06B6D4; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant flex justify-between items-center h-[52px] px-mobile-edge-margin">
+<div class="flex items-center gap-4">
+<button class="active:scale-95 duration-150 p-2 -ml-2">
+<span class="material-symbols-outlined text-primary dark:text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-on-surface dark:text-on-surface">DELETION CONFIRMATION</h1>
+</div>
+<button class="active:scale-95 duration-150 p-2">
+<span class="material-symbols-outlined text-primary dark:text-primary">sync</span>
+</button>
+</header>
+<main class="flex-grow pt-[52px] pb-[80px] px-mobile-edge-margin space-y-web-margin-component">
+<!-- Warning Section -->
+<section class="mt-mobile-section-pad">
+<div class="bg-error-container/20 border border-danger/30 rounded-xl p-mobile-card-pad critical-glow">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-danger text-concrete-white font-label-tiny text-label-tiny px-2 py-0.5 rounded uppercase tracking-widest">CRITICAL</span>
+<span class="material-symbols-outlined text-danger text-[20px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<p class="font-mobile-body text-mobile-body text-on-surface-variant">
+                    This action is <span class="text-danger font-bold">irreversible</span>. All personal identity, site logs, and technical telemetry associated with your profile will be permanently removed.
+                </p>
+</div>
+</section>
+<!-- Impact Summary -->
+<section class="space-y-4">
+<h3 class="font-headline-h3 text-headline-h3 uppercase tracking-wider text-outline">Impact Summary</h3>
+<div class="bg-surface-container rounded-lg border border-outline-variant overflow-hidden">
+<table class="w-full text-left">
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-4 py-4 font-body-md text-body-md text-on-surface">Identity Data</td>
+<td class="px-4 py-4 text-right">
+<span class="material-symbols-outlined text-danger text-sm" style="font-variation-settings: 'FILL' 1;">delete_forever</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-4 py-4 font-body-md text-body-md text-on-surface">GPS History</td>
+<td class="px-4 py-4 text-right">
+<span class="material-symbols-outlined text-danger text-sm" style="font-variation-settings: 'FILL' 1;">delete_forever</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="px-4 py-4 font-body-md text-body-md text-on-surface">Daily Reports</td>
+<td class="px-4 py-4 text-right">
+<span class="material-symbols-outlined text-danger text-sm" style="font-variation-settings: 'FILL' 1;">delete_forever</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Verification -->
+<section class="space-y-4">
+<label class="block font-headline-h3 text-headline-h3 uppercase tracking-wider text-outline" for="verification">
+                Confirm Identity
+            </label>
+<div class="space-y-2">
+<p class="font-body-sm text-body-sm text-on-surface-variant">Type <span class="text-on-surface font-mono">DELETE</span> to authorize permanent removal.</p>
+<input class="w-full h-[52px] bg-surface-container border border-outline-variant rounded-lg px-4 text-on-surface placeholder:text-outline focus:ring-2 focus:ring-tertiary transition-all" id="verification" placeholder="Type DELETE" type="text"/>
+</div>
+</section>
+<!-- Primary CTA -->
+<section class="pt-4 flex flex-col gap-4">
+<button class="w-full h-[52px] bg-danger text-concrete-white font-headline-h3 text-headline-h3 rounded-lg flex items-center justify-center gap-2 opacity-50 cursor-not-allowed transition-all active:scale-95" disabled="" id="deleteBtn">
+<span class="material-symbols-outlined">save_as</span>
+                CONFIRM PERMANENT DELETION
+            </button>
+<button class="w-full py-3 text-on-surface-variant font-body-md text-body-md hover:text-on-surface transition-colors">
+                Cancel and Go Back
+            </button>
+</section>
+</main>
+<!-- Bottom Navigation suppressed for this transactional screen as per logic -->
+<script>
+        const input = document.getElementById('verification');
+        const btn = document.getElementById('deleteBtn');
+
+        input.addEventListener('input', (e) => {
+            if (e.target.value === 'DELETE') {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.classList.add('hover:bg-red-600', 'shadow-lg', 'shadow-danger/20');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('hover:bg-red-600', 'shadow-lg', 'shadow-danger/20');
+            }
+        });
+
+        // Simple feedback on click
+        btn.addEventListener('click', () => {
+            if (!btn.disabled) {
+                btn.innerHTML = `<span class="material-symbols-outlined animate-spin">sync</span> DELETING...`;
+                setTimeout(() => {
+                    alert('Data purge protocol initiated.');
+                }, 1000);
+            }
+        });
+    </script>
+</body></html>
