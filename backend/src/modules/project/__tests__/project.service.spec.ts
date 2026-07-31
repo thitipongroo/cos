@@ -302,6 +302,16 @@ describe('ProjectService', () => {
     });
   });
 
+  describe('listForUser()', () => {
+    it('returns a specific user’s projects via repo.listByMember', async () => {
+      const repo = makeRepo();
+      const service = await buildService(repo);
+      const result = await service.listForUser('user-uuid-002');
+      expect(result.items).toHaveLength(1);
+      expect(repo.listByMember).toHaveBeenCalledWith('user-uuid-002');
+    });
+  });
+
   describe('addMember()', () => {
     it('adds member to an existing project', async () => {
       const service = await buildService(makeRepo());

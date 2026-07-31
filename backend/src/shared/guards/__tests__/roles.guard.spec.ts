@@ -106,4 +106,11 @@ describe('RolesGuard', () => {
       guard.canActivate(ctxWith({ role: CosRole.SITE_WORKER, user_id: 'u1', tenant_id: 't1' })),
     ).rejects.toThrow("Role 'SITE_WORKER' does not have access. Required: FINANCE | TENANT_ADMIN");
   });
+
+  it('onModuleDestroy disconnects the prisma client', async () => {
+    const guard = makeGuard(new Reflector());
+    const prisma = (guard as unknown as { prisma: { $disconnect: jest.Mock } }).prisma;
+    await expect(guard.onModuleDestroy()).resolves.toBeUndefined();
+    expect(prisma.$disconnect).toHaveBeenCalledTimes(1);
+  });
 });

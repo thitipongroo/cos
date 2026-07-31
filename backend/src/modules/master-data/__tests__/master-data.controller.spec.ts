@@ -4,6 +4,7 @@
 import { Test } from '@nestjs/testing';
 import { MasterDataController } from '../master-data.controller';
 import { MasterDataService } from '../master-data.service';
+import { LastSeenService } from '../../identity/last-seen.service';
 import type {
   MaterialRow,
   WorkCategoryRow,
@@ -83,7 +84,13 @@ describe('MasterDataController', () => {
     jest.clearAllMocks();
     const module = await Test.createTestingModule({
       controllers: [MasterDataController],
-      providers: [{ provide: MasterDataService, useValue: mockSvc }],
+      providers: [
+        { provide: MasterDataService, useValue: mockSvc },
+        // JwtAuthGuard (class-level @UseGuards) gained a LastSeenService dependency; provide a mock so
+        // the guard resolves under DI. The guard never runs here — these tests call the controller
+        // methods directly — but the module must still compile.
+        { provide: LastSeenService, useValue: { touch: jest.fn() } },
+      ],
     }).compile();
     ctrl = module.get(MasterDataController);
   });

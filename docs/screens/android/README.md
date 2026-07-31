@@ -27,13 +27,13 @@ image** — where a screen is taller than the phone it is stitched from scrollin
 (`scripts/stitch-fullpage.py`) — except where a screen has a genuinely distinct alternate state, which
 gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-expanded view).
 
-| Folder | What it holds |
-| --- | --- |
-| [`_public/`](_public/) | Pre-auth — the native splash (`00`), app-launch loading (`01`) and the login flow (`02`–`04`). |
-| [`_mfa-flow/`](_mfa-flow/) | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser. |
-| [`_shared/`](_shared/) | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`). |
-| [`SITE_ENGINEER/`](SITE_ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE_ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`). |
-| [`TENANT_ADMIN/`](TENANT_ADMIN/) | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| Folder                             | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`_public/`](_public/)             | Pre-auth — the native splash (`00`), app-launch loading (`01`) and the login flow (`02`–`04`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| [`_mfa-flow/`](_mfa-flow/)         | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| [`_shared/`](_shared/)             | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| [`SITE_ENGINEER/`](SITE_ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE_ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| [`TENANT_ADMIN/`](TENANT_ADMIN/)   | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT_ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT_ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT_ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT_ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE_ENGINEER/01-Home/`,
@@ -51,10 +51,10 @@ login header's language switcher is used to leave the th-TH default (QM-3).
 
 | #   | Screen                                            | What it shows                                                                  |
 | --- | ------------------------------------------------- | ------------------------------------------------------------------------------ |
-| 02  | [Login](_public/02-login.png)                          | Landing — Path A phone form, Path B "Login with Email" as the secondary action |
-| 03  | [OTP verify](_public/03-login-otp-verify.png)          | Passcode step for `+66 •••• 0010`, requested from the landing                  |
-| 03  | [Email + password](_public/03-login-password.png)      | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)    |
-| 04  | [Securing session](_public/04-login-loading.png)       | `VerifyingOverlay`, shown while the Path B code→token exchange runs            |
+| 02  | [Login](_public/02-login.png)                     | Landing — Path A phone form, Path B "Login with Email" as the secondary action |
+| 03  | [OTP verify](_public/03-login-otp-verify.png)     | Passcode step for `+66 •••• 0010`, requested from the landing                  |
+| 03  | [Email + password](_public/03-login-password.png) | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)    |
+| 04  | [Securing session](_public/04-login-loading.png)  | `VerifyingOverlay`, shown while the Path B code→token exchange runs            |
 
 Captured by [`apps/mobile/scripts/capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
 (`cd apps/mobile && pnpm capture:android` — it installs standalone, see the root `pnpm-workspace.yaml`)
@@ -184,7 +184,7 @@ Quick-Add menu (`TENANT_ADMIN/01-Home/01-quick-action.png`) and the Users tab
 
 ## Tenant Admin — Users — [`00`](TENANT_ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT_ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT_ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT_ADMIN/02-Users/04-edit-permission.png) · [`success`](TENANT_ADMIN/02-Users/05-success-permission.png) · [`reset`](TENANT_ADMIN/02-Users/06-reset-password.png) · [`temp-done`](TENANT_ADMIN/02-Users/07-temp-password-create.png) · [`link-sent`](TENANT_ADMIN/02-Users/08-reset-link-sent.png)
 
-The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](../../../apps/mobile/src/app/(app)/users.tsx)),
+The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](<../../../apps/mobile/src/app/(app)/users.tsx>)),
 implementing the
 [`02_users/02_user_management`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management)
 mockup — the tenant's active users from `GET /users` (TENANT_ADMIN-only, spec §14.3), captured against the
@@ -214,7 +214,7 @@ on mobile yet" note rather than dead-ending. **Tapping the card itself (or its c
 
 ## Tenant Admin — User profile — [`01`](TENANT_ADMIN/02-Users/03-user-profile.png)
 
-The per-user detail ([`app/(app)/user-profile.tsx`](../../../apps/mobile/src/app/(app)/user-profile.tsx)),
+The per-user detail ([`app/(app)/user-profile.tsx`](<../../../apps/mobile/src/app/(app)/user-profile.tsx>)),
 implementing [`02_users/02_user_management/02_user_profile`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/02_user_profile).
 Pushed from the Users list (a card tap), carrying the tapped row as params. No top bar of its own — the
 global TopBar shows "User Profile" + a Back arrow.
@@ -237,7 +237,7 @@ Everything is real, never the mockup's placeholders:
 
 ## Tenant Admin — Edit permissions — [`04`](TENANT_ADMIN/02-Users/04-edit-permission.png)
 
-The permission editor ([`app/(app)/edit-permission.tsx`](../../../apps/mobile/src/app/(app)/edit-permission.tsx)),
+The permission editor ([`app/(app)/edit-permission.tsx`](<../../../apps/mobile/src/app/(app)/edit-permission.tsx>)),
 implementing [`02_users/02_user_management/03_edit_permission`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/03_edit_permission).
 Reached from the Users action sheet or the profile's **Edit permissions**.
 
@@ -248,7 +248,7 @@ editable per-user CRUD toggles have no backing store. Following NIST RBAC and Ke
 screen instead lets a TENANT_ADMIN give a user a **primary role plus additional roles**:
 
 - **Backend** — a new `platform.user_additional_roles` table (migration `20260730000002`); `PUT
-  /users/:id/roles` sets the primary (on `tenant_memberships`) + the additional set. Enforcement is real:
+/users/:id/roles` sets the primary (on `tenant_memberships`) + the additional set. Enforcement is real:
   `RolesGuard` falls back to a user's additional roles when the JWT's primary role doesn't satisfy an
   endpoint, and `PermissionsGuard` unions `ROLE_PERMISSIONS` across all of them. Both guards keep a
   fast path (primary role alone) so the common request never hits the DB.
@@ -263,7 +263,7 @@ screen instead lets a TENANT_ADMIN give a user a **primary role plus additional 
 ## Tenant Admin — Permission saved — [`05`](TENANT_ADMIN/02-Users/05-success-permission.png)
 
 The terminal confirmation shown after the editor's SAVE succeeds
-([`app/(app)/permission-success.tsx`](../../../apps/mobile/src/app/(app)/permission-success.tsx),
+([`app/(app)/permission-success.tsx`](<../../../apps/mobile/src/app/(app)/permission-success.tsx>),
 mockup [`02_users/02_user_management/04_success_permission`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/04_success_permission)).
 Edit-permission `router.replace`s here on a successful `PUT /users/:id/roles`, carrying the target's id +
 name. No top bar of its own — the global TopBar shows the CONSTRUCTION OS wordmark with **no Back arrow**
@@ -281,7 +281,7 @@ name. No top bar of its own — the global TopBar shows the CONSTRUCTION OS word
 ## Tenant Admin — Reset password — [`06`](TENANT_ADMIN/02-Users/06-reset-password.png)
 
 The admin-triggered password-reset form
-([`app/(app)/reset-password.tsx`](../../../apps/mobile/src/app/(app)/reset-password.tsx), mockup
+([`app/(app)/reset-password.tsx`](<../../../apps/mobile/src/app/(app)/reset-password.tsx>), mockup
 [`02_users/02_user_management/05_reset_password`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/05_reset_password)).
 Opened from a user's profile **Reset password** button or the Users-list ⋮ sheet, carrying the target's row.
 The **breadcrumb** (`USER MANAGEMENT › PASSWORD RESET`) sits under the TopBar (mockup).
@@ -291,7 +291,7 @@ Sheet, Okta): the **email reset link is the standards-compliant primary method**
 the fallback for phone-only accounts.
 
 - **Real target** — the card shows the actual user from the passed row (`Chalermsak Nithat`, `CRM SALES
-  MANAGER` in the capture).
+MANAGER` in the capture).
 - **AI Security Check → honest shell** — the mockup's _"99 % Confidence · No suspicious activity detected"_
   is **fabricated**; the card is kept but states the truth (the reset is recorded in the audit log; no risk
   score is inferred).
@@ -313,7 +313,7 @@ the fallback for phone-only accounts.
 ## Tenant Admin — Password reset done (temp) — [`07`](TENANT_ADMIN/02-Users/07-temp-password-create.png)
 
 The terminal confirmation shown after **Confirm reset** succeeds with the **temporary-password** fallback
-([`app/(app)/reset-password-success.tsx`](../../../apps/mobile/src/app/(app)/reset-password-success.tsx),
+([`app/(app)/reset-password-success.tsx`](<../../../apps/mobile/src/app/(app)/reset-password-success.tsx>),
 mockup [`02_users/02_user_management/07_temp_password_success`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/07_temp_password_success)).
 Reached via `router.replace` — no top bar of its own (global TopBar shows the wordmark, **no Back**).
 
@@ -335,7 +335,7 @@ Reached via `router.replace` — no top bar of its own (global TopBar shows the 
 ## Tenant Admin — Reset link sent (email) — [`08`](TENANT_ADMIN/02-Users/08-reset-link-sent.png)
 
 The terminal confirmation for the **standards-compliant email path**
-([`app/(app)/reset-password-email-success.tsx`](../../../apps/mobile/src/app/(app)/reset-password-email-success.tsx),
+([`app/(app)/reset-password-email-success.tsx`](<../../../apps/mobile/src/app/(app)/reset-password-email-success.tsx>),
 mockup [`02_users/02_user_management/06_reset_password_success`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/06_reset_password_success)).
 Reached via `router.replace` — terminal, wordmark TopBar, no Back.
 
@@ -372,7 +372,7 @@ stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
 ## Tenant Admin — Invite user — [`phone`](TENANT_ADMIN/01-Home/03-invite-user-phone.png) · [`email`](TENANT_ADMIN/01-Home/03-invite-user-email.png)
 
 The Quick Commands "Invite New User" target
-([`app/(app)/invite-user.tsx`](../../../apps/mobile/src/app/(app)/invite-user.tsx), mockups
+([`app/(app)/invite-user.tsx`](<../../../apps/mobile/src/app/(app)/invite-user.tsx>), mockups
 `04_tenant_admin/01_home/02_quick_action_button/02_invite_user/{02_invite_user_via_phone,02_invite_user_via_email}`
 — one screen with a phone/email toggle covers both). A real, wired form: **SEND INVITATION** calls
 `POST /users` (createUser, TENANT_ADMIN §14.3) with the chosen method — **Path A phone** (E.164, the
@@ -401,7 +401,7 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
 ## Tenant Admin — Role permissions — [`03`](TENANT_ADMIN/01-Home/04-role-permissions.png)
 
 Reached from Invite-user's **"View permissions"** link
-([`app/(app)/role-permissions.tsx`](../../../apps/mobile/src/app/(app)/role-permissions.tsx), mockup
+([`app/(app)/role-permissions.tsx`](<../../../apps/mobile/src/app/(app)/role-permissions.tsx>), mockup
 `04_tenant_admin/01_home/02_quick_action_button/02_invite_user/02_role_permissions`). A read-only access
 breakdown for the role being invited.
 
@@ -423,7 +423,7 @@ breakdown for the role being invited.
 ## Tenant Admin — Roles selection — [`04`](TENANT_ADMIN/01-Home/05-roles-selection.png)
 
 The full-screen role picker opened from Invite-user's **"Show more roles"**
-([`app/(app)/roles-selection.tsx`](../../../apps/mobile/src/app/(app)/roles-selection.tsx), mockup
+([`app/(app)/roles-selection.tsx`](<../../../apps/mobile/src/app/(app)/roles-selection.tsx>), mockup
 `04_tenant_admin/01_home/02_quick_action_button/02_invite_user/03_roles_selection`). Searchable,
 single-select (createUser takes one role).
 
@@ -445,7 +445,7 @@ single-select (createUser takes one role).
 ## Tenant Admin — Invitation success — [`05`](TENANT_ADMIN/01-Home/06-invitation-success.png)
 
 The terminal confirmation shown after Invite-user's **SEND INVITATION** succeeds
-([`app/(app)/invitation-success.tsx`](../../../apps/mobile/src/app/(app)/invitation-success.tsx), mockup
+([`app/(app)/invitation-success.tsx`](<../../../apps/mobile/src/app/(app)/invitation-success.tsx>), mockup
 `04_tenant_admin/01_home/02_quick_action_button/02_invite_user/04_invitation_success`). It **replaces the
 old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
 
@@ -467,7 +467,7 @@ old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
 ## Tenant Admin — System integration — [`06`](TENANT_ADMIN/01-Home/07-system-integration.png)
 
 The connector picker opened from Quick Commands → **New System Integration**
-([`app/(app)/system-integration.tsx`](../../../apps/mobile/src/app/(app)/system-integration.tsx), mockup
+([`app/(app)/system-integration.tsx`](<../../../apps/mobile/src/app/(app)/system-integration.tsx>), mockup
 `04_tenant_admin/01_home/02_quick_action_button/03_system_integration/00_tenant_new_integration`). It
 **replaces the Integration action's `coming soon` alert** — QuickAdd now `router.push`es here.
 
@@ -489,7 +489,7 @@ The connector picker opened from Quick Commands → **New System Integration**
 
 The module / tools / extensions hub, opened from Quick Commands → **Apps & Services** (a new action card
 there — `router.push`)
-([`app/(app)/apps-services.tsx`](../../../apps/mobile/src/app/(app)/apps-services.tsx), mockup
+([`app/(app)/apps-services.tsx`](<../../../apps/mobile/src/app/(app)/apps-services.tsx>), mockup
 `04_tenant_admin/01_home/02_quick_action_button/03_system_integration/01_application_and_services/00_apps_and_services`).
 
 - **Honest wiring:** every card is a catalogue entry with no built screen yet (the core modules are
@@ -505,7 +505,7 @@ there — `router.push`)
 ## Tenant Admin — Sync Review Queue (Alerts) — [`00`](TENANT_ADMIN/03-Alerts/01-alerts-dashboard.png)
 
 The `TENANT_ADMIN` "Alerts" tab
-([`app/(app)/sync-queue.tsx`](../../../apps/mobile/src/app/(app)/sync-queue.tsx)), implementing
+([`app/(app)/sync-queue.tsx`](<../../../apps/mobile/src/app/(app)/sync-queue.tsx>)), implementing
 [`04_tenant_admin/03_alerts/01_sync_queue`](../../../mockup/mobile/04_tenant_admin/03_alerts/01_sync_queue).
 It is the field-sync **review queue** — `GET /site/conflict-records` (the SAME endpoint the Site
 Engineer's ConflictBadge uses; spec §17.5 lets `TENANT_ADMIN` view/resolve), resolved via
@@ -524,7 +524,7 @@ conflicts, like it accumulates issues and reports); the screen renders that real
 ## Tenant Admin — System Settings — [`00`](TENANT_ADMIN/04-Settings/01-system-settings.png)
 
 The `TENANT_ADMIN` "Settings" tab
-([`app/(app)/system-settings.tsx`](../../../apps/mobile/src/app/(app)/system-settings.tsx)), implementing
+([`app/(app)/system-settings.tsx`](<../../../apps/mobile/src/app/(app)/system-settings.tsx>)), implementing
 [`04_tenant_admin/04_settings/01_system_settings`](../../../mockup/mobile/04_tenant_admin/04_settings/01_system_settings).
 The screen is taller than the viewport, so it is captured as ONE full-page image (stitched from
 scrolling viewports): Organization Info → Brand & Identity → External Integrations → Others → AI System Insight.

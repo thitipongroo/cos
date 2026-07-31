@@ -195,4 +195,40 @@ describe('KeycloakAdminService', () => {
       expect(mockKcInstance.users.del).toHaveBeenCalledWith({ id: 'kc-uuid-1' });
     });
   });
+
+  describe('setTemporaryPassword', () => {
+    it('admin-resets the credential as temporary=true (forces UPDATE_PASSWORD at next sign-in)', async () => {
+      await expect(
+        service.setTemporaryPassword('kc-uuid-1', 'tenant-acme', 'Temp-Pass-123'),
+      ).resolves.toBeUndefined();
+      expect(mockKcInstance.users.resetPassword).toHaveBeenCalledWith({
+        id: 'kc-uuid-1',
+        credential: { type: 'password', value: 'Temp-Pass-123', temporary: true },
+      });
+    });
+  });
+
+  describe('sendPasswordResetEmail', () => {
+    it('sends an UPDATE_PASSWORD action email with the default 900s lifespan', async () => {
+      const executeActionsEmail = jest.fn().mockResolvedValue(undefined);
+      (mockKcInstance.users as unknown as { executeActionsEmail: jest.Mock }).executeActionsEmail =
+        executeActionsEmail;
+      await expect(
+        service.sendPasswordResetEmail('kc-uuid-1', 'tenant-acme'),
+      ).resolves.toBeUndefined();
+      expect(executeActionsEmail).toHaveBeenCalledWith({
+        id: 'kc-uuid-1',
+        actions: ['UPDATE_PASSWORD'],
+        lifespan: 900,
+      });
+    });
+
+    it('honours a caller-supplied lifespan (covers the non-default lifespanSec branch)', async () => {
+      const executeActionsEmail = jest.fn().mockResolvedValue(undefined);
+      (mockKcInstance.users as unknown as { executeActionsEmail: jest.Mock }).executeActionsEmail =
+        executeActionsEmail;
+      await service.sendPasswordResetEmail('kc-uuid-2', 'tenant-acme', 600);
+      expect(executeActionsEmail).toHaveBeenCalledWith(expect.objectContaining({ lifespan: 600 }));
+    });
+  });
 });

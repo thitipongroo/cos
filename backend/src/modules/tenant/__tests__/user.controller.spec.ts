@@ -8,6 +8,10 @@ const mockUserService = {
   listUsers: jest.fn(),
   createUser: jest.fn(),
   changeRole: jest.fn(),
+  getUserRoles: jest.fn(),
+  setUserRoles: jest.fn(),
+  resetPassword: jest.fn(),
+  sendPasswordResetLink: jest.fn(),
   deactivateUser: jest.fn(),
 };
 
@@ -100,6 +104,76 @@ describe('UserController', () => {
         { tenantId: TENANT_ID, userId: undefined } as never,
       );
       expect(mockUserService.changeRole).toHaveBeenCalledWith(USER_ID, dto, TENANT_ID, 'system');
+    });
+  });
+
+  describe('getRoles', () => {
+    it('delegates to userService.getUserRoles and returns the result', async () => {
+      const roles = { primary: CosRole.FINANCE, additional: [CosRole.SITE_ENGINEER] };
+      mockUserService.getUserRoles.mockResolvedValue(roles);
+      const result = await controller.getRoles(USER_ID, fakeReq());
+      expect(mockUserService.getUserRoles).toHaveBeenCalledWith(USER_ID, TENANT_ID);
+      expect(result).toBe(roles);
+    });
+  });
+
+  describe('setRoles', () => {
+    it('delegates to userService.setUserRoles', async () => {
+      mockUserService.setUserRoles.mockResolvedValue(undefined);
+      const dto = { primary: CosRole.FINANCE, additional: [CosRole.SITE_ENGINEER] };
+      await controller.setRoles(USER_ID, dto as never, fakeReq());
+      expect(mockUserService.setUserRoles).toHaveBeenCalledWith(USER_ID, dto, TENANT_ID, 'actor-1');
+    });
+
+    it('falls back to "system" actor when req.userId is undefined', async () => {
+      mockUserService.setUserRoles.mockResolvedValue(undefined);
+      const dto = { primary: CosRole.FINANCE, additional: [] };
+      await controller.setRoles(
+        USER_ID,
+        dto as never,
+        { tenantId: TENANT_ID, userId: undefined } as never,
+      );
+      expect(mockUserService.setUserRoles).toHaveBeenCalledWith(USER_ID, dto, TENANT_ID, 'system');
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('delegates to userService.resetPassword and returns the temp password', async () => {
+      const issued = { temporary_password: 'Xk9!temp', must_change: true };
+      mockUserService.resetPassword.mockResolvedValue(issued);
+      const result = await controller.resetPassword(USER_ID, fakeReq());
+      expect(mockUserService.resetPassword).toHaveBeenCalledWith(USER_ID, TENANT_ID, 'actor-1');
+      expect(result).toBe(issued);
+    });
+
+    it('falls back to "system" actor when req.userId is undefined', async () => {
+      mockUserService.resetPassword.mockResolvedValue({});
+      await controller.resetPassword(USER_ID, { tenantId: TENANT_ID, userId: undefined } as never);
+      expect(mockUserService.resetPassword).toHaveBeenCalledWith(USER_ID, TENANT_ID, 'system');
+    });
+  });
+
+  describe('sendResetEmail', () => {
+    it('delegates to userService.sendPasswordResetLink and returns the result', async () => {
+      const sent = { emailed: true };
+      mockUserService.sendPasswordResetLink.mockResolvedValue(sent);
+      const result = await controller.sendResetEmail(USER_ID, fakeReq());
+      expect(mockUserService.sendPasswordResetLink).toHaveBeenCalledWith(
+        USER_ID,
+        TENANT_ID,
+        'actor-1',
+      );
+      expect(result).toBe(sent);
+    });
+
+    it('falls back to "system" actor when req.userId is undefined', async () => {
+      mockUserService.sendPasswordResetLink.mockResolvedValue({});
+      await controller.sendResetEmail(USER_ID, { tenantId: TENANT_ID, userId: undefined } as never);
+      expect(mockUserService.sendPasswordResetLink).toHaveBeenCalledWith(
+        USER_ID,
+        TENANT_ID,
+        'system',
+      );
     });
   });
 

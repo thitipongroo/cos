@@ -95,4 +95,22 @@ describe('PermissionsGuard', () => {
       ),
     ).rejects.toThrow(ForbiddenException);
   });
+
+  it('throws (and lists additional roles) when present additional roles still do not grant it', async () => {
+    // Primary PROJECT_MANAGER lacks finance:approve; the additional role is unknown so ROLE_PERMISSIONS
+    // yields the `?? []` fallback — the union still misses, and the warn path maps over the non-empty
+    // extra roles (exercises both the flatMap fallback branch and the additionalRoles map).
+    await expect(
+      guardWith(['finance:approve'], ['NOT_A_ROLE']).canActivate(
+        ctx({ role: 'PROJECT_MANAGER', user_id: 'u1', tenant_id: 't1' }),
+      ),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('onModuleDestroy disconnects the prisma client', async () => {
+    const guard = guardWith(undefined);
+    const prisma = (guard as unknown as { prisma: { $disconnect: jest.Mock } }).prisma;
+    await expect(guard.onModuleDestroy()).resolves.toBeUndefined();
+    expect(prisma.$disconnect).toHaveBeenCalledTimes(1);
+  });
 });

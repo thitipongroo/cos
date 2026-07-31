@@ -702,14 +702,14 @@ same surface as the web login and the Keycloak `cos` theme, so the product looks
 Dark screens (exhaustive — do not extend this list without a product-owner decision):
 
 | Screen                                  | Reference                                                    |
-| --------------------------------------- | ----------------------------------------------------------- |
-| Login                                   | `mockup/00_login_flow/mobile/`                              |
-| OTP verify                              | `mockup/00_login_flow/mobile/`                              |
-| Session-securing overlay                | `mockup/00_login_flow/mobile/`                              |
-| Site Engineer Home                      | `mockup/site-engineer/dashboard-mobile/`                    |
-| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home_dashboard/`      |
+| --------------------------------------- | ------------------------------------------------------------ |
+| Login                                   | `mockup/00_login_flow/mobile/`                               |
+| OTP verify                              | `mockup/00_login_flow/mobile/`                               |
+| Session-securing overlay                | `mockup/00_login_flow/mobile/`                               |
+| Site Engineer Home                      | `mockup/site-engineer/dashboard-mobile/`                     |
+| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home_dashboard/`           |
 | Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/01_notification_preferences/` |
-| Navigation drawer                       | `mockup/mobile/04_tenant_admin/04_navigation_drawer/`       |
+| Navigation drawer                       | `mockup/mobile/04_tenant_admin/04_navigation_drawer/`        |
 
 The Tenant-Admin notification control panel and the navigation drawer were added by product-owner
 decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28). All

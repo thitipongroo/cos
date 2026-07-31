@@ -478,6 +478,27 @@ describe('TenantService', () => {
       expect(await service.listTenants()).toHaveLength(2);
     });
   });
+
+  describe('getMyTenant', () => {
+    it('returns the caller own tenant identity (name, code, plan)', async () => {
+      const row = {
+        tenant_name: 'ACME Construction',
+        tenant_code: 'acme_corp',
+        plan_type: 'STARTER',
+      };
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([row]);
+      const result = await service.getMyTenant('tenant-1');
+      expect(result).toEqual(row);
+    });
+
+    it('throws NotFoundException (COS-TENANT-404) when the tenant is missing or inactive', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      await expect(service.getMyTenant('tenant-1')).rejects.toThrow(NotFoundException);
+      await expect(service.getMyTenant('tenant-1')).rejects.toMatchObject({
+        response: { code: 'COS-TENANT-404', message: 'Tenant not found' },
+      });
+    });
+  });
 });
 
 describe('TenantService onModuleDestroy', () => {

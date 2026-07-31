@@ -30,6 +30,9 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
+import { BadRequestException } from '@nestjs/common';
+import { CosRole } from '@cos/types';
+import { ROLE_PERMISSIONS } from '@cos/rbac';
 import { IdentityController } from '../identity.controller';
 
 describe('IdentityController', () => {
@@ -183,6 +186,21 @@ describe('IdentityController', () => {
       mockDeviceTrust.revokeDevice.mockResolvedValue(undefined);
       await controller.revokeDevice(fakeReq('user-1', 'kc-1'), 'dev-1');
       expect(mockDeviceTrust.revokeDevice).toHaveBeenCalledWith('user-1', 'dev-1');
+    });
+  });
+
+  describe('getRolePermissions', () => {
+    it('returns the static RBAC grant set for a known role (§6.4)', () => {
+      const result = controller.getRolePermissions(CosRole.FINANCE);
+      expect(result).toEqual({
+        role: CosRole.FINANCE,
+        permissions: ROLE_PERMISSIONS[CosRole.FINANCE],
+      });
+    });
+
+    it('rejects an unknown role with BadRequestException', () => {
+      expect(() => controller.getRolePermissions('NOT_A_ROLE')).toThrow(BadRequestException);
+      expect(() => controller.getRolePermissions('NOT_A_ROLE')).toThrow('Unknown role: NOT_A_ROLE');
     });
   });
 
