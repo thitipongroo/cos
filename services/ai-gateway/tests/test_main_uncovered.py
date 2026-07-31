@@ -464,6 +464,312 @@ class TestCompletionsProviderCall:
         assert "no API key" in exc.value.detail
 
 
+class TestWireDb:
+    """`_wire_db`: the asyncpg pool is built when DATABASE_URL is set, and any failure is swallowed
+    so the gateway still boots with an empty (None) pool."""
+
+    @pytest.mark.asyncio
+    async def test_returns_without_a_pool_when_no_dsn(self, monkeypatch):
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+        await main_module._wire_db()
+
+        assert main_module._db_pool is None
+
+    @pytest.mark.asyncio
+    async def test_builds_the_pool_when_dsn_is_configured(self, monkeypatch):
+        monkeypatch.setenv("DATABASE_URL", "postgres://user@host/db")
+        monkeypatch.setattr(main_module, "_db_pool", None)
+        built = object()
+        captured = {}
+
+        import asyncpg
+
+        async def fake_create_pool(dsn, **kwargs):
+            captured["dsn"] = dsn
+            captured["kwargs"] = kwargs
+            return built
+
+        monkeypatch.setattr(asyncpg, "create_pool", fake_create_pool)
+
+        await main_module._wire_db()
+
+        assert main_module._db_pool is built
+        assert captured["dsn"] == "postgres://user@host/db"
+        assert captured["kwargs"] == {"min_size": 1, "max_size": 4}
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+    @pytest.mark.asyncio
+    async def test_unreachable_database_leaves_the_pool_none(self, monkeypatch, caplog):
+        import logging
+
+        monkeypatch.setenv("DATABASE_URL", "postgres://user@host/db")
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+        import asyncpg
+
+        async def boom(dsn, **kwargs):
+            raise RuntimeError("db unreachable")
+
+        monkeypatch.setattr(asyncpg, "create_pool", boom)
+
+        with caplog.at_level(logging.WARNING, logger="cos.ai.usage"):
+            await main_module._wire_db()
+
+        assert main_module._db_pool is None
+        assert "db pool not configured" in caplog.text
+
+
+class TestVoiceIntent:
+    """The `/api/v1/ai/intent` endpoint: the kill-switch 503, the happy path, and the two error maps
+    (stub-provider NotImplementedError → 503, missing template FileNotFoundError → 404)."""
+
+    @pytest.mark.asyncio
+    async def test_503_when_completions_flag_disabled(self, monkeypatch):
+        from main import IntentRequest, voice_intent
+
+        async def _disabled(flag, default=True):
+            return False
+
+        monkeypatch.setattr(main_module.flags, "is_enabled", _disabled)
+
+        with pytest.raises(HTTPException) as exc:
+            await voice_intent(IntentRequest(transcript="ไปหน้า inspections"), tenant_id="t-1")
+
+        assert exc.value.status_code == 503
+        assert "COS-FLAG-001" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_returns_the_classified_intent(self, monkeypatch):
+        from intent.parse import IntentResult
+        from main import IntentRequest, voice_intent
+
+        captured = {}
+
+        async def fake_classify(transcript, provider, db_pool, tenant_id):
+            captured["args"] = (transcript, provider, db_pool, tenant_id)
+            return IntentResult(
+                intent="NAVIGATE", target="inspections", text="ไปหน้า inspections", confidence=0.8
+            )
+
+        monkeypatch.setattr(main_module, "classify_intent", fake_classify)
+
+        resp = await voice_intent(
+            IntentRequest(transcript="ไปหน้า inspections"), tenant_id="tenant-abc"
+        )
+
+        assert resp.intent == "NAVIGATE"
+        assert resp.target == "inspections"
+        assert resp.text == "ไปหน้า inspections"
+        assert resp.confidence == 0.8
+        # tenant + injected provider/pool are threaded through to classify_intent.
+        assert captured["args"][0] == "ไปหน้า inspections"
+        assert captured["args"][3] == "tenant-abc"
+
+    @pytest.mark.asyncio
+    async def test_stub_provider_becomes_503(self, monkeypatch):
+        from main import IntentRequest, voice_intent
+
+        async def stub_classify(*args, **kwargs):
+            raise NotImplementedError("StubLLMProvider: no API key configured")
+
+        monkeypatch.setattr(main_module, "classify_intent", stub_classify)
+
+        with pytest.raises(HTTPException) as exc:
+            await voice_intent(IntentRequest(transcript="x"), tenant_id="t-1")
+
+        assert exc.value.status_code == 503
+        assert "no API key" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_missing_template_becomes_404(self, monkeypatch):
+        from main import IntentRequest, voice_intent
+
+        async def no_template(*args, **kwargs):
+            raise FileNotFoundError("voice-intent-v1.j2 not found")
+
+        monkeypatch.setattr(main_module, "classify_intent", no_template)
+
+        with pytest.raises(HTTPException) as exc:
+            await voice_intent(IntentRequest(transcript="x"), tenant_id="t-1")
+
+        assert exc.value.status_code == 404
+        assert ".j2" in exc.value.detail
+
+
+class TestAiUsage:
+    """The `/api/v1/ai/usage` endpoint: 503 without a DB pool, else the metering summary."""
+
+    @pytest.mark.asyncio
+    async def test_503_when_no_database_is_configured(self, monkeypatch):
+        from main import ai_usage
+
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+        with pytest.raises(HTTPException) as exc:
+            await ai_usage(tenant_id="t-1")
+
+        assert exc.value.status_code == 503
+        assert "metering not configured" in exc.value.detail
+
+    @pytest.mark.asyncio
+    async def test_returns_the_usage_summary(self, monkeypatch):
+        from main import ai_usage
+
+        captured = {}
+        monkeypatch.setattr(main_module, "_db_pool", object())
+
+        async def fake_summary(db_pool, tenant_id):
+            captured["tenant_id"] = tenant_id
+            return {
+                "tokensUsed": 1234,
+                "quota": 500_000,
+                "percentUsed": 0,
+                "periodMonth": "2026-08",
+                "alertLevel": "none",
+            }
+
+        monkeypatch.setattr(main_module, "get_usage_summary", fake_summary)
+
+        resp = await ai_usage(tenant_id="tenant-abc")
+
+        assert resp.tokensUsed == 1234
+        assert resp.quota == 500_000
+        assert resp.periodMonth == "2026-08"
+        assert resp.alertLevel == "none"
+        assert captured["tenant_id"] == "tenant-abc"
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+
+class TestDelayRisk:
+    """The `/api/v1/ai/reports/delay-risk` endpoint: the best-effort context assembly and the
+    best-effort risk-prediction emit, both of whose failures must never fail the response."""
+
+    @staticmethod
+    def _report(low_confidence=False, level="HIGH"):
+        from reports.pipeline import ReportResult
+
+        return ReportResult(
+            report_id="r-1",
+            report_type="DELAY_RISK",
+            content={"delay_risk_level": level} if level else {},
+            confidence=0.9,
+            low_confidence=low_confidence,
+        )
+
+    @staticmethod
+    def _request():
+        from main import DelayRiskRequest
+
+        return DelayRiskRequest(project_id="p-1", tenant_id="t-1", generated_by="u-1")
+
+    @pytest.mark.asyncio
+    async def test_assembles_context_and_emits_when_confident(self, monkeypatch):
+        from main import delay_risk
+
+        monkeypatch.setattr(main_module, "_db_pool", object())
+        captured = {}
+
+        async def fake_assemble(db_pool, weather, tenant_id, project_id):
+            captured["assemble"] = (tenant_id, project_id)
+            return "CONTEXT"
+
+        async def fake_run_report(report_type, project_id, tenant_id, generated_by, extra, context=""):
+            captured["run_context"] = context
+            return self._report_holder
+
+        self._report_holder = self._report()
+
+        async def fake_emit(project_id, tenant_id, content, confidence, producer=None):
+            captured["emit"] = (project_id, tenant_id, confidence)
+
+        monkeypatch.setattr(main_module, "assemble_delay_context", fake_assemble)
+        monkeypatch.setattr(main_module, "_run_report", fake_run_report)
+        monkeypatch.setattr(main_module, "emit_risk_prediction", fake_emit)
+
+        resp = await delay_risk(self._request(), tenant_id="tenant-abc")
+
+        assert resp.report_id == "r-1"
+        assert captured["assemble"] == ("tenant-abc", "p-1")
+        assert captured["run_context"] == "CONTEXT"
+        assert captured["emit"] == ("p-1", "tenant-abc", 0.9)
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+    @pytest.mark.asyncio
+    async def test_context_assembly_failure_falls_back_to_empty(self, monkeypatch, caplog):
+        import logging
+
+        from main import delay_risk
+
+        monkeypatch.setattr(main_module, "_db_pool", object())
+        captured = {}
+
+        async def boom_assemble(*args, **kwargs):
+            raise RuntimeError("schedule query failed")
+
+        async def fake_run_report(report_type, project_id, tenant_id, generated_by, extra, context=""):
+            captured["run_context"] = context
+            # low_confidence → the emit branch is skipped.
+            return self._report(low_confidence=True)
+
+        monkeypatch.setattr(main_module, "assemble_delay_context", boom_assemble)
+        monkeypatch.setattr(main_module, "_run_report", fake_run_report)
+
+        with caplog.at_level(logging.WARNING, logger="cos.ai.risk"):
+            resp = await delay_risk(self._request(), tenant_id="t-1")
+
+        assert resp.report_id == "r-1"
+        assert captured["run_context"] == ""  # fell back to empty context
+        assert "context assembly failed" in caplog.text
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+    @pytest.mark.asyncio
+    async def test_no_emit_when_no_risk_level(self, monkeypatch):
+        from main import delay_risk
+
+        # No DB pool → context assembly skipped entirely (line 470 false branch).
+        monkeypatch.setattr(main_module, "_db_pool", None)
+        emitted = []
+
+        async def fake_run_report(report_type, project_id, tenant_id, generated_by, extra, context=""):
+            return self._report(level=None)  # no delay_risk_level → emit branch skipped
+
+        async def fake_emit(*args, **kwargs):
+            emitted.append(True)
+
+        monkeypatch.setattr(main_module, "_run_report", fake_run_report)
+        monkeypatch.setattr(main_module, "emit_risk_prediction", fake_emit)
+
+        resp = await delay_risk(self._request(), tenant_id="t-1")
+
+        assert resp.report_id == "r-1"
+        assert emitted == []
+
+    @pytest.mark.asyncio
+    async def test_emit_failure_never_fails_the_response(self, monkeypatch, caplog):
+        import logging
+
+        from main import delay_risk
+
+        monkeypatch.setattr(main_module, "_db_pool", None)
+
+        async def fake_run_report(report_type, project_id, tenant_id, generated_by, extra, context=""):
+            return self._report()
+
+        async def boom_emit(*args, **kwargs):
+            raise RuntimeError("kafka broker down")
+
+        monkeypatch.setattr(main_module, "_run_report", fake_run_report)
+        monkeypatch.setattr(main_module, "emit_risk_prediction", boom_emit)
+
+        with caplog.at_level(logging.WARNING, logger="cos.ai.risk"):
+            resp = await delay_risk(self._request(), tenant_id="t-1")
+
+        assert resp.report_id == "r-1"  # response still returned despite the emit failure
+        assert "risk-prediction emit failed" in caplog.text
+
+
 class TestRunReportErrorMapping:
     """`_run_report`'s remaining branches: a missing prompt template, and the success return."""
 
