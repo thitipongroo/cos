@@ -355,7 +355,7 @@ Every new service, module, or background job must include:
 - All HTTP requests must propagate `traceparent` header (W3C Trace Context)
 - All Kafka events must carry `trace_id` and `span_id` in headers
 - All cross-service calls must create child spans
-- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector/otel-collector-config.yml` (sampling section)
+- **Sampling strategy** — tail-based sampling in production: 1% baseline of all requests; 100% of requests with errors (`4xx`/`5xx` responses); 100% of all AI/LLM calls; 100% of all financial transactions (source: spec §31.5 — "head-based" corrected to "tail-based"; tail-based captures all error traces regardless of baseline sample rate); sampling config in `infrastructure/monitoring/otel-collector/otel-collector-config.yml` (sampling section). **No SDK may head-sample** (ADR-075): the Go (`libs/go/cosotel`), Python (`services/ai-gateway/otel.py`) and Node (`@cos/tracing`) SDKs export EVERY span and the Collector's `tail_sampling` processor decides — a head sampler drops spans before the Collector can apply the error/AI/financial policies, so those "100%" guarantees silently fail. The baseline is set by `OTEL_SAMPLING_PERCENTAGE` (PERCENT 0–100, not a ratio) injected into the Collector Deployment; per spec §31.5 development=100, staging=10, production=1. Collector 0.103.0 accepts only `${env:VAR}` — `${VAR:-default}` makes it refuse to start
 
 **Metrics:**
 
@@ -1031,7 +1031,9 @@ docs/runbooks/temporal-worker-restart.md         — Temporal.io worker restart 
 cos-audit/                                          — Product owner sign-off audit logs (git-ignored content, directory committed)
 
 # Observability Infrastructure
-infrastructure/monitoring/otel-collector/otel-collector-config.yml — OTel collector config (includes trace sampling configuration)
+infrastructure/monitoring/otel-collector/otel-collector-config.yml — OTel collector config (tail_sampling + Loki label hints; ADR-075)
+infrastructure/monitoring/otel-collector/kustomization.yaml        — base; generates the config ConfigMap from the file above (never hand-write it)
+infrastructure/monitoring/otel-collector-overlays/{development,staging,production}/ — per-env ENV + OTEL_SAMPLING_PERCENTAGE (§31.5: 100/10/1); deploy with `kubectl apply -k <overlay>`, NOT `apply -f`
 infrastructure/synthetics/                          — Synthetic monitoring probe definitions for Grafana Synthetic Monitoring / OpenTelemetry Collector (Phase 15)
 
 # Lint & Format Config

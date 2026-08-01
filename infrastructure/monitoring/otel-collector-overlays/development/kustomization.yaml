@@ -1,0 +1,35 @@
+# OTel Collector — development overlay.
+#
+# Lives beside the base rather than inside it: kustomize rejects an overlay nested under its own
+# base ("cycle detected"), and moving the base files would break the many references to
+# infrastructure/monitoring/otel-collector/otel-collector-config.yml (context.md, ADR-075,
+# prometheus.yml).
+#
+# Sets ONLY the two mandatory environment variables. Sampling per spec §31.5: development = 100% (keep every trace locally)
+# Deploy:  kubectl apply -k infrastructure/monitoring/otel-collector-overlays/development
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../otel-collector
+
+patches:
+  - target:
+      kind: Deployment
+      name: otel-collector
+    # Strategic-merge patch: env entries merge by `name`, so only these two are touched.
+    patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: otel-collector
+      spec:
+        template:
+          spec:
+            containers:
+              - name: otel-collector
+                env:
+                  - name: ENV
+                    value: 'development'
+                  - name: OTEL_SAMPLING_PERCENTAGE
+                    value: '100'

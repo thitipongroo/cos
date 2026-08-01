@@ -315,7 +315,9 @@ export function LoadingState({
     // natural mid-frame: a full-page screenshot is stitched from several scrolling viewports, and a
     // moving shimmer between frames defeats the stitch's overlap match. The fill jumps straight to its
     // honest target so the frozen frame still shows the real bar/ring/percentage.
-    if (process.env['EXPO_PUBLIC_CAPTURE']) {
+    // Compare against '1' exactly, matching src/app/_layout.tsx. A bare truthiness check made
+    // EXPO_PUBLIC_CAPTURE=0 (or any "off" string) still freeze every animation.
+    if (process.env['EXPO_PUBLIC_CAPTURE'] === '1') {
       pulseValue.setValue(0.6);
       spinValue.setValue(0);
       scanValue.setValue(0);

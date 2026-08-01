@@ -69,4 +69,4 @@ Export the updated realm (`kc.sh export` or Admin Console partial export) and co
 - The custom backend TOTP module (`backend/src/modules/identity/mfa/*`, `/api/v1/auth/mfa/*`) is **deprecated**:
   it is not wired into any client flow (Keycloak-native OTP is the source of truth per master doc). Left in place
   to avoid test churn; remove in a dedicated change.
-- Path A (SMS OTP, SITE_WORKER/SITE_ENGINEER) is unaffected — MFA applies to Path B office roles only.
+- Path A (SMS OTP, SITE_WORKER/SITE-ENGINEER) is unaffected — MFA applies to Path B office roles only.

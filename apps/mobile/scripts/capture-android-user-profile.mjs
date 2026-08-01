@@ -1,7 +1,7 @@
-// User-profile capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab, taps the
+// User-profile capture — adb/uiautomator only. Logs in as TENANT-ADMIN, opens the Users tab, taps the
 // first user card (which opens that user's profile) and captures it as ONE full-page image (mockup
 // 04_tenant_admin/02_users/02_user_management/02_user_profile):
-//   docs/screens/android/TENANT_ADMIN/02-Users/03-user-profile.png
+//   docs/screens/android/TENANT-ADMIN/02-Users/03-user-profile.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
@@ -10,7 +10,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/02-Users');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/02-Users');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -127,7 +127,7 @@ async function main() {
   await delay(30_000);
   await dismissDevBanners();
 
-  console.log(`· Path A login as ${OTP_PHONE} (TENANT_ADMIN)`);
+  console.log(`· Path A login as ${OTP_PHONE} (TENANT-ADMIN)`);
   await tap(byId('phone-input'), 'phone input');
   await type(OTP_PHONE);
   await hideKeyboard();

@@ -220,7 +220,7 @@ Android over a poor network.
 | Finance             | `FINANCE`             | Web              | Cost recognition, payment approvals, cash flow                              |
 | Safety Officer      | `SAFETY_OFFICER`      | Web + mobile     | Safety checklists, incident reporting, compliance status, violation alerts  |
 | CRM / Sales Manager | `CRM_SALES_MANAGER`   | Web              | Lead pipeline, opportunity tracking (basic UI in MVP)                       |
-| Tenant Admin        | `TENANT_ADMIN`        | Web              | Users, roles, workflows, tenant settings, integrations                      |
+| Tenant Admin        | `TENANT-ADMIN`        | Web              | Users, roles, workflows, tenant settings, integrations                      |
 
 Sub-roles (spec 06 §6.8): `PROC_MANAGER` (procurement approval tier above Officer),
 `SITE_WORKER` (field worker — mobile-primary; tasks/reports/checklists/issues read-write),
@@ -280,7 +280,7 @@ Two login paths — BOTH rendered on web and on mobile:
 
 - OTP: 6-digit numeric, TTL 5 min, max 3 attempts/session, 10 requests/phone/day —
   design countdown, resend limits, attempt errors (spec 05 §5.4.2).
-- **MFA (TOTP)** required for `TENANT_ADMIN` and `FINANCE` — MFA challenge screen after
+- **MFA (TOTP)** required for `TENANT-ADMIN` and `FINANCE` — MFA challenge screen after
   primary factor; enrollment flow shows QR from `otpauth://` URI (spec 14 §14.3 auth APIs).
 - Session: access token 15 min / refresh 7 days — design silent-refresh, session-expiry
   states. Post-login redirect = first page of the role's page inventory (§5.4).
@@ -1019,7 +1019,7 @@ AVAILABLE / RESERVED / LEASED / SOLD (spec 28 §28.9 resources).
   anonymised aggregates retained — state this in the consent copy).
 - **API monetization & quota (spec 13 §13.5)** — monthly external-API quotas per tier
   (SMB 50k / Mid-market 100k / Enterprise 1M default); overage → block + notify
-  TENANT_ADMIN; per-key cap ≤ 20% of tenant quota — design quota usage + overage
+  TENANT-ADMIN; per-key cap ≤ 20% of tenant quota — design quota usage + overage
   notification states alongside the AI-token dashboard (§9.4).
 - **Module subscription (spec 22 §22.7 GLOB-004)** — tenants subscribe to intelligence
   modules (Construction Core / Infrastructure / Real Estate) — subscription management

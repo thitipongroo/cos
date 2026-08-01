@@ -1,8 +1,8 @@
 // Role-permissions screenshot capture — adb/uiautomator only (same approach as capture-android-invite-user.mjs).
-// Logs in as the TENANT_ADMIN (+66811000002), opens the FAB's Quick Commands → Invite New User, selects a
+// Logs in as the TENANTขADMIN (+66811000002), opens the FAB's Quick Commands → Invite New User, selects a
 // role (Project Manager), then taps "View permissions" to open the role-permissions breakdown (mockup
 // 04_tenant_admin/01_home/02_quick_action_button/02_invite_user/02_role_permissions). Captures:
-//   docs/screens/android/TENANT_ADMIN/01-Home/04-role-permissions.png — ONE full-page (hero → CORE_AI
+//   docs/screens/android/TENANT-ADMIN/01-Home/04-role-permissions.png — ONE full-page (hero → CORE_AI
 //   banner → all module rows → Back-to-invitation), stitched from scrolling viewports via stitch-fullpage.py.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python. Run:
 //   node scripts/capture-android-role-permissions.mjs
@@ -13,11 +13,11 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/01-Home');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
-const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002'; // TENANT_ADMIN
+const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002'; // TENANT-ADMIN
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
 
 const SDK = process.env['ANDROID_HOME'] ?? process.env['ANDROID_SDK_ROOT'] ?? '';
@@ -117,7 +117,7 @@ async function main() {
   await delay(30_000);
   await dismissDevBanners();
 
-  console.log(`· Path A login as ${OTP_PHONE} (TENANT_ADMIN)`);
+  console.log(`· Path A login as ${OTP_PHONE} (TENANT-ADMIN)`);
   await tap(byId('phone-input'), 'phone input');
   await type(OTP_PHONE);
   await hideKeyboard();

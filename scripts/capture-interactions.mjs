@@ -1,6 +1,7 @@
 // Interaction-level screenshots: drill-down detail pages, create forms, and the notification
 // popover (the app's real in-page interactions — it uses dedicated /new form pages + detail
-// routes rather than modals). Saves to docs/screens/web/<ROLE>/_interactions/.
+// routes rather than modals). Saves to docs/screens/web/<ROLE>/interactions/, where <ROLE> is the
+// role name in UPPER-KEBAB (TENANT-ADMIN, not TENANT_ADMIN) — same convention as docs/screens/android/.
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,6 +11,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const BASE = process.env.WEB_BASE || 'http://localhost:3001';
 const PW = process.env.DEMO_USER_PASSWORD || 'Ekachai@2026';
 const OUT = path.resolve(__dirname, '../docs/screens/web');
+
+// USERS keys below stay the canonical CosRole spelling (UPPER_SNAKE) — doInteractions() branches on
+// them (`role === 'PROJECT_MANAGER'`), so they are role identities, not folder names. Convert only
+// when building a path.
+const folderFor = (role) => role.replace(/_/g, '-');
 const SKV45 = '88803908-e4b5-57bd-8e6b-ed4662b5d67d'; // The Sukhumvit 45 Residences (EKC)
 
 const USERS = {
@@ -83,7 +89,7 @@ async function doInteractions(page, role, dir) {
   const browser = await chromium.launch();
   let total = 0;
   for (const [role, email] of Object.entries(USERS)) {
-    const dir = path.join(OUT, role, '_interactions');
+    const dir = path.join(OUT, folderFor(role), 'interactions');
     fs.mkdirSync(dir, { recursive: true });
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();

@@ -1,10 +1,10 @@
 // Tenant Admin Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-home.mjs (see capture-android-login.mjs for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/TENANT_ADMIN/01-Home/01-home-dashboard.png: the TENANT_ADMIN landing dashboard
+// Writes docs/screens/android/TENANT-ADMIN/01-Home/01-home-dashboard.png: the TENANT-ADMIN landing dashboard
 // (mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/) with live data — system status, pending
 // approvals (payments + POs) and AI token usage — reached through a real Path A (SMS OTP) login as
-// the seeded TENANT_ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
+// the seeded TENANT-ADMIN (Suphaporn Rattanakul, +66811000002). Office roles enrol MFA in the
 // browser (Path B); the Direct-Grant OTP path used here provisions a phone username + password with
 // no TOTP required action, so the same account logs in either way (provision-keycloak-demo.ts).
 //
@@ -26,14 +26,14 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // Grouped by main-menu tab: each capture's name carries its menu subfolder (Home / Users / Alerts /
-// Settings) under TENANT_ADMIN/, so stitchFull() writes e.g. TENANT_ADMIN/01-Home/01-home-dashboard.png.
+// Settings) under TENANT-ADMIN/, so stitchFull() writes e.g. TENANT-ADMIN/01-Home/01-home-dashboard.png.
 // Every screen is captured as ONE full-page image (scrolling viewports stitched via stitch-fullpage.py).
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
 
-// Suphaporn Rattanakul — TENANT_ADMIN at Ekachai (seed-realistic.ts). National format: the login
+// Suphaporn Rattanakul — TENANT-ADMIN at Ekachai (seed-realistic.ts). National format: the login
 // screen prefixes +66 from the country picker, so +66811000002 is typed as 0811000002.
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';

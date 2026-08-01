@@ -1,6 +1,8 @@
 // Package cosotel provides OpenTelemetry SDK setup shared by the Go workers.
 // Call Configure() once at startup before processing any Kafka messages.
-// Sampling: 1% baseline (OTEL_SAMPLING_RATIO env), 100% for errors via Collector tail-sampling.
+// Sampling: NONE here — every span is exported and the OTel Collector decides via tail-sampling
+// (1% baseline, 100% for errors). Do not add an SDK sampler: it discards spans before the Collector
+// can see them, which breaks the "100% of error traces" guarantee. See ADR-075 and spec §31.5.
 //
 // Extracted from services/{analytics,kg-ingestion}-worker/internal/otel on 2026-07-21 (ADR-021).
 // The two copies differed in exactly one behavioural respect — the fallback service name — which is
@@ -58,7 +60,10 @@ func Configure(ctx context.Context, defaultServiceName string) (func(context.Con
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
-		sdktrace.WithSampler(sdktrace.ParentBased(sdktrace.TraceIDRatioBased(samplingRatio()))),
+		// No SDK sampler (ADR-075): sampling is TAIL-based at the OTel Collector (spec §31.5, QM-8).
+		// Head-sampling here dropped ~99% of spans before the Collector could apply its
+		// errors / ai-llm / financial policies, so "100% of error traces" could never hold.
+		// The SDK now exports every span and the Collector decides what to keep.
 	)
 
 	otel.SetTracerProvider(tp)
@@ -107,15 +112,6 @@ func InjectKafkaHeaders(ctx context.Context, headers map[string][]byte) {
 // ExtractKafkaContext extracts a span context from Kafka message headers.
 func ExtractKafkaContext(ctx context.Context, headers map[string][]byte) context.Context {
 	return otel.GetTextMapPropagator().Extract(ctx, KafkaHeaderCarrier(headers))
-}
-
-func samplingRatio() float64 {
-	v := getenv("OTEL_SAMPLING_RATIO", "0.01")
-	var r float64
-	if _, err := fmt.Sscanf(v, "%f", &r); err != nil {
-		return 0.01
-	}
-	return r
 }
 
 func getenv(key, fallback string) string {

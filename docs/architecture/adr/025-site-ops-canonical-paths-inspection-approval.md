@@ -43,8 +43,8 @@ inspection (`PENDING`, `FAILED`, or `REQUIRES_REINSPECTION`) may move to `PASSED
 `PATCH` on a `PASSED` inspection returns `422` (re-inspection requires a new inspection record).
 Moving to `PASSED` emits `site.inspection.passed.v1`; moving to `FAILED` emits
 `site.inspection.failed.v1` (reusing the existing Phase 6 events). RBAC: read =
-EXECUTIVE/PM/SITE_ENGINEER/SAFETY_OFFICER/TENANT_ADMIN; write (PATCH) =
-PM/SITE_ENGINEER/SAFETY_OFFICER/TENANT_ADMIN (§06 "Inspections / QC" RW).
+EXECUTIVE/PM/SITE-ENGINEER/SAFETY_OFFICER/TENANT-ADMIN; write (PATCH) =
+PM/SITE-ENGINEER/SAFETY_OFFICER/TENANT-ADMIN (§06 "Inspections / QC" RW).
 
 ## Consequences
 

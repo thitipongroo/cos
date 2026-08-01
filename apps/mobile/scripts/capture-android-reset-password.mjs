@@ -1,4 +1,4 @@
-// Reset-password capture — adb/uiautomator only. Logs in as TENANT_ADMIN and captures BOTH reset paths
+// Reset-password capture — adb/uiautomator only. Logs in as TENANT-ADMIN and captures BOTH reset paths
 // (mockup 04_tenant_admin/02_users/02_user_management/05_reset_password + 06/07 success screens):
 //   06-reset-password.png       — the form for a user WITH an email (email reset-link recommended)
 //   08-reset-link-sent.png      — email path: standards-compliant Keycloak action-token link sent
@@ -14,7 +14,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/02-Users');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/02-Users');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -144,7 +144,7 @@ async function main() {
   await delay(30_000);
   await dismissDevBanners();
 
-  console.log(`· Path A login as ${OTP_PHONE} (TENANT_ADMIN)`);
+  console.log(`· Path A login as ${OTP_PHONE} (TENANT-ADMIN)`);
   await tap(byId('phone-input'), 'phone input');
   await type(OTP_PHONE);
   await hideKeyboard();

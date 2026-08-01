@@ -1,7 +1,7 @@
-// Quick-Add overlay screenshot capture — adb/uiautomator only. Logs in as TENANT_ADMIN, taps the Home
+// Quick-Add overlay screenshot capture — adb/uiautomator only. Logs in as TENANT-ADMIN, taps the Home
 // FAB to open the Quick Commands overlay (components/QuickAddMenu), and captures it as ONE full-page
 // image (the overlay scrolls: action cards + the stats bento), stitched via scripts/stitch-fullpage.py:
-//   docs/screens/android/TENANT_ADMIN/01-Home/01-quick-action.png
+//   docs/screens/android/TENANT-ADMIN/01-Home/01-quick-action.png
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
 import { execFileSync } from 'node:child_process';
@@ -10,7 +10,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT_DIR = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/01-Home');
+const OUT_DIR = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/01-Home');
 const OUT = join(OUT_DIR, '01-quick-action.png');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
@@ -89,7 +89,7 @@ async function main() {
   await delay(30_000);
   await dismissDevBanners();
 
-  console.log(`· Path A login as ${OTP_PHONE} (TENANT_ADMIN)`);
+  console.log(`· Path A login as ${OTP_PHONE} (TENANT-ADMIN)`);
   await tap(byId('phone-input'), 'phone input');
   await type(OTP_PHONE);
   await hideKeyboard();

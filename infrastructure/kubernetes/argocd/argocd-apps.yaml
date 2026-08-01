@@ -315,3 +315,40 @@ spec:
         duration: 5s
         maxDuration: 3m
         factor: 2
+---
+# OTel Collector. The AppProject already whitelists the `monitoring` namespace, but nothing under
+# infrastructure/monitoring/ had an Application — so the collector had no deploy path at all.
+#
+# Source is a KUSTOMIZE overlay, not Helm: the overlay supplies the two mandatory env vars
+# (ENV, OTEL_SAMPLING_PERCENTAGE) and the base generates the collector ConfigMap from the real
+# config file. ArgoCD detects kustomization.yaml automatically — no `kustomize:` block needed.
+# Point a staging ArgoCD instance at overlays/staging instead (§31.5: staging samples at 10%).
+# See ADR-075.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cos-otel-collector
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: construction-os
+  source:
+    repoURL: https://github.com/construction-os/construction-os
+    targetRevision: main
+    path: infrastructure/monitoring/otel-collector-overlays/production
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        maxDuration: 3m
+        factor: 2

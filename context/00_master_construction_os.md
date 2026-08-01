@@ -1328,7 +1328,7 @@ Purchase Order Workflow:
   Approval Chain Additional Rules (spec §15.5):
     - Vendor Invoice (AP): FINANCE approves up to configured limit; above limit requires EXECUTIVE
     - Client Billing (AR): PM approves up to configured limit; above limit requires EXECUTIVE
-    - Safety permit: SITE_WORKER/SITE_ENGINEER initiates → SAFETY_OFFICER approves → PM (final)
+    - Safety permit: SITE_WORKER/SITE-ENGINEER initiates → SAFETY_OFFICER approves → PM (final)
     - All approval decisions: logged with approver_id, decision, timestamp, comment (audit_logs table)
 
 RULES:
@@ -4072,6 +4072,13 @@ Distributed Tracing:
   Go workers: trace every Kafka consume iteration and DB write
   Trace propagation: W3C TraceContext headers on HTTP, Kafka headers for async
   Sampling: 1% of requests in production (100% for errors — tail-based sampling; source: spec §31.5 — production rate corrected from 10% staging rate to 1% production rate)
+    Sampling happens ONLY at the OTel Collector (ADR-075). No SDK — Go (libs/go/cosotel), Python
+    (services/ai-gateway/otel.py) or Node (@cos/tracing) — may configure a sampler: head-sampling
+    discards spans inside the service, before the Collector's tail_sampling can apply its
+    error / AI-LLM / financial policies, so the "100% for errors" guarantee silently fails.
+    Baseline set via OTEL_SAMPLING_PERCENTAGE (PERCENT 0–100, NOT a ratio) on the Collector
+    Deployment; per §31.5 development=100, staging=10, production=1. Collector 0.103.0 accepts
+    only ${env:VAR} — the older ${VAR:-default} form makes the Collector refuse to start.
 
 Grafana Dashboards (required):
   Implementation dashboards (technology-based — spec §31.8):

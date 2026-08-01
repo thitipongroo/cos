@@ -1,7 +1,7 @@
 // Site Engineer Home screenshot capture — adb/uiautomator only, same approach as
 // capture-android-login.mjs (see that file for why Detox cannot drive these flows).
 //
-// Writes docs/screens/android/SITE_ENGINEER/01-Home/01-home.png: the SITE_ENGINEER landing dashboard
+// Writes docs/screens/android/SITE-ENGINEER/01-Home/01-home.png: the SITE_ENGINEER landing dashboard
 // (mockup/site-engineer/dashboard-mobile/) with live data — BOQ-value-weighted project progress
 // (§32.12), open issues, and upcoming tasks — reached through a real Path A (SMS OTP) login.
 //
@@ -22,8 +22,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// Grouped by main-menu tab: SITE_ENGINEER's loading + landing shots are its Home tab → SITE_ENGINEER/01-Home/.
-const OUT = resolve(HERE, '../../../docs/screens/android/SITE_ENGINEER/01-Home');
+// Grouped by main-menu tab: SITE_ENGINEER's loading + landing shots are its Home tab → SITE-ENGINEER/01-Home/.
+const OUT = resolve(HERE, '../../../docs/screens/android/SITE-ENGINEER/01-Home');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';

@@ -1,8 +1,8 @@
-// Users screen capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab and captures:
-//   docs/screens/android/TENANT_ADMIN/02-Users/01-users-dashboard.png    — the users list (mockup
+// Users screen capture — adb/uiautomator only. Logs in as TENANT-ADMIN, opens the Users tab and captures:
+//   docs/screens/android/TENANT-ADMIN/02-Users/01-users-dashboard.png    — the users list (mockup
 //     04_tenant_admin/02_users/01_users_dashboard) as a SINGLE top viewport: header + AI audit + the
 //     first ~2 user cards (not the whole scrolled list).
-//   docs/screens/android/TENANT_ADMIN/02-Users/02-users-more.png  — the per-user ⋮ action sheet
+//   docs/screens/android/TENANT-ADMIN/02-Users/02-users-more.png  — the per-user ⋮ action sheet
 //     (mockup 02_user_management/01_management); a bottom sheet that fits one viewport → a single grab.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
@@ -12,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/02-Users');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/02-Users');
 const PKG = 'com.constructionos.cos';
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000002';
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
@@ -91,7 +91,7 @@ async function main() {
   await delay(30_000);
   await dismissDevBanners();
 
-  console.log(`· Path A login as ${OTP_PHONE} (TENANT_ADMIN)`);
+  console.log(`· Path A login as ${OTP_PHONE} (TENANT-ADMIN)`);
   await tap(byId('phone-input'), 'phone input');
   await type(OTP_PHONE);
   await hideKeyboard();

@@ -3,9 +3,9 @@
 // committed navigation-drawer shot uses) and captures the APP screens that previously leaked the
 // mfa-enrollment / notifications routes as broken (tofu-icon) bottom tabs. Those routes are now
 // href:null in components/MobileNav.tsx, so a fresh capture shows the correct 4-tab bar:
-//   docs/screens/android/_shared/02-navigation-drawer.png     — the drawer (opened from the top bar)
-//   docs/screens/android/_shared/01-notification-preferences.png — the notification-preferences route
-//   docs/screens/android/_mfa-flow/01-app-intro.png           — the in-app MFA enrolment intro
+//   docs/screens/android/02-shared/02-navigation-drawer.png     — the drawer (opened from the top bar)
+//   docs/screens/android/02-shared/01-notification-preferences.png — the notification-preferences route
+//   docs/screens/android/03-mfa/01-app-intro.png           — the in-app MFA enrolment intro
 // The Keycloak browser steps of the MFA flow (02–07) are captured by hand; this script covers only the
 // in-app screens it can drive. Prereqs are the same as capture-android-home.mjs, plus Metro started
 // with EXPO_PUBLIC_CAPTURE=1 so the dev-only LogBox toast is suppressed (see src/app/_layout.tsx).
@@ -147,7 +147,7 @@ async function main() {
   }
   await find(byId('drawer-logout'), 'drawer open (logout button)', 15);
   await delay(1200);
-  await shot('_shared/02-navigation-drawer');
+  await shot('02-shared/02-navigation-drawer');
   await tap(byId('drawer-backdrop'), 'drawer backdrop (close)');
   await delay(1000);
 
@@ -157,7 +157,7 @@ async function main() {
   await find(byId('notification-preferences'), 'notification-preferences', 25);
   await dismissDevBanners();
   await delay(1500);
-  await shot('_shared/01-notification-preferences');
+  await shot('02-shared/01-notification-preferences');
 
   // In-app MFA enrolment intro ("Two-factor authentication" / "Set up authenticator").
   console.log('· MFA enrolment intro');
@@ -166,7 +166,7 @@ async function main() {
   await find(byId('mfa-enroll-start'), 'MFA intro (mfa-enroll-start)', 25);
   await dismissDevBanners();
   await delay(1500);
-  await shot('_mfa-flow/01-app-intro');
+  await shot('03-mfa/01-app-intro');
 
   console.log('done.');
 }

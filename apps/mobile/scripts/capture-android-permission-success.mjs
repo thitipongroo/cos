@@ -1,8 +1,8 @@
-// Permission-success capture — adb/uiautomator only. Logs in as TENANT_ADMIN, opens the Users tab →
+// Permission-success capture — adb/uiautomator only. Logs in as TENANT-ADMIN, opens the Users tab →
 // Thanawat Boonmee's profile → Edit permissions, toggles an additional role to enable Save, taps SAVE
 // CHANGES and captures the success screen (mockup 04_tenant_admin/02_users/02_user_management/
 // 04_success_permission):
-//   docs/screens/android/TENANT_ADMIN/02-Users/05-success-permission.png
+//   docs/screens/android/TENANT-ADMIN/02-Users/05-success-permission.png
 // It adds FINANCE as an additional role; the caller reverts Thanawat back to PM + Safety afterwards.
 // Prereqs: emulator + Metro (EXPO_PUBLIC_CAPTURE=1) + backend with E2E_AUTH_BYPASS=true + Python.
 
@@ -12,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/TENANT_ADMIN/02-Users');
+const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN/02-Users');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
 const STITCH = join(HERE, 'stitch-fullpage.py');
 const PKG = 'com.constructionos.cos';
@@ -140,7 +140,7 @@ async function main() {
   await delay(30_000);
   await dismissDevBanners();
 
-  console.log(`· Path A login as ${OTP_PHONE} (TENANT_ADMIN)`);
+  console.log(`· Path A login as ${OTP_PHONE} (TENANT-ADMIN)`);
   await tap(byId('phone-input'), 'phone input');
   await type(OTP_PHONE);
   await hideKeyboard();

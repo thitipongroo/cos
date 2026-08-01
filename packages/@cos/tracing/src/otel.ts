@@ -14,11 +14,12 @@ export interface TracingOptions {
   otlpEndpoint?: string;
   /** Prometheus scrape port. Defaults to PROMETHEUS_PORT env or 9464 */
   prometheusPort?: number;
-  /**
-   * Tail-sampling ratio 0–1. Defaults to OTEL_SAMPLING_RATIO env or 0.01 (1% production).
-   * Errors are always sampled regardless of this ratio (configured on the OTel Collector).
-   */
-  samplingRatio?: number;
+  // NOTE (ADR-075): there is deliberately no sampling option here. Sampling is TAIL-based at the
+  // OTel Collector (spec §31.5, QM-8) — the SDK exports every span and the Collector's
+  // tail_sampling processor decides. A previous `samplingRatio?: number` field was declared here
+  // and documented as reading OTEL_SAMPLING_RATIO, but nothing ever read it; the claim was false.
+  // Do not reintroduce it: head-sampling would drop spans before the Collector could apply the
+  // errors / ai-llm / financial policies.
 }
 
 export function initTracing(serviceNameOrOptions: string | TracingOptions): void {

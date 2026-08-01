@@ -1,0 +1,25 @@
+# OTel Collector — base.
+#
+# Do NOT `kubectl apply -f` the raw manifests: the collector's ConfigMap is generated here from the
+# real otel-collector-config.yml, and the two mandatory environment variables are set per
+# environment by the overlays. Deploy an overlay instead:
+#
+#   kubectl apply -k infrastructure/monitoring/otel-collector/overlays/production
+#
+# The base itself carries the production-safe values (ENV=production, sampling 1%) so an accidental
+# `-k .` on the base is never louder than production.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+resources:
+  - otel-collector-deployment.yml
+
+# Generates the otel-collector-config ConfigMap from the actual config file, so the file in git IS
+# what runs. The generated name carries a content hash, so editing the config rolls the Deployment
+# automatically — kustomize rewrites the volume reference to match.
+configMapGenerator:
+  - name: otel-collector-config
+    files:
+      - otel-collector-config.yml

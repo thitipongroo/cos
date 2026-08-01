@@ -7,7 +7,22 @@ last_updated: 2026-07-07
 
 > Part of [`docs/screens/`](../README.md) · platform: **Web** (Next.js + Serwist, tablet/laptop browser).
 
-✅ **24 screens** — 1440×900 headless Chromium, live local backend + seeded `DEMO-001` data.
+⚠️ **4 screens committed** — the pre-auth login flow in [`01-public/`](01-public/). The 24-route table
+below is the set [`web-screens.mjs`](../../../scripts/capture/web-screens.mjs) _can_ produce; those
+files are **not** in the repo. The earlier per-role captures were deleted by `7d2ba1b`
+("update: screens out date") and have not been retaken.
+
+| File                                                             | Route         |
+| ---------------------------------------------------------------- | ------------- |
+| [`00-login.png`](01-public/00-login.png)                         | `/login`      |
+| [`01-login-otp-verify.png`](01-public/01-login-otp-verify.png)   | `/login/otp`  |
+| [`02-login-password.png`](01-public/02-login-password.png)       | Keycloak page |
+| [`03-login-loading.png`](01-public/03-login-loading.png)         | post-submit   |
+
+> No script currently reproduces these four filenames. They were committed by hand
+> (`983a935`, `829b8fa`). `capture/web-screens.mjs` writes `00-login.png` to the folder **root**, and
+> `capture-screens.mjs` names its pre-auth shots `login.png` / `login_otp.png` — neither matches.
+> Re-running either tool will not refresh this set in place.
 
 | Browser | Chromium (Playwright), 1440×900 viewport                                             |
 | ------- | ------------------------------------------------------------------------------------ |
@@ -16,7 +31,25 @@ last_updated: 2026-07-07
 | Web app | Next.js @ `localhost:3001`                                                           |
 | Project | `DEMO-001` — _Bangkok Tower — Phase 1_ (tenant `…0001`)                              |
 
-## Screens
+## Folder layout
+
+Same convention as [`../android/`](../android/README.md): numbered folders for cross-role flows,
+`UPPER-KEBAB` for role folders (`TENANT-ADMIN`, not `TENANT_ADMIN`).
+
+| Folder                   | Written by                                          |
+| ------------------------ | --------------------------------------------------- |
+| `01-public/`             | `capture-screens.mjs` — pre-auth routes             |
+| `<ROLE>/`                | `capture-screens.mjs` — every route that role reaches |
+| `<ROLE>/interactions/`   | `capture-interactions.mjs` — detail pages, forms, popovers |
+| `PROJECT-MANAGER/`       | `capture-graph.mjs` — the knowledge-graph pages      |
+
+The role **keys inside those scripts** stay `UPPER_SNAKE` (`TENANT_ADMIN`) because they are CosRole
+identities that the scripts branch on; only the folder name is kebab-cased, via a `folderFor()` helper.
+
+`capture/web-screens.mjs` is the exception — it still writes its 24-route dump flat into this folder's
+root, not into a subfolder.
+
+## Screens the capture script targets (not committed)
 
 | #   | Screen              | Route                       |
 | --- | ------------------- | --------------------------- |

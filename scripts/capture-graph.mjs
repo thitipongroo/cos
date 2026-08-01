@@ -12,7 +12,9 @@ const BASE = process.env.WEB_BASE || 'http://localhost:3001';
 const PW = process.env.DEMO_USER_PASSWORD || 'Ekachai@2026';
 const EMAIL = 'thanawat.b@ekachai.co.th'; // PROJECT_MANAGER
 const PID = process.env.PID || '88803908-e4b5-57bd-8e6b-ed4662b5d67d';
-const OUT = path.resolve(__dirname, '../docs/screens/web/PROJECT_MANAGER');
+// UPPER-KEBAB folder name, matching docs/screens/android/ (SITE-ENGINEER, TENANT-ADMIN) and the
+// other web capture scripts. The role itself is still PROJECT_MANAGER.
+const OUT = path.resolve(__dirname, '../docs/screens/web/PROJECT-MANAGER');
 
 async function login(page, email) {
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });

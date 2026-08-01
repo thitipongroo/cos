@@ -7,6 +7,12 @@ last_updated: 2026-07-04
 
 > Part of [`docs/screens/`](../README.md) · platform: **iOS** (iPhone 17 simulator). Android and Web live in sibling folders.
 
+❌ **No iOS screenshots are committed.** Every `.png` this file indexes was deleted by `7d2ba1b`
+("update: screens out date") and has not been retaken — Android was recaptured after that commit,
+iOS was not. Everything below therefore describes the **target** set and how to produce it, not
+files you will find in this folder. Re-run the capture (see [How these were captured](#how-these-were-captured))
+before treating any link here as live.
+
 Full-flow screenshots of the Construction OS mobile app (Expo / React Native, iOS),
 captured against the **local backend running with seeded demo data**. Every screen was
 reached by a real login (Path A phone + OTP) and live API/analytics calls — not mockups.

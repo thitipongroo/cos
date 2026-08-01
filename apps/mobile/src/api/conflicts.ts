@@ -1,5 +1,5 @@
 // Sync conflict records — the Tenant Admin "Alerts" sync-review queue (mockup 04_tenant_admin/03_alerts).
-// GET /site/conflict-records lists unresolved field-sync conflicts (client vs server payload); TENANT_ADMIN
+// GET /site/conflict-records lists unresolved field-sync conflicts (client vs server payload); TENANT-ADMIN
 // (and SITE_ENGINEER/PM) can view/resolve them (spec §17.5, site-ops.controller). PATCH .../resolve marks
 // one resolved. This is the SAME endpoint the SITE_ENGINEER ConflictBadge review uses — no new backend.
 

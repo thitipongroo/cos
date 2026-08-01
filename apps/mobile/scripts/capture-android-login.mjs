@@ -1,7 +1,7 @@
 // Android login-flow screenshot capture — adb/uiautomator only, deliberately NOT Detox.
 //
-// Writes the four public login screens to docs/screens/android/_public/ — the same flow as the web set
-// (docs/screens/web/_public/00-login.png … 03-login-loading.png). Android's _public/ also holds the
+// Writes the four public login screens to docs/screens/android/01-public/ — the same flow as the web set
+// (docs/screens/web/01-public/00-login.png … 03-login-loading.png). Android's 01-public/ also holds the
 // native splash (00) and app-launch loading (01), so the login screens sit at 02–04 here:
 //   02-login             landing (Path A phone form + Path B "Login with Email" secondary action)
 //   03-login-otp-verify  OTP-verify step, reached by requesting a passcode from the landing
@@ -30,7 +30,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const OUT = resolve(HERE, '../../../docs/screens/android/_public');
+const OUT = resolve(HERE, '../../../docs/screens/android/01-public');
 const PKG = 'com.constructionos.cos';
 
 // Path B demo account — seeded by backend/prisma/seed-realistic.ts, given this password by
