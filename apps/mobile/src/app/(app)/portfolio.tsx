@@ -10,6 +10,7 @@ import { useCollection } from '../../hooks/useCollection';
 import { refreshProjectsCache } from '../../api/projects';
 import { get } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -28,17 +29,20 @@ export default function PortfolioScreen() {
   const projects = useCollection<Project>('local_projects');
   const [execById, setExecById] = useState<Record<string, ExecRow>>({});
   const [selected, setSelected] = useState<Project | null>(null);
+  const [healthLoading, setHealthLoading] = useState(true);
   const t = useT();
 
   useEffect(() => {
     refreshProjectsCache().catch(() => {
       /* offline — show cached */
     });
+    // Only the remote health metrics load — the project list is local and renders instantly (no loader).
     get<ExecRow[]>('/analytics/executive')
       .then((rows) => setExecById(Object.fromEntries(rows.map((r) => [r.projectId, r]))))
       .catch(() => {
         /* offline — no badges */
-      });
+      })
+      .finally(() => setHealthLoading(false));
   }, []);
 
   if (selected) {
@@ -55,23 +59,26 @@ export default function PortfolioScreen() {
     return (
       <View testID="portfolio-health" style={screen.container}>
         <Text style={screen.heading}>{selected.projectName}</Text>
-        {h ? (
-          <>
-            {h.atRisk ? (
-              <Text testID="health-at-risk" style={styles.atRisk}>
-                {t('exec.portfolio.atRisk')}
-              </Text>
-            ) : null}
-            {rowsOut.map(([label, value]) => (
-              <View key={label} style={screen.kvRow}>
-                <Text style={screen.kvKey}>{label}</Text>
-                <Text style={screen.kvValue}>{value}</Text>
-              </View>
-            ))}
-          </>
-        ) : (
-          <Text style={screen.empty}>{t('exec.portfolio.noHealth')}</Text>
-        )}
+        {/* Health metrics are remote; loader shows only while that fetch is still pending. */}
+        <LoadingBoundary loading={healthLoading} variant="widget" theme="light">
+          {h ? (
+            <>
+              {h.atRisk ? (
+                <Text testID="health-at-risk" style={styles.atRisk}>
+                  {t('exec.portfolio.atRisk')}
+                </Text>
+              ) : null}
+              {rowsOut.map(([label, value]) => (
+                <View key={label} style={screen.kvRow}>
+                  <Text style={screen.kvKey}>{label}</Text>
+                  <Text style={screen.kvValue}>{value}</Text>
+                </View>
+              ))}
+            </>
+          ) : (
+            <Text style={screen.empty}>{t('exec.portfolio.noHealth')}</Text>
+          )}
+        </LoadingBoundary>
         <TouchableOpacity testID="portfolio-back" onPress={() => setSelected(null)}>
           <Text style={styles.back}>{t('common.back')}</Text>
         </TouchableOpacity>

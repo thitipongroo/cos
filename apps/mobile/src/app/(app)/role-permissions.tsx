@@ -11,10 +11,11 @@
 // The screen renders no top bar of its own — the global TopBar shows "Role permissions" + a Back arrow.
 
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getRolePermissions } from '../../api/roles';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -169,47 +170,47 @@ export default function RolePermissionsScreen(): React.JSX.Element {
         </View>
 
         {/* Permission modules */}
-        {error ? (
-          <Text style={styles.state} testID="role-permissions-error">
-            {t('rolePermissions.error')}
-          </Text>
-        ) : permissions === null ? (
-          <ActivityIndicator color={darkColors.cyan} style={styles.state} />
-        ) : modules.length === 0 ? (
-          <Text style={styles.state}>{t('rolePermissions.empty')}</Text>
-        ) : (
-          <View style={styles.list}>
-            {modules.map(({ resource, level }) => {
-              const meta = RESOURCE_META[resource];
-              const ls = LEVEL_STYLE[level];
-              return (
-                <View key={resource} style={styles.card} testID={`role-perm-${resource}`}>
-                  <View style={styles.cardLeft}>
-                    <View style={styles.cardIcon}>
-                      <MaterialIcons
-                        name={meta?.icon ?? 'lock'}
-                        size={22}
-                        color={darkColors.muted}
-                      />
+        <LoadingBoundary loading={permissions === null && !error} variant="widget" theme="dark">
+          {error ? (
+            <Text style={styles.state} testID="role-permissions-error">
+              {t('rolePermissions.error')}
+            </Text>
+          ) : modules.length === 0 ? (
+            <Text style={styles.state}>{t('rolePermissions.empty')}</Text>
+          ) : (
+            <View style={styles.list}>
+              {modules.map(({ resource, level }) => {
+                const meta = RESOURCE_META[resource];
+                const ls = LEVEL_STYLE[level];
+                return (
+                  <View key={resource} style={styles.card} testID={`role-perm-${resource}`}>
+                    <View style={styles.cardLeft}>
+                      <View style={styles.cardIcon}>
+                        <MaterialIcons
+                          name={meta?.icon ?? 'lock'}
+                          size={22}
+                          color={darkColors.muted}
+                        />
+                      </View>
+                      <View style={styles.cardText}>
+                        <Text style={styles.cardTitle}>
+                          {meta ? t(meta.labelKey) : resource.toUpperCase()}
+                        </Text>
+                        <Text style={styles.cardDesc}>{meta ? t(meta.descKey) : ''}</Text>
+                      </View>
                     </View>
-                    <View style={styles.cardText}>
-                      <Text style={styles.cardTitle}>
-                        {meta ? t(meta.labelKey) : resource.toUpperCase()}
-                      </Text>
-                      <Text style={styles.cardDesc}>{meta ? t(meta.descKey) : ''}</Text>
+                    <View style={styles.cardRight}>
+                      <View style={[styles.badge, { backgroundColor: `${ls.color}22` }]}>
+                        <Text style={[styles.badgeText, { color: ls.color }]}>{level}</Text>
+                      </View>
+                      <Text style={[styles.levelLabel, { color: ls.color }]}>{t(ls.labelKey)}</Text>
                     </View>
                   </View>
-                  <View style={styles.cardRight}>
-                    <View style={[styles.badge, { backgroundColor: `${ls.color}22` }]}>
-                      <Text style={[styles.badgeText, { color: ls.color }]}>{level}</Text>
-                    </View>
-                    <Text style={[styles.levelLabel, { color: ls.color }]}>{t(ls.labelKey)}</Text>
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
+                );
+              })}
+            </View>
+          )}
+        </LoadingBoundary>
       </ScrollView>
 
       {/* Footer — back to the invitation */}

@@ -29,6 +29,7 @@ import { get } from '../api/client';
 import { checkBackendHealth } from '../api/health';
 import { getAiUsage, type AiUsage } from '../api/ai';
 import { QuickAddMenu } from './QuickAddMenu';
+import { LoadingBoundary } from './LoadingBoundary';
 import { useT } from '../i18n';
 import { darkColors, fontFamily, spacing, typography, touchTarget } from '../theme/tokens';
 
@@ -45,28 +46,35 @@ export default function TenantAdminHome(): React.JSX.Element {
   const [pendingPayments, setPendingPayments] = useState<number | null>(null);
   const [pendingPos, setPendingPos] = useState<number | null>(null);
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getAiUsage()
+    const usageP = getAiUsage()
       .then(setUsage)
       .catch(() => {
         /* offline / metering not yet reporting — keep null (shows "—", never a fake %) */
       });
-    checkBackendHealth()
+    const healthP = checkBackendHealth()
       .then(setHealthy)
       .catch(() => setHealthy(false));
-    get<{ items?: { status: string }[] } | { status: string }[]>('/finance/payments')
+    const paymentsP = get<{ items?: { status: string }[] } | { status: string }[]>(
+      '/finance/payments',
+    )
       .then((res) => setPendingPayments(asList(res).filter((p) => p.status === 'PENDING').length))
       .catch(() => {
         /* offline — keep last */
       });
-    get<{ items?: { status: string }[] } | { status: string }[]>('/procurement/purchase-orders')
+    const posP = get<{ items?: { status: string }[] } | { status: string }[]>(
+      '/procurement/purchase-orders',
+    )
       .then((res) =>
         setPendingPos(asList(res).filter((p) => p.status === 'PENDING_APPROVAL').length),
       )
       .catch(() => {
         /* offline — keep last */
       });
+    // Loader clears once every KPI fetch has settled (each catch resolves, so this never hangs offline).
+    Promise.allSettled([usageP, healthP, paymentsP, posP]).finally(() => setLoading(false));
   }, []);
 
   const pct = usage?.percentUsed ?? null;
@@ -98,88 +106,90 @@ export default function TenantAdminHome(): React.JSX.Element {
         contentContainerStyle={styles.content}
         testID="tenant-admin-home"
       >
-        {/* ── System Overview ─────────────────────────────────────────────── */}
-        <Text style={styles.sectionLabel}>{t('adminHome.systemOverview')}</Text>
+        <LoadingBoundary loading={loading} variant="widget" theme="dark" style={styles.boundary}>
+          {/* ── System Overview ─────────────────────────────────────────────── */}
+          <Text style={styles.sectionLabel}>{t('adminHome.systemOverview')}</Text>
 
-        {/* AI Token Usage */}
-        <View style={[styles.card, styles.cardAccentCyan]} testID="admin-ai-tokens">
-          <MaterialIcons
-            name="bolt"
-            size={40}
-            color={darkColors.cyan}
-            style={styles.cardWatermark}
-          />
-          <Text style={styles.cardLabel}>{t('adminHome.aiTokens')}</Text>
-          <View style={styles.pctRow}>
-            <Text style={styles.pctValue}>{pct === null ? '—' : String(Math.round(pct))}</Text>
-            <Text style={styles.pctUnit}>%</Text>
-          </View>
-          <View style={styles.track}>
-            <View
-              style={[styles.trackFill, { width: `${pct === null ? 0 : Math.min(100, pct)}%` }]}
+          {/* AI Token Usage */}
+          <View style={[styles.card, styles.cardAccentCyan]} testID="admin-ai-tokens">
+            <MaterialIcons
+              name="bolt"
+              size={40}
+              color={darkColors.cyan}
+              style={styles.cardWatermark}
             />
-          </View>
-        </View>
-
-        {/* System Status */}
-        <View
-          style={[styles.card, styles.cardRow, styles.cardAccentGreen]}
-          testID="admin-system-status"
-        >
-          <View style={styles.flex1}>
-            <Text style={styles.cardLabel}>{t('adminHome.systemStatus')}</Text>
-            <View style={styles.statusRow}>
-              <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-              <Text style={[styles.statusValue, { color: statusColor }]}>{statusText}</Text>
+            <Text style={styles.cardLabel}>{t('adminHome.aiTokens')}</Text>
+            <View style={styles.pctRow}>
+              <Text style={styles.pctValue}>{pct === null ? '—' : String(Math.round(pct))}</Text>
+              <Text style={styles.pctUnit}>%</Text>
+            </View>
+            <View style={styles.track}>
+              <View
+                style={[styles.trackFill, { width: `${pct === null ? 0 : Math.min(100, pct)}%` }]}
+              />
             </View>
           </View>
-          <View style={styles.iconPlate}>
-            <MaterialIcons name="dns" size={22} color={statusColor} />
-          </View>
-        </View>
 
-        {/* ── Pending Approvals ───────────────────────────────────────────── */}
-        <View style={styles.sectionHeaderRow}>
-          <Text style={styles.sectionLabel}>{t('adminHome.pendingApprovals')}</Text>
-          {approvalsTotal !== null ? (
-            <View style={styles.countBadge}>
-              <Text style={styles.countBadgeText}>
-                {t('adminHome.itemsBadge', { count: approvalsTotal })}
-              </Text>
+          {/* System Status */}
+          <View
+            style={[styles.card, styles.cardRow, styles.cardAccentGreen]}
+            testID="admin-system-status"
+          >
+            <View style={styles.flex1}>
+              <Text style={styles.cardLabel}>{t('adminHome.systemStatus')}</Text>
+              <View style={styles.statusRow}>
+                <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                <Text style={[styles.statusValue, { color: statusColor }]}>{statusText}</Text>
+              </View>
             </View>
-          ) : null}
-        </View>
-
-        <ApprovalRow
-          testID="admin-approval-payments"
-          icon="payments"
-          tint={darkColors.warning}
-          title={t('adminHome.paymentsAwaiting')}
-          count={pendingPayments}
-          reviewLabel={t('adminHome.review')}
-          onReview={() => router.push('/payments')}
-        />
-        <ApprovalRow
-          testID="admin-approval-pos"
-          icon="receipt-long"
-          tint={darkColors.primary}
-          title={t('adminHome.posAwaiting')}
-          count={pendingPos}
-          reviewLabel={t('adminHome.review')}
-          onReview={() => router.push('/orders')}
-        />
-
-        {/* ── AI Insights ─────────────────────────────────────────────────── */}
-        <View
-          style={[styles.card, styles.cardAccentCyan, styles.insightCard]}
-          testID="admin-ai-insights"
-        >
-          <View style={styles.insightHead}>
-            <MaterialIcons name="insights" size={18} color={darkColors.cyan} />
-            <Text style={styles.insightTitle}>{t('adminHome.aiInsights')}</Text>
+            <View style={styles.iconPlate}>
+              <MaterialIcons name="dns" size={22} color={statusColor} />
+            </View>
           </View>
-          <Text style={styles.insightBody}>{insightText}</Text>
-        </View>
+
+          {/* ── Pending Approvals ───────────────────────────────────────────── */}
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionLabel}>{t('adminHome.pendingApprovals')}</Text>
+            {approvalsTotal !== null ? (
+              <View style={styles.countBadge}>
+                <Text style={styles.countBadgeText}>
+                  {t('adminHome.itemsBadge', { count: approvalsTotal })}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          <ApprovalRow
+            testID="admin-approval-payments"
+            icon="payments"
+            tint={darkColors.warning}
+            title={t('adminHome.paymentsAwaiting')}
+            count={pendingPayments}
+            reviewLabel={t('adminHome.review')}
+            onReview={() => router.push('/payments')}
+          />
+          <ApprovalRow
+            testID="admin-approval-pos"
+            icon="receipt-long"
+            tint={darkColors.primary}
+            title={t('adminHome.posAwaiting')}
+            count={pendingPos}
+            reviewLabel={t('adminHome.review')}
+            onReview={() => router.push('/orders')}
+          />
+
+          {/* ── AI Insights ─────────────────────────────────────────────────── */}
+          <View
+            style={[styles.card, styles.cardAccentCyan, styles.insightCard]}
+            testID="admin-ai-insights"
+          >
+            <View style={styles.insightHead}>
+              <MaterialIcons name="insights" size={18} color={darkColors.cyan} />
+              <Text style={styles.insightTitle}>{t('adminHome.aiInsights')}</Text>
+            </View>
+            <Text style={styles.insightBody}>{insightText}</Text>
+          </View>
+        </LoadingBoundary>
       </ScrollView>
 
       <Pressable
@@ -256,6 +266,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
   },
   flex1: { flex: 1 },
+  // The boundary is now the ScrollView's single child, so it carries the inter-card gap the content
+  // container used to apply directly.
+  boundary: { gap: spacing.sm },
   sectionLabel: {
     fontFamily: fontFamily.bold,
     fontSize: 12,

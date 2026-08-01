@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { get, post } from '../../api/client';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
@@ -36,6 +37,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 
 export default function InvoicesScreen() {
   const [rows, setRows] = useState<InvoiceRow[]>([]);
+  const [loading, setLoading] = useState(true); // initial vendor-invoice fetch is in flight on mount
   const [status, setStatus] = useState<string>('');
   const [detail, setDetail] = useState<InvoiceDetail | null>(null);
   const [noteText, setNoteText] = useState('');
@@ -67,11 +69,13 @@ export default function InvoicesScreen() {
     const path = status
       ? `/procurement/vendor-invoices?status=${status}`
       : '/procurement/vendor-invoices';
+    setLoading(true);
     get<{ items?: InvoiceRow[] } | InvoiceRow[]>(path)
       .then((res) => setRows(asList(res)))
       .catch(() => {
         /* offline — keep cached */
-      });
+      })
+      .finally(() => setLoading(false));
   }, [status]);
 
   if (detail) {
@@ -142,33 +146,41 @@ export default function InvoicesScreen() {
         ))}
       </View>
 
-      <FlatList
-        testID="invoices-list"
-        data={rows}
-        keyExtractor={(r, i) => r.vendor_invoice_id ?? r.invoice_id ?? String(i)}
-        ListEmptyComponent={<Text style={screen.empty}>{t('finance.invoices.empty')}</Text>}
-        renderItem={({ item }) => {
-          const id = item.vendor_invoice_id ?? item.invoice_id;
-          return (
-            <TouchableOpacity
-              testID="invoice-item"
-              style={screen.item}
-              disabled={!id}
-              onPress={() => id && openDetail(id)}
-            >
-              <Text style={screen.itemTitle}>
-                {item.invoice_number ?? item.vendor_invoice_id ?? item.invoice_id ?? '—'}
-              </Text>
-              {item.status ? <StatusChip label={item.status} /> : null}
-            </TouchableOpacity>
-          );
-        }}
-      />
+      <LoadingBoundary
+        loading={loading && rows.length === 0}
+        variant="list"
+        theme="light"
+        style={styles.boundary}
+      >
+        <FlatList
+          testID="invoices-list"
+          data={rows}
+          keyExtractor={(r, i) => r.vendor_invoice_id ?? r.invoice_id ?? String(i)}
+          ListEmptyComponent={<Text style={screen.empty}>{t('finance.invoices.empty')}</Text>}
+          renderItem={({ item }) => {
+            const id = item.vendor_invoice_id ?? item.invoice_id;
+            return (
+              <TouchableOpacity
+                testID="invoice-item"
+                style={screen.item}
+                disabled={!id}
+                onPress={() => id && openDetail(id)}
+              >
+                <Text style={screen.itemTitle}>
+                  {item.invoice_number ?? item.vendor_invoice_id ?? item.invoice_id ?? '—'}
+                </Text>
+                {item.status ? <StatusChip label={item.status} /> : null}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  boundary: { flex: 1 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
     borderRadius: 16,

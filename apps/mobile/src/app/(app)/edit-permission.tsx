@@ -25,6 +25,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserRoles, setUserRoles } from '../../api/users';
 import { getRolePermissions } from '../../api/roles';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -199,13 +200,6 @@ export default function EditPermissionScreen(): React.JSX.Element {
       .finally(() => setSaving(false));
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.root, styles.center]} testID="edit-permission">
-        <ActivityIndicator color={darkColors.primary} />
-      </View>
-    );
-  }
   if (error) {
     return (
       <View style={[styles.root, styles.center]} testID="edit-permission">
@@ -215,7 +209,13 @@ export default function EditPermissionScreen(): React.JSX.Element {
   }
 
   return (
-    <View style={styles.root} testID="edit-permission">
+    <LoadingBoundary
+      loading={loading}
+      variant="widget"
+      theme="dark"
+      style={styles.root}
+      testID="edit-permission"
+    >
       <ScrollView contentContainerStyle={styles.content}>
         {/* AI shell — honest: the effective permissions are simply the union of the assigned roles. */}
         <View style={styles.aiCard}>
@@ -343,7 +343,7 @@ export default function EditPermissionScreen(): React.JSX.Element {
           </Pressable>
         </Pressable>
       </Modal>
-    </View>
+    </LoadingBoundary>
   );
 }
 

@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, ScrollView, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
@@ -32,6 +33,7 @@ function asList<T>(res: { items?: T[] } | T[]): T[] {
 
 export default function OrdersScreen() {
   const [rows, setRows] = useState<PoRow[]>([]);
+  const [loading, setLoading] = useState(true); // initial PO fetch is in flight on mount
   const [detail, setDetail] = useState<PoDetail | null>(null);
   const t = useT();
 
@@ -40,7 +42,8 @@ export default function OrdersScreen() {
       .then((res) => setRows(asList(res)))
       .catch(() => {
         /* offline — keep cached */
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const open = async (poId: string): Promise<void> => {
@@ -84,27 +87,35 @@ export default function OrdersScreen() {
 
   return (
     <View testID="orders-screen" style={screen.container}>
-      <FlatList
-        testID="orders-list"
-        data={rows}
-        keyExtractor={(r, i) => r.po_id || String(i)}
-        ListEmptyComponent={<Text style={screen.empty}>{t('procurement.orders.empty')}</Text>}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            testID="order-item"
-            style={screen.item}
-            onPress={() => open(item.po_id)}
-          >
-            <Text style={screen.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>
-            <StatusChip label={item.status} />
-          </TouchableOpacity>
-        )}
-      />
+      <LoadingBoundary
+        loading={loading && rows.length === 0}
+        variant="list"
+        theme="light"
+        style={styles.boundary}
+      >
+        <FlatList
+          testID="orders-list"
+          data={rows}
+          keyExtractor={(r, i) => r.po_id || String(i)}
+          ListEmptyComponent={<Text style={screen.empty}>{t('procurement.orders.empty')}</Text>}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              testID="order-item"
+              style={screen.item}
+              onPress={() => open(item.po_id)}
+            >
+              <Text style={screen.itemTitle}>{item.po_number ?? item.po_id.slice(0, 8)}</Text>
+              <StatusChip label={item.status} />
+            </TouchableOpacity>
+          )}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  boundary: { flex: 1 },
   content: { gap: spacing.sm, paddingBottom: spacing.lg },
   detailHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   linesHeading: {

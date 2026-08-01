@@ -16,6 +16,7 @@ import {
   unreadCount,
   type Notification,
 } from '../../api/notifications';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useI18n } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -78,39 +79,41 @@ export default function NotificationsScreen() {
         ) : null}
       </View>
 
-      <FlatList
-        data={items}
-        keyExtractor={(n) => n.notification_id}
-        contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          loaded ? (
-            <Text testID="notifications-empty" style={styles.empty}>
-              {t('notifications.empty')}
-            </Text>
-          ) : null
-        }
-        renderItem={({ item }) => {
-          const isUnread = item.read_at === null;
-          return (
-            <TouchableOpacity
-              testID={`notification-${item.notification_id}`}
-              style={[styles.row, isUnread && styles.rowUnread]}
-              onPress={() => void onRead(item)}
-            >
-              {isUnread ? <View testID="unread-dot" style={styles.dot} /> : null}
-              <View style={styles.rowBody}>
-                <Text style={styles.subject} numberOfLines={2}>
-                  {item.subject ?? item.event_type}
-                </Text>
-                <Text style={styles.body} numberOfLines={3}>
-                  {item.body}
-                </Text>
-                <Text style={styles.meta}>{formatDate(item.created_at)}</Text>
-              </View>
-            </TouchableOpacity>
-          );
-        }}
-      />
+      <LoadingBoundary loading={!loaded} variant="list" theme="dark" style={styles.listRegion}>
+        <FlatList
+          data={items}
+          keyExtractor={(n) => n.notification_id}
+          contentContainerStyle={styles.list}
+          ListEmptyComponent={
+            loaded ? (
+              <Text testID="notifications-empty" style={styles.empty}>
+                {t('notifications.empty')}
+              </Text>
+            ) : null
+          }
+          renderItem={({ item }) => {
+            const isUnread = item.read_at === null;
+            return (
+              <TouchableOpacity
+                testID={`notification-${item.notification_id}`}
+                style={[styles.row, isUnread && styles.rowUnread]}
+                onPress={() => void onRead(item)}
+              >
+                {isUnread ? <View testID="unread-dot" style={styles.dot} /> : null}
+                <View style={styles.rowBody}>
+                  <Text style={styles.subject} numberOfLines={2}>
+                    {item.subject ?? item.event_type}
+                  </Text>
+                  <Text style={styles.body} numberOfLines={3}>
+                    {item.body}
+                  </Text>
+                  <Text style={styles.meta}>{formatDate(item.created_at)}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
@@ -133,6 +136,9 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.medium,
     color: darkColors.primary,
   },
+  // The inbox list fills the space under the header; the loader stands in for it until the first
+  // listNotifications() settles (previously the region was blank during load).
+  listRegion: { flex: 1 },
   list: { gap: spacing.xs, paddingBottom: spacing.xl },
   row: {
     flexDirection: 'row',

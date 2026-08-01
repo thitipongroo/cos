@@ -19,7 +19,6 @@ import {
   Text,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   Pressable,
   Image,
   Modal,
@@ -29,6 +28,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getUsers, type TenantUser } from '../../api/users';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -238,27 +238,32 @@ export default function UsersScreen(): React.JSX.Element {
         ) : null}
 
         {/* User list */}
-        {users == null && !error ? (
-          <ActivityIndicator color={darkColors.primary} style={styles.loading} />
-        ) : error ? (
-          <Text style={styles.empty} testID="users-error">
-            {t('adminUsers.error')}
-          </Text>
-        ) : filtered.length === 0 ? (
-          <Text style={styles.empty} testID="users-empty">
-            {t('adminUsers.empty')}
-          </Text>
-        ) : (
-          filtered.map((u) => (
-            <UserCard
-              key={u.user_id}
-              user={u}
-              t={t}
-              onOpen={() => openProfile(u)}
-              onActions={() => setSelected(u)}
-            />
-          ))
-        )}
+        <LoadingBoundary
+          loading={users == null && !error}
+          variant="list"
+          theme="dark"
+          style={styles.listBoundary}
+        >
+          {error ? (
+            <Text style={styles.empty} testID="users-error">
+              {t('adminUsers.error')}
+            </Text>
+          ) : filtered.length === 0 ? (
+            <Text style={styles.empty} testID="users-empty">
+              {t('adminUsers.empty')}
+            </Text>
+          ) : (
+            filtered.map((u) => (
+              <UserCard
+                key={u.user_id}
+                user={u}
+                t={t}
+                onOpen={() => openProfile(u)}
+                onActions={() => setSelected(u)}
+              />
+            ))
+          )}
+        </LoadingBoundary>
       </ScrollView>
 
       {/* FAB — invite user */}
@@ -610,7 +615,7 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
     fontStyle: 'italic',
   },
-  loading: { marginTop: spacing.xl },
+  listBoundary: { gap: spacing.sm },
   empty: {
     marginTop: spacing.xl,
     textAlign: 'center',

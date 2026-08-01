@@ -5,6 +5,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
 import { get } from '../api/client';
+import { LoadingBoundary } from './LoadingBoundary';
 import { StatusChip } from './StatusChip';
 import { useT } from '../i18n';
 import { colors, fontFamily, spacing, typography } from '../theme/tokens';
@@ -52,28 +53,40 @@ export function FetchListScreen<T>({
   return (
     <View testID={testID} style={styles.container}>
       <Text style={styles.heading}>{heading}</Text>
-      <FlatList
-        testID={listTestID}
-        data={rows}
-        keyExtractor={(row, index) => mapItem(row).key || String(index)}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={styles.empty}>{emptyText ?? t('common.list.empty')}</Text>}
-        renderItem={({ item }) => {
-          const m = mapItem(item);
-          return (
-            <View testID={itemTestID} style={styles.item}>
-              <Text style={styles.itemTitle}>{m.title}</Text>
-              {m.status ? <StatusChip label={m.status} /> : null}
-            </View>
-          );
-        }}
-      />
+      {/* First load (no rows yet) shows an animated list skeleton that crossfades to the list; a
+          pull-to-refresh on an already-populated list keeps the RefreshControl spinner instead. */}
+      <LoadingBoundary
+        loading={loading && rows.length === 0}
+        variant="list"
+        theme="light"
+        style={styles.boundary}
+      >
+        <FlatList
+          testID={listTestID}
+          data={rows}
+          keyExtractor={(row, index) => mapItem(row).key || String(index)}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+          ListEmptyComponent={
+            <Text style={styles.empty}>{emptyText ?? t('common.list.empty')}</Text>
+          }
+          renderItem={({ item }) => {
+            const m = mapItem(item);
+            return (
+              <View testID={itemTestID} style={styles.item}>
+                <Text style={styles.itemTitle}>{m.title}</Text>
+                {m.status ? <StatusChip label={m.status} /> : null}
+              </View>
+            );
+          }}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
+  boundary: { flex: 1 },
   heading: {
     fontSize: typography.title.fontSize,
     fontFamily: fontFamily.semibold,

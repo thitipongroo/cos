@@ -23,7 +23,13 @@ import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import Svg, { Circle } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Defs,
+  Stop,
+  Rect,
+  LinearGradient as SvgLinearGradient,
+} from 'react-native-svg';
 import {
   resolvePalette,
   formatPercent,
@@ -102,19 +108,33 @@ function ProgressBar({
   palette,
   determinate,
   fill,
-  pulse,
+  sweep,
   color,
 }: {
   palette: LoadingPalette;
   determinate: boolean;
   fill: Animated.Value;
-  pulse: Animated.AnimatedInterpolation<number>;
+  sweep: Animated.Value;
   color?: string;
 }): React.JSX.Element {
   const styles = makeStyles(palette);
+  const [trackW, setTrackW] = useState(0);
+  const barColor = color ?? palette.primary;
   if (!determinate) {
-    // No honest value → a breathing skeleton track, not a fabricated fill.
-    return <Animated.View style={[styles.track, { opacity: pulse }]} />;
+    // No honest value → a bright segment sweeps across the track (Material-style indeterminate), so the
+    // bar is visibly working without inventing a percentage.
+    const seg = Math.max(24, trackW * 0.35);
+    const tx = sweep.interpolate({ inputRange: [0, 1], outputRange: [-seg, trackW] });
+    return (
+      <View style={styles.track} onLayout={(e) => setTrackW(e.nativeEvent.layout.width)}>
+        <Animated.View
+          style={[
+            styles.fill,
+            { width: seg, backgroundColor: barColor, transform: [{ translateX: tx }] },
+          ]}
+        />
+      </View>
+    );
   }
   const width = fill.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
@@ -122,9 +142,65 @@ function ProgressBar({
       <Animated.View
         style={[
           styles.fill,
-          { width: width as unknown as `${number}%`, backgroundColor: color ?? palette.primary },
+          { width: width as unknown as `${number}%`, backgroundColor: barColor },
         ]}
       />
+    </View>
+  );
+}
+
+/**
+ * A perpetual shimmer band that sweeps across a card, so the loading always reads as "working" — even
+ * in the branded launch case where the skeletons are replaced by a static favicon + tagline, or when a
+ * determinate bar is sitting at a fixed percentage between steps. Absolutely positioned over the card
+ * (which clips it via overflow:hidden); purely decorative, so it is pointer-transparent and a11y-hidden.
+ */
+function CardShimmer({
+  sweep,
+  color,
+  alpha,
+}: {
+  sweep: Animated.Value;
+  color: string;
+  alpha: number;
+}): React.JSX.Element {
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const BAND = 150;
+  // Move a STATIC gradient band with a native translateX (react-native-svg's own animated props don't
+  // drive from a JS Animated.Value reliably, so the band lives in a plain View that the transform moves).
+  // The band's left edge travels from off-screen-left to off-screen-right, forever.
+  const tx = sweep.interpolate({ inputRange: [0, 1], outputRange: [-BAND, size.w + BAND] });
+  return (
+    <View
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={StyleSheet.absoluteFill}
+      onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+    >
+      {size.h > 0 ? (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: BAND,
+            height: size.h,
+            transform: [{ translateX: tx }],
+          }}
+        >
+          <Svg width={BAND} height={size.h}>
+            <Defs>
+              <SvgLinearGradient id="cardShimmer" x1="0" y1="0" x2="1" y2="0">
+                <Stop offset="0" stopColor={color} stopOpacity={0} />
+                <Stop offset="0.5" stopColor={color} stopOpacity={alpha} />
+                <Stop offset="1" stopColor={color} stopOpacity={0} />
+              </SvgLinearGradient>
+            </Defs>
+            <Rect x={0} y={0} width={BAND} height={size.h} fill="url(#cardShimmer)" />
+          </Svg>
+        </Animated.View>
+      ) : null}
     </View>
   );
 }
@@ -221,6 +297,13 @@ export function LoadingState({
   const scanValue = useRef(new Animated.Value(0)).current;
   // Drives the fill-bar width, the ring arc, and the counting percentage — one value so they agree.
   const fillValue = useRef(new Animated.Value(0)).current;
+  // A perpetual left-to-right sweep (never settles) — drives the card shimmer and the indeterminate
+  // bar segment, so the loading always reads as actively working, not a frozen still.
+  const sweepValue = useRef(new Animated.Value(0)).current;
+  // Shimmer highlight: a light band on the dark shell, a brighter white on the light one (the alpha
+  // is applied on the gradient stop, so the colour stays a solid SVG-friendly hex).
+  const shimmerColor = theme === 'dark' ? '#F8FAFC' : '#FFFFFF';
+  const shimmerAlpha = theme === 'dark' ? 0.22 : 0.6;
 
   useEffect(() => {
     const id = fillValue.addListener(({ value }) => setDisplayPct(Math.round(value * 100)));
@@ -236,6 +319,7 @@ export function LoadingState({
       pulseValue.setValue(0.6);
       spinValue.setValue(0);
       scanValue.setValue(0);
+      sweepValue.setValue(0.5);
       fillValue.setValue(target);
       return;
     }
@@ -261,9 +345,20 @@ export function LoadingState({
         useNativeDriver: true,
       }),
     );
+    // The perpetual shimmer / indeterminate sweep — drives a translateX on the shimmer band and the
+    // indeterminate bar segment, both native-driver-friendly transforms.
+    const sweep = Animated.loop(
+      Animated.timing(sweepValue, {
+        toValue: 1,
+        duration: 1400,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+    );
     breathe.start();
     spin.start();
     scan.start();
+    sweep.start();
     // Slide the fill/ring/percentage to the current honest value. Width + SVG stroke are layout/JS
     // props, so this one animation cannot use the native driver (the loops above still do).
     const advance = Animated.timing(fillValue, {
@@ -277,9 +372,10 @@ export function LoadingState({
       breathe.stop();
       spin.stop();
       scan.stop();
+      sweep.stop();
       advance.stop();
     };
-  }, [pulseValue, spinValue, scanValue, fillValue, target]);
+  }, [pulseValue, spinValue, scanValue, sweepValue, fillValue, target]);
 
   const pulse = pulseValue.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
   const spinDeg = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
@@ -338,6 +434,7 @@ export function LoadingState({
             </View>
           );
         })}
+        <CardShimmer sweep={sweepValue} color={shimmerColor} alpha={shimmerAlpha} />
       </View>
     );
   }
@@ -382,9 +479,10 @@ export function LoadingState({
           palette={palette}
           determinate={determinate}
           fill={fillValue}
-          pulse={pulse}
+          sweep={sweepValue}
           color={palette.accent ?? palette.primary}
         />
+        <CardShimmer sweep={sweepValue} color={shimmerColor} alpha={shimmerAlpha} />
       </View>
     );
   }
@@ -420,7 +518,13 @@ export function LoadingState({
           </View>
         ) : null}
       </View>
-      <ProgressBar palette={palette} determinate={determinate} fill={fillValue} pulse={pulse} />
+      <ProgressBar
+        palette={palette}
+        determinate={determinate}
+        fill={fillValue}
+        sweep={sweepValue}
+      />
+      <CardShimmer sweep={sweepValue} color={shimmerColor} alpha={shimmerAlpha} />
     </View>
   );
 }

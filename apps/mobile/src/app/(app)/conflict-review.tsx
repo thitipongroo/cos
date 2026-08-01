@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { get, mutate } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -46,6 +47,9 @@ function buildDiff(client: Payload, server: Payload): DiffRow[] {
 export default function ConflictReviewScreen() {
   const [records, setRecords] = useState<ConflictRecord[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
+  // Remote /site/conflict-records is pending on first paint — gate the list loader on it so the
+  // empty-state text no longer flashes before rows arrive.
+  const [loading, setLoading] = useState(true);
   const t = useT();
 
   const load = async (): Promise<void> => {
@@ -56,6 +60,8 @@ export default function ConflictReviewScreen() {
       setRecords(Array.isArray(res) ? res : (res.items ?? []));
     } catch {
       /* offline — keep cached */
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,71 +82,76 @@ export default function ConflictReviewScreen() {
 
   return (
     <View testID="conflict-review-screen" style={screen.container}>
-      <FlatList
-        data={records}
-        keyExtractor={(r) => r.conflict_id}
-        ListEmptyComponent={<Text style={screen.empty}>{t('sync.conflictReview.empty')}</Text>}
-        renderItem={({ item }) => {
-          const open = openId === item.conflict_id;
-          const diff = open
-            ? buildDiff(item.client_payload ?? null, item.server_payload ?? null)
-            : [];
-          return (
-            <View testID="conflict-record-item" style={screen.item}>
-              <TouchableOpacity
-                style={styles.itemHead}
-                onPress={() => setOpenId(open ? null : item.conflict_id)}
-              >
-                <Text style={screen.itemTitle}>{item.entity_type}</Text>
-                <StatusChip label={item.conflict_type} />
-              </TouchableOpacity>
+      <LoadingBoundary loading={loading} variant="list" theme="light" style={styles.listRegion}>
+        <FlatList
+          data={records}
+          keyExtractor={(r) => r.conflict_id}
+          ListEmptyComponent={<Text style={screen.empty}>{t('sync.conflictReview.empty')}</Text>}
+          renderItem={({ item }) => {
+            const open = openId === item.conflict_id;
+            const diff = open
+              ? buildDiff(item.client_payload ?? null, item.server_payload ?? null)
+              : [];
+            return (
+              <View testID="conflict-record-item" style={screen.item}>
+                <TouchableOpacity
+                  style={styles.itemHead}
+                  onPress={() => setOpenId(open ? null : item.conflict_id)}
+                >
+                  <Text style={screen.itemTitle}>{item.entity_type}</Text>
+                  <StatusChip label={item.conflict_type} />
+                </TouchableOpacity>
 
-              {open ? (
-                <View testID="conflict-diff" style={styles.diff}>
-                  <View style={styles.diffRow}>
-                    <Text style={[styles.diffCell, styles.diffHeadCell]}>
-                      {t('sync.conflictReview.field')}
-                    </Text>
-                    <Text style={[styles.diffCell, styles.diffHeadCell]}>
-                      {t('sync.conflictReview.client')}
-                    </Text>
-                    <Text style={[styles.diffCell, styles.diffHeadCell]}>
-                      {t('sync.conflictReview.server')}
-                    </Text>
+                {open ? (
+                  <View testID="conflict-diff" style={styles.diff}>
+                    <View style={styles.diffRow}>
+                      <Text style={[styles.diffCell, styles.diffHeadCell]}>
+                        {t('sync.conflictReview.field')}
+                      </Text>
+                      <Text style={[styles.diffCell, styles.diffHeadCell]}>
+                        {t('sync.conflictReview.client')}
+                      </Text>
+                      <Text style={[styles.diffCell, styles.diffHeadCell]}>
+                        {t('sync.conflictReview.server')}
+                      </Text>
+                    </View>
+                    {diff.map((d) => {
+                      const differs = d.client !== d.server;
+                      return (
+                        <View key={d.field} style={styles.diffRow}>
+                          <Text style={styles.diffCell}>{d.field}</Text>
+                          <Text style={[styles.diffCell, differs && styles.diffChanged]}>
+                            {d.client}
+                          </Text>
+                          <Text style={[styles.diffCell, differs && styles.diffChanged]}>
+                            {d.server}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
-                  {diff.map((d) => {
-                    const differs = d.client !== d.server;
-                    return (
-                      <View key={d.field} style={styles.diffRow}>
-                        <Text style={styles.diffCell}>{d.field}</Text>
-                        <Text style={[styles.diffCell, differs && styles.diffChanged]}>
-                          {d.client}
-                        </Text>
-                        <Text style={[styles.diffCell, differs && styles.diffChanged]}>
-                          {d.server}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : null}
+                ) : null}
 
-              <TouchableOpacity
-                testID="resolve-conflict-button"
-                style={styles.resolve}
-                onPress={() => resolve(item.conflict_id)}
-              >
-                <Text style={styles.resolveText}>{t('sync.conflictReview.resolve')}</Text>
-              </TouchableOpacity>
-            </View>
-          );
-        }}
-      />
+                <TouchableOpacity
+                  testID="resolve-conflict-button"
+                  style={styles.resolve}
+                  onPress={() => resolve(item.conflict_id)}
+                >
+                  <Text style={styles.resolveText}>{t('sync.conflictReview.resolve')}</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // The conflict list fills the screen; the loader stands in for it while /site/conflict-records
+  // is pending so the empty-state text no longer flashes first.
+  listRegion: { flex: 1 },
   itemHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   diff: { gap: 2, marginVertical: spacing.xs },
   diffRow: { flexDirection: 'row', gap: spacing.xs },

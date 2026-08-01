@@ -2,7 +2,7 @@
 // Guards all (app) routes: redirects unauthenticated users to (auth)/login.
 
 import { useEffect, useState } from 'react';
-import { View, StyleSheet, LogBox } from 'react-native';
+import { StyleSheet, LogBox } from 'react-native';
 import { Slot, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
@@ -19,7 +19,7 @@ import { useLocaleStore } from '../store/localeStore';
 import { I18nProvider } from '../i18n';
 import { initSyncQueue } from '../db/sync-queue';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
-import { LoadingState } from '../components/LoadingState';
+import { LoadingBoundary } from '../components/LoadingBoundary';
 import { darkColors } from '../theme/tokens';
 import appFavicon from '../../assets/favicon.png';
 
@@ -127,39 +127,47 @@ export default function RootLayout() {
   // "Loading…" label are the English brand default, not i18n: this renders before I18nProvider mounts
   // and before the persisted locale is known (QM-3's system default).
   const launchSteps = (hydrated ? 1 : 0) + (fontsLoaded || fontError ? 1 : 0);
-  if (launchSteps < 2) {
-    return (
-      <View style={styles.launch}>
-        <LoadingState
-          variant="widget"
-          theme="dark"
-          progress={(launchSteps / 2) * 100}
-          iconSource={appFavicon}
-          heading={LAUNCH_TAGLINE}
-          label={LAUNCH_LABEL}
-          testID="app-launch-loading"
-        />
-      </View>
-    );
-  }
 
+  // The launch loading and the app tree share one <LoadingBoundary>, so when hydration + the brand font
+  // settle the launch widget crossfades out over the freshly-mounted app instead of the old hard cut
+  // (PO 2026-08-01 — "make loading→screen transitions seamless"). The app tree is not mounted until the
+  // gate opens, so nothing renders against a half-hydrated session.
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <I18nProvider>
-          <AuthGate />
-          <Slot />
-        </I18nProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <LoadingBoundary
+      loading={launchSteps < 2}
+      variant="widget"
+      theme="dark"
+      progress={(launchSteps / 2) * 100}
+      iconSource={appFavicon}
+      heading={LAUNCH_TAGLINE}
+      label={LAUNCH_LABEL}
+      style={styles.launch}
+      loaderStyle={styles.launchLoader}
+      testID="app-launch-loading"
+    >
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <I18nProvider>
+            <AuthGate />
+            <Slot />
+          </I18nProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </LoadingBoundary>
   );
 }
 
 const styles = StyleSheet.create({
-  // Full-screen dark ground for the launch loading — matches the app shell, not the navy splash.
+  // Full-screen dark ground shared by the launch loader and the app it crossfades to — matches the app
+  // shell, not the navy splash.
   launch: {
     flex: 1,
     backgroundColor: darkColors.bg,
+  },
+  // Centres the launch widget on that ground (kept on the loader itself so it stays centred through the
+  // crossfade, not on the wrapper the app also fills).
+  launchLoader: {
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
   },

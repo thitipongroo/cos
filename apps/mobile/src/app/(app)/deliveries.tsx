@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { get, mutate } from '../../api/client';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
@@ -43,9 +44,11 @@ export default function DeliveriesScreen() {
   const [note, setNote] = useState('');
   const [linesError, setLinesError] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true); // initial deliveries + PO fetch is in flight on mount
   const t = useT();
 
   const load = async (): Promise<void> => {
+    setLoading(true);
     try {
       const res = await get<{ items?: DeliveryRow[] } | DeliveryRow[]>('/procurement/deliveries');
       setRows(asList(res));
@@ -57,6 +60,8 @@ export default function DeliveriesScreen() {
       setPos(asList(res));
     } catch {
       /* offline — PO picker empty */
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -169,19 +174,25 @@ export default function DeliveriesScreen() {
         </>
       ) : null}
 
-      <FlatList
-        testID="delivery-list"
+      <LoadingBoundary
+        loading={loading && rows.length === 0}
+        variant="list"
+        theme="light"
         style={styles.list}
-        data={rows}
-        keyExtractor={(r, i) => r.delivery_id || String(i)}
-        ListEmptyComponent={<Text style={screen.empty}>{t('procurement.deliveries.empty')}</Text>}
-        renderItem={({ item }) => (
-          <View testID="delivery-item" style={screen.item}>
-            <Text style={screen.itemTitle}>{item.delivery_id.slice(0, 8)}</Text>
-            <StatusChip label={item.status} />
-          </View>
-        )}
-      />
+      >
+        <FlatList
+          testID="delivery-list"
+          data={rows}
+          keyExtractor={(r, i) => r.delivery_id || String(i)}
+          ListEmptyComponent={<Text style={screen.empty}>{t('procurement.deliveries.empty')}</Text>}
+          renderItem={({ item }) => (
+            <View testID="delivery-item" style={screen.item}>
+              <Text style={screen.itemTitle}>{item.delivery_id.slice(0, 8)}</Text>
+              <StatusChip label={item.status} />
+            </View>
+          )}
+        />
+      </LoadingBoundary>
     </View>
   );
 }

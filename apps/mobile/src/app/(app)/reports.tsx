@@ -24,6 +24,7 @@ import { enqueue } from '../../db/sync-queue';
 import { decodeJwtPayload } from '../../lib/jwt';
 import { useAuthStore } from '../../store/authStore';
 import { StatusChip } from '../../components/StatusChip';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { ConflictBadge } from '../../components/ConflictBadge';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useI18n } from '../../i18n';
@@ -65,6 +66,11 @@ function SiteEngineerReports() {
     void load();
   }, []);
 
+  // First load only: the list is still empty AND a fetch is in flight. Pull-refresh keeps the
+  // RefreshControl (reports already populated → boundary stays settled), so a refresh never blanks
+  // the list back to a skeleton.
+  const firstLoad = loading && reports.length === 0;
+
   const canRecord = matName.trim() !== '' && qty.trim() !== '' && unit.trim() !== '';
 
   const recordMaterial = (reportId: string): void => {
@@ -86,73 +92,75 @@ function SiteEngineerReports() {
       <View style={styles.headerRow}>
         <ConflictBadge onPress={() => router.push('/conflict-review')} />
       </View>
-      <FlatList
-        testID="reports-list"
-        data={reports}
-        keyExtractor={(r) => r.report_id}
-        refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
-        ListEmptyComponent={<Text style={screen.empty}>{t('site.reports.empty')}</Text>}
-        renderItem={({ item }) => {
-          const open = selectedReportId === item.report_id;
-          return (
-            <TouchableOpacity
-              testID="report-item"
-              style={screen.item}
-              onPress={() => setSelectedReportId(open ? null : item.report_id)}
-            >
-              <Text style={screen.itemTitle}>{formatDate(item.report_date)}</Text>
-              {item.summary ? <Text style={styles.sub}>{item.summary}</Text> : null}
-              <StatusChip label={item.status} />
+      <LoadingBoundary loading={firstLoad} variant="list" theme="light" style={styles.listRegion}>
+        <FlatList
+          testID="reports-list"
+          data={reports}
+          keyExtractor={(r) => r.report_id}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={load} />}
+          ListEmptyComponent={<Text style={screen.empty}>{t('site.reports.empty')}</Text>}
+          renderItem={({ item }) => {
+            const open = selectedReportId === item.report_id;
+            return (
+              <TouchableOpacity
+                testID="report-item"
+                style={screen.item}
+                onPress={() => setSelectedReportId(open ? null : item.report_id)}
+              >
+                <Text style={screen.itemTitle}>{formatDate(item.report_date)}</Text>
+                {item.summary ? <Text style={styles.sub}>{item.summary}</Text> : null}
+                <StatusChip label={item.status} />
 
-              {open ? (
-                <View testID="material-form" style={styles.matForm}>
-                  <Text style={styles.matHeading}>{t('site.reports.materialTitle')}</Text>
-                  <TextInput
-                    testID="material-name-input"
-                    style={styles.input}
-                    placeholder={t('site.reports.materialPlaceholder')}
-                    placeholderTextColor={colors.textSecondary}
-                    value={matName}
-                    onChangeText={setMatName}
-                  />
-                  <View style={styles.qtyRow}>
+                {open ? (
+                  <View testID="material-form" style={styles.matForm}>
+                    <Text style={styles.matHeading}>{t('site.reports.materialTitle')}</Text>
                     <TextInput
-                      testID="material-qty-input"
-                      style={[styles.input, styles.qtyInput]}
-                      placeholder={t('site.reports.qtyPlaceholder')}
+                      testID="material-name-input"
+                      style={styles.input}
+                      placeholder={t('site.reports.materialPlaceholder')}
                       placeholderTextColor={colors.textSecondary}
-                      keyboardType="decimal-pad"
-                      value={qty}
-                      onChangeText={setQty}
+                      value={matName}
+                      onChangeText={setMatName}
                     />
-                    <TextInput
-                      testID="material-unit-input"
-                      style={[styles.input, styles.qtyInput]}
-                      placeholder={t('site.reports.unitPlaceholder')}
-                      placeholderTextColor={colors.textSecondary}
-                      value={unit}
-                      onChangeText={setUnit}
-                    />
+                    <View style={styles.qtyRow}>
+                      <TextInput
+                        testID="material-qty-input"
+                        style={[styles.input, styles.qtyInput]}
+                        placeholder={t('site.reports.qtyPlaceholder')}
+                        placeholderTextColor={colors.textSecondary}
+                        keyboardType="decimal-pad"
+                        value={qty}
+                        onChangeText={setQty}
+                      />
+                      <TextInput
+                        testID="material-unit-input"
+                        style={[styles.input, styles.qtyInput]}
+                        placeholder={t('site.reports.unitPlaceholder')}
+                        placeholderTextColor={colors.textSecondary}
+                        value={unit}
+                        onChangeText={setUnit}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      testID="record-material-button"
+                      style={[styles.button, !canRecord && screen.buttonDisabled]}
+                      onPress={() => recordMaterial(item.report_id)}
+                      disabled={!canRecord}
+                    >
+                      <Text style={screen.primaryButtonText}>{t('site.reports.record')}</Text>
+                    </TouchableOpacity>
+                    {savedFor === item.report_id ? (
+                      <Text testID="material-saved" style={styles.saved}>
+                        {t('site.reports.recorded')}
+                      </Text>
+                    ) : null}
                   </View>
-                  <TouchableOpacity
-                    testID="record-material-button"
-                    style={[styles.button, !canRecord && screen.buttonDisabled]}
-                    onPress={() => recordMaterial(item.report_id)}
-                    disabled={!canRecord}
-                  >
-                    <Text style={screen.primaryButtonText}>{t('site.reports.record')}</Text>
-                  </TouchableOpacity>
-                  {savedFor === item.report_id ? (
-                    <Text testID="material-saved" style={styles.saved}>
-                      {t('site.reports.recorded')}
-                    </Text>
-                  ) : null}
-                </View>
-              ) : null}
-            </TouchableOpacity>
-          );
-        }}
-      />
+                ) : null}
+              </TouchableOpacity>
+            );
+          }}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
@@ -240,6 +248,8 @@ export default function ReportsScreen() {
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  // The boundary occupies the list's space so the FlatList still fills the screen once revealed.
+  listRegion: { flex: 1 },
   sub: {
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.regular,

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useI18n } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -28,16 +29,20 @@ export default function DashboardScreen() {
   const [projectId, setProjectId] = useState('');
   const [rows, setRows] = useState<PmDashboardRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const { t, formatDate } = useI18n();
 
   const onSelect = async (id: string): Promise<void> => {
     setProjectId(id);
     setError(null);
+    setLoading(true);
     try {
       setRows(await get<PmDashboardRow[]>(`/analytics/pm/${id}`));
     } catch {
       setError(t('pm.dashboard.loadError'));
       setRows(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,25 +56,28 @@ export default function DashboardScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      {rows && rows.length > 0 ? (
-        <View testID="kpi-list" style={styles.kpis}>
-          {rows.map((row) => (
-            <View key={row.eventDate} testID="kpi-day" style={styles.dayCard}>
-              <Text style={styles.dayDate}>{formatDate(row.eventDate)}</Text>
-              {KPI_LABELS.map(([key, labelKey]) => (
-                <View key={key} style={styles.kpiRow}>
-                  <Text style={screen.kvKey}>{t(labelKey)}</Text>
-                  <Text style={screen.kvValue}>{String(row[key])}</Text>
-                </View>
-              ))}
-            </View>
-          ))}
-        </View>
-      ) : (
-        <Text style={screen.empty}>
-          {rows ? t('pm.dashboard.emptyForProject') : t('pm.dashboard.selectPrompt')}
-        </Text>
-      )}
+      {/* Loader only while a picked project's analytics are in flight — never on the select-prompt. */}
+      <LoadingBoundary loading={loading} variant="widget" theme="light">
+        {rows && rows.length > 0 ? (
+          <View testID="kpi-list" style={styles.kpis}>
+            {rows.map((row) => (
+              <View key={row.eventDate} testID="kpi-day" style={styles.dayCard}>
+                <Text style={styles.dayDate}>{formatDate(row.eventDate)}</Text>
+                {KPI_LABELS.map(([key, labelKey]) => (
+                  <View key={key} style={styles.kpiRow}>
+                    <Text style={screen.kvKey}>{t(labelKey)}</Text>
+                    <Text style={screen.kvValue}>{String(row[key])}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={screen.empty}>
+            {rows ? t('pm.dashboard.emptyForProject') : t('pm.dashboard.selectPrompt')}
+          </Text>
+        )}
+      </LoadingBoundary>
     </ScrollView>
   );
 }

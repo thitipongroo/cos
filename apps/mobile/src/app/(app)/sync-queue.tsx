@@ -8,7 +8,7 @@
 //     single real action (the mockup's retry/merge/edit are one resolve on the backend).
 
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import {
   getConflictRecords,
@@ -16,6 +16,7 @@ import {
   type ConflictRecord,
   type ConflictType,
 } from '../../api/conflicts';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
 
@@ -141,104 +142,111 @@ export default function SyncQueueScreen(): React.JSX.Element {
           ))}
         </ScrollView>
 
-        {records == null && !error ? (
-          <ActivityIndicator color={darkColors.primary} style={styles.loading} />
-        ) : error ? (
-          <Text style={styles.empty} testID="sync-queue-error">
-            {t('syncQueue.error')}
-          </Text>
-        ) : filtered.length === 0 ? (
-          <View style={styles.emptyState} testID="sync-queue-empty">
-            <MaterialIcons name="cloud-done" size={48} color={darkColors.muted} />
-            <Text style={styles.empty}>{t('syncQueue.empty')}</Text>
-          </View>
-        ) : (
-          filtered.map((r) => {
-            const open = openId === r.conflict_id;
-            const color = TYPE_COLOR[r.conflict_type];
-            const diff = open ? buildDiff(r.client_payload, r.server_payload) : [];
-            return (
-              <View key={r.conflict_id} style={styles.card} testID={`conflict-${r.conflict_id}`}>
-                <View style={[styles.strip, { backgroundColor: color }]} />
-                <View style={styles.cardInner}>
-                  <View style={styles.cardTop}>
-                    <Text style={styles.entityType}>{formatEntity(r.entity_type)}</Text>
-                    <View style={[styles.typeBadge, { backgroundColor: `${color}22` }]}>
-                      <Text style={[styles.typeBadgeText, { color }]}>
-                        {t(TYPE_LABEL_KEY[r.conflict_type])}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.metaRow}>
-                    <View style={styles.metaCol}>
-                      <Text style={styles.metaLabel}>{t('syncQueue.ref')}</Text>
-                      <Text style={styles.metaValue}>#{r.entity_id.slice(0, 8).toUpperCase()}</Text>
-                    </View>
-                    <View style={styles.metaCol}>
-                      <Text style={styles.metaLabel}>{t('syncQueue.failedAt')}</Text>
-                      <Text style={styles.metaValue}>{failureTime(r.created_at)}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.reasonBox}>
-                    <Text style={styles.reasonLabel}>{t('syncQueue.reasonLabel')}</Text>
-                    <Text style={styles.reasonText}>{t(TYPE_REASON_KEY[r.conflict_type])}</Text>
-                  </View>
-
-                  {open ? (
-                    <View style={styles.diff} testID={`diff-${r.conflict_id}`}>
-                      <View style={styles.diffRow}>
-                        <Text style={[styles.diffCell, styles.diffHead]}>
-                          {t('syncQueue.field')}
-                        </Text>
-                        <Text style={[styles.diffCell, styles.diffHead]}>
-                          {t('syncQueue.client')}
-                        </Text>
-                        <Text style={[styles.diffCell, styles.diffHead]}>
-                          {t('syncQueue.server')}
+        <LoadingBoundary
+          loading={records == null && !error}
+          variant="list"
+          theme="dark"
+          style={styles.listBoundary}
+        >
+          {error ? (
+            <Text style={styles.empty} testID="sync-queue-error">
+              {t('syncQueue.error')}
+            </Text>
+          ) : filtered.length === 0 ? (
+            <View style={styles.emptyState} testID="sync-queue-empty">
+              <MaterialIcons name="cloud-done" size={48} color={darkColors.muted} />
+              <Text style={styles.empty}>{t('syncQueue.empty')}</Text>
+            </View>
+          ) : (
+            filtered.map((r) => {
+              const open = openId === r.conflict_id;
+              const color = TYPE_COLOR[r.conflict_type];
+              const diff = open ? buildDiff(r.client_payload, r.server_payload) : [];
+              return (
+                <View key={r.conflict_id} style={styles.card} testID={`conflict-${r.conflict_id}`}>
+                  <View style={[styles.strip, { backgroundColor: color }]} />
+                  <View style={styles.cardInner}>
+                    <View style={styles.cardTop}>
+                      <Text style={styles.entityType}>{formatEntity(r.entity_type)}</Text>
+                      <View style={[styles.typeBadge, { backgroundColor: `${color}22` }]}>
+                        <Text style={[styles.typeBadgeText, { color }]}>
+                          {t(TYPE_LABEL_KEY[r.conflict_type])}
                         </Text>
                       </View>
-                      {diff.map((d) => {
-                        const differs = d.client !== d.server;
-                        return (
-                          <View key={d.field} style={styles.diffRow}>
-                            <Text style={styles.diffCell}>{d.field}</Text>
-                            <Text style={[styles.diffCell, differs && styles.diffChanged]}>
-                              {d.client}
-                            </Text>
-                            <Text style={[styles.diffCell, differs && styles.diffChanged]}>
-                              {d.server}
-                            </Text>
-                          </View>
-                        );
-                      })}
                     </View>
-                  ) : null}
 
-                  <View style={styles.actions}>
-                    <Pressable
-                      style={styles.reviewBtn}
-                      onPress={() => setOpenId(open ? null : r.conflict_id)}
-                      testID={`review-${r.conflict_id}`}
-                    >
-                      <MaterialIcons name="difference" size={18} color={darkColors.onPrimary} />
-                      <Text style={styles.reviewText}>{t('syncQueue.review')}</Text>
-                    </Pressable>
-                    <Pressable
-                      style={styles.resolveBtn}
-                      onPress={() => onResolve(r.conflict_id)}
-                      testID={`resolve-${r.conflict_id}`}
-                    >
-                      <MaterialIcons name="check" size={18} color={darkColors.success} />
-                      <Text style={styles.resolveText}>{t('syncQueue.resolve')}</Text>
-                    </Pressable>
+                    <View style={styles.metaRow}>
+                      <View style={styles.metaCol}>
+                        <Text style={styles.metaLabel}>{t('syncQueue.ref')}</Text>
+                        <Text style={styles.metaValue}>
+                          #{r.entity_id.slice(0, 8).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={styles.metaCol}>
+                        <Text style={styles.metaLabel}>{t('syncQueue.failedAt')}</Text>
+                        <Text style={styles.metaValue}>{failureTime(r.created_at)}</Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.reasonBox}>
+                      <Text style={styles.reasonLabel}>{t('syncQueue.reasonLabel')}</Text>
+                      <Text style={styles.reasonText}>{t(TYPE_REASON_KEY[r.conflict_type])}</Text>
+                    </View>
+
+                    {open ? (
+                      <View style={styles.diff} testID={`diff-${r.conflict_id}`}>
+                        <View style={styles.diffRow}>
+                          <Text style={[styles.diffCell, styles.diffHead]}>
+                            {t('syncQueue.field')}
+                          </Text>
+                          <Text style={[styles.diffCell, styles.diffHead]}>
+                            {t('syncQueue.client')}
+                          </Text>
+                          <Text style={[styles.diffCell, styles.diffHead]}>
+                            {t('syncQueue.server')}
+                          </Text>
+                        </View>
+                        {diff.map((d) => {
+                          const differs = d.client !== d.server;
+                          return (
+                            <View key={d.field} style={styles.diffRow}>
+                              <Text style={styles.diffCell}>{d.field}</Text>
+                              <Text style={[styles.diffCell, differs && styles.diffChanged]}>
+                                {d.client}
+                              </Text>
+                              <Text style={[styles.diffCell, differs && styles.diffChanged]}>
+                                {d.server}
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    ) : null}
+
+                    <View style={styles.actions}>
+                      <Pressable
+                        style={styles.reviewBtn}
+                        onPress={() => setOpenId(open ? null : r.conflict_id)}
+                        testID={`review-${r.conflict_id}`}
+                      >
+                        <MaterialIcons name="difference" size={18} color={darkColors.onPrimary} />
+                        <Text style={styles.reviewText}>{t('syncQueue.review')}</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.resolveBtn}
+                        onPress={() => onResolve(r.conflict_id)}
+                        testID={`resolve-${r.conflict_id}`}
+                      >
+                        <MaterialIcons name="check" size={18} color={darkColors.success} />
+                        <Text style={styles.resolveText}>{t('syncQueue.resolve')}</Text>
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
-              </View>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </LoadingBoundary>
       </ScrollView>
     </View>
   );
@@ -273,7 +281,7 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
   },
   chipTextActive: { color: darkColors.onPrimary },
-  loading: { marginTop: spacing.xl },
+  listBoundary: { gap: spacing.sm },
   emptyState: { alignItems: 'center', gap: spacing.sm, marginTop: spacing.xl },
   empty: {
     textAlign: 'center',

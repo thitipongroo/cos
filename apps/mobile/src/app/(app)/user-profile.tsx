@@ -11,18 +11,11 @@
 // Reset password → the temporary-password reset flow (both are real, backed sub-flows).
 
 import { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  Image,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, Image, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getUserProjects, type UserProject } from '../../api/projects';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { getUsers, type TenantUser } from '../../api/users';
 import { useT } from '../../i18n';
 import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
@@ -195,29 +188,34 @@ export default function UserProfileScreen(): React.JSX.Element {
             <MaterialIcons name="architecture" size={18} color={darkColors.cyan} />
             <Text style={styles.sectionTitle}>{t('userProfile.projects')}</Text>
           </View>
-          {projects === null && !projErr ? (
-            <ActivityIndicator color={darkColors.primary} style={{ marginVertical: spacing.sm }} />
-          ) : projErr || (projects?.length ?? 0) === 0 ? (
-            <Text style={styles.empty}>{t('userProfile.noProjects')}</Text>
-          ) : (
-            projects?.map((p) => (
-              <View key={p.project_id} style={styles.projectRow}>
-                <View style={styles.projectInfo}>
-                  <Text style={styles.projectName} numberOfLines={1}>
-                    {p.project_name}
-                  </Text>
-                  <Text style={styles.projectCode}>
-                    {t('userProfile.projectCode')}: {p.project_code}
-                  </Text>
+          <LoadingBoundary
+            loading={projects === null && !projErr}
+            variant="micro"
+            theme="dark"
+            style={styles.projectsBoundary}
+          >
+            {projErr || (projects?.length ?? 0) === 0 ? (
+              <Text style={styles.empty}>{t('userProfile.noProjects')}</Text>
+            ) : (
+              projects?.map((p) => (
+                <View key={p.project_id} style={styles.projectRow}>
+                  <View style={styles.projectInfo}>
+                    <Text style={styles.projectName} numberOfLines={1}>
+                      {p.project_name}
+                    </Text>
+                    <Text style={styles.projectCode}>
+                      {t('userProfile.projectCode')}: {p.project_code}
+                    </Text>
+                  </View>
+                  <View style={[styles.projectBadge, { borderColor: `${statusTint(p.status)}66` }]}>
+                    <Text style={[styles.projectBadgeText, { color: statusTint(p.status) }]}>
+                      {p.status.toUpperCase()}
+                    </Text>
+                  </View>
                 </View>
-                <View style={[styles.projectBadge, { borderColor: `${statusTint(p.status)}66` }]}>
-                  <Text style={[styles.projectBadgeText, { color: statusTint(p.status) }]}>
-                    {p.status.toUpperCase()}
-                  </Text>
-                </View>
-              </View>
-            ))
-          )}
+              ))
+            )}
+          </LoadingBoundary>
         </View>
       </ScrollView>
 
@@ -394,6 +392,7 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
     color: darkColors.muted,
   },
+  projectsBoundary: { gap: spacing.sm },
   projectRow: {
     flexDirection: 'row',
     alignItems: 'center',

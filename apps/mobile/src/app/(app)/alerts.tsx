@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -34,59 +35,65 @@ function severityOf(r: ExecutiveDashboardRow): Severity {
 
 export default function AlertsScreen() {
   const [rows, setRows] = useState<ExecutiveDashboardRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const t = useT();
 
   useEffect(() => {
+    // rows is [] both before the fetch and when genuinely empty, so a dedicated flag drives the loader.
     get<ExecutiveDashboardRow[]>('/analytics/executive')
       .then((data) =>
         setRows([...data].sort((a, b) => SEV_RANK[severityOf(b)] - SEV_RANK[severityOf(a)])),
       )
       .catch(() => {
         /* offline — keep last */
-      });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <View testID="alerts-screen" style={screen.container}>
-      <FlatList
-        testID="alerts-list"
-        data={rows}
-        keyExtractor={(r, i) => r.projectId || String(i)}
-        ListEmptyComponent={<Text style={screen.empty}>{t('exec.alerts.empty')}</Text>}
-        renderItem={({ item }) => (
-          <View testID="alert-item" style={[styles.card, item.atRisk && styles.cardRisk]}>
-            <View style={styles.row}>
-              <Text style={styles.project}>{item.projectId.slice(0, 8)}</Text>
-              <Text
-                style={[
-                  styles.badge,
-                  severityOf(item) === 'LOW' ? styles.badgeOk : styles.badgeRisk,
-                ]}
-              >
-                {t(`status.${severityOf(item)}`)}
+      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.boundary}>
+        <FlatList
+          testID="alerts-list"
+          data={rows}
+          keyExtractor={(r, i) => r.projectId || String(i)}
+          ListEmptyComponent={<Text style={screen.empty}>{t('exec.alerts.empty')}</Text>}
+          renderItem={({ item }) => (
+            <View testID="alert-item" style={[styles.card, item.atRisk && styles.cardRisk]}>
+              <View style={styles.row}>
+                <Text style={styles.project}>{item.projectId.slice(0, 8)}</Text>
+                <Text
+                  style={[
+                    styles.badge,
+                    severityOf(item) === 'LOW' ? styles.badgeOk : styles.badgeRisk,
+                  ]}
+                >
+                  {t(`status.${severityOf(item)}`)}
+                </Text>
+              </View>
+              <Text style={styles.metric}>
+                {t('exec.alerts.utilization', { value: item.utilizationPct })}
+              </Text>
+              <Text style={styles.metric}>
+                {t('exec.alerts.budgetLine', {
+                  budget: item.totalBudget,
+                  committed: item.totalCommitted,
+                  actual: item.totalActual,
+                })}
+              </Text>
+              <Text style={styles.metric}>
+                {t('exec.alerts.overdueInvoices', { count: item.overdueInvoiceCount })}
               </Text>
             </View>
-            <Text style={styles.metric}>
-              {t('exec.alerts.utilization', { value: item.utilizationPct })}
-            </Text>
-            <Text style={styles.metric}>
-              {t('exec.alerts.budgetLine', {
-                budget: item.totalBudget,
-                committed: item.totalCommitted,
-                actual: item.totalActual,
-              })}
-            </Text>
-            <Text style={styles.metric}>
-              {t('exec.alerts.overdueInvoices', { count: item.overdueInvoiceCount })}
-            </Text>
-          </View>
-        )}
-      />
+          )}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  boundary: { flex: 1 },
   card: {
     backgroundColor: colors.surface,
     borderRadius: 8,

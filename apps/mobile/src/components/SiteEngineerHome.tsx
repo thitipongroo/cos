@@ -38,7 +38,7 @@ import {
 import { VoiceCommandFab } from './VoiceCommandFab';
 import { QuickActionCard } from './QuickActionCard';
 import { ProjectPicker } from './ProjectPicker';
-import { LoadingState } from './LoadingState';
+import { LoadingBoundary } from './LoadingBoundary';
 import { useI18n } from '../i18n';
 import {
   currentPhase,
@@ -261,14 +261,13 @@ export default function SiteEngineerHome() {
         {/* Project picker, scoped to this engineer's own projects (project_members). While the
           projects are still loading, show a loading strip rather than the picker's "no projects
           cached" empty message, which would read as a failure (PO 2026-07-26). */}
-        {loading ? (
-          <LoadingState
-            variant="micro"
-            theme="dark"
-            label={t('common.loadingLabel')}
-            progress={loadProgress}
-          />
-        ) : (
+        <LoadingBoundary
+          loading={loading}
+          variant="micro"
+          theme="dark"
+          label={t('common.loadingLabel')}
+          progress={loadProgress}
+        >
           <ProjectPicker
             selectedId={projectId}
             onSelect={setProjectId}
@@ -279,19 +278,18 @@ export default function SiteEngineerHome() {
             }))}
             hideLabel
           />
-        )}
+        </LoadingBoundary>
 
         {/* While the first project's data loads, a widget skeleton stands in for the command card
           (ADR-055); once loaded, the real consolidated card renders. */}
-        {loading ? (
-          <LoadingState
-            variant="widget"
-            theme="dark"
-            label={t('common.loadingLabel')}
-            progress={loadProgress}
-            testID="dash-loading-widget"
-          />
-        ) : (
+        <LoadingBoundary
+          loading={loading}
+          variant="widget"
+          theme="dark"
+          label={t('common.loadingLabel')}
+          progress={loadProgress}
+          testID="dash-loading-widget"
+        >
           <View testID="progress-card" style={styles.card}>
             <View style={styles.cardTopRow}>
               <Text style={styles.cardLabel}>{t('home.engineer.progressTitle')}</Text>
@@ -327,7 +325,7 @@ export default function SiteEngineerHome() {
               </>
             )}
           </View>
-        )}
+        </LoadingBoundary>
 
         {/* The mockup's four quick-action tiles. Each routes to a real screen. */}
         <View style={styles.grid}>
@@ -375,54 +373,55 @@ export default function SiteEngineerHome() {
             />
           ) : null}
         </View>
-        {loading ? (
-          <LoadingState
-            variant="list"
-            theme="dark"
-            progress={loadProgress}
-            testID="dash-loading-issues"
-          />
-        ) : sortedIssues.length === 0 ? (
-          <Text testID="issues-empty" style={styles.muted}>
-            {t('home.engineer.noIssues')}
-          </Text>
-        ) : (
-          sortedIssues.slice(0, 5).map((issue) => (
-            <TouchableOpacity
-              key={issue.issue_id}
-              testID={`issue-${issue.issue_id}`}
-              style={[
-                styles.row,
-                { borderLeftColor: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
-              ]}
-              onPress={() => router.push('/issues')}
-            >
-              <View style={styles.rowBody}>
-                <View style={styles.issueHead}>
-                  {issue.issue_number ? (
-                    <Text testID={`issue-${issue.issue_id}-number`} style={styles.issueNumber}>
-                      {issue.issue_number}
+        <LoadingBoundary
+          loading={loading}
+          variant="list"
+          theme="dark"
+          progress={loadProgress}
+          testID="dash-loading-issues"
+        >
+          {sortedIssues.length === 0 ? (
+            <Text testID="issues-empty" style={styles.muted}>
+              {t('home.engineer.noIssues')}
+            </Text>
+          ) : (
+            sortedIssues.slice(0, 5).map((issue) => (
+              <TouchableOpacity
+                key={issue.issue_id}
+                testID={`issue-${issue.issue_id}`}
+                style={[
+                  styles.row,
+                  { borderLeftColor: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
+                ]}
+                onPress={() => router.push('/issues')}
+              >
+                <View style={styles.rowBody}>
+                  <View style={styles.issueHead}>
+                    {issue.issue_number ? (
+                      <Text testID={`issue-${issue.issue_id}-number`} style={styles.issueNumber}>
+                        {issue.issue_number}
+                      </Text>
+                    ) : null}
+                    <Text
+                      style={[
+                        styles.chip,
+                        { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
+                      ]}
+                    >
+                      {issue.severity}
                     </Text>
-                  ) : null}
-                  <Text
-                    style={[
-                      styles.chip,
-                      { color: SEVERITY_COLOR[issue.severity] ?? darkColors.muted },
-                    ]}
-                  >
-                    {issue.severity}
+                  </View>
+                  <Text style={styles.rowTitle} numberOfLines={2}>
+                    {issue.title}
                   </Text>
                 </View>
-                <Text style={styles.rowTitle} numberOfLines={2}>
-                  {issue.title}
-                </Text>
-              </View>
-              <View style={styles.chevronBox}>
-                <MaterialIcons name="chevron-right" size={20} color={darkColors.text} />
-              </View>
-            </TouchableOpacity>
-          ))
-        )}
+                <View style={styles.chevronBox}>
+                  <MaterialIcons name="chevron-right" size={20} color={darkColors.text} />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </LoadingBoundary>
 
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>{t('home.engineer.upcomingTasks')}</Text>
@@ -445,50 +444,51 @@ export default function SiteEngineerHome() {
             ) : null}
           </View>
         </View>
-        {loading ? (
-          <LoadingState
-            variant="list"
-            theme="dark"
-            progress={loadProgress}
-            testID="dash-loading-tasks"
-          />
-        ) : upcoming.length === 0 ? (
-          <Text testID="tasks-empty" style={styles.muted}>
-            {t('home.engineer.noTasks')}
-          </Text>
-        ) : (
-          upcoming.map((task) => {
-            const taskUrgency = task.planned_start
-              ? taskStartUrgency(task.planned_start, now)
-              : 'normal';
-            return (
-              <TouchableOpacity
-                key={task.task_id}
-                testID={`task-${task.task_id}`}
-                style={styles.row}
-                onPress={() => router.push('/tasks')}
-              >
-                <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle} numberOfLines={2}>
-                    {task.task_name}
-                  </Text>
-                  {task.planned_start ? (
-                    <Text
-                      testID={`task-${task.task_id}-start`}
-                      style={[styles.muted, { color: URGENCY_COLOR[taskUrgency] }]}
-                    >
-                      {t('home.engineer.starts', { date: formatDate(task.planned_start) })}
+        <LoadingBoundary
+          loading={loading}
+          variant="list"
+          theme="dark"
+          progress={loadProgress}
+          testID="dash-loading-tasks"
+        >
+          {upcoming.length === 0 ? (
+            <Text testID="tasks-empty" style={styles.muted}>
+              {t('home.engineer.noTasks')}
+            </Text>
+          ) : (
+            upcoming.map((task) => {
+              const taskUrgency = task.planned_start
+                ? taskStartUrgency(task.planned_start, now)
+                : 'normal';
+              return (
+                <TouchableOpacity
+                  key={task.task_id}
+                  testID={`task-${task.task_id}`}
+                  style={styles.row}
+                  onPress={() => router.push('/tasks')}
+                >
+                  <View style={styles.rowBody}>
+                    <Text style={styles.rowTitle} numberOfLines={2}>
+                      {task.task_name}
                     </Text>
-                  ) : null}
-                </View>
-                {/* Chevron matching the Active Issues cards (mockup parity). */}
-                <View style={styles.chevronBox}>
-                  <MaterialIcons name="chevron-right" size={20} color={darkColors.text} />
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        )}
+                    {task.planned_start ? (
+                      <Text
+                        testID={`task-${task.task_id}-start`}
+                        style={[styles.muted, { color: URGENCY_COLOR[taskUrgency] }]}
+                      >
+                        {t('home.engineer.starts', { date: formatDate(task.planned_start) })}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {/* Chevron matching the Active Issues cards (mockup parity). */}
+                  <View style={styles.chevronBox}>
+                    <MaterialIcons name="chevron-right" size={20} color={darkColors.text} />
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </LoadingBoundary>
       </ScrollView>
       {/* Voice command FAB (ADR-073) — round mic, floats over the content, bottom-right. */}
       <VoiceCommandFab />

@@ -22,12 +22,12 @@ import {
   TextInput,
   Switch,
   Pressable,
-  ActivityIndicator,
   StyleSheet,
   Alert,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { getMyTenant, type MyTenant } from '../../api/tenant';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { getSettings, updateSettings, type TenantSettings } from '../../api/settings';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useT } from '../../i18n';
@@ -99,16 +99,14 @@ export default function SystemSettingsScreen(): React.JSX.Element {
       </View>
     );
   }
-  if (!tenant || !settings) {
-    return (
-      <View style={[styles.root, styles.center]} testID="tenant-admin-settings">
-        <ActivityIndicator color={darkColors.primary} />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.root} testID="tenant-admin-settings">
+    <LoadingBoundary
+      loading={!tenant || !settings}
+      variant="widget"
+      theme="dark"
+      style={styles.root}
+      testID="tenant-admin-settings"
+    >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Title lives in the global TopBar (PO decision 2026-07-29 — main screens drop their in-content
             page header). */}
@@ -119,7 +117,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
             <Text style={styles.fieldLabel}>{t('systemSettings.orgName')}</Text>
             <View style={styles.readonlyInput}>
               <Text style={styles.readonlyText} numberOfLines={2}>
-                {tenant.tenant_name}
+                {tenant?.tenant_name}
               </Text>
             </View>
           </View>
@@ -130,7 +128,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
                 ref={codeRef}
                 testID="org-code"
                 style={styles.codeInput}
-                value={tenant.tenant_code}
+                value={tenant?.tenant_code}
                 editable={false}
                 selectTextOnFocus
                 showSoftInputOnFocus={false}
@@ -325,7 +323,7 @@ export default function SystemSettingsScreen(): React.JSX.Element {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </LoadingBoundary>
   );
 }
 

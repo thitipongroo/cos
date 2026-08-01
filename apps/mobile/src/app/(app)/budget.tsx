@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -27,16 +28,20 @@ export default function BudgetScreen() {
   const [projectId, setProjectId] = useState('');
   const [data, setData] = useState<BudgetResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const t = useT();
 
   const onSelect = async (id: string): Promise<void> => {
     setProjectId(id);
     setError(null);
+    setLoading(true);
     try {
       setData(await get<BudgetResponse>(`/finance/budget/${id}`));
     } catch {
       setError(t('finance.budget.loadError'));
       setData(null);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,31 +79,34 @@ export default function BudgetScreen() {
     >
       <ProjectPicker selectedId={projectId} onSelect={onSelect} />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {data ? (
-        <>
-          <View testID="budget-figures">
-            {figures.map(([label, value, color]) => (
-              <View key={label} style={screen.kvRow}>
-                <Text style={screen.kvKey}>{label}</Text>
-                <Text style={[screen.kvValue, color ? { color } : null]}>{value}</Text>
-              </View>
-            ))}
-          </View>
-          {data.lines.length > 0 ? (
-            <View testID="budget-lines" style={styles.lines}>
-              <Text style={styles.linesHeading}>{t('finance.budget.lines')}</Text>
-              {data.lines.map((line) => (
-                <View key={line.line_id} style={screen.kvRow}>
-                  <Text style={screen.kvKey}>{line.line_name}</Text>
-                  <Text style={screen.kvValue}>{line.allocated_amount}</Text>
+      {/* Loader only while a picked project's budget is in flight — never on the select-prompt. */}
+      <LoadingBoundary loading={loading} variant="widget" theme="light">
+        {data ? (
+          <>
+            <View testID="budget-figures">
+              {figures.map(([label, value, color]) => (
+                <View key={label} style={screen.kvRow}>
+                  <Text style={screen.kvKey}>{label}</Text>
+                  <Text style={[screen.kvValue, color ? { color } : null]}>{value}</Text>
                 </View>
               ))}
             </View>
-          ) : null}
-        </>
-      ) : (
-        <Text style={screen.empty}>{t('finance.budget.selectPrompt')}</Text>
-      )}
+            {data.lines.length > 0 ? (
+              <View testID="budget-lines" style={styles.lines}>
+                <Text style={styles.linesHeading}>{t('finance.budget.lines')}</Text>
+                {data.lines.map((line) => (
+                  <View key={line.line_id} style={screen.kvRow}>
+                    <Text style={screen.kvKey}>{line.line_name}</Text>
+                    <Text style={screen.kvValue}>{line.allocated_amount}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <Text style={screen.empty}>{t('finance.budget.selectPrompt')}</Text>
+        )}
+      </LoadingBoundary>
     </ScrollView>
   );
 }

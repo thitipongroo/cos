@@ -27,6 +27,7 @@ import { refreshProjectsCache } from '../../api/projects';
 import { useAuthStore } from '../../store/authStore';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { QuickActionCard } from '../../components/QuickActionCard';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
 import TenantAdminHome from '../../components/TenantAdminHome';
 import { useT } from '../../i18n';
@@ -162,13 +163,16 @@ function ExecHome() {
   const [budget, setBudget] = useState<number | null>(null);
   const [actual, setActual] = useState<number | null>(null);
   const [critical, setCritical] = useState<number | null>(null);
+  // First-load flag: true until the remote KPI fetches settle (success OR offline failure), so the
+  // loader crossfades to the real values — which stay the offline-safe `—` when a fetch fails.
+  const [loading, setLoading] = useState(true);
   const activeCount = projects.filter((p) => p.status === 'ACTIVE').length;
 
   useEffect(() => {
     refreshProjectsCache().catch(() => {
       /* offline — show cached */
     });
-    get<ExecutiveDashboardRow[]>('/analytics/executive')
+    const execFetch = get<ExecutiveDashboardRow[]>('/analytics/executive')
       .then((rows) => {
         setBudget(rows.reduce((s, r) => s + Number(r.totalBudget), 0));
         setActual(rows.reduce((s, r) => s + Number(r.totalActual), 0));
@@ -176,7 +180,7 @@ function ExecHome() {
       .catch(() => {
         /* offline — keep last */
       });
-    get<{ items?: unknown[]; total?: number }>('/site/issues', {
+    const issuesFetch = get<{ items?: unknown[]; total?: number }>('/site/issues', {
       severity: 'CRITICAL',
       status: 'OPEN',
     })
@@ -184,28 +188,31 @@ function ExecHome() {
       .catch(() => {
         /* offline — keep last */
       });
+    void Promise.allSettled([execFetch, issuesFetch]).then(() => setLoading(false));
   }, []);
 
   const money = (n: number | null): string => (n === null ? '—' : n.toLocaleString());
 
   return (
     <Screen testID="home-screen">
-      <View style={styles.kpiRow}>
-        <KpiCard
-          testID="kpi-active-projects"
-          value={String(activeCount)}
-          label={t('home.exec.activeProjects')}
-        />
-        <KpiCard
-          testID="kpi-open-critical"
-          value={critical === null ? '—' : String(critical)}
-          label={t('home.exec.openCritical')}
-        />
-      </View>
-      <View style={styles.kpiRow}>
-        <KpiCard testID="kpi-budget" value={money(budget)} label={t('home.exec.budget')} />
-        <KpiCard testID="kpi-actual" value={money(actual)} label={t('home.exec.actual')} />
-      </View>
+      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+        <View style={styles.kpiRow}>
+          <KpiCard
+            testID="kpi-active-projects"
+            value={String(activeCount)}
+            label={t('home.exec.activeProjects')}
+          />
+          <KpiCard
+            testID="kpi-open-critical"
+            value={critical === null ? '—' : String(critical)}
+            label={t('home.exec.openCritical')}
+          />
+        </View>
+        <View style={styles.kpiRow}>
+          <KpiCard testID="kpi-budget" value={money(budget)} label={t('home.exec.budget')} />
+          <KpiCard testID="kpi-actual" value={money(actual)} label={t('home.exec.actual')} />
+        </View>
+      </LoadingBoundary>
     </Screen>
   );
 }
@@ -215,36 +222,43 @@ function FinanceHome() {
   const t = useT();
   const [pendingPayments, setPendingPayments] = useState<number | null>(null);
   const [overdueInvoices, setOverdueInvoices] = useState<number | null>(null);
+  // First-load flag: true until both remote KPI fetches settle (offline failures included).
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    get<{ items?: { status: string }[] } | { status: string }[]>('/finance/payments')
+    const paymentsFetch = get<{ items?: { status: string }[] } | { status: string }[]>(
+      '/finance/payments',
+    )
       .then((res) => setPendingPayments(asList(res).filter((p) => p.status === 'PENDING').length))
       .catch(() => {
         /* offline — keep last */
       });
-    get<ExecutiveDashboardRow[]>('/analytics/executive')
+    const execFetch = get<ExecutiveDashboardRow[]>('/analytics/executive')
       .then((rows) => setOverdueInvoices(rows.reduce((s, r) => s + r.overdueInvoiceCount, 0)))
       .catch(() => {
         /* offline — keep last */
       });
+    void Promise.allSettled([paymentsFetch, execFetch]).then(() => setLoading(false));
   }, []);
 
   const n = (v: number | null): string => (v === null ? '—' : String(v));
 
   return (
     <Screen testID="home-screen">
-      <View style={styles.kpiRow}>
-        <KpiCard
-          testID="kpi-pending-payments"
-          value={n(pendingPayments)}
-          label={t('home.finance.pendingPayments')}
-        />
-        <KpiCard
-          testID="kpi-overdue-invoices"
-          value={n(overdueInvoices)}
-          label={t('home.finance.overdueInvoices')}
-        />
-      </View>
+      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+        <View style={styles.kpiRow}>
+          <KpiCard
+            testID="kpi-pending-payments"
+            value={n(pendingPayments)}
+            label={t('home.finance.pendingPayments')}
+          />
+          <KpiCard
+            testID="kpi-overdue-invoices"
+            value={n(overdueInvoices)}
+            label={t('home.finance.overdueInvoices')}
+          />
+        </View>
+      </LoadingBoundary>
     </Screen>
   );
 }
@@ -255,51 +269,60 @@ function ProcurementHome() {
   const [openRfqs, setOpenRfqs] = useState<number | null>(null);
   const [awaitingAck, setAwaitingAck] = useState<number | null>(null);
   const [deliveries, setDeliveries] = useState<number | null>(null);
+  // First-load flag: true until all three remote KPI fetches settle (offline failures included).
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // "RFQs closing soon" ≈ still-open (PUBLISHED) RFQs; exact deadline window is not defined in
     // master 3120, so the open-RFQ count is used as the actionable proxy.
-    get<{ items?: { status: string }[] } | { status: string }[]>('/procurement/rfqs')
+    const rfqsFetch = get<{ items?: { status: string }[] } | { status: string }[]>(
+      '/procurement/rfqs',
+    )
       .then((res) => setOpenRfqs(asList(res).filter((r) => r.status === 'PUBLISHED').length))
       .catch(() => {
         /* offline — keep last */
       });
     // "POs awaiting acknowledgment" = status SENT (sent to vendor, not yet ACKNOWLEDGED).
-    get<{ items?: { status: string }[] } | { status: string }[]>('/procurement/purchase-orders')
+    const posFetch = get<{ items?: { status: string }[] } | { status: string }[]>(
+      '/procurement/purchase-orders',
+    )
       .then((res) => setAwaitingAck(asList(res).filter((p) => p.status === 'SENT').length))
       .catch(() => {
         /* offline — keep last */
       });
-    get<{ items?: unknown[] } | unknown[]>('/procurement/deliveries')
+    const deliveriesFetch = get<{ items?: unknown[] } | unknown[]>('/procurement/deliveries')
       .then((res) => setDeliveries(asList(res).length))
       .catch(() => {
         /* offline — keep last */
       });
+    void Promise.allSettled([rfqsFetch, posFetch, deliveriesFetch]).then(() => setLoading(false));
   }, []);
 
   const n = (v: number | null): string => (v === null ? '—' : String(v));
 
   return (
     <Screen testID="home-screen">
-      <View style={styles.kpiRow}>
-        <KpiCard
-          testID="kpi-open-rfqs"
-          value={n(openRfqs)}
-          label={t('home.procurement.openRfqs')}
-        />
-        <KpiCard
-          testID="kpi-awaiting-ack"
-          value={n(awaitingAck)}
-          label={t('home.procurement.awaitingAck')}
-        />
-      </View>
-      <View style={styles.kpiRow}>
-        <KpiCard
-          testID="kpi-deliveries"
-          value={n(deliveries)}
-          label={t('home.procurement.deliveries')}
-        />
-      </View>
+      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+        <View style={styles.kpiRow}>
+          <KpiCard
+            testID="kpi-open-rfqs"
+            value={n(openRfqs)}
+            label={t('home.procurement.openRfqs')}
+          />
+          <KpiCard
+            testID="kpi-awaiting-ack"
+            value={n(awaitingAck)}
+            label={t('home.procurement.awaitingAck')}
+          />
+        </View>
+        <View style={styles.kpiRow}>
+          <KpiCard
+            testID="kpi-deliveries"
+            value={n(deliveries)}
+            label={t('home.procurement.deliveries')}
+          />
+        </View>
+      </LoadingBoundary>
     </Screen>
   );
 }
@@ -311,33 +334,40 @@ function PmHome() {
   const projects = useCollection<Project>('local_projects');
   const t = useT();
   const [openIssues, setOpenIssues] = useState<number | null>(null);
+  // First-load flag: true until the remote open-issues fetch settles (offline failure included).
+  const [loading, setLoading] = useState(true);
   const activeCount = projects.filter((p) => p.status === 'ACTIVE').length;
 
   useEffect(() => {
     refreshProjectsCache().catch(() => {
       /* offline — show cached */
     });
-    get<{ items?: unknown[]; total?: number }>('/site/issues', { status: 'OPEN' })
+    const issuesFetch = get<{ items?: unknown[]; total?: number }>('/site/issues', {
+      status: 'OPEN',
+    })
       .then((res) => setOpenIssues(res.total ?? asList(res as { items?: unknown[] }).length))
       .catch(() => {
         /* offline — keep last */
       });
+    void Promise.allSettled([issuesFetch]).then(() => setLoading(false));
   }, []);
 
   return (
     <Screen testID="home-screen">
-      <View style={styles.kpiRow}>
-        <KpiCard
-          testID="kpi-active-projects"
-          value={String(activeCount)}
-          label={t('home.pm.activeProjects')}
-        />
-        <KpiCard
-          testID="kpi-open-issues"
-          value={openIssues === null ? '—' : String(openIssues)}
-          label={t('home.pm.openIssues')}
-        />
-      </View>
+      <LoadingBoundary loading={loading} variant="widget" theme="light" style={styles.kpiRegion}>
+        <View style={styles.kpiRow}>
+          <KpiCard
+            testID="kpi-active-projects"
+            value={String(activeCount)}
+            label={t('home.pm.activeProjects')}
+          />
+          <KpiCard
+            testID="kpi-open-issues"
+            value={openIssues === null ? '—' : String(openIssues)}
+            label={t('home.pm.openIssues')}
+          />
+        </View>
+      </LoadingBoundary>
     </Screen>
   );
 }
@@ -386,6 +416,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.md },
   kpiRow: { flexDirection: 'row', gap: spacing.md },
+  // Wrapper the LoadingBoundary occupies — reproduces the Screen container's vertical gap so a
+  // multi-row KPI region keeps its spacing once the loader crossfades to the real cards.
+  kpiRegion: { gap: spacing.md },
   quickRow: { flexDirection: 'row', gap: spacing.md },
   kpi: {
     flex: 1,

@@ -12,6 +12,7 @@ import type { SafetyChecklist } from '../../db/database';
 import { useCollection } from '../../hooks/useCollection';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
+import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
 import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
@@ -39,6 +40,9 @@ export default function InspectionsScreen() {
   const [results, setResults] = useState<Record<string, ItemResult>>({});
   const [severity, setSeverity] = useState<Severity>('MEDIUM');
   const [submitted, setSubmitted] = useState(false);
+  // Remote /site/inspections is pending on first paint — gate the list loader on it (local checklists
+  // above are instant and unaffected).
+  const [loading, setLoading] = useState(true);
   const t = useT();
 
   const load = async (): Promise<void> => {
@@ -47,6 +51,8 @@ export default function InspectionsScreen() {
       setInspections(Array.isArray(res) ? res : (res.items ?? []));
     } catch {
       /* offline — keep cached */
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -201,26 +207,31 @@ export default function InspectionsScreen() {
       >
         <Text style={screen.primaryButtonText}>{t('site.inspections.fill')}</Text>
       </TouchableOpacity>
-      <FlatList
-        data={inspections}
-        keyExtractor={(i) => i.inspection_id}
-        ListEmptyComponent={<Text style={screen.empty}>{t('site.inspections.empty')}</Text>}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            testID="inspection-item"
-            style={screen.item}
-            onPress={() => openInspection(item)}
-          >
-            <Text style={styles.itemTitle}>{item.inspection_id.slice(0, 8)}</Text>
-            <StatusChip label={item.status} />
-          </TouchableOpacity>
-        )}
-      />
+      <LoadingBoundary loading={loading} variant="list" theme="light" style={styles.listRegion}>
+        <FlatList
+          data={inspections}
+          keyExtractor={(i) => i.inspection_id}
+          ListEmptyComponent={<Text style={screen.empty}>{t('site.inspections.empty')}</Text>}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              testID="inspection-item"
+              style={screen.item}
+              onPress={() => openInspection(item)}
+            >
+              <Text style={styles.itemTitle}>{item.inspection_id.slice(0, 8)}</Text>
+              <StatusChip label={item.status} />
+            </TouchableOpacity>
+          )}
+        />
+      </LoadingBoundary>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // The remote inspection list fills the space under the fixed "fill" button; the loader stands in
+  // for it while /site/inspections is pending.
+  listRegion: { flex: 1 },
   checkRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
