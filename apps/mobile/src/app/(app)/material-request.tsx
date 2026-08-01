@@ -215,6 +215,7 @@ const styles = StyleSheet.create({
     color: darkColors.onPrimary,
     fontFamily: fontFamily.semibold,
     fontSize: typography.body.fontSize,
+    textTransform: 'uppercase',
   },
   message: {
     color: darkColors.text,

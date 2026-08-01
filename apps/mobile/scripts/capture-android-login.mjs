@@ -236,10 +236,17 @@ async function freshApp() {
   await find(byId('office-login-button'), 'login screen');
   await delay(2500); // let the hero/card finish laying out
   await dismissDevBanners();
-  // The docs set is English (so are the mockups); QM-3 keeps th-TH as the app default, so switch via
-  // the login header's LanguageSwitcher — it is named for the locale it switches TO.
-  await tap(byId('locale-en'), 'language switcher');
-  await delay(1000);
+  // The docs set is English (so are the mockups). The login header's LanguageSwitcher is named for the
+  // locale it switches TO, so 'locale-en' exists only while the app is showing Thai. On an en-US device
+  // the app already comes up in English (the switcher reads 'locale-th') and there is nothing to do —
+  // so tap 'locale-en' only when it is actually present, otherwise assume we are already English.
+  try {
+    const c = await find(byId('locale-en'), 'language switcher', 3);
+    adb('shell', 'input', 'tap', String(c.x), String(c.y));
+    await delay(1000);
+  } catch {
+    /* already English (switcher shows locale-th) — no switch needed */
+  }
 }
 
 async function main() {

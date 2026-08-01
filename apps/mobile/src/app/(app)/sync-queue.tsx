@@ -363,6 +363,7 @@ const styles = StyleSheet.create({
     color: darkColors.onPrimary,
     fontFamily: fontFamily.semibold,
     fontSize: typography.label.fontSize,
+    textTransform: 'uppercase',
   },
   resolveBtn: {
     flexDirection: 'row',
@@ -380,5 +381,6 @@ const styles = StyleSheet.create({
     color: darkColors.success,
     fontFamily: fontFamily.semibold,
     fontSize: typography.label.fontSize,
+    textTransform: 'uppercase',
   },
 });

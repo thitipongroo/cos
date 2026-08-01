@@ -212,6 +212,7 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.semibold,
+    textTransform: 'uppercase',
   },
   galleryTitle: {
     color: colors.textPrimary,

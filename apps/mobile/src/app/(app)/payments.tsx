@@ -127,5 +127,6 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontFamily: fontFamily.semibold,
     fontSize: typography.caption.fontSize,
+    textTransform: 'uppercase',
   },
 });

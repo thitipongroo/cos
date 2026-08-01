@@ -684,11 +684,13 @@ const styles = StyleSheet.create({
     color: darkColors.onPrimary,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.semibold,
+    textTransform: 'uppercase',
   },
   buttonOutlineText: {
     color: darkColors.text,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.semibold,
+    textTransform: 'uppercase',
   },
   helper: {
     color: darkColors.muted,

@@ -407,6 +407,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: typography.body.fontSize,
     color: darkColors.text,
+    textTransform: 'uppercase',
   },
   hint: {
     fontFamily: fontFamily.regular,

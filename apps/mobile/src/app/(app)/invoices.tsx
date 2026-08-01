@@ -214,6 +214,7 @@ const styles = StyleSheet.create({
     color: colors.bg,
     fontFamily: fontFamily.semibold,
     fontSize: typography.body.fontSize,
+    textTransform: 'uppercase',
   },
   savedText: {
     color: colors.success,

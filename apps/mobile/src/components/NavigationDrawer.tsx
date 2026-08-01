@@ -337,5 +337,6 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: typography.body.fontSize,
     color: darkColors.danger,
+    textTransform: 'uppercase',
   },
 });

@@ -1,30 +1,33 @@
 // <LoadingState /> — the standard loading placeholder / progress component (§32.7 "Loading State";
-// ADR-055). Layout from mockup/mobile/universal_loading_component_mobile_view.
+// ADR-055). Layout from mockup/mobile/02_loading_component (the "Universal Loading Patterns" A–D).
 //
-// Presentational only: it owns no data source, no timer, and no i18n copy. The caller passes
-// `progress` (0–100; omit for indeterminate) and an already-translated `label` (QM-3 — the
-// component holds no key and no literal). The `widget` variant additionally accepts a caller-owned
-// brand `iconSource` + `heading` for its launch/branded use (e.g. app favicon + tagline); both are
-// opt-in, so the plain dashboard skeleton is unchanged when they are omitted (ADR-055 — brand assets
-// and copy stay with the caller, none are baked here).
+// Presentational only: it owns no data source and no i18n copy. The caller passes `progress` (0–100;
+// omit for indeterminate) and an already-translated `label` (QM-3 — the component holds no key and no
+// literal). The `widget` variant additionally accepts a caller-owned brand `iconSource` + `heading`
+// for its launch/branded use (e.g. app favicon + tagline); both are opt-in.
 //
-// The `ai` variant carries the cyan glow / scan-line / waveform. §32.7 "Exception 2 — loading
-// states" permits the motif here for the reason the pre-auth exception exists: no project data is
-// on screen yet, and the motif unmounts the moment data renders. Every other variant is a flat
-// skeleton. All colour comes from theme/tokens.ts — §32.7 forbids hardcoded hex.
+// Motion (PO 2026-08-01 — "loadings must actually move"): when the caller supplies a real `progress`
+// (determinate), the fill bar / ring arc animate smoothly to it and the percentage counts up with the
+// same value — the number is never fabricated, it tracks the caller's honest progress. When `progress`
+// is omitted (indeterminate) there is NO percentage and the bar stays a pulsing skeleton — the ring
+// keeps its rotating sweep — so nothing invents a figure it doesn't have (honest-data policy).
 //
-// Decisions live in ../lib/loadingState.ts so they are covered by the QM-1 100% gate; this file is
-// the shell (jest.config.ts collectCoverageFrom excludes src/components/**, and react-native is
-// mocked wholesale, so components cannot be rendered under jest — they are Detox territory).
+// The `ai` variant carries the cyan glow / scan-line / waveform. §32.7 "Exception 2 — loading states"
+// permits the motif here: no project data is on screen yet, and it unmounts the moment data renders.
+//
+// Decisions live in ../lib/loadingState.ts so they are covered by the QM-1 100% gate; this file is the
+// shell (jest.config.ts collectCoverageFrom excludes src/components/**, and react-native is mocked
+// wholesale, so components cannot be rendered under jest — they are Detox territory).
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import type { ImageSourcePropType } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import Svg, { Circle } from 'react-native-svg';
 import {
   resolvePalette,
   formatPercent,
-  progressWidth,
+  clampProgress,
   aiMotifEnabled,
   listRowWidths,
   accessibilityLabel,
@@ -35,10 +38,12 @@ import {
 } from '../lib/loadingState';
 import { fontFamily, spacing, typography } from '../theme/tokens';
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 export interface LoadingStateProps {
   /** Layout. `list` stacks card skeletons — §32.7 prohibits tables on mobile, so there is no `table`. */
   variant: LoadingVariant;
-  /** 0–100. Omit for indeterminate (no bar, no percentage). Clamped; NaN reads as indeterminate. */
+  /** 0–100. Omit for indeterminate (no bar fill, no percentage). Clamped; NaN reads as indeterminate. */
   progress?: number;
   /** Already-translated copy. Omit to render no text. */
   label?: string;
@@ -88,6 +93,108 @@ function SkeletonBar({
   );
 }
 
+/**
+ * A determinate progress bar whose fill animates to the current value. Indeterminate callers get a
+ * pulsing skeleton track instead of an invented fill (honest-data policy). `fill` is the shared 0→1
+ * animated value; `color` overrides the primary (the `ai` variant fills in cyan).
+ */
+function ProgressBar({
+  palette,
+  determinate,
+  fill,
+  pulse,
+  color,
+}: {
+  palette: LoadingPalette;
+  determinate: boolean;
+  fill: Animated.Value;
+  pulse: Animated.AnimatedInterpolation<number>;
+  color?: string;
+}): React.JSX.Element {
+  const styles = makeStyles(palette);
+  if (!determinate) {
+    // No honest value → a breathing skeleton track, not a fabricated fill.
+    return <Animated.View style={[styles.track, { opacity: pulse }]} />;
+  }
+  const width = fill.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  return (
+    <View style={styles.track}>
+      <Animated.View
+        style={[
+          styles.fill,
+          { width: width as unknown as `${number}%`, backgroundColor: color ?? palette.primary },
+        ]}
+      />
+    </View>
+  );
+}
+
+/**
+ * The `micro` variant's ring (mockup D). Determinate → a real progress arc that grows with the value
+ * (the "circle bar"); indeterminate → a rotating quarter-arc sweep. SVG so the arc is a true partial
+ * stroke, not a border trick.
+ */
+function ProgressRing({
+  palette,
+  determinate,
+  fill,
+  spinDeg,
+}: {
+  palette: LoadingPalette;
+  determinate: boolean;
+  fill: Animated.Value;
+  spinDeg: Animated.AnimatedInterpolation<string>;
+}): React.JSX.Element {
+  const size = 18;
+  const stroke = 2;
+  const r = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * r;
+  const track = `${palette.primary}33`;
+  if (determinate) {
+    // Offset shrinks from full circumference (empty) to 0 (full) as fill goes 0→1.
+    const offset = fill.interpolate({
+      inputRange: [0, 1],
+      outputRange: [circumference, 0],
+    });
+    return (
+      <Svg width={size} height={size}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
+        <AnimatedCircle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={palette.primary}
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          // Start the arc at 12 o'clock rather than 3 o'clock.
+          rotation={-90}
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+    );
+  }
+  return (
+    <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
+      <Svg width={size} height={size}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={track} strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={palette.primary}
+          strokeWidth={stroke}
+          fill="none"
+          strokeDasharray={`${circumference * 0.25} ${circumference}`}
+          strokeLinecap="round"
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 export function LoadingState({
   variant,
   progress,
@@ -100,27 +207,38 @@ export function LoadingState({
 }: LoadingStateProps): React.JSX.Element {
   const palette = resolvePalette(theme);
   const showMotif = aiMotifEnabled(variant, theme);
-  const percent = formatPercent(progress);
-  const width = progressWidth(progress);
+  const clamped = clampProgress(progress); // number 0–100, or null when indeterminate
+  const determinate = clamped !== null;
+  const target = clamped === null ? 0 : clamped / 100;
+  // The percentage shown IS the animated fill value, so number and bar/ring never disagree; it renders
+  // only when the caller gave a real progress (honest-data policy — no invented figure).
+  const [displayPct, setDisplayPct] = useState(0);
+  const percent = determinate ? formatPercent(displayPct) : null;
   const a11y = accessibilityLabel(label, progress);
 
   const pulseValue = useRef(new Animated.Value(0)).current;
   const spinValue = useRef(new Animated.Value(0)).current;
   const scanValue = useRef(new Animated.Value(0)).current;
+  // Drives the fill-bar width, the ring arc, and the counting percentage — one value so they agree.
+  const fillValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const id = fillValue.addListener(({ value }) => setDisplayPct(Math.round(value * 100)));
+    return () => fillValue.removeListener(id);
+  }, [fillValue]);
 
   useEffect(() => {
     // Capture builds (EXPO_PUBLIC_CAPTURE, same flag that mutes the LogBox toast) FREEZE every loop at a
-    // natural mid-frame: a full-page screenshot of the loading state is stitched from several scrolling
-    // viewports, and a moving shimmer between frames defeats the stitch's overlap match. Production and
-    // normal dev are unaffected — the loops run as usual.
+    // natural mid-frame: a full-page screenshot is stitched from several scrolling viewports, and a
+    // moving shimmer between frames defeats the stitch's overlap match. The fill jumps straight to its
+    // honest target so the frozen frame still shows the real bar/ring/percentage.
     if (process.env['EXPO_PUBLIC_CAPTURE']) {
       pulseValue.setValue(0.6);
       spinValue.setValue(0);
       scanValue.setValue(0);
+      fillValue.setValue(target);
       return;
     }
-    // One breathing pulse drives every skeleton bar, so the whole card reads as a single surface
-    // rather than a field of independently blinking rectangles.
     const breathe = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseValue, { toValue: 1, duration: 750, useNativeDriver: true }),
@@ -146,12 +264,22 @@ export function LoadingState({
     breathe.start();
     spin.start();
     scan.start();
+    // Slide the fill/ring/percentage to the current honest value. Width + SVG stroke are layout/JS
+    // props, so this one animation cannot use the native driver (the loops above still do).
+    const advance = Animated.timing(fillValue, {
+      toValue: target,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    });
+    advance.start();
     return () => {
       breathe.stop();
       spin.stop();
       scan.stop();
+      advance.stop();
     };
-  }, [pulseValue, spinValue, scanValue]);
+  }, [pulseValue, spinValue, scanValue, fillValue, target]);
 
   const pulse = pulseValue.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] });
   const spinDeg = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
@@ -163,14 +291,17 @@ export function LoadingState({
       : { accessible: true, accessibilityLabel: a11y, accessibilityRole: 'progressbar' as const };
 
   // ── micro ─────────────────────────────────────────────────────────────────────────────────────
-  // An inline strip: spinner + label + percentage. Sits beside content, so it has no card chrome.
+  // An inline strip: ring + label + percentage. Sits beside content, so it has no card chrome.
   if (variant === 'micro') {
     return (
       <View testID={testID} style={styles.microRow} {...a11yProps}>
-        {/* Spinning ring (mockup D) — a low-alpha track with a rotating primary arc. */}
-        <View style={styles.ring}>
-          <Animated.View style={[styles.ringArc, { transform: [{ rotate: spinDeg }] }]} />
-        </View>
+        {/* Progress ring (mockup D) — a real arc when determinate, a rotating sweep when not. */}
+        <ProgressRing
+          palette={palette}
+          determinate={determinate}
+          fill={fillValue}
+          spinDeg={spinDeg}
+        />
         {label !== undefined && label !== '' && (
           <Text style={styles.microLabel} numberOfLines={1}>
             {label}
@@ -195,7 +326,7 @@ export function LoadingState({
                 <SkeletonBar palette={palette} width={title} height={14} pulse={pulse} />
                 <SkeletonBar palette={palette} width={subtitle} height={10} pulse={pulse} />
               </View>
-              {/* The first row carries a sync-in-progress spinner + percentage (mockup B). */}
+              {/* The first row carries a sync-in-progress spinner + counting percentage (mockup B). */}
               {row === 0 ? (
                 <View style={styles.listSync}>
                   <Animated.View style={{ transform: [{ rotate: spinDeg }] }}>
@@ -247,25 +378,19 @@ export function LoadingState({
         ) : (
           <SkeletonBar palette={palette} width="100%" height={14} pulse={pulse} />
         )}
-        {width !== null && (
-          <View style={styles.track}>
-            <View
-              style={[
-                styles.fill,
-                {
-                  width: width as `${number}%`,
-                  backgroundColor: palette.accent ?? palette.primary,
-                },
-              ]}
-            />
-          </View>
-        )}
+        <ProgressBar
+          palette={palette}
+          determinate={determinate}
+          fill={fillValue}
+          pulse={pulse}
+          color={palette.accent ?? palette.primary}
+        />
       </View>
     );
   }
 
   // ── widget ────────────────────────────────────────────────────────────────────────────────────
-  // The dashboard tile: icon plate, text skeletons, label + percentage, progress bar.
+  // The dashboard tile: icon plate, text skeletons, label + counting percentage, progress bar.
   return (
     <View testID={testID} style={styles.card} {...a11yProps}>
       <View style={styles.widgetBody}>
@@ -295,11 +420,7 @@ export function LoadingState({
           </View>
         ) : null}
       </View>
-      {width !== null && (
-        <View style={styles.track}>
-          <View style={[styles.fill, { width: width as `${number}%` }]} />
-        </View>
-      )}
+      <ProgressBar palette={palette} determinate={determinate} fill={fillValue} pulse={pulse} />
     </View>
   );
 }
@@ -357,25 +478,6 @@ const makeStyles = (palette: LoadingPalette) =>
       backgroundColor: palette.skeleton,
       alignItems: 'center',
       justifyContent: 'center',
-    },
-    // Spinning ring (mockup D) — low-alpha track + a rotating primary top arc overlaid on it.
-    ring: {
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      borderWidth: 2,
-      borderColor: `${palette.primary}33`,
-    },
-    ringArc: {
-      position: 'absolute',
-      top: -2,
-      left: -2,
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      borderWidth: 2,
-      borderColor: 'transparent',
-      borderTopColor: palette.primary,
     },
     aiCard: {
       // Start/end, not left/right: RN does not auto-flip borderLeft* under I18nManager.isRTL, so a

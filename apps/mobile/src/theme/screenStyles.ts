@@ -60,11 +60,14 @@ export const screen = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Label on a filled primary button (on-primary text = colors.bg).
+  // Label on a filled primary button (on-primary text = colors.bg). Action-button labels are
+  // uppercased app-wide (PO 2026-08-01) — the transform stays in the style so the i18n strings keep
+  // their natural case (QM-3) and dynamic labels (e.g. "Generating…") uppercase automatically.
   primaryButtonText: {
     color: colors.bg,
     fontFamily: fontFamily.semibold,
     fontSize: typography.body.fontSize,
+    textTransform: 'uppercase',
   },
 
   // Disabled affordance for buttons.

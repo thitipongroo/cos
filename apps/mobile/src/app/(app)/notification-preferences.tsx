@@ -511,6 +511,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.bold,
     fontSize: typography.body.fontSize,
     color: darkColors.onPrimary,
+    textTransform: 'uppercase',
   },
   // Success state (mockup 02)
   successCircle: {

@@ -257,6 +257,9 @@ function ToolButton({
           color: primary ? colors.bg : active ? palette.primary : palette.text,
           fontFamily: fontFamily.semibold,
           fontSize: typography.label.fontSize,
+          // Only the filled primary action (Save) is a CTA — uppercase it; the transparent tools
+          // (Pen / Undo / Clear all / Back) keep their natural case (PO 2026-08-01).
+          textTransform: primary ? 'uppercase' : undefined,
         }}
       >
         {label}

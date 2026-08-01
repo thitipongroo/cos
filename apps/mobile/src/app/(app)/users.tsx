@@ -602,6 +602,7 @@ const styles = StyleSheet.create({
     color: darkColors.cyan,
     fontFamily: fontFamily.semibold,
     fontSize: typography.label.fontSize,
+    textTransform: 'uppercase',
   },
   auditSource: {
     fontFamily: fontFamily.regular,
