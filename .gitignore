@@ -9,6 +9,11 @@ build
 out
 coverage
 
+# Lighthouse CI reports (apps/web/.lighthouseci) — `lhci autorun` writes ~5.7 MB of lhr-*.json /
+# lhr-*.html per run. CI uploads this directory as a workflow artifact
+# (.github/workflows/lighthouse.yml), so it is build output, never source.
+.lighthouseci
+
 # coverage.py data/report artifacts (Python services). `coverage` above only matches a path named
 # exactly that, so the dotfile data file and the generated reports were NOT ignored — running
 # `pytest --cov` in any service left a committable SQLite file behind. `.coveragerc` is CONFIG and

@@ -7,8 +7,8 @@ packages:
   # @cos/types as a file: dependency. Nothing in turbo/CI references @cos/mobile.
   - '!apps/mobile'
   - 'backend'
-  - 'services/*'
   - 'packages/@cos/*'
+  - 'services/*'
 
 overrides:
   # Single fastify version — file-service imports fastify directly while @nestjs/platform-fastify
