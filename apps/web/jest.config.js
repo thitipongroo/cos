@@ -35,6 +35,13 @@ module.exports = {
     'src/lib/riskHeatMap.ts',
     // Kubernetes probe endpoints — a regression here silently disables liveness/readiness.
     'src/app/health/**/route.ts',
+    // Feature-flag resolution (QM-15). The React binding stays in src/lib/api/flags.ts; this is
+    // the pure half, and it decides whether a flag reads as on — a wrong fallback here would
+    // enable a feature that is still at 0% rollout.
+    'src/lib/flags.ts',
+    // Locale widening + document lang/dir (QM-3). A regression here is invisible on screen but
+    // makes a screen reader announce Thai with an English voice, and would drop the Buddhist Era.
+    'src/lib/locale.ts',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '\\.spec\\.ts$'],
   coverageThreshold: {

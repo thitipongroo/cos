@@ -4,10 +4,12 @@ import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { otpVerifySchema } from '@cos/schemas';
 import { useEffect, useRef, useState } from 'react';
 import { useT } from '../../../i18n';
 import { LanguageSwitcher } from '../../../components/shell/LanguageSwitcher';
 import { COUNTRIES, DEFAULT_COUNTRY_ISO2, findCountry, toE164 } from '../../../lib/countries';
+import { useValidatedForm } from '../../../lib/forms';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
@@ -92,6 +94,18 @@ export default function OtpVerifyPage() {
   const otp = digits.join('');
   const maskedPhone = `${country.dialCode} •••• ${nationalNumber.slice(-4)}`;
 
+  // The six boxes stay as they are — one-character inputs with their own paste and arrow-key
+  // handling. react-hook-form holds the joined result, so the "six digits" rule lives in the
+  // schema with every other rule, behind the same kill switch, rather than only in the
+  // button's disabled state where a screen-reader user never learns why it will not submit.
+  const {
+    handleSubmit,
+    formState: { errors },
+  } = useValidatedForm({
+    schema: otpVerifySchema,
+    values: { phoneNumber, otp },
+  });
+
   async function resendOtp(): Promise<void> {
     if (resendIn > 0 || submitting) return;
     setError(null);
@@ -117,18 +131,21 @@ export default function OtpVerifyPage() {
     }
   }
 
-  async function verifyOtp(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  const verifyOtp = handleSubmit(async (values) => {
     setError(null);
     setSubmitting(true);
-    const result = await signIn('otp', { phoneNumber, otp, redirect: false });
+    const result = await signIn('otp', {
+      phoneNumber: values.phoneNumber,
+      otp: values.otp,
+      redirect: false,
+    });
     setSubmitting(false);
     if (!result || result.error) {
       setError(t('auth.otp.verifyError'));
       return;
     }
     window.location.assign('/post-login');
-  }
+  });
 
   function setDigit(index: number, value: string): void {
     const clean = value.replace(/\D/g, '');
@@ -191,6 +208,7 @@ export default function OtpVerifyPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <form
           onSubmit={verifyOtp}
+          noValidate
           className="w-full max-w-md rounded-xl border border-white/10 bg-slate-900 p-8 shadow-2xl"
         >
           {/* Project logo mark — white box (matches the email/password screen) */}
@@ -223,7 +241,14 @@ export default function OtpVerifyPage() {
             </p>
           </div>
 
-          <div className="mt-8 grid grid-cols-6 gap-2 sm:gap-3">
+          {/* role="group" with a name: without it a screen reader announces six unlabelled
+              one-character text boxes and never says what they are collectively for. */}
+          <div
+            role="group"
+            aria-label={t('auth.otp.verifyTitle')}
+            aria-describedby={errors.otp ? 'otp-error' : undefined}
+            className="mt-8 grid grid-cols-6 gap-2 sm:gap-3"
+          >
             {digits.map((digit, i) => (
               <input
                 key={i}
@@ -244,11 +269,17 @@ export default function OtpVerifyPage() {
             ))}
           </div>
 
+          {errors.otp ? (
+            <p id="otp-error" role="alert" className="mt-3 text-small text-red-400">
+              {t(errors.otp.message ?? '')}
+            </p>
+          ) : null}
+
           <div className="mt-8 space-y-3">
             <button
               data-testid="verify-otp-button"
               type="submit"
-              disabled={submitting || otp.length !== OTP_LENGTH}
+              disabled={submitting}
               className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-cos-blue font-semibold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
               {t('auth.otp.verifyButton')}
@@ -274,7 +305,7 @@ export default function OtpVerifyPage() {
               {t('auth.otp.aesActive')}
             </span>
           </div>
-          <p className="mt-4 text-small leading-snug text-slate-500">
+          <p className="mt-4 text-small leading-snug text-slate-400">
             {t('auth.otp.securityNote')}
           </p>
 
@@ -292,17 +323,17 @@ export default function OtpVerifyPage() {
       {/* Footer */}
       <footer className="border-t border-white/10 px-6 py-5 md:px-12">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 sm:flex-row">
-          <p className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+          <p className="text-tiny font-bold uppercase tracking-widest text-slate-400">
             {t('auth.login.copyright')} · {t('auth.login.footerUnit')}
           </p>
           <div className="flex gap-6">
-            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-400">
               {t('auth.login.termsOfService')}
             </span>
-            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-400">
               {t('auth.login.privacyPolicy')}
             </span>
-            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-400">
               {t('auth.login.systemStatus')}
             </span>
           </div>

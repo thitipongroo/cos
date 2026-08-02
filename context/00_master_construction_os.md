@@ -427,7 +427,7 @@ carries real integration surface.
 
 - Objective: full test suite + quality gates.
 - Exit: coverage 100/100 (QM-1); mutation score ≥ 70%; load test passes at target concurrency;
-  Lighthouse CI frontend gate (Core Web Vitals + bundle budget) green (`30 §30.9`).
+  Lighthouse CI frontend gate (Core Web Vitals + bundle budget + accessibility category = 1.0) green (`30 §30.9`).
 
 **Phase 19 — Final Production Readiness** · deps `Ph1–18` · risk `R-05, R-06`
 

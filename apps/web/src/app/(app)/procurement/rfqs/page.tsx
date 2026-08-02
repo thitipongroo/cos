@@ -1,6 +1,10 @@
 'use client';
 
+import { rfqCreateSchema } from '@cos/schemas';
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
+import { NativeSelectField } from '../../../../components/form/NativeSelectField';
+import { TextInputField } from '../../../../components/form/TextInputField';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
 import {
@@ -14,6 +18,7 @@ import {
 import type { RfqRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
+import { useValidatedForm } from '../../../../lib/forms';
 
 const STATUSES = ['DRAFT', 'PUBLISHED', 'CLOSED', 'EVALUATED', 'AWARDED', 'CANCELLED'];
 
@@ -29,21 +34,28 @@ export default function RfqsPage() {
   const busy = publish.isPending || close.isPending || cancel.isPending;
   const projects = useProjects();
   const create = useCreateRfq();
-  const [projectId, setProjectId] = useState('');
-  const [rfqNumber, setRfqNumber] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const {
+    control,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: rfqCreateSchema,
+    defaultValues: { project_id: '', rfq_number: '', deadline: '' },
+  });
 
-  const submitCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
+
+  const submitCreate = handleSubmit(async (values) => {
     await create.mutateAsync({
-      project_id: projectId,
-      rfq_number: rfqNumber,
-      deadline: new Date(deadline).toISOString(),
+      project_id: values.project_id,
+      rfq_number: values.rfq_number,
+      // The field holds a local datetime; the API takes an absolute instant.
+      deadline: new Date(values.deadline).toISOString(),
     });
-    setRfqNumber('');
-    setDeadline('');
-  };
-  const f = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm';
+    reset({ project_id: getValues('project_id'), rfq_number: '', deadline: '' });
+  });
 
   const columns: Column<RfqRow>[] = [
     { headerKey: 'pm.colNumber', cell: (r) => r.rfq_number },
@@ -89,40 +101,70 @@ export default function RfqsPage() {
       <h1 className="mb-6 text-2xl font-bold text-gray-800">{t('proc.rfqsTitle')}</h1>
 
       {!readOnly && (
-        <form onSubmit={submitCreate} className="mb-4 flex flex-wrap items-end gap-2">
-          <select
-            required
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className={f}
-          >
-            <option value="">{t('site.selectProject')}</option>
-            {projects.data?.items.map((p) => (
-              <option key={p.project_id} value={p.project_id}>
-                {p.project_name}
-              </option>
-            ))}
-          </select>
-          <input
-            required
-            value={rfqNumber}
-            onChange={(e) => setRfqNumber(e.target.value)}
-            placeholder={t('proc.rfqNumber')}
-            maxLength={50}
-            className={f}
+        <form onSubmit={submitCreate} noValidate className="mb-4 flex flex-wrap items-start gap-2">
+          <Controller
+            name="project_id"
+            control={control}
+            render={({ field }) => (
+              <NativeSelectField
+                {...field}
+                label={t('site.selectProject')}
+                placeholder={t('site.selectProject')}
+                options={
+                  projects.data?.items.map((p) => ({ id: p.project_id, label: p.project_name })) ??
+                  []
+                }
+                errorMessage={messageFor(errors.project_id?.message)}
+              />
+            )}
           />
-          <input
-            type="datetime-local"
-            required
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-            aria-label={t('proc.deadline')}
-            className={f}
+          <Controller
+            name="rfq_number"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('proc.rfqNumber')}
+                errorMessage={messageFor(errors.rfq_number?.message)}
+              />
+            )}
           />
+          {/* Stays a native datetime-local rather than DateField: React Aria's DatePicker is
+              date-only, and an RFQ deadline needs the hour. Buddhist Era does not apply to a
+              deadline instant the vendor sees in their own locale. */}
+          <div className="flex flex-col gap-1">
+            <label htmlFor="rfq-deadline" className="block text-sm font-medium text-gray-700">
+              {t('proc.deadline')}
+            </label>
+            <Controller
+              name="deadline"
+              control={control}
+              render={({ field }) => (
+                <>
+                  <input
+                    id="rfq-deadline"
+                    type="datetime-local"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    aria-invalid={errors.deadline ? true : undefined}
+                    aria-describedby={errors.deadline ? 'rfq-deadline-error' : undefined}
+                    className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
+                  />
+                  {errors.deadline ? (
+                    <span id="rfq-deadline-error" role="alert" className="text-xs text-red-700">
+                      {messageFor(errors.deadline.message)}
+                    </span>
+                  ) : null}
+                </>
+              )}
+            />
+          </div>
           <button
             type="submit"
-            disabled={create.isPending || !projectId || !rfqNumber || !deadline}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitting || create.isPending}
+            className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {t('proc.createRfq')}
           </button>

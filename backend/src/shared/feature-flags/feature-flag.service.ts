@@ -18,6 +18,10 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   's1.ai.completions': true,
   's1.identity.sms-otp-login': true,
   's1.finance.payment-mutations': true,
+  // New feature, not a retrofit kill-switch — defaults OFF until rollout. Failing closed is the
+  // safe direction here: with it off, web forms fall back to server-only validation (QM-4
+  // class-validator), which is the behaviour that shipped before the flag existed.
+  's1.web.client-validation': false,
 };
 
 export interface FlagContext {

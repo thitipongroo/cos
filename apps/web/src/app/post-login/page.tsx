@@ -116,13 +116,13 @@ export default function PostLoginPage() {
             </div>
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div>
-                <p className="text-[9px] uppercase tracking-tighter text-slate-500">
+                <p className="text-[9px] uppercase tracking-tighter text-slate-400">
                   {t('auth.loading.encryption')}
                 </p>
                 <p className="font-mono text-tiny text-slate-300">{ENCRYPTION}</p>
               </div>
               <div className="text-right">
-                <p className="text-[9px] uppercase tracking-tighter text-slate-500">
+                <p className="text-[9px] uppercase tracking-tighter text-slate-400">
                   {t('auth.loading.nodeId')}
                 </p>
                 <p className="font-mono text-tiny text-slate-300">{NODE_ID}</p>
@@ -135,7 +135,7 @@ export default function PostLoginPage() {
       {/* Terminal footer */}
       <footer className="px-6 py-6 md:px-12">
         <div className="mx-auto flex max-w-5xl items-center justify-between opacity-50">
-          <span className="flex items-center gap-2 font-mono text-tiny text-slate-500">
+          <span className="flex items-center gap-2 font-mono text-tiny text-slate-400">
             <svg
               aria-hidden="true"
               viewBox="0 0 24 24"
@@ -149,7 +149,7 @@ export default function PostLoginPage() {
             </svg>
             {t('auth.loading.rootCert')}
           </span>
-          <span className="font-mono text-tiny text-slate-500">{VERSION}</span>
+          <span className="font-mono text-tiny text-slate-400">{VERSION}</span>
         </div>
       </footer>
     </div>

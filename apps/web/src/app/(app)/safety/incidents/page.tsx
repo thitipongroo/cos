@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { incidentReportSchema } from '@cos/schemas';
+import { Controller } from 'react-hook-form';
+import { NativeSelectField } from '../../../../components/form/NativeSelectField';
+import { TextInputField } from '../../../../components/form/TextInputField';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
 import {
@@ -12,6 +15,7 @@ import {
 import type { IncidentRow, IncidentSeverity } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
+import { useValidatedForm } from '../../../../lib/forms';
 
 const SEVERITIES: IncidentSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
@@ -23,15 +27,25 @@ export default function SafetyIncidentsPage() {
   const report = useReportIncident();
   const ack = useAcknowledgeIncident();
   const readOnly = useReadOnly();
-  const [projectId, setProjectId] = useState('');
-  const [type, setType] = useState('');
-  const [severity, setSeverity] = useState<IncidentSeverity>('MEDIUM');
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    report.mutate({ project_id: projectId, incident_type: type, severity });
-    setType('');
-  };
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: incidentReportSchema,
+    defaultValues: { project_id: '', incident_type: '', severity: 'MEDIUM' as const },
+  });
+
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
+
+  const submit = handleSubmit((values) => {
+    report.mutate(values);
+    // Keep the project and severity so a second incident on the same site is one field of typing;
+    // only the description of what happened is cleared.
+    reset({ ...values, incident_type: '' });
+  });
 
   const columns: Column<IncidentRow>[] = [
     { headerKey: 'safety.colType', cell: (i) => i.incident_type },
@@ -56,47 +70,55 @@ export default function SafetyIncidentsPage() {
     },
   ];
 
-  const field = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm';
+  const projectOptions =
+    projects.data?.items.map((p) => ({ id: p.project_id, label: p.project_name })) ?? [];
 
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('safety.incidentsTitle')}</h1>
-      <form onSubmit={submit} className="mb-6 flex flex-wrap items-center gap-2">
-        <select
-          required
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          className={field}
-        >
-          <option value="">{t('site.selectProject')}</option>
-          {projects.data?.items.map((p) => (
-            <option key={p.project_id} value={p.project_id}>
-              {p.project_name}
-            </option>
-          ))}
-        </select>
-        <input
-          required
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-          placeholder={t('safety.colType')}
-          className={field}
+      {/* items-start, not items-center: each field now carries a label above and an error below, so
+          centring would leave the inputs on different baselines. */}
+      <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
+        <Controller
+          name="project_id"
+          control={control}
+          render={({ field }) => (
+            <NativeSelectField
+              {...field}
+              label={t('site.selectProject')}
+              placeholder={t('site.selectProject')}
+              options={projectOptions}
+              errorMessage={messageFor(errors.project_id?.message)}
+            />
+          )}
         />
-        <select
-          value={severity}
-          onChange={(e) => setSeverity(e.target.value as IncidentSeverity)}
-          className={field}
-        >
-          {SEVERITIES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+        <Controller
+          name="incident_type"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('safety.colType')}
+              errorMessage={messageFor(errors.incident_type?.message)}
+            />
+          )}
+        />
+        <Controller
+          name="severity"
+          control={control}
+          render={({ field }) => (
+            <NativeSelectField
+              {...field}
+              label={t('site.colSeverity')}
+              options={SEVERITIES.map((s) => ({ id: s, label: s }))}
+              errorMessage={messageFor(errors.severity?.message)}
+            />
+          )}
+        />
         <button
           type="submit"
-          disabled={report.isPending || !projectId || !type}
-          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          disabled={isSubmitting || report.isPending}
+          className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('safety.report')}
         </button>

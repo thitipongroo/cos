@@ -6,6 +6,7 @@
  * Locale is persisted in localStorage and toggled via the app-shell switcher.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { applyDocumentLocale } from '../lib/locale';
 import en from './en.json';
 import th from './th.json';
 
@@ -46,10 +47,18 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Keep <html lang>/<dir> in step with `locale` from a single effect rather than only inside
+  // setLocale. Previously a user who had chosen Thai got `lang="en"` on every subsequent visit:
+  // the restore path above sets state without going through setLocale, so the attribute was only
+  // ever corrected by clicking the switcher again. A screen reader then reads Thai with an English
+  // voice — invisible on screen, and no automated check catches it (checklist item B1).
+  useEffect(() => {
+    applyDocumentLocale(locale);
+  }, [locale]);
+
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     window.localStorage.setItem(STORAGE_KEY, next);
-    document.documentElement.lang = next;
   }, []);
 
   const t = useCallback(

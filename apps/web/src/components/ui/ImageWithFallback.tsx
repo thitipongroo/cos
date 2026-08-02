@@ -5,11 +5,13 @@
 // never hits this. The useEffect below detects an already-failed image on mount and falls back,
 // covering the missed-onError case.
 import React, { useEffect, useRef, useState } from 'react';
+import { useT } from '../../i18n';
 
 const ERROR_IMG_SRC =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4KCg==';
 
 export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElement>) {
+  const t = useT();
   const [didError, setDidError] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -32,7 +34,14 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
       style={style}
     >
       <div className="flex h-full w-full items-center justify-center">
-        <img src={ERROR_IMG_SRC} alt="Error loading image" {...rest} data-original-url={src} />
+        {/* Alt must not contain "image"/"photo"/"picture" — a screen reader already announces the
+            element as an image, so repeating it is noise (jsx-a11y/img-redundant-alt). */}
+        <img
+          src={ERROR_IMG_SRC}
+          alt={t('common.imageFailedToLoad')}
+          {...rest}
+          data-original-url={src}
+        />
       </div>
     </div>
   ) : (

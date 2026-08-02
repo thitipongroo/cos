@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { userCreateSchema } from '@cos/schemas';
+import { Controller } from 'react-hook-form';
+import { NativeSelectField } from '../../../../components/form/NativeSelectField';
+import { TextInputField } from '../../../../components/form/TextInputField';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
 import {
@@ -10,6 +13,7 @@ import {
   useDeactivateUser,
 } from '../../../../lib/api/queries';
 import type { UserRow } from '../../../../lib/api/types';
+import { useValidatedForm } from '../../../../lib/forms';
 
 const ROLES = [
   'TENANT_ADMIN',
@@ -31,16 +35,28 @@ export default function SettingsUsersPage() {
   const changeRole = useChangeUserRole();
   const deactivate = useDeactivateUser();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('SITE_ENGINEER');
+  const {
+    control,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: userCreateSchema,
+    defaultValues: { display_name: '', email: '', role: 'SITE_ENGINEER' as const },
+  });
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    create.mutate({ display_name: name, email, role });
-    setName('');
-    setEmail('');
-  };
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
+
+  const submit = handleSubmit((values) => {
+    create.mutate({
+      display_name: values.display_name,
+      email: values.email,
+      role: values.role,
+    });
+    // Keep the role: an admin inviting a crew invites several people into the same one.
+    reset({ display_name: '', email: '', role: getValues('role') });
+  });
 
   const columns: Column<UserRow>[] = [
     { headerKey: 'settings.colName', cell: (u) => u.display_name },
@@ -86,38 +102,53 @@ export default function SettingsUsersPage() {
     },
   ];
 
-  const field = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm';
-
   return (
     <div>
       <h1 className="mb-4 text-2xl font-bold text-gray-800">{t('settings.usersTitle')}</h1>
-      <form onSubmit={submit} className="mb-6 flex flex-wrap items-center gap-2">
-        <input
-          required
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t('settings.colName')}
-          className={field}
+      <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
+        <Controller
+          name="display_name"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('settings.colName')}
+              errorMessage={messageFor(errors.display_name?.message)}
+            />
+          )}
         />
-        <input
-          required
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t('settings.colEmail')}
-          className={field}
+        <Controller
+          name="email"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              type="email"
+              label={t('settings.colEmail')}
+              errorMessage={messageFor(errors.email?.message)}
+            />
+          )}
         />
-        <select value={role} onChange={(e) => setRole(e.target.value)} className={field}>
-          {ROLES.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
+        {/* ROLES is this page's own list and is narrower than @cos/schemas' ASSIGNABLE_ROLE —
+            PROC_MANAGER and CRM_SALES_MANAGER are omitted here. Left as-is: which roles a tenant
+            admin may hand out is a product decision, and the schema accepting a superset only
+            means the server still has the final say. */}
+        <Controller
+          name="role"
+          control={control}
+          render={({ field }) => (
+            <NativeSelectField
+              {...field}
+              label={t('settings.colRole')}
+              options={ROLES.map((r) => ({ id: r, label: r }))}
+              errorMessage={messageFor(errors.role?.message)}
+            />
+          )}
+        />
         <button
           type="submit"
-          disabled={create.isPending || !name || !email}
-          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          disabled={isSubmitting || create.isPending}
+          className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('settings.createUser')}
         </button>

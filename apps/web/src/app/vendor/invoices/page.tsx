@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { vendorInvoiceSubmitSchema } from '@cos/schemas';
+import { Controller } from 'react-hook-form';
+import { DateField } from '../../../components/form/DateField';
+import { TextInputField } from '../../../components/form/TextInputField';
 import { DataTable, type Column } from '../../../components/ui/DataTable';
 import { useI18n } from '../../../i18n';
+import { useValidatedForm } from '../../../lib/forms';
 import { useVendorInvoices, useSubmitInvoice, type VendorInvoice } from '../../../lib/api/vendor';
 
 /** Tier-2: submit + list the vendor's own invoices (§20.7.12). */
@@ -11,35 +15,40 @@ export default function VendorInvoicesPage() {
   const query = useVendorInvoices();
   const submit = useSubmitInvoice();
 
-  const [poId, setPoId] = useState('');
-  const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('THB');
-  const [invoiceDate, setInvoiceDate] = useState('');
-  const [dueDate, setDueDate] = useState('');
+  const {
+    control,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: vendorInvoiceSubmitSchema,
+    defaultValues: {
+      po_id: '',
+      invoice_number: '',
+      amount: '',
+      currency_code: 'THB',
+      invoice_date: '',
+      due_date: '',
+    },
+  });
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    submit.mutate(
-      {
-        po_id: poId,
-        invoice_number: invoiceNumber,
-        amount,
-        currency_code: currency,
-        invoice_date: invoiceDate,
-        due_date: dueDate,
-      },
-      {
-        onSuccess: () => {
-          setPoId('');
-          setInvoiceNumber('');
-          setAmount('');
-          setInvoiceDate('');
-          setDueDate('');
-        },
-      },
-    );
-  };
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
+
+  const onSubmit = handleSubmit((values) => {
+    submit.mutate(values, {
+      // Keep the currency: a vendor invoices in one currency, not a different one each time.
+      onSuccess: () =>
+        reset({
+          po_id: '',
+          invoice_number: '',
+          amount: '',
+          currency_code: getValues('currency_code'),
+          invoice_date: '',
+          due_date: '',
+        }),
+    });
+  });
 
   const columns: Column<VendorInvoice>[] = [
     { headerKey: 'vendor.colInvoiceNumber', cell: (i) => i.invoice_number },
@@ -52,62 +61,86 @@ export default function VendorInvoicesPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-semibold">{t('vendor.invoices')}</h1>
 
-      <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3">
-        <input
-          required
-          placeholder={t('vendor.poId')}
-          value={poId}
-          onChange={(e) => setPoId(e.target.value)}
-          className="rounded border px-3 py-2"
+      <form onSubmit={onSubmit} noValidate className="grid grid-cols-2 gap-3">
+        <Controller
+          name="po_id"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('vendor.poId')}
+              errorMessage={messageFor(errors.po_id?.message)}
+            />
+          )}
         />
-        <input
-          required
-          placeholder={t('vendor.colInvoiceNumber')}
-          value={invoiceNumber}
-          onChange={(e) => setInvoiceNumber(e.target.value)}
-          className="rounded border px-3 py-2"
+        <Controller
+          name="invoice_number"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('vendor.colInvoiceNumber')}
+              errorMessage={messageFor(errors.invoice_number?.message)}
+            />
+          )}
         />
-        <input
-          required
-          placeholder={t('vendor.totalAmount')}
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          inputMode="decimal"
-          className="rounded border px-3 py-2"
+        <Controller
+          name="amount"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('vendor.totalAmount')}
+              errorMessage={messageFor(errors.amount?.message)}
+            />
+          )}
         />
-        <input
-          required
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-          maxLength={3}
-          className="rounded border px-3 py-2"
+        <Controller
+          name="currency_code"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              name={field.name}
+              onBlur={field.onBlur}
+              value={field.value}
+              // The schema requires three uppercase letters; upper-casing as the vendor types
+              // keeps that from reading as a validation failure for `thb`.
+              onChange={(v) => field.onChange(v.toUpperCase())}
+              label={t('vendor.currency')}
+              errorMessage={messageFor(errors.currency_code?.message)}
+            />
+          )}
         />
-        <label className="text-sm text-gray-600">
-          {t('vendor.invoiceDate')}
-          <input
-            required
-            type="date"
-            value={invoiceDate}
-            onChange={(e) => setInvoiceDate(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2"
-          />
-        </label>
-        <label className="text-sm text-gray-600">
-          {t('vendor.dueDate')}
-          <input
-            required
-            type="date"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-            className="mt-1 w-full rounded border px-3 py-2"
-          />
-        </label>
+        <Controller
+          name="invoice_date"
+          control={control}
+          render={({ field }) => (
+            <DateField
+              {...field}
+              label={t('vendor.invoiceDate')}
+              errorMessage={messageFor(errors.invoice_date?.message)}
+            />
+          )}
+        />
+        <Controller
+          name="due_date"
+          control={control}
+          render={({ field }) => (
+            <DateField
+              {...field}
+              label={t('vendor.dueDate')}
+              errorMessage={messageFor(errors.due_date?.message)}
+            />
+          )}
+        />
         {submit.isError && (
-          <p className="col-span-2 text-sm text-red-600">{t('vendor.submitFailed')}</p>
+          <p role="alert" className="col-span-2 text-sm text-red-600">
+            {t('vendor.submitFailed')}
+          </p>
         )}
         <button
           type="submit"
-          disabled={submit.isPending}
+          disabled={isSubmitting || submit.isPending}
           className="col-span-2 rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
         >
           {t('vendor.submitInvoice')}

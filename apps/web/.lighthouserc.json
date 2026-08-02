@@ -16,7 +16,9 @@
         "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
         "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1 }],
         "total-blocking-time": ["error", { "maxNumericValue": 200 }],
-        "resource-summary:script:size": ["error", { "maxNumericValue": 256000 }]
+        "resource-summary:script:size": ["error", { "maxNumericValue": 256000 }],
+        "categories:accessibility": ["error", { "minScore": 1 }],
+        "color-contrast": ["error", { "minScore": 1 }]
       }
     },
     "upload": {

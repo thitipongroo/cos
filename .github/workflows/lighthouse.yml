@@ -3,6 +3,15 @@ name: Lighthouse CI
 # Spec §30.9: Lighthouse CI runs on every apps/web PR under a throttled mobile profile.
 # Gate (blocks merge): LCP ≤ 2.5s · CLS ≤ 0.1 · TBT ≤ 200ms · JS bundle ≤ 250KB per route
 # (budget numbers ratified by product owner 2026-07-04; assertions in apps/web/.lighthouserc.json).
+#
+# The accessibility gate is `minScore: 1`, not a fraction. Measured on /login: the category has 24
+# scored audits totalling weight 163, and the lightest weighs 1 — so failing a single audit scores
+# 0.9939. Any floor below 1 would let a real regression through. 1.0 was measured three consecutive
+# runs after the contrast and label-in-name fixes, and the Lighthouse version is pinned by
+# pnpm-lock.yaml + --frozen-lockfile, so the audit set cannot shift underneath the gate without a
+# deliberate dependency PR. `color-contrast` is asserted separately only because its failure message
+# names the offending element — the category assertion already covers it.
+# Rationale and the measured ratios: docs/a11y/contrast-report.md.
 on:
   pull_request:
     paths:

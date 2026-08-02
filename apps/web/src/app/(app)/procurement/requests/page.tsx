@@ -1,6 +1,11 @@
 'use client';
 
+import { purchaseRequestCreateSchema } from '@cos/schemas';
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
+import { DateField } from '../../../../components/form/DateField';
+import { NativeSelectField } from '../../../../components/form/NativeSelectField';
+import { TextInputField } from '../../../../components/form/TextInputField';
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
 import {
@@ -11,6 +16,7 @@ import {
 import type { PurchaseRequestRow } from '../../../../lib/api/types';
 import { formatDate } from '../../../../lib/format';
 import { useReadOnly } from '../../../../lib/auth/useReadOnly';
+import { useValidatedForm } from '../../../../lib/forms';
 
 const STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'REJECTED', 'PO_CREATED'];
 
@@ -23,22 +29,29 @@ export default function PurchaseRequestsPage() {
   const create = useCreatePurchaseRequest();
   const readOnly = useReadOnly();
 
-  const [projectId, setProjectId] = useState('');
-  const [prNumber, setPrNumber] = useState('');
-  const [requiredDate, setRequiredDate] = useState('');
+  const {
+    control,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: purchaseRequestCreateSchema,
+    defaultValues: { project_id: '', pr_number: '', required_date: '' },
+  });
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await create.mutateAsync({
-      project_id: projectId,
-      pr_number: prNumber,
-      required_date: requiredDate || undefined,
-    });
-    setPrNumber('');
-    setRequiredDate('');
-  };
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
 
-  const field = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm';
+  const submitForm = handleSubmit((values) => {
+    create.mutate(
+      { ...values, required_date: values.required_date || undefined },
+      // Keep the project: a procurement officer raises several PRs against one project in a row.
+      {
+        onSuccess: () =>
+          reset({ project_id: getValues('project_id'), pr_number: '', required_date: '' }),
+      },
+    );
+  });
 
   const columns: Column<PurchaseRequestRow>[] = [
     { headerKey: 'pm.colNumber', cell: (r) => r.pr_number },
@@ -51,39 +64,49 @@ export default function PurchaseRequestsPage() {
       <h1 className="mb-6 text-2xl font-bold text-gray-800">{t('proc.requestsTitle')}</h1>
 
       {!readOnly && (
-        <form onSubmit={submit} className="mb-4 flex flex-wrap items-end gap-2">
-          <select
-            required
-            value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
-            className={field}
-          >
-            <option value="">{t('site.selectProject')}</option>
-            {projects.data?.items.map((p) => (
-              <option key={p.project_id} value={p.project_id}>
-                {p.project_name}
-              </option>
-            ))}
-          </select>
-          <input
-            required
-            value={prNumber}
-            onChange={(e) => setPrNumber(e.target.value)}
-            placeholder={t('proc.prNumber')}
-            maxLength={50}
-            className={field}
+        <form onSubmit={submitForm} noValidate className="mb-4 flex flex-wrap items-start gap-2">
+          <Controller
+            name="project_id"
+            control={control}
+            render={({ field }) => (
+              <NativeSelectField
+                {...field}
+                label={t('site.selectProject')}
+                placeholder={t('site.selectProject')}
+                options={
+                  projects.data?.items.map((p) => ({ id: p.project_id, label: p.project_name })) ??
+                  []
+                }
+                errorMessage={messageFor(errors.project_id?.message)}
+              />
+            )}
           />
-          <input
-            type="date"
-            value={requiredDate}
-            onChange={(e) => setRequiredDate(e.target.value)}
-            aria-label={t('proc.requiredDate')}
-            className={field}
+          <Controller
+            name="pr_number"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('proc.prNumber')}
+                errorMessage={messageFor(errors.pr_number?.message)}
+              />
+            )}
+          />
+          <Controller
+            name="required_date"
+            control={control}
+            render={({ field }) => (
+              <DateField
+                {...field}
+                label={t('proc.requiredDate')}
+                errorMessage={messageFor(errors.required_date?.message)}
+              />
+            )}
           />
           <button
             type="submit"
-            disabled={create.isPending || !projectId || !prNumber}
-            className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitting || create.isPending}
+            className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {t('proc.createRequest')}
           </button>

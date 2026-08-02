@@ -19,6 +19,7 @@
     "capture:android:tenant-admin-home": "node scripts/capture-android-tenant-admin-home.mjs"
   },
   "dependencies": {
+    "@cos/schemas": "file:../../packages/@cos/schemas",
     "@cos/types": "file:../../packages/@cos/types",
     "@cos/ui-logic": "file:../../packages/@cos/ui-logic",
     "@expo-google-fonts/inter-tight": "^0.4.2",

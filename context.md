@@ -297,7 +297,7 @@ Source: spec §31.6 (targets corrected to match spec SLO definitions; Web Vitals
 | API p99 latency (write endpoints — POST/PUT) | < 1s                                           | Grafana / k6 load test                                                                  |
 | Dashboard / analytics (ClickHouse)           | p95 < 1s                                       | Grafana / k6 load test                                                                  |
 | AI report generation                         | p95 < 5s                                       | Grafana / k6 load test                                                                  |
-| Web LCP — Largest Contentful Paint (p75)     | ≤ 2.5s                                         | web-vitals RUM (spec §31.6); Lighthouse CI lab gate (§30.9)                             |
+| Web LCP — Largest Contentful Paint (p75)     | ≤ 2.5s (field) · lab TBD                       | web-vitals RUM (spec §31.6). The Lighthouse lab gate (§30.9) currently reuses the same 2.5s — OPEN: lab and field measure different things, and a PO-ratified lab number is pending a CI baseline |
 | Web INP — Interaction to Next Paint (p75)    | ≤ 200ms                                        | web-vitals RUM (§31.6); TBT lab proxy in Lighthouse CI (§30.9)                          |
 | Web CLS — Cumulative Layout Shift (p75)      | ≤ 0.1                                          | web-vitals RUM (§31.6); Lighthouse CI lab gate (§30.9)                                  |
 | Mobile app cold start (React Native)         | < 3s on mid-range Android                      | Manual test + Flipper                                                                   |
@@ -960,7 +960,7 @@ docs/specifications/18-enterprise-saas-scaling.md §18.4 — Capacity planning +
 docs/specifications/20-ux-flow.md §20.8              — Accessibility (WCAG 2.2 AA)
 docs/specifications/22-ai-architecture.md §22.7      — AI integration decisions (registry); §22.8 AI security (OWASP LLM Top 10); §22.9 model governance; §22.10 RAG-eval/prompt-registry/token-cap/semantic-cache
 docs/specifications/23-ai-native-operating-model.md §23.5 — Human-AI governance structure (STEW-001)
-docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend gate (Core Web Vitals + bundle budget)
+docs/specifications/30-testing-strategy.md §30.9     — Lighthouse CI frontend gate (Core Web Vitals + bundle budget + accessibility category = 1.0)
 docs/specifications/31-monitoring-observability.md §31.6 — SLO/error-budget + Frontend Web Vitals (LCP/INP/CLS); §31.9 incident/SEV/postmortem; §31.11 chaos/game-day; §31.12 DORA
 
 # Readiness & Verification

@@ -609,12 +609,27 @@ Non-negotiable for safety flows (incident / safety report): **color is never the
 
 ### Acceptance criteria / gate
 
-- [ ] Automated a11y lint in CI: `eslint-plugin-jsx-a11y` (web) + RN a11y checks — 0 errors on merge
-- [ ] Contrast audit of §32.7 tokens passes 4.5:1 / 3:1 (`docs/a11y/contrast-report.md`)
-- [ ] Every interactive RN component has `accessibilityLabel` + `accessibilityRole` (CI grep gate)
+- [x] Automated a11y lint in CI: `eslint-plugin-jsx-a11y` (web) + RN a11y checks — 0 errors on merge
+      — **done 2026-08-03.** jsx-a11y runs at error level over `apps/web/src/**/*.tsx` via the root
+      `eslint.config.mjs` (0 violations across 81 files); axe-core scans 6 routes in the Playwright
+      suite; the Lighthouse accessibility category is gated at 1.0 (see §30.9).
+- [x] Contrast audit of §32.7 tokens passes 4.5:1 / 3:1 (`docs/a11y/contrast-report.md`)
+      — **audit done 2026-08-03, and it does NOT pass.** 7 findings (F1–F7) against the §32.7 tokens
+      themselves, worst `--mobile-syncing #FFD60A` at 1.41:1 as a status indicator, and
+      `--cos-dark-elevated #111827` at 1.14:1 as the dark-surface input border. Each hex is a §32.7
+      product-owner decision, so none was changed — **awaiting product-owner decision.**
+- [~] Every interactive RN component has `accessibilityLabel` + `accessibilityRole` (CI grep gate)
+      — **gate built, target not met.** `scripts/a11y/check-rn-a11y.sh` runs in CI (`mobile-tests`).
+      Measured 2026-08-03: 24 of the 50 `apps/mobile` files with tappable elements have no
+      accessibility prop at all. It runs as a **ratchet** — warns on the 24, fails when the count
+      grows — because failing on the existing 24 would only mean disabling the check.
 - [ ] Manual screen-reader pass (VoiceOver + TalkBack) on the 5 critical flows (login, daily report,
       issue, safety incident, sync-status) — `docs/a11y/screenreader-checklist.md`
-- [ ] Layout verified at 200% font scale on the smallest supported device (375pt)
+      — **checklist written 2026-08-03, no pass recorded yet.** Not automatable; this remains open.
+- [x] Layout verified at 200% font scale on the smallest supported device (375pt)
+      — **done 2026-08-03** for `/login`, via `expectUsableAt200PercentText` in the Playwright suite
+      (375px viewport, asserts no horizontal overflow at `font-size: 200%`). The 5 authenticated
+      routes it also covers need a backend + Keycloak, so their first run is the staging pipeline.
 - **Gate:** a screen cannot ship if it fails automated a11y lint or lacks the screen-reader pass for
   a critical flow.
 

@@ -12,9 +12,12 @@
     "test:cov": "jest --coverage"
   },
   "dependencies": {
+    "@cos/schemas": "workspace:*",
     "@cos/types": "workspace:*",
     "@cos/ui-logic": "workspace:*",
     "@fontsource/inter-tight": "^5.2.7",
+    "@hookform/resolvers": "5.7.1",
+    "@internationalized/date": "3.12.3",
     "@serwist/turbopack": "9.5.11",
     "@tanstack/react-query": "^5.101.2",
     "dxf-viewer": "^1.0.48",
@@ -22,13 +25,16 @@
     "next": "^16.2.11",
     "next-auth": "^4.24.15",
     "react": "^19.2.7",
+    "react-aria-components": "1.20.0",
     "react-dom": "^19.2.7",
+    "react-hook-form": "7.84.0",
     "recharts": "^3.9.1",
     "serwist": "9.5.11",
     "zustand": "^4.5.0"
   },
   "devDependencies": {
     "@lhci/cli": "^0.15.1",
+    "@standard-schema/spec": "1.1.0",
     "@tailwindcss/postcss": "4.3.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.12.0",

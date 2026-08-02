@@ -1,0 +1,20 @@
+// ESM output — REQUIRED for tree-shaking, not a nicety.
+//
+// Measured on this package: the CommonJS build pulls zod's *.cjs files, which bundlers cannot
+// tree-shake, producing 69,350 B gzipped. The ESM build of the identical source produces 6,903 B —
+// a 10x difference. apps/web resolves with moduleResolution "bundler" and would take the CJS path
+// unless package.json `exports.import` points here.
+//
+// The CJS build (tsconfig.build.json → dist/cjs) is kept for any Node/require consumer.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist/esm",
+    "rootDir": "./src",
+    "declaration": true,
+    "paths": {}
+  },
+  "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.test.ts", "src/__tests__"]
+}

@@ -1,9 +1,11 @@
 'use client';
 
+import { otpPhoneSchema } from '@cos/schemas';
 import { signIn } from 'next-auth/react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { Controller } from 'react-hook-form';
 import { useT } from '../../i18n';
 import { LanguageSwitcher } from '../../components/shell/LanguageSwitcher';
 import {
@@ -13,6 +15,7 @@ import {
   findCountry,
   toE164,
 } from '../../lib/countries';
+import { useValidatedForm } from '../../lib/forms';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
@@ -110,9 +113,10 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const hasError = searchParams.get('error') !== null;
 
+  // The country stays outside the form: it is never submitted on its own, it only decides which
+  // dial code the typed digits compose with.
   const [countryIso2, setCountryIso2] = useState(DEFAULT_COUNTRY_ISO2);
   const [nationalNumber, setNationalNumber] = useState('');
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,15 +125,34 @@ function LoginContent() {
 
   const country = findCountry(countryIso2);
 
-  async function sendPasscode(e: React.FormEvent): Promise<void> {
-    e.preventDefault();
+  // What is validated is the composed E.164 number, not the raw digits — that is what the API
+  // receives, and "is this a usable phone number" is a question about the whole thing.
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({ schema: otpPhoneSchema, defaultValues: { phoneNumber: '' } });
+
+  const onNationalNumberChange = (digits: string) => {
+    setNationalNumber(digits);
+    setValue('phoneNumber', toE164(country.dialCode, digits), { shouldValidate: true });
+  };
+
+  const onCountryChange = (iso2: string) => {
+    setCountryIso2(iso2);
+    setValue('phoneNumber', toE164(findCountry(iso2).dialCode, nationalNumber), {
+      shouldValidate: true,
+    });
+  };
+
+  const sendPasscode = handleSubmit(async (values) => {
     setError(null);
-    setSubmitting(true);
     try {
       const res = await fetch(`${API_BASE}/auth/otp/request`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: toE164(country.dialCode, nationalNumber) }),
+        body: JSON.stringify({ phoneNumber: values.phoneNumber }),
       });
       if (!res.ok) {
         setError(t('auth.otp.requestError'));
@@ -139,10 +162,8 @@ function LoginContent() {
       router.push(`/login/otp?cc=${countryIso2}&n=${encodeURIComponent(nationalNumber)}`);
     } catch {
       setError(t('auth.otp.requestError'));
-    } finally {
-      setSubmitting(false);
     }
-  }
+  });
 
   return (
     <div className="flex min-h-screen flex-col bg-cos-navy text-white">
@@ -220,8 +241,14 @@ function LoginContent() {
           )}
 
           {/* Path A — field worker (phone → SMS OTP), primary */}
-          <form onSubmit={sendPasscode} className="space-y-4">
-            <label className="block text-tiny font-bold uppercase tracking-widest text-slate-400">
+          {/* Keeps the §32.7 Exception 1 pre-auth styling rather than adopting the generic field
+              components — this surface is deliberately branded. What changes is the wiring: the
+              label now points at the input, and the schema's message is announced. */}
+          <form onSubmit={sendPasscode} noValidate className="space-y-4">
+            <label
+              htmlFor="login-phone"
+              className="block text-tiny font-bold uppercase tracking-widest text-slate-400"
+            >
               {t('auth.login.fieldAccess')}
             </label>
             <div className="flex gap-2">
@@ -235,7 +262,7 @@ function LoginContent() {
                 <select
                   aria-label={t('auth.otp.countryLabel')}
                   value={countryIso2}
-                  onChange={(e) => setCountryIso2(e.target.value)}
+                  onChange={(e) => onCountryChange(e.target.value)}
                   className="bg-transparent py-3 pr-1 text-body text-white focus:outline-none"
                 >
                   {COUNTRIES.map((c) => (
@@ -245,21 +272,37 @@ function LoginContent() {
                   ))}
                 </select>
               </div>
-              <input
-                data-testid="landing-phone-input"
-                type="tel"
-                inputMode="tel"
-                required
-                value={nationalNumber}
-                onChange={(e) => setNationalNumber(e.target.value)}
-                placeholder={t('auth.otp.phonePlaceholder')}
-                className="h-12 w-full rounded-lg border border-white/10 bg-cos-navy px-4 text-white placeholder:text-slate-500 focus:border-cos-blue focus:outline-none"
+              <Controller
+                name="phoneNumber"
+                control={control}
+                render={({ field }) => (
+                  <input
+                    id="login-phone"
+                    data-testid="landing-phone-input"
+                    type="tel"
+                    inputMode="tel"
+                    value={nationalNumber}
+                    onChange={(e) => onNationalNumberChange(e.target.value)}
+                    onBlur={field.onBlur}
+                    aria-invalid={errors.phoneNumber ? true : undefined}
+                    aria-describedby={errors.phoneNumber ? 'login-phone-error' : undefined}
+                    placeholder={t('auth.otp.phonePlaceholder')}
+                    // placeholder:text-slate-400, not slate-500: slate-500 on --cos-navy measures
+                    // 3.97:1, below the 4.5:1 floor (docs/a11y/contrast-report.md).
+                    className="h-12 w-full rounded-lg border border-white/10 bg-cos-navy px-4 text-white placeholder:text-slate-400 focus:border-cos-blue focus:outline-none"
+                  />
+                )}
               />
             </div>
+            {errors.phoneNumber ? (
+              <p id="login-phone-error" role="alert" className="text-sm text-red-400">
+                {t(errors.phoneNumber.message ?? '')}
+              </p>
+            ) : null}
             <button
               data-testid="send-passcode-button"
               type="submit"
-              disabled={submitting || nationalNumber.trim().length === 0}
+              disabled={isSubmitting}
               className="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-cos-blue font-semibold text-white shadow-lg shadow-blue-600/20 transition-colors hover:bg-blue-700 disabled:opacity-50"
             >
               <span>{t('auth.login.sendPasscode')}</span>
@@ -270,7 +313,7 @@ function LoginContent() {
           {/* Divider */}
           <div className="my-6 flex items-center gap-4">
             <span className="h-px flex-grow bg-white/10" />
-            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-400">
               {t('auth.login.or')}
             </span>
             <span className="h-px flex-grow bg-white/10" />
@@ -293,18 +336,18 @@ function LoginContent() {
       <footer className="border-t border-white/10 px-6 py-6 md:px-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex flex-col gap-1 text-center sm:text-left">
-            <p className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            <p className="text-tiny font-bold uppercase tracking-widest text-slate-400">
               {t('auth.login.copyright')}
             </p>
-            <p className="text-tiny uppercase tracking-tight text-slate-600">
+            <p className="text-tiny uppercase tracking-tight text-slate-400">
               {t('auth.login.footerUnit')}
             </p>
           </div>
           <div className="flex gap-6">
-            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-400">
               {t('auth.login.securityPolicy')}
             </span>
-            <span className="text-tiny font-bold uppercase tracking-widest text-slate-500">
+            <span className="text-tiny font-bold uppercase tracking-widest text-slate-400">
               {t('auth.login.terms')}
             </span>
           </div>

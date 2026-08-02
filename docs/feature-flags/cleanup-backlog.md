@@ -4,7 +4,9 @@
 > be removed within **30 days** of reaching 100% rollout. This file is the authoritative list of
 > stale or scheduled-for-removal flags.
 >
-> Flag system: **AWS AppConfig** (Stage 1–3). Flag naming: `{stage}.{domain}.{feature}`.
+> Flag system: **Unleash**, self-hosted, server-evaluated via `GET /api/v1/flags` (ADR-049 —
+> supersedes the AWS AppConfig / LaunchDarkly plan named in QM-15, which cannot serve the
+> on-premise deployments spec §08 requires). Flag naming: `{stage}.{domain}.{feature}`.
 
 ---
 
@@ -16,26 +18,30 @@ When a flag reaches 100% rollout:
 2. Creates a cleanup ticket linked to this entry
 3. After code removal, moves the flag to the **Removed** table
 
-**CI check:** `scripts/ci/check-feature-flag-staleness.sh` scans source code for flag keys and
-cross-references with this file. Build warning (not failure) if a flag is in source code and
-its deadline has passed.
+**CI check — NOT IMPLEMENTED.** This file previously described
+`scripts/ci/check-feature-flag-staleness.sh` as if it existed; it does not, and `scripts/ci/`
+is empty. Nothing in `.github/workflows/ci.yml` references flag staleness. Until it is written,
+the 30-day removal deadline is enforced only by the weekly manual review below. Intended
+behaviour when built: scan source for flag keys, cross-reference this file, warn (not fail) when
+a flag is still in source past its deadline.
 
 ---
 
 ## Active flags (currently in rollout)
 
-| Flag key                                 | Domain       | Description                             | Current rollout % | Rollout started | Owner            |
-| ---------------------------------------- | ------------ | --------------------------------------- | ----------------- | --------------- | ---------------- |
-| `s1.procurement.rfq-workflow`            | Procurement  | Full PR→RFQ→PO Temporal workflow        | 0%                | —               | Engineering lead |
-| `s1.ai.report-generation`                | AI Gateway   | GPT-4o report generation endpoint       | 0%                | —               | Engineering lead |
-| `s1.mobile.offline-sync-v2`              | Mobile       | WatermelonDB delta sync engine          | 0%                | —               | Engineering lead |
-| `s1.finance.budget-alerts`               | Finance      | Budget exceeded push notifications      | 0%                | —               | Engineering lead |
-| `s1.analytics.clickhouse-exec-dashboard` | Analytics    | Executive ClickHouse dashboard          | 0%                | —               | Engineering lead |
-| `s1.notifications.expo-push`             | Notification | Expo push notification channel          | 0%                | —               | Engineering lead |
-| `s1.knowledge-graph.neo4j-sync`          | Graph        | Neo4j kg-ingestion-worker sync          | 0%                | —               | Engineering lead |
-| `s1.equipment.telemetry-ingest`          | Equipment    | TimescaleDB telemetry pipeline          | 0%                | —               | Engineering lead |
-| `s1.workforce.overtime-calc`             | Workforce    | Thai overtime calculation engine        | 0%                | —               | Engineering lead |
-| `s1.platform.enterprise-provisioning`    | Platform     | Enterprise tenant provisioning workflow | 0%                | —               | Engineering lead |
+| Flag key                                 | Domain       | Description                                        | Current rollout % | Rollout started | Owner            |
+| ---------------------------------------- | ------------ | -------------------------------------------------- | ----------------- | --------------- | ---------------- |
+| `s1.procurement.rfq-workflow`            | Procurement  | Full PR→RFQ→PO Temporal workflow                   | 0%                | —               | Engineering lead |
+| `s1.ai.report-generation`                | AI Gateway   | GPT-4o report generation endpoint                  | 0%                | —               | Engineering lead |
+| `s1.mobile.offline-sync-v2`              | Mobile       | WatermelonDB delta sync engine                     | 0%                | —               | Engineering lead |
+| `s1.finance.budget-alerts`               | Finance      | Budget exceeded push notifications                 | 0%                | —               | Engineering lead |
+| `s1.analytics.clickhouse-exec-dashboard` | Analytics    | Executive ClickHouse dashboard                     | 0%                | —               | Engineering lead |
+| `s1.notifications.expo-push`             | Notification | Expo push notification channel                     | 0%                | —               | Engineering lead |
+| `s1.knowledge-graph.neo4j-sync`          | Graph        | Neo4j kg-ingestion-worker sync                     | 0%                | —               | Engineering lead |
+| `s1.equipment.telemetry-ingest`          | Equipment    | TimescaleDB telemetry pipeline                     | 0%                | —               | Engineering lead |
+| `s1.workforce.overtime-calc`             | Workforce    | Thai overtime calculation engine                   | 0%                | —               | Engineering lead |
+| `s1.platform.enterprise-provisioning`    | Platform     | Enterprise tenant provisioning workflow            | 0%                | —               | Engineering lead |
+| `s1.web.client-validation`               | Web          | Client-side form validation (`@cos/schemas` + RHF) | 0%                | —               | Engineering lead |
 
 ---
 
@@ -64,8 +70,9 @@ Per QM-15 progressive rollout order:
 3. **50%** of tenants → observe for minimum 24 hours
 4. **100%** → start 30-day removal clock
 
-Emergency rollback: toggle flag to OFF in AWS AppConfig → takes effect within **60 seconds**
-without deployment (QM-15 kill switch requirement).
+Emergency rollback: toggle flag to OFF in Unleash → takes effect within **60 seconds** without
+deployment (QM-15 kill switch requirement). Budget: backend polls Unleash every 15s
+(`REFRESH_INTERVAL_MS`); clients refetch `GET /api/v1/flags` every 30s — worst case 45s.
 
 ---
 

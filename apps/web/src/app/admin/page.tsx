@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { tenantCreateSchema } from '@cos/schemas';
 import { useSession } from 'next-auth/react';
+import { Controller } from 'react-hook-form';
 import { CosRole } from '@cos/types';
+import { NativeSelectField } from '../../components/form/NativeSelectField';
+import { TextInputField } from '../../components/form/TextInputField';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 import { useI18n } from '../../i18n';
 import {
@@ -14,6 +17,7 @@ import {
 } from '../../lib/api/queries';
 import type { PlanType, TenantRow } from '../../lib/api/types';
 import { formatDate } from '../../lib/format';
+import { useValidatedForm } from '../../lib/forms';
 
 const PLANS: PlanType[] = ['STARTER', 'PROFESSIONAL', 'ENTERPRISE'];
 
@@ -27,29 +31,49 @@ export default function AdminPanelPage() {
   const assignDb = useAssignDedicatedDb();
   const markContracted = useMarkContracted();
 
-  const [form, setForm] = useState({
-    tenantCode: '',
-    tenantName: '',
-    planType: 'STARTER' as PlanType,
-    dedicatedDbUrl: '',
+  // Declared before the SYSTEM_ADMIN guard below: hooks cannot be called conditionally, and the
+  // guard returns early for every other role.
+  const {
+    control,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useValidatedForm({
+    schema: tenantCreateSchema,
+    defaultValues: {
+      tenantCode: '',
+      tenantName: '',
+      planType: 'STARTER' as PlanType,
+      dedicatedDbUrl: '',
+    },
   });
+
+  const messageFor = (key?: string) => (key ? t(key) : undefined);
 
   if (session && session.user?.role !== CosRole.SYSTEM_ADMIN) {
     return <main className="p-8 text-sm text-gray-600">{t('admin.unauthorized')}</main>;
   }
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = handleSubmit((values) => {
     create.mutate(
       {
-        tenantCode: form.tenantCode,
-        tenantName: form.tenantName,
-        planType: form.planType,
-        dedicatedDbUrl: form.dedicatedDbUrl || undefined,
+        tenantCode: values.tenantCode,
+        tenantName: values.tenantName,
+        planType: values.planType,
+        dedicatedDbUrl: values.dedicatedDbUrl || undefined,
       },
-      { onSuccess: () => setForm({ ...form, tenantCode: '', tenantName: '', dedicatedDbUrl: '' }) },
+      {
+        onSuccess: () =>
+          reset({
+            tenantCode: '',
+            tenantName: '',
+            planType: getValues('planType'),
+            dedicatedDbUrl: '',
+          }),
+      },
     );
-  };
+  });
 
   const columns: Column<TenantRow>[] = [
     { headerKey: 'admin.colCode', cell: (x) => x.tenant_code },
@@ -120,48 +144,62 @@ export default function AdminPanelPage() {
     },
   ];
 
-  const field = 'rounded-md border border-gray-300 px-3 py-1.5 text-sm';
-
   return (
     <main className="mx-auto max-w-6xl p-8">
       <h1 className="mb-6 text-2xl font-bold text-gray-800">{t('admin.title')}</h1>
 
-      <form onSubmit={submit} className="mb-6 flex flex-wrap items-end gap-2">
-        <input
-          required
-          value={form.tenantCode}
-          onChange={(e) => setForm({ ...form, tenantCode: e.target.value })}
-          placeholder={t('admin.colCode')}
-          className={field}
+      <form onSubmit={submit} noValidate className="mb-6 flex flex-wrap items-start gap-2">
+        <Controller
+          name="tenantCode"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('admin.colCode')}
+              errorMessage={messageFor(errors.tenantCode?.message)}
+            />
+          )}
         />
-        <input
-          required
-          value={form.tenantName}
-          onChange={(e) => setForm({ ...form, tenantName: e.target.value })}
-          placeholder={t('admin.colName')}
-          className={field}
+        <Controller
+          name="tenantName"
+          control={control}
+          render={({ field }) => (
+            <TextInputField
+              {...field}
+              label={t('admin.colName')}
+              errorMessage={messageFor(errors.tenantName?.message)}
+            />
+          )}
         />
-        <select
-          value={form.planType}
-          onChange={(e) => setForm({ ...form, planType: e.target.value as PlanType })}
-          className={field}
-        >
-          {PLANS.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-        <input
-          value={form.dedicatedDbUrl}
-          onChange={(e) => setForm({ ...form, dedicatedDbUrl: e.target.value })}
-          placeholder={t('admin.dbUrlOptional')}
-          className={`${field} min-w-[16rem] flex-1`}
+        <Controller
+          name="planType"
+          control={control}
+          render={({ field }) => (
+            <NativeSelectField
+              {...field}
+              label={t('admin.colPlan')}
+              options={PLANS.map((p) => ({ id: p, label: p }))}
+              errorMessage={messageFor(errors.planType?.message)}
+            />
+          )}
         />
+        <div className="min-w-[16rem] flex-1">
+          <Controller
+            name="dedicatedDbUrl"
+            control={control}
+            render={({ field }) => (
+              <TextInputField
+                {...field}
+                label={t('admin.dbUrlOptional')}
+                errorMessage={messageFor(errors.dedicatedDbUrl?.message)}
+              />
+            )}
+          />
+        </div>
         <button
           type="submit"
-          disabled={create.isPending || !form.tenantCode || !form.tenantName}
-          className="rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+          disabled={isSubmitting || create.isPending}
+          className="mt-6 rounded-md bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
         >
           {t('admin.createTenant')}
         </button>

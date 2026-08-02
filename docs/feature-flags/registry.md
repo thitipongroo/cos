@@ -14,6 +14,7 @@ disable a live production feature. New-feature flags should default OFF until ro
 | `s1.finance.payment-mutations` | `POST /api/v1/finance/payments`, `PATCH /api/v1/finance/payments/:id/approve`, `POST /api/v1/finance/billing`, `PATCH /api/v1/finance/billing/:id/approve` | ON       | kill-switch — permanent |
 | `s1.ai.report-generation`      | AI report generation (`services/ai-gateway` — see registry note below)                                                                                     | ON       | kill-switch — permanent |
 | `s1.ai.completions`            | `POST /api/v1/ai/completions` (general LLM completion endpoint, `services/ai-gateway`)                                                                     | ON       | kill-switch — permanent |
+| `s1.web.client-validation`     | Client-side form validation in `apps/web` (`@cos/schemas` + react-hook-form resolver)                                                                      | OFF      | 30 days after 100%      |
 
 Notes:
 
@@ -24,5 +25,11 @@ Notes:
   four `/api/v1/ai/reports/*` generation endpoints with 503 `COS-FLAG-001`.
 - `s1.ai.completions` is enforced the same way inside `services/ai-gateway` — gates
   `POST /api/v1/ai/completions` with 503 `COS-FLAG-001`.
+- `s1.web.client-validation` is the one **client-enforced** flag: `apps/web` reads it from
+  `GET /api/v1/flags` via `useFlag()` and, when off, mounts forms without a resolver. It is not a
+  kill-switch for a server surface, so it is **fail-closed** — an unreachable flag endpoint leaves
+  forms on server-only validation (QM-4 `class-validator`), the behaviour that shipped before it.
+  Backend Unleash poll (15s) + client refetch (30s) keeps worst-case propagation at 45s, inside
+  the QM-15 60-second bound.
 - Stale flags (100% rollout > 30 days) move to `cleanup-backlog.md` (QM-15) — kill-switches are
   exempt (permanent operational controls).

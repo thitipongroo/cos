@@ -16,7 +16,12 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <button
       type="button"
-      aria-label={t('shell.language')}
+      // WCAG 2.5.3 (Label in Name, level A): the accessible name must contain the visible text.
+      // The button's visible text is the locale code, so `aria-label="Language"` alone left a
+      // voice-control user unable to say "click Language, en" — Lighthouse flagged it as
+      // label-content-name-mismatch. Appending the code keeps the spoken name descriptive and
+      // makes the visible label a substring of it.
+      aria-label={`${t('shell.language')}: ${locale}`}
       onClick={() => setLocale(next)}
       className={`inline-flex items-center gap-1.5 ${
         className ??

@@ -90,3 +90,4 @@ minimumReleaseAgeExclude:
   - '@typescript-eslint/visitor-keys@8.62.1'
   - prettier@3.9.4
   - recharts@3.9.1
+  - '@hookform/resolvers@5.7.1'

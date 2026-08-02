@@ -311,6 +311,16 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
   **TBT ≤ 200 ms** (Total Blocking Time, Lighthouse's lab proxy for INP; matches the INP ≤ 200 ms RUM SLO) — or the JS
   **bundle-size budget ≤ 250 KB** (script transfer size per audited route) exceeded. Budgets live in the CI config
   (`apps/web/.lighthouserc.json`; workflow `.github/workflows/lighthouse.yml`).
+- **Accessibility is gated in the same run:** the Lighthouse **accessibility category must score 1.0**
+  (`categories:accessibility` `minScore: 1`), which is the automated half of the §20.8 gate. The floor is 1.0 rather
+  than a fraction because the category has 24 scored audits totalling weight 163 and the lightest weighs 1 — failing a
+  single audit still scores 0.9939, so any threshold below 1 would let a real regression through. Measured 1.0 across
+  three consecutive runs on 2026-08-03; the Lighthouse version is pinned by `pnpm-lock.yaml` + `--frozen-lockfile`, so
+  the audit set cannot shift without a deliberate dependency PR. `color-contrast` is asserted separately only because
+  its failure message names the offending element.
+- **Measured baseline (2026-08-03):** `/login` script transfer size **194,995 B** before the react-hook-form migration
+  and **223,086 B** after it, against the 256,000 B budget — 32,914 B of headroom. Recorded because it is what the
+  per-route field budget in `apps/web/src/components/form/README.md` is computed against.
 - **Complements RUM:** Lighthouse catches regressions pre-merge (lab); production Core Web Vitals are measured from
   real users at p75 (`31 §31.6 Frontend Web Vitals SLO`).
 
