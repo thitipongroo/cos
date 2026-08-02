@@ -1,3 +1,3 @@
-export * from './enums.js';
-export * from './primitives.js';
-export * from './forms.js';
+export * from './enums';
+export * from './primitives';
+export * from './forms';

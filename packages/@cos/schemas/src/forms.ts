@@ -15,7 +15,7 @@ import {
   riskCategory,
   riskStatus,
   taskStatus,
-} from './enums.js';
+} from './enums';
 import {
   currencyCode,
   intInRange,
@@ -32,7 +32,7 @@ import {
   requiredId,
   requiredText,
   riskScore,
-} from './primitives.js';
+} from './primitives';
 
 /** POST /site/issues — apps/web/src/app/(app)/site/issues/new. */
 export const issueCreateSchema = z.object({

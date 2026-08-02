@@ -41,8 +41,16 @@ specifier so the cheaper entry cannot be swapped back by accident.
 
 **Dual CJS/ESM build, with `exports.import` pointing at the ESM output.** Identical source measured
 **69,352 B gzipped as CommonJS** against **6,905 B as ESM**, because bundlers cannot tree-shake
-zod's `.cjs` files. Source imports carry explicit `.js` extensions so Node's ESM loader accepts the
-output; `jest.config.js` strips them back off via `moduleNameMapper`.
+zod's `.cjs` files.
+
+Relative imports in the source are **extensionless** (`./enums`, not `./enums.js`), matching every
+other `@cos/*` package. Explicit `.js` extensions were tried first — they make the emitted
+`dist/esm` loadable by Node's own ESM loader — and had to be reverted: `tsconfig.base.json` maps
+`@cos/schemas` to `src/index.ts`, so Turbopack bundles the TypeScript source directly and cannot
+resolve `./enums.js` to `./enums.ts` the way `tsc` does. The build failed with 39 module-resolution
+errors. Nothing consumes this package from Node ESM — `apps/web` goes through Turbopack and
+`apps/mobile` through Metro, and both resolve extensionless specifiers — so the extensions bought
+nothing and cost the build.
 
 **Every message is an i18n key** (`validation.required`, never "This field is required"), resolved
 by the consumer. QM-3 forbids literal copy in shared code, and the same schema serves th and en.
