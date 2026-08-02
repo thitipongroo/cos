@@ -619,10 +619,10 @@ Non-negotiable for safety flows (incident / safety report): **color is never the
       `--cos-dark-elevated #111827` at 1.14:1 as the dark-surface input border. Each hex is a §32.7
       product-owner decision, so none was changed — **awaiting product-owner decision.**
 - [~] Every interactive RN component has `accessibilityLabel` + `accessibilityRole` (CI grep gate)
-      — **gate built, target not met.** `scripts/a11y/check-rn-a11y.sh` runs in CI (`mobile-tests`).
-      Measured 2026-08-03: 24 of the 50 `apps/mobile` files with tappable elements have no
-      accessibility prop at all. It runs as a **ratchet** — warns on the 24, fails when the count
-      grows — because failing on the existing 24 would only mean disabling the check.
+  — **gate built, target not met.** `scripts/a11y/check-rn-a11y.sh` runs in CI (`mobile-tests`).
+  Measured 2026-08-03: 24 of the 50 `apps/mobile` files with tappable elements have no
+  accessibility prop at all. It runs as a **ratchet** — warns on the 24, fails when the count
+  grows — because failing on the existing 24 would only mean disabling the check.
 - [ ] Manual screen-reader pass (VoiceOver + TalkBack) on the 5 critical flows (login, daily report,
       issue, safety incident, sync-status) — `docs/a11y/screenreader-checklist.md`
       — **checklist written 2026-08-03, no pass recorded yet.** Not automatable; this remains open.

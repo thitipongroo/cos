@@ -12,12 +12,12 @@ below is the set [`web-screens.mjs`](../../../scripts/capture/web-screens.mjs) _
 files are **not** in the repo. The earlier per-role captures were deleted by `7d2ba1b`
 ("update: screens out date") and have not been retaken.
 
-| File                                                             | Route         |
-| ---------------------------------------------------------------- | ------------- |
-| [`00-login.png`](01-public/00-login.png)                         | `/login`      |
-| [`01-login-otp-verify.png`](01-public/01-login-otp-verify.png)   | `/login/otp`  |
-| [`02-login-password.png`](01-public/02-login-password.png)       | Keycloak page |
-| [`03-login-loading.png`](01-public/03-login-loading.png)         | post-submit   |
+| File                                                           | Route         |
+| -------------------------------------------------------------- | ------------- |
+| [`00-login.png`](01-public/00-login.png)                       | `/login`      |
+| [`01-login-otp-verify.png`](01-public/01-login-otp-verify.png) | `/login/otp`  |
+| [`02-login-password.png`](01-public/02-login-password.png)     | Keycloak page |
+| [`03-login-loading.png`](01-public/03-login-loading.png)       | post-submit   |
 
 > No script currently reproduces these four filenames. They were committed by hand
 > (`983a935`, `829b8fa`). `capture/web-screens.mjs` writes `00-login.png` to the folder **root**, and
@@ -36,12 +36,12 @@ files are **not** in the repo. The earlier per-role captures were deleted by `7d
 Same convention as [`../android/`](../android/README.md): numbered folders for cross-role flows,
 `UPPER-KEBAB` for role folders (`TENANT-ADMIN`, not `TENANT_ADMIN`).
 
-| Folder                   | Written by                                          |
-| ------------------------ | --------------------------------------------------- |
-| `01-public/`             | `capture-screens.mjs` — pre-auth routes             |
-| `<ROLE>/`                | `capture-screens.mjs` — every route that role reaches |
-| `<ROLE>/interactions/`   | `capture-interactions.mjs` — detail pages, forms, popovers |
-| `PROJECT-MANAGER/`       | `capture-graph.mjs` — the knowledge-graph pages      |
+| Folder                 | Written by                                                 |
+| ---------------------- | ---------------------------------------------------------- |
+| `01-public/`           | `capture-screens.mjs` — pre-auth routes                    |
+| `<ROLE>/`              | `capture-screens.mjs` — every route that role reaches      |
+| `<ROLE>/interactions/` | `capture-interactions.mjs` — detail pages, forms, popovers |
+| `PROJECT-MANAGER/`     | `capture-graph.mjs` — the knowledge-graph pages            |
 
 The role **keys inside those scripts** stay `UPPER_SNAKE` (`TENANT_ADMIN`) because they are CosRole
 identities that the scripts branch on; only the folder name is kebab-cased, via a `folderFor()` helper.

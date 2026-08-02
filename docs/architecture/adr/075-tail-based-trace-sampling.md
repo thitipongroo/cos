@@ -88,32 +88,32 @@ was a ratio (`0.01` = 1%). Reusing the name would have made a copied value under
 ## Rationale
 
 Tail sampling is the only mechanism that can honour "100% of error traces": the decision to keep a
-trace depends on how it *ended*, which is unknowable at span start. Any head-based sampler upstream
+trace depends on how it _ended_, which is unknowable at span start. Any head-based sampler upstream
 of it is therefore not an optimisation but a correctness bug — it silently discards the exact traces
 the policy exists to preserve.
 
 **Why both env vars are mandatory rather than defaulted.** Collector 0.103.0 has no default-value
 substitution syntax. This was verified against the pinned image, not assumed:
 
-| Syntax                     | Result on 0.103.0                                                     |
-| -------------------------- | --------------------------------------------------------------------- |
-| `${ENV:-production}`       | ERROR — `scheme "ENV" is not supported`                               |
-| `${env:ENV:-production}`   | ERROR — `environment variable "ENV:-production" has invalid name`     |
-| `${env:ENV}`               | OK (resolves to empty string when unset)                              |
+| Syntax                   | Result on 0.103.0                                                 |
+| ------------------------ | ----------------------------------------------------------------- |
+| `${ENV:-production}`     | ERROR — `scheme "ENV" is not supported`                           |
+| `${env:ENV:-production}` | ERROR — `environment variable "ENV:-production" has invalid name` |
+| `${env:ENV}`             | OK (resolves to empty string when unset)                          |
 
 **Why hints rather than something else for Loki labels.** Also verified rather than assumed, against
 `otel/opentelemetry-collector-contrib:0.103.0` and a live `grafana/loki:3.0.0`:
 
-| Probe                                                     | Result                                                    |
-| --------------------------------------------------------- | --------------------------------------------------------- |
-| `labels:` on the exporter                                 | rejected — `has invalid keys: labels`                     |
-| `default_labels_enabled`, `headers`, `retry_on_failure`   | accepted                                                  |
-| hints + push a real OTLP log                              | Loki stream `{service, env, tenant_id, level}` — as intended |
-| `default_labels_enabled: {exporter,job,instance: false}`  | those three labels really disappear                       |
-| `default_labels_enabled: {service_name: false}`           | **no effect** — `service_name` is still emitted           |
-| `default_labels_enabled: {totally_bogus_key: false}`      | accepted — the map is NOT schema-checked                  |
-| delete the `service.name` resource attribute entirely     | **no effect** — `service_name` still appears              |
-| push a log with NO service attribute of any kind          | `service_name="unknown_service"` appears anyway           |
+| Probe                                                    | Result                                                       |
+| -------------------------------------------------------- | ------------------------------------------------------------ |
+| `labels:` on the exporter                                | rejected — `has invalid keys: labels`                        |
+| `default_labels_enabled`, `headers`, `retry_on_failure`  | accepted                                                     |
+| hints + push a real OTLP log                             | Loki stream `{service, env, tenant_id, level}` — as intended |
+| `default_labels_enabled: {exporter,job,instance: false}` | those three labels really disappear                          |
+| `default_labels_enabled: {service_name: false}`          | **no effect** — `service_name` is still emitted              |
+| `default_labels_enabled: {totally_bogus_key: false}`     | accepted — the map is NOT schema-checked                     |
+| delete the `service.name` resource attribute entirely    | **no effect** — `service_name` still appears                 |
+| push a log with NO service attribute of any kind         | `service_name="unknown_service"` appears anyway              |
 
 The last row identifies the real source: **`service_name` is added by Loki, not by the exporter.**
 Loki 3.x performs service-name discovery (`limits_config.discover_service_name`, confirmed present
@@ -132,11 +132,11 @@ explicitly. An empty `sampling_percentage` is a config error the `validate` gate
 
 **Alternatives rejected:**
 
-- *Keep head sampling and accept the deviation.* Rejected: it silently violates §31.5 and QM-8, and
+- _Keep head sampling and accept the deviation._ Rejected: it silently violates §31.5 and QM-8, and
   the failure mode is invisible — dashboards look healthy precisely because error traces are missing.
-- *Add head sampling to the TypeScript SDK for consistency.* Rejected: it would make the one
+- _Add head sampling to the TypeScript SDK for consistency._ Rejected: it would make the one
   spec-correct runtime match the two incorrect ones.
-- *Sample per-environment in the SDKs.* Rejected: it spreads one policy across three languages and
+- _Sample per-environment in the SDKs._ Rejected: it spreads one policy across three languages and
   reintroduces the same correctness problem.
 
 ## Consequences
@@ -171,7 +171,7 @@ explicitly. An empty `sampling_percentage` is a config error the `validate` gate
 ### Neutral
 
 - No application code reads `OTEL_SAMPLING_PERCENTAGE`; it is Collector-only configuration.
-- Trace *volume reaching storage* is unchanged — the Collector still keeps 1% baseline in production.
+- Trace _volume reaching storage_ is unchanged — the Collector still keeps 1% baseline in production.
   What changes is which spans are eligible to be kept.
 
 ## References
