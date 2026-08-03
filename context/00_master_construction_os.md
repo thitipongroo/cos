@@ -1075,7 +1075,7 @@ TYPOGRAPHY TOKENS
 
 Brand font (source: brand_palette §7):
   Primary:     Inter Tight
-  Package:     @fontsource/inter-tight (via npm — add to web/PWA)
+  Package:     @fontsource-variable/inter-tight (via npm — add to web/PWA)
                React Native: expo-font with Inter Tight from Google Fonts
   Fallback:    Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif
   Weight used: 400 (body), 500 (labels/UI), 600 (headings), 700 (wordmark OS)
@@ -1249,7 +1249,7 @@ This was the actual failure mode once. Required files (all must exist):
                                  Tight stack). Use extend so the default palette keeps working.
   apps/web/src/app/globals.css   @tailwind base/components/utilities + :root{ --cos-* / --web-* }
                                  + .dark{} overrides (dark-theme tokens)
-  apps/web/src/app/layout.tsx    import '@fontsource/inter-tight/{400,500,600,700}.css' then
+  apps/web/src/app/layout.tsx    import '@fontsource-variable/inter-tight' then
                                  import './globals.css'  (global CSS only loads from a layout)
 
   Spacing: do NOT override — Tailwind default 4px scale already equals the --web-space-* tokens.

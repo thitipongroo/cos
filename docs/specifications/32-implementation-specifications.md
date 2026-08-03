@@ -744,7 +744,12 @@ works this way).
 
 **Brand font:** Inter Tight
 
-- Package: `@fontsource/inter-tight` (web/PWA) · expo-font with Inter Tight (React Native)
+- Package: `@fontsource-variable/inter-tight` (web/PWA) · expo-font with Inter Tight (React Native).
+  The variable build is one 44,872 B latin file covering weights 100–900, against 67,424 B for the
+  three static weights `/login` was loading — measured 2026-08-03, and worth 24 KB plus two fewer
+  requests on every page. Its CSS registers the family as **`Inter Tight Variable`**, which must be
+  first in the Tailwind `fontFamily.sans` stack: with only `"Inter Tight"` there the font is
+  downloaded and never matched, and the page silently renders in a system font.
 - Fallback: Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif
 - Weights: 400 (body), 500 (labels/UI), 600 (headings), 700 (wordmark)
 
@@ -799,14 +804,14 @@ files MUST exist in `apps/web` — this is the implementation contract for the t
 | `postcss.config.js`         | `plugins: { tailwindcss: {}, autoprefixer: {} }` (Next.js auto-runs it)                                                                                                                                                                                                                                                                 |
 | `tailwind.config.js`        | `content: ['./src/**/*.{ts,tsx,js,jsx}']`, `darkMode: 'class'`, and `theme.extend` mapping the tokens — `colors.cos.*`, `borderRadius` `sm/md/lg/xl` → `--web-radius-*`, `fontSize` `display/h1/h2/h3/body/small/tiny` (named token utilities), `fontFamily.sans` = Inter Tight stack. Use `extend` so the default palette still works. |
 | `src/app/globals.css`       | `@tailwind base/components/utilities` + `:root { --cos-*, --web-* }` declaring the token values + a `.dark { … }` block for the Dark Theme tokens                                                                                                                                                                                       |
-| `src/app/layout.tsx` (root) | `import '@fontsource/inter-tight/{400,500,600,700}.css'` then `import './globals.css'` — global CSS only loads when imported from a layout                                                                                                                                                                                              |
+| `src/app/layout.tsx` (root) | `import '@fontsource-variable/inter-tight'` then `import './globals.css'` — global CSS only loads when imported from a layout                                                                                                                                                                                                           |
 
 Notes:
 
 - **Spacing:** do not override Tailwind's scale — its default 4px base already equals the
   `--web-space-*` tokens (`p-4`=16px, `p-6`=24px, …).
 - **Radius:** `rounded`=4px (sm), `rounded-md`=8px, `rounded-lg`=12px, `rounded-xl`=16px (mapped to `--web-radius-*`).
-- **Font:** brand font is `@fontsource/inter-tight` (weights 400/500/600/700); fallback `Inter, -apple-system, system-ui,
+- **Font:** brand font is `@fontsource-variable/inter-tight` (one file, weights 100–900); fallback `Inter, -apple-system, system-ui,
 sans-serif`.
 - **Verification:** a build must emit non-empty utility CSS (compiling `globals.css` yields > 0 bytes) — an empty result
   means the pipeline is not wired.

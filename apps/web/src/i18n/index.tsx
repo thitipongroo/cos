@@ -8,11 +8,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { applyDocumentLocale } from '../lib/locale';
 import en from './en.json';
-import th from './th.json';
 
 export type Locale = 'th' | 'en';
 
-const MESSAGES: Record<Locale, Record<string, unknown>> = { th, en };
+/**
+ * Only `en` is bundled. `th.json` is fetched the first time Thai is selected.
+ *
+ * Both files used to be static imports, which put **58,462 B of JSON into every route's bundle** —
+ * the single largest item on `/login`, larger than react-hook-form, on a page that reads 23 of the
+ * 463 keys. Nothing regresses by loading Thai late: `locale` already starts at `DEFAULT_LOCALE`
+ * and the stored choice is applied in an effect, so a Thai user has always seen English on the
+ * first frame. Until the file arrives, `lookup` falls through to `FALLBACK_LOCALE` exactly as it
+ * does for a missing key.
+ */
+type Messages = Partial<Record<Locale, Record<string, unknown>>>;
 const STORAGE_KEY = 'cos.locale';
 // Default UI language is English (product-owner decision 2026-07-26 — overrides QM-3's th-TH default).
 const DEFAULT_LOCALE: Locale = 'en';
@@ -39,6 +48,23 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
+  const [messages, setMessages] = useState<Messages>({ en });
+
+  // Fetch the Thai bundle on first use. `cancelled` guards the unmount-before-resolve case.
+  useEffect(() => {
+    if (locale !== 'th' || messages.th) {
+      return;
+    }
+    let cancelled = false;
+    void import('./th.json').then((mod) => {
+      if (!cancelled) {
+        setMessages((prev) => ({ ...prev, th: mod.default as Record<string, unknown> }));
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale, messages.th]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -63,8 +89,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback(
     (key: string): string =>
-      lookup(MESSAGES[locale], key) ?? lookup(MESSAGES[FALLBACK_LOCALE], key) ?? key,
-    [locale],
+      lookup(messages[locale] ?? {}, key) ?? lookup(messages[FALLBACK_LOCALE] ?? {}, key) ?? key,
+    [locale, messages],
   );
 
   const value = useMemo<I18nContextValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t]);

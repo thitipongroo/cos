@@ -126,7 +126,7 @@ rationale governs all-day outdoor use; signing in is a one-off, usually indoor.
 
 **Brand font: Inter Tight** — weights 400 (body), 500 (labels/UI), 600 (headings),
 700 (wordmark). Fallback: `Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif`.
-Web via `@fontsource/inter-tight`; mobile via `expo-font` + `@expo-google-fonts/inter-tight`.
+Web via `@fontsource-variable/inter-tight`; mobile via `expo-font` + `@expo-google-fonts/inter-tight`.
 
 **Web scale — base unit 14px (compact enterprise SaaS):**
 

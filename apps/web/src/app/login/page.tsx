@@ -28,8 +28,12 @@ const SWITCHER_DARK =
  * Keycloak OIDC) as the secondary. Sending a passcode requests the OTP and hands off to /login/otp's
  * verify step (phone carried in the query). Path B still delegates to Keycloak's hosted page (QM-4).
  *
- * `useSearchParams()` forces CSR and must sit inside a <Suspense> boundary or `next build` fails the
- * static export ("missing-suspense-with-csr-bailout"). The reader lives in LoginContent.
+ * `useSearchParams()` opts its nearest <Suspense> boundary out of server rendering — without one,
+ * `next build` fails the static export ("missing-suspense-with-csr-bailout"). That boundary used to
+ * wrap the whole page, which meant the server sent nothing but an empty navy <div> and every pixel
+ * waited for hydration. Measured on CI: **2,695 ms of a 3,164 ms LCP was render delay**, against
+ * 470 ms TTFB and a single 170 ms render-blocking stylesheet. The reader is now `UrlErrorProbe`,
+ * scoped to its own boundary, so the card itself is server-rendered HTML.
  */
 function MailIcon() {
   return (
@@ -107,11 +111,27 @@ function HubIcon() {
   );
 }
 
+/**
+ * Reads `?error=` and reports it upward, rendering nothing itself.
+ *
+ * Exists only to keep `useSearchParams()` — and therefore the server-rendering bail-out it forces
+ * on its Suspense boundary — away from the rest of the page. Keycloak redirects back here with
+ * `?error=` when the hosted login fails, which is the only thing the query string is read for.
+ */
+function UrlErrorProbe({ onResult }: { onResult: (hasError: boolean) => void }) {
+  const hasError = useSearchParams().get('error') !== null;
+  useEffect(() => {
+    onResult(hasError);
+  }, [hasError, onResult]);
+  return null;
+}
+
 function LoginContent() {
   const t = useT();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const hasError = searchParams.get('error') !== null;
+  // `useState`'s setter is referentially stable, so passing it straight down keeps the probe's
+  // effect from re-firing every render.
+  const [hasError, setHasError] = useState(false);
 
   // The country stays outside the form: it is never submitted on its own, it only decides which
   // dial code the typed digits compose with.
@@ -230,6 +250,11 @@ function LoginContent() {
             <h2 className="text-h1 font-bold text-white">{t('auth.login.cardTitle')}</h2>
             <p className="mt-2 text-body text-slate-400">{t('auth.login.credentialsSubtitle')}</p>
           </div>
+
+          {/* Its own boundary — the page around it stays server-rendered. */}
+          <Suspense fallback={null}>
+            <UrlErrorProbe onResult={setHasError} />
+          </Suspense>
 
           {(hasError || error) && (
             <div
@@ -369,9 +394,8 @@ function LoginContent() {
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-cos-navy" />}>
-      <LoginContent />
-    </Suspense>
-  );
+  // No Suspense here any more: the only `useSearchParams()` reader is UrlErrorProbe, which carries
+  // its own boundary. Wrapping the page meant the server emitted the fallback — an empty navy div —
+  // and the real markup arrived only after hydration.
+  return <LoginContent />;
 }
