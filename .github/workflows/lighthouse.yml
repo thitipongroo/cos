@@ -54,3 +54,10 @@ jobs:
         with:
           name: lighthouse-report-${{ github.run_id }}
           path: apps/web/.lighthouseci/
+          # Without this the artifact is always empty. `.lighthouseci` is a dotted directory, and
+          # upload-artifact@v4 skips hidden files unless told otherwise — it resolved
+          # `include-hidden-files: false` and reported "No files were found with the provided path"
+          # on run 30794467316, even though lhci had just logged "Dumping 3 reports to disk at
+          # /home/runner/work/cos/cos/apps/web/.lighthouseci". The step passed, so the gap was
+          # invisible until someone went looking for the reports.
+          include-hidden-files: true
