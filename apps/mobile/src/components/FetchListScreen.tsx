@@ -1,6 +1,10 @@
 // FetchListScreen — reusable read-only list backed by a GET endpoint (online; offline shows the
 // last fetched list). Used by the dashboard/status screens (payments, invoices, rfqs, orders,
-// deliveries, etc.). Each row maps to { key, title, status }.
+// deliveries, CRM customers, etc.). Each row maps to { key, title, status }.
+//
+// Themed via usePalette (2026-08-04). This one component is the fastest step of the staged palette
+// rollout: every screen listed above renders through it, so they all follow the user's mode without
+// being touched individually.
 
 import { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, RefreshControl, StyleSheet } from 'react-native';
@@ -8,7 +12,9 @@ import { get } from '../api/client';
 import { LoadingBoundary } from './LoadingBoundary';
 import { StatusChip } from './StatusChip';
 import { useT } from '../i18n';
-import { colors, fontFamily, spacing, typography } from '../theme/tokens';
+import { fontFamily, spacing, typography } from '../theme/tokens';
+import { usePalette, useIsDark } from '../theme/usePalette';
+import type { Palette } from '../theme/palette';
 
 interface FetchListScreenProps<T> {
   heading: string;
@@ -33,6 +39,9 @@ export function FetchListScreen<T>({
   const [rows, setRows] = useState<T[]>([]);
   const [loading, setLoading] = useState(false);
   const t = useT();
+  const p = usePalette();
+  const dark = useIsDark();
+  const styles = makeStyles(p);
 
   const load = useCallback(async (): Promise<void> => {
     setLoading(true);
@@ -58,7 +67,7 @@ export function FetchListScreen<T>({
       <LoadingBoundary
         loading={loading && rows.length === 0}
         variant="list"
-        theme="light"
+        theme={dark ? 'dark' : 'light'}
         style={styles.boundary}
       >
         <FlatList
@@ -84,24 +93,25 @@ export function FetchListScreen<T>({
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: spacing.md, gap: spacing.sm },
-  boundary: { flex: 1 },
-  heading: {
-    fontSize: typography.title.fontSize,
-    fontFamily: fontFamily.semibold,
-    color: colors.textPrimary,
-  },
-  item: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: spacing.xs,
-  },
-  itemTitle: {
-    fontSize: typography.body.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  empty: { color: colors.textSecondary, fontFamily: fontFamily.regular, padding: spacing.md },
-});
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: p.bg, padding: spacing.md, gap: spacing.sm },
+    boundary: { flex: 1 },
+    heading: {
+      fontSize: typography.title.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.text,
+    },
+    item: {
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: p.border,
+      gap: spacing.xs,
+    },
+    itemTitle: {
+      fontSize: typography.body.fontSize,
+      fontFamily: fontFamily.medium,
+      color: p.text,
+    },
+    empty: { color: p.muted, fontFamily: fontFamily.regular, padding: spacing.md },
+  });

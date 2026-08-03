@@ -148,6 +148,14 @@ export async function post<T>(path: string, payload: unknown): Promise<T> {
   return data;
 }
 
+// Same contract as post() — never enqueues, throws on network error — for PATCH state transitions
+// that must not be replayed later. Added 2026-08-04 for the CRM opportunity→customer convert, which
+// the server rejects on a second attempt (COS-CRM-003): a queued replay could only ever fail.
+export async function patch<T>(path: string, payload: unknown): Promise<T> {
+  const { data } = await http.patch<T>(path, payload);
+  return data;
+}
+
 // ── GET helper ─────────────────────────────────────────────────────────────
 
 export async function get<T>(path: string, params?: Record<string, string>): Promise<T> {

@@ -15,7 +15,8 @@
 
 import { ScrollView, StyleSheet } from 'react-native';
 import { useT } from '../../i18n';
-import { colors, spacing } from '../../theme/tokens';
+import { usePalette } from '../../theme/usePalette';
+import { spacing } from '../../theme/tokens';
 import { SectionLabel, Lede, InfoCard } from '../../components/TransparencyKit';
 
 const IN_USE = [
@@ -36,9 +37,14 @@ const SAFEGUARDS = [
 
 export default function TransparencyAiScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
 
   return (
-    <ScrollView testID="transparency-ai" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency-ai"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.ai.lede')}</Lede>
 
       <SectionLabel>{t('transparency.ai.inuse')}</SectionLabel>
@@ -60,7 +66,7 @@ export default function TransparencyAiScreen(): React.JSX.Element {
           key={c.key}
           testID={`ai-cap-${c.key}`}
           icon={c.icon}
-          tint={colors.textSecondary}
+          tint={pal.muted}
           title={t(`transparency.ai.cap.${c.key}.title`)}
           body={t(`transparency.ai.cap.${c.key}.body`)}
           status="planned"

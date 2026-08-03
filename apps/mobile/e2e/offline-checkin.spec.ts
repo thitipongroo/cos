@@ -99,11 +99,14 @@ describe('Offline Check-In — Worker', () => {
 
     await setNetworkConnected(true);
 
-    await waitFor(element(by.id('sync-status-bar')))
+    // The full-width green sync strip was replaced by the top-bar <SyncPill /> for every role
+    // (PO decision 2026-08-04). The pill is icon-only, so the synced state is asserted on its
+    // accessibilityLabel (i18n sync.pill.synced) rather than on-screen text.
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(10_000);
 
-    await waitFor(element(by.text(/synced|up to date|ซิงค์แล้ว/i)))
+    await waitFor(element(by.label(/synced|ซิงค์แล้ว/i)))
       .toBeVisible()
       .withTimeout(30_000);
   });

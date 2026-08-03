@@ -11,6 +11,7 @@
 
 import { ScrollView, StyleSheet } from 'react-native';
 import { useT } from '../../i18n';
+import { usePalette } from '../../theme/usePalette';
 import { spacing } from '../../theme/tokens';
 import { SectionLabel, Lede, InfoCard } from '../../components/TransparencyKit';
 
@@ -30,9 +31,14 @@ const RULES = [
 
 export default function TransparencyManualScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
 
   return (
-    <ScrollView testID="transparency-manual" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency-manual"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.manual.lede')}</Lede>
 
       <SectionLabel>{t('transparency.manual.channels')}</SectionLabel>

@@ -1,26 +1,37 @@
 // MobileNav — role-based bottom navigation (spec §32.7 Mobile Core Component Library:
-// "MobileNav: Bottom navigation, 4–5 items max, icons + labels").
+// "MobileNav: Bottom navigation, exactly 4 items, icons + labels").
 //
 // Implemented on top of Expo Router's <Tabs> navigator: every role's tab set from the
 // authoritative spec §Phase 10 is declared once, and tabs outside the current role are
 // hidden via `href: null` while keeping the route mountable (reachable by router.push).
 //
-// Role tab sets (spec §Phase 10):
-//   SITE_WORKER:            Home | Tasks | Report | Issues | Profile
-//   SITE_ENGINEER:          Home | Issues | Inspections | Reports   (dark tab bar; no Profile — see below)
-//   PROJECT_MANAGER:        Home | Projects | Procurement | Dashboard | Profile
-//   EXECUTIVE:              Home | Portfolio | Alerts | Reports | Profile
-//   FINANCE:                Home | Payments | Budget | Invoices | Profile
-//   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries | Profile
-//   SAFETY_OFFICER:         Home | Incidents | Profile (PO ruling D1/D2 — §17.4)
-//   TENANT_ADMIN:           Home | Users | Alerts | Settings   (dark tab bar; no Profile tab — reached
-//                           via the top-bar avatar. PO decision 2026-07-28, mockup 01_home_dashboard;
-//                           Alerts = sync-review queue, Settings = system-settings.)
-//   VIEWER/others:          Home | Profile (minimal access)
+// Role tab sets — FOUR tabs, no Profile (PO decision 2026-08-04). Profile is reached from the
+// top-bar avatar on every screen, which already routed there for all roles. This generalises what
+// SITE_ENGINEER (PO 2026-07-16) and TENANT_ADMIN (PO 2026-07-28) already did to the whole product.
+//   SITE_WORKER:            Home | Tasks | Report | Issues
+//   SITE_ENGINEER:          Home | Issues | Inspections | Reports
+//   PROJECT_MANAGER:        Home | Projects | Procurement | Dashboard
+//   EXECUTIVE:              Home | Portfolio | Alerts | Reports
+//   FINANCE:                Home | Payments | Budget | Invoices
+//   PROCUREMENT_OFFICER/PROC_MANAGER: Home | RFQs | Orders | Deliveries
+//   SAFETY_OFFICER:         Home | Incidents | Inspections | Reports  (PO 2026-08-04 — the two extra
+//                           tabs are existing mounted routes and match §20.7.7, which gives the role
+//                           safety checklists and compliance review)
+//   TENANT_ADMIN:           Home | Users | Alerts | Settings
+//   CRM_SALES_MANAGER:      Home | Leads | Opportunities | Customers  (§20.7.10)
+//   VIEWER:                 Home | Projects | Procurement | Budget  (PO decision 2026-08-04)
+//                           §6.8 grants VIEWER read on seven modules, but the tab set is NOT a free
+//                           pick from those: §20.7.9 says "no create/edit/approve actions are
+//                           rendered", and an audit on 2026-08-04 found several candidate screens
+//                           render ungated write controls (issues → create-issue-button, tasks →
+//                           onSave, payments → approve). These three were verified to contain no
+//                           onPress/Pressable at all, so they satisfy the read-only rule as they
+//                           stand. Adding reports/issues/tasks needs a read-only mode built first.
+//   SYSTEM_ADMIN:           Home only — and that is CORRECT, not a gap. §20.7.11 puts its work in the
+//                           separate /admin panel (§20.4), a web route explicitly "not visible to
+//                           tenant users", so no mobile tabs are invented for it.
 //
-// SITE_ENGINEER reaches Profile through the avatar in its Home header instead of a fifth tab
-// (product-owner decision 2026-07-16 — master §Phase 10 updated to match). The route stays mounted
-// via `href: null`, so router.push('/profile') still works.
+// The `profile` route stays mounted via `href: null`, so router.push('/profile') still works.
 
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -28,6 +39,7 @@ import { CosRole } from '@cos/types';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { colors, darkColors } from '../theme/tokens';
+import { useIsDark } from '../theme/usePalette';
 
 /** MaterialIcons glyph name — §32.7 names @expo/vector-icons' MaterialIcons as the icon set. */
 type IconName = keyof typeof MaterialIcons.glyphMap;
@@ -39,12 +51,6 @@ type TabConfig = {
   icon: IconName;
   roles: CosRole[];
 };
-
-// Every role except SITE_ENGINEER (Profile lives in its Home header avatar) and TENANT_ADMIN (whose
-// bottom nav is Home|Users|Alerts|Settings — Profile is reached via the top-bar avatar instead).
-const PROFILE_TAB_ROLES = Object.values(CosRole).filter(
-  (r) => r !== CosRole.SITE_ENGINEER && r !== CosRole.TENANT_ADMIN,
-);
 
 // Authoritative per-role tab set (spec §Phase 10). Exported for reuse/testing.
 // Icons are MaterialIcons glyph names, type-checked against the set's glyphMap. None of them are
@@ -84,25 +90,25 @@ export const ALL_TABS: TabConfig[] = [
     name: 'inspections',
     titleKey: 'nav.tabs.inspections',
     icon: 'fact-check',
-    roles: [CosRole.SITE_ENGINEER],
+    roles: [CosRole.SITE_ENGINEER, CosRole.SAFETY_OFFICER],
   },
   {
     name: 'reports',
     titleKey: 'nav.tabs.reports',
     icon: 'description',
-    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE],
+    roles: [CosRole.SITE_ENGINEER, CosRole.EXECUTIVE, CosRole.SAFETY_OFFICER],
   },
   {
     name: 'projects',
     titleKey: 'nav.tabs.projects',
     icon: 'folder',
-    roles: [CosRole.PROJECT_MANAGER],
+    roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
   },
   {
     name: 'procurement',
     titleKey: 'nav.tabs.procurement',
     icon: 'shopping-cart',
-    roles: [CosRole.PROJECT_MANAGER],
+    roles: [CosRole.PROJECT_MANAGER, CosRole.VIEWER],
   },
   {
     name: 'dashboard',
@@ -127,7 +133,7 @@ export const ALL_TABS: TabConfig[] = [
     name: 'budget',
     titleKey: 'nav.tabs.budget',
     icon: 'account-balance-wallet',
-    roles: [CosRole.FINANCE],
+    roles: [CosRole.FINANCE, CosRole.VIEWER],
   },
   {
     name: 'invoices',
@@ -159,7 +165,26 @@ export const ALL_TABS: TabConfig[] = [
     icon: 'health-and-safety',
     roles: [CosRole.SAFETY_OFFICER],
   },
-  { name: 'profile', titleKey: 'nav.tabs.profile', icon: 'person', roles: PROFILE_TAB_ROLES },
+  // CRM — the three pages §20.7.10 defines for CRM_SALES_MANAGER, in lifecycle order
+  // (lead → opportunity → customer), which is also the order the work happens in.
+  {
+    name: 'leads',
+    titleKey: 'nav.tabs.leads',
+    icon: 'person-add',
+    roles: [CosRole.CRM_SALES_MANAGER],
+  },
+  {
+    name: 'opportunities',
+    titleKey: 'nav.tabs.opportunities',
+    icon: 'trending-up',
+    roles: [CosRole.CRM_SALES_MANAGER],
+  },
+  {
+    name: 'customers',
+    titleKey: 'nav.tabs.customers',
+    icon: 'business',
+    roles: [CosRole.CRM_SALES_MANAGER],
+  },
 ];
 
 /** Role-filtered bottom tab navigator. Reads the signed-in role from the auth store. */
@@ -167,11 +192,10 @@ export function MobileNav() {
   const role = useAuthStore((s) => s.role) as CosRole | null;
   const t = useT();
 
-  // Dark-shell roles' landing is a dark dashboard (§32.7 Mobile Dark Surfaces), so their whole tab bar
-  // is dark for a consistent shell — SITE_ENGINEER (PO decision 2026-07-16) + TENANT_ADMIN (PO decision
-  // 2026-07-28). Every other role keeps the light field-app tab bar. A light tab bar under a dark Home
-  // is the mismatch this fixes.
-  const dark = role === CosRole.SITE_ENGINEER || role === CosRole.TENANT_ADMIN;
+  // Tab-bar colour follows the USER'S theme (PO decision 2026-08-04: dark is the product default for
+  // every role, light is selectable in Profile). Previously only SITE_ENGINEER and TENANT_ADMIN got a
+  // dark bar, because only their Home mockups were dark.
+  const dark = useIsDark();
 
   return (
     <Tabs
@@ -260,6 +284,11 @@ export function MobileNav() {
       {/* Transparency Portal (PO 2026-08-04) — reached from Profile, not a tab for any role. Hidden
           here for the same reason as every other pushed child screen: `href: null` keeps it out of
           the bottom nav while leaving it routable. */}
+      {/* Profile left the bottom nav (PO 2026-08-04) but must stay mounted — the top-bar avatar
+          pushes here from every screen. */}
+      <Tabs.Screen name="profile" options={{ href: null }} />
+      {/* Post-auth Privacy Policy — drawer entry (PO 2026-08-04); same document as the (auth) route. */}
+      <Tabs.Screen name="privacy-policy" options={{ href: null }} />
       <Tabs.Screen name="transparency" options={{ href: null }} />
       <Tabs.Screen name="transparency-identity" options={{ href: null }} />
       <Tabs.Screen name="transparency-location" options={{ href: null }} />

@@ -36,7 +36,10 @@
       "incidents": "Incidents",
       "profile": "Profile",
       "users": "Users",
-      "settings": "Settings"
+      "settings": "Settings",
+      "leads": "Leads",
+      "opportunities": "Opportunities",
+      "customers": "Customers"
     }
   },
   "auth": {
@@ -519,6 +522,7 @@
     "fieldTools": "Field tools",
     "settings": "Notification settings",
     "security": "Security & MFA",
+    "privacyPolicy": "Privacy policy",
     "logout": "Log out",
     "projects": "Project overview",
     "reports": "Daily site reports",
@@ -591,7 +595,10 @@
       "language": "Language",
       "thai": "ไทย",
       "english": "English",
-      "logout": "Log out"
+      "logout": "Log out",
+      "theme": "Appearance",
+      "themeDark": "Dark",
+      "themeLight": "Light"
     },
     "notifications": {
       "title": "Notifications",
@@ -1412,6 +1419,33 @@
       "why": "Why some records stay",
       "whyBody": "Erasure does not override a legal duty to keep a record. Where a record must be kept, the personal parts of it are removed instead, so the record survives without identifying you — the approach our data protection policy requires.",
       "action": "Request erasure"
+    }
+  },
+  "crm": {
+    "leads": {
+      "title": "Leads",
+      "contactName": "Contact name",
+      "company": "Company",
+      "create": "Add lead",
+      "saving": "Saving…",
+      "empty": "No leads yet.",
+      "untitled": "Unnamed lead"
+    },
+    "opportunities": {
+      "title": "Opportunities",
+      "fromLead": "From lead",
+      "noLeads": "No leads to qualify yet.",
+      "titleField": "Opportunity title",
+      "value": "Value",
+      "create": "Add opportunity",
+      "saving": "Saving…",
+      "empty": "No opportunities yet.",
+      "convert": "Convert to customer",
+      "converting": "Converting…"
+    },
+    "customers": {
+      "title": "Customers",
+      "empty": "No customers yet."
     }
   }
 }

@@ -11,7 +11,8 @@
 
 import { ScrollView, StyleSheet } from 'react-native';
 import { useT } from '../../i18n';
-import { colors, spacing } from '../../theme/tokens';
+import { usePalette } from '../../theme/usePalette';
+import { spacing } from '../../theme/tokens';
 import { SectionLabel, Lede, InfoCard } from '../../components/TransparencyKit';
 
 const CAPABILITIES = [
@@ -22,9 +23,14 @@ const CAPABILITIES = [
 
 export default function TransparencyIotScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
 
   return (
-    <ScrollView testID="transparency-iot" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency-iot"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.iot.lede')}</Lede>
 
       <SectionLabel>{t('transparency.iot.planned')}</SectionLabel>
@@ -33,7 +39,7 @@ export default function TransparencyIotScreen(): React.JSX.Element {
           key={c.key}
           testID={`iot-cap-${c.key}`}
           icon={c.icon}
-          tint={colors.textSecondary}
+          tint={pal.muted}
           title={t(`transparency.iot.cap.${c.key}.title`)}
           body={t(`transparency.iot.cap.${c.key}.body`)}
           status="planned"

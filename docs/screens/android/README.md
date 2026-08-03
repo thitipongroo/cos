@@ -27,13 +27,14 @@ image** — where a screen is taller than the phone it is stitched from scrollin
 (`scripts/stitch-fullpage.py`) — except where a screen has a genuinely distinct alternate state, which
 gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-expanded view).
 
-| Folder                             | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`01-public/`](01-public/)         | Pre-auth — the native splash (`00`), app-launch loading (`01`), the login flow (`02`–`04`) and the Privacy Policy (`05`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| [`03-mfa/`](03-mfa/)               | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| [`02-shared/`](02-shared/)         | Cross-role app-shell screens — notification preferences (`01`, three states) and the navigation drawer (`02`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| [`SITE-ENGINEER/`](SITE-ENGINEER/) | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| [`TENANT-ADMIN/`](TENANT-ADMIN/)   | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| Folder                                     | What it holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`01-public/`](01-public/)                 | Pre-auth — the native splash (`00`), app-launch loading (`01`), the login flow (`02`–`04`) and the Privacy Policy (`05`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| [`03-mfa/`](03-mfa/)                       | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| [`02-shared/`](02-shared/)                 | Cross-role app-shell screens — notification preferences (`01`, three states), the navigation drawer (`02`) and the Transparency Portal ([`transparency/`](02-shared/privacy-policy/01-data-collection/), 8 screens).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
@@ -162,8 +163,10 @@ screen renders its empty states truthfully rather than inventing figures.
 > roles too — which is what makes this dashboard capturable without driving the undrivable browser MFA flow.
 
 **Shell — dark, like the Site Engineer Home (§32.7 Mobile Dark Surfaces; PO decision 2026-07-28).** The
-whole shell renders dark to match the dark dashboard: a dark top bar and a dark bottom nav, and the light
-`SyncStatusBar` strip is dropped (as it is for the Site Engineer). The bottom nav is **Home | Users |
+whole shell renders dark to match the dark dashboard: a dark top bar and a dark bottom nav, and no
+full-width sync strip. Since 2026-08-04 that is true of EVERY role, not just this one: the
+`SyncStatusBar` strip was deleted and the top-bar `<SyncPill />` became the standard sync indicator
+everywhere (this screen is the mockup the rest now follows). The bottom nav is **Home | Users |
 Alerts | Settings** — the per-role tab set for `TENANT_ADMIN` (`components/MobileNav.tsx`): "Alerts" is
 the sync-review queue and "Settings" is the System Settings route (`system-settings`, both dark);
 Profile is reached from the top-bar avatar, not a fifth tab. The brand icon (no separate hamburger)
@@ -173,16 +176,24 @@ indicator in place of the dropped strip: a green check when synced, gold while s
 colour, no label, so it stays balanced beside the brand and never crowds it). It sits on the shared top
 bar, so it shows the same on every Tenant Admin screen.
 
-**Title-aware top bar + standard Help (PO decision 2026-07-29).** The shared bar shows the **CONSTRUCTION
-OS** wordmark only on a role's top-level destinations (its bottom-nav tabs — for Tenant Admin: Home /
-Users / Alerts / Settings, where the brand icon is the drawer trigger). On a **child** screen (a pushed
-route such as Invite user, Notifications, System-settings detail, Profile-via-avatar) the bar instead
-shows that **screen's name + a Back arrow** before the brand icon, and the screen no longer draws its own
-in-content page heading (main screens dropped theirs too — the active bottom-nav tab names the screen).
-Long titles truncate with "…" so they never crowd the sync pill. A **Help "?"** now sits beside the bell
-on **every** authenticated screen (`testID="topbar-help"`); with no in-app help centre yet it opens an
-honest "coming soon" note. The mockup's **+ FAB** (bottom-right) opens the
-Quick-Add menu (below).
+**Uniform top bar + breadcrumb + standard Help.** The shared bar shows the **CONSTRUCTION OS**
+wordmark on **every** screen, and the brand icon is the drawer trigger. Screens no longer draw their
+own in-content page heading (main screens dropped theirs too — the active bottom-nav tab names the
+screen). On a **child** screen (a pushed route such as Invite user, Notifications, System-settings
+detail, Profile-via-avatar) the screen is named by a clickable **breadcrumb** strip under the bar
+([`components/Breadcrumb.tsx`](../../../apps/mobile/src/components/Breadcrumb.tsx)), and the bar
+carries a leading bare chevron **`<`** back control (PO decision 2026-08-04). The two are
+complementary: the chevron is the one-tap gesture, the breadcrumb shows depth and can jump more than
+one level. `isChildRoute()` is the single source of "has a parent", so no route gets one without the
+other.
+
+> Supersedes the **2026-07-29** "title-aware bar" (screen name + Material back arrow **in** the bar,
+> wordmark on tabs only): the title moved to the breadcrumb on **2026-07-31**, which also removed the
+> back arrow entirely; **2026-08-04** brought a back control back as the `<` chevron.
+
+A **Help "?"** sits beside the bell on **every** authenticated screen (`testID="topbar-help"`); with
+no in-app help centre yet it opens an honest "coming soon" note. The mockup's **+ FAB**
+(bottom-right) opens the Quick-Add menu (below).
 
 Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../../apps/mobile/scripts/capture-android-tenant-admin-home.mjs)
 (`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
@@ -367,7 +378,8 @@ stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
 
 - **Force System Sync** — real (`runPushSync()` then `runDeltaSync()`, §17.6 flush + pull); tapping it
   spins the icon and the sub-label reads **SYNCING…** while it runs.
-- **SYNCED pill** (top bar) — real `useSyncStatus()` (the SyncStatusBar's source; green check when idle).
+- **SYNCED pill** (top bar) — real `useSyncStatus()`; green check when idle. Since 2026-08-04 this
+  pill is the standard sync indicator on every role's top bar, not just Tenant Admin's.
 - **Active Projects** / **System Health** bento — real figures over **bundled photo backdrops** (PO
   decision 2026-07-29): the project count from `GET /projects/mine` (0 for this admin, who is a member of
   none) on `assets/tenant-admin/digital_archectural_blueprint.jpg`, and liveness from `GET /health/live`
@@ -575,6 +587,88 @@ during this window. Critical safety alerts are never quieted."_
 
 **`01-notification-preferences-saved.png`** — the post-save confirmation: _Changes saved_, with
 `STATUS Active` and `LAST SYNC Just now`, and a **Back** button.
+
+## CRM Sales Manager — [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/)
+
+The three CRM pages §20.7.10 defines, built 2026-08-04 after the product owner approved the Rule 38
+list. Backend endpoints already existed (`crm.controller.ts`) and `apps/web` already had all three
+pages, so nothing here is speculative — the mobile screens call the same role-gated routes.
+
+Captured signed in as **Chalermsak Nithat — CRM_SALES_MANAGER** (`+66811000012`, seed-realistic.ts),
+the only seeded account with the role. Every CRM endpoint is gated to `CRM_READ_ROLES` /
+`CRM_WRITE_ROLES`, so no other account can populate these tabs.
+
+| #   | Screen                                                  | What it shows                                                                |
+| --- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 01  | [Leads](CRM-SALES-MANAGER/01-leads.png)                 | Capture form (contact / company) + the lead list with NEW / QUALIFIED status |
+| 02  | [Opportunities](CRM-SALES-MANAGER/02-opportunities.png) | Lead picker + title/value form; per-row **Convert to customer** on OPEN rows |
+| 03  | [Customers](CRM-SALES-MANAGER/03-customers.png)         | Read-only `finance.customers` list — no create action, per the spec row      |
+
+Two behaviours worth reading off frame `02`: the **WON** row deliberately renders **no** convert
+button (the server rejects a second convert with `COS-CRM-003`, so the state is the affordance), and
+`value` is displayed as the DECIMAL **string** the API returns — never parsed into a JS number (§14).
+
+> The lead picker on `02` is a **wrapping** row of chips, not a horizontal scroller. The first device
+> capture showed the picker completely blank; a probe confirmed four leads were in state, but a
+> horizontal `ScrollView` in that column container would not lay them out, and forcing an explicit
+> height only reserved empty space. Since choosing a lead is mandatory before an opportunity can be
+> created, that bug made the screen unusable. The wrapping row also shows every candidate at once.
+
+Captured by
+[`apps/mobile/scripts/capture-android-crm.mjs`](../../../apps/mobile/scripts/capture-android-crm.mjs)
+(`cd apps/mobile && pnpm capture:android:crm`). Plain single-viewport grabs, not stitched: each screen
+fits one viewport, and these are top-level **tab** screens so they carry no breadcrumb strip — running
+the full-page stitcher would mean re-deriving its fixed chrome band for a layout that does not need it.
+
+## Shared — Privacy Policy + Data Collection — [`02-shared/privacy-policy/`](02-shared/privacy-policy/)
+
+The post-auth Privacy Policy and the PDPA data-collection portal beneath it, reached from **drawer →
+PRIVACY POLICY → Data Collection card** (PO decision 2026-08-04). Under `02-shared/` because every
+role can open them — they are not any role's tab.
+
+The folder mirrors the mockup tree rather than inventing its own name (PO decision 2026-08-04):
+
+| Here                                            | Mockup                                                                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `privacy-policy/00-privacy-policy-postauth.png` | [`05_privacy_policy/00_policy_data`](../../../mockup/mobile/01_authen/05_privacy_policy/00_policy_data)          |
+| `privacy-policy/01-data-collection/`            | [`05_privacy_policy/01_data_collection/`](../../../mockup/mobile/01_authen/05_privacy_policy/01_data_collection) |
+
+> **Entry path changed 2026-08-04.** These screens were previously reached from **Profile →
+> Transparency Portal**. Both halves of that path are gone: the Profile **tab** was removed for every
+> role (Profile is reached from the top-bar avatar), and the portal row was removed from Profile when
+> the policy's Data Collection card became the entry point. Frame `00-privacy-policy-postauth` is the
+> new doorway.
+
+Captured signed in as **Thanawat Boonmee — PROJECT_MANAGER** (`seed-realistic.ts`), because
+`01-identity` renders that account's real stored values from `GET /api/v1/users/me`.
+
+Shell colour is no longer role-dependent: **dark is the product default for every role** (PO decision
+2026-08-04), with light selectable in Profile, so these frames show the dark default. Each child
+screen carries the `<` back control restored to the top bar on 2026-08-04, alongside the breadcrumb.
+
+| #   | Screen                                                                                          | What it shows                                                                   |
+| --- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| 00  | [Privacy Policy (post-auth)](02-shared/privacy-policy/00-privacy-policy-postauth.png)           | The drawer's policy route — same document as the pre-auth one, in the app shell |
+| 00  | [Portal hub](02-shared/privacy-policy/01-data-collection/00-portal.png)                         | Category count, what is collected, how it arrives, retention and rights         |
+| 01  | [Identity & contact](02-shared/privacy-policy/01-data-collection/01-identity.png)               | The signed-in account's real name / email / phone / photo / role                |
+| 02  | [Site & location](02-shared/privacy-policy/01-data-collection/02-location.png)                  | The five record types that carry a coordinate; geofencing marked Planned        |
+| 03  | [Technical logs](02-shared/privacy-policy/01-data-collection/03-technical-logs.png)             | Audit-log fields, the path an entry travels, retention tiers                    |
+| 04  | [What you enter](02-shared/privacy-policy/01-data-collection/04-manual-input.png)               | The forms that create records and how entries are handled                       |
+| 05  | [Equipment sensors](02-shared/privacy-policy/01-data-collection/05-equipment-sensors.png)       | Every row Planned — IoT ingestion is Phase 21/24 and collects nothing today     |
+| 06  | [Automated processing](02-shared/privacy-policy/01-data-collection/06-automated-processing.png) | OCR + report drafting in use; PPE detection and photo-vs-design Planned         |
+| 07  | [Erasing your data](02-shared/privacy-policy/01-data-collection/07-erasure.png)                 | What is erased vs anonymised-and-kept, and why; request control inactive        |
+
+Captured by
+[`apps/mobile/scripts/capture-android-transparency.mjs`](../../../apps/mobile/scripts/capture-android-transparency.mjs)
+(`cd apps/mobile && pnpm capture:android:transparency`). It is the only capture script here that
+signs in and then walks a sub-tree, so it carries two helpers the others do not need: the shell's
+fixed bands are **taller** than the pre-auth screens (the breadcrumb pushes the content start to row
+311 — it was 375 until the green sync strip was removed on 2026-08-04), and rows below the fold are
+tapped via a scroll-until-found helper, because React Native does not report off-viewport rows to
+`uiautomator`.
+
+> Measure the BOTTOM band by walking **up** from the last row, never down: the content cards use the
+> same `#0F172A` surface as the bottom nav, so a downward scan stops in the middle of the page.
 
 ## Shared — Navigation drawer — [`02-shared/02-navigation-drawer.png`](02-shared/02-navigation-drawer.png)
 

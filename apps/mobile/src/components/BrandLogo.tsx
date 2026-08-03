@@ -23,6 +23,12 @@ const TEXT = {
   light: { main: '#0B1020', os: '#2563EB', tag: '#64748B' },
 };
 
+/**
+ * Hexagon height as a multiple of the nominal `height`. One constant, so every call site (top bar,
+ * Quick-Add sheet) shifts together and the wordmark scale is untouched.
+ */
+const MARK_SCALE = 1.32;
+
 export function BrandLogo({
   variant = 'light',
   height = 26,
@@ -35,12 +41,22 @@ export function BrandLogo({
   const onDark = variant === 'dark';
   const m = onDark ? MARK.dark : MARK.light;
   const c = onDark ? TEXT.dark : TEXT.light;
-  const markW = Math.round((height * 80) / 92); // mark viewBox is 80×92
+  // The mark is drawn TALLER than the nominal `height` (PO decision 2026-08-04: "the icon is a bit
+  // small — make it bigger so it balances the text"). `height` sets the type scale, and the hexagon
+  // is sized off it rather than being equal to it.
+  //
+  // Why it looked small at 1.0: the mark's viewBox is 80×92, so at parity with `height` it renders
+  // ~13% NARROWER than it is tall, while the text beside it is a two-line block (wordmark + tagline)
+  // whose total height already matched the mark. Measured off the 1080-wide capture: mark 60px vs a
+  // 67px text block. At 1.32 the hexagon reads as the dominant element it is meant to be, and its
+  // width (~1.15 × height) finally exceeds the single-line cap height it sits against.
+  const markH = Math.round(height * MARK_SCALE);
+  const markW = Math.round((markH * 80) / 92); // mark viewBox is 80×92
   const wmSize = Math.round(height * 0.54); // wordmark scales with the logo height
 
   return (
     <View style={styles.row}>
-      <Svg width={markW} height={height} viewBox="0 0 80 92">
+      <Svg width={markW} height={markH} viewBox="0 0 80 92">
         <Polygon
           points="40,6 74.64,26 74.64,66 40,86 5.36,66 5.36,26"
           fill={m.poly}
@@ -71,8 +87,13 @@ export function BrandLogo({
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  textCol: { justifyContent: 'center' },
+  // flexShrink + minWidth:0 so the logo YIELDS when the bar is tight instead of overflowing its
+  // container. React Native does not clip overflow by default, so without this an over-wide brand row
+  // is drawn straight over whatever sits to its right — which is exactly how the top bar's sync pill
+  // ended up on top of the cyan "OS" once the pill became universal (fixed 2026-08-04). With it, the
+  // wordmark ellipsizes as a visible last resort rather than silently colliding.
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0 },
+  textCol: { justifyContent: 'center', flexShrink: 1, minWidth: 0 },
   wm: { fontFamily: fontFamily.medium, letterSpacing: 1.6, lineHeight: undefined },
   tg: { fontFamily: fontFamily.regular, letterSpacing: 1.4, marginTop: 2 },
 });

@@ -19,22 +19,28 @@
 
 import { ScrollView, StyleSheet } from 'react-native';
 import { useT } from '../../i18n';
-import { colors, spacing } from '../../theme/tokens';
+import { usePalette } from '../../theme/usePalette';
+import { spacing } from '../../theme/tokens';
 import { SectionLabel, Lede, InfoCard, DisabledAction } from '../../components/TransparencyKit';
 
 /** What erasure does per record type — 'erase' where we can, 'retain + anonymise' where law binds. */
 const RECORDS = [
-  { key: 'identity', icon: 'person-off', tint: colors.success },
-  { key: 'location', icon: 'location-off', tint: colors.success },
-  { key: 'reports', icon: 'description', tint: colors.warning },
-  { key: 'audit', icon: 'gavel', tint: colors.warning },
+  { key: 'identity', icon: 'person-off', tone: 'success' },
+  { key: 'location', icon: 'location-off', tone: 'success' },
+  { key: 'reports', icon: 'description', tone: 'warning' },
+  { key: 'audit', icon: 'gavel', tone: 'warning' },
 ] as const;
 
 export default function TransparencyDeleteScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
 
   return (
-    <ScrollView testID="transparency-delete" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency-delete"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.delete.lede')}</Lede>
 
       <SectionLabel>{t('transparency.delete.what')}</SectionLabel>
@@ -43,7 +49,7 @@ export default function TransparencyDeleteScreen(): React.JSX.Element {
           key={r.key}
           testID={`delete-rec-${r.key}`}
           icon={r.icon}
-          tint={r.tint}
+          tint={pal[r.tone]}
           title={t(`transparency.delete.rec.${r.key}.title`)}
           body={t(`transparency.delete.rec.${r.key}.body`)}
         />

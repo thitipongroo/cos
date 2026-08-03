@@ -15,6 +15,7 @@
 
 import { ScrollView, StyleSheet } from 'react-native';
 import { useT } from '../../i18n';
+import { usePalette } from '../../theme/usePalette';
 import { spacing } from '../../theme/tokens';
 import { SectionLabel, Lede, InfoCard, FlowStep } from '../../components/TransparencyKit';
 
@@ -44,9 +45,14 @@ const SAFEGUARDS = [
 
 export default function TransparencyLocationScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
 
   return (
-    <ScrollView testID="transparency-location" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency-location"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.location.lede')}</Lede>
 
       <SectionLabel>{t('transparency.location.where')}</SectionLabel>

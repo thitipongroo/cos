@@ -5,22 +5,19 @@
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { usePathname } from 'expo-router';
-import { CosRole } from '@cos/types';
 import { runDeltaSync } from '../../sync/runDeltaSync';
 import { runPushSync } from '../../sync/runPushSync';
 import { checkLocalDbLimit } from '../../db/database';
 import { OfflineBanner } from '../../components/OfflineBanner';
-import { SyncStatusBar } from '../../components/SyncStatusBar';
 import { TopBar } from '../../components/TopBar';
 import { Breadcrumb } from '../../components/Breadcrumb';
 import { MobileNav } from '../../components/MobileNav';
 import { NavigationDrawer } from '../../components/NavigationDrawer';
-import { useAuthStore } from '../../store/authStore';
+import { useIsDark } from '../../theme/usePalette';
 import { setLastAppPath } from '../../lib/e2e/lastRoute';
 
 export default function AppLayout() {
   const pathname = usePathname();
-  const role = useAuthStore((s) => s.role);
 
   // Remember the current in-app route so the E2E network-toggle deep link can return here (see
   // lib/e2e/lastRoute). No-op effect in production beyond bookkeeping.
@@ -46,12 +43,14 @@ export default function AppLayout() {
       });
   }, []);
 
-  // Dark-shell roles (§32.7 Mobile Dark Surfaces): their signed-in Home is a dark dashboard, so the
-  // whole shell — top bar + bottom nav — renders dark to match the content (a light shell over dark
-  // content is the mismatch this fixes). SITE_ENGINEER + TENANT_ADMIN (PO decision 2026-07-28 adds
-  // the Tenant Admin Home to the §32.7 dark list). Every other role keeps the light field palette.
-  const darkShell = role === CosRole.SITE_ENGINEER || role === CosRole.TENANT_ADMIN;
-  const variant = darkShell ? 'dark' : 'light';
+  // Shell colour follows the USER'S theme, not the role (PO decision 2026-08-04: dark is the product
+  // default for every role, light is selectable in Profile). This replaces the previous rule where
+  // only SITE_ENGINEER and TENANT_ADMIN got a dark shell because their Home mockups were dark.
+  //
+  // Nothing in this shell branches on the role any more: with the sync strip replaced by the top-bar
+  // pill (below), every role gets the same chrome and only the tab SET differs (components/MobileNav).
+  const dark = useIsDark();
+  const variant = dark ? 'dark' : 'light';
 
   return (
     <View style={styles.root}>
@@ -60,12 +59,13 @@ export default function AppLayout() {
       <TopBar variant={variant} />
       {/* Clickable breadcrumb for pushed child screens (null on main tabs / terminal screens). */}
       <Breadcrumb variant={variant} />
+      {/* OfflineBanner is kept for all roles — it only appears while actually offline.
+          The full-width green <SyncStatusBar /> strip that used to sit here is GONE (PO decision
+          2026-08-04): the compact <SyncPill /> in the top bar is now the standard sync indicator for
+          every role, as 01_home_dashboard draws it. It was previously dropped only for the two
+          dark-shell dashboards; making the pill universal removes the last piece of chrome whose
+          presence depended on which role was signed in. */}
       <OfflineBanner />
-      {/* The dark-shell dashboards (SITE_ENGINEER, TENANT_ADMIN) match their mockups, which have no
-          persistent light sync strip (PO decision 2026-07-25 "full parity", extended 2026-07-28); the
-          bar stays for every other role — including its E2E assertions (all field-role flows).
-          OfflineBanner is kept for all roles (it only appears while offline). */}
-      {darkShell ? null : <SyncStatusBar />}
       <View style={styles.tabs}>
         <MobileNav />
       </View>

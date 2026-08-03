@@ -9,6 +9,7 @@
 
 import { StyleSheet } from 'react-native';
 import { colors, fontFamily, spacing, typography } from './tokens';
+import type { Palette } from './palette';
 
 export const screen = StyleSheet.create({
   // Root view of a list/form screen: 16px section padding, 12px gap between children.
@@ -94,3 +95,83 @@ export const screen = StyleSheet.create({
     color: colors.textPrimary,
   },
 });
+
+// ── Themed variant ───────────────────────────────────────────────────────────
+//
+// `screen` above is the LIGHT set, frozen at module load, and is what the not-yet-migrated screens
+// still import. `makeScreenStyles(palette)` is the same primitives resolved against whichever mode
+// the user is in — new screens take this one, existing screens move over as they are migrated
+// (staged rollout, PO decision 2026-08-04). Keeping both avoids a repo-wide rewrite in the same
+// change that introduces theming, and keeps this module's promise: it never alters a screen's
+// appearance until that screen opts in.
+//
+// The shapes are IDENTICAL to `screen` — only the colours are resolved from the palette — so a
+// migration is a one-line import swap, not a re-layout.
+export const makeScreenStyles = (p: Palette) =>
+  StyleSheet.create({
+    container: { flex: 1, backgroundColor: p.bg, padding: spacing.md, gap: spacing.sm },
+
+    heading: {
+      fontSize: typography.title.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.text,
+    },
+
+    item: {
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: p.border,
+      gap: spacing.xs,
+    },
+    itemTitle: {
+      fontSize: typography.body.fontSize,
+      fontFamily: fontFamily.medium,
+      color: p.text,
+    },
+    empty: { color: p.muted, fontFamily: fontFamily.regular, padding: spacing.md },
+
+    input: {
+      minHeight: 48,
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 8,
+      paddingHorizontal: spacing.md,
+      fontSize: typography.body.fontSize,
+      fontFamily: fontFamily.regular,
+      color: p.text,
+      backgroundColor: p.surface,
+    },
+
+    primaryButton: {
+      minHeight: 48,
+      backgroundColor: p.primary,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryButtonText: {
+      color: p.onPrimary,
+      fontFamily: fontFamily.semibold,
+      fontSize: typography.body.fontSize,
+      textTransform: 'uppercase',
+    },
+    buttonDisabled: { opacity: 0.5 },
+
+    kvRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: p.border,
+    },
+    kvKey: {
+      fontSize: typography.body.fontSize,
+      fontFamily: fontFamily.regular,
+      color: p.muted,
+    },
+    kvValue: {
+      fontSize: typography.body.fontSize,
+      fontFamily: fontFamily.semibold,
+      color: p.text,
+    },
+  });

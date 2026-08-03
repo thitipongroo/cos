@@ -1172,7 +1172,7 @@ MOBILE COMPONENT LIBRARY (source: MOBILE_UX_GUIDELINES.md)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Core components (React Native — implement in apps/mobile/):
-  <MobileNav />         Bottom navigation, 4–5 items max, icons + labels
+  <MobileNav />         Bottom navigation, exactly 4 items (PO 2026-08-04), icons + labels, no Profile tab
   <QuickActionCard />   60px min height, icon + label + badge, single tap
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription

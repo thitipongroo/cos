@@ -1,7 +1,9 @@
 // Breadcrumb bar — rendered globally under the TopBar in (app)/_layout for pushed child screens (PO
 // decision 2026-07-31, which reverts the 2026-07-29 "child screens show their title in the bar" rule:
-// the bar now shows the CONSTRUCTION OS wordmark on every screen, and this breadcrumb carries the screen
-// context + navigation instead). Each crumb except the last is tappable and routes to its section.
+// the bar shows the CONSTRUCTION OS wordmark on every screen, and this breadcrumb carries the screen
+// context + navigation). PO 2026-08-04 additionally restored a Back control in the TopBar — the two
+// coexist: Back is the one-tap gesture, the breadcrumb still shows depth and can jump several levels.
+// Each crumb except the last is tappable and routes to its section.
 //
 // Terminal success screens (permission-success, reset-password-success/-email-success) are reached via
 // router.replace and are deliberately absent from the map — they show the wordmark with no breadcrumb.
@@ -68,10 +70,14 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
   ],
   // Account
   '/profile': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'profile.main.title' }],
-  // Transparency Portal (PO 2026-08-04) — entered from Profile, so Profile is the parent crumb. The
-  // seven category screens hang off the portal hub, giving Profile → Portal → category.
+  // Privacy Policy, post-auth. Entered from the drawer, which is reachable from any tab, so Home is
+  // the parent crumb — the drawer itself has no route to name.
+  '/privacy-policy': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'privacy.policy.title' }],
+  // Transparency Portal (PO 2026-08-04) — entered from the Data Collection card on the policy, so
+  // the policy is the parent crumb. The seven category screens hang off the portal hub, giving
+  // Policy → Portal → category.
   '/transparency': [
-    { key: 'profile.main.title', href: '/profile' },
+    { key: 'privacy.policy.title', href: '/privacy-policy' },
     { key: 'transparency.portal.title' },
   ],
   '/transparency-identity': [
@@ -103,6 +109,18 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'transparency.delete.title' },
   ],
 };
+
+/**
+ * True when `pathname` is a pushed child screen — i.e. it has a breadcrumb chain.
+ *
+ * The TopBar uses this to decide whether to render its Back control, so "has a parent" is defined in
+ * exactly one place: adding a route to BREADCRUMB_MAP gives it both a breadcrumb and a Back button,
+ * and the two can never disagree.
+ */
+export function isChildRoute(pathname: string): boolean {
+  const crumbs = BREADCRUMB_MAP[pathname];
+  return !!crumbs && crumbs.length > 0;
+}
 
 export function Breadcrumb({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
   const pathname = usePathname();

@@ -3,9 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore, type ThemeMode } from '../../store/themeStore';
 import { get, mutate } from '../../api/client';
 import { useI18n } from '../../i18n';
 import type { Locale } from '../../i18n';
@@ -72,6 +71,11 @@ function NotificationPreferences() {
   );
 }
 
+const THEMES: Array<{ mode: ThemeMode; labelKey: string }> = [
+  { mode: 'dark', labelKey: 'profile.main.themeDark' },
+  { mode: 'light', labelKey: 'profile.main.themeLight' },
+];
+
 const LOCALES: Array<{ locale: Locale; labelKey: string }> = [
   { locale: 'th', labelKey: 'profile.main.thai' },
   { locale: 'en', labelKey: 'profile.main.english' },
@@ -81,7 +85,8 @@ export default function ProfileScreen() {
   const userId = useAuthStore((s) => s.userId);
   const role = useAuthStore((s) => s.role);
   const logout = useAuthStore((s) => s.logout);
-  const router = useRouter();
+  const mode = useThemeStore((s) => s.mode);
+  const setMode = useThemeStore((s) => s.setMode);
   const { t, locale, setLocale } = useI18n();
 
   return (
@@ -121,22 +126,30 @@ export default function ProfileScreen() {
 
       <NotificationPreferences />
 
-      {/* Transparency Portal (PO 2026-08-04) — the account is where a data subject looks for "what
-          do you hold about me", so the portal is entered from here rather than from a tab. */}
-      <TouchableOpacity
-        testID="transparency-entry"
-        accessibilityRole="button"
-        accessibilityLabel={t('transparency.portal.entry')}
-        style={styles.portalRow}
-        onPress={() => router.push('/transparency')}
-      >
-        <MaterialIcons name="policy" size={22} color={colors.primary} />
-        <View style={styles.portalText}>
-          <Text style={styles.portalTitle}>{t('transparency.portal.entry')}</Text>
-          <Text style={styles.portalHint}>{t('transparency.portal.entryHint')}</Text>
+      {/* Appearance — dark is the product default (PO 2026-08-04); light stays selectable because the
+          §32.7 light palette exists for outdoor sunlight visibility, which is a real field need. */}
+      <View style={screen.kvRow}>
+        <Text style={screen.kvKey}>{t('profile.main.theme')}</Text>
+        <View style={styles.localeRow}>
+          {THEMES.map((item) => {
+            const active = item.mode === mode;
+            return (
+              <TouchableOpacity
+                key={item.mode}
+                testID={`theme-${item.mode}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={[styles.localeChip, active && styles.localeChipActive]}
+                onPress={() => void setMode(item.mode)}
+              >
+                <Text style={[styles.localeText, active && styles.localeTextActive]}>
+                  {t(item.labelKey)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-        <MaterialIcons name="chevron-right" size={22} color={colors.textSecondary} />
-      </TouchableOpacity>
+      </View>
 
       <TouchableOpacity testID="logout-button" style={styles.logout} onPress={() => logout()}>
         <Text style={styles.logoutText}>{t('profile.main.logout')}</Text>
@@ -146,27 +159,6 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  portalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 52,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-  },
-  portalText: { flex: 1 },
-  portalTitle: {
-    fontSize: typography.caption.fontSize,
-    fontFamily: fontFamily.medium,
-    color: colors.textPrimary,
-  },
-  portalHint: {
-    fontSize: typography.label.fontSize,
-    fontFamily: fontFamily.regular,
-    color: colors.textSecondary,
-  },
   value: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.medium,

@@ -10,15 +10,17 @@
 // All components take PRE-TRANSLATED strings (same contract as <LoadingState />, §32.7): they hold
 // no i18n keys, so a caller can pass a server value or a formatted string without the kit guessing.
 //
-// Palette: the light field palette, because these render inside the normal (app) shell (PO decision
-// 2026-08-04 "use the existing chrome"). The mockups are dark, but §32.7's Mobile Dark Surfaces list
-// is exhaustive and adding eight screens to it was not approved — matching the shell the user is
-// already in is the behaviour that list exists to protect.
+// Palette: themed. Every piece reads `usePalette()`, so the kit renders in whichever mode the user
+// is in — dark by default (PO decision 2026-08-04), light when they switch. StyleSheets here are
+// built per render from the palette rather than at module load, which is what lets one component
+// serve both modes without a second copy.
 
 import type { ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { colors, fontFamily, spacing, typography, touchTarget } from '../theme/tokens';
+import { fontFamily, spacing, typography, touchTarget } from '../theme/tokens';
+import { usePalette } from '../theme/usePalette';
+import type { Palette } from '../theme/palette';
 
 /**
  * Whether a capability described on screen is actually running today.
@@ -40,6 +42,8 @@ export function StatusPill({
   label: string;
   testID?: string;
 }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   const live = status === 'live';
   return (
     <View
@@ -47,15 +51,15 @@ export function StatusPill({
       style={[styles.pill, live ? styles.pillLive : styles.pillPlanned]}
       accessibilityRole="text"
     >
-      <Text style={[styles.pillText, { color: live ? colors.success : colors.textSecondary }]}>
-        {label}
-      </Text>
+      <Text style={[styles.pillText, { color: live ? p.success : p.muted }]}>{label}</Text>
     </View>
   );
 }
 
 /** Small uppercase caption that opens a section ("Compliance breakdown", "Active inputs"). */
 export function SectionLabel({ children }: { children: string }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return (
     <Text accessibilityRole="header" style={styles.sectionLabel}>
       {children}
@@ -65,6 +69,8 @@ export function SectionLabel({ children }: { children: string }): React.JSX.Elem
 
 /** Lead-in paragraph under a screen title. */
 export function Lede({ children }: { children: string }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return <Text style={styles.lede}>{children}</Text>;
 }
 
@@ -89,10 +95,12 @@ export function InfoCard({
   statusLabel?: string;
   testID?: string;
 }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return (
     <View testID={testID} style={styles.card}>
-      <View style={[styles.cardIcon, { backgroundColor: (tint ?? colors.primary) + '14' }]}>
-        <MaterialIcons name={icon} size={22} color={tint ?? colors.primary} />
+      <View style={[styles.cardIcon, { backgroundColor: (tint ?? p.primary) + '14' }]}>
+        <MaterialIcons name={icon} size={22} color={tint ?? p.primary} />
       </View>
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
@@ -121,6 +129,8 @@ export function FieldRow({
   note?: string;
   testID?: string;
 }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return (
     <View testID={testID} style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -142,11 +152,13 @@ export function FlowStep({
   caption: string;
   last?: boolean;
 }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return (
     <View style={styles.flowRow}>
       <View style={styles.flowRail}>
         <View style={styles.flowNode}>
-          <MaterialIcons name={icon} size={18} color={colors.primary} />
+          <MaterialIcons name={icon} size={18} color={p.primary} />
         </View>
         {last ? null : <View style={styles.flowConnector} />}
       </View>
@@ -178,6 +190,8 @@ export function DisabledAction({
   comingSoon: string;
   testID: string;
 }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return (
     <View
       testID={testID}
@@ -186,7 +200,7 @@ export function DisabledAction({
       accessibilityLabel={`${label} — ${comingSoon}`}
       style={styles.action}
     >
-      <MaterialIcons name={icon} size={20} color={colors.textSecondary} />
+      <MaterialIcons name={icon} size={20} color={p.muted} />
       <Text style={styles.actionLabel}>{label}</Text>
       <View style={styles.comingSoonChip}>
         <Text style={styles.comingSoonText}>{comingSoon}</Text>
@@ -215,6 +229,8 @@ export function NavCard({
   statusLabel?: string;
   testID: string;
 }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return (
     <Pressable
       testID={testID}
@@ -223,8 +239,8 @@ export function NavCard({
       onPress={onPress}
       style={styles.card}
     >
-      <View style={[styles.cardIcon, { backgroundColor: (tint ?? colors.primary) + '14' }]}>
-        <MaterialIcons name={icon} size={22} color={tint ?? colors.primary} />
+      <View style={[styles.cardIcon, { backgroundColor: (tint ?? p.primary) + '14' }]}>
+        <MaterialIcons name={icon} size={22} color={tint ?? p.primary} />
       </View>
       <View style={styles.cardBody}>
         <View style={styles.cardTitleRow}>
@@ -233,165 +249,171 @@ export function NavCard({
         </View>
         <Text style={styles.cardText}>{body}</Text>
       </View>
-      <MaterialIcons name="chevron-right" size={22} color={colors.textSecondary} />
+      {/* alignSelf:center — the card is a row whose tallest child is the two-to-three-line body, so
+          the chevron would otherwise sit against the TOP edge (PO decision 2026-08-04: centre it). */}
+      <MaterialIcons name="chevron-right" size={22} color={p.muted} style={styles.cardChevron} />
     </Pressable>
   );
 }
 
 /** Card wrapper used for the screen-opening summary tile. */
 export function SummaryTile({ children }: { children: ReactNode }): React.JSX.Element {
+  const p = usePalette();
+  const styles = makeStyles(p);
   return <View style={styles.summary}>{children}</View>;
 }
 
-const styles = StyleSheet.create({
-  pill: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  pillLive: { backgroundColor: colors.success + '14', borderColor: colors.success + '55' },
-  pillPlanned: { backgroundColor: colors.surface, borderColor: colors.offline + '55' },
-  pillText: {
-    fontFamily: fontFamily.semibold,
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    pill: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: 999,
+      borderWidth: 1,
+    },
+    pillLive: { backgroundColor: p.success + '14', borderColor: p.success + '55' },
+    pillPlanned: { backgroundColor: p.border, borderColor: p.muted + '55' },
+    pillText: {
+      fontFamily: fontFamily.semibold,
+      fontSize: 10,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
 
-  sectionLabel: {
-    marginTop: spacing.md,
-    color: colors.textSecondary,
-    fontFamily: fontFamily.semibold,
-    fontSize: 11,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  lede: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight * 1.15,
-  },
+    sectionLabel: {
+      marginTop: spacing.md,
+      color: p.muted,
+      fontFamily: fontFamily.semibold,
+      fontSize: 11,
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+    },
+    lede: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight * 1.15,
+    },
 
-  summary: {
-    borderWidth: 1,
-    borderColor: colors.surface,
-    borderRadius: 12,
-    backgroundColor: colors.surface,
-    padding: spacing.md,
-    gap: spacing.xs,
-  },
+    summary: {
+      borderWidth: 1,
+      borderColor: p.border,
+      borderRadius: 12,
+      backgroundColor: p.border,
+      padding: spacing.md,
+      gap: spacing.xs,
+    },
 
-  card: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    padding: spacing.sm,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.surface,
-    backgroundColor: colors.bg,
-  },
-  cardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardBody: { flex: 1, gap: 2 },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  cardTitle: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontFamily: fontFamily.medium,
-    fontSize: typography.caption.fontSize,
-  },
-  cardText: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight * 1.15,
-  },
+    card: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      padding: spacing.sm,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.surface,
+    },
+    cardIcon: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    cardBody: { flex: 1, gap: 2 },
+    cardChevron: { alignSelf: 'center' },
+    cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+    cardTitle: {
+      flex: 1,
+      color: p.text,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.caption.fontSize,
+    },
+    cardText: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight * 1.15,
+    },
 
-  field: {
-    padding: spacing.sm,
-    borderRadius: 10,
-    backgroundColor: colors.surface,
-    gap: 2,
-  },
-  fieldLabel: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.semibold,
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  fieldValue: {
-    color: colors.textPrimary,
-    fontFamily: fontFamily.medium,
-    fontSize: typography.caption.fontSize,
-  },
-  fieldNote: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-  },
+    field: {
+      padding: spacing.sm,
+      borderRadius: 10,
+      backgroundColor: p.border,
+      gap: 2,
+    },
+    fieldLabel: {
+      color: p.muted,
+      fontFamily: fontFamily.semibold,
+      fontSize: 10,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    fieldValue: {
+      color: p.text,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.caption.fontSize,
+    },
+    fieldNote: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+    },
 
-  flowRow: { flexDirection: 'row', gap: spacing.sm },
-  flowRail: { alignItems: 'center', width: 36 },
-  flowNode: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.surface,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  flowConnector: { flex: 1, width: 2, backgroundColor: colors.surface, minHeight: spacing.md },
-  flowBody: { flex: 1, paddingBottom: spacing.md, gap: 2 },
-  flowTitle: {
-    color: colors.textPrimary,
-    fontFamily: fontFamily.medium,
-    fontSize: typography.caption.fontSize,
-  },
-  flowCaption: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-  },
+    flowRow: { flexDirection: 'row', gap: spacing.sm },
+    flowRail: { alignItems: 'center', width: 36 },
+    flowNode: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    flowConnector: { flex: 1, width: 2, backgroundColor: p.border, minHeight: spacing.md },
+    flowBody: { flex: 1, paddingBottom: spacing.md, gap: 2 },
+    flowTitle: {
+      color: p.text,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.caption.fontSize,
+    },
+    flowCaption: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+    },
 
-  action: {
-    minHeight: touchTarget.formInput,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.surface,
-    backgroundColor: colors.surface,
-  },
-  actionLabel: {
-    flex: 1,
-    color: colors.textSecondary,
-    fontFamily: fontFamily.medium,
-    fontSize: typography.caption.fontSize,
-  },
-  comingSoonChip: {
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: 6,
-    backgroundColor: colors.bg,
-  },
-  comingSoonText: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.medium,
-    fontSize: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-});
+    action: {
+      minHeight: touchTarget.formInput,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: p.border,
+      backgroundColor: p.border,
+    },
+    actionLabel: {
+      flex: 1,
+      color: p.muted,
+      fontFamily: fontFamily.medium,
+      fontSize: typography.caption.fontSize,
+    },
+    comingSoonChip: {
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+      borderRadius: 6,
+      backgroundColor: p.surface,
+    },
+    comingSoonText: {
+      color: p.muted,
+      fontFamily: fontFamily.medium,
+      fontSize: 10,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+  });

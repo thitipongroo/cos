@@ -13,7 +13,9 @@
 import { ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { usePalette } from '../../theme/usePalette';
+import { fontFamily, spacing, typography } from '../../theme/tokens';
+import type { Palette } from '../../theme/palette';
 import {
   SectionLabel,
   Lede,
@@ -42,10 +44,16 @@ const INPUTS = [
 
 export default function TransparencyScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
   const router = useRouter();
+  const styles = makeStyles(pal);
 
   return (
-    <ScrollView testID="transparency" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.portal.lede')}</Lede>
 
       <SummaryTile>
@@ -79,7 +87,7 @@ export default function TransparencyScreen(): React.JSX.Element {
           key={i.key}
           testID={`transparency-input-${i.key}`}
           icon={i.icon}
-          tint={i.status === 'planned' ? colors.textSecondary : colors.primary}
+          tint={i.status === 'planned' ? pal.muted : pal.primary}
           title={t(`transparency.portal.input.${i.key}.title`)}
           body={t(`transparency.portal.input.${i.key}.body`)}
           onPress={() => router.push(i.route)}
@@ -104,7 +112,7 @@ export default function TransparencyScreen(): React.JSX.Element {
       <NavCard
         testID="transparency-cat-delete"
         icon="delete-outline"
-        tint={colors.danger}
+        tint={pal.danger}
         title={t('transparency.delete.title')}
         body={t('transparency.delete.lede')}
         onPress={() => router.push('/transparency-delete')}
@@ -119,27 +127,28 @@ export default function TransparencyScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
-  summaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
-  summaryFlex: { flex: 1 },
-  summaryLabel: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.semibold,
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  summaryValue: {
-    color: colors.textPrimary,
-    fontFamily: fontFamily.bold,
-    fontSize: typography.hero.fontSize,
-    lineHeight: typography.hero.lineHeight,
-  },
-  summaryNote: {
-    color: colors.textSecondary,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-    lineHeight: typography.label.lineHeight * 1.15,
-  },
-});
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    summaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+    summaryFlex: { flex: 1 },
+    summaryLabel: {
+      color: p.muted,
+      fontFamily: fontFamily.semibold,
+      fontSize: 11,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    },
+    summaryValue: {
+      color: p.text,
+      fontFamily: fontFamily.bold,
+      fontSize: typography.hero.fontSize,
+      lineHeight: typography.hero.lineHeight,
+    },
+    summaryNote: {
+      color: p.muted,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+      lineHeight: typography.label.lineHeight * 1.15,
+    },
+  });

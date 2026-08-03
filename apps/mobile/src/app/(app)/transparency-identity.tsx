@@ -15,8 +15,10 @@ import { useEffect, useState } from 'react';
 import { ScrollView, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { useT } from '../../i18n';
+import { usePalette } from '../../theme/usePalette';
 import { useAuthStore } from '../../store/authStore';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { fontFamily, spacing, typography } from '../../theme/tokens';
+import type { Palette } from '../../theme/palette';
 import {
   SectionLabel,
   Lede,
@@ -41,6 +43,8 @@ const PURPOSES = [
 
 export default function TransparencyIdentityScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
+  const styles = makeStyles(pal);
   const role = useAuthStore((s) => s.role);
   const [me, setMe] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,12 +72,16 @@ export default function TransparencyIdentityScreen(): React.JSX.Element {
     v?.trim() || t('transparency.identity.field.none');
 
   return (
-    <ScrollView testID="transparency-identity" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency-identity"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.identity.lede')}</Lede>
 
       <SectionLabel>{t('transparency.identity.stored')}</SectionLabel>
       {loading ? (
-        <ActivityIndicator testID="transparency-identity-loading" color={colors.primary} />
+        <ActivityIndicator testID="transparency-identity-loading" color={pal.primary} />
       ) : (
         <View style={styles.fields}>
           {offline ? (
@@ -145,12 +153,13 @@ export default function TransparencyIdentityScreen(): React.JSX.Element {
   );
 }
 
-const styles = StyleSheet.create({
-  content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
-  fields: { gap: spacing.xs },
-  offline: {
-    color: colors.warning,
-    fontFamily: fontFamily.regular,
-    fontSize: typography.label.fontSize,
-  },
-});
+const makeStyles = (p: Palette) =>
+  StyleSheet.create({
+    content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
+    fields: { gap: spacing.xs },
+    offline: {
+      color: p.warning,
+      fontFamily: fontFamily.regular,
+      fontSize: typography.label.fontSize,
+    },
+  });

@@ -700,11 +700,32 @@ Optimised for outdoor sunlight visibility.
 
 #### Mobile Dark Surfaces
 
+> **Superseded 2026-08-04 (product-owner decision).** Dark is now the **product default for every
+> screen and every role**, and light is a **user-selectable preference** rather than a per-screen
+> decision. The mode lives in `apps/mobile/src/store/themeStore.ts` (`DEFAULT_THEME = 'dark'`,
+> persisted in `expo-secure-store`, hydrated in `app/_layout.tsx` before the first frame) and is read
+> through `theme/usePalette.ts`. The sunlight-visibility rationale below is why light must stay
+> **reachable** — a worker outdoors switches to it in Profile — not why particular screens are pinned
+> to it. The table that follows is retained as the record of which screens were dark **before** that
+> decision, because those are the ones already authored against `--cos-dark-*` and the ones whose
+> mockups are dark; it is no longer a limit on what may render dark.
+>
+> Two surfaces remain **pinned** regardless of the preference, and both are deliberate:
+>
+> | Pinned surface                                                        | Why                                                                                                                                           |
+> | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+> | Pre-auth screens (login, OTP, overlay, Privacy Policy pre-auth route) | The preference is per-user and there is no user yet. They are pushed from a dark login, so following a light preference would break mid-flow. |
+> | Navigation drawer                                                     | An overlay panel, not a page. It reads as a raised dark sheet over either mode — the same way its mockup draws it.                            |
+>
+> `--cos-dark-cyan` stays scoped to the **auth entry screens** (see the accent note under Mobile
+> Colour Tokens). The post-auth Privacy Policy route therefore takes `primary` as its accent, not
+> cyan, even though it renders the same document.
+
 The table above applies to **task screens** — the forms and lists a field worker keeps open all day.
 A defined set of screens renders **dark** instead, on the shared `--cos-dark-*` tokens above: the
 same surface as the web login and the Keycloak `cos` theme, so the product looks like one product.
 
-Dark screens (exhaustive — do not extend this list without a product-owner decision):
+Dark screens (the pre-2026-08-04 set — see the note above):
 
 | Screen                                  | Reference                                                    |
 | --------------------------------------- | ------------------------------------------------------------ |
@@ -728,6 +749,24 @@ outdoor task screens, so the sunlight-visibility rationale for the light palette
 dark-shell role renders the **whole** shell dark — top bar AND bottom nav, and it drops the light
 `SyncStatusBar` strip — so no light chrome ever sits over dark content (the Site Engineer Home already
 works this way).
+
+Since 2026-08-04 the shell follows the **theme**, not the role: `app/(app)/_layout.tsx` reads
+`useIsDark()` rather than testing for a dark-shell role. In the same change the full-width
+`SyncStatusBar` strip was **deleted outright** and the compact `<SyncPill />` in the top bar became
+the standard sync indicator for **every** role, as `01_home_dashboard` draws it (product-owner
+decision 2026-08-04). Nothing in the shell branches on the role any more — only the tab SET differs.
+Two consequences worth knowing:
+
+- The component `components/SyncStatusBar.tsx` is gone. The three Detox specs that asserted
+  `by.id('sync-status-bar')` now assert `by.id('sync-pill')`, and because the pill is icon-only they
+  match its `accessibilityLabel` (`sync.pill.*`) with `by.label()` rather than on-screen text.
+- The signed-in shell got **64px shorter** on a 1080×2400 frame, which moves the fixed band the
+  full-page screenshot stitcher clips to (`TOP` 375 → 311 in the capture scripts).
+
+Screen migration to the palette is **staged** (product-owner decision 2026-08-04): the shell,
+the Privacy Policy and the Transparency Portal read the store today; the remaining task screens still
+render their own palette until migrated, so a dark shell over lighter content is expected mid-rollout
+rather than a defect.
 
 | Surface            | Token                 | Hex       |
 | ------------------ | --------------------- | --------- |
@@ -872,19 +911,19 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
 
 ### Mobile Core Component Library (React Native)
 
-| Component             | Description                                                 |
-| --------------------- | ----------------------------------------------------------- |
-| `<TopBar />`          | Standard top app bar, every role — see below                |
-| `<MobileNav />`       | Bottom navigation, 4–5 items max, icons + labels            |
-| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap           |
-| `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue     |
-| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription      |
-| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect           |
-| `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count   |
-| `<StatusChip />`      | Visual status: Todo / InProgress / Done / Syncing / Synced  |
-| `<OptimisticList />`  | Instant UI update, rollback on failure, retry option        |
-| `<LoadingState />`    | Loading placeholder / progress, 4 variants — see below      |
-| `<PhotoAnnotation />` | Draw/erase over a captured photo, undo, flatten — see below |
+| Component             | Description                                                        |
+| --------------------- | ------------------------------------------------------------------ |
+| `<TopBar />`          | Standard top app bar, every role — see below                       |
+| `<MobileNav />`       | Bottom navigation, **exactly 4 items**, icons + labels — see below |
+| `<QuickActionCard />` | 60px min height, icon + label + badge, single tap                  |
+| `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue            |
+| `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription             |
+| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect                  |
+| `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count          |
+| `<StatusChip />`      | Visual status: Todo / InProgress / Done / Syncing / Synced         |
+| `<OptimisticList />`  | Instant UI update, rollback on failure, retry option               |
+| `<LoadingState />`    | Loading placeholder / progress, 4 variants — see below             |
+| `<PhotoAnnotation />` | Draw/erase over a captured photo, undo, flatten — see below        |
 
 Do **not** implement on mobile: tables (use cards), navigation deeper than 3 levels,
 modal-on-modal (use bottom sheets), dropdowns with 50+ items (add search).
@@ -979,9 +1018,53 @@ each on a **surface** background distinct from the content area, exactly as the 
 - **One component, all roles.** It is not per-screen; it lives in the authenticated layout so a role
   screen never renders its own header. The safe-area strip above it takes the same surface colour, so
   the notch region reads as part of the bar.
-- **Palette follows the screen.** On a dark surface (Site Engineer Home, §32.7 Mobile Dark Surfaces)
-  the bar uses `--cos-dark-surface`; on the light field app it uses `--mobile-surface`.
+- **Palette follows the theme** (product-owner decision 2026-08-04; previously "follows the screen").
+  In dark mode the bar uses `--cos-dark-surface`, in light mode `--mobile-surface`.
 - Avatar falls back to initials, then a person glyph, when there is no `photo_url` (§11 `platform.users`).
+- **Back control on child screens.** A pushed child screen carries a leading bare chevron `<`
+  (product-owner decision 2026-08-04, reversing the 2026-07-31 removal). It is rendered **in addition
+  to** the clickable breadcrumb below the bar, not instead of it: the chevron is the one-tap gesture,
+  the breadcrumb shows depth and can jump more than one level. "Is a child screen" has a single
+  source of truth — `isChildRoute()` in `components/Breadcrumb.tsx`, backed by the breadcrumb map —
+  so a route cannot get one affordance without the other. Top-level tab screens get neither.
+
+#### Bottom Navigation (`<MobileNav />`)
+
+**Exactly four items, varying by role** (product-owner decision 2026-08-04). Four is the standard,
+not a ceiling: it keeps every tap target wide enough on a 360dp phone and makes the nav learnable
+across roles.
+
+- **No Profile tab, for any role.** Profile is reached from the avatar in the top bar, which is
+  present on every screen. A tab would have spent one of the four slots on a destination that
+  already has a permanent affordance.
+- **Account-level destinations belong in the drawer, not the nav** — Settings, Security & MFA and
+  **Privacy Policy** (the last added by product-owner decision 2026-08-04; it is not in the drawer
+  mockup, which only ever reaches the policy from the login footer and so leaves a signed-in user
+  with no route to a notice PDPA §23 requires to remain available).
+- Child screens stay mounted as `href: null` siblings so `router.push()` reaches them and
+  `backBehavior="history"` returns to the screen they were pushed from.
+- **Palette follows the theme**, the same as the top bar — the whole shell is one mode.
+
+All twelve roles are resolved as of **2026-08-04**. Eleven carry four tabs; `SYSTEM_ADMIN` carries
+one, and that is the correct answer for it rather than an outstanding gap:
+
+| Role                | Tabs                                     | Note                                                                                                                      |
+| ------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `CRM_SALES_MANAGER` | Home · Leads · Opportunities · Customers | Built 2026-08-04 — exactly the three pages §20.7.10 defines                                                               |
+| `VIEWER`            | Home · Projects · Procurement · Budget   | See the read-only constraint below                                                                                        |
+| `SYSTEM_ADMIN`      | Home                                     | **Not a gap.** §20.7.11 puts its work in the `/admin` panel (§20.4), a web route explicitly "not visible to tenant users" |
+
+**VIEWER's tab set is constrained, not chosen freely.** §6.8 grants read on seven modules (Project,
+BOQ, Tasks, Site reports, Issues, Procurement, Finance), but §20.7.9 also requires that **no
+create/edit/approve actions are rendered**. An audit on 2026-08-04 found that several otherwise
+eligible screens render write controls that are **not** role-gated — `issues` has an unconditional
+`create-issue-button`, `tasks` has `onSave`, `payments` has `approve` — so granting them to VIEWER
+would breach the read-only rule rather than merely look untidy. The three screens chosen
+(`projects`, `procurement`, `budget`) were each verified to contain no `onPress`/`Pressable` at all.
+BOQ has no mobile screen at any status.
+
+Adding `reports` / `issues` / `tasks` to VIEWER therefore requires building a read-only mode for
+those screens first — it is not a `MobileNav` configuration change.
 
 ### Mobile Implementation — token wiring (React Native + Expo)
 

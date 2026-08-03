@@ -17,6 +17,7 @@
 
 import { ScrollView, StyleSheet } from 'react-native';
 import { useT } from '../../i18n';
+import { usePalette } from '../../theme/usePalette';
 import { spacing } from '../../theme/tokens';
 import { SectionLabel, Lede, InfoCard, FlowStep } from '../../components/TransparencyKit';
 
@@ -36,9 +37,14 @@ const FLOW = [
 
 export default function TransparencyLogsScreen(): React.JSX.Element {
   const t = useT();
+  const pal = usePalette();
 
   return (
-    <ScrollView testID="transparency-logs" contentContainerStyle={styles.content}>
+    <ScrollView
+      testID="transparency-logs"
+      style={{ backgroundColor: pal.bg }}
+      contentContainerStyle={styles.content}
+    >
       <Lede>{t('transparency.logs.lede')}</Lede>
 
       <SectionLabel>{t('transparency.logs.collected')}</SectionLabel>

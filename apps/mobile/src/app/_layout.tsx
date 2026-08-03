@@ -16,6 +16,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../store/authStore';
 import { useLocaleStore } from '../store/localeStore';
+import { useThemeStore } from '../store/themeStore';
 import { I18nProvider } from '../i18n';
 import { initSyncQueue } from '../db/sync-queue';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
@@ -81,6 +82,10 @@ export default function RootLayout() {
     void Promise.all([
       useAuthStore.getState().hydrate(),
       useLocaleStore.getState().hydrate(),
+      // Theme is hydrated in the same gate as the session and locale so the first painted frame is
+      // already in the user's mode — hydrating later would flash the default dark shell at someone
+      // who has chosen light.
+      useThemeStore.getState().hydrate(),
     ]).finally(() => setHydrated(true));
   }, []);
 

@@ -62,6 +62,17 @@ const SECURITY_LINK: NavLink = {
   icon: 'shield',
 };
 
+// PO decision 2026-08-04 — the post-auth entry to the Privacy Policy. Not in the drawer mockup: the
+// mockups only ever reach the policy from the login footer, which leaves a signed-in user with no
+// route to it at all. PDPA §23 makes the notice a standing disclosure, so it needs a permanent home
+// once the login footer is behind you. Grouped with Settings rather than Field tools — it is an
+// account-level document, not a site tool.
+const PRIVACY_LINK: NavLink = {
+  route: '/privacy-policy',
+  labelKey: 'drawer.privacyPolicy',
+  icon: 'privacy-tip',
+};
+
 // QM-15: the MFA-enrollment surface is a new auth flow and must be flag-gated. Mobile has no
 // server-evaluated flags client yet (ADR-049 is backend-only), so this is a build-time flag read
 // statically (Expo only inlines EXPO_PUBLIC_* on static access); a runtime client is a follow-up.
@@ -191,6 +202,7 @@ export function NavigationDrawer(): React.JSX.Element | null {
           <View style={styles.divider} />
           {MFA_ENROLLMENT_ENABLED ? renderLink(SECURITY_LINK) : null}
           {renderLink(SETTINGS_LINK)}
+          {renderLink(PRIVACY_LINK)}
         </ScrollView>
 
         {/* Logout */}
