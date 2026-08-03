@@ -506,28 +506,30 @@ export class FinanceRepository {
     );
   }
 
-  /** Find a still-usable sign-link token by its hash (ADR-058 CT-5) — unused + unexpired. */
-  async findActiveSignToken(token_hash: string): Promise<ContractSignTokenRow | null> {
+  /**
+   * Atomically consume a sign-link token (single-use, ADR-058 CT-5). Returns the row on success, or
+   * null when the token does not exist for this tenant, is expired, or was ALREADY consumed.
+   *
+   * This is a compare-and-set, not a read followed by a write, and that is the whole point. The
+   * previous shape was `findActiveSignToken(...)` → issue a VC → verify it → record the signature →
+   * `markSignTokenUsed(...)`: a check and a consume in separate transactions with two CredentialService
+   * round-trips in between. Two concurrent POSTs to /finance/contracts/sign/:token both passed the
+   * check and both recorded a CLIENT signature, so "single-use" held only when nobody raced it.
+   *
+   * `UPDATE ... WHERE used_at IS NULL` closes that: under READ COMMITTED the second transaction blocks
+   * on the row lock, re-evaluates the predicate once the first commits, and matches zero rows.
+   */
+  async consumeSignToken(token_hash: string): Promise<ContractSignTokenRow | null> {
     const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ContractSignTokenRow[]>`
-        SELECT * FROM finance.contract_sign_tokens
+        UPDATE finance.contract_sign_tokens SET used_at = now()
          WHERE tenant_id = ${this.tenantId}::uuid AND token_hash = ${token_hash}
            AND used_at IS NULL AND expires_at > now()
+        RETURNING *
       `,
     );
     return rows[0] ?? null;
-  }
-
-  /** Mark a sign-link token consumed (single-use, ADR-058 CT-5). */
-  async markSignTokenUsed(token_id: string): Promise<void> {
-    await this.db.run(
-      (tx) =>
-        tx.$executeRaw`
-        UPDATE finance.contract_sign_tokens SET used_at = now()
-         WHERE token_id = ${token_id}::uuid AND tenant_id = ${this.tenantId}::uuid
-      `,
-    );
   }
 
   /** Persist an issued client sign-link token (ADR-058 CT-4). Only the token_hash is stored. */

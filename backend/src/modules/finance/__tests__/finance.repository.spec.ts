@@ -438,17 +438,26 @@ describe('FinanceRepository', () => {
     expect(noInfo.token_id).toBe('tk-1');
   });
 
-  it('findActiveSignToken returns an unused token then null (ADR-058 CT-5)', async () => {
+  it('consumeSignToken returns the token it consumed, then null (ADR-058 CT-5)', async () => {
     mockPrisma.$queryRaw.mockResolvedValueOnce([{ token_id: 'tk-1', contract_id: 'con-1' }]);
-    expect((await repo.findActiveSignToken('h'.repeat(64)))?.token_id).toBe('tk-1');
+    expect((await repo.consumeSignToken('h'.repeat(64)))?.token_id).toBe('tk-1');
+    // Second call: the UPDATE's `used_at IS NULL` predicate no longer matches, so it returns no rows.
     mockPrisma.$queryRaw.mockResolvedValueOnce([]);
-    expect(await repo.findActiveSignToken('h'.repeat(64))).toBeNull();
+    expect(await repo.consumeSignToken('h'.repeat(64))).toBeNull();
   });
 
-  it('markSignTokenUsed executes the update (ADR-058 CT-5)', async () => {
-    mockPrisma.$executeRaw.mockResolvedValue(1);
-    await repo.markSignTokenUsed('tk-1');
-    expect(mockPrisma.$executeRaw).toHaveBeenCalled();
+  it('consumeSignToken consumes in a single statement, not read-then-write (ADR-058 CT-5)', async () => {
+    // The single-use guarantee rests on the check and the write being ONE statement: a
+    // SELECT followed by a later UPDATE let two concurrent signers both pass the check.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ token_id: 'tk-1', contract_id: 'con-1' }]);
+    await repo.consumeSignToken('h'.repeat(64));
+
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+    const sql = mockPrisma.$queryRaw.mock.calls[0][0].join('?');
+    expect(sql).toMatch(/UPDATE\s+finance\.contract_sign_tokens/);
+    expect(sql).toContain('used_at IS NULL');
+    expect(sql).toContain('RETURNING');
   });
 
   it('listContractSignatures returns the trail (ADR-058 CT-6)', async () => {

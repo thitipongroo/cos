@@ -537,7 +537,14 @@ export class FinanceService {
     dto: ClientSignDto,
     ip: string,
   ): Promise<ContractSignatureRow> {
-    const tokenRow = await this.repo.findActiveSignToken(await this.signLink.hashToken(token));
+    // Consume FIRST, atomically. Every step below (VC issuance, verification, recording the
+    // signature) is slow and network-bound; checking the token here and marking it used at the end
+    // left a window in which a second concurrent request passed the same check and produced a second
+    // CLIENT signature. See FinanceRepository.consumeSignToken.
+    //
+    // The consume is therefore not rolled back if a later step fails: a token burned by a failed
+    // attempt is a new sign link, which is the safe direction for a single-use credential.
+    const tokenRow = await this.repo.consumeSignToken(await this.signLink.hashToken(token));
     if (!tokenRow) {
       throw new UnauthorizedException('Invalid or already-used sign link');
     }
@@ -568,7 +575,6 @@ export class FinanceService {
       magic_link_token_id: tokenRow.token_id,
       verification_status: verified.verified ? 'VERIFIED' : 'FAILED',
     });
-    await this.repo.markSignTokenUsed(tokenRow.token_id);
     await this.emitEvent('finance.contract.signature_recorded.v1', {
       contract_id: tokenRow.contract_id,
       signature_id: signature.signature_id,

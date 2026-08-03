@@ -61,8 +61,7 @@ const mockRepo = {
   findBoqSnapshotByProject: jest.fn(),
   recordContractSignature: jest.fn(),
   createSignToken: jest.fn(),
-  findActiveSignToken: jest.fn(),
-  markSignTokenUsed: jest.fn(),
+  consumeSignToken: jest.fn(),
   listContractSignatures: jest.fn(),
   createBilling: jest.fn(),
   findBillingById: jest.fn(),
@@ -991,14 +990,14 @@ describe('emitEvent error handling', () => {
       beforeEach(() => mockSignLink.hashToken.mockResolvedValue('h'.repeat(64)));
 
       it('401 for an invalid/used token', async () => {
-        mockRepo.findActiveSignToken.mockResolvedValue(null);
+        mockRepo.consumeSignToken.mockResolvedValue(null);
         await expect(service.signContractAsClient('tok', {}, '1.2.3.4')).rejects.toBeInstanceOf(
           UnauthorizedException,
         );
       });
 
       it('400 when the contract has no document', async () => {
-        mockRepo.findActiveSignToken.mockResolvedValue(tokenRow);
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
         mockRepo.findContractById.mockResolvedValue({
           contract_id: 'con-1',
           signed_document_id: null,
@@ -1009,7 +1008,7 @@ describe('emitEvent error handling', () => {
       });
 
       it('400 when the document hash is unavailable', async () => {
-        mockRepo.findActiveSignToken.mockResolvedValue(tokenRow);
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
         mockRepo.findContractById.mockResolvedValue({
           contract_id: 'con-1',
           signed_document_id: 'file-1',
@@ -1021,7 +1020,7 @@ describe('emitEvent error handling', () => {
       });
 
       it('records a VERIFIED CLIENT signature, captures client identity, and consumes the token', async () => {
-        mockRepo.findActiveSignToken.mockResolvedValue(tokenRow);
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
         mockRepo.findContractById.mockResolvedValue({
           contract_id: 'con-1',
           project_id: 'proj-uuid-001',
@@ -1035,7 +1034,6 @@ describe('emitEvent error handling', () => {
           signature_id: 'sig-c1',
           verification_status: 'VERIFIED',
         });
-        mockRepo.markSignTokenUsed.mockResolvedValue(undefined);
         // Both parties now VERIFIED → draft→signed transition + finance.contract.signed.v1.
         mockRepo.listContractSignatures.mockResolvedValue([
           { signer_party: 'INTERNAL', verification_status: 'VERIFIED' },
@@ -1057,12 +1055,50 @@ describe('emitEvent error handling', () => {
             signer_identity: { name: 'Jane Client', email: 'jane@client.com' },
           }),
         );
-        expect(mockRepo.markSignTokenUsed).toHaveBeenCalledWith('tok-id-1');
         expect(mockRepo.updateContractStatus).toHaveBeenCalledWith('con-1', 'SIGNED');
       });
 
+      it('consumes the token BEFORE issuing the credential (single-use under concurrency)', async () => {
+        // Ordering is the fix: consuming last left a window in which a second concurrent request
+        // passed the check and recorded a second CLIENT signature on the same magic link.
+        const order: string[] = [];
+        mockRepo.consumeSignToken.mockImplementation(() => {
+          order.push('consume');
+          return Promise.resolve(tokenRow);
+        });
+        mockRepo.findContractById.mockResolvedValue({
+          contract_id: 'con-1',
+          project_id: 'proj-uuid-001',
+          signed_document_id: 'file-1',
+          status: 'DRAFT',
+        });
+        mockFileClient.getFileMetadata.mockResolvedValue({ sha256: 'a'.repeat(64) });
+        mockCredentialClient.issue.mockImplementation(() => {
+          order.push('issue');
+          return Promise.resolve({ vcId: 'vc-c1', credential: {} });
+        });
+        mockCredentialClient.verify.mockResolvedValue({ verified: true });
+        mockRepo.recordContractSignature.mockImplementation(() => {
+          order.push('record');
+          return Promise.resolve({ signature_id: 'sig-c1', verification_status: 'VERIFIED' });
+        });
+        mockRepo.listContractSignatures.mockResolvedValue([]);
+
+        await service.signContractAsClient('tok', {}, '198.51.100.7');
+        expect(order).toEqual(['consume', 'issue', 'record']);
+      });
+
+      it('a token already consumed by a concurrent request is rejected with 401', async () => {
+        // Second caller: the atomic UPDATE matched no rows, so the repo returns null.
+        mockRepo.consumeSignToken.mockResolvedValue(null);
+        await expect(service.signContractAsClient('tok', {}, '1.2.3.4')).rejects.toBeInstanceOf(
+          UnauthorizedException,
+        );
+        expect(mockRepo.recordContractSignature).not.toHaveBeenCalled();
+      });
+
       it('records FAILED when the VC does not verify (+ null client identity)', async () => {
-        mockRepo.findActiveSignToken.mockResolvedValue(tokenRow);
+        mockRepo.consumeSignToken.mockResolvedValue(tokenRow);
         mockRepo.findContractById.mockResolvedValue({
           contract_id: 'con-1',
           project_id: 'proj-uuid-001',

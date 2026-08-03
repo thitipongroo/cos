@@ -55,11 +55,8 @@ export class RolesGuard implements CanActivate, OnModuleDestroy {
     }
 
     // Multi-role fallback — allow if ANY of the user's additional roles satisfies the requirement.
-    const extra = await this.prisma.$queryRaw<Array<{ role: string }>>`
-      SELECT role FROM platform.user_additional_roles
-      WHERE user_id = ${user.user_id}::uuid AND tenant_id = ${user.tenant_id}::uuid
-    `;
-    if (extra.some((r) => requiredRoles.includes(r.role as CosRole))) {
+    const extra = await this.additionalRoles(user);
+    if (extra.some((r) => requiredRoles.includes(r as CosRole))) {
       return true;
     }
 
@@ -68,12 +65,42 @@ export class RolesGuard implements CanActivate, OnModuleDestroy {
         userId: user.user_id,
         requiredRoles,
         actualRole: user.role,
-        additionalRoles: extra.map((r) => r.role),
+        additionalRoles: extra,
       },
       'Access denied — insufficient role',
     );
     throw new ForbiddenException(
       `Role '${user.role}' does not have access. Required: ${requiredRoles.join(' | ')}`,
     );
+  }
+
+  /**
+   * Does `user` hold ANY of `requiredRoles`, counting the primary JWT role plus additional roles?
+   *
+   * Exposed because not every endpoint can express its requirement as a static `@Roles(...)`
+   * decorator: `/sync/push` and `/sync/delta` carry the entity type in the body/query, so the
+   * required roles are only known at request time (SyncAuthGuard). Sharing this method is what keeps
+   * the union semantics identical on both paths — a second implementation that forgot the
+   * additional-roles lookup would silently deny multi-role users on sync but allow them on REST.
+   */
+  async hasAnyRole(
+    user: Pick<JwtPayload, 'role' | 'user_id' | 'tenant_id'>,
+    requiredRoles: readonly CosRole[],
+  ): Promise<boolean> {
+    if (!user.role) return false;
+    if (requiredRoles.includes(user.role as CosRole)) return true;
+    const extra = await this.additionalRoles(user);
+    return extra.some((r) => requiredRoles.includes(r as CosRole));
+  }
+
+  /** The user's ADDITIONAL role codes (platform.user_additional_roles) — empty when they hold none. */
+  private async additionalRoles(
+    user: Pick<JwtPayload, 'user_id' | 'tenant_id'>,
+  ): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<Array<{ role: string }>>`
+      SELECT role FROM platform.user_additional_roles
+      WHERE user_id = ${user.user_id}::uuid AND tenant_id = ${user.tenant_id}::uuid
+    `;
+    return rows.map((r) => r.role);
   }
 }

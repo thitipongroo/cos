@@ -14,10 +14,14 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { SyncService } from './sync.service';
 import { PushItemDto } from './dto/sync.dto';
 import { JwtAuthGuard } from '../identity/guards/jwt-auth.guard';
+import { SyncAuthGuard } from './sync-auth.guard';
 
 @ApiTags('Sync')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+// SyncAuthGuard applies the same role matrix the REST controllers enforce. It MUST stay after
+// JwtAuthGuard (it reads req.user) and it is what stops /sync/* from being an unguarded second entry
+// point into SiteOps/Safety/Workforce/Annotation services — see sync-authz.ts.
+@UseGuards(JwtAuthGuard, SyncAuthGuard)
 @Controller('sync')
 export class SyncController {
   constructor(private readonly service: SyncService) {}

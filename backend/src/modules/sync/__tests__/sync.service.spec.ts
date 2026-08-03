@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
+import { ClsServiceManager } from 'nestjs-cls';
 import { SyncService } from '../sync.service';
 import { PushItemDto } from '../dto/sync.dto';
+import { CLS_SYNC_ALLOWED_ENTITY_TYPES } from '../../../shared/context/cls-context';
 
 function harness() {
   const tx = { $queryRawUnsafe: jest.fn() };
@@ -222,6 +224,44 @@ describe('SyncService', () => {
       const res = await svc.delta('2026-01-01T00:00:00Z', ['bogus']);
       expect(res.updated).toEqual([]);
       expect(res.deleted).toEqual([]);
+      expect(tx.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    // `constructor` / `toString` / `hasOwnProperty` resolve on Object.prototype, so a truthiness
+    // check on the registry passed them through and interpolated `undefined` as the table name.
+    it('rejects prototype-chain keys as entity types', async () => {
+      const { svc, tx } = harness();
+      const res = await svc.delta('2026-01-01T00:00:00Z', [
+        'constructor',
+        'toString',
+        'hasOwnProperty',
+      ]);
+      expect(res.updated).toEqual([]);
+      expect(tx.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('honours the types SyncAuthGuard cleared, dropping the rest', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe.mockResolvedValue([]);
+      const cls = ClsServiceManager.getClsService();
+      await cls.run(async () => {
+        cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, ['task']);
+        await svc.delta('2026-01-01T00:00:00Z', ['task', 'safety']);
+      });
+      // Only the `task` page plus the tombstone query — `safety` never reaches SQL.
+      const tables = tx.$queryRawUnsafe.mock.calls.map((c) => String(c[0]));
+      expect(tables.some((sql) => sql.includes('projects.tasks'))).toBe(true);
+      expect(tables.some((sql) => sql.includes('site_ops.incidents'))).toBe(false);
+    });
+
+    it('queries nothing when the guard cleared no types', async () => {
+      const { svc, tx } = harness();
+      const cls = ClsServiceManager.getClsService();
+      await cls.run(async () => {
+        cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, []);
+        const res = await svc.delta('2026-01-01T00:00:00Z', ['task', 'safety']);
+        expect(res.updated).toEqual([]);
+      });
       expect(tx.$queryRawUnsafe).not.toHaveBeenCalled();
     });
 

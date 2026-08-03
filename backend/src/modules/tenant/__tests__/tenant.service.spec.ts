@@ -73,6 +73,45 @@ describe('TenantService', () => {
       expect(result).toEqual(mockTenant);
     });
 
+    // Regression: the payload was built from tenant.tenantId / .tenantCode / .tenantName /
+    // .planType, but `$queryRaw` returns RAW column names — Prisma's @map is not applied — so all
+    // four were undefined. identity.tenant.created.v1's Avro schema declares them non-null strings,
+    // so every encode failed and publishEvent's catch swallowed it: the event was never delivered.
+    it('publishes identity.tenant.created.v1 with a fully populated payload', async () => {
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
+      (prismaMock.$transaction as jest.Mock).mockImplementation(
+        async (fn: (tx: unknown) => Promise<unknown>) => {
+          const tx = {
+            $queryRaw: jest.fn().mockResolvedValue([mockTenant]),
+            $executeRawUnsafe: jest.fn().mockResolvedValue(undefined),
+          };
+          return fn(tx);
+        },
+      );
+      const kafkaMock = (service as unknown as { kafka: { publish: jest.Mock } }).kafka;
+      kafkaMock.publish.mockClear();
+
+      await service.createTenant(
+        { tenantCode: 'acme_corp', tenantName: 'ACME Construction', planType: 'STARTER' as never },
+        'admin-1',
+      );
+
+      const created = kafkaMock.publish.mock.calls.find(
+        (c) => c[0]?.event_type === 'identity.tenant.created.v1',
+      );
+      expect(created).toBeDefined();
+      expect(created![0].payload).toEqual({
+        tenant_id: 'tenant-1',
+        tenant_code: 'acme_corp',
+        tenant_name: 'ACME Construction',
+        plan_type: 'STARTER',
+      });
+      // Every Avro-required field must be present — undefined is what the bug produced.
+      for (const v of Object.values(created![0].payload as Record<string, unknown>)) {
+        expect(v).toBeDefined();
+      }
+    });
+
     it('swallows Kafka topic-provisioning failures (tenant creation still succeeds)', async () => {
       (KafkaTopicProvisioner as jest.Mock).mockImplementationOnce(() => ({
         connect: jest.fn().mockResolvedValue(undefined),

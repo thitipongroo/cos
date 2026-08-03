@@ -30,6 +30,7 @@ import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
 import type { CreateIncidentDto } from '../safety/dto/safety.dto';
 import { PushItemDto, PushResponse, DeltaResponse, ServerSyncStatus } from './dto/sync.dto';
 import { tombstoneRetentionCutoff, tombstoneRetentionDays } from './tombstone-retention';
+import { clsSyncAllowedEntityTypes } from '../../shared/context/cls-context';
 
 interface EntityRegistryEntry {
   table: string; // schema-qualified
@@ -114,7 +115,19 @@ export class SyncService {
     const cutoff = tombstoneRetentionCutoff();
     const fullResyncRequired = sinceMs < cutoff.getTime();
 
-    const types = entityTypes.filter((t) => ENTITY_REGISTRY[t]);
+    // SyncAuthGuard has already dropped the types this caller's role may not read; intersect with its
+    // decision before anything reaches SQL. `undefined` means the guard did not run (a unit test
+    // constructing the service directly) — an empty ARRAY from the guard is a real "nothing allowed"
+    // and must not be treated the same way.
+    const permitted = clsSyncAllowedEntityTypes();
+    const authorized =
+      permitted === undefined ? entityTypes : entityTypes.filter((t) => permitted.includes(t));
+
+    // Object.hasOwn, not truthiness: `ENTITY_REGISTRY[t]` walks the prototype chain, so
+    // `?entity_types=constructor` (or toString / hasOwnProperty / __proto__) passed this "whitelist"
+    // and then interpolated an undefined table name into the query below — `SELECT * FROM undefined`,
+    // a 500 from a value the client controls.
+    const types = authorized.filter((t) => Object.hasOwn(ENTITY_REGISTRY, t));
     const updated: Record<string, unknown>[] = [];
     const truncatedWatermarks: string[] = [];
 

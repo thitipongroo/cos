@@ -7,10 +7,12 @@ import {
   CLS_USER_ID,
   CLS_USER_ROLE,
   CLS_DEDICATED_DB_URL,
+  CLS_SYNC_ALLOWED_ENTITY_TYPES,
   clsTenantId,
   clsUserId,
   clsUserRole,
   clsDedicatedDbUrl,
+  clsSyncAllowedEntityTypes,
 } from '../cls-context';
 
 function inCls<T>(store: Record<string, string> | null, fn: () => T): Promise<T> {
@@ -34,6 +36,37 @@ describe('cls-context accessors', () => {
     });
     it('clsDedicatedDbUrl returns undefined', () => {
       expect(clsDedicatedDbUrl()).toBeUndefined();
+    });
+    it('clsSyncAllowedEntityTypes returns undefined', () => {
+      expect(clsSyncAllowedEntityTypes()).toBeUndefined();
+    });
+  });
+
+  // undefined ("the guard did not run") and [] ("the guard allowed nothing") are distinct answers;
+  // SyncService branches on exactly that difference, so both are asserted here.
+  describe('clsSyncAllowedEntityTypes', () => {
+    it('returns the list the guard published', async () => {
+      const cls = ClsServiceManager.getClsService();
+      await expect(
+        cls.run(async () => {
+          cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, ['task', 'issue']);
+          return clsSyncAllowedEntityTypes();
+        }),
+      ).resolves.toEqual(['task', 'issue']);
+    });
+
+    it('preserves an empty list rather than collapsing it to undefined', async () => {
+      const cls = ClsServiceManager.getClsService();
+      await expect(
+        cls.run(async () => {
+          cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, []);
+          return clsSyncAllowedEntityTypes();
+        }),
+      ).resolves.toEqual([]);
+    });
+
+    it('returns undefined inside a context where the guard never ran', async () => {
+      await expect(inCls(null, clsSyncAllowedEntityTypes)).resolves.toBeUndefined();
     });
   });
 
