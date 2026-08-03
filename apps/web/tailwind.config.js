@@ -50,7 +50,9 @@ module.exports = {
         // `"Inter Tight"` here the variable font was declared but never matched, so the browser
         // issued zero font requests and the page silently rendered in a system font.
         sans: [
-          '"Inter Tight Variable"',
+          // Set by next/font/local in layout.tsx — it hashes the family name, so the variable is
+          // the only stable way to reference it. The literals stay as a fallback chain.
+          'var(--font-inter-tight)',
           '"Inter Tight"',
           'Inter',
           '-apple-system',

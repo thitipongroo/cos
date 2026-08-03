@@ -1,8 +1,19 @@
 name: Lighthouse CI
 
 # Spec §30.9: Lighthouse CI runs on every apps/web PR under a throttled mobile profile.
-# Gate (blocks merge): LCP ≤ 2.5s · CLS ≤ 0.1 · TBT ≤ 200ms · JS bundle ≤ 250KB per route
-# (budget numbers ratified by product owner 2026-07-04; assertions in apps/web/.lighthouserc.json).
+# Gate (blocks merge): lab LCP ≤ 3.2s · CLS ≤ 0.1 · TBT ≤ 200ms · JS bundle ≤ 250KB per route
+# (CLS/TBT/bundle ratified by product owner 2026-07-04; the 3.2s lab LCP ratified 2026-08-03;
+# assertions in apps/web/.lighthouserc.json).
+#
+# The lab LCP is 3.2s while the field SLO in §31.6 stays 2.5s — they measure different things. This
+# is one throttled profile on a `ubuntu-latest` runner, which is both slower and far more variable
+# than a developer machine: `benchmarkIndex` ranged 2,154–3,368 across five runs on 2026-08-03 while
+# the same page reported ~3,860 locally. 3.2s is the highest median observed across those runs
+# (2,913ms) plus ~10%. It is a regression gate, not a performance target.
+#
+# `aggregationMethod: median` is set in .lighthouserc.json rather than lhci's `optimistic` default.
+# Optimistic compares the best of the three runs, which is how a 1,190ms TBT — nearly 6x its budget
+# — passed unnoticed on 2026-08-03.
 #
 # The accessibility gate is `minScore: 1`, not a fraction. Measured on /login: the category has 24
 # scored audits totalling weight 163, and the lightest weighs 1 — so failing a single audit scores
@@ -45,9 +56,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build web app
         run: pnpm --filter @cos/web build
+      # `pnpm run lighthouse`, not `lhci autorun`: the script starts the server, requests /login five
+      # times, and only then collects. Letting lhci start the server via `startServerCommand` made
+      # its first of three runs a cold-start measurement — on 2026-08-03 that run reported
+      # serverTTFB ~30 ms against ~5 ms for the other two, with browser bootup 2–4x higher and TBT
+      # as high as 1,172 ms, nearly 6x its budget. `aggregationMethod: median` already discards it,
+      # so the budgets do not depend on this; what it buys is an artifact that measures the app
+      # rather than the server's first request. Reproduced locally: warming drops run #1's
+      # serverTTFB from 28 ms to 4 ms and its TBT from 39 to 8.
       - name: Run Lighthouse CI
         working-directory: apps/web
-        run: pnpm exec lhci autorun
+        run: pnpm run lighthouse
       - name: Upload Lighthouse reports
         uses: actions/upload-artifact@v4
         if: always()

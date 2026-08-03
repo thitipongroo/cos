@@ -307,10 +307,33 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
 
 - **Lighthouse CI** runs on every `apps/web` PR under a **throttled mobile profile** (mid/low-end device + slow network)
   — matching the field-worker reality.
-- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **LCP ≤ 2.5 s**, **CLS ≤ 0.1**, and
+- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **lab LCP ≤ 3.2 s**, **CLS ≤ 0.1**, and
   **TBT ≤ 200 ms** (Total Blocking Time, Lighthouse's lab proxy for INP; matches the INP ≤ 200 ms RUM SLO) — or the JS
   **bundle-size budget ≤ 250 KB** (script transfer size per audited route) exceeded. Budgets live in the CI config
   (`apps/web/.lighthouserc.json`; workflow `.github/workflows/lighthouse.yml`).
+- **The lab LCP budget is 3.2 s and the field SLO is 2.5 s. They are different numbers on purpose.** §31.6's 2.5 s is
+  a RUM p75 across real devices and networks. This one is a single throttled profile — 1,638 Kbps, 150 ms RTT, 4× CPU —
+  on a GitHub `ubuntu-latest` runner, which is slower and far more variable than a developer machine: measured
+  2026-08-03, `benchmarkIndex` ranged 2,154–3,368 across five runs while the same page reported ~3,860 locally. Holding
+  the lab gate to the field number would have meant a gate that has never once passed.
+  3,200 ms is the highest median observed across those five runs (2,913 ms) plus ~10 % headroom. It is a
+  **regression gate, not a performance target**: it catches a change that makes `/login` ~10 % slower, and it does not
+  say the page is fast enough.
+- **`aggregationMethod: median`,** not lhci's `optimistic` default. Optimistic compares the _best_ of the three runs,
+  which is how a 1,190 ms TBT — nearly 6× its budget — passed unnoticed on 2026-08-03. Median is what the numbers above
+  are calibrated against.
+- **The server is started and warmed before collection** (`pnpm run lighthouse`, not `lhci autorun`). Letting lhci
+  start it through `startServerCommand` made the first of the three runs a cold-start measurement: on 2026-08-03 that
+  run reported `server-response-time` ~30 ms against ~5 ms for the other two, browser bootup 2–4× higher, and TBT
+  between 271 ms and 1,190 ms while runs two and three sat at 52–80 ms. Every LCP outlier in that data set — 3,826,
+  3,856, 3,895 ms — was a first run. The cause was the Next server's first request, not the page: warming it locally
+  drops run one's `server-response-time` from 28 ms to 4 ms and its TBT from 39 to 8.
+  This changes the budgets by ~95 ms at the median, because median already discards the outlier. What it buys is an
+  artifact that measures the application rather than the server's first request, and it is what would make a
+  `pessimistic` aggregation viable later.
+- **Measured baselines (2026-08-03, five CI runs each).** Before the `/login` server-rendering and font fixes: median
+  LCP up to 3,673 ms. After: **up to 2,913 ms**. Script transfer size 223,234 B against the 256,000 B budget;
+  accessibility 1.0 on every run.
 - **Accessibility is gated in the same run:** the Lighthouse **accessibility category must score 1.0**
   (`categories:accessibility` `minScore: 1`), which is the automated half of the §20.8 gate. The floor is 1.0 rather
   than a fraction because the category has 24 scored audits totalling weight 163 and the lightest weighs 1 — failing a
