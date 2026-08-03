@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Contact Preferences</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "syncing": "#FFD60A",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "concrete-white": "#F8FAFC",
+                        "error-container": "#93000a",
+                        "surface-dim": "#031427",
+                        "on-surface-variant": "#c7c6cd",
+                        "inverse-surface": "#d3e4fe",
+                        "on-primary": "#2b3041",
+                        "on-secondary-fixed": "#00174b",
+                        "surface-variant": "#26364a",
+                        "secondary-container": "#0053db",
+                        "surface": "#031427",
+                        "surface-container-highest": "#26364a",
+                        "tertiary-container": "#001318",
+                        "outline": "#909097",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "offline": "#8E8E93",
+                        "surface-bright": "#2a3a4f",
+                        "outline-variant": "#46464c",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "on-background": "#d3e4fe",
+                        "on-primary-fixed-variant": "#414658",
+                        "inverse-primary": "#595e71",
+                        "tertiary": "#4cd7f6",
+                        "on-tertiary": "#003640",
+                        "tertiary-fixed": "#acedff",
+                        "on-tertiary-fixed": "#001f26",
+                        "primary": "#c1c5dc",
+                        "on-secondary": "#002a78",
+                        "surface-tint": "#c1c5dc",
+                        "inverse-on-surface": "#213145",
+                        "surface-container-high": "#1b2b3f",
+                        "on-tertiary-container": "#0088a0",
+                        "primary-container": "#0b1020",
+                        "on-primary-fixed": "#161b2b",
+                        "background": "#031427",
+                        "on-surface": "#d3e4fe",
+                        "on-primary-container": "#777c90",
+                        "danger": "#EF4444",
+                        "surface-container": "#102034",
+                        "on-error": "#690005",
+                        "mobile-primary": "#0066FF",
+                        "on-secondary-container": "#cdd7ff",
+                        "surface-container-low": "#0b1c30",
+                        "primary-fixed": "#dee1f9",
+                        "success": "#10B981",
+                        "surface-container-lowest": "#000f21",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "secondary": "#b4c5ff",
+                        "on-error-container": "#ffdad6",
+                        "error": "#ffb4ab",
+                        "warning": "#F59E0B",
+                        "primary-fixed-dim": "#c1c5dc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "touch-target-min": "44px",
+                        "mobile-base": "8px",
+                        "web-margin-component": "32px",
+                        "web-base": "4px",
+                        "web-page-gap": "64px",
+                        "web-padding-card": "16px",
+                        "web-gap-tight": "4px",
+                        "mobile-edge-margin": "24px",
+                        "touch-target-optimum": "52px",
+                        "mobile-section-pad": "16px",
+                        "mobile-icon-pad": "8px",
+                        "mobile-card-pad": "12px"
+                    },
+                    "fontFamily": {
+                        "headline-h1": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "body-md": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #0066FF;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #0066FF;
+        }
+        .toggle-checkbox:checked:disabled + .toggle-label {
+            background-color: #0b1c30;
+        }
+        .toggle-checkbox:disabled {
+            border-color: #46464c;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col font-body-md overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface border-b border-outline-variant flex items-center px-mobile-edge-margin h-touch-target-optimum w-full sticky top-0 z-50">
+<button aria-label="Go back" class="h-touch-target-min w-touch-target-min flex items-center justify-center -ml-2 text-on-surface active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="arrow_back" data-weight="fill" style="font-variation-settings: 'FILL' 1;">arrow_back</span>
+</button>
+<h1 class="font-mobile-title text-mobile-title ml-2 flex-1 truncate">Contact Preferences</h1>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-mobile-edge-margin py-mobile-section-pad pb-32 flex flex-col gap-mobile-section-pad">
+<!-- Channels Section -->
+<section class="bg-surface-container rounded-xl border border-outline-variant p-mobile-card-pad flex flex-col gap-mobile-base shadow-sm">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface-variant mb-2">Channels</h2>
+<div class="flex items-center justify-between py-2 border-b border-outline-variant/50">
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-on-surface">Email Communication</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">user@constructionos.com</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in h-touch-target-min flex items-center">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-1/2 -translate-y-1/2 left-0 transition-all duration-300" id="toggle-email" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer transition-colors duration-300" for="toggle-email"></label>
+</div>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-outline-variant/50">
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-on-surface">SMS Notifications</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in h-touch-target-min flex items-center">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-1/2 -translate-y-1/2 left-0 transition-all duration-300" id="toggle-sms" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer transition-colors duration-300" for="toggle-sms"></label>
+</div>
+</div>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-on-surface">LINE Messaging</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in h-touch-target-min flex items-center">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-1/2 -translate-y-1/2 left-0 transition-all duration-300" id="toggle-line" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer transition-colors duration-300" for="toggle-line"></label>
+</div>
+</div>
+</section>
+<!-- Categories Section -->
+<section class="bg-surface-container rounded-xl border border-outline-variant p-mobile-card-pad flex flex-col gap-mobile-base shadow-sm">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface-variant mb-2">Notification Categories</h2>
+<div class="flex items-center justify-between py-2 border-b border-outline-variant/50 opacity-70">
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-on-surface flex items-center gap-2">
+                        Safety & Alerts
+                        <span class="material-symbols-outlined text-danger text-sm" data-icon="lock" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lock</span>
+</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Always Enabled</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none h-touch-target-min flex items-center">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-surface-variant border-4 appearance-none z-10 top-1/2 -translate-y-1/2 right-0" disabled="" id="toggle-safety" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container-low transition-colors duration-300" for="toggle-safety"></label>
+</div>
+</div>
+<div class="flex items-center justify-between py-2 border-b border-outline-variant/50">
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-on-surface">Daily Logs & Reports</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in h-touch-target-min flex items-center">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-1/2 -translate-y-1/2 left-0 transition-all duration-300" id="toggle-logs" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer transition-colors duration-300" for="toggle-logs"></label>
+</div>
+</div>
+<div class="flex items-center justify-between py-2">
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-on-surface">Procurement Updates</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in h-touch-target-min flex items-center">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 top-1/2 -translate-y-1/2 left-0 transition-all duration-300" id="toggle-procurement" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-outline-variant cursor-pointer transition-colors duration-300" for="toggle-procurement"></label>
+</div>
+</div>
+</section>
+</main>
+<!-- Sticky Footer -->
+<footer class="fixed bottom-0 w-full z-50 bg-surface-container-low border-t border-outline-variant p-mobile-section-pad">
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-white font-mobile-title text-mobile-title rounded-xl active:scale-95 transition-transform duration-150 flex items-center justify-center shadow-lg">
+            Save Preferences
+        </button>
+</footer>
+<script>
+        // Simple script to handle visual toggle state for checkboxes (Tailwind peer works too, but this ensures robustness across browsers for custom toggle positioning if needed)
+        document.querySelectorAll('.toggle-checkbox:not(:disabled)').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                if(this.checked) {
+                    this.style.left = '100%';
+                    this.style.transform = 'translate(-100%, -50%)';
+                } else {
+                    this.style.left = '0';
+                    this.style.transform = 'translate(0, -50%)';
+                }
+            });
+            
+            // Init state
+            if(checkbox.checked) {
+                checkbox.style.left = '100%';
+                checkbox.style.transform = 'translate(-100%, -50%)';
+            }
+        });
+    </script>
+</body></html>
