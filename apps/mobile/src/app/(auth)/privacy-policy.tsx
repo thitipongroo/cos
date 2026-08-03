@@ -373,12 +373,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Uppercased here rather than in the i18n value (PO 2026-08-03) so the stored string stays natural
+  // and reusable. Safe for both shipped locales: Thai has no case, so `th` renders unchanged.
   headerTitle: {
     flex: 1,
     color: darkColors.text,
     fontFamily: fontFamily.semibold,
     fontSize: typography.title.fontSize,
     lineHeight: typography.title.lineHeight,
+    textTransform: 'uppercase',
   },
   headerBadge: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs / 2 },
   headerBadgeText: {
@@ -408,12 +411,15 @@ const styles = StyleSheet.create({
       default: {},
     }),
   },
+  // The brand is a wordmark — §32.7 sets it as CONSTRUCTION OS — so it renders uppercase, the same
+  // way <VerifyingOverlay /> uppercases `common.appName` (PO 2026-08-03).
   brandTitle: {
     color: darkColors.text,
     fontFamily: fontFamily.semibold,
     fontSize: typography.title.fontSize,
     lineHeight: typography.title.lineHeight,
     marginBottom: spacing.xs,
+    textTransform: 'uppercase',
   },
   brandSubtitle: {
     color: darkColors.muted,

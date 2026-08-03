@@ -15,6 +15,7 @@
     "build:e2e:ios": "detox build --configuration ios.sim.release",
     "build:e2e:android": "detox build --configuration android.emu.release",
     "capture:android": "node scripts/capture-android-login.mjs",
+    "capture:android:privacy-policy": "node scripts/capture-android-privacy-policy.mjs",
     "capture:android:home": "node scripts/capture-android-home.mjs",
     "capture:android:tenant-admin-home": "node scripts/capture-android-tenant-admin-home.mjs"
   },
