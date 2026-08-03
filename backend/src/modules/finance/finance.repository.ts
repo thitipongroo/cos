@@ -6,6 +6,7 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
 
 // Row types live in ./finance.rows; imported here for the method signatures below and re-exported so
@@ -328,14 +329,16 @@ export class FinanceRepository {
   // ── variance report ───────────────────────────────────────────────────────
 
   async findAllBudgets(): Promise<ProjectBudgetRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ProjectBudgetRow[]>`
         SELECT * FROM finance.project_budgets
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'finance.project_budgets');
   }
 
   // ── customers (§11) ─────────────────────────────────────────────────────────
@@ -369,14 +372,16 @@ export class FinanceRepository {
   }
 
   async listCustomers(): Promise<CustomerRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<CustomerRow[]>`
         SELECT * FROM finance.customers
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'finance.customers');
   }
 
   // ── contracts (§11) ─────────────────────────────────────────────────────────
@@ -418,15 +423,17 @@ export class FinanceRepository {
   }
 
   async listContracts(project_id?: string): Promise<ContractRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ContractRow[]>`
         SELECT * FROM finance.contracts
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${project_id ?? null}::uuid IS NULL OR project_id = ${project_id ?? null}::uuid)
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'finance.contracts');
   }
 
   /** Update a contract's lifecycle status; returns the updated row. */

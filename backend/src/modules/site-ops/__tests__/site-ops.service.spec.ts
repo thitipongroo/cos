@@ -48,6 +48,7 @@ jest.mock('@cos/logger', () => ({
 const mockRepo = {
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
+  findReportsByIds: jest.fn().mockResolvedValue(new Map()),
   listSiteReports: jest.fn(),
   updateSiteReport: jest.fn(),
   updateReportStatus: jest.fn(),
@@ -247,7 +248,7 @@ describe('getSiteReport', () => {
 
 describe('syncSiteReports', () => {
   it('ACCEPTED for new report (no existing record)', async () => {
-    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'new-id' }));
 
     const results = await service.syncSiteReports({
@@ -266,7 +267,7 @@ describe('syncSiteReports', () => {
   });
 
   it('ACCEPTED for new report with all optional fields provided (covers ?? null true branches)', async () => {
-    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'new-full-id' }));
 
     const results = await service.syncSiteReports({
@@ -288,7 +289,7 @@ describe('syncSiteReports', () => {
   });
 
   it('ACCEPTED for new report with no optional fields (covers ?? null false branches)', async () => {
-    mockRepo.findReportById.mockRejectedValue(new Error('not found'));
+    mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'bare-id' }));
 
     const results = await service.syncSiteReports({
@@ -307,7 +308,7 @@ describe('syncSiteReports', () => {
 
   it('ACCEPTED for existing report with no client_submitted_at (covers ?? new Date() branch)', async () => {
     const serverReport = makeReport({ modified_at: new Date('2026-06-04T07:00:00Z') });
-    mockRepo.findReportById.mockResolvedValue(serverReport);
+    mockRepo.findReportsByIds.mockResolvedValue(new Map([['report-1', serverReport]]));
     mockRepo.createSiteReport.mockResolvedValue(serverReport);
 
     const results = await service.syncSiteReports({
@@ -328,7 +329,7 @@ describe('syncSiteReports', () => {
     const serverReport = makeReport({
       modified_at: new Date('2026-06-04T10:00:00Z'),
     });
-    mockRepo.findReportById.mockResolvedValue(serverReport);
+    mockRepo.findReportsByIds.mockResolvedValue(new Map([['report-1', serverReport]]));
     mockRepo.createConflictRecord.mockResolvedValue({});
 
     const results = await service.syncSiteReports({
@@ -364,8 +365,13 @@ describe('syncSiteReports', () => {
   // ACCEPTED without ever updating the report — so offline edits were acknowledged and dropped.
 
   it('persists the client fields when syncing an edit to an existing report', async () => {
-    mockRepo.findReportById.mockResolvedValue(
-      makeReport({ summary: 'server text', modified_at: new Date('2026-06-04T07:00:00Z') }),
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([
+        [
+          'report-1',
+          makeReport({ summary: 'server text', modified_at: new Date('2026-06-04T07:00:00Z') }),
+        ],
+      ]),
     );
 
     const results = await service.syncSiteReports({
@@ -395,8 +401,8 @@ describe('syncSiteReports', () => {
   });
 
   it('persists a client-wins overwrite even when the result is flagged for review', async () => {
-    mockRepo.findReportById.mockResolvedValue(
-      makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') }),
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([['report-1', makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') })]]),
     );
     mockRepo.createConflictRecord.mockResolvedValue({});
 
@@ -421,8 +427,8 @@ describe('syncSiteReports', () => {
   });
 
   it('does NOT write when the server row wins — a no-op write would bump modified_at', async () => {
-    mockRepo.findReportById.mockResolvedValue(
-      makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') }),
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([['report-1', makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') })]]),
     );
     mockRepo.createConflictRecord.mockResolvedValue({});
 
@@ -444,8 +450,8 @@ describe('syncSiteReports', () => {
   });
 
   it('reports CONFLICT_REJECTED instead of ACCEPTED when the row vanished mid-sync', async () => {
-    mockRepo.findReportById.mockResolvedValue(
-      makeReport({ modified_at: new Date('2026-06-04T07:00:00Z') }),
+    mockRepo.findReportsByIds.mockResolvedValue(
+      new Map([['report-1', makeReport({ modified_at: new Date('2026-06-04T07:00:00Z') })]]),
     );
     mockRepo.updateSiteReport.mockResolvedValue(null); // deleted between read and write
 

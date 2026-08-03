@@ -261,6 +261,66 @@ export class NotificationRepository implements OnModuleDestroy {
     return rows[0]?.is_enabled ?? true;
   }
 
+  /**
+   * The channels this user has explicitly DISABLED for an event type, in one query.
+   *
+   * Returns disabled rather than enabled channels on purpose: a missing preference row means
+   * "enabled" (isChannelEnabled defaults `?? true`), so the set of explicit opt-outs is the complete
+   * answer and the caller needs no per-channel fallback logic.
+   *
+   * Replaces one isChannelEnabled round trip per channel per recipient — each of which opened its own
+   * db.run transaction, so notifying 50 users cost 150 transactions before a single template lookup.
+   */
+  async findDisabledChannels(
+    tenantId: string,
+    userId: string,
+    eventType: string,
+    channels: readonly string[],
+  ): Promise<Set<string>> {
+    if (channels.length === 0) return new Set();
+    const rows = await this.db.run(
+      tenantId,
+      (tx) =>
+        tx.$queryRaw<Array<{ channel: string }>>`
+        SELECT channel FROM notifications.notification_preferences
+        WHERE tenant_id  = ${tenantId}::uuid
+          AND user_id    = ${userId}::uuid
+          AND event_type = ${eventType}
+          AND channel    = ANY(${channels}::notifications."NotificationChannel"[])
+          AND is_enabled = false
+      `,
+    );
+    return new Set(rows.map((r) => r.channel));
+  }
+
+  /**
+   * Resolve the active template for each channel in one query.
+   *
+   * Mirrors findTemplate's precedence exactly — a tenant-specific row wins over the shared NULL-tenant
+   * default — using DISTINCT ON so the choice is made per channel inside the same statement.
+   */
+  async findTemplatesByChannel(
+    tenantId: string,
+    eventType: string,
+    channels: readonly string[],
+  ): Promise<Map<string, TemplateRow>> {
+    if (channels.length === 0) return new Map();
+    const rows = await this.db.run(
+      tenantId,
+      (tx) =>
+        tx.$queryRaw<TemplateRow[]>`
+        SELECT DISTINCT ON (channel) *
+          FROM notifications.notification_templates
+         WHERE event_type = ${eventType}
+           AND channel    = ANY(${channels}::notifications."NotificationChannel"[])
+           AND is_active  = true
+           AND (tenant_id = ${tenantId}::uuid OR tenant_id IS NULL)
+         ORDER BY channel, tenant_id NULLS LAST
+      `,
+    );
+    return new Map(rows.map((r) => [r.channel, r]));
+  }
+
   async upsertPreference(params: {
     tenant_id: string;
     user_id: string;

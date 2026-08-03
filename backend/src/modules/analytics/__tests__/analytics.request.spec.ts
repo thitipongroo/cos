@@ -1,6 +1,9 @@
 // analytics.request helpers — resolveTenantId / resolveDateRange (QM-1: 100% branches)
 
+import { UnauthorizedException } from '@nestjs/common';
+import { ClsServiceManager } from 'nestjs-cls';
 import { resolveDateRange, resolveTenantId } from '../analytics.request';
+import { CLS_TENANT_ID } from '../../../shared/context/cls-context';
 
 describe('resolveTenantId', () => {
   it('prefers the authenticated request tenantId over the query param', () => {
@@ -9,11 +12,32 @@ describe('resolveTenantId', () => {
 
   it('ignores a client-supplied query param — tenant comes only from the authenticated request (IDOR fix)', () => {
     // Honouring the query param would let an authenticated caller read another tenant's analytics.
-    expect(resolveTenantId({}, 'query-tenant')).toBe('');
+    expect(() => resolveTenantId({}, 'query-tenant')).toThrow(UnauthorizedException);
   });
 
-  it('returns empty string when the request carries no tenantId', () => {
-    expect(resolveTenantId({})).toBe('');
+  // Under Fastify the request an interceptor decorates is not guaranteed to be the one the handler
+  // receives, so CLS — written by JwtAuthGuard — is the reliable source.
+  it('falls back to the CLS tenant when the request object does not carry one', async () => {
+    const cls = ClsServiceManager.getClsService();
+    await cls.run(async () => {
+      cls.set(CLS_TENANT_ID, 'cls-tenant');
+      expect(resolveTenantId({})).toBe('cls-tenant');
+    });
+  });
+
+  it('still prefers the request tenantId when CLS also has one', async () => {
+    const cls = ClsServiceManager.getClsService();
+    await cls.run(async () => {
+      cls.set(CLS_TENANT_ID, 'cls-tenant');
+      expect(resolveTenantId({ tenantId: 'req-tenant' })).toBe('req-tenant');
+    });
+  });
+
+  // Returning '' sent an empty string into a ClickHouse {tenantId:UUID} bind, so a lost tenant
+  // context surfaced as a 500 from the driver instead of an auth error.
+  it('throws 401 rather than returning an empty tenant when context is missing entirely', () => {
+    expect(() => resolveTenantId({})).toThrow(UnauthorizedException);
+    expect(() => resolveTenantId({})).toThrow('Tenant context missing from request');
   });
 });
 

@@ -305,6 +305,26 @@ describe('BoqRepository', () => {
     expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
   });
 
+  // Whole-version recalculation must be ONE statement: as a per-category loop it was both N round
+  // trips and non-atomic, so a mid-loop failure left some subtotals new and the rest stale.
+  it('updateCategorySubtotals writes every category in a single statement', async () => {
+    mockPrisma.$executeRaw.mockResolvedValue(3);
+    await repo.updateCategorySubtotals([
+      { category_id: 'cat-001', subtotal: '100.0000' },
+      { category_id: 'cat-002', subtotal: '200.0000' },
+      { category_id: 'cat-003', subtotal: '300.0000' },
+    ]);
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    const sql = (mockPrisma.$executeRaw.mock.calls[0][0] as string[]).join('?');
+    expect(sql).toMatch(/UPDATE\s+boq\.boq_categories/);
+    expect(sql).toContain('UNNEST');
+  });
+
+  it('updateCategorySubtotals does nothing when there are no categories', async () => {
+    await repo.updateCategorySubtotals([]);
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
   it('updateItem returns updated row', async () => {
     const now = new Date();
     mockPrisma.$queryRaw.mockResolvedValue([

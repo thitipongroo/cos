@@ -307,6 +307,35 @@ export class BoqRepository {
     });
   }
 
+  /**
+   * Write every category subtotal for a version in ONE statement.
+   *
+   * recalculateVersionTotal updated them in a loop — one UPDATE, in one db.run transaction, per
+   * category — so re-costing a BOQ with 80 categories issued 80 sequential transactions. Worse than
+   * slow: because each committed on its own, a failure partway left some categories carrying new
+   * subtotals and the rest the old ones, with the version total never written. A single UPDATE ...
+   * FROM (VALUES …) makes the recalculation atomic as well as one round trip.
+   */
+  async updateCategorySubtotals(
+    rows: Array<{ category_id: string; subtotal: string }>,
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    const ids = rows.map((r) => r.category_id);
+    const subtotals = rows.map((r) => r.subtotal);
+    await this.db.run(async (prisma) => {
+      await prisma.$executeRaw`
+        UPDATE boq.boq_categories c
+           SET subtotal_amount = v.subtotal
+          FROM (
+            SELECT UNNEST(${ids}::uuid[]) AS category_id,
+                   UNNEST(${subtotals}::decimal[]) AS subtotal
+          ) AS v
+         WHERE c.category_id = v.category_id
+           AND c.tenant_id   = ${this.tenantId}::uuid
+      `;
+    });
+  }
+
   // ── Items ─────────────────────────────────────────────────────────────────
 
   async addItem(params: {

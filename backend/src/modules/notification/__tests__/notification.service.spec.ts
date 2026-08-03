@@ -9,10 +9,21 @@ import { NotificationService, isWithinQuietHours } from '../notification.service
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
+// The repository resolves preferences and templates for the whole channel set at once (one query
+// each) rather than per channel, so these helpers express the same intent the old per-channel mocks
+// did. `findDisabledChannels` returns explicit OPT-OUTS: a channel absent from the set is enabled,
+// matching the "no preference row means enabled" default.
+const ALL_CHANNELS = ['IN_APP', 'EMAIL', 'LINE'] as const;
+const allDisabled = (): Set<string> => new Set<string>(ALL_CHANNELS);
+const onlyEnabled = (channel: string): Set<string> =>
+  new Set<string>(ALL_CHANNELS.filter((c) => c !== channel));
+const templatesFor = (template: unknown): Map<string, unknown> =>
+  new Map<string, unknown>(ALL_CHANNELS.map((c) => [c, template]));
+
 const mockRepo = {
   findUsersByRole: jest.fn(),
-  isChannelEnabled: jest.fn(),
-  findTemplate: jest.fn(),
+  findDisabledChannels: jest.fn().mockResolvedValue(new Set<string>()),
+  findTemplatesByChannel: jest.fn().mockResolvedValue(new Map()),
   createNotification: jest.fn(),
   markSent: jest.fn(),
   markFailed: jest.fn(),
@@ -89,7 +100,7 @@ describe('render', () => {
 describe('handleEvent — routing', () => {
   it('routes inspection.failed to SITE_ENGINEER and PROJECT_MANAGER roles', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockResolvedValue(false); // skip delivery
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled()); // skip delivery
     await svc.handleEvent({
       event_type: 'site.inspection.failed.v1',
       tenant_id: 'tenant-001',
@@ -103,7 +114,7 @@ describe('handleEvent — routing', () => {
   });
 
   it('routes po.status_changed directly to actor (not role lookup)', async () => {
-    mockRepo.isChannelEnabled.mockResolvedValue(false);
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
     await svc.handleEvent({
       event_type: 'procurement.po.status_changed.v1',
       tenant_id: 'tenant-001',
@@ -114,7 +125,7 @@ describe('handleEvent — routing', () => {
   });
 
   it('routes po.approval_requested to the approver_id carried in the payload', async () => {
-    mockRepo.isChannelEnabled.mockResolvedValue(false);
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
     await svc.handleEvent({
       event_type: 'procurement.po.approval_requested.v1',
       tenant_id: 'tenant-001',
@@ -122,12 +133,13 @@ describe('handleEvent — routing', () => {
       payload: { po_id: 'po-1', approver_id: 'approver-9', tier: 'PM' },
     });
     // Targeted at the payload user — no role lookup, and the approver's channels are checked.
+    // The channel argument is now the whole set (one query instead of one per channel).
     expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
-    expect(mockRepo.isChannelEnabled).toHaveBeenCalledWith(
+    expect(mockRepo.findDisabledChannels).toHaveBeenCalledWith(
       'tenant-001',
       'approver-9',
       'procurement.po.approval_requested.v1',
-      expect.any(String),
+      expect.arrayContaining(['IN_APP', 'EMAIL', 'LINE']),
     );
   });
 
@@ -139,7 +151,7 @@ describe('handleEvent — routing', () => {
       payload: { po_id: 'po-1' }, // no approver_id → empty recipients
     });
     expect(mockRepo.findUsersByRole).not.toHaveBeenCalled();
-    expect(mockRepo.isChannelEnabled).not.toHaveBeenCalled();
+    expect(mockRepo.findDisabledChannels).not.toHaveBeenCalled();
     expect(mockRepo.createNotification).not.toHaveBeenCalled();
   });
 
@@ -227,7 +239,7 @@ describe('handleEvent — routing', () => {
 describe('preference filtering', () => {
   it('skips channel when is_enabled = false', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockResolvedValue(false);
+    mockRepo.findDisabledChannels.mockResolvedValue(allDisabled());
     await svc.handleEvent({
       event_type: 'site.inspection.failed.v1',
       tenant_id: 'tenant-001',
@@ -239,8 +251,8 @@ describe('preference filtering', () => {
 
   it('skips channel when no template found', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockResolvedValue(true);
-    mockRepo.findTemplate.mockResolvedValue(null);
+    mockRepo.findDisabledChannels.mockResolvedValue(new Set<string>());
+    mockRepo.findTemplatesByChannel.mockResolvedValue(new Map());
     await svc.handleEvent({
       event_type: 'site.inspection.failed.v1',
       tenant_id: 'tenant-001',
@@ -256,18 +268,18 @@ describe('preference filtering', () => {
 describe('IN_APP channel dispatch', () => {
   it('pushes SSE event and marks sent on IN_APP delivery', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'IN_APP'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('IN_APP'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'IN_APP',
+        subject_template: 'Alert',
+        body_template: 'Inspection failed on {{project_id}}',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't1',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'IN_APP',
-      subject_template: 'Alert',
-      body_template: 'Inspection failed on {{project_id}}',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({ ...notifRow });
     mockRepo.markSent.mockResolvedValue(undefined);
 
@@ -287,18 +299,18 @@ describe('IN_APP channel dispatch', () => {
 
   it('marks failed when SSE push throws', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'IN_APP'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('IN_APP'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'IN_APP',
+        subject_template: null,
+        body_template: 'Body',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't1',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'IN_APP',
-      subject_template: null,
-      body_template: 'Body',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({ ...notifRow });
     mockSse.push.mockImplementation(() => {
       throw new Error('SSE error');
@@ -317,18 +329,18 @@ describe('IN_APP channel dispatch', () => {
 
   it('swallows markFailed rejection without rethrowing', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'IN_APP'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('IN_APP'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'IN_APP',
+        subject_template: null,
+        body_template: 'Body',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't1',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'IN_APP',
-      subject_template: null,
-      body_template: 'Body',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({ ...notifRow });
     mockSse.push.mockImplementation(() => {
       throw new Error('SSE error');
@@ -352,18 +364,18 @@ describe('IN_APP channel dispatch', () => {
 describe('Expo push alongside IN_APP', () => {
   it('sends Expo push to all registered device tokens', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'IN_APP'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('IN_APP'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'IN_APP',
+        subject_template: 'Alert',
+        body_template: 'Body',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't1',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'IN_APP',
-      subject_template: 'Alert',
-      body_template: 'Body',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({ ...notifRow });
     mockRepo.findDeviceTokens.mockResolvedValue([
       { token_id: 'tok1', user_id: 'u1', push_token: 'ExponentPushToken[abc]', platform: 'IOS' },
@@ -385,18 +397,18 @@ describe('Expo push alongside IN_APP', () => {
 
   it('still marks sent even when push.send rejects', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'IN_APP'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('IN_APP'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'IN_APP',
+        subject_template: null,
+        body_template: 'Body',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't1',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'IN_APP',
-      subject_template: null,
-      body_template: 'Body',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({ ...notifRow });
     mockRepo.findDeviceTokens.mockResolvedValue([
       { token_id: 'tok1', user_id: 'u1', push_token: 'ExponentPushToken[abc]', platform: 'IOS' },
@@ -420,18 +432,18 @@ describe('Expo push alongside IN_APP', () => {
 describe('EMAIL channel dispatch', () => {
   it('sends email and marks sent', async () => {
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'user@example.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'EMAIL'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('EMAIL'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't2',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'EMAIL',
+        subject_template: 'Subject',
+        body_template: 'Body',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't2',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'EMAIL',
-      subject_template: 'Subject',
-      body_template: 'Body',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({ ...notifRow, channel: 'EMAIL' });
     mockEmail.send.mockResolvedValue(undefined);
     mockRepo.markSent.mockResolvedValue(undefined);
@@ -462,18 +474,18 @@ describe('LINE channel dispatch', () => {
   it('sends LINE message when LINE_USER_ID env var is set', async () => {
     process.env = { ...OLD_ENV, LINE_USER_ID_u1: 'U_line_user_001' };
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'LINE'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('LINE'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't3',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'LINE',
+        subject_template: null,
+        body_template: 'Inspection failed',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't3',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'LINE',
-      subject_template: null,
-      body_template: 'Inspection failed',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({
       ...notifRow,
       channel: 'LINE',
@@ -498,18 +510,18 @@ describe('LINE channel dispatch', () => {
     process.env = { ...OLD_ENV };
     delete process.env['LINE_USER_ID_u1'];
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t, _u, _e, ch) =>
-      Promise.resolve(ch === 'LINE'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('LINE'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't3',
+        tenant_id: null,
+        event_type: 'site.inspection.failed.v1',
+        channel: 'LINE',
+        subject_template: null,
+        body_template: 'Inspection failed',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't3',
-      tenant_id: null,
-      event_type: 'site.inspection.failed.v1',
-      channel: 'LINE',
-      subject_template: null,
-      body_template: 'Inspection failed',
-      is_active: true,
-    });
     mockRepo.createNotification.mockResolvedValue({ ...notifRow, channel: 'LINE' });
 
     await svc.handleEvent({
@@ -661,18 +673,18 @@ describe('quiet-hours push suppression', () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-01-01T16:00:00Z')); // 23:00 Bangkok
     mockRepo.getUserQuietHours.mockResolvedValue({ start: '22:00:00', end: '07:00:00' });
     mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'u1', email: 'a@b.com' }]);
-    mockRepo.isChannelEnabled.mockImplementation((_t: string, _u: string, _e: string, ch: string) =>
-      Promise.resolve(ch === 'IN_APP'),
+    mockRepo.findDisabledChannels.mockResolvedValue(onlyEnabled('IN_APP'));
+    mockRepo.findTemplatesByChannel.mockResolvedValue(
+      templatesFor({
+        template_id: 't1',
+        tenant_id: null,
+        event_type: 'x',
+        channel: 'IN_APP',
+        subject_template: 'S',
+        body_template: 'B',
+        is_active: true,
+      }),
     );
-    mockRepo.findTemplate.mockResolvedValue({
-      template_id: 't1',
-      tenant_id: null,
-      event_type: 'x',
-      channel: 'IN_APP',
-      subject_template: 'S',
-      body_template: 'B',
-      is_active: true,
-    });
     mockRepo.findDeviceTokens.mockResolvedValue([
       { token_id: 'tok1', user_id: 'u1', push_token: 'ExponentPushToken[abc]', platform: 'IOS' },
     ]);

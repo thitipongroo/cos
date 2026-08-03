@@ -9,6 +9,7 @@ import { randomUUID } from 'crypto';
 import type { Request } from 'express';
 import type { PrismaClient } from '@prisma/client';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
 
 // Row types live in ./procurement.rows; imported here for the method signatures below and re-exported
@@ -92,17 +93,20 @@ export class ProcurementRepository {
   }
 
   async listVendors(active_only: boolean): Promise<VendorRow[]> {
-    return this.db.run((prisma) =>
+    const rows = await this.db.run((prisma) =>
       active_only
         ? prisma.$queryRaw<VendorRow[]>`
             SELECT * FROM procurement.vendors
             WHERE tenant_id = ${this.tenantId}::uuid AND is_active = true
-            ORDER BY vendor_name`
+            ORDER BY vendor_name
+            LIMIT ${capLimit()}`
         : prisma.$queryRaw<VendorRow[]>`
             SELECT * FROM procurement.vendors
             WHERE tenant_id = ${this.tenantId}::uuid
-            ORDER BY vendor_name`,
+            ORDER BY vendor_name
+            LIMIT ${capLimit()}`,
     );
+    return applyCap(rows, 'procurement.vendors');
   }
 
   async deactivateVendor(vendor_id: string): Promise<void> {

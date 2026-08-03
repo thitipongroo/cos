@@ -66,6 +66,69 @@ describe('findTemplate', () => {
   });
 });
 
+// ── batch lookups (one query per notified user, not one per channel) ────────
+
+describe('findTemplatesByChannel', () => {
+  it('keys the resolved templates by channel', async () => {
+    mockQueryRaw.mockResolvedValueOnce([
+      { template_id: 't1', channel: 'IN_APP', body_template: 'a' },
+      { template_id: 't2', channel: 'EMAIL', body_template: 'b' },
+    ]);
+    const result = await repo.findTemplatesByChannel('tenant-001', 'evt.v1', [
+      'IN_APP',
+      'EMAIL',
+      'LINE',
+    ]);
+    expect(result.get('IN_APP')?.template_id).toBe('t1');
+    expect(result.get('EMAIL')?.template_id).toBe('t2');
+    expect(result.get('LINE')).toBeUndefined();
+    expect(mockQueryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('picks one template per channel, tenant-specific ahead of the shared default', async () => {
+    mockQueryRaw.mockResolvedValueOnce([]);
+    await repo.findTemplatesByChannel('tenant-001', 'evt.v1', ['IN_APP']);
+    const sql = (mockQueryRaw.mock.calls[0][0] as string[]).join('?');
+    // Same precedence findTemplate applies, expressed per channel inside one statement.
+    expect(sql).toContain('DISTINCT ON (channel)');
+    expect(sql).toContain('tenant_id NULLS LAST');
+  });
+
+  it('short-circuits an empty channel list', async () => {
+    const result = await repo.findTemplatesByChannel('tenant-001', 'evt.v1', []);
+    expect(result.size).toBe(0);
+    expect(mockQueryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe('findDisabledChannels', () => {
+  // Returns explicit OPT-OUTS: a channel with no preference row is enabled, which is what
+  // isChannelEnabled's `?? true` default meant.
+  it('returns only the channels explicitly switched off', async () => {
+    mockQueryRaw.mockResolvedValueOnce([{ channel: 'EMAIL' }]);
+    const result = await repo.findDisabledChannels('tenant-001', 'user-1', 'evt.v1', [
+      'IN_APP',
+      'EMAIL',
+      'LINE',
+    ]);
+    expect(result.has('EMAIL')).toBe(true);
+    expect(result.has('IN_APP')).toBe(false);
+    expect(result.has('LINE')).toBe(false);
+  });
+
+  it('returns an empty set when the user has opted out of nothing', async () => {
+    mockQueryRaw.mockResolvedValueOnce([]);
+    const result = await repo.findDisabledChannels('tenant-001', 'user-1', 'evt.v1', ['IN_APP']);
+    expect(result.size).toBe(0);
+  });
+
+  it('short-circuits an empty channel list', async () => {
+    const result = await repo.findDisabledChannels('tenant-001', 'user-1', 'evt.v1', []);
+    expect(result.size).toBe(0);
+    expect(mockQueryRaw).not.toHaveBeenCalled();
+  });
+});
+
 // ── createNotification ──────────────────────────────────────────────────────
 
 describe('createNotification', () => {

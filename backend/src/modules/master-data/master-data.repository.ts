@@ -4,6 +4,7 @@
 
 import { Injectable, Scope } from '@nestjs/common';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import type { CreateMaterialDto } from './dto/create-material.dto';
 import type { UpdateMaterialDto } from './dto/update-material.dto';
 import type { CreateWorkCategoryDto } from './dto/create-work-category.dto';
@@ -68,15 +69,17 @@ export class MasterDataRepository {
   // ── Materials ────────────────────────────────────────────────────────────
 
   async listMaterials(): Promise<MaterialRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<MaterialRow[]>`
         SELECT material_id, tenant_id, name, category, unit, is_active, created_by, created_at, updated_at
         FROM procurement.materials
         WHERE is_active = true
         ORDER BY name
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'master-data.materials');
   }
 
   async createMaterial(dto: CreateMaterialDto, createdBy: string): Promise<MaterialRow> {
@@ -159,15 +162,17 @@ export class MasterDataRepository {
   // ── Work Categories ──────────────────────────────────────────────────────
 
   async listWorkCategories(): Promise<WorkCategoryRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<WorkCategoryRow[]>`
         SELECT work_category_id, tenant_id, name, code, phase, is_active, created_by, created_at, updated_at
         FROM site_ops.work_categories
         WHERE is_active = true
         ORDER BY name
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'master-data.work_categories');
   }
 
   async createWorkCategory(
@@ -241,15 +246,17 @@ export class MasterDataRepository {
   // ── Issue Categories ─────────────────────────────────────────────────────
 
   async listIssueCategories(): Promise<IssueCategoryRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<IssueCategoryRow[]>`
         SELECT issue_category_id, tenant_id, name, severity_default, is_active, created_by, created_at, updated_at
         FROM site_ops.issue_categories
         WHERE is_active = true
         ORDER BY name
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'master-data.issue_categories');
   }
 
   async createIssueCategory(
@@ -276,15 +283,17 @@ export class MasterDataRepository {
   // ── Cost Categories ──────────────────────────────────────────────────────
 
   async listCostCategories(): Promise<CostCategoryRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<CostCategoryRow[]>`
         SELECT cost_category_id, tenant_id, name, type, is_active, created_by, created_at, updated_at
         FROM finance.cost_categories
         WHERE is_active = true
         ORDER BY name
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'master-data.cost_categories');
   }
 
   async createCostCategory(

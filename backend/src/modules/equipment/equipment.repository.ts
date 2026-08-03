@@ -3,6 +3,7 @@
 
 import { Injectable, Scope } from '@nestjs/common';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 
 export interface EquipmentRow {
   equipment_id: string;
@@ -76,14 +77,16 @@ export class EquipmentRepository {
   }
 
   async findAll(filters: { status?: string; type?: string } = {}): Promise<EquipmentRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) => tx.$queryRaw<EquipmentRow[]>`
       SELECT * FROM equipment.equipment
       WHERE (${filters.status ?? null} IS NULL OR status = ${filters.status}::equipment.equipment_status_enum)
         AND (${filters.type ?? null} IS NULL OR equipment_type = ${filters.type}::equipment.equipment_type_enum)
       ORDER BY created_at DESC
+      LIMIT ${capLimit()}
     `,
     );
+    return applyCap(rows, 'equipment.equipment');
   }
 
   async findById(id: string): Promise<EquipmentRow | null> {

@@ -260,8 +260,16 @@ export class SyncService {
     const clamped = Math.max(0, Math.min(100, Number.isFinite(incoming) ? incoming : 0));
     const rows = await this.db.run((tx) =>
       tx.$queryRawUnsafe<Record<string, unknown>[]>(
+        // The tenant_id predicate is defense-in-depth, not the control: RLS is FORCEd on
+        // projects.tasks and db.run connects as app_user, so an out-of-tenant task_id already matches
+        // nothing. Every other repository still spells the tenant out alongside RLS (see
+        // tasks.repository.ts), and a write path that reads differently from its neighbours is the
+        // one a future reader trusts least. NULLIF mirrors the RLS policy: an unset GUC becomes NULL,
+        // which matches no row rather than every row.
         `UPDATE projects.tasks SET progress_percent = GREATEST(progress_percent, $1)
-         WHERE task_id = $2::uuid RETURNING *`,
+         WHERE task_id = $2::uuid
+           AND tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), '')::uuid
+         RETURNING *`,
         clamped,
         dto.entity_id,
       ),

@@ -5,6 +5,8 @@ import { createClient, ClickHouseClient } from '@clickhouse/client';
 import { redisInsStore } from 'cache-manager-ioredis-yet';
 import Redis from 'ioredis';
 import { AnalyticsService } from './analytics.service';
+import { AnalyticsProjectScopeService } from './analytics-project-scope.service';
+import { TenantModule } from '../tenant/tenant.module';
 import { AnalyticsExecutiveController } from './analytics.executive.controller';
 import { AnalyticsPmController } from './analytics.pm.controller';
 import { AnalyticsTrendsController } from './analytics.trends.controller';
@@ -43,6 +45,8 @@ class CacheRedisModule {}
 @Module({
   imports: [
     ConfigModule,
+    // TenantModule supplies TenantPrismaService for the §6.5 project-membership lookup.
+    TenantModule,
     CacheRedisModule,
     CacheModule.registerAsync({
       imports: [CacheRedisModule],
@@ -67,6 +71,7 @@ class CacheRedisModule {}
         }),
     },
     AnalyticsService,
+    AnalyticsProjectScopeService,
   ],
   exports: [AnalyticsService],
 })
