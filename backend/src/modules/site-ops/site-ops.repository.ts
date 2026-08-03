@@ -6,6 +6,7 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
 
 // Row types live in ./site-ops.rows; imported here for the method signatures below and re-exported so
@@ -94,6 +95,28 @@ export class SiteOpsRepository {
       `,
     );
     return rows[0] ?? null;
+  }
+
+  /**
+   * Look up many reports at once, keyed by report_id.
+   *
+   * Exists for the offline-sync batch (syncSiteReports), which called findReportById once per item —
+   * a full round trip AND its own `db.run` transaction per element, so a 200-report catch-up sync
+   * opened 200 transactions before doing any work. Callers must pass validated UUIDs: a single
+   * malformed id would fail the `::uuid[]` cast for the whole batch, whereas the per-item version
+   * only failed that item.
+   */
+  async findReportsByIds(reportIds: string[]): Promise<Map<string, SiteReportRow>> {
+    if (reportIds.length === 0) return new Map();
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<SiteReportRow[]>`
+        SELECT * FROM site_ops.site_reports
+        WHERE report_id = ANY(${reportIds}::uuid[])
+          AND tenant_id = ${this.tenantId}::uuid
+      `,
+    );
+    return new Map(rows.map((r) => [r.report_id, r]));
   }
 
   async listSiteReports(params: {
@@ -434,15 +457,17 @@ export class SiteOpsRepository {
   }
 
   async listChecklists(project_id?: string): Promise<SafetyChecklistRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<SafetyChecklistRow[]>`
         SELECT * FROM site_ops.safety_checklists
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (${project_id ?? null}::uuid IS NULL OR project_id = ${project_id ?? null}::uuid)
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'site-ops.safety_checklists');
   }
 
   // ── Conflict Records ───────────────────────────────────────────────────
@@ -475,15 +500,17 @@ export class SiteOpsRepository {
   }
 
   async listConflictRecords(unresolvedOnly: boolean): Promise<ConflictRecordRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<ConflictRecordRow[]>`
         SELECT * FROM site_ops.conflict_records
         WHERE tenant_id = ${this.tenantId}::uuid
           AND (NOT ${unresolvedOnly} OR reviewed_at IS NULL)
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'site-ops.conflict_records');
   }
 
   async resolveConflictRecord(

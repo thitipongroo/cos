@@ -35,6 +35,7 @@ const mockRepo = {
   addCategory: jest.fn(),
   findCategoriesByVersion: jest.fn(),
   updateCategorySubtotal: jest.fn(),
+  updateCategorySubtotals: jest.fn(),
   addItem: jest.fn(),
   updateItem: jest.fn(),
   deleteItem: jest.fn(),
@@ -159,7 +160,7 @@ describe('BoqService', () => {
       }));
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.addItem('version-uuid-001', {
@@ -185,7 +186,7 @@ describe('BoqService', () => {
       }));
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.addItem('version-uuid-001', {
@@ -210,7 +211,7 @@ describe('BoqService', () => {
       }));
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.addItem('version-uuid-001', {
@@ -280,7 +281,7 @@ describe('BoqService', () => {
       mockRepo.copyVersionContents.mockResolvedValue(undefined);
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const kafkaMock = (
@@ -371,7 +372,7 @@ describe('BoqService', () => {
         .mockResolvedValueOnce({ ...draftV2, status: 'APPROVED' }); // final fetch
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
       mockRepo.approveVersion.mockResolvedValue(undefined);
 
@@ -467,7 +468,7 @@ describe('BoqService', () => {
       mockRepo.updateItem.mockResolvedValue(item);
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
       await expect(
         service.updateItem('item-uuid-001', { quantity: '1.0000' }),
@@ -484,7 +485,7 @@ describe('BoqService', () => {
       });
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.updateItem('item-uuid-001', {
@@ -501,7 +502,7 @@ describe('BoqService', () => {
       mockRepo.updateItem.mockResolvedValue({ ...item, description: 'Updated desc' });
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       const result = await service.updateItem('item-uuid-001', { description: 'Updated desc' });
@@ -524,7 +525,7 @@ describe('BoqService', () => {
       mockRepo.deleteItem.mockResolvedValue(undefined);
       mockRepo.findItemsByVersion.mockResolvedValue([]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
 
       await expect(service.deleteItem('item-uuid-001')).resolves.toBeUndefined();
@@ -582,7 +583,7 @@ describe('BoqService', () => {
         .mockResolvedValueOnce({ ...draftV2, status: 'APPROVED' });
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
       mockRepo.findCategoriesByVersion.mockResolvedValue([category]);
-      mockRepo.updateCategorySubtotal.mockResolvedValue(undefined);
+      mockRepo.updateCategorySubtotals.mockResolvedValue(undefined);
       mockRepo.updateVersionTotal.mockResolvedValue(undefined);
       mockRepo.approveVersion.mockResolvedValue(undefined);
 

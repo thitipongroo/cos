@@ -335,12 +335,19 @@ export class BoqService {
     const allItems = await this.repo.findItemsByVersion(version_id);
     const categories = await this.repo.findCategoriesByVersion(version_id);
 
-    // Update each category subtotal
-    for (const cat of categories) {
-      const items = allItems.filter((i) => i.category_id === cat.category_id);
-      const subtotal = sumDecimals(items.map((i) => new Decimal(i.estimated_total)));
-      await this.repo.updateCategorySubtotal(cat.category_id, subtotal.toFixed(4));
-    }
+    // Update every category subtotal in one statement. This was a loop issuing one UPDATE per
+    // category, each in its own transaction, so a large BOQ re-cost meant dozens of sequential round
+    // trips — and a mid-loop failure left the version half-recalculated with no total written.
+    await this.repo.updateCategorySubtotals(
+      categories.map((cat) => ({
+        category_id: cat.category_id,
+        subtotal: sumDecimals(
+          allItems
+            .filter((i) => i.category_id === cat.category_id)
+            .map((i) => new Decimal(i.estimated_total)),
+        ).toFixed(4),
+      })),
+    );
 
     // Sum root-category subtotals for version total
     const rootCategories = categories.filter((c) => !c.parent_category_id);

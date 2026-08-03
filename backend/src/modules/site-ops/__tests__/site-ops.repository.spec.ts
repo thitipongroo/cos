@@ -160,6 +160,21 @@ describe('SiteOpsRepository', () => {
     expect((await repo.findReportById('report-uuid-001'))?.report_id).toBe('report-uuid-001');
   });
 
+  // Batch lookup backing the offline-sync path — one query for the whole push instead of one per item.
+  it('findReportsByIds keys the returned rows by report_id', async () => {
+    mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
+    const found = await repo.findReportsByIds(['report-uuid-001', 'report-uuid-002']);
+    expect(found.get('report-uuid-001')?.report_id).toBe('report-uuid-001');
+    expect(found.get('report-uuid-002')).toBeUndefined();
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('findReportsByIds short-circuits an empty id list without querying', async () => {
+    const found = await repo.findReportsByIds([]);
+    expect(found.size).toBe(0);
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
   it('listSiteReports returns rows and total', async () => {
     mockPrisma.$queryRaw
       .mockResolvedValueOnce([reportRow]) // first call = rows

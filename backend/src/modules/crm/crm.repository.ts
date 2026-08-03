@@ -5,6 +5,7 @@
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 import { clsTenantId } from '../../shared/context/cls-context';
 
 export interface LeadRow {
@@ -233,13 +234,15 @@ export class CrmRepository {
   }
 
   async listCustomers(): Promise<CrmCustomerRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) =>
         tx.$queryRaw<CrmCustomerRow[]>`
         SELECT * FROM finance.customers
         WHERE tenant_id = ${this.tenantId}::uuid
         ORDER BY created_at DESC
+        LIMIT ${capLimit()}
       `,
     );
+    return applyCap(rows, 'crm.customers');
   }
 }

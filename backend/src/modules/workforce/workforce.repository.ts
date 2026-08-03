@@ -3,6 +3,7 @@
 
 import { Injectable, Scope } from '@nestjs/common';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { applyCap, capLimit } from '../../shared/pagination/list-cap';
 
 export interface WorkerRow {
   worker_id: string;
@@ -94,11 +95,13 @@ export class WorkforceRepository {
   }
 
   async findAllWorkers(): Promise<WorkerRow[]> {
-    return this.db.run(
+    const rows = await this.db.run(
       (tx) => tx.$queryRaw<WorkerRow[]>`
       SELECT * FROM workforce.workers WHERE is_active = true ORDER BY full_name
+      LIMIT ${capLimit()}
     `,
     );
+    return applyCap(rows, 'workforce.workers');
   }
 
   async findWorkerById(id: string): Promise<WorkerRow | null> {

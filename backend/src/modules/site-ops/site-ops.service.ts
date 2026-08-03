@@ -23,6 +23,7 @@ import type {
   InspectionRow,
   MaterialConsumptionRow,
 } from './site-ops.repository';
+import { UUID_PATTERN } from '../../shared/prisma/assert-safe-tenant-id';
 import { resolveReportConflict, resolveIssueConflict } from './conflict-handler';
 import type { ConflictStatus } from './conflict-handler';
 import type { CreateSiteReportDto } from './dto/create-site-report.dto';
@@ -138,8 +139,20 @@ export class SiteOpsService {
       conflict_status: ConflictStatus;
     }> = [];
 
+    // One lookup for the whole batch instead of one per item. This loop used to call
+    // findReportById(item.client_id) on every element — each a separate round trip inside its own
+    // db.run transaction — so a device coming back from a week offline opened one transaction per
+    // queued report before performing a single write.
+    //
+    // Only well-formed UUIDs are sent: client_id comes from the device, and one malformed value
+    // would break the `::uuid[]` cast for the entire batch. A non-UUID simply misses the map and
+    // takes the create path, which is exactly what the old per-item `.catch(() => null)` did.
+    const existingById = await this.repo
+      .findReportsByIds(dto.items.map((i) => i.client_id).filter((id) => UUID_PATTERN.test(id)))
+      .catch(() => new Map<string, SiteReportRow>());
+
     for (const item of dto.items) {
-      const existing = await this.repo.findReportById(item.client_id).catch(() => null);
+      const existing = existingById.get(item.client_id) ?? null;
 
       if (!existing) {
         // New report — accept directly

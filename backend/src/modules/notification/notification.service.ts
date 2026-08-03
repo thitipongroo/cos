@@ -135,16 +135,20 @@ export class NotificationService {
     event_type: string;
     payload: Record<string, unknown>;
   }): Promise<void> {
-    for (const channel of CHANNELS) {
-      const enabled = await this.repo.isChannelEnabled(
-        params.tenant_id,
-        params.user_id,
-        params.event_type,
-        channel,
-      );
-      if (!enabled) continue;
+    // Two queries for the whole channel set, not two per channel. This loop previously ran
+    // isChannelEnabled + findTemplate for each of IN_APP/EMAIL/LINE, and each call opens its own
+    // db.run transaction — six transactions per recipient before any notification was written,
+    // multiplied by every recipient of the event.
+    const [disabledChannels, templatesByChannel] = await Promise.all([
+      this.repo.findDisabledChannels(params.tenant_id, params.user_id, params.event_type, CHANNELS),
+      this.repo.findTemplatesByChannel(params.tenant_id, params.event_type, CHANNELS),
+    ]);
 
-      const template = await this.repo.findTemplate(params.tenant_id, params.event_type, channel);
+    for (const channel of CHANNELS) {
+      // Absent preference row = enabled, matching isChannelEnabled's `?? true` default.
+      if (disabledChannels.has(channel)) continue;
+
+      const template = templatesByChannel.get(channel);
       if (!template) continue;
 
       const subject = template.subject_template
