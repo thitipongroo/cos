@@ -15,6 +15,8 @@ import { KafkaProducer } from '@cos/shared';
 import { createLogger } from '@cos/logger';
 import { Connection, Client } from '@temporalio/client';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { FeatureFlagService } from '../../shared/feature-flags/feature-flag.service';
+import { encryptDedicatedDbUrl, ENCRYPTED_DB_URL_FLAG } from './utils/dedicated-db-url-cipher';
 
 const logger = createLogger('tenant-service');
 
@@ -66,6 +68,16 @@ export class TenantService implements OnModuleDestroy {
   private readonly prisma = createPrismaClient();
   private readonly kafka = new KafkaProducer();
 
+  // FeatureFlagService gates whether dedicated_db_url is encrypted on write (s1.tenant.encrypted-db-url,
+  // security review F5b / QM-15). Injected rather than constructed so the Unleash client stays owned by
+  // Nest and is closed on shutdown (Rule 39).
+  constructor(private readonly flags: FeatureFlagService) {}
+
+  /** Encrypt-on-write decision for this tenant, honouring the QM-15 rollout flag. */
+  private encryptDbUrl(url: string, tenantId?: string): string {
+    return encryptDedicatedDbUrl(url, this.flags.isEnabled(ENCRYPTED_DB_URL_FLAG, { tenantId }));
+  }
+
   /** Close the Prisma connection on shutdown so the query-engine socket does not leak. */
   async onModuleDestroy(): Promise<void> {
     await this.prisma.$disconnect();
@@ -98,7 +110,7 @@ export class TenantService implements OnModuleDestroy {
     const tenant = await this.prisma.$transaction(async (tx) => {
       const [created] = await tx.$queryRaw<TenantSummaryRow[]>`
         INSERT INTO platform.tenants (tenant_code, tenant_name, keycloak_realm, plan_type, dedicated_db_url, data_region, timezone)
-        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ?? null}, ${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')})
+        VALUES (${dto.tenantCode}, ${dto.tenantName}, ${keycloakRealm}, ${dto.planType}::"PlanType", ${dto.dedicatedDbUrl ? this.encryptDbUrl(dto.dedicatedDbUrl) : null},${dto.dataRegion ?? 'ap-southeast-1'}, ${dto.timezone ?? defaultTimezoneForRegion(dto.dataRegion ?? 'ap-southeast-1')})
         RETURNING tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active,
                   data_region, timezone, created_at, updated_at
       `;
@@ -172,7 +184,7 @@ export class TenantService implements OnModuleDestroy {
     }
     const affected = await this.prisma.$executeRaw`
       UPDATE platform.tenants
-      SET dedicated_db_url = ${dedicatedDbUrl}, updated_at = now()
+      SET dedicated_db_url = ${this.encryptDbUrl(dedicatedDbUrl, tenantId)}, updated_at = now()
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
     `;
     if (affected === 0) {

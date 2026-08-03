@@ -17,11 +17,21 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   's1.ai.report-generation': true,
   's1.ai.completions': true,
   's1.identity.sms-otp-login': true,
+  // Retrofit kill-switch for ADR-077 (security review F1b/F2b): resolve platform.users.is_active and
+  // the effective role from the database on every request instead of trusting the JWT claim. Default
+  // ON — it is a security fix, and this file's convention is that retrofit kill-switches fail open to
+  // the CURRENT behaviour. Turning it OFF reverts to trusting the token, which re-opens the finding;
+  // it exists only so an auth-path incident can be mitigated in <60s without a rollback deploy.
+  's1.identity.authoritative-role-check': true,
   's1.finance.payment-mutations': true,
   // New feature, not a retrofit kill-switch — defaults OFF until rollout. Failing closed is the
   // safe direction here: with it off, web forms fall back to server-only validation (QM-4
   // class-validator), which is the behaviour that shipped before the flag existed.
   's1.web.client-validation': false,
+  // Encrypt platform.tenants.dedicated_db_url at rest on WRITE (security review F5b; QM-15 kill
+  // switch). Defaults OFF until rollout — reads always accept both formats, so flipping it either way
+  // is safe at any time and never strands a row.
+  's1.tenant.encrypted-db-url': false,
 };
 
 export interface FlagContext {

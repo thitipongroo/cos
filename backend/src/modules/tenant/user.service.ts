@@ -298,9 +298,16 @@ export class UserService implements OnModuleDestroy {
     actorId: string,
   ): Promise<void> {
     assertRoleAssignableByTenant(dto.role);
-    const [membership] = await this.prisma.$queryRaw<Array<{ role: string }>>`
-      SELECT role FROM platform.tenant_memberships
-      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+    // keycloak_user_id + realm are selected alongside the membership so the Keycloak `role` attribute
+    // can be re-synced below without a second round trip (security review F2).
+    const [membership] = await this.prisma.$queryRaw<
+      Array<{ role: string; keycloak_user_id: string; keycloak_realm: string }>
+    >`
+      SELECT m.role, u.keycloak_user_id, t.keycloak_realm
+      FROM platform.tenant_memberships m
+      JOIN platform.users u   ON u.user_id   = m.user_id AND u.tenant_id = m.tenant_id
+      JOIN platform.tenants t ON t.tenant_id = m.tenant_id
+      WHERE m.user_id = ${userId}::uuid AND m.tenant_id = ${tenantId}::uuid
       LIMIT 1
     `;
     if (!membership) {
@@ -313,6 +320,14 @@ export class UserService implements OnModuleDestroy {
       SET role = ${dto.role}::platform."CosRoleEnum"
       WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
     `;
+
+    // Keep the identity store in step with the membership table. Without this the `role` claim in every
+    // token Keycloak mints afterwards still carries the OLD role (security review F2).
+    await this.keycloakAdmin.syncUserRole(
+      membership.keycloak_user_id,
+      membership.keycloak_realm,
+      dto.role,
+    );
 
     logger.info({ userId, tenantId, actorId, oldRole, newRole: dto.role }, 'user.role_changed');
 
@@ -365,12 +380,19 @@ export class UserService implements OnModuleDestroy {
     // failure after the DELETE (a dropped connection, a rejected enum value) left the user holding the
     // NEW primary role with NO additional roles — a silently under-privileged account that nothing
     // retries or repairs. Role state is a security boundary: it moves all at once or not at all.
-    const oldRole = await this.prisma.$transaction(async (tx) => {
-      const [membership] = await tx.$queryRaw<Array<{ role: string }>>`
-        SELECT role FROM platform.tenant_memberships
-        WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+    const membershipRow = await this.prisma.$transaction(async (tx) => {
+      // keycloak_user_id + realm ride along so the Keycloak `role` attribute can be re-synced after the
+      // transaction commits, without a second round trip (security review F2).
+      const [membership] = await tx.$queryRaw<
+        Array<{ role: string; keycloak_user_id: string; keycloak_realm: string }>
+      >`
+        SELECT m.role, u.keycloak_user_id, t.keycloak_realm
+        FROM platform.tenant_memberships m
+        JOIN platform.users u   ON u.user_id   = m.user_id AND u.tenant_id = m.tenant_id
+        JOIN platform.tenants t ON t.tenant_id = m.tenant_id
+        WHERE m.user_id = ${userId}::uuid AND m.tenant_id = ${tenantId}::uuid
         LIMIT 1
-        FOR UPDATE
+        FOR UPDATE OF m
       `;
       if (!membership) {
         throw new NotFoundException(`User ${userId} not found in tenant`);
@@ -394,8 +416,19 @@ export class UserService implements OnModuleDestroy {
         ON CONFLICT (user_id, tenant_id, role) DO NOTHING
       `;
 
-      return membership.role;
+      return membership;
     });
+    const oldRole = membershipRow.role;
+
+    // Outside the transaction on purpose: an external HTTP call held inside an open DB transaction
+    // pins a PgBouncer server connection for the duration of that call (QM-18). The membership row is
+    // already committed, so a Keycloak failure here surfaces as a 500 with COS and Keycloak briefly
+    // disagreeing — which the per-request role resolution in KeycloakJwtStrategy already covers.
+    await this.keycloakAdmin.syncUserRole(
+      membershipRow.keycloak_user_id,
+      membershipRow.keycloak_realm,
+      dto.primary_role,
+    );
 
     logger.info(
       { userId, tenantId, actorId, primaryRole: dto.primary_role, additionalRoles: additional },
@@ -512,18 +545,42 @@ export class UserService implements OnModuleDestroy {
     return { email: user.email };
   }
 
+  /**
+   * Deactivate a user — revoke access, preserve data.
+   *
+   * Order matters. The COS flag is flipped FIRST so `KeycloakJwtStrategy` starts rejecting the user on
+   * the very next request (it re-checks `is_active` per request), then the Keycloak account is disabled
+   * and its sessions killed so no NEW token can be minted. Previously only the COS flag was written and
+   * nothing checked it at auth time, so a "deactivated" user could keep logging in forever
+   * (security review F1).
+   *
+   * A Keycloak failure propagates rather than being swallowed: the account is already deactivated in
+   * COS (the safe direction), and the admin must know the identity store is out of sync so they can
+   * retry. Re-running the endpoint after a failure returns 404 — the row is no longer `is_active` — so
+   * the retry path is the Keycloak-side runbook, not this endpoint.
+   */
   async deactivateUser(userId: string, tenantId: string, actorId: string): Promise<void> {
-    const [user] = await this.prisma.$queryRaw<Array<{ user_id: string }>>`
+    const [user] = await this.prisma.$queryRaw<Array<{ keycloak_user_id: string }>>`
       UPDATE platform.users
       SET is_active = false, updated_at = now()
       WHERE user_id = ${userId}::uuid
         AND tenant_id = ${tenantId}::uuid
         AND is_active = true
-      RETURNING user_id
+      RETURNING keycloak_user_id
     `;
     if (!user) {
       throw new NotFoundException(`User ${userId} not found or already inactive`);
     }
+
+    const [tenant] = await this.prisma.$queryRaw<Array<{ keycloak_realm: string }>>`
+      SELECT keycloak_realm FROM platform.tenants
+      WHERE tenant_id = ${tenantId}::uuid AND is_active = true
+      LIMIT 1
+    `;
+    if (!tenant) throw new BadRequestException('Tenant not found or inactive');
+
+    await this.keycloakAdmin.disableUser(user.keycloak_user_id, tenant.keycloak_realm);
+
     logger.info({ userId, tenantId, actorId }, 'user.deactivated');
   }
 

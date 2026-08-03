@@ -201,6 +201,55 @@ export class KeycloakAdminService {
     logger.info({ keycloakUserId, realm }, 'keycloak.user.deleted');
   }
 
+  /**
+   * Disable a Keycloak account and terminate every live session (security review F1).
+   *
+   * Deactivating a user in `platform.users` alone does NOT revoke access: the account stays enabled in
+   * Keycloak, so the person can complete a fresh OIDC login and be issued a brand-new, fully valid
+   * token indefinitely. Keycloak is the identity store for both auth paths, so the account must be
+   * disabled THERE for deactivation to mean anything.
+   *
+   * `logout` is what kills the refresh tokens already in the wild — `enabled: false` stops new logins,
+   * but an existing refresh token would otherwise keep minting access tokens until it expired.
+   */
+  async disableUser(keycloakUserId: string, realm: string): Promise<void> {
+    const client = await this.getAuthenticatedClient(realm);
+    await client.users.update({ id: keycloakUserId }, { enabled: false });
+    await client.users.logout({ id: keycloakUserId });
+    logger.info({ keycloakUserId, realm }, 'keycloak.user.disabled');
+  }
+
+  /**
+   * Rewrite the `role` user attribute the JWT `role` claim is mapped from (security review F2).
+   *
+   * The realm maps `role` with an `oidc-usermodel-attribute-mapper` over the user attribute of the
+   * same name (infrastructure/keycloak/realms/construction-os-realm.json), and that attribute was
+   * previously written ONLY at user-creation time. A role change in `platform.tenant_memberships`
+   * therefore never reached any token Keycloak minted afterwards, so a demotion never took effect.
+   *
+   * Attributes are read-modify-written: Keycloak REPLACES the whole attribute map when the field is
+   * present, so sending `{ role }` alone would silently drop `tenant_id` and `user_id` — the two
+   * claims every downstream guard and RLS transaction depends on.
+   *
+   * No forced logout here, deliberately: KeycloakJwtStrategy resolves the effective role from
+   * `platform.tenant_memberships` on every request (F2b), so a live session already sees the new role.
+   * This keeps Keycloak's own view correct for tokens minted later, without signing everyone out.
+   */
+  async syncUserRole(keycloakUserId: string, realm: string, role: string): Promise<void> {
+    const client = await this.getAuthenticatedClient(realm);
+    const existing = await client.users.findOne({ id: keycloakUserId });
+    if (!existing) {
+      throw new InternalServerErrorException(
+        `Keycloak user ${keycloakUserId} not found in realm ${realm}`,
+      );
+    }
+    await client.users.update(
+      { id: keycloakUserId },
+      { attributes: { ...(existing.attributes ?? {}), role: [role] } },
+    );
+    logger.info({ keycloakUserId, realm, role }, 'keycloak.user.role_synced');
+  }
+
   private async callTokenEndpoint(
     realm: string,
     params: URLSearchParams,

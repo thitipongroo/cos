@@ -31,7 +31,14 @@ describe('KeycloakAdminService', () => {
   let mockFetch: jest.SpyInstance;
   let mockKcInstance: {
     auth: jest.Mock;
-    users: { create: jest.Mock; del: jest.Mock; resetPassword: jest.Mock };
+    users: {
+      create: jest.Mock;
+      del: jest.Mock;
+      resetPassword: jest.Mock;
+      update: jest.Mock;
+      logout: jest.Mock;
+      findOne: jest.Mock;
+    };
   };
 
   beforeEach(() => {
@@ -47,6 +54,12 @@ describe('KeycloakAdminService', () => {
         create: jest.fn().mockResolvedValue({ id: 'kc-created-id' }),
         del: jest.fn().mockResolvedValue(undefined),
         resetPassword: jest.fn().mockResolvedValue(undefined),
+        update: jest.fn().mockResolvedValue(undefined),
+        logout: jest.fn().mockResolvedValue(undefined),
+        findOne: jest.fn().mockResolvedValue({
+          id: 'kc-1',
+          attributes: { tenant_id: ['t-1'], user_id: ['u-1'], role: ['SITE_WORKER'] },
+        }),
       },
     };
     MockKcAdminClient.mockImplementation(() => mockKcInstance);
@@ -193,6 +206,63 @@ describe('KeycloakAdminService', () => {
     it('deletes Keycloak user by id', async () => {
       await service.deleteUser('kc-uuid-1', 'tenant-acme');
       expect(mockKcInstance.users.del).toHaveBeenCalledWith({ id: 'kc-uuid-1' });
+    });
+  });
+
+  // ─── Security review F1 — deactivation must revoke access at the identity store ───────────
+  describe('disableUser', () => {
+    it('disables the account and terminates every live session', async () => {
+      await expect(service.disableUser('kc-uuid-1', 'tenant-acme')).resolves.toBeUndefined();
+
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        { enabled: false },
+      );
+      // enabled:false alone only blocks NEW logins — an existing refresh token would keep minting
+      // access tokens until it expired, so the sessions must be killed too.
+      expect(mockKcInstance.users.logout).toHaveBeenCalledWith({ id: 'kc-uuid-1' });
+    });
+  });
+
+  // ─── Security review F2 — the JWT `role` claim is mapped from this user attribute ──────────
+  describe('syncUserRole', () => {
+    it('rewrites the role attribute while PRESERVING tenant_id and user_id', async () => {
+      await expect(
+        service.syncUserRole('kc-uuid-1', 'tenant-acme', 'PROJECT_MANAGER'),
+      ).resolves.toBeUndefined();
+
+      // Keycloak REPLACES the whole attribute map when `attributes` is present, so sending only
+      // { role } would silently drop the two claims every guard and RLS transaction depends on.
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        {
+          attributes: {
+            tenant_id: ['t-1'],
+            user_id: ['u-1'],
+            role: ['PROJECT_MANAGER'],
+          },
+        },
+      );
+    });
+
+    it('tolerates a Keycloak user that carries no attributes yet', async () => {
+      mockKcInstance.users.findOne.mockResolvedValue({ id: 'kc-1' });
+
+      await service.syncUserRole('kc-uuid-1', 'tenant-acme', 'FINANCE');
+
+      expect(mockKcInstance.users.update).toHaveBeenCalledWith(
+        { id: 'kc-uuid-1' },
+        { attributes: { role: ['FINANCE'] } },
+      );
+    });
+
+    it('throws when the Keycloak user does not exist — never writes a partial attribute map', async () => {
+      mockKcInstance.users.findOne.mockResolvedValue(undefined);
+
+      await expect(service.syncUserRole('missing', 'tenant-acme', 'FINANCE')).rejects.toThrow(
+        InternalServerErrorException,
+      );
+      expect(mockKcInstance.users.update).not.toHaveBeenCalled();
     });
   });
 

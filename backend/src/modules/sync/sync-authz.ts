@@ -99,16 +99,12 @@ const ATTENDANCE_WRITE_ROLES = [
  * Roles allowed to PUSH each entity type. An entity type absent from this map carries no role
  * requirement beyond authentication.
  *
- * `photo_annotation` is deliberately absent — i.e. authentication only, no role gate. No spec states
- * a write role for it directly, so this follows the surrounding evidence rather than a guess:
- * 14-api-architecture §Files APIs marks EVERY file route "Any role" (upload, get metadata, list by
- * project, and the annotation read `GET /files/{id}/annotation`) with the single exception of
- * `DELETE /files/{id}` → Tenant Admin. Annotation writing is defined in that same section as flowing
- * through `/sync/push` instead of a REST route (ADR-056), so it sits inside an API surface the spec
- * treats as unrestricted for everything but deletion.
- *
- * This is an inference from the section, not an explicit line — if annotation writing should be
- * narrower, add an entry here and it takes effect immediately.
+ * `photo_annotation` used to be absent — authentication only, no role gate — because no spec stated a
+ * write role for it and inferring one would have been inventing policy. 14-api-architecture §Files APIs
+ * now states it outright (product-owner decision 2026-08-04): Site Worker, Site Engineer, PM, Tenant
+ * Admin, i.e. the same FIELD_WRITE_ROLES as the other field-editable entities routed through
+ * `/sync/push`. Reads stay unrestricted, matching the `GET /files/{id}/annotation` row, so
+ * `writeNeverWiderThanRead` holds trivially and the pair is asserted below.
  */
 export const PUSH_ROLES: Readonly<Record<string, readonly CosRole[]>> = Object.freeze({
   task: TASK_WRITE_ROLES,
@@ -118,6 +114,7 @@ export const PUSH_ROLES: Readonly<Record<string, readonly CosRole[]>> = Object.f
   safety: SAFETY_WRITE_ROLES,
   material: FIELD_WRITE_ROLES,
   inspection: INSPECTION_WRITE_ROLES,
+  photo_annotation: FIELD_WRITE_ROLES,
 });
 
 /**
@@ -153,5 +150,15 @@ export const syncAuthzInvariants = {
   /** No entity may be readable by a role that cannot read the record it hangs off. */
   childNeverWiderThanParent: [{ child: 'material', parent: 'site_report' }] as const,
   /** Writing an entity must not be granted more widely than reading it. */
-  writeNeverWiderThanRead: ['task', 'site_report', 'issue', 'safety', 'material'] as const,
+  writeNeverWiderThanRead: [
+    'task',
+    'site_report',
+    'issue',
+    'safety',
+    'material',
+    // Reads are unrestricted (no DELTA_ROLES entry, matching "Any role" on GET /files/{id}/annotation),
+    // so this pair passes trivially today. It is listed anyway so that narrowing annotation READS later
+    // cannot silently leave writes wider than reads.
+    'photo_annotation',
+  ] as const,
 };

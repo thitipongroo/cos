@@ -12,6 +12,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './shared/filters/http-exception.filter';
 import { appDatabaseUrl } from './shared/prisma/app-database-url';
+import { resolveTrustProxy } from './shared/net/trusted-proxy';
+import { assertSecurityTogglesConfigured } from './shared/config/security-toggles';
 
 async function bootstrap(): Promise<void> {
   // Fail fast at startup if the non-superuser app DB role is not configured — every tenant-scoped
@@ -19,9 +21,19 @@ async function bootstrap(): Promise<void> {
   // silently degrade tenant isolation, so refuse to start rather than fall back to a superuser role.
   appDatabaseUrl();
 
+  // Refuse to boot a production instance whose security posture is implicit — WAF_ORIGIN_ENFORCE,
+  // MFA_ENFORCE and WEBHOOK_REPLAY_PROTECTION all default OFF, so an unset variable is a disabled
+  // control that looks identical to a deliberate one (security review F8).
+  assertSecurityTogglesConfigured();
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ logger: false }),
+    // trustProxy — without it `request.ip` is the Cloudflare/ALB peer, so ThrottlerGuard (which keys on
+    // request.ip) collapsed every caller behind one edge into a single rate-limit bucket, and @Ip() /
+    // audit_logs.ip_address recorded the edge instead of the client (security review F3). Trust is
+    // granted only to peers inside TRUSTED_PROXY_CIDRS — never blanket-true, which would let a direct
+    // caller forge X-Forwarded-For. Unset ranges → false → previous behaviour (see trusted-proxy.ts).
+    new FastifyAdapter({ logger: false, trustProxy: resolveTrustProxy() }),
     // rawBody: true makes Nest expose req.rawBody (Buffer) for webhook HMAC
     // verification (Phase 25) without manually registering a content-type parser
     // that conflicts with Nest's own JSON body parser registered during init.

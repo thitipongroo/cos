@@ -39,6 +39,30 @@ export class AnnotationRepository {
     return this.request.userId ?? '';
   }
 
+  /**
+   * True when `fileId` names a live photo belonging to the caller's tenant (security review F7).
+   *
+   * `files.photo_annotations` carries a GLOBAL unique on `file_id` while its RLS policy is per-tenant,
+   * so an upsert aimed at another tenant's file_id conflicts with a row the caller cannot see and
+   * PostgreSQL raises instead of writing. RLS means nothing leaks, but the resulting 500 answers a
+   * question the caller should not get to ask — "does this file_id have an annotation somewhere?" —
+   * and reads as a server fault rather than a denial. Checking ownership first turns that into a clean
+   * 404 and makes the object-level authorization explicit rather than a side effect of a constraint.
+   */
+  async fileExistsInTenant(fileId: string): Promise<boolean> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<Array<{ file_id: string }>>`
+        SELECT file_id
+        FROM files.files
+        WHERE file_id = ${fileId}::uuid
+          AND tenant_id = ${this.tenantId}::uuid
+          AND deleted_at IS NULL
+        LIMIT 1`,
+    );
+    return rows.length > 0;
+  }
+
   /** The active annotation for a photo, or null. Soft-deleted rows are not returned. */
   async findByFileId(fileId: string): Promise<AnnotationRow | null> {
     const rows = await this.db.run(

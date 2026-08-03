@@ -393,6 +393,13 @@ POST /api/v1/projects
 > other field-editable entity: `POST /api/v1/sync/push` with `entity_type: "photo_annotation"`, which
 > runs the `version`-based `CONFLICT_FLAGGED` check (ADR-056; §17.5). A dedicated `PUT` was considered
 > and rejected as inconsistent with the seven entities already routed through `/sync/push`.
+>
+> **Write authorization: Site Worker, Site Engineer, PM, Tenant Admin** — the same set as the other
+> field-editable entities pushed through `/sync/push` (`site_report`, `issue`, `material`). Reading an
+> annotation stays "Any role", matching the `GET` row above (product-owner decision 2026-08-04; closes
+> the gap noted in `backend/src/modules/sync/sync-authz.ts`, where `photo_annotation` previously carried
+> no entry and therefore no role requirement beyond authentication). This satisfies the
+> `writeNeverWiderThanRead` invariant that file asserts, since annotation reads are unrestricted.
 
 ---
 
