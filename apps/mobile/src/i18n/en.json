@@ -108,7 +108,7 @@
             "photos": "Site photos — images attached to site reports and inspections. Faces may appear; no facial recognition is performed.",
             "financial": "Payroll — your agreed daily rate on a project. No bank account details are stored."
           },
-          "note": "We do not collect biometric identifiers such as fingerprints or face scans, national ID numbers, or dates of birth. The retention period for each data type is defined in our data retention policy."
+          "note": "We do not collect biometric identifiers such as fingerprints or face scans, and we run no facial recognition on any image. Site photos may incidentally show a person's face; those images are protected by the same project access controls as the record they belong to. We also do not collect national ID numbers or dates of birth. The retention period for each data type is defined in our data retention policy."
         },
         "usage": {
           "title": "Data Usage",
@@ -132,12 +132,13 @@
           "title": "Technical Security",
           "body": "Personal data is protected by the following controls:",
           "controls": {
-            "atRest": "AES-256 encryption at rest (managed keys)",
+            "atRest": "AES-256 encryption at rest, with keys held in cloud hardware security modules",
             "fieldLevel": "AES-256-GCM field-level encryption for secrets",
             "tls": "TLS 1.3 minimum on all public endpoints",
             "mesh": "Zero-trust service mesh with mutual TLS",
             "isolation": "Row-level security isolating each organisation"
-          }
+          },
+          "trustCenter": "Full control status, certificate references and our sub-processor list are published on our Trust Center."
         },
         "rights": {
           "title": "User Rights",

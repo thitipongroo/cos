@@ -31,13 +31,13 @@ the prerequisite for assigning the rest.
 
 ## §37 — Controller obligations
 
-| ID      | PDPA ref | Obligation                                        | Implementation on disk                                                                                                                                                                                           | Status    | Verified   |
-| ------- | -------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
-| PDPA-01 | §37(1)   | Security measures appropriate to the risk         | AES-256-GCM field encryption (ADR-035); TLS 1.3 pinned at ingress (`infrastructure/kubernetes/cert-manager/cert-manager.yml:130` — `ssl-protocols: 'TLSv1.3'`); AES-256 SSE-KMS + CMK per §5.2.1                 | `DONE`    | 2026-08-03 |
-| PDPA-02 | §37(2)   | Prevent unauthorised disclosure to third parties  | RLS `rls_tenant_isolation` on every domain table; `app_user` never granted BYPASSRLS (ADR-031); `isolation-tests` job in `.github/workflows/ci.yml:408` runs `backend/test/tenant-isolation.integration.spec.ts` | `DONE`    | 2026-08-03 |
-| PDPA-03 | §37(3)   | Reachable controller contact published            | Pre-auth Privacy Policy screen renders the address from `EXPO_PUBLIC_DPO_EMAIL`; renders disabled while unset                                                                                                    | `PARTIAL` | 2026-08-03 |
-| PDPA-04 | §37(4)   | Breach notification to the Office within 72 hours | No breach-notification workflow exists in `backend/src/`                                                                                                                                                         | `OPEN`    | 2026-08-03 |
-| PDPA-05 | §41      | Data Protection Officer appointed                 | Not appointed. `data-flow-map.md` § Review schedule assigns an **External DPO** at the Stage 2→3 gate                                                                                                            | `OPEN`    | 2026-08-03 |
+| ID      | PDPA ref | Obligation                                        | Implementation on disk                                                                                                                                                                                                                                                                                  | Status    | Verified   |
+| ------- | -------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| PDPA-01 | §37(1)   | Security measures appropriate to the risk         | AES-256-GCM field encryption (ADR-035); TLS 1.3 pinned at ingress (`infrastructure/kubernetes/cert-manager/cert-manager.yml:130` — `ssl-protocols: 'TLSv1.3'`); AES-256 SSE-KMS + CMK per §5.2.1                                                                                                        | `DONE`    | 2026-08-03 |
+| PDPA-02 | §37(2)   | Prevent unauthorised disclosure to third parties  | RLS `rls_tenant_isolation` on every domain table; `app_user` never granted BYPASSRLS (ADR-031); `isolation-tests` job in `.github/workflows/ci.yml:408` runs `backend/test/tenant-isolation.integration.spec.ts`                                                                                        | `DONE`    | 2026-08-03 |
+| PDPA-03 | §37(3)   | Reachable controller contact published            | Pre-auth Privacy Policy screen renders the address from `EXPO_PUBLIC_DPO_EMAIL` (set to `support@construction-os.com`, PO 2026-08-03); renders disabled while unset. `PARTIAL`, not `DONE`: this is the general support address, not a dedicated DPO mailbox, because no DPO is appointed yet (PDPA-05) | `PARTIAL` | 2026-08-03 |
+| PDPA-04 | §37(4)   | Breach notification to the Office within 72 hours | No breach-notification workflow exists in `backend/src/`                                                                                                                                                                                                                                                | `OPEN`    | 2026-08-03 |
+| PDPA-05 | §41      | Data Protection Officer appointed                 | Not appointed. `data-flow-map.md` § Review schedule assigns an **External DPO** at the Stage 2→3 gate                                                                                                                                                                                                   | `OPEN`    | 2026-08-03 |
 
 ---
 
@@ -82,18 +82,52 @@ Response deadline for a verified request: **30 days** (PDPA §32).
 
 ## §6 / §37 — Data inventory, residency and retention
 
-| ID      | Obligation                             | Authoritative document                                                                                                                                                                                                                                          | Status    | Verified   |
-| ------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
-| PDPA-40 | Record of processing activities (RoPA) | `data-flow-map.md` — 8 service flows + processor table                                                                                                                                                                                                          | `PARTIAL` | 2026-08-03 |
-| PDPA-41 | Retention period defined per data type | `data-retention-policy.md`                                                                                                                                                                                                                                      | `PARTIAL` | 2026-08-03 |
-| PDPA-42 | Data residency enforced                | `data-residency-policy.md`; per-tenant `platform.tenants.data_region`                                                                                                                                                                                           | `PARTIAL` | 2026-08-03 |
-| PDPA-43 | Cross-border transfer documented       | OTP SMS via AWS SNS `ap-southeast-1` (§5.3.1); OpenAI (USA, sanitised)                                                                                                                                                                                          | `PARTIAL` | 2026-08-03 |
-| PDPA-44 | DPA signed with every processor        | AWS signed; **OpenAI and Cloudflare OPEN** (`data-flow-map.md`)                                                                                                                                                                                                 | `OPEN`    | 2026-08-03 |
-| PDPA-45 | PII never written to logs or traces    | **Convention only.** `@cos/logger` configures pino with NO `redact` option (`packages/@cos/logger/src/logger.ts`), so nothing prevents a developer from logging PII. The allowlist in STRIDE DP-8 (§5.9) is scoped to the credential service, not platform-wide | `OPEN`    | 2026-08-03 |
+| ID      | Obligation                             | Authoritative document                                                                                                                                                                                                                                                                | Status    | Verified   |
+| ------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| PDPA-40 | Record of processing activities (RoPA) | `data-flow-map.md` — 8 service flows + processor table                                                                                                                                                                                                                                | `PARTIAL` | 2026-08-03 |
+| PDPA-41 | Retention period defined per data type | `data-retention-policy.md`                                                                                                                                                                                                                                                            | `PARTIAL` | 2026-08-03 |
+| PDPA-42 | Data residency enforced                | `data-residency-policy.md`; per-tenant `platform.tenants.data_region`                                                                                                                                                                                                                 | `PARTIAL` | 2026-08-03 |
+| PDPA-43 | Cross-border transfer documented       | OTP SMS via AWS SNS `ap-southeast-1` (§5.3.1); OpenAI (USA, sanitised)                                                                                                                                                                                                                | `PARTIAL` | 2026-08-03 |
+| PDPA-44 | DPA signed with every processor        | AWS signed; **OpenAI and Cloudflare OPEN** (`data-flow-map.md`)                                                                                                                                                                                                                       | `OPEN`    | 2026-08-03 |
+| PDPA-45 | PII never written to logs or traces    | **Convention only.** `@cos/logger` configures pino with NO `redact` option (`packages/@cos/logger/src/logger.ts`), so nothing prevents a developer from logging PII. The allowlist in STRIDE DP-8 (§5.9) is scoped to the credential service, not platform-wide                       | `OPEN`    | 2026-08-03 |
+| PDPA-46 | Service-to-service mTLS (spec §5.4)    | **Not deployed.** No Istio manifest exists anywhere under `infrastructure/`; `cos-kg-ingestion-worker/templates/networkpolicy.yaml:22` states in its own comment that NetworkPolicy "does NOT replace" the specified Istio mTLS. NetworkPolicy itself covers only 2 of 11 Helm charts | `OPEN`    | 2026-08-03 |
+
+> **Disclosure gap on PDPA-46 — product-owner decision 2026-08-03.** The pre-auth Privacy Policy
+> screen lists "Zero-trust service mesh with mutual TLS" among its technical controls. That control
+> is `OPEN`, not `DONE`. The product owner was shown this evidence and elected to keep the line as
+> written. It is recorded here so the gap is tracked rather than invisible: closing PDPA-46 (deploying
+> Istio, or an equivalent mTLS layer) makes the published statement accurate. Until then the notice
+> describes a control the platform does not yet enforce.
 
 `PDPA-41` and `PDPA-42` are `PARTIAL`, not `DONE`, because the documents exist and are now accurate
 but the enforcement they describe (`TenantRoutingMiddleware` regional routing, automated retention
 purge jobs) is not implemented in `backend/src/`.
+
+---
+
+## Cryptographic module validation
+
+Evidence for the "keys are held in hardware security modules" statement published on the Trust
+Center (`apps/web/src/app/trust`) and referenced in general terms by the mobile Privacy Policy.
+Verified directly against the NIST CMVP register on 2026-08-03 — not taken from vendor marketing.
+
+| Module                         | Standard   | Level     | Certificate                                                                                           | Validated  | Status                         |
+| ------------------------------ | ---------- | --------- | ----------------------------------------------------------------------------------------------------- | ---------- | ------------------------------ |
+| AWS Key Management Service HSM | FIPS 140-3 | Overall 3 | [CMVP #4884](https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/4884) | 2024-11-18 | Active — **sunset 2026-11-17** |
+
+Scope of the claim, stated the same way ADR-039 scopes the RKE2 FIPS claim — what the certificate
+covers is the **module**, not our deployment:
+
+- It covers the AWS-operated HSMs that generate and hold KMS key material. Our SSE-KMS
+  customer-managed keys (`infrastructure/terraform/aws/kms.tf`) are created in that boundary.
+- It does **not** make Construction OS "FIPS validated". Nothing about our own services, the host
+  OS, or the on-premise deployment path is in scope. Do not write that phrase.
+- The certificate carries a CMVP caveat: _"No assurance of minimum security of SSPs (e.g. keys, bit
+  strings) that are externally loaded."_
+- **The sunset date is a maintenance obligation.** After 2026-11-17 the published claim must be
+  re-verified against whatever certificate supersedes #4884, or the Trust Center row corrected.
+  Separately, FIPS 140-2 modules become Historical after 2026-09-21, so any future 140-2 citation is
+  already unusable.
 
 ---
 

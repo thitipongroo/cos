@@ -96,6 +96,9 @@ export const config = {
     // 307 → /api/auth/signin, and Kubernetes counts 2xx/3xx as success — the probe would pass
     // forever and a wedged pod would never be restarted. Removing `health` here silently disables
     // both probes. Guarded by src/app/health/__tests__/health-routes.spec.ts.
-    '/((?!login|health|dev/component-preview|api/auth|offline|manifest.json|sw.js|workbox-|icons/|flags/|_next/static|_next/image|favicon.ico).*)',
+    // `trust` is the public Trust Center (PO 2026-08-03) — it publishes security-control status,
+    // sub-processors and residency for prospects and auditors who have no account, so it must not
+    // redirect to sign-in.
+    '/((?!login|health|trust|dev/component-preview|api/auth|offline|manifest.json|sw.js|workbox-|icons/|flags/|_next/static|_next/image|favicon.ico).*)',
   ],
 };

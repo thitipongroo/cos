@@ -64,6 +64,11 @@ allowBuilds:
   cpu-features: true
   detox: true
   dtrace-provider: true
+  # esbuild's postinstall links the platform-native binary. Needed because apps/web bundles its
+  # service worker with the NATIVE esbuild on Windows (see apps/web/src/app/serwist/[path]/route.ts):
+  # the esbuild-wasm build that Turbopack loads during `next build` rejects a Windows working
+  # directory, so `next build` cannot complete on a Windows dev machine without this.
+  esbuild: true
   prisma: true
   protobufjs: true
   sharp: true

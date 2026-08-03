@@ -539,5 +539,100 @@
     "error": "Transcription failed",
     "unavailable": "Transcription service is not available yet",
     "language": "Language"
+  },
+  "trust": {
+    "brand": "CONSTRUCTION OS",
+    "title": "Trust Center",
+    "intro": "What protects your data, stated so you can check it. Every control below points at a certificate, a public fact, or a control register in our repository — and the ones we have not built yet are listed as such rather than left out.",
+    "verifiedOn": "Controls verified against the implementation on",
+    "status": {
+      "live": "Live",
+      "partial": "Partial",
+      "planned": "Planned"
+    },
+    "controls": {
+      "heading": "Security controls",
+      "note": "“Planned” means specified and scheduled, but not running in production today.",
+      "keys": {
+        "label": "Key protection",
+        "detail": "Data-encryption keys are generated and used inside AWS Key Management Service hardware security modules. The module is validated by NIST; the certificate is linked below and is active until 17 November 2026, when it must be re-verified."
+      },
+      "atRest": {
+        "label": "Encryption at rest",
+        "detail": "All databases, object storage and backups, using a customer-managed key."
+      },
+      "fieldLevel": {
+        "label": "Field-level encryption",
+        "detail": "Individual sensitive fields, such as MFA secrets and signing keys, are separately encrypted before storage."
+      },
+      "inTransit": {
+        "label": "Encryption in transit",
+        "detail": "TLS 1.3 is the minimum on every public endpoint; earlier TLS versions are disabled."
+      },
+      "isolation": {
+        "label": "Tenant isolation",
+        "detail": "Every table carries a database-enforced policy so one organisation cannot read another's rows, even if the application layer is bypassed. A cross-tenant test runs on every build."
+      },
+      "mesh": {
+        "label": "Service-to-service mTLS",
+        "detail": "Mutual TLS between internal services is specified but is not yet deployed."
+      },
+      "logRedaction": {
+        "label": "Automatic log redaction",
+        "detail": "Personal data is kept out of logs by engineering convention; automated redaction is not yet enforced."
+      },
+      "subjectRights": {
+        "label": "Self-service data requests",
+        "detail": "Access, portability, erasure and restriction requests are handled by our Data Protection Office; a self-service endpoint is not yet built."
+      },
+      "breach": {
+        "label": "Automated breach notification",
+        "detail": "The 72-hour notification workflow required by PDPA is not yet implemented."
+      }
+    },
+    "certs": {
+      "heading": "Certifications",
+      "note": "We hold none of these today. They are listed with their target so the status is not ambiguous.",
+      "soc2": {
+        "label": "SOC 2 Type II",
+        "detail": "Security, Availability, Confidentiality. Audit begins 6 months before our Stage 1→2 transition."
+      },
+      "iso27001": {
+        "label": "ISO/IEC 27001:2022",
+        "detail": "Information Security Management System. No ISMS is established yet — the largest gap to certification."
+      },
+      "pdpa": {
+        "label": "PDPA audit (Thailand)",
+        "detail": "Annual audit, triggered 6 months before the first Thai enterprise customer onboards."
+      }
+    },
+    "subprocessors": {
+      "heading": "Sub-processors",
+      "note": "Third parties that may process personal data on our behalf.",
+      "colName": "Processor",
+      "colPurpose": "Purpose",
+      "colRegion": "Region",
+      "aws": {
+        "name": "Amazon Web Services",
+        "purpose": "Databases, object storage, secrets, Kubernetes"
+      },
+      "awsSns": {
+        "name": "AWS SNS",
+        "purpose": "Sign-in code (SMS) delivery — pinned to the SMS-capable endpoint"
+      },
+      "openai": {
+        "name": "OpenAI",
+        "purpose": "AI report generation. Personal data is removed before any text is sent"
+      },
+      "cloudflare": {
+        "name": "Cloudflare",
+        "purpose": "Web application firewall and CDN"
+      }
+    },
+    "residency": {
+      "heading": "Data residency",
+      "body": "Data is stored in the home region assigned to your organisation: Thailand (ap-southeast-7) for Thai organisations, Ireland (eu-west-1) for EU organisations, and Singapore (ap-southeast-1) otherwise, with Singapore as the disaster-recovery region for Thai data. The one routine cross-border transfer is SMS sign-in code delivery."
+    },
+    "footer": "Questions about this page, or a request to exercise your data rights, go to our Data Protection Office — the address is published in the Privacy Policy in the app."
   }
 }

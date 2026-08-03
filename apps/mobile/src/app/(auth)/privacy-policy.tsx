@@ -142,6 +142,11 @@ const SECTIONS: readonly PolicySection[] = [
       `${K}.security.controls.mesh`,
       `${K}.security.controls.isolation`,
     ],
+    // PO decision 2026-08-03 — the "general notice + evidence elsewhere" split. The notice names the
+    // controls in general-but-useful terms (the FTC's own guidance for security language in privacy
+    // notices); certificate numbers, validation/sunset dates and per-control status live on the
+    // public Trust Center (apps/web /trust), which is checkable by a reader.
+    footNotes: [`${K}.security.trustCenter`],
   },
   {
     id: 'rights',
