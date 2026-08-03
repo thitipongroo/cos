@@ -257,6 +257,17 @@ export function MobileNav() {
       <Tabs.Screen name="reset-password-email-success" options={{ href: null }} />
       <Tabs.Screen name="material-request" options={{ href: null }} />
       <Tabs.Screen name="mfa-enrollment" options={{ href: null }} />
+      {/* Transparency Portal (PO 2026-08-04) — reached from Profile, not a tab for any role. Hidden
+          here for the same reason as every other pushed child screen: `href: null` keeps it out of
+          the bottom nav while leaving it routable. */}
+      <Tabs.Screen name="transparency" options={{ href: null }} />
+      <Tabs.Screen name="transparency-identity" options={{ href: null }} />
+      <Tabs.Screen name="transparency-location" options={{ href: null }} />
+      <Tabs.Screen name="transparency-logs" options={{ href: null }} />
+      <Tabs.Screen name="transparency-manual" options={{ href: null }} />
+      <Tabs.Screen name="transparency-iot" options={{ href: null }} />
+      <Tabs.Screen name="transparency-ai" options={{ href: null }} />
+      <Tabs.Screen name="transparency-delete" options={{ href: null }} />
     </Tabs>
   );
 }

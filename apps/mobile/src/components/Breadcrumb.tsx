@@ -68,6 +68,40 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
   ],
   // Account
   '/profile': [{ key: 'nav.tabs.home', href: '/home' }, { key: 'profile.main.title' }],
+  // Transparency Portal (PO 2026-08-04) — entered from Profile, so Profile is the parent crumb. The
+  // seven category screens hang off the portal hub, giving Profile → Portal → category.
+  '/transparency': [
+    { key: 'profile.main.title', href: '/profile' },
+    { key: 'transparency.portal.title' },
+  ],
+  '/transparency-identity': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.identity.title' },
+  ],
+  '/transparency-location': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.location.title' },
+  ],
+  '/transparency-logs': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.logs.title' },
+  ],
+  '/transparency-manual': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.manual.title' },
+  ],
+  '/transparency-iot': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.iot.title' },
+  ],
+  '/transparency-ai': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.ai.title' },
+  ],
+  '/transparency-delete': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.delete.title' },
+  ],
 };
 
 export function Breadcrumb({ variant = 'light' }: { variant?: 'light' | 'dark' }) {

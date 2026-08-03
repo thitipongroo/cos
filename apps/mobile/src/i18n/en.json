@@ -1077,5 +1077,341 @@
   },
   "breadcrumb": {
     "userManagement": "User management"
+  },
+  "transparency": {
+    "status": {
+      "live": "In use",
+      "planned": "Planned"
+    },
+    "comingSoon": "Coming soon",
+    "portal": {
+      "title": "Transparency Portal",
+      "entry": "Transparency Portal",
+      "entryHint": "See exactly what this app collects about you",
+      "lede": "What Construction OS records about you, category by category. Each entry names the data, why it exists, and how long it is kept. Capabilities marked Planned are described in our specifications but are not running yet — nothing under them is being collected today.",
+      "summaryLabel": "Categories in use",
+      "summaryValue": "5",
+      "summaryNote": "Identity, contact, location, payroll and operational records. Encrypted at rest with AES-256; separated per organisation by database-enforced policy.",
+      "breakdown": "What is collected",
+      "inputs": "How it reaches us",
+      "retention": "How long it is kept",
+      "retentionBody": "There is no single retention period — each record type has its own, set by contract or by law. Check-in coordinates are reduced to a daily count after 90 days; worker records are anonymised two years after employment ends; site reports are kept for the project's life plus seven years under accounting law.",
+      "rights": "Your rights",
+      "rightsBody": "You can ask for a copy of your data, ask for it to be corrected, or ask for it to be erased. Requests are handled by our Data Protection Office and answered within 30 days. Self-service versions of these actions are not built yet.",
+      "cat": {
+        "identity": {
+          "title": "Identity & contact",
+          "body": "Your name, phone number and email address, plus your profile photo if you set one."
+        },
+        "location": {
+          "title": "Site & location",
+          "body": "GPS coordinates attached to check-in, site reports, issues, incidents and inspections."
+        },
+        "logs": {
+          "title": "Technical logs",
+          "body": "Who did what and when, with the network address and device the request came from."
+        },
+        "manual": {
+          "title": "What you enter",
+          "body": "Daily site reports, safety incidents and inspection results you submit yourself."
+        },
+        "payroll": {
+          "title": "Payroll",
+          "body": "Your agreed daily rate on a project. No bank account details are stored."
+        }
+      },
+      "input": {
+        "manual": {
+          "title": "Forms you fill in",
+          "body": "Reports, incidents and inspections you submit in the app."
+        },
+        "camera": {
+          "title": "Camera",
+          "body": "Photos you attach to a report or inspection."
+        },
+        "iot": {
+          "title": "Equipment sensors",
+          "body": "Automatic telemetry from machinery."
+        }
+      }
+    },
+    "identity": {
+      "title": "Identity & contact",
+      "lede": "These are the values stored on your account right now, read from your own record. Only you and administrators in your organisation can see them.",
+      "stored": "Stored on your account",
+      "purpose": "Why it is needed",
+      "access": "Who can see it",
+      "accessBody": "Access follows role-based permissions: administrators in your own organisation, and the project managers you are assigned to. Every read of an administrative screen is written to the audit log.",
+      "manage": "Manage this data",
+      "field": {
+        "name": "Full name",
+        "email": "Email address",
+        "phone": "Phone number",
+        "photo": "Profile photo",
+        "role": "Role",
+        "photoSet": "Set",
+        "photoNone": "Not set — your initials are shown instead",
+        "none": "Not set"
+      },
+      "purposeAuth": {
+        "title": "Signing in",
+        "body": "Your phone number receives the sign-in code; your email is the alternative sign-in route."
+      },
+      "purposeSafety": {
+        "title": "Safety notifications",
+        "body": "Reaching you quickly when a safety incident affects a site you work on."
+      },
+      "purposeAudit": {
+        "title": "Audit record",
+        "body": "Attributing each action to a person, which safety and accounting rules require."
+      },
+      "actionExport": "Request a copy of my data",
+      "actionUpdate": "Change contact preferences",
+      "offline": "Showing what is cached on this device — connect to load your current record."
+    },
+    "location": {
+      "title": "Site & location",
+      "lede": "Coordinates are attached to field records, not tracked continuously. Your device is not followed between records, and location is optional on every one of them.",
+      "where": "Where coordinates are attached",
+      "whereBody": "Five record types can carry a coordinate: check-in and check-out, daily site reports, issues, safety incidents and inspections. If a record has no coordinate, none was captured.",
+      "pipeline": "What happens to a coordinate",
+      "safeguards": "Safeguards",
+      "rec": {
+        "attendance": {
+          "title": "Check-in and check-out",
+          "body": "Confirms attendance at a site. Reduced to a daily count after 90 days."
+        },
+        "reports": {
+          "title": "Daily site reports",
+          "body": "Places a report on the site it describes."
+        },
+        "issues": {
+          "title": "Issues",
+          "body": "Locates a defect so it can be found again."
+        },
+        "incidents": {
+          "title": "Safety incidents",
+          "body": "Locates a hazard for the safety response."
+        },
+        "inspections": {
+          "title": "Inspections",
+          "body": "Records where an inspection was carried out."
+        }
+      },
+      "flow": {
+        "capture": {
+          "title": "Captured on your device",
+          "caption": "Only at the moment you save a record"
+        },
+        "transit": {
+          "title": "Sent over TLS 1.3",
+          "caption": "Encrypted in transit"
+        },
+        "geocode": {
+          "title": "Turned into an address",
+          "caption": "By our own server — coordinates are not sent to any mapping company"
+        },
+        "store": {
+          "title": "Stored with the record",
+          "caption": "Encrypted at rest, isolated per organisation"
+        }
+      },
+      "safeguard": {
+        "optional": {
+          "title": "Always optional",
+          "body": "A record saves normally without a coordinate."
+        },
+        "noTracking": {
+          "title": "No continuous tracking",
+          "body": "Nothing is recorded between the moments you save a record."
+        },
+        "purge": {
+          "title": "90-day reduction",
+          "body": "Check-in coordinates become a daily count after 90 days."
+        },
+        "geofence": {
+          "title": "Site geofencing",
+          "body": "Automatic site-boundary detection is specified but not implemented."
+        }
+      }
+    },
+    "logs": {
+      "title": "Technical logs",
+      "lede": "Every action that changes data is recorded so it can be attributed later. This is an accountability record, not analytics — it is never used to profile you.",
+      "collected": "What each entry holds",
+      "path": "Where an entry travels",
+      "retention": "Retention",
+      "retentionBody": "Application logs are kept 30 days for day-to-day work and archived for one year. Audit entries — the ones attributing an action to a person — are held for seven years in write-once storage, because safety and accounting rules require it.",
+      "item": {
+        "actor": {
+          "title": "Who",
+          "body": "The account that performed the action."
+        },
+        "action": {
+          "title": "What and when",
+          "body": "The action, the record it touched, and a timestamp in UTC."
+        },
+        "ip": {
+          "title": "Network address",
+          "body": "The IP address the request came from."
+        },
+        "device": {
+          "title": "Device",
+          "body": "The browser or app build that made the request."
+        }
+      },
+      "flow": {
+        "app": {
+          "title": "The app",
+          "caption": "The entry is written as the action completes"
+        },
+        "gateway": {
+          "title": "API gateway",
+          "caption": "Authenticates and rate-limits before anything reaches the platform"
+        },
+        "store": {
+          "title": "Log store",
+          "caption": "Indexed for search, retained on the schedule above"
+        },
+        "archive": {
+          "title": "Archive",
+          "caption": "Audit entries copied to storage that cannot be rewritten"
+        }
+      },
+      "redaction": {
+        "title": "Automatic redaction",
+        "body": "Stripping personal data from logs automatically is not implemented; today it depends on engineering practice."
+      }
+    },
+    "manual": {
+      "title": "What you enter",
+      "lede": "Most of what the platform knows is what your team types in. These are the forms that create records, and what each one is used for.",
+      "channels": "Forms that create records",
+      "rules": "How entries are handled",
+      "ch": {
+        "reports": {
+          "title": "Daily site reports",
+          "body": "Progress, weather, manpower counts and blockers for a working day."
+        },
+        "incidents": {
+          "title": "Safety incidents",
+          "body": "Hazards and accidents, routed immediately to the safety officer and project manager."
+        },
+        "inspections": {
+          "title": "Inspections",
+          "body": "Checklist results, including failures that open an issue."
+        },
+        "issues": {
+          "title": "Issues",
+          "body": "Defects and rework raised against a task or location."
+        },
+        "materials": {
+          "title": "Material consumption",
+          "body": "What was used on a task, recorded against the project."
+        }
+      },
+      "rule": {
+        "attribution": {
+          "title": "Attributed to you",
+          "body": "Each submission is stored with your account and the time it was saved."
+        },
+        "offline": {
+          "title": "Works offline",
+          "body": "Entries are queued on your device and sent when you reconnect; nothing is lost."
+        },
+        "immutable": {
+          "title": "Corrections, not deletions",
+          "body": "A submitted record is corrected by a later entry — the original stays in the audit trail."
+        }
+      }
+    },
+    "iot": {
+      "title": "Equipment sensors",
+      "lede": "None of this is running today. Sensor telemetry is specified for a later phase, and no device data is being collected from you or your equipment now.",
+      "planned": "Planned capabilities",
+      "note": "Why it is listed",
+      "noteBody": "It appears here so the picture is complete: when equipment telemetry is switched on you will see it described here first, with its own retention period, rather than discovering it after the fact.",
+      "cap": {
+        "location": {
+          "title": "Machinery location",
+          "body": "Position of heavy equipment on a site."
+        },
+        "health": {
+          "title": "Equipment health",
+          "body": "Engine hours, fuel use and load, read from the machine."
+        },
+        "environment": {
+          "title": "Site conditions",
+          "body": "Noise, dust and temperature measured on site."
+        }
+      }
+    },
+    "ai": {
+      "title": "Automated processing",
+      "lede": "Where the platform uses automated analysis, and what it is given. No automated decision is taken about you as a person, and nothing here decides pay, discipline or employment.",
+      "inuse": "In use",
+      "plannedHeading": "Planned",
+      "safeguards": "Safeguards",
+      "cap": {
+        "ocr": {
+          "title": "Reading documents",
+          "body": "Extracting line items from invoices and delivery notes you photograph."
+        },
+        "summary": {
+          "title": "Report summaries",
+          "body": "Drafting a summary of site reports for a manager to review."
+        },
+        "ppe": {
+          "title": "Safety equipment detection",
+          "body": "Checking photos for helmets and vests."
+        },
+        "progress": {
+          "title": "Progress from photos",
+          "body": "Comparing site photos against the design model."
+        }
+      },
+      "safeguard": {
+        "strip": {
+          "title": "Personal data removed first",
+          "body": "Text is stripped of personal data before it is sent to a language model."
+        },
+        "advisory": {
+          "title": "Advisory only",
+          "body": "Generated output is a draft for a person to accept or reject, never an automatic action."
+        },
+        "confidence": {
+          "title": "Confidence is shown",
+          "body": "Low-confidence output is withheld rather than presented as fact."
+        }
+      }
+    },
+    "delete": {
+      "title": "Erasing your data",
+      "lede": "What we can and cannot erase, and what happens to the rest. Please read this before making a request — parts of it are fixed by law, not by preference.",
+      "what": "What happens to each type",
+      "how": "How to make a request",
+      "howBody": "Send the request to our Data Protection Office; the address is published in the Privacy Policy. We answer within 30 days. A self-service button is not built yet, which is why the control below is inactive.",
+      "rec": {
+        "identity": {
+          "title": "Your identity and contact details",
+          "body": "Erased or replaced with an anonymous placeholder."
+        },
+        "location": {
+          "title": "Location history",
+          "body": "Erased. Check-in coordinates older than 90 days are already reduced to a count."
+        },
+        "reports": {
+          "title": "Site reports and inspections",
+          "body": "Kept — accounting and safety law require them — but your name is replaced so they no longer identify you."
+        },
+        "audit": {
+          "title": "Audit entries",
+          "body": "Kept for their full retention period. They exist to prove who did what and cannot be rewritten."
+        }
+      },
+      "why": "Why some records stay",
+      "whyBody": "Erasure does not override a legal duty to keep a record. Where a record must be kept, the personal parts of it are removed instead, so the record survives without identifying you — the approach our data protection policy requires.",
+      "action": "Request erasure"
+    }
   }
 }

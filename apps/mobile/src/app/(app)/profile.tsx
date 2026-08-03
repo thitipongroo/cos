@@ -3,6 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { get, mutate } from '../../api/client';
 import { useI18n } from '../../i18n';
@@ -79,6 +81,7 @@ export default function ProfileScreen() {
   const userId = useAuthStore((s) => s.userId);
   const role = useAuthStore((s) => s.role);
   const logout = useAuthStore((s) => s.logout);
+  const router = useRouter();
   const { t, locale, setLocale } = useI18n();
 
   return (
@@ -118,6 +121,23 @@ export default function ProfileScreen() {
 
       <NotificationPreferences />
 
+      {/* Transparency Portal (PO 2026-08-04) — the account is where a data subject looks for "what
+          do you hold about me", so the portal is entered from here rather than from a tab. */}
+      <TouchableOpacity
+        testID="transparency-entry"
+        accessibilityRole="button"
+        accessibilityLabel={t('transparency.portal.entry')}
+        style={styles.portalRow}
+        onPress={() => router.push('/transparency')}
+      >
+        <MaterialIcons name="policy" size={22} color={colors.primary} />
+        <View style={styles.portalText}>
+          <Text style={styles.portalTitle}>{t('transparency.portal.entry')}</Text>
+          <Text style={styles.portalHint}>{t('transparency.portal.entryHint')}</Text>
+        </View>
+        <MaterialIcons name="chevron-right" size={22} color={colors.textSecondary} />
+      </TouchableOpacity>
+
       <TouchableOpacity testID="logout-button" style={styles.logout} onPress={() => logout()}>
         <Text style={styles.logoutText}>{t('profile.main.logout')}</Text>
       </TouchableOpacity>
@@ -126,6 +146,27 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  portalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 52,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+  },
+  portalText: { flex: 1 },
+  portalTitle: {
+    fontSize: typography.caption.fontSize,
+    fontFamily: fontFamily.medium,
+    color: colors.textPrimary,
+  },
+  portalHint: {
+    fontSize: typography.label.fontSize,
+    fontFamily: fontFamily.regular,
+    color: colors.textSecondary,
+  },
   value: {
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.medium,
