@@ -29,10 +29,25 @@ import type { SyncSiteReportsDto } from '../site-ops/dto/sync-site-reports.dto';
 import type { RecordAttendanceDto } from '../workforce/dto/attendance.dto';
 import type { CreateIncidentDto } from '../safety/dto/safety.dto';
 import { PushItemDto, PushResponse, DeltaResponse, ServerSyncStatus } from './dto/sync.dto';
+import { tombstoneRetentionCutoff, tombstoneRetentionDays } from './tombstone-retention';
 
 interface EntityRegistryEntry {
   table: string; // schema-qualified
   deltaColumn: string;
+}
+
+// Per-entity-type cap on one /sync/delta page. Bounds both the SQL result set and the JSON response;
+// see the note on delta() for how the client resumes past a truncated page.
+const DELTA_PAGE_SIZE = 500;
+
+/** Normalise a delta-column value (pg returns Date for timestamptz) to an ISO cursor string. */
+function toIso(value: unknown): string | null {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string') {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  }
+  return null;
 }
 
 const ENTITY_REGISTRY: Record<string, EntityRegistryEntry> = {
@@ -54,37 +69,106 @@ export class SyncService {
     private readonly annotations: AnnotationService,
   ) {}
 
+  /**
+   * Pull everything changed since `sinceIso`, in bounded pages.
+   *
+   * This used to run `SELECT *` with no LIMIT and no ORDER BY, once per entity type. The controller
+   * defaults `since` to the epoch, so a client that had never synced — or one that lost its cursor —
+   * pulled every row of every table into memory in one response.
+   *
+   * Paging rule: each type is capped at DELTA_PAGE_SIZE rows ordered by its delta column. If ANY type
+   * is truncated, `server_timestamp` becomes the LOWEST watermark among the truncated types rather
+   * than "now", so the next call resumes from there. Types that drained fully will resend a few rows
+   * that fall after that watermark — harmless, because push/delta handlers are upserts — whereas
+   * returning "now" would silently skip everything that did not fit. At-least-once, never skip.
+   *
+   * Residual limitation: the cursor is a timestamp, so a full page of rows sharing one identical
+   * timestamp cannot be paged past. timestamptz has microsecond resolution and the page is 500 rows,
+   * so this needs 500 writes inside the same microsecond. Fixing it properly means a composite
+   * (timestamp, id) cursor, which is a client-visible contract change.
+   */
   async delta(sinceIso: string, entityTypes: string[]): Promise<DeltaResponse> {
+    // Cursor must be a real instant before it is bound as ::timestamptz — an unparseable `since`
+    // would otherwise surface as a Postgres error (HTTP 500) rather than a 400 the client can act on.
+    const sinceMs = Date.parse(sinceIso);
+    if (!Number.isFinite(sinceMs)) {
+      throw new BadRequestException({
+        code: 'COS-SYNC-002',
+        message: `Invalid 'since' cursor: ${sinceIso}`,
+        messageKey: 'sync.delta.invalidCursor',
+      });
+    }
+
+    // Retention guard — the other half of the tombstone-prune contract (tombstone-retention.ts).
+    // Tombstones older than the window are deleted, so a cursor that predates it cannot be brought
+    // up to date incrementally: deletions the client never saw no longer exist to be sent, and those
+    // rows would live on that device forever.
+    //
+    // The flag is ADVISORY and the rows are still returned. Two reasons not to early-return empty:
+    // the controller defaults `since` to the epoch for a client that never synced (an early return
+    // would break first sync outright), and the server cannot tell "never synced" from "offline for
+    // two years" — both send an ancient cursor. Returning the normal paged delta alongside
+    // `full_resync_required` serves both: a client with no local state loses nothing by wiping it,
+    // and an existing client learns it must drop local state before applying these pages. Clients
+    // that ignore the new field behave exactly as they do today.
+    const cutoff = tombstoneRetentionCutoff();
+    const fullResyncRequired = sinceMs < cutoff.getTime();
+
     const types = entityTypes.filter((t) => ENTITY_REGISTRY[t]);
     const updated: Record<string, unknown>[] = [];
+    const truncatedWatermarks: string[] = [];
 
     for (const type of types) {
       const entry = ENTITY_REGISTRY[type]!;
       const rows = await this.db.run((tx) =>
         tx.$queryRawUnsafe<Record<string, unknown>[]>(
-          `SELECT * FROM ${entry.table} WHERE ${entry.deltaColumn} > $1::timestamptz`,
+          `SELECT * FROM ${entry.table}
+           WHERE ${entry.deltaColumn} > $1::timestamptz
+           ORDER BY ${entry.deltaColumn} ASC
+           LIMIT $2`,
           sinceIso,
+          DELTA_PAGE_SIZE,
         ),
       );
       for (const row of rows) updated.push({ entity_type: type, ...row });
+
+      if (rows.length === DELTA_PAGE_SIZE) {
+        const watermark = toIso(rows[rows.length - 1]![entry.deltaColumn]);
+        if (watermark) truncatedWatermarks.push(watermark);
+      }
     }
 
     const tombstones =
       types.length === 0
         ? []
         : await this.db.run((tx) =>
-            tx.$queryRawUnsafe<{ entity_id: string }[]>(
-              `SELECT entity_id FROM platform.sync_tombstones
-               WHERE entity_type = ANY($1::text[]) AND deleted_at > $2::timestamptz`,
+            tx.$queryRawUnsafe<{ entity_id: string; deleted_at: unknown }[]>(
+              `SELECT entity_id, deleted_at FROM platform.sync_tombstones
+               WHERE entity_type = ANY($1::text[]) AND deleted_at > $2::timestamptz
+               ORDER BY deleted_at ASC
+               LIMIT $3`,
               types,
               sinceIso,
+              DELTA_PAGE_SIZE,
             ),
           );
 
+    if (tombstones.length === DELTA_PAGE_SIZE) {
+      const watermark = toIso(tombstones[tombstones.length - 1]!.deleted_at);
+      if (watermark) truncatedWatermarks.push(watermark);
+    }
+
+    const hasMore = truncatedWatermarks.length > 0;
     return {
       updated,
       deleted: tombstones.map((t) => t.entity_id),
-      server_timestamp: new Date().toISOString(),
+      // Lowest watermark wins — resuming from the earliest truncation point cannot skip any type.
+      server_timestamp: hasMore
+        ? truncatedWatermarks.reduce((a, b) => (a < b ? a : b))
+        : new Date().toISOString(),
+      has_more: hasMore,
+      full_resync_required: fullResyncRequired,
+      ...(fullResyncRequired ? { retention_days: tombstoneRetentionDays() } : {}),
     };
   }
 

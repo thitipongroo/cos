@@ -2,7 +2,15 @@ import { Inject, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import type { ClickHouseClient } from '@clickhouse/client';
-import { CLICKHOUSE_CLIENT } from './analytics.tokens';
+import type Redis from 'ioredis';
+import { createLogger } from '@cos/logger';
+import { CACHE_REDIS, CLICKHOUSE_CLIENT } from './analytics.tokens';
+
+const logger = createLogger('analytics-service');
+
+// Rows per SCAN round trip. SCAN is cursor-based and non-blocking, unlike KEYS, which would stall
+// the shared Redis for every other caller while it walks the whole keyspace.
+const SCAN_COUNT = 200;
 
 // Cache key format from spec §Phase 14 Caching Strategy:
 // analytics:{tenant_id}:{dashboard_type}:{project_id}:{date_range}
@@ -60,6 +68,7 @@ export class AnalyticsService {
   constructor(
     @Inject(CLICKHOUSE_CLIENT) private readonly ch: ClickHouseClient,
     @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    @Inject(CACHE_REDIS) private readonly redis: Redis,
   ) {}
 
   // Cache is best-effort: a cache-store outage must never fail an analytics request
@@ -315,14 +324,53 @@ export class AnalyticsService {
   }
 
   // ── Cache invalidation ────────────────────────────────────────────────────
-  // Called by event-driven invalidation when a relevant Kafka event arrives
-  async invalidate(tenantId: string, projectId: string): Promise<void> {
-    // Pattern: analytics:{tenant_id}:*:{project_id}:*
-    // cache-manager doesn't support pattern delete — delete known key prefixes
-    const dashboardTypes = ['executive', 'pm', 'cost-trend', 'procurement-trend', 'site-trend'];
-    await Promise.all(
-      dashboardTypes.map((t) => this.cache.del(cacheKey(tenantId, t, projectId, '*'))),
-    );
+  /**
+   * Drop every cached dashboard for one project. Returns the number of keys removed.
+   *
+   * NOT yet wired to a Kafka consumer — call it from whatever mutates project cost/procurement/site
+   * data. Until then the 5-minute TTL is the only bound on staleness.
+   *
+   * This used to build `analytics:{tenant}:{type}:{project}:*` and hand it to `cache.del()`. That
+   * treats `*` as a literal character, so it could only ever have matched a key whose date range was
+   * the single character `*` — it deleted nothing, ever, for any input. Two separate reasons it could
+   * not work as written: `cache.del()` takes one exact key and has no glob support at all, and the
+   * executive dashboard keys on `projectIds.sort().join(',')`, so a single project id is a SUBSTRING
+   * of that segment rather than the whole of it.
+   *
+   * Hence SCAN over the raw client with `*{projectId}*`: it catches the executive multi-project keys
+   * as well as the single-project ones, whatever date range they were cached under. Project ids are
+   * UUIDs and no other segment of the key can contain one, so the wildcards cannot over-match.
+   */
+  async invalidate(tenantId: string, projectId: string): Promise<number> {
+    const pattern = `analytics:${tenantId}:*${projectId}*`;
+    let cursor = '0';
+    let removed = 0;
+
+    try {
+      do {
+        const [next, keys] = await this.redis.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          String(SCAN_COUNT),
+        );
+        cursor = next;
+        if (keys.length > 0) {
+          // UNLINK reclaims memory on a background thread; DEL would block the event loop of a
+          // shared Redis proportionally to the number of keys.
+          removed += await this.redis.unlink(...keys);
+        }
+      } while (cursor !== '0');
+    } catch (err) {
+      // Invalidation is best-effort, exactly like cacheGet/cacheSet: a cache-store outage must not
+      // fail the mutation that triggered it. Stale entries still expire on the TTL.
+      logger.warn({ err, tenantId, projectId }, 'analytics.cache.invalidate-failed');
+      return removed;
+    }
+
+    logger.debug({ tenantId, projectId, removed }, 'analytics.cache.invalidated');
+    return removed;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

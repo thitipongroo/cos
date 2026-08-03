@@ -24,6 +24,7 @@ jest.mock('@cos/shared', () => ({
 
 const mockRepo = {
   createVersion: jest.fn(),
+  claimNextVersion: jest.fn(),
   findVersionsByProject: jest.fn(),
   findVersionById: jest.fn(),
   findDraftVersion: jest.fn(),
@@ -146,8 +147,7 @@ describe('BoqService', () => {
       // Native JS: 0.1 * 300 = 30.000000000000004 (float error)
       // decimal.js: exactly 30.0000
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
-      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       mockRepo.findVersionById.mockResolvedValue(draftVersion);
@@ -230,18 +230,20 @@ describe('BoqService', () => {
   describe('Version creation', () => {
     it('creates first version with version_number = 1', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
-      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });
       expect(result.version_number).toBe(1);
-      expect(mockRepo.createVersion).toHaveBeenCalledWith(
-        expect.objectContaining({ version_number: 1 }),
+      // version_number is now allocated inside the transaction (COALESCE(MAX)+1), not passed in.
+      expect(mockRepo.claimNextVersion).toHaveBeenCalledWith(
+        expect.objectContaining({ project_id: 'project-uuid-001', currency_code: 'THB' }),
       );
     });
 
     it('throws ConflictException if DRAFT already exists', async () => {
+      // claimNextVersion returns null when it finds a DRAFT under the per-project advisory lock.
+      mockRepo.claimNextVersion.mockResolvedValue(null);
       mockRepo.findDraftVersion.mockResolvedValue(draftVersion);
 
       await expect(
@@ -251,8 +253,7 @@ describe('BoqService', () => {
 
     it('publishes boq.created.v1 on first version (version_number === 1 branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(0);
-      mockRepo.createVersion.mockResolvedValue(draftVersion);
+      mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       const kafkaMock = (
@@ -271,8 +272,10 @@ describe('BoqService', () => {
 
     it('does NOT publish boq.created.v1 on subsequent versions (version_number > 1 branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(1);
-      mockRepo.createVersion.mockResolvedValue({ ...draftVersion, version_number: 2 });
+      mockRepo.claimNextVersion.mockResolvedValue({
+        version: { ...draftVersion, version_number: 2 },
+        version_number: 2,
+      });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(approvedVersion);
       mockRepo.copyVersionContents.mockResolvedValue(undefined);
       mockRepo.findItemsByVersion.mockResolvedValue([item]);
@@ -298,8 +301,10 @@ describe('BoqService', () => {
 
     it('creates version_number = 2 when no approved version to copy from (G5 — inner if false branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
-      mockRepo.findMaxVersionNumber.mockResolvedValue(1);
-      mockRepo.createVersion.mockResolvedValue({ ...draftVersion, version_number: 2 });
+      mockRepo.claimNextVersion.mockResolvedValue({
+        version: { ...draftVersion, version_number: 2 },
+        version_number: 2,
+      });
       mockRepo.findLatestApprovedVersion.mockResolvedValue(null);
 
       const result = await service.createVersion('project-uuid-001', { currency_code: 'THB' });

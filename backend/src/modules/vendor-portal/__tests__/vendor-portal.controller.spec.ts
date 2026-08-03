@@ -1,6 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { VendorInvitationController, VendorPortalController } from '../vendor-portal.controller';
-import { VendorRequest } from '../vendor-auth.middleware';
+import { VendorRequest } from '../vendor-auth.guard';
 
 describe('VendorInvitationController', () => {
   it('maps the body + path param into service.issueInvitation', () => {

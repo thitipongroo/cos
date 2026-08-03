@@ -5,6 +5,7 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../../shared/context/cls-context';
 import type { CreateRiskDto } from './dto/create-risk.dto';
 import type { UpdateRiskDto } from './dto/update-risk.dto';
 import { projectExistsInTenant } from '../shared/parent-existence';
@@ -40,8 +41,12 @@ export interface ListRisksFilter {
 
 @Injectable({ scope: Scope.REQUEST })
 export class RisksRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(

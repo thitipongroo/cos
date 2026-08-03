@@ -1,5 +1,5 @@
 // Unit tests — PlatformWebhookController (Phase 25)
-// Verifies header extraction and delegation to PlatformWebhookService.
+// Verifies header extraction (signature + replay-protection timestamp) and delegation.
 
 const mockWebhookService = {
   handleEnterpriseContractSigned: jest.fn(),
@@ -21,7 +21,10 @@ describe('PlatformWebhookController', () => {
     it('extracts signature from headers and delegates to webhookService', async () => {
       const dto = { tenant_id: TENANT_ID, contract_reference: 'CRM-001' } as never;
       const rawBody = Buffer.from('{}', 'utf8');
-      const req = { headers: { 'x-webhook-signature': 'sha256=abc123' }, rawBody } as never;
+      const req = {
+        headers: { 'x-webhook-signature': 'sha256=abc123', 'x-webhook-timestamp': '1750000000000' },
+        rawBody,
+      } as never;
       const serviceResult = {
         message: 'Webhook accepted',
         workflowId: `enterprise-provisioning-${TENANT_ID}`,
@@ -35,6 +38,7 @@ describe('PlatformWebhookController', () => {
         'CRM-001',
         'sha256=abc123',
         rawBody,
+        '1750000000000',
       );
       expect(result).toBe(serviceResult);
     });
@@ -53,6 +57,7 @@ describe('PlatformWebhookController', () => {
         undefined,
         '',
         rawBody,
+        '',
       );
     });
 
@@ -67,6 +72,7 @@ describe('PlatformWebhookController', () => {
         undefined,
         'sha256=xyz',
         undefined,
+        '',
       );
     });
   });

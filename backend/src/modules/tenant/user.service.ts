@@ -361,32 +361,41 @@ export class UserService implements OnModuleDestroy {
     const additional = [...new Set(dto.additional_roles)].filter((r) => r !== dto.primary_role);
     const assignedBy = actorId && actorId !== 'system' ? actorId : null;
 
-    const [membership] = await this.prisma.$queryRaw<Array<{ role: string }>>`
-      SELECT role FROM platform.tenant_memberships
-      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
-      LIMIT 1
-    `;
-    if (!membership) {
-      throw new NotFoundException(`User ${userId} not found in tenant`);
-    }
-    const oldRole = membership.role;
+    // One transaction for the whole role change. These three statements used to run unwrapped, so a
+    // failure after the DELETE (a dropped connection, a rejected enum value) left the user holding the
+    // NEW primary role with NO additional roles — a silently under-privileged account that nothing
+    // retries or repairs. Role state is a security boundary: it moves all at once or not at all.
+    const oldRole = await this.prisma.$transaction(async (tx) => {
+      const [membership] = await tx.$queryRaw<Array<{ role: string }>>`
+        SELECT role FROM platform.tenant_memberships
+        WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+        LIMIT 1
+        FOR UPDATE
+      `;
+      if (!membership) {
+        throw new NotFoundException(`User ${userId} not found in tenant`);
+      }
 
-    await this.prisma.$queryRaw`
-      UPDATE platform.tenant_memberships
-      SET role = ${dto.primary_role}::platform."CosRoleEnum"
-      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
-    `;
-    await this.prisma.$queryRaw`
-      DELETE FROM platform.user_additional_roles
-      WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
-    `;
-    for (const r of additional) {
-      await this.prisma.$queryRaw`
+      await tx.$queryRaw`
+        UPDATE platform.tenant_memberships
+        SET role = ${dto.primary_role}::platform."CosRoleEnum"
+        WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      `;
+      await tx.$queryRaw`
+        DELETE FROM platform.user_additional_roles
+        WHERE user_id = ${userId}::uuid AND tenant_id = ${tenantId}::uuid
+      `;
+      // Single set-based INSERT rather than one round trip per role. unnest() over an empty array
+      // yields zero rows, so the empty case needs no branch (repo idiom: bind the JS array and cast).
+      await tx.$queryRaw`
         INSERT INTO platform.user_additional_roles (user_id, tenant_id, role, assigned_by)
-        VALUES (${userId}::uuid, ${tenantId}::uuid, ${r}::platform."CosRoleEnum", ${assignedBy}::uuid)
+        SELECT ${userId}::uuid, ${tenantId}::uuid, r::platform."CosRoleEnum", ${assignedBy}::uuid
+        FROM unnest(${additional}::text[]) AS r
         ON CONFLICT (user_id, tenant_id, role) DO NOTHING
       `;
-    }
+
+      return membership.role;
+    });
 
     logger.info(
       { userId, tenantId, actorId, primaryRole: dto.primary_role, additionalRoles: additional },

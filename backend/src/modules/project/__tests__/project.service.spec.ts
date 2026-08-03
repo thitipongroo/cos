@@ -57,6 +57,7 @@ function makeRepo(overrides: Partial<ProjectRepository> = {}): ProjectRepository
   return {
     create: jest.fn().mockResolvedValue(baseProject),
     findById: jest.fn().mockResolvedValue(baseProject),
+    findByIds: jest.fn().mockResolvedValue([baseProject]),
     list: jest.fn().mockResolvedValue({ items: [baseProject], nextCursor: null }),
     listByMember: jest.fn().mockResolvedValue([baseProject]),
     update: jest.fn().mockResolvedValue(baseProject),
@@ -276,6 +277,49 @@ describe('ProjectService', () => {
       const result = await service.list({ q: 'Test', limit: 10 } as never);
       // OpenSearch mock returns empty hits → falls back gracefully
       expect(Array.isArray(result.items)).toBe(true);
+    });
+
+    it('hydrates OpenSearch hits with ONE repo call, in relevance order', async () => {
+      const second: ProjectRow = { ...baseProject, project_id: 'proj-uuid-002' };
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockResolvedValue({
+          body: { hits: { hits: [{ _id: 'proj-uuid-002' }, { _id: 'proj-uuid-001' }] } },
+        }),
+      }));
+      // Returned deliberately in the opposite order — SQL does not preserve relevance ranking.
+      const repo = makeRepo({
+        findByIds: jest.fn().mockResolvedValue([baseProject, second]),
+      } as never);
+      const service = await buildService(repo);
+
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+
+      expect(repo.findByIds).toHaveBeenCalledTimes(1);
+      expect(repo.findByIds).toHaveBeenCalledWith(['proj-uuid-002', 'proj-uuid-001']);
+      expect(repo.findById).not.toHaveBeenCalled();
+      expect(result.items.map((p) => p.project_id)).toEqual(['proj-uuid-002', 'proj-uuid-001']);
+    });
+
+    it('drops search hits with no surviving row', async () => {
+      const { Client } = jest.requireMock('@opensearch-project/opensearch') as {
+        Client: jest.Mock;
+      };
+      Client.mockImplementationOnce(() => ({
+        index: jest.fn().mockResolvedValue({}),
+        search: jest.fn().mockResolvedValue({
+          body: { hits: { hits: [{ _id: 'proj-uuid-001' }, { _id: 'deleted-since-indexing' }] } },
+        }),
+      }));
+      const repo = makeRepo({ findByIds: jest.fn().mockResolvedValue([baseProject]) } as never);
+      const service = await buildService(repo);
+
+      const result = await service.list({ q: 'Test', limit: 10 } as never);
+
+      expect(result.items.map((p) => p.project_id)).toEqual(['proj-uuid-001']);
     });
 
     it('falls back to repo.list when OpenSearch throws', async () => {

@@ -49,6 +49,7 @@ const mockRepo = {
   createSiteReport: jest.fn(),
   findReportById: jest.fn(),
   listSiteReports: jest.fn(),
+  updateSiteReport: jest.fn(),
   updateReportStatus: jest.fn(),
   createIssue: jest.fn(),
   nextIssueNumber: jest.fn(),
@@ -136,6 +137,8 @@ let service: SiteOpsService;
 
 beforeEach(async () => {
   jest.clearAllMocks();
+  // Default: the sync write lands. Tests that exercise the "row vanished mid-sync" path override it.
+  mockRepo.updateSiteReport.mockResolvedValue(makeReport());
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       SiteOpsService,
@@ -354,6 +357,111 @@ describe('syncSiteReports', () => {
         }),
       }),
     );
+  });
+
+  // ── Regression: the edit path must actually write ────────────────────────
+  // This branch previously computed a resolution, wrote a conflict record when flagged, and returned
+  // ACCEPTED without ever updating the report — so offline edits were acknowledged and dropped.
+
+  it('persists the client fields when syncing an edit to an existing report', async () => {
+    mockRepo.findReportById.mockResolvedValue(
+      makeReport({ summary: 'server text', modified_at: new Date('2026-06-04T07:00:00Z') }),
+    );
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'edited offline',
+          weather: 'rain',
+          manpower_count: 12,
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'report-1',
+      expect.objectContaining({
+        summary: 'edited offline',
+        weather: 'rain',
+        manpower_count: 12,
+        client_submitted_at: '2026-06-04T09:00:00Z',
+      }),
+    );
+  });
+
+  it('persists a client-wins overwrite even when the result is flagged for review', async () => {
+    mockRepo.findReportById.mockResolvedValue(
+      makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') }),
+    );
+    mockRepo.createConflictRecord.mockResolvedValue({});
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'client wins but flagged',
+          client_submitted_at: '2026-06-04T11:00:00Z',
+          last_known_modified_at: '2026-06-04T08:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(mockRepo.updateSiteReport).toHaveBeenCalledWith(
+      'report-1',
+      expect.objectContaining({ summary: 'client wins but flagged' }),
+    );
+  });
+
+  it('does NOT write when the server row wins — a no-op write would bump modified_at', async () => {
+    mockRepo.findReportById.mockResolvedValue(
+      makeReport({ modified_at: new Date('2026-06-04T10:00:00Z') }),
+    );
+    mockRepo.createConflictRecord.mockResolvedValue({});
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'stale client edit',
+          client_submitted_at: '2026-06-04T09:00:00Z', // older than server modified_at
+          last_known_modified_at: '2026-06-04T08:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(mockRepo.updateSiteReport).not.toHaveBeenCalled();
+  });
+
+  it('reports CONFLICT_REJECTED instead of ACCEPTED when the row vanished mid-sync', async () => {
+    mockRepo.findReportById.mockResolvedValue(
+      makeReport({ modified_at: new Date('2026-06-04T07:00:00Z') }),
+    );
+    mockRepo.updateSiteReport.mockResolvedValue(null); // deleted between read and write
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'report-1',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          summary: 'edit that cannot land',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('CONFLICT_REJECTED');
   });
 });
 

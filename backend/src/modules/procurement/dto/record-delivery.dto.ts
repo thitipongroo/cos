@@ -3,6 +3,7 @@ import {
   IsOptional,
   IsISO8601,
   IsArray,
+  ArrayMaxSize,
   ValidateNested,
   IsUUID,
   MaxLength,
@@ -41,8 +42,11 @@ export class RecordDeliveryDto {
   @IsString()
   notes?: string;
 
-  @ApiProperty({ type: [DeliveryItemDto], minItems: 1 })
+  // Bounded for the same reason as CreatePurchaseOrderDto.line_items: one row per item, all inside a
+  // single transaction. A delivery cannot have more lines than the PO it is recorded against.
+  @ApiProperty({ type: [DeliveryItemDto], minItems: 1, maxItems: 500 })
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => DeliveryItemDto)
   items!: DeliveryItemDto[];

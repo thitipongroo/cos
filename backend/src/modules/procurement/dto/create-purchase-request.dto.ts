@@ -7,6 +7,7 @@ import {
   IsNotEmpty,
   IsArray,
   ArrayMinSize,
+  ArrayMaxSize,
   ValidateNested,
   IsNumber,
   IsPositive,
@@ -70,6 +71,7 @@ export class CreatePurchaseRequestDto {
   @ApiPropertyOptional({
     type: [PurchaseRequestItemDto],
     minItems: 1,
+    maxItems: 500,
     description:
       'What is being requested (procurement.pr_line_items). Optional only for backward ' +
       'compatibility: the web form at apps/web/.../procurement/requests predates line items and ' +
@@ -79,6 +81,8 @@ export class CreatePurchaseRequestDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
+  // Upper bound for the same reason as the PO: one row per line inside a single transaction.
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => PurchaseRequestItemDto)
   items?: PurchaseRequestItemDto[];

@@ -4,6 +4,7 @@ import {
   IsDateString,
   IsOptional,
   IsArray,
+  ArrayMaxSize,
   ValidateNested,
   IsNumberString,
   MaxLength,
@@ -70,8 +71,12 @@ export class CreatePurchaseOrderDto {
   @IsDateString()
   delivery_date!: string;
 
-  @ApiProperty({ type: [PoLineItemDto], minItems: 1 })
+  // Bounded because every line becomes a row written inside ONE transaction: an unbounded array
+  // holds that transaction (and its locks) open for as long as the client cares to make it. 500 is
+  // far above any real purchase order while keeping the write bounded.
+  @ApiProperty({ type: [PoLineItemDto], minItems: 1, maxItems: 500 })
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => PoLineItemDto)
   line_items!: PoLineItemDto[];

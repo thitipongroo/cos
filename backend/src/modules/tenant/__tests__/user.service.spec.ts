@@ -478,45 +478,73 @@ describe('UserService setUserRoles', () => {
     ).kafka;
   });
 
+  // The whole role change runs inside one $transaction — mirror that here so the tx-scoped calls are
+  // observable. `membership` is what the leading SELECT ... FOR UPDATE returns ([] = no membership).
+  function mockRoleTx(membership: Array<{ role: CosRole }>): jest.Mock {
+    const txQueryRaw = jest.fn().mockResolvedValue([]);
+    txQueryRaw.mockResolvedValueOnce(membership); // SELECT membership FOR UPDATE
+    (prismaMock.$transaction as jest.Mock).mockImplementation(
+      async (fn: (tx: unknown) => Promise<unknown>) => fn({ $queryRaw: txQueryRaw }),
+    );
+    return txQueryRaw;
+  }
+
   it('updates the primary role, replaces additional roles (deduped + primary filtered), and emits role_changed when the primary changes', async () => {
-    (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([{ role: CosRole.SITE_ENGINEER }]); // membership (old primary)
+    const txQueryRaw = mockRoleTx([{ role: CosRole.SITE_ENGINEER }]);
 
     const dto = {
       primary_role: CosRole.PROJECT_MANAGER,
       // duplicate FINANCE is deduped; PROJECT_MANAGER equals the primary and is filtered out →
-      // effective additional = [FINANCE], so exactly one INSERT runs.
+      // effective additional = [FINANCE], bound as a single array parameter.
       additional_roles: [CosRole.FINANCE, CosRole.FINANCE, CosRole.PROJECT_MANAGER],
     };
 
     await expect(service.setUserRoles(USER_ID, dto, TENANT_ID, ACTOR_ID)).resolves.toBeUndefined();
 
-    // SELECT membership + UPDATE primary + DELETE additional + INSERT (x1, deduped/filtered)
-    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(4);
+    // SELECT membership + UPDATE primary + DELETE additional + one set-based INSERT
+    expect(txQueryRaw).toHaveBeenCalledTimes(4);
+    // Every write went through the transaction, never straight at the client.
+    expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
     // oldRole (SITE_ENGINEER) !== primary (PROJECT_MANAGER) → role_changed published
     expect(kafkaMock.publish).toHaveBeenCalledTimes(1);
   });
 
-  it('does not emit role_changed when the primary is unchanged, and runs no INSERT for empty additional_roles (actor "system" → assigned_by null)', async () => {
-    (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([{ role: CosRole.SITE_ENGINEER }]); // membership
+  it('does not emit role_changed when the primary is unchanged (actor "system" → assigned_by null)', async () => {
+    const txQueryRaw = mockRoleTx([{ role: CosRole.SITE_ENGINEER }]);
 
     const dto = { primary_role: CosRole.SITE_ENGINEER, additional_roles: [] };
 
     await expect(service.setUserRoles(USER_ID, dto, TENANT_ID, 'system')).resolves.toBeUndefined();
 
-    // SELECT membership + UPDATE primary + DELETE additional (no INSERT — additional empty)
-    expect(prismaMock.$queryRaw).toHaveBeenCalledTimes(3);
+    // Still 4 statements: unnest() over an empty array inserts zero rows, so there is no empty-case
+    // branch to skip — the INSERT is issued unconditionally.
+    expect(txQueryRaw).toHaveBeenCalledTimes(4);
     // oldRole === primary → no event
     expect(kafkaMock.publish).not.toHaveBeenCalled();
   });
 
   it('throws NotFoundException when the user has no membership (falsy actorId → assigned_by null)', async () => {
-    (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([]); // no membership
+    const txQueryRaw = mockRoleTx([]); // no membership
 
     const dto = { primary_role: CosRole.SITE_ENGINEER, additional_roles: [CosRole.FINANCE] };
 
     await expect(service.setUserRoles(USER_ID, dto, TENANT_ID, '')).rejects.toThrow(
       NotFoundException,
     );
+    // Aborted on the SELECT — nothing was mutated, so the rollback has nothing to undo.
+    expect(txQueryRaw).toHaveBeenCalledTimes(1);
+    expect(kafkaMock.publish).not.toHaveBeenCalled();
+  });
+
+  it('publishes no role_changed event when the transaction fails (all-or-nothing)', async () => {
+    (prismaMock.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB error'));
+
+    const dto = { primary_role: CosRole.PROJECT_MANAGER, additional_roles: [CosRole.FINANCE] };
+
+    await expect(service.setUserRoles(USER_ID, dto, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+      'DB error',
+    );
+    expect(kafkaMock.publish).not.toHaveBeenCalled();
   });
 
   it('rejects a SYSTEM_ADMIN primary role before any DB write (privilege-escalation guard)', async () => {
@@ -526,6 +554,7 @@ describe('UserService setUserRoles', () => {
       ForbiddenException,
     );
     expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('rejects SYSTEM_ADMIN in additional_roles before any DB write', async () => {
@@ -535,6 +564,7 @@ describe('UserService setUserRoles', () => {
       ForbiddenException,
     );
     expect(prismaMock.$queryRaw).not.toHaveBeenCalled();
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 });
 

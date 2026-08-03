@@ -69,6 +69,30 @@ describe('resolveReportConflict — LAST_WRITE_WINS', () => {
     expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
     expect(result.server_version).toBe(1); // ?? 1 right side
   });
+
+  // should_persist drives the actual DB write in SiteOpsService.syncSiteReports. It is NOT the same
+  // question as conflict_status: a client-wins overwrite is CONFLICT_FLAGGED *and* must be written.
+  it('should_persist is true when the client payload wins (ACCEPTED)', () => {
+    const client = { summary: 'client summary' };
+    const server = { summary: 'server summary', modified_at: OLDER_TS, version: 1 };
+    expect(resolveReportConflict(client, server, NEWER_TS).should_persist).toBe(true);
+  });
+
+  it('should_persist is true when the client wins but the write is flagged for review', () => {
+    const client = { summary: 'client version', last_known_modified_at: OLDER_TS };
+    const server = { summary: 'server version', modified_at: NEWER_TS, version: 2 };
+    const result = resolveReportConflict(client, server, NEWER_TS);
+    expect(result.conflict_status).toBe('CONFLICT_FLAGGED');
+    expect(result.should_persist).toBe(true);
+  });
+
+  it('should_persist is false when the server row wins — writing it back would be a no-op', () => {
+    const client = { summary: 'stale client', last_known_modified_at: OLDER_TS };
+    const server = { summary: 'newer server', modified_at: NEWER_TS, version: 3 };
+    const result = resolveReportConflict(client, server, OLDER_TS);
+    expect(result.resolved_payload).toBe(server);
+    expect(result.should_persist).toBe(false);
+  });
 });
 
 // ── issues: FIELD_LEVEL_MERGE ─────────────────────────────────────────────
@@ -159,6 +183,24 @@ describe('resolveIssueConflict — FIELD_LEVEL_MERGE', () => {
     const result = resolveIssueConflict(client, server, NEWER_TS);
     expect(result.resolved_payload['status']).toBe('OPEN');
   });
+
+  // A field-level merge is never the untouched server row, so the merged result is always written —
+  // including when the status change is flagged for review.
+  it.each([
+    ['unflagged', 'OPEN', 'ACCEPTED'],
+    ['flagged', 'RESOLVED', 'CONFLICT_FLAGGED'],
+  ])('should_persist is true for a %s merge', (_label, serverStatus, expectedStatus) => {
+    const client = { description: 'update', status: 'OPEN', resolution_note: null };
+    const server = {
+      description: 'original',
+      status: serverStatus,
+      resolution_note: null,
+      modified_at: OLDER_TS,
+    };
+    const result = resolveIssueConflict(client, server, NEWER_TS);
+    expect(result.conflict_status).toBe(expectedStatus);
+    expect(result.should_persist).toBe(true);
+  });
 });
 
 // ── safety_checklists: SERVER_WINS ────────────────────────────────────────
@@ -227,6 +269,10 @@ describe('resolveChecklistConflict — SERVER_WINS', () => {
     const result = resolveChecklistConflict(server);
     expect(result.server_version).toBe(1);
   });
+
+  it('never persists — safety data is server-authoritative', () => {
+    expect(resolveChecklistConflict({ version: 1 }).should_persist).toBe(false);
+  });
 });
 
 // ── photo_annotation: CONFLICT_FLAGGED (ADR-056; §17.5) ──────────────────────────────────────────
@@ -261,6 +307,19 @@ describe('resolveAnnotationConflict', () => {
     expect(result.server_version).toBe(5);
     // The server row is kept untouched — the client's strokes are NOT merged in.
     expect(result.resolved_payload).toBe(server);
+    expect(result.should_persist).toBe(false);
+  });
+
+  it('should_persist tracks ACCEPTED for both the first write and a clean fast-forward', () => {
+    expect(
+      resolveAnnotationConflict({ file_id: 'f1', strokes, version: 0 }, null).should_persist,
+    ).toBe(true);
+    expect(
+      resolveAnnotationConflict(
+        { file_id: 'f1', strokes, version: 3 },
+        { file_id: 'f1', strokes: [], version: 3 },
+      ).should_persist,
+    ).toBe(true);
   });
 
   it('defaults the server version to 1 when the server row omits version', () => {

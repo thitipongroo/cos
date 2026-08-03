@@ -37,7 +37,7 @@ export class TenantMiddleware implements NestMiddleware, OnModuleDestroy {
     const isAuthPath = path.startsWith('/api/v1/auth');
     const isHealthPath = path.startsWith('/api/v1/health');
     const isAdminPath = path.startsWith('/api/v1/admin');
-    // Vendor Portal uses external (non-Keycloak) auth — VendorAuthMiddleware sets the context.
+    // Vendor Portal uses external (non-Keycloak) auth — VendorAuthGuard sets the context.
     const isVendorPath = path.startsWith('/api/v1/vendor');
     if (isAuthPath || isHealthPath || isAdminPath || isVendorPath) {
       return next();

@@ -98,6 +98,7 @@ const mockRepo = {
   findQuotationsByVendor: jest.fn(),
   markQuotationSelected: jest.fn(),
   createPurchaseOrder: jest.fn(),
+  createPurchaseOrderWithLineItems: jest.fn(),
   findPoById: jest.fn(),
   updatePoStatus: jest.fn(),
   setPoWorkflowId: jest.fn(),
@@ -389,8 +390,10 @@ describe('Purchase Order financial calculations', () => {
   });
 
   it('createPurchaseOrder — accepts when total_amount matches line item sum', async () => {
-    mockRepo.createPurchaseOrder.mockResolvedValue(poFixture);
-    mockRepo.createLineItems.mockResolvedValue(lineItemFixtures);
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: poFixture,
+      line_items: lineItemFixtures,
+    });
     mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
 
     const result = await service.createPurchaseOrder({
@@ -416,18 +419,17 @@ describe('Purchase Order financial calculations', () => {
 
   it('createPurchaseOrder — DECIMAL precision: 10.1234 × 6000.0001 computed correctly', async () => {
     // 10.1234 × 6000.0001 = 60740.4010... rounded HALF_UP to 60740.4010
-    mockRepo.createPurchaseOrder.mockResolvedValue({
-      ...poFixture,
-      total_amount: '60740.4010',
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: { ...poFixture, total_amount: '60740.4010' },
+      line_items: [
+        {
+          ...lineItemFixtures[0]!,
+          quantity: '10.1234',
+          unit_price: '6000.0001',
+          line_total: '60740.4010',
+        },
+      ],
     });
-    mockRepo.createLineItems.mockResolvedValue([
-      {
-        ...lineItemFixtures[0]!,
-        quantity: '10.1234',
-        unit_price: '6000.0001',
-        line_total: '60740.4010',
-      },
-    ]);
     mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
 
     await expect(
@@ -654,16 +656,17 @@ describe('Purchase Requests', () => {
     );
   });
 
-  it('allocates the tenant’s next pr_number when the caller omits one', async () => {
-    // The mobile path: a site engineer should not be asked to invent a document number.
-    mockRepo.nextPrNumber.mockResolvedValue('PR-2026-0042');
+  it('defers pr_number allocation to the insert transaction when the caller omits one', async () => {
+    // The mobile path: a site engineer should not be asked to invent a document number. The number
+    // is now derived inside createPurchaseRequest's transaction (under an advisory lock) rather than
+    // read here first — reading it in a separate transaction was a race.
     mockRepo.createPurchaseRequest.mockResolvedValue({ pr_id: 'pr-001' });
 
     await service.createPurchaseRequest({ project_id: 'p-001' } as never);
 
-    expect(mockRepo.nextPrNumber).toHaveBeenCalledWith(new Date().getFullYear());
+    expect(mockRepo.nextPrNumber).not.toHaveBeenCalled();
     expect(mockRepo.createPurchaseRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ pr_number: 'PR-2026-0042' }),
+      expect.objectContaining({ pr_number: undefined, year: new Date().getFullYear() }),
     );
   });
 });
@@ -1518,8 +1521,10 @@ describe('exact contracts — createPurchaseOrder', () => {
   };
 
   beforeEach(() => {
-    mockRepo.createPurchaseOrder.mockResolvedValue(poFixture);
-    mockRepo.createLineItems.mockResolvedValue(lineItemFixtures);
+    mockRepo.createPurchaseOrderWithLineItems.mockResolvedValue({
+      po: poFixture,
+      line_items: lineItemFixtures,
+    });
     mockRepo.setPoWorkflowId.mockResolvedValue(undefined);
   });
 
@@ -1531,26 +1536,29 @@ describe('exact contracts — createPurchaseOrder', () => {
 
   it('passes exact repo payload and line items', async () => {
     await service.createPurchaseOrder(poDto);
-    expect(mockRepo.createPurchaseOrder).toHaveBeenCalledWith({
-      rfq_id: undefined,
-      vendor_id: 'vendor-uuid-001',
-      project_id: 'project-uuid-001',
-      po_number: 'PO-001',
-      total_amount: '60000.0000',
-      currency_code: 'THB',
-      delivery_date: '2026-09-01',
-      created_by: 'user-uuid-001',
-    });
-    expect(mockRepo.createLineItems).toHaveBeenCalledWith('po-uuid-001', [
+    // Header + lines go to the repo as a single atomic call (one transaction).
+    expect(mockRepo.createPurchaseOrderWithLineItems).toHaveBeenCalledWith(
       {
-        boq_item_id: undefined,
-        description: 'Concrete mix M35',
-        quantity: '10.0000',
-        unit: 'm3',
-        unit_price: '6000.0000',
-        line_total: '60000.0000',
+        rfq_id: undefined,
+        vendor_id: 'vendor-uuid-001',
+        project_id: 'project-uuid-001',
+        po_number: 'PO-001',
+        total_amount: '60000.0000',
+        currency_code: 'THB',
+        delivery_date: '2026-09-01',
+        created_by: 'user-uuid-001',
       },
-    ]);
+      [
+        {
+          boq_item_id: undefined,
+          description: 'Concrete mix M35',
+          quantity: '10.0000',
+          unit: 'm3',
+          unit_price: '6000.0000',
+          line_total: '60000.0000',
+        },
+      ],
+    );
     expect(mockRepo.setPoWorkflowId).toHaveBeenCalledWith('po-uuid-001', 'po-po-uuid-001');
   });
 

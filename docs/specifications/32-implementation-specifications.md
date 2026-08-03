@@ -811,8 +811,8 @@ Notes:
 - **Spacing:** do not override Tailwind's scale — its default 4px base already equals the
   `--web-space-*` tokens (`p-4`=16px, `p-6`=24px, …).
 - **Radius:** `rounded`=4px (sm), `rounded-md`=8px, `rounded-lg`=12px, `rounded-xl`=16px (mapped to `--web-radius-*`).
-- **Font:** brand font is `@fontsource-variable/inter-tight` (one file, weights 100–900); fallback `Inter, -apple-system, system-ui,
-sans-serif`.
+- **Font:** brand font is `@fontsource-variable/inter-tight` (one file, weights 100–900); fallback `Inter, -apple-system,
+system-ui, sans-serif`.
 - **Verification:** a build must emit non-empty utility CSS (compiling `globals.css` yields > 0 bytes) — an empty result
   means the pipeline is not wired.
 

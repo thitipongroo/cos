@@ -13,26 +13,21 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
+import { tombstoneRetentionCutoff, tombstoneRetentionDays } from './tombstone-retention';
 
 const logger = createLogger('tombstone-prune-service');
-const DEFAULT_RETENTION_DAYS = 90;
-const MS_PER_DAY = 86_400_000;
 
 @Injectable()
 export class TombstonePruneService implements OnModuleDestroy {
   private readonly prisma = createPrismaClient();
 
-  private retentionDays(): number {
-    const raw = process.env['SYNC_TOMBSTONE_RETENTION_DAYS'];
-    const parsed = raw ? Number(raw) : DEFAULT_RETENTION_DAYS;
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_RETENTION_DAYS;
-  }
-
   /** Delete tombstones older than the retention window. Returns the number of rows removed. */
   @Cron('0 3 * * *', { timeZone: 'UTC', name: 'sync-tombstone-prune' })
   async pruneOldTombstones(): Promise<number> {
-    const days = this.retentionDays();
-    const cutoff = new Date(Date.now() - days * MS_PER_DAY).toISOString();
+    // Window shared with SyncService.delta() (see tombstone-retention.ts) — the prune is only safe
+    // because the delta endpoint refuses cursors older than this same cutoff.
+    const days = tombstoneRetentionDays();
+    const cutoff = tombstoneRetentionCutoff().toISOString();
     const deleted = await this.prisma.$executeRaw`
       DELETE FROM platform.sync_tombstones WHERE deleted_at < ${cutoff}::timestamptz
     `;

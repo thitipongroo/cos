@@ -14,6 +14,10 @@ const logger = createLogger('exchange-rate-service');
 const BASE_CURRENCY = 'USD';
 const CACHE_TTL_SECONDS = 86400; // 24h
 const REDIS_KEY = 'finance:exchange_rates:usd_base';
+// getRates() falls through to a live fetch on a cache miss, so this call sits on a request path. An
+// unbounded fetch would pin that request to however long the upstream takes to give up. Matches the
+// AbortSignal.timeout() every other outbound client here uses (geo, file-service, credentials).
+const FETCH_TIMEOUT_MS = 5000;
 
 interface OerResponse {
   base: string;
@@ -91,7 +95,7 @@ export class ExchangeRateService implements OnModuleDestroy {
     const appId = process.env['OPEN_EXCHANGE_RATES_APP_ID'] ?? '';
     const url = `https://openexchangerates.org/api/latest.json?app_id=${appId}&base=${BASE_CURRENCY}`;
 
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     if (!res.ok) {
       throw new Error(`Open Exchange Rates API error: ${res.status} ${res.statusText}`);
     }

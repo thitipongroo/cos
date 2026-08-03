@@ -17,6 +17,13 @@ export const CLS_USER_ROLE = 'userRole';
 export const CLS_TENANT_CODE = 'tenantCode';
 export const CLS_DEDICATED_DB_URL = 'dedicatedDbUrl';
 
+// Vendor Portal (ADR-030). External vendors have no Keycloak JWT, so VendorAuthGuard publishes their
+// context here for the same reason JwtAuthGuard does: a value written onto the request object in the
+// auth layer does not reliably reach Scope.REQUEST providers under Fastify.
+export const CLS_VENDOR_ID = 'vendorId';
+export const CLS_VENDOR_IDENTITY_ID = 'vendorIdentityId';
+export const CLS_VENDOR_INVITATION_ID = 'vendorInvitationId';
+
 function clsGet(key: string): string | undefined {
   const cls = ClsServiceManager.getClsService();
   return cls.isActive() ? cls.get<string | undefined>(key) : undefined;
@@ -40,4 +47,19 @@ export function clsUserRole(): string {
 /** Dedicated DB URL from CLS (enterprise tenants), or undefined. */
 export function clsDedicatedDbUrl(): string | undefined {
   return clsGet(CLS_DEDICATED_DB_URL);
+}
+
+/** Vendor id (procurement.vendors) for a Tier-2 vendor session, or undefined. */
+export function clsVendorId(): string | undefined {
+  return clsGet(CLS_VENDOR_ID);
+}
+
+/** Vendor identity id (platform.vendor_identities) for a Tier-2 vendor session, or undefined. */
+export function clsVendorIdentityId(): string | undefined {
+  return clsGet(CLS_VENDOR_IDENTITY_ID);
+}
+
+/** Invitation id carried by a Tier-1 magic-link token, or undefined. */
+export function clsVendorInvitationId(): string | undefined {
+  return clsGet(CLS_VENDOR_INVITATION_ID);
 }

@@ -6,6 +6,7 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../shared/context/cls-context';
 
 // Row types live in ./site-ops.rows; imported here for the method signatures below and re-exported so
 // existing `from './site-ops.repository'` type imports (service, specs) keep resolving. ManpowerLogRow
@@ -31,8 +32,12 @@ export class SiteOpsRepository {
     @Inject(REQUEST) private readonly request: Request & { tenantId?: string },
   ) {}
 
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return this.request.tenantId ?? '';
+    return this.request.tenantId ?? clsTenantId();
   }
 
   // ── Site Reports ───────────────────────────────────────────────────────
@@ -128,6 +133,48 @@ export class SiteOpsRepository {
       `,
     );
     return { rows, total: Number(countRows[0]?.count ?? 0) };
+  }
+
+  /**
+   * Apply a resolved offline edit to an existing report (ConflictHandler LAST_WRITE_WINS).
+   *
+   * Deliberately narrow: only the fields a site report's author can edit offline. `project_id`,
+   * `report_date` and `submitted_by` form the row's natural identity (and the ON CONFLICT target of
+   * createSiteReport), so an offline edit must never move a report to a different project or day —
+   * that would be a new report, not an edit.
+   *
+   * Returns null when no row matched, so a caller cannot report a write that did not land.
+   */
+  async updateSiteReport(
+    reportId: string,
+    params: {
+      summary: string | null;
+      blockers: string | null;
+      weather: string | null;
+      manpower_count: number | null;
+      client_submitted_at: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    },
+  ): Promise<SiteReportRow | null> {
+    const rows = await this.db.run(
+      (tx) =>
+        tx.$queryRaw<SiteReportRow[]>`
+        UPDATE site_ops.site_reports
+        SET summary             = ${params.summary},
+            blockers            = ${params.blockers},
+            weather             = ${params.weather},
+            manpower_count      = ${params.manpower_count},
+            client_submitted_at = ${params.client_submitted_at}::timestamptz,
+            latitude            = ${params.latitude ?? null}::numeric,
+            longitude           = ${params.longitude ?? null}::numeric,
+            modified_at         = now()
+        WHERE report_id = ${reportId}::uuid
+          AND tenant_id = ${this.tenantId}::uuid
+        RETURNING *
+      `,
+    );
+    return rows[0] ?? null;
   }
 
   async updateReportStatus(reportId: string, status: 'SUBMITTED' | 'ACKNOWLEDGED'): Promise<void> {

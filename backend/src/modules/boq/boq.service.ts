@@ -54,24 +54,23 @@ export class BoqService {
   // ── Version Operations ────────────────────────────────────────────────────
 
   async createVersion(project_id: string, dto: CreateBoqVersionDto): Promise<BoqVersionRow> {
-    // Enforce: only one DRAFT per project
-    const existingDraft = await this.repo.findDraftVersion(project_id);
-    if (existingDraft) {
-      throw new ConflictException(
-        `Project ${project_id} already has a DRAFT BOQ version (${existingDraft.version_id}). Approve or delete it first.`,
-      );
-    }
-
-    const maxVersion = await this.repo.findMaxVersionNumber(project_id);
-    const newVersionNumber = maxVersion + 1;
-
-    const version = await this.repo.createVersion({
+    // The DRAFT check and the version_number allocation must happen together, under one lock: run as
+    // separate queries they were a check-then-act race in which two concurrent creates could both
+    // see "no DRAFT" and both claim the same version number. claimNextVersion() does both inside a
+    // single per-project transaction and returns null when a DRAFT already exists.
+    const claimed = await this.repo.claimNextVersion({
       project_id,
-      version_number: newVersionNumber,
       version_name: dto.version_name ?? null,
       currency_code: dto.currency_code,
       created_by: this.userId,
     });
+    if (!claimed) {
+      const existingDraft = await this.repo.findDraftVersion(project_id);
+      throw new ConflictException(
+        `Project ${project_id} already has a DRAFT BOQ version (${existingDraft?.version_id ?? 'unknown'}). Approve or delete it first.`,
+      );
+    }
+    const { version, version_number: newVersionNumber } = claimed;
 
     // If copying from latest approved version
     if (newVersionNumber > 1) {
