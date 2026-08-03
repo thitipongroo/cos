@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-rds": "^3.600.0",
+    "@aws-sdk/client-secrets-manager": "^3.600.0",
     "@aws-sdk/client-sns": "^3.600.0",
     "@clickhouse/client": "^1.8.0",
     "@confluentinc/schemaregistry": "^1.0.0",

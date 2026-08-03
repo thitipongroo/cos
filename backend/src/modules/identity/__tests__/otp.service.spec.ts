@@ -109,6 +109,37 @@ describe('OtpService', () => {
     });
   });
 
+  // Security review F6 — the attempt budget used to be read, compared, then incremented only on a
+  // miss, so a concurrent burst all observed the same pre-increment value and every one of them got
+  // to guess. The budget is now claimed with a single atomic INCR before the comparison.
+  it('verifyOtp lets no more than OTP_MAX_ATTEMPTS concurrent guesses through', async () => {
+    await service.requestOtp('+66812345678');
+
+    // Fire 20 wrong guesses simultaneously. Pre-fix all 20 passed the `attempts >= 3` check because
+    // none of them had incremented yet; post-fix exactly 3 reach the comparison (400) and the rest
+    // are refused outright (429).
+    const outcomes = await Promise.all(
+      Array.from({ length: 20 }, () =>
+        service
+          .verifyOtp('+66812345678', '000000')
+          .then(() => 'accepted')
+          .catch((err: { status?: number }) => (err.status === 429 ? 'refused' : 'guessed')),
+      ),
+    );
+
+    expect(outcomes.filter((o) => o === 'guessed')).toHaveLength(3);
+    expect(outcomes).not.toContain('accepted');
+  });
+
+  it('verifyOtp still accepts the correct OTP on the last permitted attempt', async () => {
+    await service.requestOtp('+66812345678');
+    const otp = redisMock['otp:value:+66812345678']!;
+    await expect(service.verifyOtp('+66812345678', '000000')).rejects.toThrow(BadRequestException);
+    await expect(service.verifyOtp('+66812345678', '000000')).rejects.toThrow(BadRequestException);
+    // Third and final attempt — the budget is spent by this call, but a correct code still wins.
+    await expect(service.verifyOtp('+66812345678', otp)).resolves.toBe(true);
+  });
+
   it('requestOtp throws TooManyRequestsException after daily limit', async () => {
     // Simulate 10 requests already made today
     const dailyKey = `otp:daily:+66812345678:${new Date().toISOString().slice(0, 10)}`;

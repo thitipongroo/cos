@@ -128,22 +128,30 @@ export class OtpService implements OnModuleDestroy {
     await this.redis.set(`otp:cooldown:${phoneNumber}`, '1', 'EX', RESEND_COOLDOWN_SECONDS);
   }
 
-  /** Verify OTP — returns true on success, throws on failure/expiry/max attempts. */
+  /**
+   * Verify OTP — returns true on success, throws on failure/expiry/max attempts.
+   *
+   * The attempt budget is spent BEFORE the comparison, via a single atomic INCR (security review F6).
+   * The previous order — read the counter, compare, then increment only on a miss — was a TOCTOU: N
+   * concurrent requests all read the same pre-increment value, all passed the `attempts >= 3` check,
+   * and all got to guess. That turned a 3-guess budget into "3 guesses per round trip of parallelism"
+   * against a 6-digit space.
+   *
+   * INCR preserves the TTL requestOtp set on the key, so the budget still expires with the OTP.
+   */
   async verifyOtp(phoneNumber: string, otp: string): Promise<boolean> {
     const attemptsKey = `otp:attempts:${phoneNumber}`;
     const otpKey = `otp:value:${phoneNumber}`;
 
-    const [storedOtp, attemptsStr] = await Promise.all([
-      this.redis.get(otpKey),
-      this.redis.get(attemptsKey),
-    ]);
-
+    const storedOtp = await this.redis.get(otpKey);
     if (!storedOtp) {
       throw new BadRequestException('OTP expired or not requested');
     }
 
-    const attempts = parseInt(attemptsStr ?? /* istanbul ignore next */ '0', 10);
-    if (attempts >= OTP_MAX_ATTEMPTS) {
+    // Claim this attempt atomically. A concurrent burst gets 1, 2, 3, 4… — exactly one request per
+    // slot — so only OTP_MAX_ATTEMPTS of them ever reach the comparison below.
+    const attempts = await this.redis.incr(attemptsKey);
+    if (attempts > OTP_MAX_ATTEMPTS) {
       await this.redis.del(otpKey, attemptsKey);
       throw new HttpException(
         'Maximum OTP attempts exceeded — request a new OTP',
@@ -152,7 +160,6 @@ export class OtpService implements OnModuleDestroy {
     }
 
     if (!otpMatches(otp, storedOtp)) {
-      await this.redis.incr(attemptsKey);
       logger.warn({ phone: '[REDACTED]' }, 'OTP verification failed');
       throw new BadRequestException('Invalid OTP');
     }

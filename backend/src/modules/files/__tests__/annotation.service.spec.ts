@@ -5,6 +5,9 @@ function harness() {
   const repo = {
     findByFileId: jest.fn(),
     upsert: jest.fn(),
+    // Default to "the photo belongs to this tenant" so the existing conflict-resolution cases below
+    // exercise the resolver rather than the F7 ownership gate; the gate has its own cases.
+    fileExistsInTenant: jest.fn().mockResolvedValue(true),
   };
   const svc = new AnnotationService(repo as never);
   return { svc, repo };
@@ -53,6 +56,20 @@ describe('AnnotationService', () => {
   });
 
   describe('applyPush', () => {
+    // Security review F7 — /sync/push carries a caller-chosen file_id. Without this gate an id from
+    // another tenant reached the upsert, collided with the GLOBAL unique on file_id against a row RLS
+    // hides, and surfaced as a 500 that revealed the row existed.
+    it('rejects a file_id not visible in the caller tenant with COS-FILE-019, before any write', async () => {
+      const { svc, repo } = harness();
+      repo.fileExistsInTenant.mockResolvedValue(false);
+
+      await expect(svc.applyPush('f-other-tenant', [], 0)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(repo.findByFileId).not.toHaveBeenCalled();
+      expect(repo.upsert).not.toHaveBeenCalled();
+    });
+
     it('persists and returns ACCEPTED when the client is on the current version', async () => {
       const { svc, repo } = harness();
       repo.findByFileId.mockResolvedValue(row); // server version 3

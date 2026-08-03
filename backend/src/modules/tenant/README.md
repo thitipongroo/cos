@@ -40,6 +40,37 @@ Middleware (applied globally): `TenantMiddleware` — extracts `tenantId` from J
 | `DATABASE_URL`                 | Points to PgBouncer, NOT PostgreSQL port 5432 directly |
 | `KEYCLOAK_ADMIN_URL`           | Keycloak admin API base URL                            |
 | `KEYCLOAK_ADMIN_CLIENT_SECRET` | Injected via AWS SM / Vault                            |
+| `APP_SECRET_ENCRYPTION_KEY`    | AES-256-GCM key used to encrypt `platform.tenants.dedicated_db_url` at rest (security review F5b) |
+| `TRUSTED_PROXY_CIDRS`          | Edge ranges trusted for `X-Forwarded-For` — also gates Fastify `trustProxy` (F3) |
+
+### IAM — enterprise provisioning worker (Temporal)
+
+The `enterprise-provisioning` Temporal worker reads and creates AWS Secrets Manager secrets (security
+review F4/F9): the AWS-managed RDS master secret, and a per-tenant `app_user` credential at
+`cos/{env}/tenant-db/{tenantCode}/app_user`. Its role needs:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": [
+    "secretsmanager:GetSecretValue",
+    "secretsmanager:CreateSecret",
+    "secretsmanager:TagResource"
+  ],
+  "Resource": [
+    "arn:aws:secretsmanager:*:*:secret:cos/*/tenant-db/*",
+    "arn:aws:secretsmanager:*:*:secret:rds!db-*"
+  ]
+}
+```
+
+**This role is not created by anything in this repository.** There is no Terraform resource for
+application IAM roles and no Kubernetes manifest for this worker here — the same situation as the
+External Secrets Operator role, which `infrastructure/kubernetes/external-secrets/README.md` documents
+and an operator attaches out of band (IRSA). Follow that pattern: create the role, then annotate the
+worker's ServiceAccount with `eks.amazonaws.com/role-arn`. Without it, `createRdsActivity` succeeds and
+`secureAppUserActivity` fails, leaving the tenant DB with the app_user password from migration
+`20260623000001` — which is the F9 finding.
 
 ## Usage
 

@@ -60,6 +60,10 @@ describe('UserService', () => {
       provisionPhoneUser: jest.fn().mockResolvedValue({ keycloakUserId: KC_USER_ID }),
       createEmailUser: jest.fn().mockResolvedValue({ keycloakUserId: KC_USER_ID }),
       deleteUser: jest.fn().mockResolvedValue(undefined),
+      // Security review F1/F2 — deactivation must disable the Keycloak account, and a role change must
+      // rewrite the `role` user attribute the JWT claim is mapped from.
+      disableUser: jest.fn().mockResolvedValue(undefined),
+      syncUserRole: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<KeycloakAdminService>;
 
     service = new UserService(keycloakAdmin);
@@ -271,14 +275,24 @@ describe('UserService', () => {
   // ─── changeRole ──────────────────────────────────────────────────────────
 
   describe('changeRole', () => {
-    it('updates membership role and emits user.role_changed', async () => {
+    it('updates membership role, re-syncs the Keycloak role attribute, and emits user.role_changed', async () => {
       (prismaMock.$queryRaw as jest.Mock)
-        .mockResolvedValueOnce([{ role: CosRole.SITE_ENGINEER }]) // SELECT membership
+        .mockResolvedValueOnce([
+          { role: CosRole.SITE_ENGINEER, keycloak_user_id: KC_USER_ID, keycloak_realm: REALM },
+        ]) // SELECT membership + keycloak identifiers
         .mockResolvedValueOnce([{}]); // UPDATE
 
       await expect(
         service.changeRole(USER_ID, { role: CosRole.PROJECT_MANAGER }, TENANT_ID, ACTOR_ID),
       ).resolves.toBeUndefined();
+
+      // Security review F2 — without this the JWT `role` claim keeps the OLD role forever, so a
+      // demotion never takes effect for anything reading the token.
+      expect(keycloakAdmin.syncUserRole).toHaveBeenCalledWith(
+        KC_USER_ID,
+        REALM,
+        CosRole.PROJECT_MANAGER,
+      );
     });
 
     it('throws NotFoundException when user not in tenant', async () => {
@@ -300,15 +314,32 @@ describe('UserService', () => {
   // ─── deactivateUser ──────────────────────────────────────────────────────
 
   describe('deactivateUser', () => {
-    it('deactivates an active user', async () => {
-      (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([{ user_id: USER_ID }]);
+    it('deactivates an active user AND disables the Keycloak account', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_user_id: KC_USER_ID }]) // UPDATE ... RETURNING
+        .mockResolvedValueOnce([{ keycloak_realm: REALM }]); // SELECT realm
+
       await expect(service.deactivateUser(USER_ID, TENANT_ID, ACTOR_ID)).resolves.toBeUndefined();
+
+      // Security review F1 — the COS flag alone revoked nothing: the Keycloak account stayed enabled,
+      // so the user could log in again and be issued a brand-new valid token indefinitely.
+      expect(keycloakAdmin.disableUser).toHaveBeenCalledWith(KC_USER_ID, REALM);
     });
 
     it('throws NotFoundException when user not found or already inactive', async () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
       await expect(service.deactivateUser(USER_ID, TENANT_ID, ACTOR_ID)).rejects.toThrow(
         NotFoundException,
+      );
+      expect(keycloakAdmin.disableUser).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when the tenant row is missing or inactive', async () => {
+      (prismaMock.$queryRaw as jest.Mock)
+        .mockResolvedValueOnce([{ keycloak_user_id: KC_USER_ID }])
+        .mockResolvedValueOnce([]); // no active tenant
+      await expect(service.deactivateUser(USER_ID, TENANT_ID, ACTOR_ID)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
@@ -467,9 +498,13 @@ describe('UserService setUserRoles', () => {
   let service: UserService;
   let prismaMock: jest.Mocked<PrismaClient>;
   let kafkaMock: { connect: jest.Mock; publish: jest.Mock; disconnect: jest.Mock };
+  let keycloakAdmin: jest.Mocked<KeycloakAdminService>;
 
   beforeEach(() => {
-    service = new UserService({} as never);
+    keycloakAdmin = {
+      syncUserRole: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<KeycloakAdminService>;
+    service = new UserService(keycloakAdmin);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
     kafkaMock = (
       service as unknown as {
@@ -480,9 +515,16 @@ describe('UserService setUserRoles', () => {
 
   // The whole role change runs inside one $transaction — mirror that here so the tx-scoped calls are
   // observable. `membership` is what the leading SELECT ... FOR UPDATE returns ([] = no membership).
+  // The row now also carries the Keycloak identifiers used for the post-commit attribute sync (F2).
   function mockRoleTx(membership: Array<{ role: CosRole }>): jest.Mock {
     const txQueryRaw = jest.fn().mockResolvedValue([]);
-    txQueryRaw.mockResolvedValueOnce(membership); // SELECT membership FOR UPDATE
+    txQueryRaw.mockResolvedValueOnce(
+      membership.map((m) => ({
+        ...m,
+        keycloak_user_id: KC_USER_ID,
+        keycloak_realm: REALM,
+      })),
+    ); // SELECT membership FOR UPDATE
     (prismaMock.$transaction as jest.Mock).mockImplementation(
       async (fn: (tx: unknown) => Promise<unknown>) => fn({ $queryRaw: txQueryRaw }),
     );

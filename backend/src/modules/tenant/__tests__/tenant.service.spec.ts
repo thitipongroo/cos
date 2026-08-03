@@ -49,7 +49,10 @@ describe('TenantService', () => {
   let prismaMock: jest.Mocked<PrismaClient>;
 
   beforeEach(() => {
-    service = new TenantService();
+    // FeatureFlagService gates encrypt-on-write for dedicated_db_url (security review F5b). Default
+    // the flag OFF so these existing assertions keep comparing against the plaintext URL; the cipher
+    // has its own dedicated spec.
+    service = new TenantService({ isEnabled: () => false } as never);
     prismaMock = (service as unknown as { prisma: jest.Mocked<PrismaClient> }).prisma;
   });
 
@@ -542,7 +545,7 @@ describe('TenantService', () => {
 
 describe('TenantService onModuleDestroy', () => {
   it('disconnects Prisma on shutdown', async () => {
-    const svc = new TenantService();
+    const svc = new TenantService({ isEnabled: () => false } as never);
     await svc.onModuleDestroy();
     expect(
       (svc as unknown as { prisma: { $disconnect: jest.Mock } }).prisma.$disconnect,

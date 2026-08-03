@@ -42,6 +42,19 @@ export class AnnotationService {
     strokes: unknown[],
     baseVersion: number,
   ): Promise<ApplyAnnotationResult> {
+    // Object-level authorization before any write (security review F7). /sync/push carries the file_id
+    // in the request body, so it is caller-chosen; without this an id belonging to another tenant
+    // reached the upsert and died on the global unique constraint — a 500 that doubled as an
+    // "annotation exists for this file" oracle. 404 is the correct answer: from this tenant's side the
+    // photo does not exist.
+    if (!(await this.repo.fileExistsInTenant(fileId))) {
+      throw new NotFoundException({
+        code: 'COS-FILE-019',
+        message: 'File not found',
+        messageKey: 'files.notFound',
+      });
+    }
+
     const current = await this.repo.findByFileId(fileId);
 
     const result = resolveAnnotationConflict(

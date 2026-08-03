@@ -47,6 +47,7 @@ All API error responses follow the structure:
 | COS-FILE-016 | 409  | File not available (scan pending/failed)  | Signed-URL requested before ClamAV cleared the file (not CLEAN)         |
 | COS-FILE-017 | 422  | File content does not match declared type | Magic-byte sniff contradicts the declared MIME (M7)                     |
 | COS-FILE-018 | 401  | Invalid or expired authentication token   | In-service JWT verify failed, or token/Kong-header tenant mismatch (M1) |
+| COS-FILE-019 | 404  | File not found                            | Annotation push for a file_id not visible in the caller's tenant        |
 
 ---
 

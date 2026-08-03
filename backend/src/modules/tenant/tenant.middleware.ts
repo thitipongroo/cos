@@ -7,6 +7,7 @@ import { Injectable, NestMiddleware, UnauthorizedException, OnModuleDestroy } fr
 import type { Request, Response, NextFunction } from 'express';
 import { createPrismaClient } from '../../shared/prisma/create-prisma-client';
 import { createLogger } from '@cos/logger';
+import { decryptDedicatedDbUrl } from './utils/dedicated-db-url-cipher';
 
 const logger = createLogger('tenant-middleware');
 
@@ -71,7 +72,11 @@ export class TenantMiddleware implements NestMiddleware, OnModuleDestroy {
     req.tenantCode = tenant[0]!.tenant_code;
     req.userId = jwtPayload.user_id;
     req.userRole = jwtPayload.role;
-    req.dedicatedDbUrl = tenant[0]!.dedicated_db_url ?? undefined;
+    // Accepts ciphertext or legacy plaintext (security review F5b) — kept correct even though this
+    // middleware is no longer mounted (tenant.module.ts), so reviving it cannot resurrect the bug.
+    req.dedicatedDbUrl = tenant[0]!.dedicated_db_url
+      ? decryptDedicatedDbUrl(tenant[0]!.dedicated_db_url)
+      : undefined;
 
     logger.debug({ tenantId: req.tenantId, userId: req.userId }, 'Tenant context injected');
     next();

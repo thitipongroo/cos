@@ -103,10 +103,19 @@ describe('SyncAuthGuard', () => {
       );
     });
 
-    it('photo_annotation carries no role requirement (no REST write route to mirror)', async () => {
-      const { guard } = makeGuard([]);
+    // Security review F7b — photo_annotation used to carry NO role requirement, because no spec stated
+    // one. 14-api-architecture §Files APIs now states it (PO decision 2026-08-04): the same field-write
+    // set as the other entities pushed through /sync/push.
+    it('photo_annotation allows a field-write role', async () => {
+      const { guard } = makeGuard([CosRole.SITE_WORKER]);
       const req = { method: 'POST', user: SITE_WORKER, body: { entity_type: 'photo_annotation' } };
       await expect(guard.canActivate(ctx(req))).resolves.toBe(true);
+    });
+
+    it('photo_annotation denies a role outside the field-write set', async () => {
+      const { guard } = makeGuard([CosRole.FINANCE]);
+      const req = { method: 'POST', user: SITE_WORKER, body: { entity_type: 'photo_annotation' } };
+      await expect(guard.canActivate(ctx(req))).rejects.toThrow(ForbiddenException);
     });
   });
 

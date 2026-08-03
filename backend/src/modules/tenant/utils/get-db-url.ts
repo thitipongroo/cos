@@ -7,6 +7,7 @@
 
 import { createPrismaClient } from '../../../shared/prisma/create-prisma-client';
 import { appDatabaseUrl } from '../../../shared/prisma/app-database-url';
+import { decryptDedicatedDbUrl } from './dedicated-db-url-cipher';
 
 export async function getDbUrlForTenant(tenantId: string): Promise<string> {
   const prisma = createPrismaClient(process.env['DATABASE_URL']);
@@ -16,7 +17,10 @@ export async function getDbUrlForTenant(tenantId: string): Promise<string> {
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
     `;
-    return rows[0]?.dedicated_db_url ?? appDatabaseUrl();
+    // Stored value may be ciphertext (s1.tenant.encrypted-db-url) or legacy plaintext — the decrypt
+    // helper accepts both, so no backfill is needed (security review F5b).
+    const stored = rows[0]?.dedicated_db_url;
+    return stored ? decryptDedicatedDbUrl(stored) : appDatabaseUrl();
   } finally {
     await prisma.$disconnect();
   }

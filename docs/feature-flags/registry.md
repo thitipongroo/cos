@@ -15,6 +15,8 @@ disable a live production feature. New-feature flags should default OFF until ro
 | `s1.ai.report-generation`      | AI report generation (`services/ai-gateway` — see registry note below)                                                                                     | ON       | kill-switch — permanent |
 | `s1.ai.completions`            | `POST /api/v1/ai/completions` (general LLM completion endpoint, `services/ai-gateway`)                                                                     | ON       | kill-switch — permanent |
 | `s1.web.client-validation`     | Client-side form validation in `apps/web` (`@cos/schemas` + react-hook-form resolver)                                                                      | OFF      | 30 days after 100%      |
+| `s1.identity.authoritative-role-check` | `KeycloakJwtStrategy.validate()` — resolve `platform.users.is_active` and the effective role from the DB per request instead of trusting the JWT claim (ADR-077; security review F1b/F2b). OFF re-opens those findings by design; incident mitigation only | ON       | kill-switch — permanent |
+| `s1.tenant.encrypted-db-url`   | Encrypt `platform.tenants.dedicated_db_url` (AES-256-GCM) on WRITE in `TenantService` (security review F5b). Reads always accept both formats, so it is safe to flip either way; enterprise provisioning always encrypts (no DI in the Temporal worker) | OFF      | 30 days after 100%      |
 
 Notes:
 
