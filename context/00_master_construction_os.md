@@ -1010,8 +1010,9 @@ Avoid in all visual work:
   ✗ Gradients or glow effects
 
   TWO EXCEPTIONS to the gradient/glow rule — both because no project data is on screen yet:
-    1. Pre-auth entry screens (login, OTP verify, verification overlay) — rotating gear,
-       `architecture` mark, cyan glow. PO decision 2026-07-16.
+    1. Pre-auth entry screens (login, OTP verify, verification overlay, Privacy Policy) —
+       rotating gear, `architecture` mark, cyan glow. PO decision 2026-07-16; Privacy Policy
+       added by PO decision 2026-08-03 (reached from the login footer, so still pre-auth).
     2. <LoadingState /> `ai` variant only — cyan glow, scan-line, waveform; unmounts the
        moment data renders. PO decision 2026-07-17; ADR-055.
   Everywhere the signed-in app shows project data, the prohibition holds.

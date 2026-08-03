@@ -33,6 +33,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { SvgXml } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 import { getLocales } from 'expo-localization';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CosRole } from '@cos/types';
@@ -68,6 +69,7 @@ export default function LoginScreen() {
   // The auth stack has no navigator chrome of its own, so the header must clear the status bar
   // itself — same pattern as (app)/_layout.tsx.
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const requestOtp = useAuthStore((s) => s.requestOtp);
   const verifyOtp = useAuthStore((s) => s.verifyOtp);
   const setTokens = useAuthStore((s) => s.setTokens);
@@ -372,10 +374,20 @@ export default function LoginScreen() {
                 </Text>
               </View>
               <View style={styles.footerLinks}>
-                <View style={styles.footerLinkItem}>
+                <TouchableOpacity
+                  testID="privacy-policy-link"
+                  accessibilityRole="link"
+                  accessibilityLabel={t('auth.login.privacyPolicy')}
+                  onPress={() => router.push('/(auth)/privacy-policy')}
+                  // hitSlop, not padding: the footer row is a small text link in the mockup, and
+                  // growing it would push the layout. This keeps the visual size while giving the
+                  // 44px effective target §32.7 requires.
+                  hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+                  style={styles.footerLinkItem}
+                >
                   <MaterialIcons name="policy" size={16} color={darkColors.muted} />
                   <Text style={styles.footerLink}>{t('auth.login.privacyPolicy')}</Text>
-                </View>
+                </TouchableOpacity>
                 <Text style={styles.footerDivider}>·</Text>
                 <View style={styles.footerLinkItem}>
                   <MaterialIcons name="gavel" size={16} color={darkColors.muted} />
@@ -504,10 +516,17 @@ export default function LoginScreen() {
               <MaterialIcons name="help-center" size={18} color={darkColors.muted} />
               <Text style={styles.footerLink}>{t('auth.login.getSupport')}</Text>
             </View>
-            <View style={styles.footerLinkItem}>
+            <TouchableOpacity
+              testID="privacy-data-link"
+              accessibilityRole="link"
+              accessibilityLabel={t('auth.login.privacyData')}
+              onPress={() => router.push('/(auth)/privacy-policy')}
+              hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+              style={styles.footerLinkItem}
+            >
               <MaterialIcons name="privacy-tip" size={18} color={darkColors.muted} />
               <Text style={styles.footerLink}>{t('auth.login.privacyData')}</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         ) : null}
       </ScrollView>

@@ -622,11 +622,16 @@ DRAFT → PENDING_APPROVAL → APPROVED → SENT → ACKNOWLEDGED
 Prohibited in the signed-in app: building/crane/hard hat/blueprint/gear icons;
 orange/amber colour; rounded playful shapes; gradients or glow effects.
 
-**Exception 1 — pre-auth entry screens** (login, OTP verify, verification/loading overlay). These
-screens may use the "technical / mission-critical" motif — a rotating gear, the `architecture`
-mark, and a cyan glow on progress/accent elements — because the entry sequence is where the
-"mission-critical operating system" personality is set, before any project data is on screen
-(product-owner decision 2026-07-16; reference `mockup/00_authen/mobile/04_verification_loading_mobile`).
+**Exception 1 — pre-auth entry screens** (login, OTP verify, verification/loading overlay, Privacy
+Policy). These screens may use the "technical / mission-critical" motif — a rotating gear, the
+`architecture` mark, and a cyan glow on progress/accent elements — because the entry sequence is
+where the "mission-critical operating system" personality is set, before any project data is on
+screen (product-owner decision 2026-07-16; reference
+`mockup/00_authen/mobile/04_verification_loading_mobile`). **Privacy Policy** was added to this
+exception by product-owner decision 2026-08-03 (reference
+`mockup/mobile/01_authen/05_privacy_policy/00_policy_data`): it is reached from the login footer and
+is pre-auth by construction, so the same "no project data on screen" rationale applies — the glow is
+scoped to the brand logo on that screen and nothing else.
 
 **Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
 `mockup/mobile/universal_loading_component_mobile_view` + `mockup/desktop/universal_loading_component_desktop_view`).
@@ -706,13 +711,17 @@ Dark screens (exhaustive — do not extend this list without a product-owner dec
 | Login                                   | `mockup/00_login_flow/mobile/`                               |
 | OTP verify                              | `mockup/00_login_flow/mobile/`                               |
 | Session-securing overlay                | `mockup/00_login_flow/mobile/`                               |
+| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/00_policy_data`   |
 | Site Engineer Home                      | `mockup/site-engineer/dashboard-mobile/`                     |
 | Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home_dashboard/`           |
 | Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/01_notification_preferences/` |
 | Navigation drawer                       | `mockup/mobile/04_tenant_admin/04_navigation_drawer/`        |
 
 The Tenant-Admin notification control panel and the navigation drawer were added by product-owner
-decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28). All
+decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28); the
+**Privacy Policy** was added by product-owner decision (2026-08-03) — it is reached from the login
+footer and therefore continues the dark pre-auth surface it is pushed from, rather than dropping the
+user onto the light task palette mid-flow. All
 ship on the dark surface as their mockups define, continuing the signed-in dark identity rather than the
 light task palette. They are control / dashboard surfaces (configure / navigate / monitor), not all-day
 outdoor task screens, so the sunlight-visibility rationale for the light palette does not apply. A

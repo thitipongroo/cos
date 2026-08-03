@@ -87,6 +87,73 @@
       "securing": "Securing Session Context"
     }
   },
+  "privacy": {
+    "policy": {
+      "title": "Privacy Policy",
+      "back": "Back",
+      "encrypted": "Encrypted",
+      "brandName": "Construction OS",
+      "subtitle": "Personal Data Protection Framework v{version}",
+      "complianceBadge": "Compliant with PDPA & GDPR",
+      "intro": "This policy explains what personal data Construction OS collects, how it is processed, and the rights you can exercise over it. It applies to the mobile app, the web app, and the platform services behind them.",
+      "lastUpdated": "Last updated: {date}",
+      "sections": {
+        "collection": {
+          "title": "Data Collection",
+          "body": "We collect only the personal data needed to run construction operations and to meet safety and legal obligations:",
+          "items": {
+            "identity": "Identity — your full name, and your employee code on workforce records.",
+            "contact": "Contact — your phone number and email address, used for sign-in and notifications.",
+            "location": "Location — GPS coordinates attached to check-in/check-out, daily site reports, issues, safety incidents and inspections. Coordinates are optional on every one of those records. Check-in coordinates are kept for 90 days and then reduced to a daily count; coordinates on the other records are kept for as long as the record itself.",
+            "photos": "Site photos — images attached to site reports and inspections. Faces may appear; no facial recognition is performed.",
+            "financial": "Payroll — your agreed daily rate on a project. No bank account details are stored."
+          },
+          "note": "We do not collect biometric identifiers such as fingerprints or face scans, national ID numbers, or dates of birth. The retention period for each data type is defined in our data retention policy."
+        },
+        "usage": {
+          "title": "Data Usage",
+          "body": "Your data is used to operate your projects, to record safety and quality compliance, and to produce the reports and analytics your organisation relies on.",
+          "quote": "Analytics run on aggregated figures and pseudonymous identifiers, and personal data is removed before any text is sent to an AI model.",
+          "processors": "Processing takes place on our platform and with a limited set of service providers under data processing agreements: cloud infrastructure and storage, identity, edge protection, workflow, and the AI report service.",
+          "residency": "Data is stored in your organisation's assigned home region — Thailand (ap-southeast-7) for Thai organisations, Ireland (eu-west-1) for EU organisations, and Singapore (ap-southeast-1) otherwise — with Singapore acting as the disaster-recovery region for Thai data. One exception: sign-in codes are delivered through an SMS gateway in Singapore, so your phone number reaches that gateway when you sign in."
+        },
+        "compliance": {
+          "title": "PDPA & GDPR",
+          "body": "Under the Thai Personal Data Protection Act and the GDPR you may exercise the following rights:",
+          "rights": {
+            "access": "Right to access — obtain a copy of the personal data we hold about you.",
+            "portability": "Right to portability — receive your data in a machine-readable format.",
+            "erasure": "Right to erasure — have your identity data removed. Records subject to a legal retention period are anonymised rather than deleted.",
+            "restrict": "Right to restrict processing — have processing of your data suspended."
+          },
+          "deadline": "We respond to a verified request within 30 days."
+        },
+        "security": {
+          "title": "Technical Security",
+          "body": "Personal data is protected by the following controls:",
+          "controls": {
+            "atRest": "AES-256 encryption at rest (managed keys)",
+            "fieldLevel": "AES-256-GCM field-level encryption for secrets",
+            "tls": "TLS 1.3 minimum on all public endpoints",
+            "mesh": "Zero-trust service mesh with mutual TLS",
+            "isolation": "Row-level security isolating each organisation"
+          }
+        },
+        "rights": {
+          "title": "User Rights",
+          "body": "You can review and change which notifications you receive in the app's notification settings. Access, portability, erasure and restriction requests are handled by our Data Protection Office.",
+          "contact": "Withdrawing consent for safety-related data collection may limit access to areas of a site where that data is required."
+        }
+      },
+      "contact": {
+        "label": "Contact Data Protection Office",
+        "pending": "Contact address not yet published"
+      },
+      "downloadPdf": "Download PDF Policy",
+      "comingSoon": "Coming soon",
+      "copyright": "© {year} CONSTRUCTION OS."
+    }
+  },
   "home": {
     "main": {
       "title": "Home",
