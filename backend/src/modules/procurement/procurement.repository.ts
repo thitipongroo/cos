@@ -5,8 +5,11 @@
 
 import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
+import { randomUUID } from 'crypto';
 import type { Request } from 'express';
+import type { PrismaClient } from '@prisma/client';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../shared/context/cls-context';
 
 // Row types live in ./procurement.rows; imported here for the method signatures below and re-exported
 // so existing `from './procurement.repository'` type imports (service, specs) keep resolving.
@@ -24,12 +27,31 @@ import type {
 
 export type * from './procurement.rows';
 
+/** The transaction handle TenantPrismaService.run() hands to its callback. */
+type Tx = Omit<
+  PrismaClient,
+  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+>;
+
+export interface PoLineItemInput {
+  boq_item_id?: string;
+  description: string;
+  quantity: string;
+  unit: string;
+  unit_price: string;
+  line_total: string;
+}
+
 // ── Repository ────────────────────────────────────────────────────────────
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProcurementRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -94,30 +116,62 @@ export class ProcurementRepository {
 
   // ── Purchase Requests ─────────────────────────────────────────────────────
 
+  /**
+   * Create a PR with its line items.
+   *
+   * `pr_number` is optional: omit it and the number is allocated INSIDE this transaction, under a
+   * per-tenant advisory lock, so two concurrent creates cannot derive the same sequence value. It
+   * used to be computed by a separate nextPrNumber() call in its own transaction — the doc comment
+   * there claimed it ran "inside the caller's transaction", which was never true — leaving a window
+   * where concurrent creates both read the same MAX and the second one died on the unique index.
+   */
   async createPurchaseRequest(params: {
     project_id: string;
-    pr_number: string;
+    pr_number?: string;
     requested_by: string;
     required_date?: string;
+    year?: number;
     items?: Array<{ description: string; quantity: number; unit: string; material_id?: string }>;
   }): Promise<PurchaseRequestRow> {
     // PR + its lines in one transaction: a request that records no materials is not a request, so
     // the two must not be able to land separately.
     return this.db.run(async (prisma) => {
+      let prNumber = params.pr_number;
+      if (!prNumber) {
+        const year = params.year ?? new Date().getFullYear();
+        // Serialise number allocation per tenant+year for the rest of this transaction.
+        // hashtextextended (PostgreSQL 11+) turns the key into the bigint the lock API wants; the
+        // ::text casts keep Postgres from having to infer a type for the concatenated parameters.
+        await prisma.$executeRaw`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(${this.tenantId}::text || ':pr_number:' || ${String(year)}::text, 0)
+          )
+        `;
+        prNumber = await this.nextPrNumberIn(prisma, year);
+      }
+
       const rows = await prisma.$queryRaw<PurchaseRequestRow[]>`
         INSERT INTO procurement.purchase_requests (project_id, tenant_id, pr_number, requested_by, required_date)
-        VALUES (${params.project_id}::uuid, ${this.tenantId}::uuid, ${params.pr_number},
+        VALUES (${params.project_id}::uuid, ${this.tenantId}::uuid, ${prNumber},
                 ${params.requested_by}::uuid, ${params.required_date ?? null}::date)
         RETURNING *`;
       const pr = rows[0]!;
       const items = params.items ?? [];
-      for (let i = 0; i < items.length; i++) {
-        const it = items[i]!;
+      if (items.length > 0) {
+        // One set-based INSERT rather than a round trip per line, all still inside this transaction.
+        // WITH ORDINALITY carries the caller's array position straight into sort_order (1-based →
+        // 0-based), which is what preserved the ordering in the loop this replaces.
         await prisma.$executeRaw`
           INSERT INTO procurement.pr_line_items
             (pr_id, tenant_id, material_id, description, quantity, unit, sort_order)
-          VALUES (${pr.pr_id}::uuid, ${this.tenantId}::uuid, ${it.material_id ?? null}::uuid,
-                  ${it.description}, ${it.quantity}::decimal, ${it.unit}, ${i})`;
+          SELECT ${pr.pr_id}::uuid, ${this.tenantId}::uuid, t.material_id::uuid,
+                 t.description, t.quantity::decimal, t.unit, (t.ord - 1)::int
+          FROM unnest(
+            ${items.map((it) => it.material_id ?? null)}::text[],
+            ${items.map((it) => it.description)}::text[],
+            ${items.map((it) => String(it.quantity))}::text[],
+            ${items.map((it) => it.unit)}::text[]
+          ) WITH ORDINALITY AS t(material_id, description, quantity, unit, ord)`;
       }
       return pr;
     });
@@ -128,19 +182,25 @@ export class ProcurementRepository {
    *
    * Derived from the highest existing number for that year rather than a sequence, so the series
    * stays per-tenant (pr_number is unique per tenant, not globally) and restarts each January.
-   * Called inside the caller's transaction; concurrent creates collide on uq_pr_tenant_number, which
-   * is the constraint doing the real work here.
+   *
+   * NOTE: this opens its OWN transaction, so the value it returns is already stale by the time the
+   * caller inserts — prefer createPurchaseRequest() without a pr_number, which allocates inside the
+   * insert transaction under an advisory lock. Kept for callers that only want to preview the next
+   * number; concurrent creates that go through this path still rely on uq_pr_tenant_number to reject
+   * the loser.
    */
   async nextPrNumber(year: number): Promise<string> {
+    return this.db.run((prisma) => this.nextPrNumberIn(prisma, year));
+  }
+
+  /** Sequence derivation against a caller-supplied transaction. */
+  private async nextPrNumberIn(prisma: Tx, year: number): Promise<string> {
     const prefix = `PR-${year}-`;
-    const rows = await this.db.run(
-      (prisma) =>
-        prisma.$queryRaw<Array<{ max_seq: number | null }>>`
-        SELECT MAX(NULLIF(regexp_replace(pr_number, '^PR-[0-9]{4}-', ''), '')::int) AS max_seq
-        FROM procurement.purchase_requests
-        WHERE tenant_id = ${this.tenantId}::uuid
-          AND pr_number LIKE ${prefix + '%'}`,
-    );
+    const rows = await prisma.$queryRaw<Array<{ max_seq: number | null }>>`
+      SELECT MAX(NULLIF(regexp_replace(pr_number, '^PR-[0-9]{4}-', ''), '')::int) AS max_seq
+      FROM procurement.purchase_requests
+      WHERE tenant_id = ${this.tenantId}::uuid
+        AND pr_number LIKE ${prefix + '%'}`;
     const next = (rows[0]?.max_seq ?? 0) + 1;
     return `${prefix}${String(next).padStart(4, '0')}`;
   }
@@ -438,31 +498,86 @@ export class ProcurementRepository {
 
   // ── PO Line Items ─────────────────────────────────────────────────────────
 
-  async createLineItems(
+  /**
+   * Insert a PO and all of its line items in ONE transaction.
+   *
+   * Previously the service created the PO, then called createLineItems(), which opened a separate
+   * transaction PER ITEM — a 10-line PO committed as 11 independent transactions with no rollback.
+   * A failure partway left a committed PO header whose total_amount no longer equalled the sum of
+   * its lines, i.e. it broke the exact invariant ProcurementService validates before calling here.
+   * Both writes now share one transaction, so the PO and its lines commit or fail together.
+   */
+  async createPurchaseOrderWithLineItems(
+    params: {
+      rfq_id?: string;
+      vendor_id: string;
+      project_id: string;
+      po_number: string;
+      total_amount: string;
+      currency_code: string;
+      delivery_date: string;
+      created_by: string;
+    },
+    items: PoLineItemInput[],
+  ): Promise<{ po: PurchaseOrderRow; line_items: PoLineItemRow[] }> {
+    return this.db.run(async (prisma) => {
+      const poRows = await prisma.$queryRaw<PurchaseOrderRow[]>`
+        INSERT INTO procurement.purchase_orders (rfq_id, vendor_id, project_id, tenant_id, po_number,
+                                     total_amount, currency_code, delivery_date, created_by)
+        VALUES (${params.rfq_id ?? null}::uuid, ${params.vendor_id}::uuid,
+                ${params.project_id}::uuid, ${this.tenantId}::uuid, ${params.po_number},
+                ${params.total_amount}::decimal, ${params.currency_code},
+                ${params.delivery_date}::date, ${params.created_by}::uuid)
+        RETURNING *`;
+      const po = poRows[0]!;
+      const line_items = await this.insertLineItems(prisma, po.po_id, items);
+      return { po, line_items };
+    });
+  }
+
+  /** Standalone line-item insert. Single transaction for the whole batch (see the note above). */
+  async createLineItems(po_id: string, items: PoLineItemInput[]): Promise<PoLineItemRow[]> {
+    return this.db.run((prisma) => this.insertLineItems(prisma, po_id, items));
+  }
+
+  private async insertLineItems(
+    prisma: Tx,
     po_id: string,
-    items: Array<{
-      boq_item_id?: string;
-      description: string;
-      quantity: string;
-      unit: string;
-      unit_price: string;
-      line_total: string;
-    }>,
+    items: PoLineItemInput[],
   ): Promise<PoLineItemRow[]> {
-    const result: PoLineItemRow[] = [];
-    for (const item of items) {
-      const rows = await this.db.run(
-        (prisma) =>
-          prisma.$queryRaw<PoLineItemRow[]>`
-          INSERT INTO procurement.po_line_items (po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
-          VALUES (${po_id}::uuid, ${this.tenantId}::uuid, ${item.boq_item_id ?? null}::uuid,
-                  ${item.description}, ${item.quantity}::decimal, ${item.unit},
-                  ${item.unit_price}::decimal, ${item.line_total}::decimal)
-          RETURNING *`,
-      );
-      result.push(rows[0]!);
-    }
-    return result;
+    if (items.length === 0) return [];
+
+    // One set-based INSERT instead of one round trip per line. The previous loop held the
+    // transaction — and its locks — open for N network round trips; @ArrayMaxSize now caps N, but a
+    // 500-line PO still meant 500 sequential queries inside one transaction.
+    //
+    // line_id is generated here rather than left to the column DEFAULT so the returned rows can be
+    // put back into the caller's input order below. RETURNING order for INSERT ... SELECT is not
+    // guaranteed by Postgres, and po_line_items has no sort column to fall back on.
+    const ids = items.map(() => randomUUID());
+    const rows = await prisma.$queryRaw<PoLineItemRow[]>`
+      INSERT INTO procurement.po_line_items
+        (line_id, po_id, tenant_id, boq_item_id, description, quantity, unit, unit_price, line_total)
+      SELECT t.line_id::uuid, ${po_id}::uuid, ${this.tenantId}::uuid, t.boq_item_id::uuid,
+             t.description, t.quantity::decimal, t.unit, t.unit_price::decimal, t.line_total::decimal
+      FROM unnest(
+        ${ids}::text[],
+        ${items.map((i) => i.boq_item_id ?? null)}::text[],
+        ${items.map((i) => i.description)}::text[],
+        ${items.map((i) => i.quantity)}::text[],
+        ${items.map((i) => i.unit)}::text[],
+        ${items.map((i) => i.unit_price)}::text[],
+        ${items.map((i) => i.line_total)}::text[]
+      ) AS t(line_id, boq_item_id, description, quantity, unit, unit_price, line_total)
+      RETURNING *`;
+
+    const byId = new Map(rows.map((row) => [row.line_id, row]));
+    const ordered = ids
+      .map((id) => byId.get(id))
+      .filter((r): r is PoLineItemRow => r !== undefined);
+    // Fall back to RETURNING order rather than emitting an array with holes if the row set ever
+    // fails to line up — the caller gets every inserted row either way.
+    return ordered.length === rows.length ? ordered : rows;
   }
 
   async findLineItemsByPo(po_id: string): Promise<PoLineItemRow[]> {
@@ -493,15 +608,27 @@ export class ProcurementRepository {
         RETURNING *`;
       const delivery = deliveries[0]!;
 
-      const deliveryItems: DeliveryItemRow[] = [];
-      for (const item of params.items) {
-        const rows = await prisma.$queryRaw<DeliveryItemRow[]>`
+      // Single set-based INSERT, same reasoning as insertLineItems. Ordered back to the caller's
+      // input order via line_id, which uq_delivery_line makes unique within one delivery.
+      const lineIds = params.items.map((i) => i.line_id);
+      const rows =
+        params.items.length === 0
+          ? []
+          : await prisma.$queryRaw<DeliveryItemRow[]>`
           INSERT INTO procurement.delivery_items (delivery_id, line_id, tenant_id, quantity_received)
-          VALUES (${delivery.delivery_id}::uuid, ${item.line_id}::uuid,
-                  ${this.tenantId}::uuid, ${item.quantity_received}::decimal)
+          SELECT ${delivery.delivery_id}::uuid, t.line_id::uuid, ${this.tenantId}::uuid,
+                 t.quantity_received::decimal
+          FROM unnest(
+            ${lineIds}::text[],
+            ${params.items.map((i) => i.quantity_received)}::text[]
+          ) AS t(line_id, quantity_received)
           RETURNING *`;
-        deliveryItems.push(rows[0]!);
-      }
+
+      const byLineId = new Map(rows.map((row) => [row.line_id, row]));
+      const ordered = lineIds
+        .map((id) => byLineId.get(id))
+        .filter((r): r is DeliveryItemRow => r !== undefined);
+      const deliveryItems = ordered.length === rows.length ? ordered : rows;
 
       return { delivery, items: deliveryItems };
     });

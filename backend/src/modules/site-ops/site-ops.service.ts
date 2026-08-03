@@ -184,6 +184,36 @@ export class SiteOpsService {
         item.client_submitted_at ?? new Date().toISOString(),
       );
 
+      // Persist the resolved row. This write used to be missing entirely: the branch computed a
+      // resolution, wrote a conflict record when flagged, and returned ACCEPTED without ever
+      // touching the report — so every offline EDIT of an existing report was acknowledged and
+      // then silently discarded (clients drop their pending queue on ACCEPTED). Only the
+      // create-path was ever wired up. `should_persist` comes from the resolver so the LWW rule
+      // stays in one place: false means resolved_payload IS the untouched server row.
+      if (resolution.should_persist) {
+        const resolved = resolution.resolved_payload;
+        const updated = await this.repo.updateSiteReport(existing.report_id, {
+          summary: (resolved['summary'] as string | undefined) ?? null,
+          blockers: (resolved['blockers'] as string | undefined) ?? null,
+          weather: (resolved['weather'] as string | undefined) ?? null,
+          manpower_count: (resolved['manpower_count'] as number | undefined) ?? null,
+          client_submitted_at: (resolved['client_submitted_at'] as string | undefined) ?? null,
+          latitude: (resolved['latitude'] as number | undefined) ?? null,
+          longitude: (resolved['longitude'] as number | undefined) ?? null,
+        });
+        // The row was read a moment ago under the same tenant context; a null here means it was
+        // deleted in between. Never report ACCEPTED for a write that did not land — that is the
+        // exact failure mode this branch used to have.
+        if (!updated) {
+          results.push({
+            client_id: item.client_id,
+            report_id: existing.report_id,
+            conflict_status: 'CONFLICT_REJECTED',
+          });
+          continue;
+        }
+      }
+
       if (resolution.conflict_status === 'CONFLICT_FLAGGED') {
         const conflictId = randomUUID();
         await this.repo.createConflictRecord({

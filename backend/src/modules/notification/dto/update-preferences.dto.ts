@@ -1,4 +1,5 @@
 import {
+  ArrayMaxSize,
   IsArray,
   IsBoolean,
   IsIn,
@@ -31,8 +32,11 @@ export class PreferenceItemDto {
 }
 
 export class UpdatePreferencesDto {
-  @ApiProperty({ type: [PreferenceItemDto] })
+  // One upsert per entry. The real ceiling is (event types × 4 channels), a few hundred at most, so
+  // anything beyond this is a malformed or hostile client rather than a legitimate preference set.
+  @ApiProperty({ type: [PreferenceItemDto], maxItems: 500 })
   @IsArray()
+  @ArrayMaxSize(500)
   @ValidateNested({ each: true })
   @Type(() => PreferenceItemDto)
   preferences!: PreferenceItemDto[];

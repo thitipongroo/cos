@@ -2,7 +2,7 @@
 //   VendorInvitationController — buyer side: a Procurement Officer issues an RFQ invitation
 //     (internal Keycloak JWT + RBAC). Path under /procurement so normal TenantMiddleware applies.
 //   VendorPortalController — vendor side: external users; tenant + vendor context is set by
-//     VendorAuthMiddleware (Tier-1 magic-link token in path, or Tier-2 session + tenant header).
+//     VendorAuthGuard (Tier-1 magic-link token in path, or Tier-2 session + tenant header).
 
 import {
   Controller,
@@ -23,7 +23,12 @@ import { RolesGuard } from '../../shared/guards/roles.guard';
 import { Roles } from '@cos/rbac';
 import { CosRole } from '@cos/types';
 import { VendorPortalService } from './vendor-portal.service';
-import { VendorRequest } from './vendor-auth.middleware';
+import { VendorAuthGuard, VendorRequest } from './vendor-auth.guard';
+import {
+  clsVendorId,
+  clsVendorIdentityId,
+  clsVendorInvitationId,
+} from '../../shared/context/cls-context';
 import { IssueInvitationDto, SubmitQuotationDto, SubmitInvoiceDto } from './dto/vendor-portal.dto';
 
 const INVITE_ROLES = [
@@ -55,6 +60,7 @@ export class VendorInvitationController {
 
 @ApiTags('Vendor Portal (vendor)')
 @Controller('vendor')
+@UseGuards(VendorAuthGuard)
 export class VendorPortalController {
   constructor(private readonly service: VendorPortalService) {}
 
@@ -111,25 +117,30 @@ export class VendorPortalController {
     return this.service.listInvitedRfqs(this.vendorIdentityId(req));
   }
 
-  // VendorAuthMiddleware guarantees these are set; guard against misconfiguration.
+  // VendorAuthGuard guarantees these are set; guard against misconfiguration. CLS is the
+  // authoritative copy (it survives Fastify's request cloning) — the request object is only a
+  // mirror, so it is read first for cheapness but never relied on alone.
   private invitationId(req: VendorRequest): string {
-    if (!req.vendorInvitationId) {
+    const id = req.vendorInvitationId ?? clsVendorInvitationId();
+    if (!id) {
       throw new UnauthorizedException('Missing vendor invitation context');
     }
-    return req.vendorInvitationId;
+    return id;
   }
 
   private vendorId(req: VendorRequest): string {
-    if (!req.vendorId) {
+    const id = req.vendorId ?? clsVendorId();
+    if (!id) {
       throw new UnauthorizedException('Missing vendor session context');
     }
-    return req.vendorId;
+    return id;
   }
 
   private vendorIdentityId(req: VendorRequest): string {
-    if (!req.vendorIdentityId) {
+    const id = req.vendorIdentityId ?? clsVendorIdentityId();
+    if (!id) {
       throw new UnauthorizedException('Missing vendor session context');
     }
-    return req.vendorIdentityId;
+    return id;
   }
 }

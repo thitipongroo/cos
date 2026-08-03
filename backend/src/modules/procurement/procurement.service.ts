@@ -134,13 +134,15 @@ export class ProcurementService {
   async createPurchaseRequest(dto: CreatePurchaseRequestDto): Promise<PurchaseRequestRow> {
     // A caller that supplies its own number keeps it (the web form does); everyone else gets the
     // tenant's next PR-<year>-<seq>, because a document number is not something to ask a site
-    // engineer to invent on their phone.
-    const pr_number = dto.pr_number ?? (await this.repo.nextPrNumber(new Date().getFullYear()));
+    // engineer to invent on their phone. Allocation happens inside the insert transaction (see
+    // createPurchaseRequest) — deriving it here first was a read-then-write race across two
+    // transactions.
     const pr = await this.repo.createPurchaseRequest({
       project_id: dto.project_id,
-      pr_number,
+      pr_number: dto.pr_number,
       requested_by: this.userId,
       required_date: dto.required_date,
+      year: new Date().getFullYear(),
       items: dto.items,
     });
     logger.info({ pr_id: pr.pr_id, tenant_id: this.tenantId }, 'pr.created');
@@ -325,18 +327,21 @@ export class ProcurementService {
       );
     }
 
-    const po = await this.repo.createPurchaseOrder({
-      rfq_id: dto.rfq_id,
-      vendor_id: dto.vendor_id,
-      project_id: dto.project_id,
-      po_number: dto.po_number,
-      total_amount: computedTotal.toFixed(4),
-      currency_code: dto.currency_code,
-      delivery_date: dto.delivery_date,
-      created_by: this.userId,
-    });
-
-    const createdLines = await this.repo.createLineItems(po.po_id, lineItems);
+    // One transaction for the header + every line: a partial write would leave a committed PO whose
+    // total_amount contradicts the sum just validated above.
+    const { po, line_items: createdLines } = await this.repo.createPurchaseOrderWithLineItems(
+      {
+        rfq_id: dto.rfq_id,
+        vendor_id: dto.vendor_id,
+        project_id: dto.project_id,
+        po_number: dto.po_number,
+        total_amount: computedTotal.toFixed(4),
+        currency_code: dto.currency_code,
+        delivery_date: dto.delivery_date,
+        created_by: this.userId,
+      },
+      lineItems,
+    );
 
     // Start Temporal PO workflow
     const workflowId = `po-${po.po_id}`;

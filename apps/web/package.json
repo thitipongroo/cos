@@ -9,13 +9,14 @@
     "lint": "eslint src",
     "type-check": "tsc --noEmit",
     "test": "jest",
-    "test:cov": "jest --coverage"
+    "test:cov": "jest --coverage",
+    "lighthouse": "next start -p 3001 & until curl -sf -o /dev/null http://localhost:3001/login; do sleep 1; done; for i in 1 2 3 4 5; do curl -sf -o /dev/null http://localhost:3001/login; done; lhci autorun; s=$?; kill %1; exit $s"
   },
   "dependencies": {
     "@cos/schemas": "workspace:*",
     "@cos/types": "workspace:*",
     "@cos/ui-logic": "workspace:*",
-    "@fontsource/inter-tight": "^5.2.7",
+    "@fontsource-variable/inter-tight": "^5.3.0",
     "@hookform/resolvers": "5.7.1",
     "@internationalized/date": "3.12.3",
     "@serwist/turbopack": "9.5.11",

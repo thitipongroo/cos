@@ -223,8 +223,10 @@ describe('ProcurementRepository', () => {
     expect(result.pr_id).toBe('pr-uuid-001');
   });
 
-  it('createPurchaseRequest inserts one pr_line_items row per item, in order', async () => {
+  it('createPurchaseRequest inserts all pr_line_items in one statement, ordered by sort_order', async () => {
     // The PR and its lines share one transaction — a PR that records no materials is not a request.
+    // The lines go in as a single set-based INSERT; WITH ORDINALITY carries the array position into
+    // sort_order, which is what preserves the caller's order now that there is no per-item loop.
     mockPrisma.$queryRaw.mockResolvedValue([prRow]);
     mockPrisma.$executeRaw.mockResolvedValue(1);
 
@@ -240,7 +242,19 @@ describe('ProcurementRepository', () => {
       ],
     });
 
-    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(2);
+    // pr_number was supplied, so no advisory-lock call — exactly one statement, for the lines.
+    expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
+    const [strings, ...values] = mockPrisma.$executeRaw.mock.calls[0] as [string[], ...unknown[]];
+    expect(strings.join('')).toContain('WITH ORDINALITY');
+    // Column arrays keep the caller's order; the null material_id is preserved, not dropped.
+    expect(values).toEqual(
+      expect.arrayContaining([
+        ['mat-uuid-001', null],
+        ['Cement', 'Misc fixings'],
+        ['10', '2'],
+        ['bag', 'box'],
+      ]),
+    );
   });
 
   it('createPurchaseRequest inserts no line items when items is omitted', async () => {
@@ -253,6 +267,29 @@ describe('ProcurementRepository', () => {
     });
 
     expect(mockPrisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('createPurchaseRequest allocates pr_number in-transaction under a lock when omitted', async () => {
+    // Allocating in a separate transaction (the old nextPrNumber() call in the service) let two
+    // concurrent creates read the same MAX. The lock + derivation now live in the insert's own
+    // transaction.
+    mockPrisma.$executeRaw.mockResolvedValue(1);
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([{ max_seq: 41 }]) // sequence derivation
+      .mockResolvedValueOnce([prRow]); // the insert
+
+    await repo.createPurchaseRequest({
+      project_id: 'proj-uuid-001',
+      requested_by: 'user-uuid-001',
+      year: 2026,
+    });
+
+    const lockSql = mockPrisma.$executeRaw.mock.calls[0]![0] as string[];
+    expect(lockSql.join('')).toContain('pg_advisory_xact_lock');
+    // Derivation and insert are in the same run() — one transaction.
+    expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+    const insertParams = mockPrisma.$queryRaw.mock.calls[1]!;
+    expect(insertParams).toContain('PR-2026-0042');
   });
 
   it('nextPrNumber starts the year at 0001 when the tenant has no PR yet', async () => {
@@ -399,6 +436,39 @@ describe('ProcurementRepository', () => {
     expect(result).toHaveLength(1);
   });
 
+  // One set-based INSERT, not one per line — and the result must come back in the caller's order,
+  // which is why line_id is generated here instead of by the column DEFAULT (po_line_items has no
+  // sort column, and RETURNING order for INSERT ... SELECT is not guaranteed).
+  it('createLineItems issues a single INSERT and preserves input order', async () => {
+    const descriptions = ['Concrete', 'Rebar', 'Formwork'];
+    // Echo back the generated ids, deliberately SHUFFLED, to prove the reorder is real.
+    mockPrisma.$queryRaw.mockImplementation((_strings: unknown, ...values: unknown[]) => {
+      const ids = values[2] as string[];
+      const descs = values[4] as string[];
+      const rows = ids.map((line_id, i) => ({ ...lineRow, line_id, description: descs[i] }));
+      return Promise.resolve([...rows].reverse());
+    });
+
+    const result = await repo.createLineItems(
+      'po-uuid-001',
+      descriptions.map((description) => ({
+        description,
+        quantity: '1.0000',
+        unit: 'm3',
+        unit_price: '100.0000',
+        line_total: '100.0000',
+      })),
+    );
+
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    expect(result.map((r) => r.description)).toEqual(descriptions);
+  });
+
+  it('createLineItems issues no query for an empty item list', async () => {
+    expect(await repo.createLineItems('po-uuid-001', [])).toEqual([]);
+    expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
+  });
+
   it('findLineItemsByPo returns rows', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([lineRow]);
     expect(await repo.findLineItemsByPo('po-uuid-001')).toHaveLength(1);
@@ -423,6 +493,33 @@ describe('ProcurementRepository', () => {
     });
     expect(result.delivery.delivery_id).toBe('del-uuid-001');
     expect(result.items).toHaveLength(1);
+  });
+
+  it('createDelivery inserts all items in one query, ordered by the caller’s line_ids', async () => {
+    const lineIds = ['line-a', 'line-b', 'line-c'];
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([deliveryRow])
+      // Returned out of order — the repository must put them back.
+      .mockResolvedValueOnce(
+        [...lineIds].reverse().map((line_id) => ({
+          delivery_item_id: `di-${line_id}`,
+          delivery_id: 'del-uuid-001',
+          line_id,
+          tenant_id: 'tenant-uuid-001',
+          quantity_received: '1.0000',
+        })),
+      );
+
+    const result = await repo.createDelivery({
+      po_id: 'po-uuid-001',
+      delivered_at: new Date().toISOString(),
+      received_by: 'user-uuid-001',
+      items: lineIds.map((line_id) => ({ line_id, quantity_received: '1.0000' })),
+    });
+
+    // One INSERT for the delivery + one for all three items.
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(result.items.map((i) => i.line_id)).toEqual(lineIds);
   });
 
   it('findDeliveriesByPo returns rows', async () => {

@@ -307,10 +307,36 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
 
 - **Lighthouse CI** runs on every `apps/web` PR under a **throttled mobile profile** (mid/low-end device + slow network)
   — matching the field-worker reality.
-- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **LCP ≤ 2.5 s**, **CLS ≤ 0.1**, and
+- **Gate (blocks merge):** a Core Web Vitals lab metric regressing past budget — **lab LCP ≤ 3.2 s**, **CLS ≤ 0.1**, and
   **TBT ≤ 200 ms** (Total Blocking Time, Lighthouse's lab proxy for INP; matches the INP ≤ 200 ms RUM SLO) — or the JS
   **bundle-size budget ≤ 250 KB** (script transfer size per audited route) exceeded. Budgets live in the CI config
   (`apps/web/.lighthouserc.json`; workflow `.github/workflows/lighthouse.yml`).
+- **The lab LCP budget is 3.2 s and the field SLO is 2.5 s. They are different numbers on purpose.** §31.6's 2.5 s is
+  a RUM p75 across real devices and networks. This one is a single throttled profile — 1,638 Kbps, 150 ms RTT, 4× CPU —
+  on a GitHub `ubuntu-latest` runner, which is slower and far more variable than a developer machine: measured
+  2026-08-03, `benchmarkIndex` ranged 2,154–3,368 across five runs while the same page reported ~3,860 locally. Holding
+  the lab gate to the field number would have meant a gate that has never once passed.
+  3,200 ms is the highest median observed across those five runs (2,913 ms) plus ~10 % headroom. It is a
+  **regression gate, not a performance target**: it catches a change that makes `/login` ~10 % slower, and it does not
+  say the page is fast enough.
+- **`aggregationMethod: median`,** not lhci's `optimistic` default. Optimistic compares the _best_ of the three runs,
+  which is how a 1,190 ms TBT — nearly 6× its budget — passed unnoticed on 2026-08-03. Median is what the numbers above
+  are calibrated against.
+- **The server is started and warmed before collection** (`pnpm run lighthouse`, not `lhci autorun`). Letting lhci
+  start it through `startServerCommand` made the first of the three runs partly a cold-server measurement: on
+  2026-08-03 that run reported `server-response-time` ~30 ms against ~5 ms for the other two. Warming it fixed exactly
+  that — the same metric now reads 4 / 4 / 3 ms across the three runs.
+- **The first run is still an outlier, and warming the server did not change that.** On the first fully green run
+  (2026-08-03), run one reported **TBT 3,061 ms** and **CLS 0.133** with `bootup-time` 2,715 ms, against 72–82 ms TBT,
+  0.000 CLS and 493–541 ms bootup for runs two and three — while its `server-response-time` was already warm at 4 ms.
+  What remains is Chrome's own first-run cost (V8 compilation, no code cache), which a warm-up request to the server
+  cannot touch. **No verified fix is in place.** A discarded Lighthouse run before the measured ones would be the
+  obvious candidate; lhci exposes no option for it and it has not been tested.
+  This is why `aggregationMethod` is `median` and not `pessimistic`: pessimistic would fail today on both TBT
+  (3,061 > 200) and CLS (0.133 > 0.1), from a first run that says nothing about the application.
+- **Measured baselines (2026-08-03, five CI runs each).** Before the `/login` server-rendering and font fixes: median
+  LCP up to 3,673 ms. After: **up to 2,913 ms**. Script transfer size 223,234 B against the 256,000 B budget;
+  accessibility 1.0 on every run.
 - **Accessibility is gated in the same run:** the Lighthouse **accessibility category must score 1.0**
   (`categories:accessibility` `minScore: 1`), which is the automated half of the §20.8 gate. The floor is 1.0 rather
   than a fraction because the category has 24 scored audits totalling weight 163 and the lightest weighs 1 — failing a

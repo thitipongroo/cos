@@ -7,6 +7,7 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../shared/context/cls-context';
 
 export interface BoqVersionRow {
   version_id: string;
@@ -56,8 +57,12 @@ export interface BoqItemRow {
 
 @Injectable({ scope: Scope.REQUEST })
 export class BoqRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -66,6 +71,68 @@ export class BoqRepository {
   ) {}
 
   // ── Versions ──────────────────────────────────────────────────────────────
+
+  /**
+   * Claim the next BOQ version for a project: reject an existing DRAFT, allocate version_number and
+   * insert — all in ONE transaction, serialised per project.
+   *
+   * The service used to do this as three separate transactions (findDraftVersion, then
+   * findMaxVersionNumber, then createVersion). Two concurrent creates could both pass the
+   * "one DRAFT per project" check and both compute the same version_number.
+   *
+   * pg_advisory_xact_lock serialises the whole read-then-write per project_id and releases on
+   * COMMIT/ROLLBACK, so it is safe under PgBouncer transaction mode like the rest of ADR-008. It is
+   * used instead of a unique constraint because adding one is a schema change; a
+   * UNIQUE (tenant_id, project_id, version_number) index is still worth having as a backstop, and
+   * this lock is what makes the application correct without it.
+   *
+   * Returns null when the project already has a DRAFT — the caller turns that into a 409.
+   */
+  async claimNextVersion(params: {
+    project_id: string;
+    version_name: string | null;
+    currency_code: string;
+    created_by: string;
+  }): Promise<{ version: BoqVersionRow; version_number: number } | null> {
+    return this.db.run(async (prisma) => {
+      // hashtextextended (PostgreSQL 11+) gives a stable bigint key for the advisory lock; the key
+      // includes the tenant so two tenants never contend on the same lock slot. The ::text casts
+      // keep Postgres from having to infer a type for the concatenated parameters.
+      await prisma.$executeRaw`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(
+            ${this.tenantId}::text || ':' || ${params.project_id}::text || ':boq_version', 0
+          )
+        )
+      `;
+
+      const drafts = await prisma.$queryRaw<Array<{ version_id: string }>>`
+        SELECT version_id FROM boq.boq_versions
+        WHERE project_id = ${params.project_id}::uuid
+          AND tenant_id  = ${this.tenantId}::uuid
+          AND status     = 'DRAFT'
+        LIMIT 1
+      `;
+      if (drafts.length > 0) return null;
+
+      const rows = await prisma.$queryRaw<BoqVersionRow[]>`
+        INSERT INTO boq.boq_versions (
+          project_id, tenant_id, version_number, version_name,
+          total_estimated_currency, created_by
+        )
+        SELECT
+          ${params.project_id}::uuid, ${this.tenantId}::uuid,
+          COALESCE(MAX(version_number), 0) + 1, ${params.version_name},
+          ${params.currency_code}, ${params.created_by}::uuid
+        FROM boq.boq_versions
+        WHERE project_id = ${params.project_id}::uuid
+          AND tenant_id  = ${this.tenantId}::uuid
+        RETURNING *
+      `;
+      const version = rows[0]!;
+      return { version, version_number: version.version_number };
+    });
+  }
 
   async createVersion(params: {
     project_id: string;

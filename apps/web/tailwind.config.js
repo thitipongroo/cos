@@ -45,9 +45,14 @@ module.exports = {
         },
       },
       fontFamily: {
-        // Brand font: Inter Tight (§32.7). Falls back gracefully until
-        // @fontsource/inter-tight is installed + imported.
+        // Brand font: Inter Tight (§32.7). `Inter Tight Variable` is the family name that
+        // @fontsource-variable/inter-tight registers, and it must come first: with only
+        // `"Inter Tight"` here the variable font was declared but never matched, so the browser
+        // issued zero font requests and the page silently rendered in a system font.
         sans: [
+          // Set by next/font/local in layout.tsx — it hashes the family name, so the variable is
+          // the only stable way to reference it. The literals stay as a fallback chain.
+          'var(--font-inter-tight)',
           '"Inter Tight"',
           'Inter',
           '-apple-system',

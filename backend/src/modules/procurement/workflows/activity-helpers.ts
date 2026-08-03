@@ -14,11 +14,26 @@ import { createPrismaClient } from '../../../shared/prisma/create-prisma-client'
 import { assertSafeTenantId } from '../../../shared/prisma/assert-safe-tenant-id';
 import { getDbUrlForTenant } from '../../tenant/utils/get-db-url';
 
+// Clients pooled per datasource URL. Building a PrismaClient per activity (and disconnecting it in a
+// finally) meant a fresh pg pool + connect/teardown for every workflow step; activities run
+// constantly, so that churn was the dominant cost of a cheap UPDATE. Keyed by URL exactly as
+// TenantPrismaService does, so tenants on the shared APP_DATABASE_URL share one client.
+const clients = new Map<string, PrismaClient>();
+
+function clientFor(dbUrl: string): PrismaClient {
+  let client = clients.get(dbUrl);
+  if (!client) {
+    client = createPrismaClient(dbUrl);
+    clients.set(dbUrl, client);
+  }
+  return client;
+}
+
 /**
  * Run `fn` inside a transaction scoped to one tenant.
  *
- * Sets `app.current_tenant_id` per ADR-008 — no tenant_code, no search_path routing. The client is
- * disconnected in a finally so an activity that throws does not leak a pool.
+ * Sets `app.current_tenant_id` per ADR-008 — no tenant_code, no search_path routing. SET LOCAL is
+ * transaction-scoped, so it still reverts on COMMIT/ROLLBACK now that the client is reused.
  */
 export async function withTenantTx<T>(
   tenantId: string,
@@ -28,17 +43,20 @@ export async function withTenantTx<T>(
   // header warns a divergence between the tenant-transaction helpers is a tenant-isolation bug).
   assertSafeTenantId(tenantId);
   const dbUrl = await getDbUrlForTenant(tenantId);
-  const prisma = createPrismaClient(dbUrl);
-  try {
-    return await prisma.$transaction(async (tx) => {
-      await (tx as PrismaClient).$executeRawUnsafe(
-        `SET LOCAL app.current_tenant_id = '${tenantId}'`,
-      );
-      return fn(tx as PrismaClient);
-    });
-  } finally {
-    await prisma.$disconnect();
-  }
+  const prisma = clientFor(dbUrl);
+  return prisma.$transaction(async (tx) => {
+    await (tx as PrismaClient).$executeRawUnsafe(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
+    return fn(tx as PrismaClient);
+  });
+}
+
+/**
+ * Close every pooled activity client. Call from the Temporal worker's shutdown path — these clients
+ * outlive individual activities by design, so nothing else will close them.
+ */
+export async function disconnectActivityClients(): Promise<void> {
+  await Promise.all([...clients.values()].map((c) => c.$disconnect()));
+  clients.clear();
 }
 
 /**

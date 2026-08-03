@@ -319,12 +319,13 @@ export class ProjectService {
 
       if (ids.length === 0) return { items: [], nextCursor: null };
 
-      // Fetch full rows from DB (OpenSearch holds only search fields, not full entity)
-      const items: ProjectRow[] = [];
-      for (const id of ids) {
-        const row = await this.repo.findById(id);
-        if (row) items.push(row);
-      }
+      // Fetch full rows from DB (OpenSearch holds only search fields, not full entity) in ONE query.
+      // This used to loop findById(), i.e. a separate tenant transaction per hit.
+      const rows = await this.repo.findByIds(ids);
+      // Restore OpenSearch relevance order, which the SQL result does not preserve. Ids with no row
+      // (deleted since indexing, or filtered out by RLS) simply drop out, as before.
+      const byId = new Map(rows.map((r) => [r.project_id, r]));
+      const items = ids.map((id) => byId.get(id)).filter((r): r is ProjectRow => r !== undefined);
       return { items, nextCursor: null }; // cursor not supported for search results
     } catch (err) {
       logger.warn({ q, err }, 'opensearch.search.failed — falling back to DB list');

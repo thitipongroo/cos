@@ -8,6 +8,7 @@ import { Injectable, Scope, Inject } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import type { Request } from 'express';
 import { TenantPrismaService } from '../tenant/prisma/tenant-prisma.service';
+import { clsTenantId } from '../../shared/context/cls-context';
 import type { CreateProjectDto } from './dto/create-project.dto';
 import type { UpdateProjectDto } from './dto/update-project.dto';
 import type { ProjectStatus } from './project.state-machine';
@@ -66,8 +67,12 @@ export interface ListProjectsOptions {
 
 @Injectable({ scope: Scope.REQUEST })
 export class ProjectRepository {
+  // CLS fallback is load-bearing, not cosmetic: under Fastify the REQUEST injected into a
+  // Scope.REQUEST provider is not guaranteed to be the object the auth layer decorated. The auth
+  // guards publish tenant_id into CLS (the same source TenantPrismaService reads for RLS), so this
+  // resolves even when the request copy does not carry it.
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
@@ -110,6 +115,25 @@ export class ProjectRepository {
       `,
     );
     return rows[0] ?? null;
+  }
+
+  /**
+   * Fetch many projects by id in one round trip.
+   *
+   * Used to hydrate OpenSearch hits, which previously looped findById() — one full
+   * BEGIN/SET LOCAL/SELECT/COMMIT per hit. Rows come back in whatever order Postgres chooses; the
+   * caller is responsible for restoring search-relevance order.
+   */
+  async findByIds(projectIds: string[]): Promise<ProjectRow[]> {
+    if (projectIds.length === 0) return [];
+    return this.tenantPrisma.run(
+      async (tx) =>
+        await tx.$queryRaw<ProjectRow[]>`
+        SELECT * FROM projects.projects
+        WHERE project_id = ANY(${projectIds}::uuid[])
+          AND tenant_id  = ${this.tenantId}::uuid
+      `,
+    );
   }
 
   async list(

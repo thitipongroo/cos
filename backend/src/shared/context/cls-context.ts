@@ -17,6 +17,18 @@ export const CLS_USER_ROLE = 'userRole';
 export const CLS_TENANT_CODE = 'tenantCode';
 export const CLS_DEDICATED_DB_URL = 'dedicatedDbUrl';
 
+// Offline sync (§17.5). SyncAuthGuard narrows the requested /sync/delta entity types down to the ones
+// the caller's role may read, and SyncService (Scope.REQUEST) consumes the result. It travels through
+// CLS rather than the request object for the same Fastify reason as everything else here.
+export const CLS_SYNC_ALLOWED_ENTITY_TYPES = 'syncAllowedEntityTypes';
+
+// Vendor Portal (ADR-030). External vendors have no Keycloak JWT, so VendorAuthGuard publishes their
+// context here for the same reason JwtAuthGuard does: a value written onto the request object in the
+// auth layer does not reliably reach Scope.REQUEST providers under Fastify.
+export const CLS_VENDOR_ID = 'vendorId';
+export const CLS_VENDOR_IDENTITY_ID = 'vendorIdentityId';
+export const CLS_VENDOR_INVITATION_ID = 'vendorInvitationId';
+
 function clsGet(key: string): string | undefined {
   const cls = ClsServiceManager.getClsService();
   return cls.isActive() ? cls.get<string | undefined>(key) : undefined;
@@ -37,7 +49,32 @@ export function clsUserRole(): string {
   return clsGet(CLS_USER_ROLE) ?? '';
 }
 
+/**
+ * The /sync/delta entity types SyncAuthGuard cleared for this caller, or undefined when the guard did
+ * not run (unit tests constructing the service directly). `undefined` and `[]` mean different things:
+ * "no guard decision" vs "the guard allowed nothing" — the caller must not collapse them.
+ */
+export function clsSyncAllowedEntityTypes(): string[] | undefined {
+  const cls = ClsServiceManager.getClsService();
+  return cls.isActive() ? cls.get<string[] | undefined>(CLS_SYNC_ALLOWED_ENTITY_TYPES) : undefined;
+}
+
 /** Dedicated DB URL from CLS (enterprise tenants), or undefined. */
 export function clsDedicatedDbUrl(): string | undefined {
   return clsGet(CLS_DEDICATED_DB_URL);
+}
+
+/** Vendor id (procurement.vendors) for a Tier-2 vendor session, or undefined. */
+export function clsVendorId(): string | undefined {
+  return clsGet(CLS_VENDOR_ID);
+}
+
+/** Vendor identity id (platform.vendor_identities) for a Tier-2 vendor session, or undefined. */
+export function clsVendorIdentityId(): string | undefined {
+  return clsGet(CLS_VENDOR_IDENTITY_ID);
+}
+
+/** Invitation id carried by a Tier-1 magic-link token, or undefined. */
+export function clsVendorInvitationId(): string | undefined {
+  return clsGet(CLS_VENDOR_INVITATION_ID);
 }

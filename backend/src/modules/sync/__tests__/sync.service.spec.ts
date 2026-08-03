@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
+import { ClsServiceManager } from 'nestjs-cls';
 import { SyncService } from '../sync.service';
 import { PushItemDto } from '../dto/sync.dto';
+import { CLS_SYNC_ALLOWED_ENTITY_TYPES } from '../../../shared/context/cls-context';
 
 function harness() {
   const tx = { $queryRawUnsafe: jest.fn() };
@@ -223,6 +225,151 @@ describe('SyncService', () => {
       expect(res.updated).toEqual([]);
       expect(res.deleted).toEqual([]);
       expect(tx.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    // `constructor` / `toString` / `hasOwnProperty` resolve on Object.prototype, so a truthiness
+    // check on the registry passed them through and interpolated `undefined` as the table name.
+    it('rejects prototype-chain keys as entity types', async () => {
+      const { svc, tx } = harness();
+      const res = await svc.delta('2026-01-01T00:00:00Z', [
+        'constructor',
+        'toString',
+        'hasOwnProperty',
+      ]);
+      expect(res.updated).toEqual([]);
+      expect(tx.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('honours the types SyncAuthGuard cleared, dropping the rest', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe.mockResolvedValue([]);
+      const cls = ClsServiceManager.getClsService();
+      await cls.run(async () => {
+        cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, ['task']);
+        await svc.delta('2026-01-01T00:00:00Z', ['task', 'safety']);
+      });
+      // Only the `task` page plus the tombstone query — `safety` never reaches SQL.
+      const tables = tx.$queryRawUnsafe.mock.calls.map((c) => String(c[0]));
+      expect(tables.some((sql) => sql.includes('projects.tasks'))).toBe(true);
+      expect(tables.some((sql) => sql.includes('site_ops.incidents'))).toBe(false);
+    });
+
+    it('queries nothing when the guard cleared no types', async () => {
+      const { svc, tx } = harness();
+      const cls = ClsServiceManager.getClsService();
+      await cls.run(async () => {
+        cls.set(CLS_SYNC_ALLOWED_ENTITY_TYPES, []);
+        const res = await svc.delta('2026-01-01T00:00:00Z', ['task', 'safety']);
+        expect(res.updated).toEqual([]);
+      });
+      expect(tx.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('bounds every query — the controller defaults `since` to the epoch', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe.mockResolvedValue([]);
+
+      await svc.delta(new Date(0).toISOString(), ['task']);
+
+      for (const call of tx.$queryRawUnsafe.mock.calls) {
+        expect(call[0]).toContain('LIMIT');
+        expect(call[0]).toContain('ORDER BY');
+      }
+    });
+
+    it('reports has_more and resumes from the truncated watermark, not "now"', async () => {
+      const { svc, tx } = harness();
+      // A full page for `task`, whose last row is dated well before now.
+      const lastSeen = new Date('2026-02-01T00:00:00.000Z');
+      const page = Array.from({ length: 500 }, (_, i) => ({
+        task_id: `t${i}`,
+        created_at: i === 499 ? lastSeen : new Date('2026-01-15T00:00:00.000Z'),
+      }));
+      tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
+
+      const res = await svc.delta('2026-01-01T00:00:00Z', ['task']);
+
+      expect(res.updated).toHaveLength(500);
+      expect(res.has_more).toBe(true);
+      // Returning "now" here would silently skip every row that did not fit in the page.
+      expect(res.server_timestamp).toBe(lastSeen.toISOString());
+    });
+
+    it('reports has_more false and a fresh timestamp when everything fit', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe
+        .mockResolvedValueOnce([{ task_id: 't1', created_at: new Date('2026-01-02T00:00:00Z') }])
+        .mockResolvedValueOnce([]);
+
+      const before = Date.now();
+      const res = await svc.delta('2026-01-01T00:00:00Z', ['task']);
+
+      expect(res.has_more).toBe(false);
+      expect(new Date(res.server_timestamp).getTime()).toBeGreaterThanOrEqual(before);
+    });
+
+    // ── Tombstone retention guard ──────────────────────────────────────────
+    // TombstonePruneService deletes tombstones past the window, so a cursor older than it cannot
+    // receive a complete deletion list. Without this signal those rows survive on the device.
+
+    it('rejects an unparseable `since` cursor with 400, not a Postgres 500', async () => {
+      const { svc } = harness();
+      await expect(svc.delta('last-tuesday', ['task'])).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('flags full_resync_required when the cursor predates the retention window', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe.mockResolvedValue([]);
+      // 200 days back — comfortably past the 90-day default.
+      const stale = new Date(Date.now() - 200 * 86_400_000).toISOString();
+
+      const res = await svc.delta(stale, ['task']);
+
+      expect(res.full_resync_required).toBe(true);
+      expect(res.retention_days).toBe(90);
+    });
+
+    it('still returns the paged rows alongside the flag — first sync must not break', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe
+        .mockResolvedValueOnce([{ task_id: 't1' }])
+        .mockResolvedValueOnce([{ entity_id: 'del-1' }]);
+
+      // The controller's default for a client that never synced.
+      const res = await svc.delta(new Date(0).toISOString(), ['task']);
+
+      expect(res.full_resync_required).toBe(true);
+      expect(res.updated).toEqual([{ entity_type: 'task', task_id: 't1' }]);
+      expect(res.deleted).toEqual(['del-1']);
+    });
+
+    it('does not flag a cursor inside the window, and omits retention_days', async () => {
+      const { svc, tx } = harness();
+      tx.$queryRawUnsafe.mockResolvedValue([]);
+      const recent = new Date(Date.now() - 86_400_000).toISOString();
+
+      const res = await svc.delta(recent, ['task']);
+
+      expect(res.full_resync_required).toBe(false);
+      expect(res.retention_days).toBeUndefined();
+    });
+
+    it('tracks a SYNC_TOMBSTONE_RETENTION_DAYS override — one window, both sides', async () => {
+      const original = process.env['SYNC_TOMBSTONE_RETENTION_DAYS'];
+      process.env['SYNC_TOMBSTONE_RETENTION_DAYS'] = '7';
+      try {
+        const { svc, tx } = harness();
+        tx.$queryRawUnsafe.mockResolvedValue([]);
+        const tenDaysAgo = new Date(Date.now() - 10 * 86_400_000).toISOString();
+
+        const res = await svc.delta(tenDaysAgo, ['task']);
+
+        expect(res.full_resync_required).toBe(true);
+        expect(res.retention_days).toBe(7);
+      } finally {
+        if (original === undefined) delete process.env['SYNC_TOMBSTONE_RETENTION_DAYS'];
+        else process.env['SYNC_TOMBSTONE_RETENTION_DAYS'] = original;
+      }
     });
   });
 

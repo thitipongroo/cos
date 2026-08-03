@@ -107,6 +107,36 @@ describe('RolesGuard', () => {
     ).rejects.toThrow("Role 'SITE_WORKER' does not have access. Required: FINANCE | TENANT_ADMIN");
   });
 
+  // hasAnyRole — the runtime-roles entry point used by SyncAuthGuard, where the required roles come
+  // from the request body/query rather than an @Roles decorator.
+  describe('hasAnyRole', () => {
+    const user = { role: CosRole.SITE_WORKER, user_id: 'u1', tenant_id: 't1' };
+
+    it('true on the primary role without querying additional roles', async () => {
+      const guard = makeGuard(new Reflector());
+      const prisma = (guard as unknown as { prisma: { $queryRaw: jest.Mock } }).prisma;
+      await expect(guard.hasAnyRole(user, [CosRole.SITE_WORKER])).resolves.toBe(true);
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('true when an ADDITIONAL role satisfies it', async () => {
+      const guard = makeGuard(new Reflector(), [CosRole.SAFETY_OFFICER]);
+      await expect(guard.hasAnyRole(user, [CosRole.SAFETY_OFFICER])).resolves.toBe(true);
+    });
+
+    it('false when neither primary nor additional roles satisfy it', async () => {
+      const guard = makeGuard(new Reflector(), [CosRole.VIEWER]);
+      await expect(guard.hasAnyRole(user, [CosRole.FINANCE])).resolves.toBe(false);
+    });
+
+    it('false when the JWT carries no role claim', async () => {
+      const guard = makeGuard(new Reflector());
+      await expect(
+        guard.hasAnyRole({ role: '', user_id: 'u1', tenant_id: 't1' } as never, [CosRole.FINANCE]),
+      ).resolves.toBe(false);
+    });
+  });
+
   it('onModuleDestroy disconnects the prisma client', async () => {
     const guard = makeGuard(new Reflector());
     const prisma = (guard as unknown as { prisma: { $disconnect: jest.Mock } }).prisma;

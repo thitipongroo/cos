@@ -65,6 +65,46 @@ describe('NotificationSseService', () => {
     });
   });
 
+  // The Subject map used to grow forever: every userId that ever opened a stream left one behind.
+  describe('subscriber lifecycle', () => {
+    const liveStreams = (s: NotificationSseService) =>
+      (s as unknown as { streams: Map<string, unknown> }).streams.size;
+
+    it('holds nothing for an Observable that is never subscribed', () => {
+      svc.stream('user-1');
+      expect(liveStreams(svc)).toBe(0);
+    });
+
+    it('drops the subject when the last subscriber disconnects', () => {
+      const sub = svc.stream('user-1').subscribe();
+      expect(liveStreams(svc)).toBe(1);
+
+      sub.unsubscribe();
+      expect(liveStreams(svc)).toBe(0);
+    });
+
+    it('keeps the subject while another subscriber is still connected', () => {
+      const a = svc.stream('user-1').subscribe();
+      const b = svc.stream('user-1').subscribe();
+
+      a.unsubscribe();
+      expect(liveStreams(svc)).toBe(1);
+
+      b.unsubscribe();
+      expect(liveStreams(svc)).toBe(0);
+    });
+
+    it('a reconnecting user gets a working stream again', () => {
+      svc.stream('user-1').subscribe().unsubscribe();
+
+      const received: string[] = [];
+      svc.stream('user-1').subscribe({ next: (e) => received.push(e.data.notification_id) });
+      svc.push('user-1', notif);
+
+      expect(received).toEqual(['n1']);
+    });
+  });
+
   describe('onModuleDestroy', () => {
     it('completes all subjects without throwing', () => {
       svc.stream('user-a');

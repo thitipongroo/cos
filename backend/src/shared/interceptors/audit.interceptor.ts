@@ -40,7 +40,9 @@ export class AuditInterceptor implements NestInterceptor, OnModuleDestroy {
       user?: JwtPayload;
       tenantId?: string;
       ip: string;
-      headers: Record<string, string>;
+      // Optional: the raw ServerResponse-style request handed over in some adapter paths may not
+      // carry it, and the skip-warning below must never itself throw.
+      headers?: Record<string, string>;
     }>();
 
     if (!MUTATING_METHODS.has(request.method)) {
@@ -49,7 +51,23 @@ export class AuditInterceptor implements NestInterceptor, OnModuleDestroy {
 
     const user = request.user;
     if (!user?.user_id || !request.tenantId) {
-      return next.handle(); // Auth/admin endpoints — skip audit
+      // A mutating request with no actor/tenant is expected on the genuinely anonymous endpoints
+      // (login, webhooks). It is NOT expected on a request that carried a bearer token: that means an
+      // authenticated mutation produced no audit row, which is exactly how this compliance control
+      // would disappear if tenant context ever stopped reaching interceptors. Never fail open in
+      // silence — but stay quiet for anonymous traffic so the signal is not buried.
+      if (request.headers?.['authorization']) {
+        logger.warn(
+          {
+            method: request.method,
+            path: (request.originalUrl ?? request.url ?? '').split('?')[0],
+            hasActor: Boolean(user?.user_id),
+            hasTenant: Boolean(request.tenantId),
+          },
+          'audit.skipped — bearer token present but no actor/tenant context',
+        );
+      }
+      return next.handle();
     }
 
     // Fastify exposes `url` (path + query), not Express's `path`.

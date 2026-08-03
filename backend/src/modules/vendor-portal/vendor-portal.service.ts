@@ -1,7 +1,8 @@
 // VendorPortalService — orchestrates the four §28 Vendor Portal capabilities (ADR-030):
 //   receive RFQ · submit quotation · track PO status · submit invoice
 // plus the buyer-side "issue invitation" trigger. Reuses procurement RFQ/quotation/PO/invoice
-// tables (no duplicate data model). Tenant + vendor context come from VendorAuthMiddleware.
+// tables (no duplicate data model). Tenant + vendor context come from VendorAuthGuard (vendor side)
+// or JwtAuthGuard (buyer side); both publish into CLS.
 
 import {
   Injectable,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { REQUEST } from '@nestjs/core';
 import { randomUUID } from 'crypto';
+import { clsTenantId } from '../../shared/context/cls-context';
 import { MagicLinkService } from './magic-link.service';
 import { VendorIdentityRepository } from './vendor-identity.repository';
 import {
@@ -28,8 +30,10 @@ import {
 
 @Injectable({ scope: Scope.REQUEST })
 export class VendorPortalService {
+  // See VendorPortalRepository: CLS is the reliable carrier under Fastify, the request object is a
+  // mirror. Covers both the vendor path (VendorAuthGuard) and the buyer path (JwtAuthGuard).
   private get tenantId(): string {
-    return (this.request as { tenantId?: string }).tenantId ?? '';
+    return (this.request as { tenantId?: string }).tenantId ?? clsTenantId();
   }
 
   constructor(
