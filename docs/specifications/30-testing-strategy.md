@@ -323,14 +323,17 @@ The k6 tests above cover the backend; the web app's user-perceived performance i
   which is how a 1,190 ms TBT — nearly 6× its budget — passed unnoticed on 2026-08-03. Median is what the numbers above
   are calibrated against.
 - **The server is started and warmed before collection** (`pnpm run lighthouse`, not `lhci autorun`). Letting lhci
-  start it through `startServerCommand` made the first of the three runs a cold-start measurement: on 2026-08-03 that
-  run reported `server-response-time` ~30 ms against ~5 ms for the other two, browser bootup 2–4× higher, and TBT
-  between 271 ms and 1,190 ms while runs two and three sat at 52–80 ms. Every LCP outlier in that data set — 3,826,
-  3,856, 3,895 ms — was a first run. The cause was the Next server's first request, not the page: warming it locally
-  drops run one's `server-response-time` from 28 ms to 4 ms and its TBT from 39 to 8.
-  This changes the budgets by ~95 ms at the median, because median already discards the outlier. What it buys is an
-  artifact that measures the application rather than the server's first request, and it is what would make a
-  `pessimistic` aggregation viable later.
+  start it through `startServerCommand` made the first of the three runs partly a cold-server measurement: on
+  2026-08-03 that run reported `server-response-time` ~30 ms against ~5 ms for the other two. Warming it fixed exactly
+  that — the same metric now reads 4 / 4 / 3 ms across the three runs.
+- **The first run is still an outlier, and warming the server did not change that.** On the first fully green run
+  (2026-08-03), run one reported **TBT 3,061 ms** and **CLS 0.133** with `bootup-time` 2,715 ms, against 72–82 ms TBT,
+  0.000 CLS and 493–541 ms bootup for runs two and three — while its `server-response-time` was already warm at 4 ms.
+  What remains is Chrome's own first-run cost (V8 compilation, no code cache), which a warm-up request to the server
+  cannot touch. **No verified fix is in place.** A discarded Lighthouse run before the measured ones would be the
+  obvious candidate; lhci exposes no option for it and it has not been tested.
+  This is why `aggregationMethod` is `median` and not `pessimistic`: pessimistic would fail today on both TBT
+  (3,061 > 200) and CLS (0.133 > 0.1), from a first run that says nothing about the application.
 - **Measured baselines (2026-08-03, five CI runs each).** Before the `/login` server-rendering and font fixes: median
   LCP up to 3,673 ms. After: **up to 2,913 ms**. Script transfer size 223,234 B against the 256,000 B budget;
   accessibility 1.0 on every run.

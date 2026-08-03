@@ -57,13 +57,16 @@ jobs:
       - name: Build web app
         run: pnpm --filter @cos/web build
       # `pnpm run lighthouse`, not `lhci autorun`: the script starts the server, requests /login five
-      # times, and only then collects. Letting lhci start the server via `startServerCommand` made
-      # its first of three runs a cold-start measurement — on 2026-08-03 that run reported
-      # serverTTFB ~30 ms against ~5 ms for the other two, with browser bootup 2–4x higher and TBT
-      # as high as 1,172 ms, nearly 6x its budget. `aggregationMethod: median` already discards it,
-      # so the budgets do not depend on this; what it buys is an artifact that measures the app
-      # rather than the server's first request. Reproduced locally: warming drops run #1's
-      # serverTTFB from 28 ms to 4 ms and its TBT from 39 to 8.
+      # times, and only then collects. With lhci starting the server via `startServerCommand`, its
+      # first of three runs also measured the server's first request — serverTTFB ~30 ms against
+      # ~5 ms for the other two on 2026-08-03. Warming fixed that specific metric: it now reads
+      # 4 / 4 / 3 ms across the three runs.
+      #
+      # It did NOT make the first run comparable. On the first green run the same first sample
+      # reported TBT 3,061 ms and CLS 0.133 with bootup-time 2,715 ms, against 72–82 ms / 0.000 /
+      # 493–541 ms for runs two and three — with its server already warm. That residue is Chrome's
+      # own first-run cost, and there is no verified fix for it here. It is the reason
+      # `aggregationMethod` is `median`: pessimistic would fail on that sample alone.
       - name: Run Lighthouse CI
         working-directory: apps/web
         run: pnpm run lighthouse
