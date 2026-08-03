@@ -45,9 +45,12 @@ module.exports = {
         },
       },
       fontFamily: {
-        // Brand font: Inter Tight (§32.7). Falls back gracefully until
-        // @fontsource/inter-tight is installed + imported.
+        // Brand font: Inter Tight (§32.7). `Inter Tight Variable` is the family name that
+        // @fontsource-variable/inter-tight registers, and it must come first: with only
+        // `"Inter Tight"` here the variable font was declared but never matched, so the browser
+        // issued zero font requests and the page silently rendered in a system font.
         sans: [
+          '"Inter Tight Variable"',
           '"Inter Tight"',
           'Inter',
           '-apple-system',
