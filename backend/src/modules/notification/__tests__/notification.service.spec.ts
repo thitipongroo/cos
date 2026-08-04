@@ -751,6 +751,23 @@ describe('escalate', () => {
     await svc.escalate('tenant-001', ['PROJECT_MANAGER'], 'Escalation', 'Body');
     expect(mockEmail.send).not.toHaveBeenCalled();
   });
+
+  it('still delivers in-app when the email provider is down', async () => {
+    // §19.3 escalations fire on unacknowledged SAFETY incidents. A SendGrid outage must not take the
+    // in-app notice down with it — the .catch on the email send is what keeps one channel's failure
+    // from becoming an unnotified safety escalation.
+    mockRepo.findUsersByRole.mockResolvedValue([{ user_id: 'pm1', email: 'pm@b.com' }]);
+    mockRepo.createNotification.mockResolvedValue({ ...notifRow, recipient_id: 'pm1' });
+    mockRepo.markSent.mockResolvedValue(undefined);
+    mockEmail.send.mockRejectedValue(new Error('sendgrid 503'));
+
+    await expect(
+      svc.escalate('tenant-001', ['PROJECT_MANAGER'], 'Escalation', 'Body'),
+    ).resolves.toBeUndefined();
+
+    expect(mockSse.push).toHaveBeenCalledWith('pm1', expect.any(Object));
+    expect(mockRepo.markSent).toHaveBeenCalled();
+  });
 });
 
 // ── digest delivery (§19.3) ───────────────────────────────────────────────────
@@ -769,5 +786,23 @@ describe('deliverDigest', () => {
     expect(mockEmail.send).toHaveBeenCalledWith(
       expect.objectContaining({ to: 'pm@b.com', subject: 'Daily site summary' }),
     );
+  });
+
+  it('one bad address does not abort the rest of the digest run', async () => {
+    // The digest is a scheduled fan-out (18:00 daily / Mon 08:00). Without the per-recipient catch a
+    // single hard bounce would reject the batch and everyone after it would silently get nothing.
+    mockRepo.findUsersByRole.mockResolvedValue([
+      { user_id: 'pm1', email: 'bounces@b.com' },
+      { user_id: 'pm2', email: 'ok@b.com' },
+    ]);
+    mockEmail.send
+      .mockRejectedValueOnce(new Error('550 mailbox unavailable'))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(
+      svc.deliverDigest('tenant-001', ['PROJECT_MANAGER'], 'Daily site summary', 'Body'),
+    ).resolves.toBeUndefined();
+
+    expect(mockEmail.send).toHaveBeenCalledTimes(2);
   });
 });

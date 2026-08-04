@@ -166,6 +166,43 @@ describe('PlatformWebhookService', () => {
       expect(tenantService.markAsEnterpriseContracted).not.toHaveBeenCalled();
     });
 
+    it('rejects a malformed timestamp instead of treating it as epoch 0', async () => {
+      // Date.parse('yesterday') is NaN. Without the isFinite guard the skew check compares against
+      // NaN, `NaN > window` is false, and every replay with a garbage stamp would be ACCEPTED —
+      // the exact opposite of what replay protection is for.
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const ts = 'yesterday';
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          stampedHmac(ts, rawBody),
+          rawBody,
+          ts,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(tenantService.markAsEnterpriseContracted).not.toHaveBeenCalled();
+    });
+
+    it('accepts an ISO-8601 timestamp, not just epoch milliseconds', async () => {
+      // The header is documented as accepting both shapes; only the all-digits path was covered.
+      process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
+      const rawBody = Buffer.from('{}', 'utf8');
+      const ts = new Date().toISOString();
+
+      await expect(
+        svc.handleEnterpriseContractSigned(
+          TENANT_ID,
+          undefined,
+          stampedHmac(ts, rawBody),
+          rawBody,
+          ts,
+        ),
+      ).resolves.toMatchObject({ tenantId: TENANT_ID, message: 'Webhook accepted' });
+    });
+
     it('rejects a timestamp far in the future', async () => {
       process.env['WEBHOOK_REPLAY_PROTECTION'] = 'true';
       const rawBody = Buffer.from('{}', 'utf8');

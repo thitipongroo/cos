@@ -57,6 +57,29 @@ describe('ProjectRepository', () => {
     });
   });
 
+  // Hydrates OpenSearch hits in ONE round trip. The loop it replaced ran a full
+  // BEGIN/SET LOCAL/SELECT/COMMIT per hit, so the early return below is what keeps a search with no
+  // matches from opening a transaction at all.
+  describe('findByIds()', () => {
+    it('returns [] without opening a transaction for an empty id list', async () => {
+      const txMock = { $queryRaw: jest.fn() };
+      const tenantPrisma = {
+        run: jest.fn((fn: (tx: typeof txMock) => Promise<unknown>) => fn(txMock)),
+      };
+      const repo = new ProjectRepository(tenantPrisma as never, { tenantId: TENANT_ID } as never);
+
+      expect(await repo.findByIds([])).toEqual([]);
+      expect(tenantPrisma.run).not.toHaveBeenCalled();
+      expect(txMock.$queryRaw).not.toHaveBeenCalled();
+    });
+
+    it('fetches every id in a single query', async () => {
+      const repo = makeRepo([baseRow]);
+      const rows = await repo.findByIds([baseRow.project_id, 'other-id']);
+      expect(rows).toEqual([baseRow]);
+    });
+  });
+
   describe('listByMember()', () => {
     it('returns the projects the user is a member of', async () => {
       const repo = makeRepo([baseRow]);

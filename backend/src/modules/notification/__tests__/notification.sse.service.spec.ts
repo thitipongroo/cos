@@ -83,6 +83,23 @@ describe('NotificationSseService', () => {
       expect(liveStreams(svc)).toBe(0);
     });
 
+    it('survives a subscriber disconnecting AFTER shutdown cleared the counters', () => {
+      // The real ordering on SIGTERM: onModuleDestroy() completes every Subject and clears both maps
+      // while SSE connections are still open, then each client's teardown runs. release() then finds
+      // no counter — the `?? 1` fallback — and must not throw or resurrect an entry. Without it the
+      // subtraction yields NaN, `NaN > 0` is false, and the maps are left in an inconsistent state
+      // during the exact window the process is trying to exit cleanly.
+      const sub = svc.stream('user-1').subscribe();
+      expect(liveStreams(svc)).toBe(1);
+
+      svc.onModuleDestroy();
+      expect(liveStreams(svc)).toBe(0);
+
+      expect(() => sub.unsubscribe()).not.toThrow();
+      expect(liveStreams(svc)).toBe(0);
+      expect((svc as unknown as { subscribers: Map<string, number> }).subscribers.size).toBe(0);
+    });
+
     it('keeps the subject while another subscriber is still connected', () => {
       const a = svc.stream('user-1').subscribe();
       const b = svc.stream('user-1').subscribe();

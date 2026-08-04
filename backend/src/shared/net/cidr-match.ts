@@ -36,8 +36,11 @@ function parseIpv6(ip: string): bigint | null {
   if (halves.length > 2) return null;
 
   const expand = (segment: string): string[] => (segment === '' ? [] : segment.split(':'));
-  let head = expand(halves[0] ?? '');
-  let tail = halves.length === 2 ? expand(halves[1] ?? '') : [];
+  // The `?? ''` fallbacks are unreachable — String.split never returns an empty array, so index 0
+  // always exists, and index 1 is only read when halves.length === 2. They exist to satisfy
+  // noUncheckedIndexedAccess. Same idiom as audit.interceptor.ts's `segments[0] ?? 'unknown'`.
+  let head = expand(halves[0] ?? /* istanbul ignore next */ '');
+  let tail = halves.length === 2 ? expand(halves[1] ?? /* istanbul ignore next */ '') : [];
 
   // A trailing dotted-quad ('::ffff:1.2.3.4', '64:ff9b::1.2.3.4') occupies the last two groups.
   const groups = halves.length === 2 ? tail : head;

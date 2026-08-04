@@ -62,6 +62,29 @@ describe('AnnotationRepository', () => {
     });
   });
 
+  // The object-level authorization check. Without it, an annotation push for another tenant's
+  // file_id hits the FK and returns a 500 — which both reads as a server fault and answers a
+  // question the caller should not get to ask ("does this file_id exist somewhere?"). RLS keeps the
+  // data safe either way; this is what turns the leak of EXISTENCE into a clean 404.
+  describe('fileExistsInTenant', () => {
+    it('is true for a live file in the caller’s tenant', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([{ file_id: 'f1' }]);
+      expect(await repo.fileExistsInTenant('f1')).toBe(true);
+    });
+
+    it('is false when the file belongs to another tenant or does not exist', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      expect(await repo.fileExistsInTenant('f-other')).toBe(false);
+    });
+
+    it('is false for a soft-deleted file', async () => {
+      // deleted_at IS NULL is part of the predicate — a deleted file must not accept annotations.
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      expect(await repo.fileExistsInTenant('f-deleted')).toBe(false);
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('falls back to empty tenantId/userId when the request has neither', async () => {
     const noCtx = await makeRepo({});
     mockPrisma.$queryRaw.mockResolvedValue([row]);

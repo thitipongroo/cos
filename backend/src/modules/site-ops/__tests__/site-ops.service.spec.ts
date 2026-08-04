@@ -266,6 +266,29 @@ describe('syncSiteReports', () => {
     expect(results[0]?.report_id).toBe('new-id');
   });
 
+  it('still syncs when the batch pre-fetch fails — every item takes the create path', async () => {
+    // The pre-fetch is one set-based lookup replacing a per-item read. If it rejects (a malformed id
+    // slipping past the UUID filter would break the ::uuid[] cast for the WHOLE batch), the catch
+    // degrades to an empty map, which is exactly what the old per-item `.catch(() => null)` did:
+    // a sync push from the field must not fail wholesale because a lookup could not be optimised.
+    mockRepo.findReportsByIds.mockRejectedValue(new Error('invalid input syntax for type uuid'));
+    mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'recovered-id' }));
+
+    const results = await service.syncSiteReports({
+      items: [
+        {
+          client_id: 'recovered-id',
+          project_id: 'project-1',
+          report_date: '2026-06-04',
+          client_submitted_at: '2026-06-04T09:00:00Z',
+        },
+      ],
+    });
+
+    expect(results[0]?.conflict_status).toBe('ACCEPTED');
+    expect(mockRepo.createSiteReport).toHaveBeenCalledTimes(1);
+  });
+
   it('ACCEPTED for new report with all optional fields provided (covers ?? null true branches)', async () => {
     mockRepo.findReportsByIds.mockResolvedValue(new Map());
     mockRepo.createSiteReport.mockResolvedValue(makeReport({ report_id: 'new-full-id' }));

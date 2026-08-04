@@ -295,6 +295,104 @@ describe('SyncService', () => {
       expect(res.server_timestamp).toBe(lastSeen.toISOString());
     });
 
+    // toIso's string branch. pg returns Date for timestamptz, but $queryRawUnsafe is untyped and a
+    // driver/-adapter change (or a text-cast column) hands back a string. Getting this wrong means
+    // has_more is true with no usable watermark, and the client re-requests the same page forever.
+    it('accepts an ISO string delta column, not just a Date', async () => {
+      const { svc, tx } = harness();
+      const page = Array.from({ length: 500 }, (_, i) => ({
+        task_id: `t${i}`,
+        created_at: i === 499 ? '2026-02-01T00:00:00.000Z' : '2026-01-15T00:00:00.000Z',
+      }));
+      tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
+
+      const res = await svc.delta('2026-01-01T00:00:00Z', ['task']);
+      expect(res.has_more).toBe(true);
+      expect(res.server_timestamp).toBe('2026-02-01T00:00:00.000Z');
+    });
+
+    it('ignores an unparseable delta column rather than emitting a bad cursor', async () => {
+      const { svc, tx } = harness();
+      const page = Array.from({ length: 500 }, (_, i) => ({
+        task_id: `t${i}`,
+        created_at: 'not-a-date',
+      }));
+      tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
+
+      const res = await svc.delta('2026-01-01T00:00:00Z', ['task']);
+      // No watermark could be derived, so there is nothing to resume from — reporting has_more with
+      // a garbage cursor would be worse than reporting the page as complete.
+      expect(res.has_more).toBe(false);
+    });
+
+    it('ignores a delta column that is neither Date nor string', async () => {
+      const { svc, tx } = harness();
+      const page = Array.from({ length: 500 }, (_, i) => ({ task_id: `t${i}`, created_at: null }));
+      tx.$queryRawUnsafe.mockResolvedValueOnce(page).mockResolvedValueOnce([]);
+      expect((await svc.delta('2026-01-01T00:00:00Z', ['task'])).has_more).toBe(false);
+    });
+
+    it('reports has_more when the TOMBSTONE page is full, using its own watermark', async () => {
+      const { svc, tx } = harness();
+      const lastDeleted = new Date('2026-03-01T00:00:00.000Z');
+      const tombstones = Array.from({ length: 500 }, (_, i) => ({
+        entity_id: `d${i}`,
+        deleted_at: i === 499 ? lastDeleted : new Date('2026-02-15T00:00:00.000Z'),
+      }));
+      // updated page short, tombstone page full — truncation can come from either side.
+      tx.$queryRawUnsafe.mockResolvedValueOnce([]).mockResolvedValueOnce(tombstones);
+
+      const res = await svc.delta('2026-01-01T00:00:00Z', ['task']);
+      expect(res.deleted).toHaveLength(500);
+      expect(res.has_more).toBe(true);
+      expect(res.server_timestamp).toBe(lastDeleted.toISOString());
+    });
+
+    it('ignores an unparseable tombstone watermark', async () => {
+      const { svc, tx } = harness();
+      const tombstones = Array.from({ length: 500 }, (_, i) => ({
+        entity_id: `d${i}`,
+        deleted_at: 'not-a-date',
+      }));
+      tx.$queryRawUnsafe.mockResolvedValueOnce([]).mockResolvedValueOnce(tombstones);
+      expect((await svc.delta('2026-01-01T00:00:00Z', ['task'])).has_more).toBe(false);
+    });
+
+    it('resumes from the LOWEST watermark when two types truncate at different points', async () => {
+      const { svc, tx } = harness();
+      const mk = (last: string) =>
+        Array.from({ length: 500 }, (_, i) => ({
+          id: `x${i}`,
+          modified_at: i === 499 ? new Date(last) : new Date('2026-01-02T00:00:00.000Z'),
+        }));
+      tx.$queryRawUnsafe
+        .mockResolvedValueOnce(mk('2026-05-01T00:00:00.000Z')) // site_report — later
+        .mockResolvedValueOnce(mk('2026-04-01T00:00:00.000Z')) // issue — earlier
+        .mockResolvedValueOnce([]); // tombstones
+
+      const res = await svc.delta('2026-01-01T00:00:00Z', ['site_report', 'issue']);
+      // Resuming from the later watermark would skip every issue row between the two points.
+      expect(res.server_timestamp).toBe('2026-04-01T00:00:00.000Z');
+    });
+
+    it('picks the lowest watermark regardless of which type truncated earlier', async () => {
+      // Same assertion with the order reversed. The reduce keeps whichever side is smaller, so both
+      // orderings have to hold — a `>` typo passes the previous test and fails this one.
+      const { svc, tx } = harness();
+      const mk = (last: string) =>
+        Array.from({ length: 500 }, (_, i) => ({
+          id: `x${i}`,
+          modified_at: i === 499 ? new Date(last) : new Date('2026-01-02T00:00:00.000Z'),
+        }));
+      tx.$queryRawUnsafe
+        .mockResolvedValueOnce(mk('2026-04-01T00:00:00.000Z')) // site_report — earlier
+        .mockResolvedValueOnce(mk('2026-05-01T00:00:00.000Z')) // issue — later
+        .mockResolvedValueOnce([]);
+
+      const res = await svc.delta('2026-01-01T00:00:00Z', ['site_report', 'issue']);
+      expect(res.server_timestamp).toBe('2026-04-01T00:00:00.000Z');
+    });
+
     it('reports has_more false and a fresh timestamp when everything fit', async () => {
       const { svc, tx } = harness();
       tx.$queryRawUnsafe

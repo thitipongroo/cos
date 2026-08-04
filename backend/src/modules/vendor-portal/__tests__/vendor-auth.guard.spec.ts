@@ -13,9 +13,9 @@ function ctxFor(req: VendorRequest): ExecutionContext {
   return { switchToHttp: () => ({ getRequest: () => req }) } as unknown as ExecutionContext;
 }
 
-function build(relationship: unknown = { vendor_id: 'ven-1' }) {
+function build(relationship: unknown = { vendor_id: 'ven-1' }, clsActive = true) {
   const store = new Map<string, unknown>();
-  const cls = { isActive: () => true, set: (k: string, v: unknown) => void store.set(k, v) };
+  const cls = { isActive: () => clsActive, set: (k: string, v: unknown) => void store.set(k, v) };
   const magicLink = {
     verifyInvitationToken: jest.fn().mockReturnValue({ tenantId: TENANT, invitationId: 'inv-1' }),
     verifySessionToken: jest.fn().mockReturnValue('vid-1'),
@@ -37,6 +37,20 @@ describe('VendorAuthGuard', () => {
       // CLS is what TenantPrismaService actually reads — the whole point of the guard.
       expect(store.get(CLS_TENANT_ID)).toBe(TENANT);
       expect(store.get(CLS_VENDOR_INVITATION_ID)).toBe('inv-1');
+      expect(req.tenantId).toBe(TENANT);
+      expect(req.vendorInvitationId).toBe('inv-1');
+    });
+
+    it('still populates the request when no CLS context is open', async () => {
+      // cls.set() throws outside an active context, so the guard checks isActive() first. That
+      // branch matters on any path where the CLS middleware has not run (a test harness, or a route
+      // mounted outside it): the guard must still attach tenant/vendor to the REQUEST rather than
+      // failing the call — req.* is the secondary path TenantContextInterceptor reads (ADR-031).
+      const { guard, store } = build({ vendor_id: 'ven-1' }, /* clsActive */ false);
+      const req = { params: { token: 'THE-TOKEN' }, headers: {} } as unknown as VendorRequest;
+
+      await expect(guard.canActivate(ctxFor(req))).resolves.toBe(true);
+      expect(store.size).toBe(0); // nothing written to CLS
       expect(req.tenantId).toBe(TENANT);
       expect(req.vendorInvitationId).toBe('inv-1');
     });

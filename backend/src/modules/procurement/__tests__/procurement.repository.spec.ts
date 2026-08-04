@@ -1,4 +1,4 @@
-// Unit tests — Procurement Repository (Phase 5)
+﻿// Unit tests — Procurement Repository (Phase 5)
 // Tests: tenant isolation, query delegation, null-return handling.
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -223,6 +223,19 @@ describe('ProcurementRepository', () => {
     expect(result.pr_id).toBe('pr-uuid-001');
   });
 
+  it('createPurchaseRequest defaults the allocation year to now when the caller omits it', async () => {
+    // The service always sends `year`, but the repository is also reachable from the Temporal worker
+    // and from seeds. Falling back to the current year keeps PR-<year>-<seq> correct there instead of
+    // allocating under `undefined`.
+    mockPrisma.$queryRaw.mockResolvedValue([prRow]);
+    await repo.createPurchaseRequest({
+      project_id: 'proj-uuid-001',
+      requested_by: 'user-uuid-001',
+      // no pr_number → allocation path runs; no year → the ?? fallback is what supplies it
+    });
+    expect(mockPrisma.$queryRaw).toHaveBeenCalled();
+  });
+
   it('createPurchaseRequest inserts all pr_line_items in one statement, ordered by sort_order', async () => {
     // The PR and its lines share one transaction — a PR that records no materials is not a request.
     // The lines go in as a single set-based INSERT; WITH ORDINALITY carries the array position into
@@ -400,6 +413,70 @@ describe('ProcurementRepository', () => {
     expect(result.po_id).toBe('po-uuid-001');
   });
 
+  // The PO and its lines must land in ONE transaction. Splitting them (create the PO, then insert
+  // lines) can leave a header with no lines committed if the second call fails — a PO whose total
+  // no longer matches anything.
+  it('createPurchaseOrderWithLineItems inserts header and lines in a single transaction', async () => {
+    const lineRow = {
+      line_id: 'line-uuid-001',
+      po_id: 'po-uuid-001',
+      tenant_id: 'tenant-uuid-001',
+      boq_item_id: null,
+      description: 'Cement 50kg',
+      quantity: '10.0000',
+      unit: 'bag',
+      unit_price: '150.0000',
+      line_total: '1500.0000',
+    };
+    mockPrisma.$queryRaw.mockResolvedValueOnce([poRow]).mockResolvedValueOnce([lineRow]);
+
+    const result = await repo.createPurchaseOrderWithLineItems(
+      {
+        vendor_id: 'vendor-uuid-001',
+        project_id: 'proj-uuid-001',
+        po_number: 'PO-001',
+        total_amount: '1500.0000',
+        currency_code: 'THB',
+        delivery_date: '2026-09-01',
+        created_by: 'user-uuid-001',
+      },
+      [
+        {
+          description: 'Cement 50kg',
+          quantity: '10.0000',
+          unit: 'bag',
+          unit_price: '150.0000',
+          line_total: '1500.0000',
+        },
+      ],
+    );
+
+    expect(result.po.po_id).toBe('po-uuid-001');
+    expect(result.line_items).toEqual([lineRow]);
+    // One db.run() — both statements share the transaction, and therefore the RLS GUC.
+    expect(mockTenantPrisma.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('createPurchaseOrderWithLineItems skips the line insert when there are no items', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([poRow]);
+    const result = await repo.createPurchaseOrderWithLineItems(
+      {
+        rfq_id: 'rfq-uuid-001',
+        vendor_id: 'vendor-uuid-001',
+        project_id: 'proj-uuid-001',
+        po_number: 'PO-002',
+        total_amount: '0.0000',
+        currency_code: 'THB',
+        delivery_date: '2026-09-01',
+        created_by: 'user-uuid-001',
+      },
+      [],
+    );
+    expect(result.line_items).toEqual([]);
+    // Header only — an empty VALUES list would be a syntax error, not an empty insert.
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
   it('findPoById returns null when not found', async () => {
     mockPrisma.$queryRaw.mockResolvedValue([]);
     expect(await repo.findPoById('missing')).toBeNull();
@@ -493,6 +570,45 @@ describe('ProcurementRepository', () => {
     });
     expect(result.delivery.delivery_id).toBe('del-uuid-001');
     expect(result.items).toHaveLength(1);
+  });
+
+  it('createDelivery records the header with no items at all', async () => {
+    // A delivery can arrive with nothing matched to a PO line yet (a note-only receipt). The header
+    // still has to commit, and an empty VALUES list would be a syntax error — hence the guard rather
+    // than an unconditional INSERT.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([deliveryRow]);
+    const result = await repo.createDelivery({
+      po_id: 'po-uuid-001',
+      delivered_at: new Date().toISOString(),
+      received_by: 'user-uuid-001',
+      items: [],
+    });
+    expect(result.delivery.delivery_id).toBe('del-uuid-001');
+    expect(result.items).toEqual([]);
+    expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('createDelivery falls back to raw RETURNING order when a line_id is missing from the result', async () => {
+    // The re-ordering maps requested line_ids back onto returned rows. If the database returns a row
+    // the caller did not ask for (or drops one), `ordered` is shorter than `rows` and the code keeps
+    // the raw rows instead — losing an item silently would understate what was received.
+    mockPrisma.$queryRaw.mockResolvedValueOnce([deliveryRow]).mockResolvedValueOnce([
+      {
+        delivery_item_id: 'di-x',
+        delivery_id: 'del-uuid-001',
+        line_id: 'line-UNREQUESTED',
+        tenant_id: 'tenant-uuid-001',
+        quantity_received: '1.0000',
+      },
+    ]);
+    const result = await repo.createDelivery({
+      po_id: 'po-uuid-001',
+      delivered_at: new Date().toISOString(),
+      received_by: 'user-uuid-001',
+      items: [{ line_id: 'line-requested', quantity_received: '1.0000' }],
+    });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]!.line_id).toBe('line-UNREQUESTED');
   });
 
   it('createDelivery inserts all items in one query, ordered by the caller’s line_ids', async () => {

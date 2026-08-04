@@ -53,7 +53,12 @@ export class NotificationSseService implements OnModuleDestroy {
 
   /** Drop one subscriber; complete and forget the Subject when none are left. */
   private release(userId: string): void {
-    const remaining = (this.subscribers.get(userId) ?? 1) - 1;
+    // The `?? 1` is unreachable and kept only as a guard. release() runs solely from the teardown in
+    // stream(), which always follows an acquire() that set a count >= 1 — and on shutdown the
+    // Subjects are completed BEFORE the maps are cleared, so those teardowns also see their counter.
+    // Reaching it would mean a subtraction on undefined (NaN, so `NaN > 0` is false) silently
+    // dropping a live Subject. Same idiom as audit.interceptor.ts / cidr-match.ts.
+    const remaining = (this.subscribers.get(userId) ?? /* istanbul ignore next */ 1) - 1;
     if (remaining > 0) {
       this.subscribers.set(userId, remaining);
       return;

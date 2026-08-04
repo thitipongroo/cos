@@ -175,6 +175,70 @@ describe('SiteOpsRepository', () => {
     expect(mockPrisma.$queryRaw).not.toHaveBeenCalled();
   });
 
+  // The LAST_WRITE_WINS half of offline sync (§17.5): when the client's submission is newer, the
+  // server row is overwritten in place. modified_at is bumped here because the NEXT sync compares
+  // against it to detect a concurrent server-side edit.
+  describe('updateSiteReport', () => {
+    it('returns the updated row', async () => {
+      const updated = { ...reportRow, summary: 'poured slab', manpower_count: 12 };
+      mockPrisma.$queryRaw.mockResolvedValue([updated]);
+
+      const result = await repo.updateSiteReport('report-uuid-001', {
+        summary: 'poured slab',
+        blockers: null,
+        weather: 'sunny',
+        manpower_count: 12,
+        client_submitted_at: '2026-06-04T09:00:00Z',
+      });
+
+      expect(result?.summary).toBe('poured slab');
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns null when the report belongs to another tenant', async () => {
+      // The UPDATE carries `AND tenant_id = ...`, so a cross-tenant id simply matches no row. Null
+      // lets the caller answer 404 rather than reporting a successful write that never happened.
+      mockPrisma.$queryRaw.mockResolvedValue([]);
+      const result = await repo.updateSiteReport('foreign-report', {
+        summary: null,
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+      });
+      expect(result).toBeNull();
+    });
+
+    it('writes NULL coordinates when the client sends none (offline report with no GPS fix)', async () => {
+      mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
+      await repo.updateSiteReport('report-uuid-001', {
+        summary: 's',
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+        // latitude/longitude omitted entirely — the ?? null fallbacks supply them.
+      });
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+
+    it('passes explicit coordinates through', async () => {
+      // SiteReportRow does not surface lat/lng, so assert the write happened rather than the shape.
+      mockPrisma.$queryRaw.mockResolvedValue([reportRow]);
+      const result = await repo.updateSiteReport('report-uuid-001', {
+        summary: 's',
+        blockers: null,
+        weather: null,
+        manpower_count: null,
+        client_submitted_at: null,
+        latitude: 13.75,
+        longitude: 100.5,
+      });
+      expect(result).not.toBeNull();
+      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it('listSiteReports returns rows and total', async () => {
     mockPrisma.$queryRaw
       .mockResolvedValueOnce([reportRow]) // first call = rows

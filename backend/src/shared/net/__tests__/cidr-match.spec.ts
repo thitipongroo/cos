@@ -45,6 +45,40 @@ describe('ipInCidr — IPv6', () => {
     expect(ipInCidr('1.2.3.4', '::/0')).toBe(false);
     expect(ipInCidr('2400:cb00::1', '0.0.0.0/0')).toBe(false);
   });
+
+  // A trailing dotted-quad occupies the LAST TWO 16-bit groups. The `::ffff:` fast path in parseIp
+  // short-circuits the common dual-stack shape before parseIpv6 ever sees it, so this embedded-IPv4
+  // branch was reachable only through the forms below — and was entirely uncovered.
+  describe('embedded IPv4 in an IPv6 address', () => {
+    it('expands a dotted quad after :: (NAT64 well-known prefix)', () => {
+      // 64:ff9b::192.0.2.33 — RFC 6052. The quad becomes c000:0221, so it sits inside 64:ff9b::/96.
+      expect(parseIp('64:ff9b::192.0.2.33')?.bits).toBe(128);
+      expect(ipInCidr('64:ff9b::192.0.2.33', '64:ff9b::/96')).toBe(true);
+      expect(ipInCidr('64:ff9b::192.0.2.33', '2400:cb00::/32')).toBe(false);
+    });
+
+    it('expands a dotted quad with no :: at all (fully written form)', () => {
+      // The same address as ::ffff:1.2.3.4 but spelled out, so parseIp's mapped fast path does not
+      // fire and parseIpv6 must replace the last group in `head` rather than `tail`.
+      expect(parseIp('0:0:0:0:0:ffff:1.2.3.4')?.bits).toBe(128);
+      expect(ipInCidr('0:0:0:0:0:ffff:1.2.3.4', '::ffff:0:0/96')).toBe(true);
+    });
+
+    it('rejects an address with more than 8 groups', () => {
+      // 9 groups — over-long addresses must fail closed rather than being truncated to the first 8.
+      expect(parseIp('1:2:3:4:5:6:7:8:9')).toBeNull();
+      expect(ipInCidr('1:2:3:4:5:6:7:8:9', '::/0')).toBe(false);
+      // Also over-long once the embedded quad expands into two groups.
+      expect(parseIp('1:2:3:4:5:6:7:8:1.2.3.4')).toBeNull();
+    });
+
+    it('fails closed when the embedded quad is not a valid IPv4 address', () => {
+      // 999 is out of range — must be a non-match, never a partial parse (this code gates access).
+      expect(parseIp('64:ff9b::192.0.2.999')).toBeNull();
+      expect(ipInCidr('64:ff9b::192.0.2.999', '64:ff9b::/96')).toBe(false);
+      expect(parseIp('0:0:0:0:0:ffff:1.2.3.256')).toBeNull();
+    });
+  });
 });
 
 describe('ipInCidr — fails closed', () => {

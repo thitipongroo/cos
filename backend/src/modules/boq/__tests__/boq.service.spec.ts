@@ -252,6 +252,19 @@ describe('BoqService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
+    it('still reports the conflict when the blocking DRAFT cannot be re-read', async () => {
+      // claimNextVersion and findDraftVersion are two separate reads: the lock-holder can approve or
+      // delete the DRAFT in between, so the id lookup comes back empty. The 409 is still correct —
+      // the claim genuinely failed — and the message must degrade to 'unknown' rather than render
+      // "(undefined)" at a user.
+      mockRepo.claimNextVersion.mockResolvedValue(null);
+      mockRepo.findDraftVersion.mockResolvedValue(null);
+
+      await expect(
+        service.createVersion('project-uuid-001', { currency_code: 'THB' }),
+      ).rejects.toThrow(/already has a DRAFT BOQ version \(unknown\)/);
+    });
+
     it('publishes boq.created.v1 on first version (version_number === 1 branch)', async () => {
       mockRepo.findDraftVersion.mockResolvedValue(null);
       mockRepo.claimNextVersion.mockResolvedValue({ version: draftVersion, version_number: 1 });
