@@ -558,12 +558,13 @@ before executing; throws `GovernanceViolationError` for disallowed actions.
 
 **Decision:** Python `scikit-learn` + `XGBoost` as the primary ML framework for all Phase 23 models.
 
-| Model              | Use case                   | Algorithm                                                                | Input features                                                               |
-| ------------------ | -------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| DelayForecastModel | Delay forecast             | XGBoost regressor (days to delay)                                        | procurement delays, task completion %, weather history, workforce attendance |
-| SafetyVisionModel  | Safety violation detection | XGBoost classifier on extracted image features (HOG + ViT embeddings)    | site photo embeddings, PPE label presence                                    |
-| GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                           |
-| RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents        |
+| Model              | Use case                   | Algorithm                                                                | Input features                                                                                       |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
+| DelayForecastModel | Delay forecast             | XGBoost regressor (days to delay)                                        | procurement delays, task completion %, weather history, workforce attendance                         |
+| SafetyVisionModel  | Safety violation detection | XGBoost classifier on extracted image features (HOG + ViT embeddings)    | site photo embeddings, PPE label presence                                                            |
+| GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                                                   |
+| RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents                                |
+| DeviceTrustModel   | Device trust score         | XGBoost binary classifier; calibrated probability rendered 0–100        | attestation verdict, enrolment age, `last_seen_at` recency, revocation history, ingress ASN stability |
 
 All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thresholds before training:
 
@@ -571,6 +572,13 @@ All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thr
 - SafetyVisionModel: 10,000+ labeled site photos
 - GraphMLModel: 6+ months Neo4j relationship data
 - RiskClassifier: 50+ projects with full lifecycle
+- DeviceTrustModel: **no count threshold** — promotion is gated on beating the rule-based baseline on
+  a held-out set, measured by **PR-AUC** (ADR-081). A count trigger is the wrong gate here: the
+  positive class ("device later revoked as compromised") is rare by design, so a calendar- or
+  volume-based trigger would promote a model that had learned almost nothing, and accuracy/ROC-AUC
+  both stay flattering under that imbalance. Until the gate passes, a deterministic rule-based scorer
+  serves behind the same interface, and the surface is **not** described as AI-derived while it does.
+  The score is advisory only — it never revokes a device or blocks a login (§22.3).
 
 ---
 
@@ -764,8 +772,11 @@ below reference mechanisms elsewhere in this spec unless marked **[GAP]** (to bu
 
 ## 22.9 Model Governance
 
-- **Model cards** — every deployed model (LLM provider model, SafetyVisionModel, RiskClassifier)
-  has a card recording purpose, training/eval data, known limits, owner: `docs/ai-governance/model-cards/`
+- **Model cards** — every deployed model (LLM provider model, SafetyVisionModel, RiskClassifier,
+  DeviceTrustModel) has a card recording purpose, training/eval data, known limits, owner:
+  `docs/ai-governance/model-cards/`. DeviceTrustModel's card additionally records the PR-AUC margin
+  over the rule-based baseline that authorised its promotion (§22.6, ADR-081) — the model may not be
+  deployed without it, and the surface must state which scorer is serving
 - **Evaluation suite** — LAYER-C-001 rubric (§22.6) run as a gate before each model/prompt change;
   regression eval on a fixed construction-domain test set
 - **AI red-teaming** — adversarial test of prompt injection + jailbreak + safety-bypass before each

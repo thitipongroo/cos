@@ -371,9 +371,15 @@ The web login renders **both** authentication paths already defined in §5.4 (ma
   **earned** — a device is untrusted on its first
   login (the OTP is the authenticator) and enrols on success, so the next login from it is trusted;
   trust has a 30-day sliding window and can be revoked (`/auth/devices`). Device trust is **additive
-  and non-blocking**: a failed check only shows red, it never prevents login. See ADR-054; a hardened
-  v2 (Play Integrity / App Attest device+app attestation) is deferred. The `deviceId`/`signature`
-  fields are optional in the OTP API (`docs/api/auth.openapi.yaml`).
+  and non-blocking**: a failed check only shows red, it never prevents login. See ADR-054. The
+  hardened **v2 — platform attestation (Play Integrity on Android / App Attest on iOS, via
+  `@expo/app-integrity`, verified server-side) — is no longer deferred: it was accepted on
+  2026-08-04 (ADR-082)**, because the device-integrity rows on the transparency portal
+  (security patch level, root/jailbreak state) and the trust score of ADR-081 have no other honest
+  source. Attestation keeps ADR-054's safety property: it is additive and non-blocking, its registry
+  columns are nullable (absent attestation is a distinct state from failed), and it never gates
+  login. The `deviceId`/`signature` fields are optional in the OTP API
+  (`docs/api/auth.openapi.yaml`).
 
 ### 20.6.2 Web Application Shell (all authenticated pages)
 

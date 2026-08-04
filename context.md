@@ -780,7 +780,12 @@ If any check fails → list what needs to be fixed before re-running. Do not adv
   TimescaleDB is a PostgreSQL extension co-located on the primary instance through
   Stages 1–3, split to a dedicated instance only on the volume trigger in ADR-032
 - Use **scikit-learn + XGBoost** for all Phase 23 ML models (DelayForecastModel, SafetyVisionModel,
-  GraphMLModel, RiskClassifier); RESOLVED (source: spec §22-ai-architecture §22.6)
+  GraphMLModel, RiskClassifier, **DeviceTrustModel**); RESOLVED (source: spec §22-ai-architecture §22.6).
+  DeviceTrustModel (added 2026-08-04, ADR-081) is the one model with **no minimum-count training
+  threshold** — it is promoted only by beating the rule-based baseline on a held-out set (PR-AUC),
+  because its positive class is rare by design; until then a deterministic rule-based scorer serves
+  and the surface must not be described as AI-derived. The score is advisory — never revokes a device
+  or blocks a login (§22.3)
 - Use **MLflow** (experiment tracking + model registry) + **Evidently AI** (open-source, self-hosted —
   model/output evaluation + drift) for Phase 23+ MLOps; no external SaaS/API key. W&B removed —
   RESOLVED (source: spec §22-ai-architecture §22.6; ADR-038)

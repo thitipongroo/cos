@@ -74,8 +74,12 @@ error); **bearer secret in secure-store** (managed-only, weaker — exportable/r
 
 ### Neutral
 
-- v2 (deferred): platform attestation — Play Integrity (Android) / App Attest (iOS) via
-  `@expo/app-integrity` — to prove the device+app are genuine, layered on this registry.
+- v2: platform attestation — Play Integrity (Android) / App Attest (iOS) via `@expo/app-integrity` —
+  to prove the device+app are genuine, layered on this registry. **Deferred when this ADR was
+  written; accepted 2026-08-04 — see ADR-082.** The deferral was correct at the time (the keypair
+  alone delivered the trust banner this ADR set out to solve); it stopped being correct once the
+  transparency portal's device-integrity rows and the ADR-081 trust score needed a signal that a
+  possession proof cannot provide.
 
 ## References
 

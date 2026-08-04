@@ -5058,6 +5058,7 @@ Model Types (from source §19.3):
   Computer vision (SafetyVisionModel):       XGBoost classifier on ViT image embeddings; requires 10,000+ labeled site photos (see spec §22.6)
   Graph ML (GraphMLModel):              XGBoost on Neo4j graph-derived features (PageRank, centrality); requires 6+ months data (see spec §22.6)
   Classification (RiskClassifier):        XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL); features: budget variance, schedule delay, procurement, safety incidents; requires 50+ projects (see spec §22.6)
+  Device trust (DeviceTrustModel):        XGBoost binary classifier, calibrated probability rendered 0–100; features: attestation verdict, enrolment age, last_seen_at recency, revocation history, ingress ASN stability; NO count threshold — promoted only by beating the rule-based baseline on a held-out set (PR-AUC), because the positive class is rare by design (see spec §22.6; ADR-081)
 
 Feature Store (Feast):
   Feature views:
@@ -5149,6 +5150,20 @@ Stubs in Phase 23 (generate stub — algorithms RESOLVED in spec §22-ai-archite
     RiskLevel: ENUM(LOW, MEDIUM, HIGH, CRITICAL)
     Algorithm: RESOLVED — XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL); source: spec §22-ai-architecture §22.6
     Framework: scikit-learn + XGBoost
+
+  DeviceTrustModel:  (added 2026-08-04 — ADR-081; the fifth §22.6 model)
+    Trigger:  NOT a data count. Promoted only when it beats the rule-based baseline on a held-out
+              set (PR-AUC). The positive class ("device later revoked as compromised") is rare by
+              design, so a count/calendar trigger would promote an untrained model, and accuracy and
+              ROC-AUC both stay flattering under that imbalance.
+    Day one:  a deterministic rule-based scorer serves behind the same interface and IS the baseline
+              the model must beat. While it serves, the surface must NOT be described as AI-derived.
+    Interface: { score(deviceId: string, userId: string): TrustScore }
+    TrustScore: { score: int 0..100, scorer: 'RULE_BASED'|'MODEL', signals: SignalState[] }
+    Algorithm: RESOLVED — XGBoost binary classifier, calibrated; source: spec §22-ai-architecture §22.6
+    Framework: scikit-learn + XGBoost
+    Governance: ADVISORY ONLY — never revokes a device, never blocks a login (§22.3 autonomous-mode
+              prohibition). Model card records the PR-AUC margin that authorised promotion (§22.9).
 
 Constraints:
 
