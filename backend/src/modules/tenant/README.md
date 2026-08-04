@@ -35,13 +35,13 @@ Middleware (applied globally): `TenantMiddleware` — extracts `tenantId` from J
 
 ## Configuration
 
-| Variable                       | Description                                            |
-| ------------------------------ | ------------------------------------------------------ |
-| `DATABASE_URL`                 | Points to PgBouncer, NOT PostgreSQL port 5432 directly |
-| `KEYCLOAK_ADMIN_URL`           | Keycloak admin API base URL                            |
-| `KEYCLOAK_ADMIN_CLIENT_SECRET` | Injected via AWS SM / Vault                            |
+| Variable                       | Description                                                                                       |
+| ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                 | Points to PgBouncer, NOT PostgreSQL port 5432 directly                                            |
+| `KEYCLOAK_ADMIN_URL`           | Keycloak admin API base URL                                                                       |
+| `KEYCLOAK_ADMIN_CLIENT_SECRET` | Injected via AWS SM / Vault                                                                       |
 | `APP_SECRET_ENCRYPTION_KEY`    | AES-256-GCM key used to encrypt `platform.tenants.dedicated_db_url` at rest (security review F5b) |
-| `TRUSTED_PROXY_CIDRS`          | Edge ranges trusted for `X-Forwarded-For` — also gates Fastify `trustProxy` (F3) |
+| `TRUSTED_PROXY_CIDRS`          | Edge ranges trusted for `X-Forwarded-For` — also gates Fastify `trustProxy` (F3)                  |
 
 ### IAM — enterprise provisioning worker (Temporal)
 

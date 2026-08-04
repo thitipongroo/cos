@@ -32,6 +32,16 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // switch). Defaults OFF until rollout — reads always accept both formats, so flipping it either way
   // is safe at any time and never strands a row.
   's1.tenant.encrypted-db-url': false,
+  // PDPA §30/§31 data export (ADR-078). New feature, so OFF until rollout per this file's convention.
+  //
+  // It becomes a permanent kill switch afterwards, and it gates the DOWNLOAD as well as the request:
+  // the incident it exists for is a bad join putting one person's rows in another's archive, and then
+  // the archives already in MinIO are precisely what must stop being served.
+  //
+  // FLIP THIS TO true WHEN THE ROLLOUT REACHES 100%. Leaving it false permanently makes an Unleash
+  // outage fail closed on a statutory right — PDPA §30 gives 30 days to answer, and "the flag service
+  // was down" is not an answer. It is correct only while the feature is not yet rolled out.
+  's1.identity.data-export': false,
 };
 
 export interface FlagContext {

@@ -5,6 +5,11 @@
 
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
+import { NotificationModule } from '../notification/notification.module';
+import { FilesModule } from '../files/files.module';
+import { StepUpService } from './step-up/step-up.service';
+import { DataExportController } from './data-export/data-export.controller';
+import { DataExportService } from './data-export/data-export.service';
 import { IdentityController } from './identity.controller';
 import { IdentityService } from './identity.service';
 import { KeycloakAdminService } from './keycloak-admin.service';
@@ -18,8 +23,20 @@ import { KeycloakJwtStrategy } from './strategies/keycloak-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Module({
-  imports: [PassportModule.register({ defaultStrategy: 'keycloak-jwt' })],
-  controllers: [IdentityController, ConsentController],
+  // NotificationModule is imported for its SendGridAdapter alone (ADR-078 step-up email channel).
+  // No cycle: NotificationModule declares no `imports`, and app.module already instantiates it, so
+  // this adds a DI edge rather than a second instance. Cross-module DI is the sanctioned direction
+  // here (master §Architecture: "Module-to-module: Direct NestJS module dependency injection"),
+  // matching finance→FilesModule and sync→SiteOpsModule.
+  // FilesModule for FileServiceClient: the export archive is uploaded through File Service and
+  // referenced by id, because master fixes Main App <-> File Service as REST and the backend has no
+  // MinIO client (ADR-078 correction). Same DI edge as finance→FilesModule.
+  imports: [
+    PassportModule.register({ defaultStrategy: 'keycloak-jwt' }),
+    NotificationModule,
+    FilesModule,
+  ],
+  controllers: [IdentityController, ConsentController, DataExportController],
   providers: [
     KeycloakAdminService,
     IdentityService,
@@ -30,16 +47,24 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     OtpService,
     DeviceTrustService,
     ConsentService,
+    StepUpService,
+    DataExportService,
     KeycloakJwtStrategy,
     JwtAuthGuard,
   ],
   // ConsentService is exported because the write paths it gates live in other modules — site-ops,
   // workforce and finance all persist consent-basis PII (ADR-079), so they inject requireConsent().
+  // StepUpService is NOT exported for the data export: that endpoint ended up here, not in the tenant
+  // module as this comment previously said. DataExportController sits alongside ConsentController
+  // because the whole feature — collector, serializer, workflow — is in this module, and only the
+  // `users/me` PATH is shared with the tenant module's UserMeController. It stays exported for the
+  // next high-value action, which may well live elsewhere.
   exports: [
     IdentityService,
     KeycloakAdminService,
     MfaService,
     ConsentService,
+    StepUpService,
     JwtAuthGuard,
     PassportModule,
   ],

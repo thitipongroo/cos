@@ -267,6 +267,7 @@ describe('SiteOpsRepository', () => {
       description: null,
       severity: 'HIGH',
       assigned_to: null,
+      created_by: 'user-uuid-001',
       client_submitted_at: null,
     });
     expect(result.issue_id).toBe('issue-uuid-001');

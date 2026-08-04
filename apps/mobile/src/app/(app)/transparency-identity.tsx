@@ -3,12 +3,25 @@
 // The one screen in the portal that shows REAL stored values, read from GET /api/v1/users/me (the
 // endpoint already exists and returns exactly these fields, including photo_url).
 //
-// Dropped from the mockup, both verified against the schema on 2026-08-04:
+// Dropped from the mockup:
 //   - "Biometric Hash SHA-256: 0x9f86…" — no biometric column exists in any migration, and the
 //     Privacy Policy states plainly that we collect no biometric identifiers. Showing a hash here
 //     would contradict our own notice on the same device.
-//   - "Employee ID C-8922-X" — employee_code lives on workforce.workers, which carries no FK to
-//     platform.users. There is no join, so there is no value to show for the signed-in account.
+//   - "Employee ID C-8922-X" — employee_code lives on workforce.workers. It is NOT rendered because
+//     GET /api/v1/users/me does not return it, not because it is unreachable.
+//
+// CORRECTION (2026-08-04). This header previously claimed workforce.workers "carries no FK to
+// platform.users. There is no join." That is wrong, and it was wrong when written: migration
+// 20260624000001_workers_user_id (2026-06-24) added `workforce.workers.user_id`, nullable, with
+// `uq_workers_user_id` unique per tenant where set, precisely so a signed-in SITE_WORKER can resolve
+// "my worker" for GET /api/v1/workers/me. The link is a nullable column rather than a foreign key
+// (workers predate it, and it lives in a different schema), which is presumably how "no FK" turned
+// into "no join" — but a nullable unique column IS a join, and the PDPA data export relies on it to
+// attribute a worker's records to the person who asked for them (ADR-078).
+//
+// Whether this screen should now SHOW employee_code is a product decision, not a schema one: the
+// value is reachable, /users/me just does not return it today. Left unrendered pending that call.
+//
 // The Export / Update-preferences actions render disabled: PDPA-10/11/14 are OPEN, no route exists.
 
 import { useEffect, useState } from 'react';

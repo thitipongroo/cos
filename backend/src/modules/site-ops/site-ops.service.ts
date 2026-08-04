@@ -272,6 +272,9 @@ export class SiteOpsService {
       description: dto.description ?? null,
       severity: dto.severity,
       assigned_to: dto.assigned_to ?? null,
+      // The same value the event below carries — now persisted on the row too, so a PDPA export can
+      // find it. The event stream is a publish queue, not a queryable record of who raised what.
+      created_by: this.userId,
       client_submitted_at: dto.client_submitted_at ?? null,
       latitude: dto.latitude ?? null,
       longitude: dto.longitude ?? null,

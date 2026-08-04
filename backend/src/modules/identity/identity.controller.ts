@@ -33,6 +33,8 @@ import {
   RegisterDeviceDto,
 } from './dto/request-otp.dto';
 import { RefreshTokenDto, MfaTokenDto } from './dto/token.dto';
+import { RequestStepUpDto, VerifyStepUpDto } from './dto/step-up.dto';
+import { StepUpService } from './step-up/step-up.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import type { JwtPayload } from './jwt.payload';
 
@@ -46,6 +48,7 @@ export class IdentityController {
     private readonly identityService: IdentityService,
     private readonly mfaService: MfaService,
     private readonly deviceTrust: DeviceTrustService,
+    private readonly stepUp: StepUpService,
   ) {}
 
   // ─── Path A: SMS OTP ───────────────────────────────────────────────────
@@ -137,6 +140,48 @@ export class IdentityController {
   async revokeDevice(@Req() req: Request, @Param('deviceId') deviceId: string) {
     const user = req.user as JwtPayload;
     await this.deviceTrust.revokeDevice(user.user_id, deviceId);
+  }
+
+  // ─── Step-up verification (ADR-078) — re-prove possession before a high-value action ───
+  //
+  // Under @Controller('auth') on purpose: this is an auth primitive, and it therefore inherits this
+  // class's @Throttle({ limit: 10, ttl: 60000 }) — exactly QM-7's auth tier — instead of restating
+  // it. The endpoints are behind JwtAuthGuard: a step-up CONFIRMS an already-authenticated caller,
+  // it never authenticates one.
+
+  @Post('step-up/request')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Send a step-up verification code for a high-value action',
+    description:
+      "Delivers a 6-digit code to the account's registered channel — SMS when the account has a " +
+      'phone number, otherwise email (every account has an email; only Path A accounts have a ' +
+      'phone). Returns the channel and a MASKED destination; the full address is never echoed back.',
+  })
+  @ApiResponse({ status: 201, description: 'Code sent' })
+  @ApiResponse({ status: 429, description: 'Daily verification limit exceeded' })
+  async requestStepUp(@Req() req: Request, @Body() dto: RequestStepUpDto) {
+    const user = req.user as JwtPayload;
+    return this.stepUp.request(user.user_id, dto.action);
+  }
+
+  @Post('step-up/verify')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Exchange a step-up code for a single-use action token',
+    description:
+      'The action token is NOT a session and can never be exchanged for one. It is bound to this ' +
+      'user and this action, lives 5 minutes, and is consumed the first time it is presented.',
+  })
+  @ApiResponse({ status: 201, description: 'Action token issued' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired code' })
+  @ApiResponse({ status: 429, description: 'Maximum verification attempts exceeded' })
+  async verifyStepUp(@Req() req: Request, @Body() dto: VerifyStepUpDto) {
+    const user = req.user as JwtPayload;
+    const actionToken = await this.stepUp.verify(user.user_id, dto.action, dto.code);
+    return { actionToken };
   }
 
   // The authoritative RBAC matrix (spec §6.4) is the single source of truth for what a role may do.

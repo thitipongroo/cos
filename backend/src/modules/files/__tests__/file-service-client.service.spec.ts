@@ -66,6 +66,84 @@ describe('FileServiceClient', () => {
     });
   });
 
+  // getSignedUrl — the download half of the PDPA export (ADR-078). The export re-mints a link on
+  // every download rather than mailing a week-long bearer URL, so this is the hot path for
+  // RESTRICTED data and its "not ready" cases must not read as failures.
+  describe('getSignedUrl', () => {
+    it('returns the URL and the service-configured TTL', async () => {
+      const fetchMock = mockFetch({
+        ok: true,
+        status: 200,
+        json: async () => ({ url: 'https://minio/signed', expires_in_seconds: 3600 }),
+      });
+      const result = await inCls(CTX, () => service.getSignedUrl('file-1'));
+
+      expect(result).toEqual({ url: 'https://minio/signed', expires_in_seconds: 3600 });
+      const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe('http://file-service:3002/api/v1/files/file-1/url');
+      expect(init.headers).toMatchObject({ 'x-tenant-id': 'tenant-1' });
+    });
+
+    it('returns null — not an error — while ClamAV has not cleared the file (409)', async () => {
+      // Uploads are scanned asynchronously, so an export archive is PENDING_SCAN for a window and
+      // File Service answers 409 FILE_NOT_CLEAN. Treating that as a failure would show an error for
+      // a file that is merely still being checked.
+      mockFetch({ ok: false, status: HttpStatus.CONFLICT, text: async () => 'FILE_NOT_CLEAN' });
+      await expect(inCls(CTX, () => service.getSignedUrl('file-1'))).resolves.toBeNull();
+    });
+
+    it('returns null for a file that is unknown, deleted, or another tenant’s (404)', async () => {
+      mockFetch({ ok: false, status: HttpStatus.NOT_FOUND, text: async () => 'FILE_NOT_FOUND' });
+      await expect(inCls(CTX, () => service.getSignedUrl('nope'))).resolves.toBeNull();
+    });
+
+    it('passes a 4xx through and maps a 5xx to 502', async () => {
+      mockFetch({ ok: false, status: 403, text: async () => 'FORBIDDEN' });
+      await expect(inCls(CTX, () => service.getSignedUrl('file-1'))).rejects.toMatchObject({
+        status: 403,
+      });
+
+      mockFetch({ ok: false, status: 500, text: async () => '' });
+      await expect(inCls(CTX, () => service.getSignedUrl('file-1'))).rejects.toMatchObject({
+        status: HttpStatus.BAD_GATEWAY,
+      });
+    });
+
+    it('maps a transport failure to 502', async () => {
+      global.fetch = jest
+        .fn()
+        .mockRejectedValue(new Error('ECONNREFUSED')) as unknown as typeof fetch;
+      await expect(inCls(CTX, () => service.getSignedUrl('file-1'))).rejects.toMatchObject({
+        status: HttpStatus.BAD_GATEWAY,
+      });
+    });
+
+    it('still raises the right status when the error body cannot be read', async () => {
+      // The detail is only for the log line. A body that fails to read (truncated response, wrong
+      // content-length) must not turn a clean 403 into an unhandled rejection.
+      mockFetch({
+        ok: false,
+        status: 403,
+        text: async () => {
+          throw new Error('stream closed');
+        },
+      });
+      await expect(inCls(CTX, () => service.getSignedUrl('file-1'))).rejects.toMatchObject({
+        status: 403,
+      });
+    });
+
+    it('fails closed with 401 when there is no tenant context', async () => {
+      // No CLS tenant means we cannot scope the call — minting a link for an unknown tenant is the
+      // one outcome that must never happen on a RESTRICTED payload.
+      const fetchMock = mockFetch({ ok: true, status: 200, json: async () => ({}) });
+      await expect(inCls(null, () => service.getSignedUrl('file-1'))).rejects.toBeInstanceOf(
+        HttpException,
+      );
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
   it('falls back to the internal default URL when the env var is unset', async () => {
     delete process.env['FILE_SERVICE_URL'];
     const svc = new FileServiceClient();

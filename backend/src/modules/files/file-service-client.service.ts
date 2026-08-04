@@ -124,4 +124,59 @@ export class FileServiceClient {
 
     return (await res.json()) as { file_id: string };
   }
+
+  /**
+   * Mint a short-lived signed download URL for a file the caller's tenant owns.
+   *
+   * Returns `null` when the file is not yet downloadable rather than throwing, because "not ready"
+   * is a NORMAL state, not an error: uploads are scanned by ClamAV asynchronously, so a file sits at
+   * `PENDING_SCAN` for a window after upload and File Service answers 409 FILE_NOT_CLEAN until the
+   * scan clears it (`files.routes.ts`). A caller that treated that as a failure would show an error
+   * for a file that is simply still being checked. 404 (unknown / deleted / another tenant's) is
+   * also null — the caller cannot distinguish those, which is the point.
+   *
+   * The TTL is the File Service's own `SIGNED_URL_TTL_SECONDS` (default 1 hour) and is returned so
+   * the caller can tell the user how long the link lasts instead of guessing. There is deliberately
+   * no per-call override: ADR-078's export flow re-mints on each download rather than asking for a
+   * long-lived bearer URL.
+   */
+  async getSignedUrl(fileId: string): Promise<{ url: string; expires_in_seconds: number } | null> {
+    const tenantId = clsTenantId();
+    if (!tenantId) {
+      throw new HttpException(
+        'Missing tenant context for FileService call',
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
+
+    const url = `${this.baseUrl}/api/v1/files/${encodeURIComponent(fileId)}/url`;
+    let res: Awaited<ReturnType<typeof fetch>>;
+    try {
+      res = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'x-tenant-id': tenantId,
+          'x-user-id': clsUserId(),
+          'x-user-role': clsUserRole(),
+        },
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+    } catch (err) {
+      logger.error(
+        { err: (err as Error).message, fileId },
+        'FileService signed-URL request failed',
+      );
+      throw new HttpException('FileService unreachable', HttpStatus.BAD_GATEWAY);
+    }
+
+    if (res.status === HttpStatus.NOT_FOUND || res.status === HttpStatus.CONFLICT) return null;
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      logger.warn({ status: res.status, fileId, detail }, 'FileService signed-URL non-2xx');
+      const status = res.status >= 400 && res.status < 500 ? res.status : HttpStatus.BAD_GATEWAY;
+      throw new HttpException(`FileService error (${res.status})`, status);
+    }
+
+    return (await res.json()) as { url: string; expires_in_seconds: number };
+  }
 }

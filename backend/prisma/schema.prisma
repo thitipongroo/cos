@@ -106,6 +106,7 @@ model User {
   auditLogs      AuditLog[]         @relation("ActorLogs")
   trustedDevices TrustedDevice[]
   consents       ConsentRecord[]
+  exportRequests ExportRequest[]
 
   @@index([tenantId, email])
   @@index([phoneNumber])
@@ -181,6 +182,60 @@ model ConsentRecord {
 
   @@index([userId, purpose, recordedAt(sort: Desc)])
   @@map("consents")
+  @@schema("platform")
+}
+
+enum ExportStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+  EXPIRED
+
+  @@schema("platform")
+}
+
+enum ExportFormat {
+  JSON
+  CSV
+
+  @@schema("platform")
+}
+
+// PDPA §30/§31 data-export request (ADR-078; closes PDPA-10/11).
+//
+// A row per request because §30 gives the controller 30 days to answer one, and "we ran a job" is not
+// an answer an auditor can accept. It is also what lets the subject see their own request's state.
+//
+// `fileId` is a File Service reference, not a storage path: the backend has no MinIO client and must
+// not grow one (master fixes Main App <-> File Service as REST). `expiresAt` is the REQUEST's 7-day
+// validity — the emailed link opens an authenticated in-app page that mints a fresh 1-hour signed URL
+// on click, rather than mailing a week-long bearer URL for a RESTRICTED payload.
+// @pdpa(category: "identity") — user_id links a request to a person
+model ExportRequest {
+  exportId   String   @id @default(dbgenerated("gen_random_uuid()")) @map("export_id") @db.Uuid
+  tenantId   String   @map("tenant_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  // @pdpa(category: "operational") — which categories of the subject's data were exported
+  categories String[] @map("categories")
+
+  format   ExportFormat @map("format")
+  fromDate DateTime?    @map("from_date") @db.Date
+  toDate   DateTime?    @map("to_date") @db.Date
+
+  status ExportStatus @default(PENDING) @map("status")
+  fileId String?      @map("file_id") @db.Uuid
+  // Never a stack trace — this is shown to the subject (QM-10).
+  failureReason String?   @map("failure_reason") @db.Text
+  requestedAt   DateTime  @default(now()) @map("requested_at") @db.Timestamptz()
+  completedAt   DateTime? @map("completed_at") @db.Timestamptz()
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, requestedAt(sort: Desc)])
+  @@index([status, expiresAt])
+  @@map("export_requests")
   @@schema("platform")
 }
 

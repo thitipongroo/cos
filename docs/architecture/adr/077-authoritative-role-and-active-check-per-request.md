@@ -77,7 +77,7 @@ This changes authorization logic, which QM-15 requires to ship behind a feature 
 `s1.identity.authoritative-role-check`, registered in `DEFAULT_FLAGS`.
 
 It defaults **ON**, unlike a new feature. Two reasons: this is a security fix, so an unset flag must not
-ship the vulnerability; and this file's existing convention is that *retrofit* kill-switches fail open to
+ship the vulnerability; and this file's existing convention is that _retrofit_ kill-switches fail open to
 the current behaviour, so a flag-service outage keeps the fix live rather than silently reverting
 authorization to a stale token claim.
 

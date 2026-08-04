@@ -65,6 +65,7 @@ function makeServerIssue(overrides: Partial<IssueRow> = {}): IssueRow {
     severity: 'HIGH',
     status: 'IN_PROGRESS',
     assigned_to: null,
+    created_by: null, // pre-20260804000004 row — who raised it was never recorded
     resolution_note: null,
     client_submitted_at: new Date('2026-06-11T06:00:00Z'),
     modified_at: new Date('2026-06-11T09:00:00Z'),

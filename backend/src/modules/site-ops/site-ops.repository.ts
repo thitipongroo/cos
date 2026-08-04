@@ -243,6 +243,12 @@ export class SiteOpsRepository {
     description: string | null;
     severity: string;
     assigned_to: string | null;
+    /**
+     * Who raised it. Passed in like `submitted_by` on a site report rather than read here, because
+     * the repository holds tenant context but not the actor. Without it an issue the subject raised
+     * but was never assigned is unattributable in their PDPA export (20260804000004).
+     */
+    created_by: string;
     client_submitted_at: string | null;
     latitude?: number | null;
     longitude?: number | null;
@@ -252,13 +258,13 @@ export class SiteOpsRepository {
         tx.$queryRaw<IssueRow[]>`
         INSERT INTO site_ops.issues
           (issue_id, issue_number, project_id, tenant_id, report_id, title, description,
-           severity, assigned_to, client_submitted_at, latitude, longitude)
+           severity, assigned_to, created_by, client_submitted_at, latitude, longitude)
         VALUES
           (${params.issue_id}::uuid, ${params.issue_number}, ${params.project_id}::uuid,
            ${this.tenantId}::uuid,
            ${params.report_id}::uuid,
            ${params.title}, ${params.description},
-           ${params.severity}, ${params.assigned_to}::uuid,
+           ${params.severity}, ${params.assigned_to}::uuid, ${params.created_by}::uuid,
            ${params.client_submitted_at}::timestamptz,
            ${params.latitude ?? null}::numeric, ${params.longitude ?? null}::numeric)
         RETURNING *

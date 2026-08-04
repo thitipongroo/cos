@@ -26,6 +26,12 @@ const mockDeviceTrust = {
   revokeDevice: jest.fn(),
 };
 
+const mockStepUp = {
+  request: jest.fn(),
+  verify: jest.fn(),
+  consume: jest.fn(),
+};
+
 jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
@@ -45,7 +51,40 @@ describe('IdentityController', () => {
       mockIdentityService as never,
       mockMfaService as never,
       mockDeviceTrust as never,
+      mockStepUp as never,
     );
+  });
+
+  // Step-up (ADR-078). What matters at this layer is that BOTH endpoints take the user id from the
+  // JWT and never from the body: a step-up that could be requested "on behalf of" another user id
+  // would mint that user's action token for whoever asked.
+  describe('step-up', () => {
+    const req = { user: { user_id: 'u1', tenant_id: 't1' } } as never;
+
+    it('request delegates with the JWT user id and the requested action', async () => {
+      const challenge = { channel: 'SMS', destinationHint: '••••4567', expiresInSeconds: 300 };
+      mockStepUp.request.mockResolvedValue(challenge);
+
+      await expect(controller.requestStepUp(req, { action: 'data-export' })).resolves.toBe(
+        challenge,
+      );
+      expect(mockStepUp.request).toHaveBeenCalledWith('u1', 'data-export');
+    });
+
+    it('verify returns the action token under an explicit key', async () => {
+      mockStepUp.verify.mockResolvedValue('TOKEN-123');
+      await expect(
+        controller.verifyStepUp(req, { action: 'data-export', code: '123456' }),
+      ).resolves.toEqual({ actionToken: 'TOKEN-123' });
+      expect(mockStepUp.verify).toHaveBeenCalledWith('u1', 'data-export', '123456');
+    });
+
+    it('propagates a rejected code rather than returning a token', async () => {
+      mockStepUp.verify.mockRejectedValue(new BadRequestException('Invalid verification code'));
+      await expect(
+        controller.verifyStepUp(req, { action: 'data-export', code: '000000' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
   });
 
   describe('requestOtp', () => {

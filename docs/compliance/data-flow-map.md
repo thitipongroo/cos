@@ -47,22 +47,36 @@ The **Implemented** column is the fact that governs the privacy notice: a catego
 yet collected must never be described to a data subject as collected (verified 2026-08-03 against
 `backend/prisma/migrations/` and `backend/prisma/schema.prisma`).
 
-| PDPA Category | Description                       | Implemented at Stage 1                                                   | @pdpa tag                      | Retention                    |
-| ------------- | --------------------------------- | ------------------------------------------------------------------------ | ------------------------------ | ---------------------------- |
-| `identity`    | Full name (ชื่อ-นามสกุล)          | **Yes** — `platform.users.display_name`, `workforce.workers.full_name`   | `@pdpa(category: "identity")`  | See data-retention-policy.md |
-| `identity`    | Date of birth                     | **No** — no `date_of_birth` column exists in any migration               | —                              | —                            |
-| `contact`     | Phone number, email address       | **Yes** — `platform.users`, `workforce.workers.contact_phone`            | `@pdpa(category: "contact")`   | See data-retention-policy.md |
-| `national_id` | Thai national ID (เลขบัตรประชาชน) | **No** — no `national_id` column exists in any migration                 | —                              | —                            |
-| `location`    | GPS coordinates                   | **Yes** — 5 tables, see §3 below                                         | `@pdpa(category: "location")`  | 90 days (attendance)         |
-| `biometric`   | Face scan / fingerprint           | **No** — not in Stage 1; photos may incidentally contain faces (§5, §26) | `@pdpa(category: "biometric")` | N/A Stage 1                  |
-| `financial`   | Worker daily rate                 | **Yes** — `workforce.project_workforce.daily_rate`                       | `@pdpa(category: "financial")` | 7 years (accounting law)     |
-| `financial`   | Bank account                      | **No** — no bank-account column exists in any migration                  | —                              | —                            |
+| PDPA Category | Description                       | Implemented at Stage 1                                                                              | @pdpa tag                        | Retention                    |
+| ------------- | --------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------- | ---------------------------- |
+| `identity`    | Full name (ชื่อ-นามสกุล)          | **Yes** — `platform.users.display_name`, `workforce.workers.full_name`                              | `@pdpa(category: "identity")`    | See data-retention-policy.md |
+| `identity`    | Date of birth                     | **No** — no `date_of_birth` column exists in any migration                                          | —                                | —                            |
+| `contact`     | Phone number, email address       | **Yes** — `platform.users`, `workforce.workers.contact_phone`                                       | `@pdpa(category: "contact")`     | See data-retention-policy.md |
+| `national_id` | Thai national ID (เลขบัตรประชาชน) | **No** — no `national_id` column exists in any migration                                            | —                                | —                            |
+| `location`    | GPS coordinates                   | **Yes** — 5 tables, see §3 below                                                                    | `@pdpa(category: "location")`    | 90 days (attendance)         |
+| `biometric`   | Face scan / fingerprint           | **No** — not in Stage 1; photos may incidentally contain faces (§5, §26)                            | `@pdpa(category: "biometric")`   | N/A Stage 1                  |
+| `financial`   | Worker daily rate                 | **Yes** — `workforce.project_workforce.daily_rate`                                                  | `@pdpa(category: "financial")`   | 7 years (accounting law)     |
+| `financial`   | Hours worked                      | **Yes** — `workforce_telemetry.timesheets.regular_hours`, `.overtime_hours`                         | `@pdpa(category: "financial")`   | 2 years (labor law)          |
+| `financial`   | Payslip / salary paid             | **No** — no payroll table exists; `finance.payments` is invoice-keyed with no personal payee        | —                                | —                            |
+| `financial`   | Bank account                      | **No** — no bank-account column exists in any migration                                             | —                                | —                            |
+| `operational` | Actions the user performed        | **Yes** — `platform.audit_logs.actor_id`, `files.files.uploaded_by`, `finance.payments.recorded_by` | `@pdpa(category: "operational")` | See data-retention-policy.md |
 
 > Corrected 2026-08-03: this table previously listed date of birth, national ID and bank account as
 > collected categories. None of them exist in the schema, and the mobile privacy notice had repeated
-> the claim to users. `@pdpa` tags currently exist only in `backend/prisma/schema.prisma` (9 tags,
-> covering the `platform` and `files` schemas) — the domain schemas are raw-SQL migrations and carry
-> no tags, so "all PII fields tagged in prisma/schema.prisma" was also untrue.
+> the claim to users.
+>
+> Updated 2026-08-04: the earlier note here said `@pdpa` tags "exist only in
+> `backend/prisma/schema.prisma` (9 tags, covering the `platform` and `files` schemas) — the domain
+> schemas are raw-SQL migrations and carry no tags". Migration `20260803000001_tag_pii_columns` had
+> already made that untrue on the day it was written: it tags the domain schemas with
+> `COMMENT ON COLUMN`, which reaches a table however it was created and survives a schema dump.
+> `20260804000005_tag_pii_columns_v2` extends the set to the columns the PDPA export collector reads
+> — `timesheets` hours, `issues.created_by`/`assigned_to`, and `finance.payments.recorded_by`.
+>
+> `finance.payments` sits under `operational`, not `financial`: it is invoice-keyed, so the only
+> personal datum is _who keyed the entry in_ — an action, exactly like `audit_logs.actor_id`. The
+> amount columns are deliberately untagged and are never exported into an individual's archive; that
+> money is the organisation's, not the recorder's.
 
 ---
 
@@ -87,8 +101,12 @@ Worker record creation
   ├── PII fields: full_name (RESTRICTED), contact_phone (RESTRICTED), employee_code
   │              NOTE: no national_id column exists — see the PII category table above
   ├── Pay rate: workforce.project_workforce.daily_rate (RESTRICTED); no bank account is stored
-  ├── @pdpa tags: NOT tagged — workforce is a raw-SQL migration, not a Prisma model.
-  │              Tags exist only for the platform + files schemas (schema.prisma).
+  ├── Hours worked: workforce_telemetry.timesheets.regular_hours / .overtime_hours (RESTRICTED)
+  │              Rate and hours are both exported; neither half alone tells a worker what
+  │              their work was worth. There is no payroll table in this schema.
+  ├── @pdpa tags: tagged via COMMENT ON COLUMN (20260803000001, extended by 20260804000005).
+  │              A comment reaches a table however it was created, so a raw-SQL migration
+  │              is taggable — Prisma-model attributes were never the only route.
   ├── Access: SITE_ENGINEER (own project), PROJECT_MANAGER (own project), ADMIN (tenant-wide)
   ├── Encryption: AES-256 at rest (RDS SSE-KMS)
   └── Retention: employment period + 2 years (Thai labor law)

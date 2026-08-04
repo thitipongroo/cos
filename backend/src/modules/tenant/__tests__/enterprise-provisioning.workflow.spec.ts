@@ -14,6 +14,12 @@ const mockCreateRds = jest
   .fn()
   .mockResolvedValue({ rdsEndpoint: 'cos-tenant-acme-prod.xxx.rds.amazonaws.com' });
 const mockRunMigrations = jest.fn().mockResolvedValue(undefined);
+// Added by security review F9 and, until 2026-08-04, called by the workflow but never registered
+// here. An unregistered activity is not a fast failure: the worker rejects the task, Temporal retries
+// it under the activity retry policy, and the workflow simply never advances — so both tests failed
+// on `expect(state).toBe('AWAITING_APPROVAL')` with the state stuck wherever it was last set. The
+// assertion that fails is nowhere near the cause, which is why the loop below names the state it got.
+const mockSecureAppUser = jest.fn().mockResolvedValue(undefined);
 const mockAssignDedicatedDb = jest.fn().mockResolvedValue(undefined);
 const mockNotifyAwaitingApproval = jest.fn().mockResolvedValue(undefined);
 const mockCompensateAssignDedicatedDb = jest.fn().mockResolvedValue(undefined);
@@ -26,6 +32,7 @@ const mockEmitProvisionedEvent = jest.fn().mockResolvedValue(undefined);
 const mockActivities = {
   createRdsActivity: mockCreateRds,
   runMigrationsActivity: mockRunMigrations,
+  secureAppUserActivity: mockSecureAppUser,
   assignDedicatedDbActivity: mockAssignDedicatedDb,
   notifyAwaitingApprovalActivity: mockNotifyAwaitingApproval,
   compensateAssignDedicatedDbActivity: mockCompensateAssignDedicatedDb,
@@ -41,6 +48,38 @@ const baseParams: EnterpriseProvisioningParams = {
   contractReference: 'CRM-2026-001',
   actorId: 'admin-user-id',
 };
+
+/**
+ * Poll the state query until the workflow reaches `expected`.
+ *
+ * Replaces `await testEnv.sleep('1s')`, which measured the WRONG CLOCK. `testEnv.sleep` advances
+ * WORKFLOW time and returns near-instantly on a time-skipping server, while the activities in front
+ * of AWAITING_APPROVAL are dispatched to a real worker and take wall-clock time. The old assertion
+ * was therefore racing activity execution even when every activity was registered.
+ *
+ * On timeout it reports the state it actually reached, which is the diagnostic the missing-activity
+ * failure never gave: "stuck at RUNNING_MIGRATIONS" points straight at the activity in that step.
+ */
+async function waitForState(
+  handle: { query: (q: typeof workflowStateQuery) => Promise<string> },
+  expected: string,
+  timeoutMs = 20_000,
+): Promise<string> {
+  const deadline = Date.now() + timeoutMs;
+  let state = await handle.query(workflowStateQuery);
+  while (state !== expected && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    state = await handle.query(workflowStateQuery);
+  }
+  if (state !== expected) {
+    throw new Error(
+      `Workflow never reached ${expected} within ${timeoutMs}ms — stuck at ${state}. ` +
+        'A state that never advances usually means an activity the workflow calls is missing from ' +
+        'mockActivities: the worker rejects the task and Temporal retries it indefinitely.',
+    );
+  }
+  return state;
+}
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
@@ -74,14 +113,20 @@ describe('EnterpriseProvisioningWorkflow', () => {
         args: [baseParams],
       });
 
-      // Wait until workflow pauses at AWAITING_APPROVAL (after activities 1-3)
-      await testEnv.sleep('1s');
-      const state = await handle.query(workflowStateQuery);
-      expect(state).toBe('AWAITING_APPROVAL');
+      // Wait until the workflow pauses at AWAITING_APPROVAL (after the pre-approval activities).
+      expect(await waitForState(handle, 'AWAITING_APPROVAL')).toBe('AWAITING_APPROVAL');
 
-      // Verify activities 1-3 ran
+      // Verify the pre-approval activities ran
       expect(mockCreateRds).toHaveBeenCalledWith({ tenantId: baseParams.tenantId });
       expect(mockRunMigrations).toHaveBeenCalledWith({
+        tenantId: baseParams.tenantId,
+        rdsEndpoint: 'cos-tenant-acme-prod.xxx.rds.amazonaws.com',
+      });
+      // F9: the app_user password that `prisma migrate deploy` sets is the one published in the git
+      // history, so it MUST be replaced before the connection URL is stored. Asserted explicitly —
+      // this step being absent from the mocks is what broke this suite, and an unasserted step is
+      // one that can be dropped from the workflow without any test noticing.
+      expect(mockSecureAppUser).toHaveBeenCalledWith({
         tenantId: baseParams.tenantId,
         rdsEndpoint: 'cos-tenant-acme-prod.xxx.rds.amazonaws.com',
       });
@@ -123,9 +168,7 @@ describe('EnterpriseProvisioningWorkflow', () => {
         args: [baseParams],
       });
 
-      await testEnv.sleep('1s');
-      const state = await handle.query(workflowStateQuery);
-      expect(state).toBe('AWAITING_APPROVAL');
+      expect(await waitForState(handle, 'AWAITING_APPROVAL')).toBe('AWAITING_APPROVAL');
 
       // SYSTEM_ADMIN aborts
       await handle.signal(abortSignal);

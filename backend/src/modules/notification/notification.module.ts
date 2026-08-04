@@ -26,6 +26,10 @@ import { LineMessagingAdapter } from './adapters/line-messaging.adapter';
     NotificationEscalationService,
     NotificationDigestService,
   ],
-  exports: [NotificationService],
+  // SendGridAdapter is exported for the step-up OTP flow (ADR-078): a user with no phone number —
+  // every Path B office account — can only be reached by email, and the code MUST NOT go through
+  // NotificationService, whose quiet-hours and per-user preference filtering would let a subject
+  // silently suppress their own security code (§19.6 exempts only critical safety notices).
+  exports: [NotificationService, SendGridAdapter],
 })
 export class NotificationModule {}

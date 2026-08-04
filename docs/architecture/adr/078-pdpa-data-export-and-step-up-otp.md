@@ -37,11 +37,51 @@ tenant-scoped object to MinIO and mails a time-limited link.
 
 **Categories** — the export is selected by the platform's own `@pdpa` taxonomy, the five categories
 tagged by migration `20260803000001_tag_pii_columns` and already counted on the portal hub:
-`identity`, `contact`, `location`, `financial`, `operational`. `financial` stays in the list and in
-the payload schema even though the only column tagged `@pdpa(category: "financial")` today is
-`workforce.project_workforce.daily_rate` — an agreed pay rate for a named worker, not a payslip. If a
-payroll/expense module is ever built, its columns join the category by being tagged; no API version
-bump is needed because adding fields to an existing category is a non-breaking addition (QM-2).
+`identity`, `contact`, `location`, `financial`, `operational`. Building the collector surfaced three
+gaps in that first tagging pass, each closed by `20260804000005_tag_pii_columns_v2` so the tags stay
+the authoritative scope statement rather than drifting from what the collector actually reads:
+
+- **`financial` was rate without hours.** `workforce.project_workforce.daily_rate` is what was
+  agreed; `workforce_telemetry.timesheets.regular_hours` / `.overtime_hours` is what was worked. A
+  person cannot tell what their work was worth from either half alone, and this schema has no
+  payroll table — Phase 7 states plainly that the finance service "does NOT implement double-entry
+  bookkeeping / chart of accounts / GL posting" and is project **cost tracking**.
+- **`finance.payments` is operational, not financial.** It is invoice-keyed with no personal payee,
+  so the only personal datum is `recorded_by` — an action traced to a user, exactly as
+  `platform.audit_logs.actor_id` is. The amount columns stay untagged and are **not** selected into
+  any individual's archive: the money is the organisation's, and exporting it under cover of a
+  subject-rights request would hand a former employee the tenant's finances.
+- **Issue attribution was one-legged.** See below.
+
+If a payroll/expense module is ever built, its columns join the category by being tagged; no API
+version bump is needed because adding fields to an existing category is a non-breaking addition
+(QM-2).
+
+**Issue attribution needs three predicates, and one of them had to be created.** `site_ops.issues`
+carries `latitude`/`longitude` — a record of where a person physically stood — but until
+`20260804000004_issues_created_by` the only user column was the nullable `assigned_to`, so an issue
+the subject raised and was never assigned was invisible in their own export. The value was never
+missing, merely unpersisted: `SiteOpsService.createIssue` already held `this.userId` and put it in
+the `site.issue.created.v1` payload. The collector now matches `created_by OR assigned_to OR
+(report_id → site_reports.submitted_by)`, and all three are load-bearing —
+
+| predicate                  | NULL when                       |
+| -------------------------- | ------------------------------- |
+| `created_by`               | the issue predates 2026-08-04   |
+| `assigned_to`              | the issue was never assigned    |
+| `report_id → submitted_by` | the issue was raised standalone |
+
+**No backfill is possible and none is attempted.** `platform.audit_logs` records `actor_id` and
+`resource_type` but no `resource_id`, so "user X created an issue" cannot be matched to _which_
+issue; `platform.outbox_events` holds the creator in its payload but is a transient publish queue,
+not an event store. Guessing would attribute one person's site location to another. Historical rows
+keep `created_by = NULL` and **every export states this in the issues table's `note`** — a subject
+cannot challenge a gap they are not told about, and this one is invisible from the rows themselves.
+
+**Structural absences are explained, not blank.** An account with no `workforce.workers.user_id` link
+has no worker-keyed data at all. Those tables still appear in the archive with zero rows and a `note`
+saying why, so the same table list reaches every subject: an empty section that does not explain
+itself is indistinguishable from one the export failed to fill.
 
 **Endpoints** (`/api/v1/`, QM-2):
 
@@ -70,12 +110,37 @@ actionToken }`, and a synchronous response cannot serve an export that reads acr
 requesting user and to the single action that minted it, and it is consumed on first use. Rate limits
 follow QM-7's auth tier (10 req/min per IP).
 
-**Storage and delivery.** The archive is written to a dedicated bucket `cos-export-{tenant_id}`,
-separate from `cos-files`, under `{year}/{month}/{export_id}/`. The download link is a signed URL with
-a **7-day TTL** — an explicit per-file-type override of the Phase 9 1-hour default, which Phase 9
-already provides for ("Signed URLs: GET signed URL TTL 1 hour (**configurable per file type**)"). A
-lifecycle rule deletes the object when the link expires. Delivery is by email through the existing
-`SendGridAdapter` in the notification module.
+**Storage and delivery** (corrected 2026-08-04, after checking the code — see the note below).
+
+The archive is uploaded through the **existing `FileServiceClient`** (`POST /api/v1/files/upload`),
+because the backend has no MinIO client and must not grow one: master §Architecture fixes
+`Main App ↔ File Service: REST API (HTTP)`, and File Service was extracted precisely to own upload
+I/O. The returned `file_id` is stored on the export-request row.
+
+**The emailed link points at an authenticated in-app page, not at a signed URL.** The mail says "your
+export is ready" and links to `/users/me/data-export`; the page mints a **fresh** signed URL when the
+user actually clicks download. The export request stays valid for **7 days** — that is the
+product-owner's 7-day decision — while each signed URL keeps the platform-wide 1-hour lifetime.
+
+This is stronger than mailing a long-lived signed URL, which was the original plan:
+
+- a signed URL is a **bearer credential**. Mailing one for a **RESTRICTED** payload (QM-5) puts every
+  category of the subject's personal data behind a link that anyone with inbox access — or anyone
+  the mail is forwarded to, or any mail-scanning intermediary — can replay for a week.
+- re-minting on click means the download requires a live session, so the export is protected by the
+  same authentication as the data it contains.
+- a 1-hour link mailed to a field worker is dead before the next shift; a link to the app is not.
+
+> **Correction to this ADR.** It originally claimed the 7-day TTL was "an explicit per-file-type
+> override of the Phase 9 1-hour default, which Phase 9 already provides for". The **spec** says
+> signed-URL TTL is "configurable per file type"; the **implementation** is not —
+> `services/file-service/src/services/minio.service.ts` holds one `ttlSeconds` for the whole service,
+> from `SIGNED_URL_TTL_SECONDS` (default 3600), and `getSignedUrl()` takes no per-call override. The
+> ADR cited the spec as though it were built. Raising that env to 7 days was rejected: it would
+> lengthen the TTL of **every** file on the platform — drawings, invoices, site photos — to buy one
+> feature a longer link.
+
+Email delivery itself is the existing `SendGridAdapter` in the notification module.
 
 **Audit and classification.** The export request, the step-up verification result and every download
 are written to `platform.audit_logs` (QM-4 immutable audit). Export payloads are classified
@@ -94,9 +159,11 @@ the screens: the flag must be able to stop PII leaving the platform within 60 se
   `workforce_telemetry`, `site_ops` and `files`; doing that inside a request would blow the QM-6 write
   budget (p95 < 500 ms) and would fail for large accounts. Temporal already runs the Phase 9 file
   cleanup workflow, so no new infrastructure is introduced.
-- **7 days is the honest number.** A field worker who opens the mail on the next shift must still be
-  able to download. One hour, applied to a mail-delivered link, produces a dead link for most
-  recipients — which would make PDPA §30 unmet in practice while looking implemented.
+- **7 days is the honest number — for the REQUEST, not for a bearer URL.** A field worker who opens
+  the mail on the next shift must still be able to download; one hour applied to a mail-delivered
+  link produces a dead link for most recipients, which would make PDPA §30 unmet in practice while
+  looking implemented. Keeping the 7 days on the export record and re-minting the signed URL on
+  click gives the recipient a week without handing a week-long credential to an inbox.
 - **The platform's own taxonomy, not the mockup's.** A data-subject notice that lists categories the
   schema does not use is the exact failure `pdpa-controls.md` § Known corrections exists to prevent.
 
@@ -105,7 +172,12 @@ scale, and streams RESTRICTED data through the API tier); **email attachment** (
 attachment size and mailing PII bypasses the SSE-KMS at-rest guarantee of QM-4); **no step-up**
 (a stolen session becomes a full data exfiltration primitive); **reusing the login OTP endpoints with
 a flag** (a code minted for step-up would then be redeemable for a session — a privilege-escalation
-path).
+path); **a MinIO client in the backend** (crosses the deployable boundary master §Architecture sets,
+and duplicates a client File Service already owns); **raising `SIGNED_URL_TTL_SECONDS` to 7 days**
+(one global knob — it would extend every file's link lifetime platform-wide); **a dedicated
+`cos-export-{tenant_id}` bucket with a per-request TTL** (the faithful reading of the original plan,
+but it requires new routes, OpenAPI and tests in a second deployable to deliver something the
+in-app download page already gives without weakening the 1-hour signed-URL invariant).
 
 ## Consequences
 

@@ -111,6 +111,7 @@ function makeIssue(overrides?: Partial<IssueRow>): IssueRow {
     severity: 'HIGH',
     status: 'OPEN',
     assigned_to: null,
+    created_by: 'user-uuid-1',
     resolution_note: null,
     client_submitted_at: null,
     modified_at: new Date('2026-06-04T08:00:00Z'),
@@ -524,6 +525,21 @@ describe('createIssue', () => {
     });
     expect(mockRepo.createIssue).toHaveBeenCalledWith(
       expect.objectContaining({ issue_id: '11111111-1111-1111-1111-111111111111' }),
+    );
+  });
+
+  it('persists the acting user as created_by, not only in the event payload', async () => {
+    // The value was always available here — it just never reached the row, so an issue the raiser
+    // was never assigned was unattributable in their own PDPA export (20260804000004). The event
+    // stream is a publish queue, not a queryable record of who raised what.
+    mockRepo.createIssue.mockResolvedValue(makeIssue());
+    await service.createIssue({
+      project_id: 'project-1',
+      title: 'Crack',
+      severity: IssueSeverity.HIGH,
+    });
+    expect(mockRepo.createIssue).toHaveBeenCalledWith(
+      expect.objectContaining({ created_by: 'user-uuid-1' }),
     );
   });
 });

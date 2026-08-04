@@ -369,6 +369,9 @@ importers:
       unleash-client:
         specifier: ^6.11.1
         version: 6.11.1(supports-color@8.1.1)
+      yazl:
+        specifier: ^3.3.1
+        version: 3.3.1
     devDependencies:
       '@cos/test-utils':
         specifier: workspace:*
@@ -421,6 +424,12 @@ importers:
       '@types/supertest':
         specifier: ^6.0.0
         version: 6.0.3
+      '@types/yauzl':
+        specifier: ^2.10.3
+        version: 2.10.3
+      '@types/yazl':
+        specifier: ^2.4.6
+        version: 2.4.6
       dotenv:
         specifier: ^16.4.7
         version: 16.4.7
@@ -442,6 +451,9 @@ importers:
       ts-node:
         specifier: ^10.9.0
         version: 10.9.2(@swc/core@1.15.43)(@types/node@20.19.43)(typescript@6.0.3)
+      yauzl:
+        specifier: ^3.4.0
+        version: 3.4.0
 
   packages/@cos/config:
     dependencies:

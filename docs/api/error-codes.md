@@ -72,6 +72,21 @@ time anyone notices.
 | ------------ | ---- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
 | COS-PDPA-001 | 422  | Processing for purpose '{purpose}' requires consent | `ConsentService.requireConsent()` on a consent-basis purpose with no decision recorded, or a withdrawal |
 
+### Data export (ADR-078; PDPA-10/11)
+
+Each failure is separately identified on purpose. "Download failed" tells a person nothing about
+whether to wait, re-request, or complain — and this is the artefact answering their §30 request, so
+the difference between "still running", "it broke", and "the window closed" is the whole answer.
+
+| Code         | HTTP | Message                                     | Trigger                                                                                                                                  |
+| ------------ | ---- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| COS-PDPA-002 | 403  | Step-up verification required               | `POST /users/me/data-export` with an action token that is absent, expired, already spent, or bound to another user/action                |
+| COS-PDPA-003 | 422  | The reporting window ends before it begins  | `from_date > to_date`. Rejected rather than run — an inverted window returns an EMPTY export, which reads as "you hold nothing about me" |
+| COS-PDPA-004 | 404  | Export request not found                    | No `export_id` for the calling user (RLS confines the tenant; `user_id` confines it within the tenant)                                   |
+| COS-PDPA-005 | 422  | Still being prepared, or the failure reason | Status is PENDING/PROCESSING (wait) or FAILED (`failure_reason`, never a stack trace)                                                    |
+| COS-PDPA-006 | 404  | Archive not currently retrievable           | File Service returned 404, or 409 `FILE_NOT_CLEAN` — a just-finished archive is briefly PENDING_SCAN while ClamAV runs                   |
+| COS-PDPA-007 | 410  | This export has expired                     | Past `expires_at` (7 days), or status EXPIRED. The archive is gone; a new request is the way back                                        |
+
 ---
 
 ## COS-BLDG / FLOR / ROOM / STRC / UNIT / ASST — Project spatial hierarchy + assets (Phase 3, 2026-07-05)

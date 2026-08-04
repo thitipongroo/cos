@@ -29,6 +29,9 @@ export interface IssueRow {
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
   assigned_to: string | null;
+  // Who raised it (20260804000004). NULL for every issue created before that migration — audit_logs
+  // has no resource_id and the outbox is transient, so those rows cannot be backfilled.
+  created_by: string | null;
   resolution_note: string | null;
   client_submitted_at: Date | null;
   modified_at: Date;

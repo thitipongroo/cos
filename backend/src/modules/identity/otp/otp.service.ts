@@ -30,15 +30,18 @@ const OTP_LENGTH = 6;
 // (a Redis cooldown key) AND surfaced to the client so it can disable "resend" with a countdown.
 const RESEND_COOLDOWN_SECONDS = 60;
 
-function generateOtp(): string {
+// Exported so the step-up flow (ADR-078) mints and checks its codes with the SAME primitives rather
+// than a second copy. A divergence here — a weaker RNG, or a `===` comparison — would be a
+// credential bug in one flow that the other's tests could never catch.
+export function generateOtp(): string {
   // crypto.randomInt is a CSPRNG — Math.random() is predictable and must never mint a credential.
   return randomInt(0, 10 ** OTP_LENGTH)
     .toString()
     .padStart(OTP_LENGTH, '0');
 }
 
-// Constant-time OTP comparison — avoids leaking how many leading digits matched via response timing.
-function otpMatches(submitted: string, expected: string): boolean {
+/** Constant-time comparison — avoids leaking how many leading digits matched via response timing. */
+export function otpMatches(submitted: string, expected: string): boolean {
   const a = Buffer.from(submitted);
   const b = Buffer.from(expected);
   return a.length === b.length && timingSafeEqual(a, b);

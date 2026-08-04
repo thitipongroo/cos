@@ -558,13 +558,13 @@ before executing; throws `GovernanceViolationError` for disallowed actions.
 
 **Decision:** Python `scikit-learn` + `XGBoost` as the primary ML framework for all Phase 23 models.
 
-| Model              | Use case                   | Algorithm                                                                | Input features                                                                                       |
-| ------------------ | -------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| DelayForecastModel | Delay forecast             | XGBoost regressor (days to delay)                                        | procurement delays, task completion %, weather history, workforce attendance                         |
-| SafetyVisionModel  | Safety violation detection | XGBoost classifier on extracted image features (HOG + ViT embeddings)    | site photo embeddings, PPE label presence                                                            |
-| GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                                                   |
-| RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents                                |
-| DeviceTrustModel   | Device trust score         | XGBoost binary classifier; calibrated probability rendered 0–100        | attestation verdict, enrolment age, `last_seen_at` recency, revocation history, ingress ASN stability |
+| Model              | Use case                   | Algorithm                                                                | Input features                                                                                        |
+| ------------------ | -------------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| DelayForecastModel | Delay forecast             | XGBoost regressor (days to delay)                                        | procurement delays, task completion %, weather history, workforce attendance                          |
+| SafetyVisionModel  | Safety violation detection | XGBoost classifier on extracted image features (HOG + ViT embeddings)    | site photo embeddings, PPE label presence                                                             |
+| GraphMLModel       | Supply chain risk          | XGBoost on graph-derived node features (PageRank, centrality) from Neo4j | vendor relationship graph features                                                                    |
+| RiskClassifier     | Project risk score         | XGBoost multi-class (LOW/MEDIUM/HIGH/CRITICAL)                           | budget variance, schedule delay, procurement status, safety incidents                                 |
+| DeviceTrustModel   | Device trust score         | XGBoost binary classifier; calibrated probability rendered 0–100         | attestation verdict, enrolment age, `last_seen_at` recency, revocation history, ingress ASN stability |
 
 All models trained on Phase 23 MLOps pipeline (MLflow + Feast). Minimum data thresholds before training:
 
