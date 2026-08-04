@@ -1,4 +1,4 @@
-// Transparency Portal — Technical logs (mockup 03_technical_log_details_mobile).
+// Transparency Portal — Technical logs (mockup 03_00_technical_log_details_mobile).
 //
 // The collected items are the real columns of platform.audit_logs (schema.prisma): actor_id, action
 // + resource_type/resource_id + occurred_at, ip_address and user_agent. The mockup's abstract

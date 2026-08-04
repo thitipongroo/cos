@@ -1,5 +1,5 @@
 // Notification Preferences (§19.6) — the Tenant-Admin control panel from
-// mockup/mobile/04_tenant_admin/01_notification_preferences + 02_success_state.
+// mockup/mobile/04_tenant_admin/06_notification/01_notification_preferences + 02_success_state.
 //
 // Wired to the REAL model (PO decision 2026-07-26 — "event catalog จริง + โครง mockup"):
 //   - Per (event_type × channel) enable flags → GET/PATCH /notifications/preferences (writable).

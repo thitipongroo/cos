@@ -1,5 +1,5 @@
 /*
- * Construction OS — Keycloak login restyle (Path B, mockup/00_login_flow/web/03).
+ * Construction OS — Keycloak login restyle (Path B, mockup/desktop/imp_001_authen/03_login_email_password_web).
  *
  * Layers over the stock `keycloak` login theme (theme.properties parent=keycloak). Element ids
  * (#username / #password / #kc-login / #kc-form-login) come from the inherited base login.ftl and
@@ -231,7 +231,8 @@ button[aria-label='Hide password'] {
  * MFA pages — TOTP setup / OTP challenge / recovery codes (base templates login-config-totp.ftl,
  * login-otp.ftl, login-recovery-authn-code-config.ftl). These render through the base template.ftl
  * card, so the shared card/input/button rules above already apply; below styles their page-specific
- * markup to the §32.7 dark tokens + mockup/mobile/04_tenant_admin/03 & 06-07. Element ids are the
+ * markup to the §32.7 dark tokens + mockup/mobile/04_tenant_admin/07_mfa/01_mfa_enrollment and
+ * 07_mfa/03_mfa_backup_codes_success_state–04_mfa_backup_codes_download_success. Element ids are the
  * base templates' own — not renamed — so the Keycloak form contracts stay intact.
  * ──────────────────────────────────────────────────────────────────────────────────────────────── */
 

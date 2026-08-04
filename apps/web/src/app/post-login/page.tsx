@@ -16,7 +16,7 @@ const VERSION = 'v2.4.102-STABLE';
  * role's landing page from the session claim and replace the history entry.
  *
  * While the session resolves this renders the "securing session" loader from
- * mockup/00_login_flow/web/04 — top bar + hex-shield card with a progress readout + technical
+ * mockup/desktop/imp_001_authen/04_verification_loading_web — top bar + hex-shield card with a progress readout + technical
  * metadata + terminal footer. The metadata (node id, encryption, version) are static labels.
  */
 export default function PostLoginPage() {

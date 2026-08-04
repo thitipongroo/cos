@@ -1,4 +1,4 @@
-// Transparency Portal — Identity & contact (mockup 01_identity_contact_details).
+// Transparency Portal — Identity & contact (mockup 01_00_identity_contact_details).
 //
 // The one screen in the portal that shows REAL stored values, read from GET /api/v1/users/me (the
 // endpoint already exists and returns exactly these fields, including photo_url).

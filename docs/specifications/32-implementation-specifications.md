@@ -627,14 +627,14 @@ Policy). These screens may use the "technical / mission-critical" motif — a ro
 `architecture` mark, and a cyan glow on progress/accent elements — because the entry sequence is
 where the "mission-critical operating system" personality is set, before any project data is on
 screen (product-owner decision 2026-07-16; reference
-`mockup/00_authen/mobile/04_verification_loading_mobile`). **Privacy Policy** was added to this
+`mockup/mobile/01_authen/04_verification_loading_mobile`). **Privacy Policy** was added to this
 exception by product-owner decision 2026-08-03 (reference
 `mockup/mobile/01_authen/05_privacy_policy/00_policy_data`): it is reached from the login footer and
 is pre-auth by construction, so the same "no project data on screen" rationale applies — the glow is
 scoped to the brand logo on that screen and nothing else.
 
 **Exception 2 — loading states** (product-owner decision 2026-07-17; ADR-055; reference
-`mockup/mobile/universal_loading_component_mobile_view` + `mockup/desktop/universal_loading_component_desktop_view`).
+`mockup/mobile/02_loading_component` + `mockup/desktop/imp_002_universal_loading_component_desktop_view`).
 `<LoadingState />` may use the same motif — a cyan glow, a scan-line gradient, and a waveform on
 the `ai` variant — **for the same reason the pre-auth exception exists: no project data is on
 screen yet**. A loading state is by definition the interval before data arrives, so the motif never
@@ -729,14 +729,14 @@ Dark screens (the pre-2026-08-04 set — see the note above):
 
 | Screen                                  | Reference                                                    |
 | --------------------------------------- | ------------------------------------------------------------ |
-| Login                                   | `mockup/00_login_flow/mobile/`                               |
-| OTP verify                              | `mockup/00_login_flow/mobile/`                               |
-| Session-securing overlay                | `mockup/00_login_flow/mobile/`                               |
-| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/00_policy_data`   |
-| Site Engineer Home                      | `mockup/site-engineer/dashboard-mobile/`                     |
-| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home_dashboard/`           |
-| Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/01_notification_preferences/` |
-| Navigation drawer                       | `mockup/mobile/04_tenant_admin/04_navigation_drawer/`        |
+| Login                                   | `mockup/mobile/01_authen/01_landing_page_login_mobile/`                     |
+| OTP verify                              | `mockup/mobile/01_authen/02_login_otp_verification_mobile/`                 |
+| Session-securing overlay                | `mockup/mobile/01_authen/04_verification_loading_mobile/`                   |
+| Privacy Policy (pre-auth)               | `mockup/mobile/01_authen/05_privacy_policy/00_policy_data`                  |
+| Site Engineer Home                      | `mockup/mobile/03_site_engineer/01_dashboard/`                              |
+| Tenant Admin Home                       | `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/`                  |
+| Notification preferences (Tenant Admin) | `mockup/mobile/04_tenant_admin/06_notification/01_notification_preferences/` |
+| Navigation drawer                       | `mockup/mobile/04_tenant_admin/05_navigation_drawer/`                       |
 
 The Tenant-Admin notification control panel and the navigation drawer were added by product-owner
 decision (2026-07-26); the **Tenant Admin Home** was added by product-owner decision (2026-07-28); the

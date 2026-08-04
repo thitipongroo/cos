@@ -1,4 +1,4 @@
-// Transparency Portal — Equipment sensors (mockup 05_iot_telemetry_details_mobile).
+// Transparency Portal — Equipment sensors (mockup 05_00_iot_telemetry_details_mobile).
 //
 // EVERY row here is Planned, and the screen says so before anything else. IoT ingestion is Phase
 // 21/24 work (EMQX → ingestion worker → Kafka → TimescaleDB); Stage 1 has no broker, no ingestion

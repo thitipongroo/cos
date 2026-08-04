@@ -1,7 +1,8 @@
 <#--
   Construction OS — Keycloak backup (recovery) codes page. Standalone template (renders the whole
   page, same PROCESS as the custom login.ftl) but the presentation follows
-  mockup/mobile/04_tenant_admin/06 & 07 — NOT the login page's chrome. Uses the mockup's own tokens
+  mockup/mobile/04_tenant_admin/07_mfa/03_mfa_backup_codes_success_state &
+  07_mfa/04_mfa_backup_codes_download_success — NOT the login page's chrome. Uses the mockup's own tokens
   (#031427 surface, #102034 code cards, #b4c5ff code text, #2563eb action, #FF9500 warning,
   #00C853 success) and its mobile app-bar + bento-grid + "COPY ALL CODES" + success-toast layout.
   The Keycloak form contract is unchanged — action ${url.loginAction}; #kc-recovery-codes-list;
@@ -19,7 +20,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root{
-      /* mockup/mobile/04_tenant_admin/06 tokens */
+      /* mockup/mobile/04_tenant_admin/07_mfa/03_mfa_backup_codes_success_state tokens */
       --bg:#031427; --sc:#102034; --sch:#1b2b3f; --scl:#0b1c30;
       --primary:#b4c5ff; --pc:#2563eb; --pc-h:#1d4ed8; --opc:#eeefff;
       --on-surface:#d3e4fe; --osv:#c3c6d7; --outline:#8d90a0; --ov:#434655;

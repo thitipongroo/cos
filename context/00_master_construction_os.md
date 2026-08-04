@@ -3157,7 +3157,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
       Extra:      ConflictBadge, conflict review screen
       Profile:    NOT a bottom-nav tab for this role — reached from the avatar in the Home
                   header, next to the notification bell (product-owner decision 2026-07-16,
-                  from mockup/site-engineer/dashboard-mobile/). The route stays mounted, so
+                  from mockup/mobile/03_site_engineer/01_dashboard/). The route stays mounted, so
                   router.push('/profile') still works. Four tabs is within the 4–5 that
                   spec §32.7 allows for <MobileNav />. Every other role keeps Profile as a tab.
       Material requisition: SITE_ENGINEER raises purchase requests — 06-rbac-permission-matrix

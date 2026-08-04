@@ -9,8 +9,8 @@
 
 ## Context
 
-`mockup/mobile/universal_loading_component_mobile_view` and
-`mockup/desktop/universal_loading_component_desktop_view` specify a standardised set of loading
+`mockup/mobile/02_loading_component` and
+`mockup/desktop/imp_002_universal_loading_component_desktop_view` specify a standardised set of loading
 patterns — a widget skeleton, a list/table skeleton, an AI insight processor, and micro-indicators.
 Nothing in `docs/specifications/` covered them:
 
@@ -171,4 +171,4 @@ the same reason the interactive `label` is omitted there.
 - [32-implementation-specifications.md §32.7](../../specifications/32-implementation-specifications.md) —
   "Exception 2 — loading states"; Mobile Core Component Library → `<LoadingState />`
 - [ADR-049](049-unleash-feature-flags.md) — feature-flag retrofit scope (critical surfaces only)
-- `mockup/mobile/universal_loading_component_mobile_view` · `mockup/desktop/universal_loading_component_desktop_view`
+- `mockup/mobile/02_loading_component` · `mockup/desktop/imp_002_universal_loading_component_desktop_view`

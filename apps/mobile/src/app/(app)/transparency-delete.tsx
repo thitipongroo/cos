@@ -1,4 +1,4 @@
-// Transparency Portal — Erasing your data (mockup 07_data_deletion_confirmation_mobile).
+// Transparency Portal — Erasing your data (mockup 07_00_data_deletion_confirmation_mobile).
 //
 // The mockup is a confirmation dialog: type DELETE, press CONFIRM PERMANENT DELETION, and "All
 // personal identity, site logs, and technical telemetry associated with your profile will be

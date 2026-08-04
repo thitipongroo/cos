@@ -62,5 +62,5 @@ defined target), so it stays out until the action is specified.
 - `docs/specifications/32-implementation-specifications.md` §32.7 (lines 622–623 prohibition;
   Exception 1 pre-auth motif) — the mandate this ADR scopes an exception to
 - PO decision 2026-07-25 (override §32.7 for SiteEngineerHome); mockup
-  `mockup/mobile/role_site_engineer_mobile_view/dashboard_site_engineer_mobile_view/`
+  `mockup/mobile/03_site_engineer/01_dashboard/`
 - Related: ADR-069 (issue numbers), ADR-070 (project phases) — the other SiteEngineerHome mockup items

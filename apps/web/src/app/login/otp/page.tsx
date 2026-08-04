@@ -21,7 +21,7 @@ const SWITCHER_DARK =
   'rounded border border-white/10 bg-white/5 px-2.5 py-1 text-tiny font-bold uppercase text-slate-300 hover:bg-white/10';
 
 /**
- * Path A OTP verification (§20.6.1) — mockup/00_login_flow/web/02. The phone-entry step now lives on
+ * Path A OTP verification (§20.6.1) — mockup/desktop/imp_001_authen/02_login_otp_verification_web. The phone-entry step now lives on
  * the landing (/login), which requests the passcode and hands off here with `?cc=<iso2>&n=<national>`.
  * A direct visit without those params has no phone in flight, so we bounce back to /login. Wiring is
  * unchanged: `POST /auth/otp/request` for resend + the next-auth `otp` credentials provider.

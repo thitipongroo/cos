@@ -1,4 +1,4 @@
-// Transparency Portal — What you enter (mockup 04_manual_input_details_mobile).
+// Transparency Portal — What you enter (mockup 04_00_manual_input_details_mobile).
 //
 // The mockup is a DESKTOP layout — it carries `md:` breakpoints and an ADMIN_CONSOLE side nav —
 // despite sitting in the mobile folder. Rendered here as a phone screen to match the rest of the

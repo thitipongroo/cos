@@ -1,4 +1,4 @@
-// Transparency Portal — Automated processing (mockup 06_ai_logic_ocr_details_mobile).
+// Transparency Portal — Automated processing (mockup 06_00_ai_logic_ocr_details_mobile).
 //
 // Split by what actually runs. OCR via AWS Textract and LLM report drafting are resolved decisions
 // with code behind them (spec §22.6, services/ai-gateway); PPE detection and photo-vs-design

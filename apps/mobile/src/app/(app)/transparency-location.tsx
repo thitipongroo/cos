@@ -1,4 +1,4 @@
-// Transparency Portal — Site & location (mockup 02_site_gps_privacy_details).
+// Transparency Portal — Site & location (mockup 02_00_site_gps_privacy_details).
 //
 // Corrected against migration 20260705000001_geo_coordinates, which is the whole truth about GPS in
 // this platform: it adds nullable latitude/longitude to FIVE tables — workforce_telemetry

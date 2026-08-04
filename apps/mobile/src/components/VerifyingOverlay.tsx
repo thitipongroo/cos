@@ -1,5 +1,5 @@
 // Full-screen "verifying / securing session" overlay, shown while the Keycloak OIDC code exchange is
-// in flight (Path B). Layout from mockup/00_authen/mobile/04_verification_loading_mobile.
+// in flight (Path B). Layout from mockup/mobile/01_authen/04_verification_loading_mobile.
 //
 // This is a pre-auth entry screen, so it uses the "technical / mission-critical" motif §32.7 permits
 // there (and only there): a rotating gear, the `architecture` mark, and a cyan glow. The signed-in

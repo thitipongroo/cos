@@ -9,7 +9,7 @@
 
 ## Context
 
-The OTP verification screen (`mockup/00_authen/mobile/02_login_otp_verification_mobile`) shows a
+The OTP verification screen (`mockup/mobile/01_authen/02_login_otp_verification_mobile`) shows a
 "SECURITY PROTOCOL — device recognized as trusted hardware" banner. In the app this was **static
 text**: it always claimed the device was trusted, reflecting no real signal. The product owner asked
 for a genuine trusted/untrusted state (green when trusted, red when not), designed against how

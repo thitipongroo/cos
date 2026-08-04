@@ -1,4 +1,4 @@
-// NavigationDrawer — the side drawer from mockup/mobile/04_tenant_admin/04_navigation_drawer.
+// NavigationDrawer — the side drawer from mockup/mobile/04_tenant_admin/05_navigation_drawer.
 //
 // Added ALONGSIDE the bottom tabs (PO decision 2026-07-26), not replacing them: it slides in over the
 // tab content from the TopBar hamburger and its links router.push into the SAME routes the tabs mount,

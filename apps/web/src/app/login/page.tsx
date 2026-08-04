@@ -23,7 +23,7 @@ const SWITCHER_DARK =
   'rounded border border-white/10 bg-white/5 px-2.5 py-1 text-tiny font-bold uppercase text-slate-300 hover:bg-white/10';
 
 /**
- * Login landing (§20.6.1). Visual layout mirrors mockup/00_login_flow/web/01: the auth card leads
+ * Login landing (§20.6.1). Visual layout mirrors mockup/desktop/imp_001_authen/01_landing_page_login_web: the auth card leads
  * with Path A (field worker phone → SMS OTP) as the primary action and Path B (office/management via
  * Keycloak OIDC) as the secondary. Sending a passcode requests the OTP and hands off to /login/otp's
  * verify step (phone carried in the query). Path B still delegates to Keycloak's hosted page (QM-4).

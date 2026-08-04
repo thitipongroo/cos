@@ -1,6 +1,6 @@
 // UI store — ephemeral, non-persisted view state shared across the shell. Currently the navigation
 // drawer's open/closed flag, driven by the TopBar hamburger and consumed by <NavigationDrawer />
-// (mockup/mobile/04_tenant_admin/04_navigation_drawer). Kept out of authStore/localeStore because it
+// (mockup/mobile/04_tenant_admin/05_navigation_drawer). Kept out of authStore/localeStore because it
 // is neither auth nor locale and must never persist to SecureStore.
 
 import { create } from 'zustand';

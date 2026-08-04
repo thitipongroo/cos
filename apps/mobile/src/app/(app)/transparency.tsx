@@ -1,8 +1,11 @@
 // Transparency Portal — hub (mockup 01_data_collection/00_data_collection_detail).
 //
-// Reached from Profile (PO decision 2026-08-04). It lives in (app), not beside the pre-auth Privacy
-// Policy where the mockups sit, because every screen below it describes — and one of them shows —
-// the signed-in user's own record; AuthGate would bounce a pre-auth route before any of it loads.
+// Reached from drawer → PRIVACY POLICY → the policy's Data Collection card (PO decision 2026-08-04;
+// the push lives in privacy-policy.tsx). It was Profile → Transparency Portal at first; both halves
+// of that path are gone — Profile is no longer a tab, and the portal row was removed from it.
+// It lives in (app), not beside the pre-auth Privacy Policy where the mockups sit, because every
+// screen below it describes — and one of them shows — the signed-in user's own record; AuthGate
+// would bounce a pre-auth route before any of it loads.
 //
 // Content is the corrected set, not the mockup's. The mockup's summary tile claimed "12 Data
 // Categories", a global "5 Year Retention" and a biometric hash; none of those are true. The count

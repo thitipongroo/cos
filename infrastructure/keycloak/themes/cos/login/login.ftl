@@ -1,5 +1,5 @@
 <#--
-  Construction OS — custom Keycloak login page (Path B, mockup/00_login_flow/web/03).
+  Construction OS — custom Keycloak login page (Path B, mockup/desktop/imp_001_authen/03_login_email_password_web).
   Standalone template (renders the whole page) so the layout matches the mockup: top bar + centred
   card + compliance badges + footer. The form keeps Keycloak's contract unchanged — action
   ${url.loginAction}, ids #username / #password / #kc-login, field names username/password/login —
@@ -129,8 +129,9 @@
           </button>
         </form>
 
-        <#-- Way back to Path A. Only the mobile client gets it: mockup/00_login_flow/mobile/03 offers
-             "Login with phone (OTP)" as the escape from this page, while the web mockup (…/web/03)
+        <#-- Way back to Path A. Only the mobile client gets it:
+             mockup/mobile/01_authen/03_login_email_password_mobile offers "Login with phone (OTP)" as
+             the escape from this page, while the web mockup (imp_001_authen/03_login_email_password_web)
              has no such control — the browser's own back button serves there. Keycloak serves one
              page to both, so gate it on the client. `cos://oauth2redirect` is the app's AuthSession
              redirect (see apps/mobile/src/app/(auth)/login.tsx); returning to it without a code

@@ -6,7 +6,7 @@
 //     device (QM-4). The returned code is exchanged for the same RS256 JWT the OTP path yields; tokens
 //     are persisted via authStore.setTokens. No new auth mechanism vs §5.4.
 //
-// Flow mirrors the web login (mockup/00_login_flow): the landing carries the phone form (Path A) as the
+// Flow mirrors the web login (mockup/desktop/imp_001_authen): the landing carries the phone form (Path A) as the
 // primary action with "Login with Email" (Path B) secondary; sending the passcode advances straight to
 // the OTP-verify step — there is no separate phone-entry screen. testIDs kept for Detox
 // (country-picker / phone-input / request-otp-button / otp-input / verify-otp-button /

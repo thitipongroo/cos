@@ -1,5 +1,5 @@
 // Site Engineer Home — the role's landing "command view".
-// Reference mockup: mockup/mobile/role_site_engineer_mobile_view/dashboard_site_engineer_mobile_view/ (screen.png + code.html).
+// Reference mockup: mockup/mobile/03_site_engineer/01_dashboard/ (screen.png + code.html).
 //
 // Rendered by (app)/home.tsx for CosRole.SITE_ENGINEER; it lives here rather than under app/ because
 // everything in app/ is a route, and this is the Home tab's content, not a route of its own. It is a
