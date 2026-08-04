@@ -105,6 +105,7 @@ model User {
   memberships    TenantMembership[]
   auditLogs      AuditLog[]         @relation("ActorLogs")
   trustedDevices TrustedDevice[]
+  consents       ConsentRecord[]
 
   @@index([tenantId, email])
   @@index([phoneNumber])
@@ -140,6 +141,46 @@ model TrustedDevice {
   @@unique([userId, deviceId])
   @@index([userId])
   @@map("trusted_devices")
+  @@schema("platform")
+}
+
+// PDPA §19 consent purposes (ADR-079). Only the categories ADR-079 assigns the CONSENT lawful basis
+// appear here. `identity` and `contact` are CONTRACT-based (PDPA §24(3)) — an account cannot exist
+// without a name and a phone number or email — so they are deliberately absent: a value here would
+// invite writing a consent row that contradicts the decision. Their route out is erasure (PDPA-13).
+enum ConsentPurpose {
+  LOCATION
+  FINANCIAL
+  OPERATIONAL
+
+  @@schema("platform")
+}
+
+// PDPA §19 consent record (ADR-079; closes PDPA-20/21/22).
+//
+// APPEND-ONLY: granting and withdrawing both INSERT a row; the effective state is the latest row per
+// (userId, purpose). Enforced by privilege, not convention — app_user holds SELECT + INSERT only, the
+// same mechanism that makes audit_logs immutable. There is deliberately no update/delete path here.
+//
+// Cross-tenant identity data like User and TrustedDevice, so it lives in the platform schema, but it
+// carries tenantId and the standard rls_tenant_isolation policy (ADR-031).
+// @pdpa(category: "identity") — user_id links a consent decision to a person
+model ConsentRecord {
+  consentId String @id @default(dbgenerated("gen_random_uuid()")) @map("consent_id") @db.Uuid
+  tenantId  String @map("tenant_id") @db.Uuid
+  userId    String @map("user_id") @db.Uuid
+  // @pdpa(category: "operational") — which processing purpose the decision covers
+  purpose   ConsentPurpose @map("purpose")
+  // true = granted, false = withdrawn. Both are inserts; neither mutates the prior row.
+  granted   Boolean @map("granted")
+  // Version of the privacy notice in force at the time (PrivacyPolicyDocument.tsx POLICY_VERSION).
+  noticeVersion String   @map("notice_version") @db.VarChar(32)
+  recordedAt    DateTime @default(now()) @map("recorded_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, purpose, recordedAt(sort: Desc)])
+  @@map("consents")
   @@schema("platform")
 }
 

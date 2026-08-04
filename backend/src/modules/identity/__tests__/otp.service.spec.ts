@@ -1,4 +1,4 @@
-// Unit tests for OtpService — validates OTP logic without real Redis or SNS.
+﻿// Unit tests for OtpService — validates OTP logic without real Redis or SNS.
 
 import { BadRequestException } from '@nestjs/common';
 
@@ -29,17 +29,16 @@ jest.mock('ioredis', () => ({
   })),
 }));
 
-jest.mock('@aws-sdk/client-sns', () => ({
-  SNSClient: jest.fn().mockImplementation(() => ({
-    send: jest.fn().mockResolvedValue({}),
-  })),
-  PublishCommand: jest.fn(),
-}));
-
 // Force dev mode so SMS is not sent
 process.env['NODE_ENV'] = 'development';
 
 import { OtpService } from '../otp/otp.service';
+import type { SmsSender } from '../otp/sms-sender';
+
+// SNS is no longer this service's concern — delivery moved behind the ADR-040 SmsSender port, so the
+// double here is the port, not the AWS SDK. That is the point of the refactor: OtpService's tests no
+// longer assert anything about a cloud vendor, and the same suite covers an on-prem deployment.
+let smsSender: jest.Mocked<SmsSender>;
 
 describe('OtpService', () => {
   let service: OtpService;
@@ -47,7 +46,16 @@ describe('OtpService', () => {
   beforeEach(() => {
     Object.keys(redisMock).forEach((k) => delete redisMock[k]);
     Object.keys(expiryMock).forEach((k) => delete expiryMock[k]);
-    service = new OtpService();
+    smsSender = { sendSms: jest.fn().mockResolvedValue(undefined) };
+    service = new OtpService(smsSender);
+  });
+
+  it('delivers the code through the SmsSender port, never a vendor SDK (ADR-040)', async () => {
+    await service.requestOtp('+66812345678');
+    expect(smsSender.sendSms).toHaveBeenCalledTimes(1);
+    const [phone, message] = smsSender.sendSms.mock.calls[0]!;
+    expect(phone).toBe('+66812345678');
+    expect(message).toMatch(/Construction OS verification code/);
   });
 
   it('requestOtp returns expiresInSeconds and the resend cooldown', async () => {
@@ -148,27 +156,39 @@ describe('OtpService', () => {
   });
 });
 
-describe('OtpService — production SNS path (line 105)', () => {
+describe('OtpService — delivery is env-independent now (ADR-040)', () => {
   const originalEnv = process.env['NODE_ENV'];
 
   beforeEach(() => {
     Object.keys(redisMock).forEach((k) => delete redisMock[k]);
     Object.keys(expiryMock).forEach((k) => delete expiryMock[k]);
+    smsSender = { sendSms: jest.fn().mockResolvedValue(undefined) };
   });
 
   afterEach(() => {
     process.env['NODE_ENV'] = originalEnv;
   });
 
-  it('calls SNS send when NODE_ENV is not development', async () => {
+  // This test used to reach into `service.sns` and assert PublishCommand was sent, which coupled the
+  // OTP suite to the AWS SDK and to NODE_ENV. Both moved to AwsSnsSmsAdapter, which owns the dev-mode
+  // short-circuit and has its own spec. What OtpService still owes is: hand every code to the port,
+  // in production and in development alike — the ONE behaviour that would silently break Path A login
+  // if the port were bypassed again.
+  it('hands the code to the port regardless of NODE_ENV', async () => {
     process.env['NODE_ENV'] = 'production';
-    // Re-create service so it picks up the new env
-    const prodService = new OtpService();
-    const snsMock = (prodService as unknown as { sns: { send: jest.Mock } }).sns;
-    snsMock.send = jest.fn().mockResolvedValue({});
-
+    const prodService = new OtpService(smsSender);
     await prodService.requestOtp('+66812345678');
-    expect(snsMock.send).toHaveBeenCalledTimes(1);
+    expect(smsSender.sendSms).toHaveBeenCalledTimes(1);
+  });
+
+  it('propagates a gateway failure instead of reporting a code that was never sent', async () => {
+    process.env['NODE_ENV'] = 'production';
+    smsSender.sendSms.mockRejectedValueOnce(new Error('gateway down'));
+    // A resolved requestOtp() on a failed send is the on-prem failure mode ADR-040 calls out: the
+    // endpoint looks healthy while every field worker waits for a code that never arrives.
+    await expect(new OtpService(smsSender).requestOtp('+66812345678')).rejects.toThrow(
+      'gateway down',
+    );
   });
 });
 
@@ -196,7 +216,7 @@ describe('OtpService — E2E auth bypass (double-gated)', () => {
     process.env['E2E_AUTH_BYPASS'] = 'true';
     process.env['NODE_ENV'] = 'development';
     delete process.env['E2E_TEST_OTP'];
-    await new OtpService().requestOtp('+66800000001');
+    await new OtpService(smsSender).requestOtp('+66800000001');
     expect(redisMock['otp:value:+66800000001']).toBe('123456');
   });
 
@@ -204,7 +224,7 @@ describe('OtpService — E2E auth bypass (double-gated)', () => {
     process.env['E2E_AUTH_BYPASS'] = 'true';
     process.env['NODE_ENV'] = 'development';
     delete process.env['E2E_TEST_OTP'];
-    const svc = new OtpService();
+    const svc = new OtpService(smsSender);
     await svc.requestOtp('+66800000009');
     // The second request must NOT throw a cooldown 429; the advertised duration is still returned.
     await expect(svc.requestOtp('+66800000009')).resolves.toMatchObject({
@@ -216,7 +236,7 @@ describe('OtpService — E2E auth bypass (double-gated)', () => {
     process.env['E2E_AUTH_BYPASS'] = 'true';
     process.env['NODE_ENV'] = 'development';
     process.env['E2E_TEST_OTP'] = '999999';
-    await new OtpService().requestOtp('+66800000002');
+    await new OtpService(smsSender).requestOtp('+66800000002');
     expect(redisMock['otp:value:+66800000002']).toBe('999999');
   });
 
@@ -224,17 +244,18 @@ describe('OtpService — E2E auth bypass (double-gated)', () => {
     process.env['E2E_AUTH_BYPASS'] = 'true';
     process.env['NODE_ENV'] = 'production';
     process.env['E2E_TEST_OTP'] = '123456';
-    const svc = new OtpService();
-    (svc as unknown as { sns: { send: jest.Mock } }).sns.send = jest.fn().mockResolvedValue({});
+    // No SNS stub needed any more — delivery is the injected port, which never touches the network.
+    const svc = new OtpService(smsSender);
     await svc.requestOtp('+66800000003');
     // Bypass returned null (production gate) → a random 6-digit OTP was generated, not the fixed one.
     expect(redisMock['otp:value:+66800000003']).toMatch(/^\d{6}$/);
+    expect(redisMock['otp:value:+66800000003']).not.toBe('123456');
   });
 });
 
 describe('OtpService onModuleDestroy', () => {
   it('quits the Redis connection on shutdown', async () => {
-    const svc = new OtpService();
+    const svc = new OtpService(smsSender);
     await svc.onModuleDestroy();
     expect((svc as unknown as { redis: { quit: jest.Mock } }).redis.quit).toHaveBeenCalledTimes(1);
   });

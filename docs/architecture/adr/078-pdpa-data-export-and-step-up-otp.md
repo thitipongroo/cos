@@ -45,15 +45,24 @@ bump is needed because adding fields to an existing category is a non-breaking a
 
 **Endpoints** (`/api/v1/`, QM-2):
 
-- `POST /identity/me/step-up/request` → sends a 6-digit code to the user's registered channel.
-- `POST /identity/me/step-up/verify` → returns a single-use, short-lived **action token**.
-- `POST /identity/me/data-export` → accepts `{ categories[], format: JSON|CSV, from?, to?, actionToken }`,
+- `POST /auth/step-up/request` → sends a 6-digit code to the user's registered channel.
+- `POST /auth/step-up/verify` → returns a single-use, short-lived **action token**.
+- `POST /users/me/data-export` → accepts `{ categories[], format: JSON|CSV, from?, to?, actionToken }`,
   persists an export request row and starts the Temporal workflow; returns the request id.
-- `GET /identity/me/data-export` → lists the caller's own export requests and their status.
+- `GET /users/me/data-export` → lists the caller's own export requests and their status.
 
-This supersedes the single `GET /api/v1/identity/me/data-export` sketched in `pdpa-controls.md`:
-a `GET` cannot carry the category/format/date selection the mockup requires, and a synchronous
-response cannot serve an export that must read across every domain schema.
+Two corrections to the path sketched as `GET /api/v1/identity/me/data-export` in `pdpa-controls.md`:
+
+- **`identity` is not a route prefix in this codebase.** The identity module's controller is
+  `@Controller('auth')` and self-service routes live under `@Controller('users')` with a `me/` path
+  (`UserMeController`, whose header explains why self-service is a separate class from the
+  TENANT_ADMIN-gated `UserController`). Inventing a third namespace for one feature would leave the
+  API with two ways to say "the signed-in user". Step-up sits under `auth` because it is an auth
+  primitive — and it therefore inherits `IdentityController`'s class-level
+  `@Throttle({ limit: 10, ttl: 60000 })`, which is exactly QM-7's auth tier, rather than restating it.
+- **`GET` cannot carry the request.** The selection is `{ categories[], format, from?, to?,
+actionToken }`, and a synchronous response cannot serve an export that reads across every domain
+  schema. `POST` creates the request; `GET` lists their status.
 
 **Step-up OTP is a distinct flow from login OTP.** It reuses the OTP primitives from Phase 2
 (6-digit numeric, 5-minute TTL, max 3 attempts, 10 requests per phone per day) but issues an

@@ -59,6 +59,21 @@ All API error responses follow the structure:
 
 ---
 
+## COS-PDPA — Consent & data-subject rights (ADR-079; PDPA-20/21/22)
+
+`422`, not `403`: the request is well-formed and the caller is authorised — what fails is a business
+rule, namely that the lawful basis for that processing purpose is not in place (QM-10).
+
+The gate throws rather than silently dropping the field. A coordinate quietly discarded on a write
+that reports success is indistinguishable from a sync bug out on site, and the data is gone by the
+time anyone notices.
+
+| Code         | HTTP | Message                                             | Trigger                                                                                                 |
+| ------------ | ---- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| COS-PDPA-001 | 422  | Processing for purpose '{purpose}' requires consent | `ConsentService.requireConsent()` on a consent-basis purpose with no decision recorded, or a withdrawal |
+
+---
+
 ## COS-BLDG / FLOR / ROOM / STRC / UNIT / ASST — Project spatial hierarchy + assets (Phase 3, 2026-07-05)
 
 Full-CRUD backing entities under the project domain (§10.2 / §11.2). `-001` = entity not found;

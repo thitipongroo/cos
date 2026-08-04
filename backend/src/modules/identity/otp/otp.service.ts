@@ -5,14 +5,15 @@
 
 import {
   Injectable,
+  Inject,
   BadRequestException,
   HttpException,
   HttpStatus,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { SNSClient, PublishCommand } from '@aws-sdk/client-sns';
 import { Redis } from 'ioredis';
 import { createLogger } from '@cos/logger';
+import { SMS_SENDER, type SmsSender } from './sms-sender';
 
 // node:crypto builtin — loaded via require() (the in-repo idiom for builtins, cf.
 // platform-webhook.service.ts) so it resolves under CommonJS without a package.json dep.
@@ -57,11 +58,11 @@ function e2eFixedOtp(): string | null {
 
 @Injectable()
 export class OtpService implements OnModuleDestroy {
-  private readonly sns: SNSClient;
   private readonly redis: Redis;
 
-  constructor() {
-    this.sns = new SNSClient({ region: process.env['AWS_REGION'] ?? 'ap-southeast-1' });
+  // SMS goes through the ADR-040 port, not a hardcoded SNSClient: the on-premise / air-gapped
+  // deployments cannot reach AWS, and SMS-OTP is the ONLY login SITE_WORKER has.
+  constructor(@Inject(SMS_SENDER) private readonly sms: SmsSender) {
     this.redis = new Redis(process.env['REDIS_URL'] ?? 'redis://localhost:6379');
   }
 
@@ -181,21 +182,11 @@ export class OtpService implements OnModuleDestroy {
   }
 
   private async sendSms(phoneNumber: string, otp: string): Promise<void> {
-    if (process.env['NODE_ENV'] === 'development') {
-      // Log OTP in dev mode only — never in production
-      logger.debug({ otp, phone: '[REDACTED]' }, '[DEV] OTP generated (not sent via SMS)');
-      return;
-    }
-
-    await this.sns.send(
-      new PublishCommand({
-        PhoneNumber: phoneNumber,
-        Message: `Your Construction OS verification code is: ${otp}. Valid for 5 minutes.`,
-        MessageAttributes: {
-          'AWS.SNS.SMS.SMSType': { DataType: 'String', StringValue: 'Transactional' },
-          'AWS.SNS.SMS.SenderID': { DataType: 'String', StringValue: 'COS' },
-        },
-      }),
+    // Delivery — including the dev-mode short-circuit — belongs to the adapter (ADR-040). This method
+    // now owns only the message copy, which is a product concern, not a gateway one.
+    await this.sms.sendSms(
+      phoneNumber,
+      `Your Construction OS verification code is: ${otp}. Valid for 5 minutes.`,
     );
   }
 }
