@@ -1,4 +1,4 @@
-// Unit tests — RFQ Workflow Activities (Phase 5)
+﻿// Unit tests — RFQ Workflow Activities (Phase 5)
 // getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
 
 jest.mock('../../../tenant/utils/get-db-url', () => ({
@@ -29,6 +29,7 @@ const { __loggerMock: loggerMock } = jest.requireMock('@cos/logger');
 import { PrismaClient } from '@prisma/client';
 import { KafkaProducer } from '@cos/shared';
 import { updateRfqStatus, markQuotationsEvaluated } from '../rfq.activities';
+import { disconnectActivityClients } from '../activity-helpers';
 
 const mockExecuteRaw = jest.fn().mockResolvedValue(1);
 const mockExecuteRawUnsafe = jest.fn().mockResolvedValue(undefined);
@@ -80,7 +81,10 @@ describe('updateRfqStatus', () => {
     expect(mockKafkaConnect).toHaveBeenCalledTimes(1);
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 
   it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
@@ -130,7 +134,10 @@ describe('updateRfqStatus', () => {
     mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
     await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
     expect(loggerMock.error).toHaveBeenCalledWith(
       {
         event_type: 'procurement.rfq.status_changed.v1',
@@ -146,13 +153,39 @@ describe('updateRfqStatus', () => {
     await expect(updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED')).rejects.toThrow(
       'DB write failed',
     );
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 });
 
 describe('module wiring', () => {
   it('creates the module logger with the exact name', () => {
     expect(loggerMock.names).toContain('rfq-activities');
+  });
+});
+
+// The other half of the ADR-021 pooling contract, previously uncovered (activity-helpers.ts:58-59).
+// Nothing else closes these clients: they outlive every individual activity by design, so if the
+// worker's shutdown path does not call this, the pg pools leak on SIGTERM (ADR-034 / Rule 39).
+describe('disconnectActivityClients', () => {
+  it('closes the pooled client and empties the pool', async () => {
+    await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
+
+    await disconnectActivityClients();
+    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+
+    // Pool emptied — the next activity builds a fresh client rather than handing out a closed one.
+    (PrismaClient as jest.Mock).mockClear();
+    await updateRfqStatus(baseParams, 'DRAFT', 'PUBLISHED');
+    expect(PrismaClient).toHaveBeenCalledTimes(1);
+  });
+
+  it('is safe to call when no activity has run', async () => {
+    await disconnectActivityClients();
+    await expect(disconnectActivityClients()).resolves.toBeUndefined();
   });
 });
 
@@ -163,7 +196,10 @@ describe('markQuotationsEvaluated', () => {
     expect(mockExecuteRaw).toHaveBeenCalledTimes(1);
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 
   it('runs the exact EVALUATED UPDATE and publishes the exact CLOSED→EVALUATED envelope', async () => {

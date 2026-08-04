@@ -1196,6 +1196,12 @@ describe('exact contracts — vendors and purchase requests', () => {
       pr_number: 'PR-001',
       requested_by: 'user-uuid-001',
       required_date: undefined,
+      // `year` and `items` were added when PR-number allocation moved INSIDE the insert transaction
+      // (deriving the number in the service first was a read-then-write race across two
+      // transactions). This assertion had not followed. Computed, not the literal 2026 the failure
+      // output showed — a hardcoded year turns into a green-until-January test.
+      year: new Date().getFullYear(),
+      items: undefined,
     });
     expect(loggerMock.info).toHaveBeenCalledWith(
       { pr_id: 'pr-001', tenant_id: 'tenant-uuid-001' },

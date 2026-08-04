@@ -1,4 +1,4 @@
-// Unit tests — PO Workflow Activities (Phase 5)
+﻿// Unit tests — PO Workflow Activities (Phase 5)
 // getDbUrlForTenant, PrismaClient, and KafkaProducer are all mocked.
 
 jest.mock('../../../tenant/utils/get-db-url', () => ({
@@ -87,7 +87,10 @@ describe('updatePoStatus', () => {
     expect(mockKafkaConnect).toHaveBeenCalledTimes(1);
     expect(mockKafkaPublish).toHaveBeenCalledTimes(1);
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 
   it('sets RLS tenant context with the exact SET LOCAL statement', async () => {
@@ -141,7 +144,10 @@ describe('updatePoStatus', () => {
     mockKafkaPublish.mockRejectedValueOnce(new Error('kafka down'));
     await updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL');
     expect(mockKafkaDisconnect).toHaveBeenCalledTimes(1);
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
     expect(loggerMock.error).toHaveBeenCalledWith(
       {
         event_type: 'procurement.po.status_changed.v1',
@@ -157,7 +163,10 @@ describe('updatePoStatus', () => {
     await expect(updatePoStatus(baseParams, 'DRAFT', 'PENDING_APPROVAL')).rejects.toThrow(
       'DB write failed',
     );
-    expect(mockPrismaDisconnect).toHaveBeenCalledTimes(1);
+    // Pooling (ADR-021): the client is reused across activities and closed only by
+    // disconnectActivityClients() on worker shutdown. Disconnecting per activity is what made every
+    // workflow step pay for a fresh pg pool.
+    expect(mockPrismaDisconnect).not.toHaveBeenCalled();
   });
 });
 

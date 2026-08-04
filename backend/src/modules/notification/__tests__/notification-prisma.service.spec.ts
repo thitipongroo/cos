@@ -1,5 +1,12 @@
 // Unit tests — NotificationPrismaService (Phase 20)
-// PrismaClient is created per run() call, not in constructor.
+//
+// Clients are POOLED PER DATASOURCE URL, not built per run(). The service used to construct a
+// PrismaClient (a fresh pg pool + TCP connect + TLS handshake) on every call and disconnect it in a
+// finally; that cost was paid 17 times over in NotificationRepository alone, plus once per Kafka
+// event. Two tests here still asserted the old per-call $disconnect and had been failing ever since
+// the refactor — they are rewritten below to assert the contract the code actually has, and the
+// previously untested onModuleDestroy path is covered.
+//
 // getDbUrlForTenant is mocked to avoid real DB connections.
 // run() validates the tenant id and issues SET LOCAL app.current_tenant_id so the notifications-schema
 // RLS policies apply (H1 fix — the path previously ran as superuser with no SET LOCAL).
@@ -99,18 +106,22 @@ describe('run', () => {
     expect(result).toEqual(expected);
   });
 
-  it('calls $disconnect in finally after successful run', async () => {
+  // The pooling contract. These two replace tests that asserted a per-call $disconnect — the
+  // behaviour the service deliberately stopped having. Disconnecting per call is what made every
+  // notification pay for a new pg pool, TCP connect and TLS handshake.
+  it('does NOT disconnect after a successful run — the client is pooled for reuse', async () => {
     await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
-    expect(_mocks.$disconnect).toHaveBeenCalledTimes(1);
+    expect(_mocks.$disconnect).not.toHaveBeenCalled();
   });
 
-  it('calls $disconnect in finally even when fn throws', async () => {
+  it('does NOT disconnect when fn throws — a failed query must not close a shared pool', async () => {
     const error = new Error('db error');
     await expect(svc.run(TENANT_A, jest.fn().mockRejectedValue(error))).rejects.toThrow('db error');
-    expect(_mocks.$disconnect).toHaveBeenCalledTimes(1);
+    // Closing here would tear the pool out from under every other in-flight caller sharing this URL.
+    expect(_mocks.$disconnect).not.toHaveBeenCalled();
   });
 
-  it('creates a new PrismaClient per call with the resolved DB URL', async () => {
+  it('creates one client PER DATASOURCE URL, not per call', async () => {
     (getDbUrlForTenant as jest.Mock)
       .mockResolvedValueOnce('postgresql://db1')
       .mockResolvedValueOnce('postgresql://db2');
@@ -123,5 +134,43 @@ describe('run', () => {
     expect(PrismaPg).toHaveBeenNthCalledWith(2, { connectionString: 'postgresql://db2' });
     expect(getDbUrlForTenant).toHaveBeenNthCalledWith(1, TENANT_A);
     expect(getDbUrlForTenant).toHaveBeenNthCalledWith(2, TENANT_B);
+  });
+
+  it('reuses one client for two tenants that share a datasource URL (the point of pooling)', async () => {
+    // Shared-DB tenants (STARTER/PROFESSIONAL) all resolve to APP_DATABASE_URL. Building a client
+    // each time would defeat the refactor entirely while still passing a per-URL assertion.
+    (getDbUrlForTenant as jest.Mock).mockResolvedValue('postgresql://shared');
+    await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
+    await svc.run(TENANT_B, jest.fn().mockResolvedValue(undefined));
+    expect(PrismaClient).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ADR-034 / Rule 39 — pooled clients outlive the call, so something must close them. This path had
+// no test at all before: the refactor moved the disconnect here and the suite never followed.
+describe('onModuleDestroy', () => {
+  it('disconnects every pooled client', async () => {
+    (getDbUrlForTenant as jest.Mock)
+      .mockResolvedValueOnce('postgresql://db1')
+      .mockResolvedValueOnce('postgresql://db2');
+    await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
+    await svc.run(TENANT_B, jest.fn().mockResolvedValue(undefined));
+
+    await svc.onModuleDestroy();
+    expect(_mocks.$disconnect).toHaveBeenCalledTimes(2);
+  });
+
+  it('is safe when nothing was ever pooled', async () => {
+    await expect(svc.onModuleDestroy()).resolves.toBeUndefined();
+    expect(_mocks.$disconnect).not.toHaveBeenCalled();
+  });
+
+  it('clears the pool so a later run rebuilds rather than reusing a closed client', async () => {
+    (getDbUrlForTenant as jest.Mock).mockResolvedValue('postgresql://shared');
+    await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
+    await svc.onModuleDestroy();
+    await svc.run(TENANT_A, jest.fn().mockResolvedValue(undefined));
+    // A stale map entry here would hand out a disconnected client after a hot reload / re-init.
+    expect(PrismaClient).toHaveBeenCalledTimes(2);
   });
 });
