@@ -1,0 +1,51 @@
+{
+  "rulesVersion": "1.0.0",
+  "maxScore": 100,
+  "bands": {
+    "attestation": {
+      "PASSED_STRONG": 40,
+      "PASSED_NO_TIER": 36,
+      "PASSED_DEVICE": 34,
+      "PASSED_BASIC": 24,
+      "NOT_ATTEMPTED": 20,
+      "UNAVAILABLE": 14,
+      "FAILED": 0
+    },
+    "recency": {
+      "SEEN_WITHIN_FRESH_WINDOW": 15,
+      "SEEN_WITHIN_TRUST_WINDOW": 10,
+      "STALE": 0
+    },
+    "enrolmentAge": {
+      "AT_LEAST_90_DAYS": 10,
+      "AT_LEAST_30_DAYS": 7,
+      "AT_LEAST_7_DAYS": 4,
+      "UNDER_7_DAYS": 0
+    },
+    "revocationHistory": {
+      "CLEAN": 20,
+      "NON_COMPROMISE_RECENT": 10,
+      "COMPROMISE_ON_RECORD": 0
+    },
+    "asnStability": {
+      "SINGLE_ASN": 15,
+      "TWO_ASNS": 11,
+      "THREE_TO_FOUR_ASNS": 7,
+      "FIVE_OR_MORE_ASNS": 3,
+      "INSUFFICIENT_DATA": 11
+    }
+  },
+  "caps": {
+    "ATTESTATION_FAILED": 30,
+    "COMPROMISE_ON_RECORD": 30
+  },
+  "thresholds": {
+    "recencyFreshDays": 7,
+    "trustWindowDays": 30,
+    "enrolmentAgeDays": [90, 30, 7],
+    "nonCompromiseRecentDays": 90,
+    "asnLookbackDays": 30,
+    "asnMinObservations": 3,
+    "asnMaxDistinctAddresses": 50
+  }
+}

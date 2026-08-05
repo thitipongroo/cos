@@ -51,6 +51,12 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // deploy — and a flag-service outage must not be the thing that silently stops a security signal
   // from being collected.
   's1.identity.device-attestation': true,
+  // The device trust score (ADR-081). New feature, so OFF until rollout per this file's convention,
+  // and failing closed is the right direction for a reason specific to this one: the score is
+  // ADVISORY (§22.3) and never gates anything, so OFF costs a user one panel on a transparency
+  // screen and costs the platform nothing. A wrong score shown confidently on a security screen is
+  // the more expensive failure, and this is the switch that removes it in under 60 seconds.
+  's1.identity.device-trust-score': false,
 };
 
 export interface FlagContext {

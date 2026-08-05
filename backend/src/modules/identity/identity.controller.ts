@@ -15,6 +15,7 @@ import {
   UseGuards,
   Req,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -25,6 +26,7 @@ import { OtpService } from './otp/otp.service';
 import { IdentityService } from './identity.service';
 import { MfaService } from './mfa/mfa.service';
 import { DeviceTrustService } from './device-trust/device-trust.service';
+import { TrustScoreService } from './device-trust/trust-score/trust-score.service';
 import { FeatureFlag } from '../../shared/feature-flags/feature-flag.decorator';
 import {
   RequestOtpDto,
@@ -50,6 +52,7 @@ export class IdentityController {
     private readonly identityService: IdentityService,
     private readonly mfaService: MfaService,
     private readonly deviceTrust: DeviceTrustService,
+    private readonly trustScore: TrustScoreService,
     private readonly stepUp: StepUpService,
   ) {}
 
@@ -157,6 +160,38 @@ export class IdentityController {
   async listDevices(@Req() req: Request) {
     const user = req.user as JwtPayload;
     return this.deviceTrust.listDevices(user.user_id);
+  }
+
+  @Get('devices/:deviceId/trust')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @FeatureFlag('s1.identity.device-trust-score')
+  @ApiOperation({
+    summary: 'The trust score for one of the caller’s own devices (ADR-081)',
+    description:
+      'ADVISORY ONLY. It never revokes a device and never blocks a login — §22.3 bars a model from ' +
+      'executing a transition that requires a human, and ADR-081 keeps the property while the ' +
+      'scorer is rules so that a regression here cannot become a lockout. ' +
+      '`scoredBy` says which scorer produced the number: it reads RULES until a DeviceTrustModel ' +
+      'beats this baseline on PR-AUC, and the screen must not describe the score as AI-derived ' +
+      'while it does. Every signal is returned with the points it earned out of the points ' +
+      'available, so a low score is actionable instead of oracular, and `capped` says when a single ' +
+      'finding held the total down rather than the signals simply summing low.',
+  })
+  @ApiResponse({ status: 200, description: 'Score 0–100 with its per-signal derivation' })
+  @ApiResponse({ status: 404, description: 'No such active enrolment for this user' })
+  @ApiResponse({ status: 503, description: 'Feature flag off (COS-FLAG-001)' })
+  async deviceTrustScore(@Req() req: Request, @Param('deviceId') deviceId: string) {
+    const user = req.user as JwtPayload;
+    const report = await this.trustScore.report({
+      tenantId: user.tenant_id,
+      userId: user.user_id,
+      deviceId,
+    });
+    // Scoped by user_id AND device_id, so an unknown id and someone else's id are the same answer.
+    // A 404 that distinguished them would confirm the existence of another person's enrolment.
+    if (!report) throw new NotFoundException('device not found');
+    return report;
   }
 
   @Delete('devices/:deviceId')

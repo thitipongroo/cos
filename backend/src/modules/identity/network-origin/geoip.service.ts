@@ -118,4 +118,28 @@ export class GeoIpService implements OnModuleDestroy {
       return null;
     }
   }
+
+  /**
+   * The autonomous system NUMBER for an address, for counting distinct networks (ADR-081).
+   *
+   * Separate from `lookup()` because it answers a different question with a different type. The panel
+   * renders the ISP's NAME; the trust score counts how many networks a device has appeared on, and
+   * organisation names are not stable identifiers — "AIS" and "Advanced Info Service" can describe
+   * the same AS across database releases, which would inflate the count and mark a stationary worker
+   * as roaming. The number is the identifier MaxMind actually guarantees.
+   *
+   * Null whenever the ASN database is absent or the address is not in it. The caller must treat that
+   * as "not established", never as a distinct network — see asnBand's INSUFFICIENT_DATA.
+   */
+  async asnNumber(ipAddress: string): Promise<number | null> {
+    await this.ensureLoaded();
+    if (!this.asn) return null;
+
+    try {
+      return this.asn.get(ipAddress)?.autonomous_system_number ?? null;
+    } catch (err) {
+      logger.warn({ err: String(err), event: 'geoip.asn_lookup_failed' }, 'ASN lookup failed');
+      return null;
+    }
+  }
 }

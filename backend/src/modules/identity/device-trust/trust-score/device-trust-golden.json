@@ -1,0 +1,279 @@
+{
+  "rulesVersion": "1.0.0",
+  "note": "Read by BOTH backend/src/.../__tests__/trust-score.spec.ts and mlops/tests/test_device_trust_baseline.py. Each vector is a complete input to the scorer and the exact output both implementations must produce. A change to either implementation that is not matched by the other turns one of the two suites red.",
+  "vectors": [
+    {
+      "name": "fresh iPhone, App Attest passed",
+      "why": "iOS has no integrity tier at all (App Attest attests the app, not the device) — an absence of the concept, not a weak answer, so it scores just under STRONG rather than being punished for a field Apple never emits.",
+      "features": {
+        "attestationVerdict": "PASSED",
+        "integrityLevel": null,
+        "enrolmentAgeDays": 0,
+        "lastSeenDaysAgo": 0,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": null,
+        "distinctAsnCount": 1,
+        "asnObservations": 1
+      },
+      "expected": {
+        "score": 82,
+        "capped": false,
+        "bands": {
+          "attestation": "PASSED_NO_TIER",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "UNDER_7_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "INSUFFICIENT_DATA"
+        }
+      }
+    },
+    {
+      "name": "rooted Android, owned for a year, used daily",
+      "why": "The cap earns its keep here. Without it, familiarity (10 + 15 + 20 + 15 = 60) outvotes the platform's own finding that the device did not pass integrity.",
+      "features": {
+        "attestationVerdict": "FAILED",
+        "integrityLevel": null,
+        "enrolmentAgeDays": 365,
+        "lastSeenDaysAgo": 0,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": null,
+        "distinctAsnCount": 1,
+        "asnObservations": 10
+      },
+      "expected": {
+        "score": 30,
+        "capped": true,
+        "bands": {
+          "attestation": "FAILED",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "AT_LEAST_90_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "SINGLE_ASN"
+        }
+      }
+    },
+    {
+      "name": "enrolment predating the attestation migration",
+      "why": "NOT_ATTEMPTED scores above UNAVAILABLE. 'We never asked' is a fact about the platform's history; 'we asked and got no answer' is a fact about this device now.",
+      "features": {
+        "attestationVerdict": null,
+        "integrityLevel": null,
+        "enrolmentAgeDays": 400,
+        "lastSeenDaysAgo": 2,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": null,
+        "distinctAsnCount": 1,
+        "asnObservations": 2
+      },
+      "expected": {
+        "score": 76,
+        "capped": false,
+        "bands": {
+          "attestation": "NOT_ATTEMPTED",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "AT_LEAST_90_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "INSUFFICIENT_DATA"
+        }
+      }
+    },
+    {
+      "name": "pristine device, but the user has a confirmed compromise on record",
+      "why": "A perfect device belonging to someone whose account was demonstrably compromised is not a low-risk situation, and 80/100 would say it was.",
+      "features": {
+        "attestationVerdict": "PASSED",
+        "integrityLevel": "STRONG",
+        "enrolmentAgeDays": 200,
+        "lastSeenDaysAgo": 0,
+        "compromiseOnRecord": true,
+        "nonCompromiseRevocationDaysAgo": null,
+        "distinctAsnCount": 1,
+        "asnObservations": 12
+      },
+      "expected": {
+        "score": 30,
+        "capped": true,
+        "bands": {
+          "attestation": "PASSED_STRONG",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "AT_LEAST_90_DAYS",
+          "revocationHistory": "COMPROMISE_ON_RECORD",
+          "asnStability": "SINGLE_ASN"
+        }
+      }
+    },
+    {
+      "name": "site worker moving between six networks",
+      "why": "Deducts, does not cap. Travelling between sites on different carriers is the job, not an attack — it costs 12 of 15 points and nothing more.",
+      "features": {
+        "attestationVerdict": "PASSED",
+        "integrityLevel": "DEVICE",
+        "enrolmentAgeDays": 45,
+        "lastSeenDaysAgo": 3,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": null,
+        "distinctAsnCount": 6,
+        "asnObservations": 30
+      },
+      "expected": {
+        "score": 79,
+        "capped": false,
+        "bands": {
+          "attestation": "PASSED_DEVICE",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "AT_LEAST_30_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "FIVE_OR_MORE_ASNS"
+        }
+      }
+    },
+    {
+      "name": "dormant device, attestation unavailable, a lost handset in the user's history",
+      "features": {
+        "attestationVerdict": "UNAVAILABLE",
+        "integrityLevel": null,
+        "enrolmentAgeDays": 120,
+        "lastSeenDaysAgo": 40,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": 20,
+        "distinctAsnCount": 2,
+        "asnObservations": 5
+      },
+      "expected": {
+        "score": 45,
+        "capped": false,
+        "bands": {
+          "attestation": "UNAVAILABLE",
+          "recency": "STALE",
+          "enrolmentAge": "AT_LEAST_90_DAYS",
+          "revocationHistory": "NON_COMPROMISE_RECENT",
+          "asnStability": "TWO_ASNS"
+        }
+      }
+    },
+    {
+      "name": "every signal at its best",
+      "why": "Pins the weights to exactly 100. If anyone re-tunes a band without re-tuning the others, this vector is what notices.",
+      "features": {
+        "attestationVerdict": "PASSED",
+        "integrityLevel": "STRONG",
+        "enrolmentAgeDays": 90,
+        "lastSeenDaysAgo": 0,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": null,
+        "distinctAsnCount": 1,
+        "asnObservations": 3
+      },
+      "expected": {
+        "score": 100,
+        "capped": false,
+        "bands": {
+          "attestation": "PASSED_STRONG",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "AT_LEAST_90_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "SINGLE_ASN"
+        }
+      }
+    },
+    {
+      "name": "every signal at its worst",
+      "why": "3, not 30. A cap is a ceiling on how high a bad device can climb, never a floor that lifts one up — and `capped` stays false, because nothing was held back: the signals really did sum to 3. Reporting capped:true here would tell the screen a single finding was responsible when in fact every one of them was.",
+      "features": {
+        "attestationVerdict": "FAILED",
+        "integrityLevel": null,
+        "enrolmentAgeDays": 0,
+        "lastSeenDaysAgo": 400,
+        "compromiseOnRecord": true,
+        "nonCompromiseRevocationDaysAgo": 1,
+        "distinctAsnCount": 9,
+        "asnObservations": 60
+      },
+      "expected": {
+        "score": 3,
+        "capped": false,
+        "bands": {
+          "attestation": "FAILED",
+          "recency": "STALE",
+          "enrolmentAge": "UNDER_7_DAYS",
+          "revocationHistory": "COMPROMISE_ON_RECORD",
+          "asnStability": "FIVE_OR_MORE_ASNS"
+        }
+      }
+    },
+    {
+      "name": "budget Android on BASIC integrity, ten days old",
+      "features": {
+        "attestationVerdict": "PASSED",
+        "integrityLevel": "BASIC",
+        "enrolmentAgeDays": 10,
+        "lastSeenDaysAgo": 1,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": null,
+        "distinctAsnCount": 2,
+        "asnObservations": 4
+      },
+      "expected": {
+        "score": 74,
+        "capped": false,
+        "bands": {
+          "attestation": "PASSED_BASIC",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "AT_LEAST_7_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "TWO_ASNS"
+        }
+      }
+    },
+    {
+      "name": "used 20 days ago — inside the trust window, outside the fresh one",
+      "why": "The two recency bands are the boundary most likely to be collapsed by a later editor; this vector sits between them.",
+      "features": {
+        "attestationVerdict": "PASSED",
+        "integrityLevel": "DEVICE",
+        "enrolmentAgeDays": 8,
+        "lastSeenDaysAgo": 20,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": 200,
+        "distinctAsnCount": 0,
+        "asnObservations": 0
+      },
+      "expected": {
+        "score": 79,
+        "capped": false,
+        "bands": {
+          "attestation": "PASSED_DEVICE",
+          "recency": "SEEN_WITHIN_TRUST_WINDOW",
+          "enrolmentAge": "AT_LEAST_7_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "INSUFFICIENT_DATA"
+        }
+      }
+    },
+    {
+      "name": "three networks, an old lost-handset revocation long out of window",
+      "why": "A revocation 200 days ago is history, not a current signal — the same input as the vector above, and it scores CLEAN in both.",
+      "features": {
+        "attestationVerdict": "PASSED",
+        "integrityLevel": "STRONG",
+        "enrolmentAgeDays": 31,
+        "lastSeenDaysAgo": 7,
+        "compromiseOnRecord": false,
+        "nonCompromiseRevocationDaysAgo": 91,
+        "distinctAsnCount": 4,
+        "asnObservations": 18
+      },
+      "expected": {
+        "score": 89,
+        "capped": false,
+        "bands": {
+          "attestation": "PASSED_STRONG",
+          "recency": "SEEN_WITHIN_FRESH_WINDOW",
+          "enrolmentAge": "AT_LEAST_30_DAYS",
+          "revocationHistory": "CLEAN",
+          "asnStability": "THREE_TO_FOUR_ASNS"
+        }
+      }
+    }
+  ]
+}

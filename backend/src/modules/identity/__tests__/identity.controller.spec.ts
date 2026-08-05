@@ -27,6 +27,10 @@ const mockDeviceTrust = {
   issueAttestationChallenge: jest.fn(),
 };
 
+const mockTrustScore = {
+  report: jest.fn(),
+};
+
 const mockStepUp = {
   request: jest.fn(),
   verify: jest.fn(),
@@ -37,7 +41,7 @@ jest.mock('@cos/logger', () => ({
   createLogger: () => ({ info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }),
 }));
 
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CosRole } from '@cos/types';
 import { ROLE_PERMISSIONS } from '@cos/rbac';
 import { IdentityController } from '../identity.controller';
@@ -52,8 +56,36 @@ describe('IdentityController', () => {
       mockIdentityService as never,
       mockMfaService as never,
       mockDeviceTrust as never,
+      mockTrustScore as never,
       mockStepUp as never,
     );
+  });
+
+  // The trust score (ADR-081). What matters at this layer is that the identity comes from the JWT
+  // and that a device the caller does not own is indistinguishable from one that does not exist.
+  describe('GET devices/:deviceId/trust', () => {
+    const req = { user: { user_id: 'u1', tenant_id: 't1' } } as never;
+
+    it('scopes the lookup by the JWT’s own user and tenant', async () => {
+      const report = { deviceId: 'd1', score: 82, scoredBy: 'RULES' };
+      mockTrustScore.report.mockResolvedValue(report);
+
+      await expect(controller.deviceTrustScore(req, 'd1')).resolves.toBe(report);
+      expect(mockTrustScore.report).toHaveBeenCalledWith({
+        tenantId: 't1',
+        userId: 'u1',
+        deviceId: 'd1',
+      });
+    });
+
+    it('404s for another user’s device exactly as for an unknown one', async () => {
+      // Both reach the service as "no row for this (user, device)" and must leave by the same door.
+      // A 403-vs-404 distinction here would confirm that someone else's enrolment exists.
+      mockTrustScore.report.mockResolvedValue(null);
+      await expect(controller.deviceTrustScore(req, 'someone-elses')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
   });
 
   // Step-up (ADR-078). What matters at this layer is that BOTH endpoints take the user id from the

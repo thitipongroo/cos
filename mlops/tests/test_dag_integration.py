@@ -19,7 +19,7 @@ def dagbag():
 # ─── DAG loading tests ────────────────────────────────────────────────────────
 
 class TestDagLoading:
-    """Verify all 5 DAGs parse without import errors."""
+    """Verify all 6 DAGs parse without import errors."""
 
     def test_all_dags_load(self, dagbag):
         assert dagbag.import_errors == {}, (
@@ -40,6 +40,9 @@ class TestDagLoading:
 
     def test_model_evaluation_dag_exists(self, dagbag):
         assert "dag-model-evaluation" in dagbag.dags
+
+    def test_train_device_trust_model_dag_exists(self, dagbag):
+        assert "dag-train-device-trust-model" in dagbag.dags
 
 
 # ─── DAG structure tests ──────────────────────────────────────────────────────
@@ -68,6 +71,31 @@ class TestTrainDelayDagStructure:
         assert task_ids == [
             "check_data_threshold",
             "load_features",
+            "train_model",
+            "evaluate_model",
+            "promote_model",
+        ]
+
+
+class TestTrainDeviceTrustDagStructure:
+    def test_has_no_data_threshold_task(self, dagbag):
+        """
+        The absence IS the decision (ADR-081). Every other training DAG opens with
+        check_data_threshold because §22.6 gives it a row count; this model has none, because its
+        positive class is rare by design and a count trigger would promote a model that had learned
+        almost nothing. If someone adds one back, the gate silently becomes the wrong gate.
+        """
+        dag = dagbag.dags["dag-train-device-trust-model"]
+        assert "check_data_threshold" not in {t.task_id for t in dag.tasks}
+
+    def test_baseline_is_computed_before_the_model_is_trained(self, dagbag):
+        """A control computed after seeing the model's numbers is not a control."""
+        dag = dagbag.dags["dag-train-device-trust-model"]
+        order = [t.task_id for t in dag.topological_sort()]
+        assert order == [
+            "load_labels",
+            "load_features",
+            "compute_baseline",
             "train_model",
             "evaluate_model",
             "promote_model",

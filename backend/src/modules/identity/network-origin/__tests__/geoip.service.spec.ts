@@ -154,6 +154,41 @@ describe('when the databases are configured', () => {
     expect(logged).not.toContain(IP);
   });
 
+  // ─── asnNumber: the ADR-081 trust-score input ──────────────────────────────
+
+  it('returns the AS NUMBER, not the organisation name', async () => {
+    // The trust score counts how many networks a device has appeared on. Organisation names are not
+    // stable identifiers — "AIS" and "Advanced Info Service" can describe the same AS across
+    // database releases — so counting them would report a stationary worker as roaming.
+    mockOpen.mockResolvedValue(
+      cityReader({ autonomous_system_number: 4713, autonomous_system_organization: 'AIS' }),
+    );
+    await expect(new GeoIpService().asnNumber(IP)).resolves.toBe(4713);
+  });
+
+  it('returns null when only the City database is present', async () => {
+    // ASN is a separate download. Having City alone is a supported state, and the caller must read
+    // the null as "not established" rather than as a distinct network.
+    delete process.env['GEOLITE2_ASN_DB_PATH'];
+    mockOpen.mockResolvedValueOnce(cityReader(CITY));
+    await expect(new GeoIpService().asnNumber(IP)).resolves.toBeNull();
+  });
+
+  it('returns null for an address the ASN database does not cover', async () => {
+    mockOpen.mockResolvedValue(cityReader(null));
+    await expect(new GeoIpService().asnNumber('10.0.0.1')).resolves.toBeNull();
+  });
+
+  it('degrades to null, without the address, when the ASN reader throws', async () => {
+    mockOpen.mockResolvedValue({
+      get: jest.fn(() => {
+        throw new Error('invalid ip');
+      }),
+    });
+    await expect(new GeoIpService().asnNumber(IP)).resolves.toBeNull();
+    expect(JSON.stringify(mockLogger.warn.mock.calls)).not.toContain(IP);
+  });
+
   it('releases the readers on shutdown (ADR-034 / Rule 39)', async () => {
     mockOpen.mockResolvedValue(cityReader(CITY));
     const service = new GeoIpService();

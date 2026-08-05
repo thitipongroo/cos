@@ -17,6 +17,7 @@ import { MfaService } from './mfa/mfa.service';
 import { OtpService } from './otp/otp.service';
 import { smsSenderProvider } from './otp/sms-sender.provider';
 import { DeviceTrustService } from './device-trust/device-trust.service';
+import { TrustScoreService } from './device-trust/trust-score/trust-score.service';
 import {
   AttestationVerifierRegistry,
   attestationVerifiersProvider,
@@ -65,6 +66,10 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     UnconfiguredAttestationVerifier,
     AttestationVerifierRegistry,
     DeviceTrustService,
+    // ADR-081's day-one path. Not a stopgap: it is the control the DeviceTrustModel must beat on
+    // PR-AUC before it may replace it, so it is maintained permanently rather than deleted on
+    // promotion. Depends on GeoIpService for the ASN-stability signal (ADR-080).
+    TrustScoreService,
     ConsentService,
     GeoIpService,
     NetworkOriginService,
