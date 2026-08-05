@@ -217,13 +217,19 @@ Construction knowledge graph
 
 ## Data subject rights implementation
 
-| Right                        | PDPA Article | Implementation                               | Status |
-| ---------------------------- | ------------ | -------------------------------------------- | ------ |
-| Right to access              | §30          | `GET /api/v1/identity/me/data-export`        | OPEN   |
-| Right to erasure             | §33          | `DELETE /api/v1/identity/me` → anonymization | OPEN   |
-| Right to portability         | §31          | `GET /api/v1/identity/me/data-export` → JSON | OPEN   |
-| Right to object              | §32          | Marketing opt-out (not applicable Stage 1)   | N/A    |
-| Right to restrict processing | §34          | Account suspension (ADMIN action)            | OPEN   |
+| Right                        | PDPA Article | Implementation                                                                           | Status  |
+| ---------------------------- | ------------ | ---------------------------------------------------------------------------------------- | ------- |
+| Right to access              | §30          | `POST` + `GET /api/v1/users/me/data-export` · `GET …/:id/download` (ADR-078)             | PARTIAL |
+| Right to erasure             | §33          | `DELETE /api/v1/identity/me` → anonymization                                             | OPEN    |
+| Right to portability         | §31          | Same endpoints, `format: JSON \| CSV`                                                    | PARTIAL |
+| Right to object              | §32          | Marketing opt-out (not applicable Stage 1)                                               | N/A     |
+| Right to restrict processing | §34          | Account suspension (ADMIN action)                                                        | OPEN    |
+| Right to withdraw consent    | §19          | `POST /api/v1/users/me/consents` — grant and withdrawal on the identical route (ADR-079) | DONE    |
+
+Access and portability are `PARTIAL` because the mechanism is complete but gated behind
+`s1.identity.data-export`, which ships OFF; see `pdpa-controls.md` PDPA-10/11 for the condition under
+which they become `DONE`. The route prefix is `users/me`, not the `identity/me` this table carried
+until 2026-08-05 — ADR-078 rejected that path.
 
 All subject rights requests must be fulfilled within **30 days** per PDPA §32.
 

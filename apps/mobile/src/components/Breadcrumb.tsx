@@ -108,6 +108,40 @@ const BREADCRUMB_MAP: Record<string, Crumb[]> = {
     { key: 'transparency.portal.title', href: '/transparency' },
     { key: 'transparency.delete.title' },
   ],
+  // The D-series (ADR-078/080/081/084). All hang off the portal hub, giving Policy → Portal → screen,
+  // except the two that hang off a sibling — see below.
+  '/data-export': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'dataExport.title' },
+  ],
+  '/transparency-network': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.network.title' },
+  ],
+  '/device-details': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'deviceDetails.title' },
+  ],
+  '/account-security': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'accountSecurity.title' },
+  ],
+  '/transparency-session': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.session.title' },
+  ],
+  '/transparency-timestamps': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.timestamps.title' },
+  ],
+  // Three levels, because it genuinely is three: the re-verification is reached from the network
+  // screen's action, not from the hub. Naming the hub as its parent would give a Back that lands
+  // somewhere the user never was.
+  '/network-reattest': [
+    { key: 'transparency.portal.title', href: '/transparency' },
+    { key: 'transparency.network.title', href: '/transparency-network' },
+    { key: 'reattest.title' },
+  ],
 };
 
 /**

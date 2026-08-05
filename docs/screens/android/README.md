@@ -658,6 +658,26 @@ screen carries the `<` back control restored to the top bar on 2026-08-04, along
 | 06  | [Automated processing](02-shared/privacy-policy/01-data-collection/06-automated-processing.png) | OCR + report drafting in use; PPE detection and photo-vs-design Planned         |
 | 07  | [Erasing your data](02-shared/privacy-policy/01-data-collection/07-erasure.png)                 | What is erased vs anonymised-and-kept, and why; request control inactive        |
 
+### Not yet captured — the D-series (`08`–`13`)
+
+Six more screens landed on 2026-08-05 (ADR-078 / ADR-080 / ADR-081 / ADR-084) and the capture script
+walks them, but **no frames are committed for them yet**: the run needs a booted emulator, the debug
+APK, Metro, a seeded backend on `:3000`, Keycloak on `:8090` and the Docker stack, and it has not been
+performed since the screens landed. The rows below are deliberately absent from the table above rather
+than listed with links to files that do not exist.
+
+| #   | Screen           | What it will show                                                                   |
+| --- | ---------------- | ----------------------------------------------------------------------------------- |
+| 08  | Data export      | Category picker, format, and the confirmation step before an archive is built       |
+| 09  | Network origin   | What the ingress address resolves to, and the behavioural label — or that it is off |
+| 10  | Device details   | The trust score with every contributing signal, and the platform integrity tier     |
+| 11  | Account security | Registered devices, revocation with a reason, and the biometric unlock switch       |
+| 12  | Session details  | Token lifetimes, transport, and the truncated credential id                         |
+| 13  | Timestamps       | UTC, storage precision, append-only audit, and the real retention tiers             |
+
+One caveat for whoever runs it: `08` renders its "not available yet" state unless
+`s1.identity.data-export` is enabled in Unleash first, because that flag ships OFF.
+
 Captured by
 [`apps/mobile/scripts/capture-android-transparency.mjs`](../../../apps/mobile/scripts/capture-android-transparency.mjs)
 (`cd apps/mobile && pnpm capture:android:transparency`). It is the only capture script here that

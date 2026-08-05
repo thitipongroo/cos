@@ -44,29 +44,54 @@ the prerequisite for assigning the rest.
 ## §30–§34 — Data subject rights
 
 Status is taken from `docs/compliance/data-flow-map.md` § Data subject rights implementation and
-re-verified against the backend routes. **No route exists for any of these today** — a `grep` for
-`data-export` across `backend/src/modules/identity` returns nothing — so requests are handled
-manually through the controller contact (PDPA-03).
+re-verified against the backend routes.
 
-| ID      | PDPA ref | Right               | Planned implementation                        | Status   | Verified   |
-| ------- | -------- | ------------------- | --------------------------------------------- | -------- | ---------- |
-| PDPA-10 | §30      | Access              | `GET /api/v1/identity/me/data-export`         | `OPEN`   | 2026-08-03 |
-| PDPA-11 | §31      | Portability         | `GET /api/v1/identity/me/data-export` → JSON  | `OPEN`   | 2026-08-03 |
-| PDPA-12 | §32      | Object              | Marketing opt-out — not applicable at Stage 1 | `N/A S1` | 2026-08-03 |
-| PDPA-13 | §33      | Erasure             | `DELETE /api/v1/identity/me` → anonymisation  | `OPEN`   | 2026-08-03 |
-| PDPA-14 | §34      | Restrict processing | Account suspension (ADMIN action)             | `OPEN`   | 2026-08-03 |
+**Access and portability are now self-service** (ADR-078, 2026-08-05). The paragraph that stood here
+until then said "No route exists for any of these today — a `grep` for `data-export` across
+`backend/src/modules/identity` returns nothing"; that grep now returns a controller, a service, a
+collector, a serializer and a Temporal workflow. Erasure and restriction are still handled manually
+through the controller contact (PDPA-03).
 
-Response deadline for a verified request: **30 days** (PDPA §32).
+The route prefix also changed: ADR-078 rejected the `/api/v1/identity/me/...` path sketched here
+originally, because `identity` is not a route prefix in this API and inventing a third namespace for
+one feature would have left two ways to say "me". The paths below are the ones that exist.
+
+| ID      | PDPA ref | Right               | Implementation on disk                                                                                                                                                                                                                            | Status    | Verified   |
+| ------- | -------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
+| PDPA-10 | §30      | Access              | `POST /api/v1/users/me/data-export` (step-up verified) · `GET /api/v1/users/me/data-export` · `GET …/:id/download`. Collector reads all five @pdpa categories across BOTH databases; mobile screen at `apps/mobile/src/app/(app)/data-export.tsx` | `PARTIAL` | 2026-08-05 |
+| PDPA-11 | §31      | Portability         | Same endpoints; `format: JSON \| CSV` — JSON preserves types, CSV is one file per table. Archive assembled by `data-export.workflow.ts`, delivered as a signed URL minted per request                                                             | `PARTIAL` | 2026-08-05 |
+| PDPA-12 | §32      | Object              | Marketing opt-out — not applicable at Stage 1                                                                                                                                                                                                     | `N/A S1`  | 2026-08-03 |
+| PDPA-13 | §33      | Erasure             | `DELETE /api/v1/identity/me` → anonymisation. Not implemented                                                                                                                                                                                     | `OPEN`    | 2026-08-03 |
+| PDPA-14 | §34      | Restrict processing | Account suspension (ADMIN action). Not implemented                                                                                                                                                                                                | `OPEN`    | 2026-08-03 |
+
+**PDPA-10 and PDPA-11 are `PARTIAL`, not `DONE`, and the reason is a switch rather than a gap.** The
+mechanism is complete and tested, but `s1.identity.data-export` ships **OFF** — new features default
+off in `docs/feature-flags/registry.md` — so the right is not exercisable by a data subject until
+that flag reaches 100%. The flag registry records that it must then be flipped permanently ON,
+because a fail-closed fallback on this surface would let an Unleash outage suspend a statutory right.
+**These rows become `DONE` on the day the flag is enabled in production, and not before.**
+
+Response deadline for a verified request: **30 days** (PDPA §32). The platform commits to no shorter
+deadline: the export is produced by a workflow that reads every domain schema, and no SLA for it
+exists in ADR-078 or anywhere else — which is why the mobile screen reports the request's actual
+state instead of the mockup's "within 24 hours".
 
 ---
 
 ## §19 — Consent
 
-| ID      | Obligation                                     | Implementation on disk                                                    | Status | Verified   |
-| ------- | ---------------------------------------------- | ------------------------------------------------------------------------- | ------ | ---------- |
-| PDPA-20 | Consent captured before PII is stored          | No consent table or consent capture exists in any migration               | `OPEN` | 2026-08-03 |
-| PDPA-21 | Consent withdrawable as easily as it was given | Not implemented                                                           | `OPEN` | 2026-08-03 |
-| PDPA-22 | Consent record retrievable for audit           | `data-residency-policy.md` §3 assumes a "Keycloak consent claim" — absent | `OPEN` | 2026-08-03 |
+| ID      | Obligation                                     | Implementation on disk                                                                                                                                                                                                                                                                                                         | Status    | Verified   |
+| ------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- | ---------- |
+| PDPA-20 | Consent captured before PII is stored          | `platform.consent_records` (migration `20260804000002_consent_records`) + `ConsentService.requireConsent()`, injected by the site-ops, workforce and finance write paths that persist consent-basis PII (ADR-079). Silence is never consent: a category with no recorded decision reports `granted:false`                      | `PARTIAL` | 2026-08-05 |
+| PDPA-21 | Consent withdrawable as easily as it was given | `POST /api/v1/users/me/consents` takes a grant and a withdrawal through the identical route and body; the mobile consent screen offers both with one control. Withdrawal is forward-only — it stops future collection, it does not delete what was lawfully collected (that is erasure, PDPA-13)                               | `DONE`    | 2026-08-05 |
+| PDPA-22 | Consent record retrievable for audit           | Append-only: every grant and every withdrawal inserts a new row and no prior row is mutated, so the history §19 requires survives. `GET /api/v1/users/me/consents` returns all five @pdpa categories with their lawful basis. The "Keycloak consent claim" `data-residency-policy.md` §3 assumed never existed and is not used | `DONE`    | 2026-08-05 |
+
+**PDPA-20 is `PARTIAL`, not `DONE`.** The mechanism exists and the write paths that were identified
+in ADR-079 call it, but "before PII is stored" is a claim about **every** write path in the platform,
+and no automated check enforces that a new one calls `requireConsent()`. Until such a check exists —
+the same class of gap as PDPA-45, which is `OPEN` for being convention-only — this row asserts a
+mechanism, not a guarantee. Categories on the CONTRACT basis (identity, contact — PDPA §24(3)) are
+outside the claim by design: they are processed without consent and the route out is erasure.
 
 ---
 

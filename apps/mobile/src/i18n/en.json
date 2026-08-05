@@ -1781,6 +1781,7 @@
     },
     "expiresIn": "Available to download for {n} more days",
     "download": "Download archive",
-    "linkFailed": "The download link could not be opened. Please try again."
+    "linkFailed": "The download link could not be opened. Please try again.",
+    "notAvailableYet": "Not available yet. Requesting a copy of your data is not switched on for this organisation yet — nothing has gone wrong, and you can ask our Data Protection Office in the meantime."
   }
 }

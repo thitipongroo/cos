@@ -49,6 +49,7 @@ import {
   type ExportCategory,
   type ExportFormat,
 } from '../../lib/dataExport';
+import { isFeatureDisabled } from '../../lib/featureFlag';
 
 type Stage = 'CHOOSE' | 'VERIFY' | 'SUBMITTED';
 
@@ -71,8 +72,13 @@ export default function DataExportScreen(): React.JSX.Element {
     try {
       setChallenge(await requestExportStepUp());
       setStage('VERIFY');
-    } catch {
-      setError(t('dataExport.stepUpFailed'));
+    } catch (err) {
+      // A flag that is off is not a failure, and saying so matters here more than anywhere: PDPA §30
+      // is a statutory right, and "your request failed" when the truth is "not switched on yet" is
+      // the kind of sentence that ends up in front of a regulator.
+      setError(
+        t(isFeatureDisabled(err) ? 'dataExport.notAvailableYet' : 'dataExport.stepUpFailed'),
+      );
     } finally {
       setBusy(false);
     }

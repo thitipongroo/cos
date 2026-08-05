@@ -244,10 +244,14 @@ export function MobileNav() {
         );
       })}
       {/* Routes reached via router.push (ConflictBadge / quick actions / drawer), never bottom tabs.
-          `notifications` + `notification-preferences` are intentionally NOT here — they are declared in
-          ALL_TABS above (bottom tabs for TENANT_ADMIN, href:null for every other role). Without an
-          explicit href:null expo-router auto-registers each remaining (app)/ route file as a visible
-          tab (the leak that once put mfa-enrollment / notification-preferences on every bottom bar). */}
+          Without an explicit href:null expo-router auto-registers each remaining (app)/ route file as
+          a visible tab — the leak that once put mfa-enrollment and notification-preferences on every
+          bottom bar, and that put the seven D-series screens there again in 2026-08.
+          `src/lib/__tests__/routeRegistry.spec.ts` now reads this list against the files on disk, so
+          the next omission fails a test rather than shipping.
+          (An earlier version of this comment claimed notifications + notification-preferences were
+          declared in ALL_TABS instead; they are not, and both are listed below like every other
+          pushed screen.) */}
       <Tabs.Screen name="conflict-review" options={{ href: null }} />
       {/* Notification inbox — reached from the top-bar bell (router.push). No role lists it as a tab. */}
       <Tabs.Screen name="notifications" options={{ href: null }} />
@@ -297,6 +301,21 @@ export function MobileNav() {
       <Tabs.Screen name="transparency-iot" options={{ href: null }} />
       <Tabs.Screen name="transparency-ai" options={{ href: null }} />
       <Tabs.Screen name="transparency-delete" options={{ href: null }} />
+      {/* The D-series screens (ADR-078/080/081/084). Every one is reached by router.push from the
+          portal hub or from another child screen, and none is a tab for any role — so each needs its
+          own href:null for exactly the reason stated at the top of this block. The mockups for these
+          screens each draw their OWN bottom bar (Dashboard|Tasks|Export|Profile on the export screen,
+          Field|Security|Logs on the network one, Inventory|Security|Fleet|Logs on the device one).
+          None of those tab sets exists in this product: the bottom nav is the role's tab set from
+          §32.7 and does not change per screen, so the mockup bars are dropped rather than reproduced. */}
+      <Tabs.Screen name="data-export" options={{ href: null }} />
+      <Tabs.Screen name="transparency-network" options={{ href: null }} />
+      {/* Terminal-ish: reached from the network screen's re-verify action, returns with router.back. */}
+      <Tabs.Screen name="network-reattest" options={{ href: null }} />
+      <Tabs.Screen name="device-details" options={{ href: null }} />
+      <Tabs.Screen name="account-security" options={{ href: null }} />
+      <Tabs.Screen name="transparency-session" options={{ href: null }} />
+      <Tabs.Screen name="transparency-timestamps" options={{ href: null }} />
     </Tabs>
   );
 }

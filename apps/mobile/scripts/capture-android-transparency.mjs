@@ -202,7 +202,23 @@ async function tapScrolling(id, what) {
   throw new Error(`capture: ${what} never became tappable`);
 }
 
-/** The seven category screens, in the order the hub lists them. */
+/**
+ * Every screen reachable in one tap from the hub, in the order the hub lists them.
+ *
+ * The first seven are the category screens. The rest are the D-series (ADR-078/080/081/084), added
+ * when those screens landed.
+ *
+ * TWO OF THE D-SERIES SCREENS ARE NOT HERE, deliberately:
+ *   - `network-reattest` is reached from the network screen, not the hub, and RUNS an attestation as
+ *     a side effect. A capture pass would re-attest this device on every run.
+ *   - the export flow's later stages (`VERIFY`, `SUBMITTED`) need a real step-up code and would
+ *     enqueue a genuine PDPA §30 request against the seeded account. The first stage is captured;
+ *     the other two are left to the E2E suite, which can drive them with a fixed OTP.
+ *
+ * `data-export` also depends on `s1.identity.data-export`, which ships OFF. The capture run must set
+ * it ON in Unleash, or the screen will photograph its "not available yet" state — a real state worth
+ * having, but not the one this file is named for.
+ */
 const CATEGORIES = [
   { card: 'transparency-cat-identity', screen: 'transparency-identity', file: '01-identity' },
   { card: 'transparency-cat-location', screen: 'transparency-location', file: '02-location' },
@@ -211,6 +227,16 @@ const CATEGORIES = [
   { card: 'transparency-input-iot', screen: 'transparency-iot', file: '05-equipment-sensors' },
   { card: 'transparency-input-camera', screen: 'transparency-ai', file: '06-automated-processing' },
   { card: 'transparency-cat-delete', screen: 'transparency-delete', file: '07-erasure' },
+  { card: 'transparency-export', screen: 'data-export', file: '08-data-export' },
+  { card: 'transparency-tech-network', screen: 'transparency-network', file: '09-network-origin' },
+  { card: 'transparency-tech-device', screen: 'device-details', file: '10-device-details' },
+  { card: 'transparency-tech-security', screen: 'account-security', file: '11-account-security' },
+  { card: 'transparency-tech-session', screen: 'transparency-session', file: '12-session' },
+  {
+    card: 'transparency-tech-timestamps',
+    screen: 'transparency-timestamps',
+    file: '13-timestamps',
+  },
 ];
 
 async function main() {
