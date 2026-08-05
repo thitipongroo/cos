@@ -1119,7 +1119,7 @@
       "retention": "How long it is kept",
       "retentionBody": "There is no single retention period — each record type has its own, set by contract or by law. Check-in coordinates are reduced to a daily count after 90 days; worker records are anonymised two years after employment ends; site reports are kept for the project's life plus seven years under accounting law.",
       "rights": "Your rights",
-      "rightsBody": "You can ask for a copy of your data, ask for it to be corrected, or ask for it to be erased. Requests are handled by our Data Protection Office and answered within 30 days. Self-service versions of these actions are not built yet.",
+      "rightsBody": "You can ask for a copy of your data, ask for it to be corrected, or ask for it to be erased. A copy is self-service — start it below and confirm with a code. Correction and erasure are handled by our Data Protection Office and answered within 30 days.",
       "cat": {
         "identity": {
           "title": "Identity & contact",
@@ -1154,6 +1154,34 @@
         "iot": {
           "title": "Equipment sensors",
           "body": "Automatic telemetry from machinery."
+        }
+      },
+      "exportBody": "Ask for a copy of everything this platform holds about you, in a file you can keep or move elsewhere.",
+      "preferences": {
+        "title": "Contact preferences",
+        "body": "Choose which notifications reach you, and by which channel."
+      },
+      "technical": "How the platform itself works",
+      "tech": {
+        "network": {
+          "title": "Network origin",
+          "body": "What your connection’s address tells us, and the one behavioural label derived from it."
+        },
+        "device": {
+          "title": "This device",
+          "body": "How this handset is identified, how much it is trusted, and why."
+        },
+        "security": {
+          "title": "Account security",
+          "body": "Every device signed in to your account, and how this one unlocks."
+        },
+        "session": {
+          "title": "Session details",
+          "body": "How long you stay signed in, and how that is protected."
+        },
+        "timestamps": {
+          "title": "Timestamps",
+          "body": "How the time of every record is captured and how long it is kept."
         }
       }
     },
@@ -1434,6 +1462,110 @@
       "why": "Why some records stay",
       "whyBody": "Erasure does not override a legal duty to keep a record. Where a record must be kept, the personal parts of it are removed instead, so the record survives without identifying you — the approach our data protection policy requires.",
       "action": "Request erasure"
+    },
+    "session": {
+      "title": "Session details",
+      "lede": "How this app keeps you signed in, and for how long. Every value below is what the platform actually does — read from the specification it is implemented against, not from a description of it.",
+      "how": "How your session works",
+      "parameters": "Session parameters",
+      "minutes": "{n} minutes",
+      "days": "{n} days",
+      "card": {
+        "offlineQueue": {
+          "title": "Working offline",
+          "body": "When the signal drops, what you write is queued on this device and sent when you are back online. Nothing you enter is lost between the two states."
+        },
+        "rolePermissions": {
+          "title": "What your role may do",
+          "body": "Every request is checked against the permissions granted to your role. The list is fixed in the platform specification, not set per person."
+        },
+        "tokenRotation": {
+          "title": "Renewing your session",
+          "body": "Your sign-in is renewed in the background so you are not interrupted mid-task. Each renewal replaces the previous credential rather than extending it."
+        }
+      },
+      "param": {
+        "accessToken": "Sign-in credential",
+        "accessTokenNote": "How long a single credential is valid before it is renewed.",
+        "refreshToken": "Renewal window",
+        "refreshTokenNote": "How long you can stay signed in without entering a code again. Renewing replaces the credential; it is never reused.",
+        "transport": "In transit",
+        "transportNote": "Every request between this app and the platform is encrypted in transit.",
+        "tokenId": "Credential id",
+        "tokenIdNote": "The identifier of the credential this device is using right now, shortened. It changes every time your session is renewed."
+      }
+    },
+    "timestamps": {
+      "title": "Timestamps",
+      "lede": "Every record this platform keeps carries the moment it happened. These are the four things that are true about how those moments are recorded.",
+      "how": "How time is recorded",
+      "fact": {
+        "utc": {
+          "title": "One clock, everywhere",
+          "body": "Times are stored in UTC in a standard format, so a record made on one site and read on another cannot disagree about when it happened."
+        },
+        "precision": {
+          "title": "Down to the microsecond",
+          "body": "Timestamps are stored at the precision the database provides, which is finer than the events being ordered — two actions a fraction of a second apart stay in the order they happened."
+        },
+        "appendOnly": {
+          "title": "Audit entries cannot be deleted",
+          "body": "The application has no permission to delete rows from the audit log. This is enforced by the database itself, not by application code, so it holds even if the application is wrong."
+        },
+        "retention": {
+          "title": "How long they are kept",
+          "body": "Application logs are kept {hot} days for immediate use, then a further {cold} year in cold storage. Audit entries are kept {worm} years in write-once storage."
+        }
+      }
+    },
+    "network": {
+      "title": "Network origin",
+      "lede": "What your network address tells this platform. Everything on this screen is worked out when you open it and then discarded — none of it is stored.",
+      "unavailable": "Could not be loaded",
+      "unavailableBody": "The panel could not be read just now. Rather than guessing, nothing is shown — pull back and try again.",
+      "origin": "Where your connection appears to come from",
+      "place": "Approximate location",
+      "placeNote": "City level only, looked up on our own servers. Your address is never sent to another company for this.",
+      "placeUnknown": "Not known",
+      "isp": "Internet provider",
+      "ispNote": "The network operator your connection belongs to.",
+      "noOrigin": "Location lookup not available",
+      "noOriginBody": "This installation has no location database, so your address is not resolved to a place at all. Nothing about you is missing — the lookup simply is not running here.",
+      "device": "Measured on this device",
+      "connection": "Connection type",
+      "connectionNote": "Read from this handset, not guessed from your address.",
+      "conn": {
+        "wifi": "Wi-Fi",
+        "cellular": "Mobile data",
+        "ethernet": "Wired",
+        "vpn": "VPN",
+        "bluetooth": "Bluetooth",
+        "wimax": "WiMAX",
+        "other": "Other",
+        "none": "Offline",
+        "unknown": "Not known"
+      },
+      "latency": "Round trip",
+      "latencyNote": "How long this screen’s own request took. Measured here, not estimated.",
+      "ms": "{n} ms",
+      "behaviour": "Behavioural context",
+      "behaviourOff": "Not enabled",
+      "behaviourOffBody": "You have not agreed to operational profiling, so no behavioural label is worked out for you. This is different from having too little data — the platform is not doing this at all.",
+      "context": {
+        "STATIONARY": "Stationary",
+        "MOBILE": "Moving between sites",
+        "INSUFFICIENT_DATA": "Not enough check-ins"
+      },
+      "contextBody": {
+        "STATIONARY": "Your last {points} check-ins were all within {radius} m of the same point.",
+        "MOBILE": "Your check-ins over the last {days} days spread up to {metres} m apart, which is wider than a single site.",
+        "INSUFFICIENT_DATA": "Fewer than {min} check-ins with a location in the last {days} days. Not enough to say anything, so nothing is said."
+      },
+      "rule": "The rule",
+      "ruleBody": "You are counted as stationary when every check-in with a location in the last {days} days is within {radius} m of their centre point, and there are at least {min} of them. Fewer than that reads as “not enough check-ins”, never as stationary.",
+      "retention": "How long this is kept",
+      "retentionBody": "Your network address is stored with each audit entry. Application logs are kept 30 days, then a year in cold storage; audit entries are kept 7 years. The location and provider on this screen are not stored at all.",
+      "reattest": "Re-verify this device"
     }
   },
   "crm": {
@@ -1462,5 +1594,193 @@
       "title": "Customers",
       "empty": "No customers yet."
     }
+  },
+  "reattest": {
+    "title": "Device re-verification",
+    "running": "Re-verifying this device…",
+    "refreshed": "Device re-verified",
+    "refreshedBody": "This device proved it still holds its security key. Its trusted period has been extended and the check has been written to your audit log.",
+    "at": "Verified at",
+    "atNote": "Recorded in UTC.",
+    "unavailable": "Could not be re-verified",
+    "unavailableBody": "This device could not produce its security key just now. Nothing is wrong with your account — the proof simply could not be made, and nothing has changed.",
+    "back": "Back"
+  },
+  "deviceDetails": {
+    "title": "Device details",
+    "lede": "What this platform knows about the device you are holding, and how much it currently trusts it.",
+    "notEnrolled": "This device is not registered",
+    "notEnrolledBody": "It has not been registered for trusted sign-in yet. It will register itself the next time you sign in with a code.",
+    "score": "Trust score",
+    "outOf": "out of {max}",
+    "scorer": {
+      "RULE_BASED": "Worked out from fixed rules",
+      "AI_VERIFIED": "Worked out by a trained model"
+    },
+    "capped": "One finding is holding this score down",
+    "cappedBy": {
+      "FAILED": "The platform reported that this device did not pass its integrity check. That alone limits the score, however long the device has been in use.",
+      "COMPROMISE_ON_RECORD": "A device on your account was reported compromised. That limits the score for every device on the account until it is resolved."
+    },
+    "signal": {
+      "attestation": "Platform integrity",
+      "recency": "Recent use",
+      "enrolmentAge": "How long registered",
+      "revocationHistory": "Account history",
+      "asnStability": "Network stability"
+    },
+    "band": {
+      "PASSED_STRONG": "Strong platform integrity",
+      "PASSED_NO_TIER": "App attested on genuine Apple hardware",
+      "PASSED_DEVICE": "Device integrity confirmed",
+      "PASSED_BASIC": "Basic integrity only",
+      "NOT_ATTEMPTED": "Never checked",
+      "UNAVAILABLE": "Could not be checked",
+      "FAILED": "Did not pass",
+      "SEEN_WITHIN_FRESH_WINDOW": "Used in the last 7 days",
+      "SEEN_WITHIN_TRUST_WINDOW": "Used in the last 30 days",
+      "STALE": "Not used for over 30 days",
+      "AT_LEAST_90_DAYS": "Registered over 90 days ago",
+      "AT_LEAST_30_DAYS": "Registered over 30 days ago",
+      "AT_LEAST_7_DAYS": "Registered over 7 days ago",
+      "UNDER_7_DAYS": "Registered less than a week ago",
+      "CLEAN": "No revocations on your account",
+      "NON_COMPROMISE_RECENT": "A device was removed recently",
+      "COMPROMISE_ON_RECORD": "A device on your account was reported compromised",
+      "SINGLE_ASN": "One network",
+      "TWO_ASNS": "Two networks",
+      "THREE_TO_FOUR_ASNS": "Three or four networks",
+      "FIVE_OR_MORE_ASNS": "Five or more networks",
+      "INSUFFICIENT_DATA": "Not established"
+    },
+    "points": "{points} of {max} points",
+    "rulesVersion": "Scoring rules version {v}",
+    "identity": "This device",
+    "installId": "Installation id",
+    "installIdNote": "Created by this app and kept in secure storage. It is not a hardware serial number — reinstalling the app produces a new one.",
+    "model": "Model",
+    "modelNote": "Reported by the device itself.",
+    "unknownModel": "Not reported",
+    "binding": "How sign-in is bound",
+    "bindingValue": "Hardware-backed key",
+    "bindingNote": "A key held in this device’s secure hardware, which cannot be copied off it. It signs silently at sign-in and is separate from app unlock, which you can turn on under Account Security.",
+    "platformIntegrity": "Platform integrity",
+    "rootCheck": "Root / jailbreak check",
+    "integrity": {
+      "PASSED": "Passed",
+      "FAILED": "Did not pass",
+      "UNAVAILABLE": "Could not be checked",
+      "NOT_ATTEMPTED": "Never checked"
+    },
+    "integrityNote": {
+      "PASSED": "Google or Apple confirmed this device’s integrity when it registered.",
+      "FAILED": "The platform answered, and this device did not pass. This usually means it is rooted, modified, or not a physical device.",
+      "UNAVAILABLE": "We asked and could not be told — for example, no Play services on this device. This is not a finding against your device.",
+      "NOT_ATTEMPTED": "This device registered before the check existed. It has not failed anything; it was simply never asked."
+    },
+    "tier": "Integrity level",
+    "tierValue": {
+      "STRONG": "Strong",
+      "DEVICE": "Device",
+      "BASIC": "Basic"
+    },
+    "tierNone": "Not reported on this platform",
+    "tierNote": "Shown instead of a security patch date. Neither Google nor Apple reports a patch date to an app, and on recent Android a Strong result already means the device was updated within the last year."
+  },
+  "accountSecurity": {
+    "title": "Account security",
+    "lede": "The devices signed in to your account, and how this one unlocks.",
+    "devices": "Your devices",
+    "noDevices": "No registered devices",
+    "noDevicesBody": "No device is registered for trusted sign-in yet. The one you are using will register itself the next time you sign in with a code.",
+    "platform": {
+      "ios": "iPhone or iPad",
+      "android": "Android device"
+    },
+    "thisDevice": "This device",
+    "lastSeen": "Last used {at}",
+    "viewDetails": "View device details",
+    "revoke": "Remove this device",
+    "whyRevoke": "Why are you removing it?",
+    "revokeSelfWarning": "This is the device you are using. Removing it means your next sign-in here will need a code again.",
+    "reason": {
+      "USER_REVOKED": "I no longer use it",
+      "LOST_OR_STOLEN": "It was lost or stolen",
+      "COMPROMISED": "Someone else got into it"
+    },
+    "settings": "Security settings",
+    "biometric": "Unlock with biometrics",
+    "biometricNote": "Ask for your face or fingerprint when the app is reopened. This is separate from signing in, and it does not leave this device.",
+    "biometricUnavailable": "Biometric unlock was not turned on",
+    "biometricUnavailableBody": "Your device declined, or no face or fingerprint is set up on it. The switch stays off rather than showing a lock that would never appear.",
+    "cancel": "Cancel"
+  },
+  "dataExport": {
+    "title": "Get a copy of your data",
+    "lede": "You can ask for a copy of the personal data this platform holds about you. Choose what to include, confirm it is you, and the archive is prepared for you to download.",
+    "categories": "What to include",
+    "cat": {
+      "identity": {
+        "title": "Identity",
+        "body": "Your name, and the account details that identify you."
+      },
+      "contact": {
+        "title": "Contact",
+        "body": "Your phone number and email address."
+      },
+      "location": {
+        "title": "Location",
+        "body": "Coordinates attached to your check-ins, reports and inspections."
+      },
+      "financial": {
+        "title": "Financial",
+        "body": "Your recorded hours and the pay rates agreed with you."
+      },
+      "operational": {
+        "title": "Activity",
+        "body": "What you did and when, including the network address each request came from."
+      }
+    },
+    "format": "File format",
+    "formatHint": {
+      "JSON": "One structured file that keeps the original data types. Best if you plan to move it to another system.",
+      "CSV": "One spreadsheet file per table. Best if you plan to open it yourself."
+    },
+    "verification": "You will be asked to confirm it is you",
+    "verificationBody": "A code is sent to your registered phone or email before the archive is built. The archive contains everything the platform holds about you, so it is worth confirming.",
+    "request": "Request my data",
+    "stepUpFailed": "The confirmation code could not be sent. Please try again.",
+    "codeSent": {
+      "SMS": "We sent a 6-digit code to your phone ending {hint}. Enter it below to confirm this request.",
+      "EMAIL": "We sent a 6-digit code to {hint}. Enter it below to confirm this request."
+    },
+    "codeLabel": "Confirmation code",
+    "codeRejected": "That code was not accepted. Check it and try again.",
+    "verify": "Confirm and request",
+    "stage": {
+      "QUEUED": {
+        "title": "Request received",
+        "body": "Your request is waiting to be picked up. You can leave this screen — it will keep going without you."
+      },
+      "PREPARING": {
+        "title": "Preparing your archive",
+        "body": "Your data is being gathered from across the platform. This can take a while for a long history."
+      },
+      "READY": {
+        "title": "Your archive is ready",
+        "body": "Download it below. The link is created fresh each time you tap, so nothing shareable is left lying around."
+      },
+      "FAILED": {
+        "title": "It did not finish",
+        "body": "Your archive could not be built. Nothing about your data has changed, and you can ask again."
+      },
+      "EXPIRED": {
+        "title": "This archive has expired",
+        "body": "The download period has passed and the file has been deleted. You can request a new copy at any time."
+      }
+    },
+    "expiresIn": "Available to download for {n} more days",
+    "download": "Download archive",
+    "linkFailed": "The download link could not be opened. Please try again."
   }
 }

@@ -105,6 +105,44 @@ export async function listDevices(): Promise<TrustedDeviceSummary[]> {
   return get<TrustedDeviceSummary[]>('/auth/devices');
 }
 
+/** One contributing signal, with the points it earned out of the points available (ADR-081). */
+export interface TrustSignal {
+  signal: 'attestation' | 'recency' | 'enrolmentAge' | 'revocationHistory' | 'asnStability';
+  band: string;
+  points: number;
+  maxPoints: number;
+}
+
+export interface DeviceTrustReport {
+  deviceId: string;
+  score: number;
+  maxScore: number;
+  /** True when one finding held the total below what the signals summed to — the screen says why. */
+  capped: boolean;
+  /**
+   * Which scorer produced the number.
+   *
+   * `RULES` until a DeviceTrustModel beats the rule-based baseline on PR-AUC. ADR-081 forbids the
+   * screen describing the score as AI-derived while this reads RULES — claiming AI over an if-chain
+   * is the same class of dishonesty as the static 98% the ADR removed.
+   */
+  scoredBy: 'RULES' | 'MODEL';
+  /** The rules file version, so a score someone saw can be tied to the rules that produced it. */
+  rulesVersion: string;
+  signals: TrustSignal[];
+}
+
+/**
+ * The trust score for one of the caller's own devices.
+ *
+ * Advisory only: it never revokes a device and never blocks a login (§22.3). Behind the
+ * `s1.identity.device-trust-score` flag, which answers 503 when off — the caller renders the rest of
+ * the screen without the panel rather than treating it as an error.
+ */
+export async function getDeviceTrustScore(deviceId: string): Promise<DeviceTrustReport> {
+  return get<DeviceTrustReport>(`/auth/devices/${encodeURIComponent(deviceId)}/trust`);
+}
+
 /**
  * Revoke a trusted device.
  *

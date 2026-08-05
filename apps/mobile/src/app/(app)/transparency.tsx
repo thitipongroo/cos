@@ -25,7 +25,6 @@ import {
   NavCard,
   InfoCard,
   SummaryTile,
-  DisabledAction,
   StatusPill,
 } from '../../components/TransparencyKit';
 
@@ -36,6 +35,21 @@ const CATEGORIES = [
   { key: 'logs', icon: 'receipt-long', route: '/transparency-logs' },
   { key: 'manual', icon: 'edit-note', route: '/transparency-manual' },
   { key: 'payroll', icon: 'payments', route: '/transparency-manual' },
+] as const;
+
+/**
+ * The technical detail screens behind the logs category.
+ *
+ * Separate from CATEGORIES because they describe the platform's own machinery rather than a category
+ * of the subject's data — what the network address resolves to, what this device is trusted for, how
+ * a session and a timestamp are recorded.
+ */
+const TECHNICAL = [
+  { key: 'network', icon: 'router', route: '/transparency-network' },
+  { key: 'device', icon: 'smartphone', route: '/device-details' },
+  { key: 'security', icon: 'security', route: '/account-security' },
+  { key: 'session', icon: 'vpn-key', route: '/transparency-session' },
+  { key: 'timestamps', icon: 'schedule', route: '/transparency-timestamps' },
 ] as const;
 
 /** How data arrives. IoT is `planned` — Stage 1 has no ingestion path at all (Phase 21/24). */
@@ -112,6 +126,15 @@ export default function TransparencyScreen(): React.JSX.Element {
         title={t('transparency.portal.rights')}
         body={t('transparency.portal.rightsBody')}
       />
+      {/* Export is no longer a DisabledAction. PDPA-10/11 shipped (ADR-078), so the row that used
+          to say "coming soon" now goes somewhere. */}
+      <NavCard
+        testID="transparency-export"
+        icon="download"
+        title={t('dataExport.title')}
+        body={t('transparency.portal.exportBody')}
+        onPress={() => router.push('/data-export')}
+      />
       <NavCard
         testID="transparency-cat-delete"
         icon="delete-outline"
@@ -120,12 +143,28 @@ export default function TransparencyScreen(): React.JSX.Element {
         body={t('transparency.delete.lede')}
         onPress={() => router.push('/transparency-delete')}
       />
-      <DisabledAction
-        testID="transparency-export"
-        icon="download"
-        label={t('transparency.identity.actionExport')}
-        comingSoon={t('transparency.comingSoon')}
+      {/* Contact preferences is a LINK, not a screen of its own. The mockup drew one, but
+          notification-preferences.tsx already writes exactly these settings against the real §19.4
+          event catalog — a second surface would be two ways to change one thing (ADR-084). */}
+      <NavCard
+        testID="transparency-preferences"
+        icon="tune"
+        title={t('transparency.portal.preferences.title')}
+        body={t('transparency.portal.preferences.body')}
+        onPress={() => router.push('/notification-preferences')}
       />
+
+      <SectionLabel>{t('transparency.portal.technical')}</SectionLabel>
+      {TECHNICAL.map((r) => (
+        <NavCard
+          key={r.key}
+          testID={`transparency-tech-${r.key}`}
+          icon={r.icon}
+          title={t(`transparency.portal.tech.${r.key}.title`)}
+          body={t(`transparency.portal.tech.${r.key}.body`)}
+          onPress={() => router.push(r.route)}
+        />
+      ))}
     </ScrollView>
   );
 }
