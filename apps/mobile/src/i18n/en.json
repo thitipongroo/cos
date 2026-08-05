@@ -604,6 +604,21 @@
       "title": "Notifications",
       "on": "On",
       "off": "Off"
+    },
+    "biometric": {
+      "title": "Biometric Unlock",
+      "face": "Face ID",
+      "fingerprint": "Fingerprint",
+      "iris": "Iris",
+      "on": "On",
+      "off": "Off",
+      "unavailable": "Not supported on this device",
+      "needsEnrolment": "Set up Face ID or a fingerprint in your device Settings first",
+      "lockPrompt": "Unlock Construction OS",
+      "lockTitle": "App locked",
+      "lockBody": "Unlock to continue.",
+      "unlockAction": "Unlock",
+      "signOut": "Sign out instead"
     }
   },
   "status": {

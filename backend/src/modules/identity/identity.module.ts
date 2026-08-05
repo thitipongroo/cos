@@ -17,8 +17,17 @@ import { MfaService } from './mfa/mfa.service';
 import { OtpService } from './otp/otp.service';
 import { smsSenderProvider } from './otp/sms-sender.provider';
 import { DeviceTrustService } from './device-trust/device-trust.service';
+import {
+  AttestationVerifierRegistry,
+  attestationVerifiersProvider,
+} from './device-trust/attestation-verifier.provider';
+import { UnconfiguredAttestationVerifier } from './device-trust/adapters/unconfigured-attestation.adapter';
+import { PlayIntegrityVerifier } from './device-trust/adapters/play-integrity.adapter';
+import { AppAttestVerifier } from './device-trust/adapters/app-attest.adapter';
 import { ConsentController } from './consent/consent.controller';
 import { ConsentService } from './consent/consent.service';
+import { GeoIpService } from './network-origin/geoip.service';
+import { NetworkOriginService } from './network-origin/network-origin.service';
 import { KeycloakJwtStrategy } from './strategies/keycloak-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
@@ -45,8 +54,20 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
     // otherwise Path A login is impossible in an air-gapped deployment.
     smsSenderProvider,
     OtpService,
+    // ADR-082/083: platform attestation is a port, because Android and iOS are two entirely
+    // different protocols — Play Integrity is a service-account call to Google, App Attest is local
+    // certificate-chain cryptography — and an air-gapped deployment has neither. Both verifiers
+    // self-disable to UNAVAILABLE without their configuration, and anything unhandled falls through
+    // to UnconfiguredAttestationVerifier, which never blocks a login (§32.9 Type B).
+    PlayIntegrityVerifier,
+    AppAttestVerifier,
+    attestationVerifiersProvider,
+    UnconfiguredAttestationVerifier,
+    AttestationVerifierRegistry,
     DeviceTrustService,
     ConsentService,
+    GeoIpService,
+    NetworkOriginService,
     StepUpService,
     DataExportService,
     KeycloakJwtStrategy,

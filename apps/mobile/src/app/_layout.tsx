@@ -17,10 +17,12 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useAuthStore } from '../store/authStore';
 import { useLocaleStore } from '../store/localeStore';
 import { useThemeStore } from '../store/themeStore';
+import { useBiometricStore } from '../store/biometricStore';
 import { I18nProvider } from '../i18n';
 import { initSyncQueue } from '../db/sync-queue';
 import { isE2EEnabled, setForcedOnline } from '../lib/e2e/networkOverride';
 import { LoadingBoundary } from '../components/LoadingBoundary';
+import { BiometricLock } from '../components/BiometricLock';
 import { darkColors } from '../theme/tokens';
 import appFavicon from '../../assets/favicon.png';
 
@@ -86,6 +88,13 @@ export default function RootLayout() {
       // already in the user's mode — hydrating later would flash the default dark shell at someone
       // who has chosen light.
       useThemeStore.getState().hydrate(),
+      // Read the biometric preference in the same gate, then raise the lock BEFORE the app tree
+      // mounts. Hydrating it later would paint the authenticated screens for a frame first, which is
+      // precisely the glimpse the lock exists to prevent.
+      useBiometricStore
+        .getState()
+        .hydrate()
+        .then(() => useBiometricStore.getState().lockIfEnabled()),
     ]).finally(() => setHydrated(true));
   }, []);
 
@@ -155,6 +164,11 @@ export default function RootLayout() {
           <I18nProvider>
             <AuthGate />
             <Slot />
+            {/* Above <Slot />, so the lock covers whatever route is mounted. Renders null unless the
+                gate is up — the users who never enable it pay nothing for it. It sits INSIDE
+                I18nProvider because its copy is translated, and outside the (app) group because the
+                session is what it guards, not any particular screen. */}
+            <BiometricLock />
           </I18nProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>

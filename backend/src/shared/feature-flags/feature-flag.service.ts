@@ -42,6 +42,15 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // outage fail closed on a statutory right — PDPA §30 gives 30 days to answer, and "the flag service
   // was down" is not an answer. It is correct only while the feature is not yet rolled out.
   's1.identity.data-export': false,
+  // Platform attestation verification (ADR-082) — kill-switch, permanent.
+  //
+  // Defaults ON despite being new, which is the opposite of this file's usual rule, because of what
+  // OFF means here. Attestation is additive and non-blocking by construction: the worst OFF can do is
+  // stop recording verdicts, and the worst ON can do is record UNAVAILABLE. Neither affects sign-in.
+  // The switch exists so a Google or Apple outage can be taken out of the request path without a
+  // deploy — and a flag-service outage must not be the thing that silently stops a security signal
+  // from being collected.
+  's1.identity.device-attestation': true,
 };
 
 export interface FlagContext {

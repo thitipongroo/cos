@@ -18,6 +18,7 @@ disable a live production feature. New-feature flags should default OFF until ro
 | `s1.identity.authoritative-role-check` | `KeycloakJwtStrategy.validate()` — resolve `platform.users.is_active` and the effective role from the DB per request instead of trusting the JWT claim (ADR-077; security review F1b/F2b). OFF re-opens those findings by design; incident mitigation only | ON                                | kill-switch — permanent |
 | `s1.tenant.encrypted-db-url`           | Encrypt `platform.tenants.dedicated_db_url` (AES-256-GCM) on WRITE in `TenantService` (security review F5b). Reads always accept both formats, so it is safe to flip either way; enterprise provisioning always encrypts (no DI in the Temporal worker)    | OFF                               | 30 days after 100%      |
 | `s1.identity.data-export`              | `POST /api/v1/users/me/data-export`, `GET /api/v1/users/me/data-export`, `GET /api/v1/users/me/data-export/:id/download` — PDPA §30/§31 subject access + portability (ADR-078)                                                                             | OFF → **must flip to ON at 100%** | kill-switch — permanent |
+| `s1.identity.device-attestation`       | `DeviceTrustService.registerDevice()` — whether a Play Integrity / App Attest token is sent for server-side verification (ADR-082). Checked in code, NOT as a route decorator: a 503 on enrolment would make a Google outage break device enrolment        | ON                                | kill-switch — permanent |
 
 Notes:
 

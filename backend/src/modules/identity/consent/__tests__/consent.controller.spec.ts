@@ -6,6 +6,7 @@
 
 import { ConsentController } from '../consent.controller';
 import type { ConsentService } from '../consent.service';
+import type { NetworkOriginService } from '../../network-origin/network-origin.service';
 import type { TenantRequest } from '../../../tenant/tenant.middleware';
 
 const TENANT = '11111111-1111-4111-8111-111111111111';
@@ -15,13 +16,36 @@ const req = { tenantId: TENANT, userId: USER } as unknown as TenantRequest;
 
 describe('ConsentController', () => {
   let service: jest.Mocked<Pick<ConsentService, 'getState' | 'record'>>;
+  let networkOrigin: jest.Mocked<Pick<NetworkOriginService, 'describe'>>;
   let controller: ConsentController;
 
   beforeEach(() => {
     service = { getState: jest.fn(), record: jest.fn() } as unknown as jest.Mocked<
       Pick<ConsentService, 'getState' | 'record'>
     >;
-    controller = new ConsentController(service as unknown as ConsentService);
+    networkOrigin = { describe: jest.fn() } as unknown as jest.Mocked<
+      Pick<NetworkOriginService, 'describe'>
+    >;
+    controller = new ConsentController(
+      service as unknown as ConsentService,
+      networkOrigin as unknown as NetworkOriginService,
+    );
+  });
+
+  describe('GET me/network-origin', () => {
+    it('uses the REQUEST’s ip, never one the caller could supply', async () => {
+      // A caller-chosen address would make this a general-purpose geo-IP lookup service for anyone
+      // holding a session, rather than a transparency view of their own record.
+      const panel = { origin: null, behavioral: null, rule: {} };
+      networkOrigin.describe.mockResolvedValue(panel as never);
+
+      await expect(controller.getNetworkOrigin(req, '203.0.113.7')).resolves.toBe(panel);
+      expect(networkOrigin.describe).toHaveBeenCalledWith({
+        tenantId: TENANT,
+        userId: USER,
+        ipAddress: '203.0.113.7',
+      });
+    });
   });
 
   it('GET me/consents reads the caller’s own state', async () => {

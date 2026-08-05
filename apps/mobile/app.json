@@ -72,7 +72,13 @@
           "microphonePermission": "Allow Construction OS to record audio for site voice notes."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Construction OS to unlock the app with Face ID."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

@@ -137,6 +137,26 @@ model TrustedDevice {
   expiresAt   DateTime  @map("expires_at") @db.Timestamptz()
   revokedAt   DateTime? @map("revoked_at") @db.Timestamptz()
 
+  // Platform attestation (ADR-082). All nullable: a device enrolled before 20260805000001 has never
+  // been attested, and NULL is a distinct state from UNAVAILABLE ("we asked, the platform could not
+  // answer") which is itself distinct from FAILED ("we asked, it did not pass").
+  // @pdpa(category: "identity") — these narrow device identification
+  attestationVerdict AttestationVerdict?   @map("attestation_verdict")
+  // The tier (ADR-083). NULL on iOS — App Attest attests the app, not the device, so it has no
+  // equivalent concept — and NULL whenever no verdict was obtained at all.
+  integrityLevel     DeviceIntegrityLevel? @map("integrity_level")
+  attestedAt         DateTime?             @map("attested_at") @db.Timestamptz()
+  // The only server-verified OS signal available: Play Integrity's deviceAttributes.sdkVersion, an
+  // Android API level. NOT expo-device's osVersion — that is self-reported and, on a rooted device,
+  // attacker-controlled. NULL on iOS.
+  osVersion          String?               @map("os_version") @db.VarChar(32)
+  // There is deliberately no securityPatchLevel: no attestation verdict on either platform carries
+  // one (ADR-083). integrityLevel STRONG already means "patched within the last year" on Android 13+.
+
+  // Why trust ended (ADR-081). COMPROMISED is the model's ONLY positive class; the other three are
+  // ordinary fleet churn. NULL while revokedAt is NULL, and also for revocations predating the column.
+  revocationReason DeviceRevocationReason? @map("revocation_reason")
+
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   @@unique([userId, deviceId])
@@ -153,6 +173,47 @@ enum ConsentPurpose {
   LOCATION
   FINANCIAL
   OPERATIONAL
+
+  @@schema("platform")
+}
+
+/// Platform integrity verdict from Play Integrity / App Attest (ADR-082).
+/// UNAVAILABLE is not a failure — it is "we asked and the platform could not answer" (no Play
+/// Services, an OS the API does not cover, verifier not configured). A NULL column means we never
+/// asked at all. Scoring those two the same would make an old device indistinguishable from one
+/// whose integrity is unknown for a current reason.
+enum AttestationVerdict {
+  PASSED
+  FAILED
+  UNAVAILABLE
+
+  @@schema("platform")
+}
+
+/// How strong the platform's answer was (ADR-083) — Play Integrity's device-integrity labels.
+/// Orthogonal to AttestationVerdict: that says whether an answer arrived, this says what it was worth.
+/// NULL on iOS, where App Attest has no equivalent concept.
+///
+/// STRONG carries a fact the platform will not hand over as a value: on Android 13+ it requires a
+/// security update within the last year. That is why this tier is rendered instead of a patch date —
+/// the tier is the conclusion the date was only evidence for.
+enum DeviceIntegrityLevel {
+  STRONG
+  DEVICE
+  BASIC
+
+  @@schema("platform")
+}
+
+/// Why a device lost trust (ADR-081).
+/// ONLY COMPROMISED is the model's positive class. The other three are ordinary hygiene — a user
+/// tidying up old installs, an admin offboarding, a lost handset — and labelling them as compromises
+/// would teach the model that normal fleet churn looks like an attack.
+enum DeviceRevocationReason {
+  USER_REVOKED
+  ADMIN_REVOKED
+  LOST_OR_STOLEN
+  COMPROMISED
 
   @@schema("platform")
 }

@@ -31,6 +31,8 @@ import {
   VerifyOtpDto,
   AttestDeviceDto,
   RegisterDeviceDto,
+  RevokeDeviceDto,
+  AttestationChallengeDto,
 } from './dto/request-otp.dto';
 import { RefreshTokenDto, MfaTokenDto } from './dto/token.dto';
 import { RequestStepUpDto, VerifyStepUpDto } from './dto/step-up.dto';
@@ -118,7 +120,33 @@ export class IdentityController {
       publicKey: dto.publicKey,
       platform: dto.platform,
       model: dto.model ?? null,
+      // Attestation (ADR-082/083). Absent for a client that cannot produce a token; the service then
+      // leaves the columns untouched rather than recording a verdict nobody established. The
+      // challenge travels with the token — a token alone would be replayable.
+      attestationToken: dto.attestationToken ?? null,
+      attestationChallenge: dto.attestationChallenge ?? null,
+      attestationKeyId: dto.attestationKeyId ?? null,
     });
+  }
+
+  @Post('devices/attestation-challenge')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Mint a single-use challenge for platform attestation',
+    description:
+      'Both Play Integrity and App Attest are challenge-response (ADR-083), so the client fetches a ' +
+      'nonce, feeds it to the platform API, and returns it alongside the resulting token in ' +
+      'POST /auth/devices. A token that is not bound to a nonce this server issued is replayable ' +
+      'indefinitely, so the challenge is consumed on use and a mismatch simply records no ' +
+      'attestation — enrolment still succeeds, because attestation never blocks (ADR-054).',
+  })
+  @ApiResponse({ status: 200, description: 'A single-use, short-lived challenge' })
+  async attestationChallenge(@Req() req: Request, @Body() dto: AttestationChallengeDto) {
+    const user = req.user as JwtPayload;
+    const challenge = await this.deviceTrust.issueAttestationChallenge(user.user_id, dto.deviceId);
+    return { challenge };
   }
 
   @Get('devices')
@@ -135,11 +163,24 @@ export class IdentityController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Revoke a trusted device' })
+  @ApiOperation({
+    summary: 'Revoke a trusted device',
+    description:
+      'The reason is required (ADR-081): COMPROMISED is the only value treated as a positive ' +
+      'training label for DeviceTrustModel, and defaulting it would either mark ordinary churn as ' +
+      'an attack or bury real compromises among retired handsets. A DELETE carrying a body is ' +
+      'unusual but permitted, and the alternative — a reason in the query string — would put a ' +
+      'security finding in every access log and proxy trace.',
+  })
   @ApiResponse({ status: 204, description: 'Device revoked (idempotent)' })
-  async revokeDevice(@Req() req: Request, @Param('deviceId') deviceId: string) {
+  @ApiResponse({ status: 400, description: 'Missing or unknown revocation reason' })
+  async revokeDevice(
+    @Req() req: Request,
+    @Param('deviceId') deviceId: string,
+    @Body() dto: RevokeDeviceDto,
+  ) {
     const user = req.user as JwtPayload;
-    await this.deviceTrust.revokeDevice(user.user_id, deviceId);
+    await this.deviceTrust.revokeDevice(user.user_id, deviceId, dto.reason);
   }
 
   // ─── Step-up verification (ADR-078) — re-prove possession before a high-value action ───

@@ -24,6 +24,7 @@ const mockDeviceTrust = {
   registerDevice: jest.fn(),
   listDevices: jest.fn(),
   revokeDevice: jest.fn(),
+  issueAttestationChallenge: jest.fn(),
 };
 
 const mockStepUp = {
@@ -198,7 +199,41 @@ describe('IdentityController', () => {
         publicKey: 'PUB_B64U',
         platform: 'android',
         model: 'Pixel 8',
+        // Explicit nulls, not absent keys: a client with no Play Services omits these and the
+        // service must be able to tell "not offered" apart from "offered and empty" (ADR-082).
+        attestationToken: null,
+        attestationChallenge: null,
+        attestationKeyId: null,
       });
+    });
+
+    it('mints an attestation challenge for the JWT user, not a body-supplied one', async () => {
+      // The device id comes from the body; the identity never does. Otherwise a caller could mint a
+      // challenge bound to someone else's user and enrol against it.
+      mockDeviceTrust.issueAttestationChallenge.mockResolvedValue('CHAL_B64U');
+      await expect(
+        controller.attestationChallenge(fakeReq('user-1', 'kc-1'), { deviceId: 'dev-1' }),
+      ).resolves.toEqual({ challenge: 'CHAL_B64U' });
+      expect(mockDeviceTrust.issueAttestationChallenge).toHaveBeenCalledWith('user-1', 'dev-1');
+    });
+
+    it('forwards the attestation token together with the challenge it answers', async () => {
+      // The challenge is what makes the token non-replayable — both platforms are challenge-response
+      // (ADR-083). Forwarding the token alone would hand the service a bearer credential.
+      mockDeviceTrust.registerDevice.mockResolvedValue(undefined);
+      await controller.registerDevice(fakeReq('user-1', 'kc-1', 'tenant-9'), {
+        deviceId: 'dev-1',
+        publicKey: 'PUB_B64U',
+        platform: 'android',
+        attestationToken: 'PLAY_INTEGRITY_TOKEN',
+        attestationChallenge: 'CHAL_B64U',
+      });
+      expect(mockDeviceTrust.registerDevice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attestationToken: 'PLAY_INTEGRITY_TOKEN',
+          attestationChallenge: 'CHAL_B64U',
+        }),
+      );
     });
 
     it('registerDevice passes null when model is omitted', async () => {
@@ -221,10 +256,26 @@ describe('IdentityController', () => {
       expect(res).toBe(devices);
     });
 
-    it('revokeDevice delegates for the authenticated user', async () => {
+    it('revokeDevice passes the reason through — it is ADR-081’s only positive label', async () => {
+      // Not defaulted anywhere along the path: whichever default were chosen would be wrong for the
+      // other three cases, and a silently-labelled revocation is a silently-poisoned training set.
       mockDeviceTrust.revokeDevice.mockResolvedValue(undefined);
-      await controller.revokeDevice(fakeReq('user-1', 'kc-1'), 'dev-1');
-      expect(mockDeviceTrust.revokeDevice).toHaveBeenCalledWith('user-1', 'dev-1');
+      await controller.revokeDevice(fakeReq('user-1', 'kc-1'), 'dev-1', {
+        reason: 'COMPROMISED',
+      });
+      expect(mockDeviceTrust.revokeDevice).toHaveBeenCalledWith('user-1', 'dev-1', 'COMPROMISED');
+    });
+
+    it('passes an ordinary revocation through unchanged', async () => {
+      mockDeviceTrust.revokeDevice.mockResolvedValue(undefined);
+      await controller.revokeDevice(fakeReq('user-1', 'kc-1'), 'dev-1', {
+        reason: 'LOST_OR_STOLEN',
+      });
+      expect(mockDeviceTrust.revokeDevice).toHaveBeenCalledWith(
+        'user-1',
+        'dev-1',
+        'LOST_OR_STOLEN',
+      );
     });
   });
 

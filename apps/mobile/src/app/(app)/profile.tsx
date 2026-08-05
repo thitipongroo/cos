@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore, type ThemeMode } from '../../store/themeStore';
+import { useBiometricStore } from '../../store/biometricStore';
 import { get, mutate } from '../../api/client';
 import { useI18n } from '../../i18n';
 import type { Locale } from '../../i18n';
@@ -67,6 +68,63 @@ function NotificationPreferences() {
           </TouchableOpacity>
         </View>
       ))}
+    </View>
+  );
+}
+
+/**
+ * Security Settings → Biometric Unlock (mockup 03_04_manage_account_access).
+ *
+ * Lives here for now because 03_04 itself is not built yet; it reads the same store, so moving it
+ * onto that screen later is a re-render, not a rewrite.
+ *
+ * The row STATES why it is unavailable rather than hiding. "Not supported on this device" and "set
+ * one up in Settings first" send the user to different places, and the second is something they can
+ * act on — silently omitting the control tells them nothing and looks like a missing feature.
+ */
+function BiometricUnlockRow() {
+  const { t } = useI18n();
+  const enabled = useBiometricStore((s) => s.enabled);
+  const available = useBiometricStore((s) => s.available);
+  const needsEnrolment = useBiometricStore((s) => s.needsEnrolment);
+  const kind = useBiometricStore((s) => s.kind);
+  const setEnabled = useBiometricStore((s) => s.setEnabled);
+
+  const kindLabel =
+    kind === 'face'
+      ? t('profile.biometric.face')
+      : kind === 'fingerprint'
+        ? t('profile.biometric.fingerprint')
+        : kind === 'iris'
+          ? t('profile.biometric.iris')
+          : null;
+
+  return (
+    <View style={screen.kvRow}>
+      <Text style={screen.kvKey}>{t('profile.biometric.title')}</Text>
+      {available ? (
+        <TouchableOpacity
+          testID="biometric-toggle"
+          accessibilityRole="switch"
+          accessibilityState={{ checked: enabled }}
+          style={[styles.toggle, enabled && styles.toggleOn]}
+          onPress={() => void setEnabled(!enabled)}
+        >
+          <Text style={[styles.toggleText, enabled && styles.toggleTextOn]}>
+            {kindLabel != null && enabled
+              ? kindLabel
+              : enabled
+                ? t('profile.biometric.on')
+                : t('profile.biometric.off')}
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <Text testID="biometric-unavailable" style={styles.value}>
+          {needsEnrolment
+            ? t('profile.biometric.needsEnrolment')
+            : t('profile.biometric.unavailable')}
+        </Text>
+      )}
     </View>
   );
 }
@@ -150,6 +208,8 @@ export default function ProfileScreen() {
           })}
         </View>
       </View>
+
+      <BiometricUnlockRow />
 
       <TouchableOpacity testID="logout-button" style={styles.logout} onPress={() => logout()}>
         <Text style={styles.logoutText}>{t('profile.main.logout')}</Text>

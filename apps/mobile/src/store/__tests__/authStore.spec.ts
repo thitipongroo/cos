@@ -3,7 +3,13 @@ jest.mock('../../api/auth', () => ({
   verifyOtp: jest.fn(),
   attestDevice: jest.fn(),
 }));
-jest.mock('../../api/devices', () => ({ registerDevice: jest.fn() }));
+jest.mock('../../api/devices', () => ({
+  registerDevice: jest.fn(),
+  requestAttestationChallenge: jest.fn(),
+}));
+// Mocked at the lib boundary, like deviceTrust above, so this spec never loads @expo/app-integrity —
+// a native module with no JS implementation under Jest.
+jest.mock('../../lib/appIntegrity', () => ({ attest: jest.fn() }));
 jest.mock('../../lib/deviceTrust', () => ({
   getDeviceId: jest.fn(),
   ensureDeviceKey: jest.fn(),
@@ -25,7 +31,8 @@ import {
   requestOtp as requestOtpApi,
   attestDevice as attestDeviceApi,
 } from '../../api/auth';
-import { registerDevice } from '../../api/devices';
+import { registerDevice, requestAttestationChallenge } from '../../api/devices';
+import { attest } from '../../lib/appIntegrity';
 import {
   getDeviceId,
   ensureDeviceKey,
@@ -59,6 +66,10 @@ describe('authStore Path A OTP flow', () => {
     (attestDeviceApi as jest.Mock).mockResolvedValue({ deviceTrusted: false });
     (registerDevice as jest.Mock).mockResolvedValue(undefined);
     (requestOtpApi as jest.Mock).mockResolvedValue({ expiresInSeconds: 300 });
+    // Attestation defaults to "this device produced none" — the state of every build before the
+    // native module ships, and of any device without Play Services. Cases that care override it.
+    (requestAttestationChallenge as jest.Mock).mockResolvedValue('ATT_CHAL');
+    (attest as jest.Mock).mockResolvedValue(null);
   });
 
   it('requestOtp delegates to the auth API with the device id (cooldown defaults to 60)', async () => {
@@ -277,6 +288,74 @@ describe('authStore Path A OTP flow', () => {
         platform: 'android',
         model: 'Pixel 8',
       });
+    });
+
+    // Attestation (ADR-082/083) rides along with enrolment. What these protect is that it can never
+    // become a precondition for it: a device that cannot attest must still register its public key,
+    // because losing the key means the NEXT login is untrusted — a worse outcome than losing a verdict.
+    it('attaches the attestation when the device produced one', async () => {
+      (ensureDeviceKey as jest.Mock).mockResolvedValue('PUBKEY');
+      (attest as jest.Mock).mockResolvedValue({
+        attestationToken: 'TOKEN',
+        attestationChallenge: 'ATT_CHAL',
+        attestationKeyId: 'KEY_ID',
+      });
+      (verifyOtpApi as jest.Mock).mockResolvedValue({
+        accessToken: tokenWithClaims({ user_id: 'u-1', role: 'SITE_ENGINEER' }),
+        refreshToken: 'r',
+        expiresIn: 60,
+        refreshExpiresIn: 120,
+      });
+
+      await useAuthStore.getState().verifyOtp('+66811000009', '123456');
+      await flush();
+
+      expect(requestAttestationChallenge).toHaveBeenCalledWith('dev-1');
+      expect(attest).toHaveBeenCalledWith('ATT_CHAL', 'dev-1');
+      expect(registerDevice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attestationToken: 'TOKEN',
+          attestationChallenge: 'ATT_CHAL',
+          attestationKeyId: 'KEY_ID',
+        }),
+      );
+    });
+
+    it('enrols WITHOUT attestation fields when the device produced none', async () => {
+      (ensureDeviceKey as jest.Mock).mockResolvedValue('PUBKEY');
+      (attest as jest.Mock).mockResolvedValue(null);
+      (verifyOtpApi as jest.Mock).mockResolvedValue({
+        accessToken: tokenWithClaims({ user_id: 'u-1', role: 'SITE_ENGINEER' }),
+        refreshToken: 'r',
+        expiresIn: 60,
+        refreshExpiresIn: 120,
+      });
+
+      await useAuthStore.getState().verifyOtp('+66811000009', '123456');
+      await flush();
+
+      const body = (registerDevice as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+      expect(body).not.toHaveProperty('attestationToken');
+      expect(body['publicKey']).toBe('PUBKEY');
+    });
+
+    it('still enrols when the CHALLENGE request fails', async () => {
+      // An older backend without the route, or an offline moment. Neither is a reason to skip
+      // enrolment — only a reason to enrol without a verdict.
+      (ensureDeviceKey as jest.Mock).mockResolvedValue('PUBKEY');
+      (requestAttestationChallenge as jest.Mock).mockRejectedValue(new Error('404'));
+      (verifyOtpApi as jest.Mock).mockResolvedValue({
+        accessToken: tokenWithClaims({ user_id: 'u-1', role: 'SITE_ENGINEER' }),
+        refreshToken: 'r',
+        expiresIn: 60,
+        refreshExpiresIn: 120,
+      });
+
+      await useAuthStore.getState().verifyOtp('+66811000009', '123456');
+      await flush();
+
+      expect(attest).not.toHaveBeenCalled();
+      expect(registerDevice).toHaveBeenCalledWith(expect.objectContaining({ publicKey: 'PUBKEY' }));
     });
 
     it('skips enrolment when no key can be produced, and never fails login', async () => {

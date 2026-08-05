@@ -61,6 +61,11 @@ allowBuilds:
   '@prisma/engines': true
   '@scarf/scarf': false
   '@swc/core': true
+  # cbor-x's OPTIONAL native accelerator. Declined on purpose: the only CBOR this repo decodes is one
+  # small App Attest attestation object per device enrolment (ADR-082), so the pure-JS path is fast by
+  # a wide margin — and it keeps a native toolchain out of the backend image and the CI builder for a
+  # security-critical parse. cbor-x falls back automatically when it is absent (verified locally).
+  cbor-extract: false
   cpu-features: true
   detox: true
   dtrace-provider: true

@@ -9,10 +9,21 @@
 // tenant, path and IP (QM-4); writing a second row from this controller would double-count one
 // decision and make the consent history look busier than it is.
 
-import { Controller, Get, Post, Body, UseGuards, Req, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  Req,
+  Ip,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { ConsentService } from './consent.service';
+import { NetworkOriginService } from '../network-origin/network-origin.service';
 import { RecordConsentDto } from '../dto/record-consent.dto';
 import type { TenantRequest } from '../../tenant/tenant.middleware';
 
@@ -21,7 +32,34 @@ import type { TenantRequest } from '../../tenant/tenant.middleware';
 @UseGuards(JwtAuthGuard)
 @Controller('users')
 export class ConsentController {
-  constructor(private readonly consent: ConsentService) {}
+  constructor(
+    private readonly consent: ConsentService,
+    private readonly networkOrigin: NetworkOriginService,
+  ) {}
+
+  // GET /api/v1/users/me/network-origin
+  @Get('me/network-origin')
+  @ApiOperation({
+    summary: 'What the platform can tell about the caller’s own network origin (ADR-080)',
+    description:
+      'Derived at read time and never stored: city, region and ISP are resolved from the caller’s ' +
+      'own ingress IP against a self-hosted GeoLite2 database, and discarded. The address is taken ' +
+      'from the request, never from a parameter — otherwise this would be a geo-IP lookup service ' +
+      'for anyone holding a session. The behavioural label is profiling and requires `operational` ' +
+      'consent; without it the field is null ("Not enabled"), which the screen must render ' +
+      'differently from INSUFFICIENT_DATA ("too few check-ins"). The rule’s thresholds are returned ' +
+      'alongside so the label can be shown with its derivation rather than as an assertion.',
+  })
+  @ApiResponse({ status: 200, description: 'Network origin and behavioural context' })
+  async getNetworkOrigin(@Req() req: TenantRequest, @Ip() ip: string) {
+    return this.networkOrigin.describe({
+      tenantId: req.tenantId!,
+      userId: req.userId!,
+      // @Ip() honours the trusted-proxy configuration (src/shared/trusted-proxy.ts), so behind
+      // Cloudflare this is the client address rather than the edge's.
+      ipAddress: ip,
+    });
+  }
 
   // GET /api/v1/users/me/consents
   @Get('me/consents')

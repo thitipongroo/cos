@@ -11,7 +11,8 @@ import {
   verifyOtp as verifyOtpApi,
   attestDevice as attestDeviceApi,
 } from '../api/auth';
-import { registerDevice } from '../api/devices';
+import { registerDevice, requestAttestationChallenge } from '../api/devices';
+import { attest, type AttestationPayload } from '../lib/appIntegrity';
 import {
   getDeviceId,
   ensureDeviceKey,
@@ -247,14 +248,32 @@ async function enrolDevice(): Promise<void> {
     const [deviceId, publicKey] = await Promise.all([getDeviceId(), ensureDeviceKey()]);
     if (!publicKey) return;
     const model = deviceModel();
+    // Platform attestation (ADR-082/083), attempted but never required. Its own failure path returns
+    // null — no Play Services, no project number configured, App Attest unsupported, offline — and
+    // enrolment then proceeds exactly as it did before attestation existed. Wrapped separately so an
+    // attestation problem can never take the ENROLMENT down with it: losing the public key would
+    // make the next login untrusted, which is a worse outcome than losing a verdict.
+    const attestation = await collectAttestation(deviceId);
     await registerDevice({
       deviceId,
       publicKey,
       platform: devicePlatform(),
       ...(model ? { model } : {}),
+      ...(attestation ?? {}),
     });
   } catch {
     // Trust is a convenience layer — a failed enrolment just means the next login is untrusted too.
+  }
+}
+
+/** Fetch a challenge and attest against it. Null whenever this device cannot produce a verdict. */
+async function collectAttestation(deviceId: string): Promise<AttestationPayload | null> {
+  try {
+    return await attest(await requestAttestationChallenge(deviceId), deviceId);
+  } catch {
+    // A challenge request that fails (offline, an older backend with no such route) is not a reason
+    // to skip enrolment — only a reason to enrol without a verdict.
+    return null;
   }
 }
 
