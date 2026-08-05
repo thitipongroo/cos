@@ -3,10 +3,11 @@
 // Path B: Keycloak OIDC (office roles) — KeycloakJwtStrategy + JwtAuthGuard
 // All JWTs are RS256-signed by Keycloak — no symmetric HS256 signing (spec §5.4.1, QM-4).
 
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { NotificationModule } from '../notification/notification.module';
 import { FilesModule } from '../files/files.module';
+import { TenantModule } from '../tenant/tenant.module';
 import { StepUpService } from './step-up/step-up.service';
 import { DataExportController } from './data-export/data-export.controller';
 import { DataExportService } from './data-export/data-export.service';
@@ -44,7 +45,27 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
   imports: [
     PassportModule.register({ defaultStrategy: 'keycloak-jwt' }),
     NotificationModule,
-    FilesModule,
+    // forwardRef because this import CLOSES A CYCLE: identity → files → tenant → identity.
+    // TenantModule has always imported IdentityModule (its controllers use JwtAuthGuard, and
+    // UserService uses KeycloakAdminService); FilesModule imports TenantModule; and ADR-078 added
+    // this edge so the export can upload through File Service. Without the lazy reference, whichever
+    // module the ESM graph reaches first evaluates its @Module decorator while another is still
+    // initialising and receives `undefined` in `imports` — the application then fails to bootstrap
+    // with "The module at index [0] is of type undefined".
+    //
+    // NOT CAUGHT BY THE UNIT SUITE, and that is the lesson rather than the fix: no test instantiates
+    // AppModule, so every module-level test passed while the compiled application could not start.
+    // `app.module.spec.ts` now boots the real graph.
+    forwardRef(() => FilesModule),
+    // NetworkOriginService injects TenantPrismaService (ADR-080's attendance query runs under
+    // `SET LOCAL app.current_tenant_id`, so RLS is what confines it to one tenant rather than a
+    // WHERE clause). TenantModule exports it, and TenantModule already imports this one — so this
+    // edge is circular by construction and needs the same lazy reference.
+    //
+    // Its absence did not fail a single unit test: every spec constructs NetworkOriginService with
+    // `new` and hands it a mock, which is the right way to test the service and says nothing about
+    // whether the container can build it.
+    forwardRef(() => TenantModule),
   ],
   controllers: [IdentityController, ConsentController, DataExportController],
   providers: [

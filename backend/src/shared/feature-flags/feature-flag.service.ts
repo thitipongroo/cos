@@ -32,16 +32,19 @@ export const DEFAULT_FLAGS: Readonly<Record<string, boolean>> = {
   // switch). Defaults OFF until rollout — reads always accept both formats, so flipping it either way
   // is safe at any time and never strands a row.
   's1.tenant.encrypted-db-url': false,
-  // PDPA §30/§31 data export (ADR-078). New feature, so OFF until rollout per this file's convention.
+  // PDPA §30/§31 data export (ADR-078). Rolled out to 100% and flipped ON (product owner,
+  // 2026-08-05); it shipped `false` while it was still rolling out.
   //
-  // It becomes a permanent kill switch afterwards, and it gates the DOWNLOAD as well as the request:
-  // the incident it exists for is a bad join putting one person's rows in another's archive, and then
-  // the archives already in MinIO are precisely what must stop being served.
+  // It stays a permanent kill switch, and it gates the DOWNLOAD as well as the request: the incident
+  // it exists for is a bad join putting one person's rows in another's archive, and then the archives
+  // already in MinIO are precisely what must stop being served.
   //
-  // FLIP THIS TO true WHEN THE ROLLOUT REACHES 100%. Leaving it false permanently makes an Unleash
-  // outage fail closed on a statutory right — PDPA §30 gives 30 days to answer, and "the flag service
-  // was down" is not an answer. It is correct only while the feature is not yet rolled out.
-  's1.identity.data-export': false,
+  // ON IS NOW THE CORRECT FALLBACK, AND MUST NOT BE FLIPPED BACK. This is the one flag in this file
+  // whose fallback had to change during its life: leaving it false would make an Unleash outage fail
+  // closed on a STATUTORY right — PDPA §30 gives the controller 30 days to answer a verified request,
+  // and "the flag service was unreachable" is not an answer to a regulator. Turn it off only to stop
+  // an active incident, and turn it back on when the incident is closed.
+  's1.identity.data-export': true,
   // Platform attestation verification (ADR-082) — kill-switch, permanent.
   //
   // Defaults ON despite being new, which is the opposite of this file's usual rule, because of what

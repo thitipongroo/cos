@@ -658,25 +658,30 @@ screen carries the `<` back control restored to the top bar on 2026-08-04, along
 | 06  | [Automated processing](02-shared/privacy-policy/01-data-collection/06-automated-processing.png) | OCR + report drafting in use; PPE detection and photo-vs-design Planned         |
 | 07  | [Erasing your data](02-shared/privacy-policy/01-data-collection/07-erasure.png)                 | What is erased vs anonymised-and-kept, and why; request control inactive        |
 
-### Not yet captured — the D-series (`08`–`13`)
+### The D-series (`08`–`13`) — ADR-078 / ADR-080 / ADR-081 / ADR-084
 
-Six more screens landed on 2026-08-05 (ADR-078 / ADR-080 / ADR-081 / ADR-084) and the capture script
-walks them, but **no frames are committed for them yet**: the run needs a booted emulator, the debug
-APK, Metro, a seeded backend on `:3000`, Keycloak on `:8090` and the Docker stack, and it has not been
-performed since the screens landed. The rows below are deliberately absent from the table above rather
-than listed with links to files that do not exist.
+| #   | Screen                                                                                  | What it shows                                                                        |
+| --- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 08  | [Data export](02-shared/privacy-policy/01-data-collection/08-data-export.png)           | The five real @pdpa categories, JSON/CSV, and the step-up before an archive is built |
+| 09  | [Network origin](02-shared/privacy-policy/01-data-collection/09-network-origin.png)     | What the ingress address resolves to, latency measured on the device, and the rule   |
+| 10  | [Device details](02-shared/privacy-policy/01-data-collection/10-device-details.png)     | Installation id (not a hardware serial), how sign-in is bound, platform integrity    |
+| 11  | [Account security](02-shared/privacy-policy/01-data-collection/11-account-security.png) | Registered devices, revocation with a reason, and the biometric unlock switch        |
+| 12  | [Session details](02-shared/privacy-policy/01-data-collection/12-session.png)           | Real token lifetimes and transport — not the mockup's invented parameters (ADR-084)  |
+| 13  | [Timestamps](02-shared/privacy-policy/01-data-collection/13-timestamps.png)             | UTC, storage precision, append-only audit, and the real retention tiers              |
 
-| #   | Screen           | What it will show                                                                   |
-| --- | ---------------- | ----------------------------------------------------------------------------------- |
-| 08  | Data export      | Category picker, format, and the confirmation step before an archive is built       |
-| 09  | Network origin   | What the ingress address resolves to, and the behavioural label — or that it is off |
-| 10  | Device details   | The trust score with every contributing signal, and the platform integrity tier     |
-| 11  | Account security | Registered devices, revocation with a reason, and the biometric unlock switch       |
-| 12  | Session details  | Token lifetimes, transport, and the truncated credential id                         |
-| 13  | Timestamps       | UTC, storage precision, append-only audit, and the real retention tiers             |
+**Two flag-dependent states are visible in these frames, and both are the correct rendering rather
+than a defect:**
 
-One caveat for whoever runs it: `08` renders its "not available yet" state unless
-`s1.identity.data-export` is enabled in Unleash first, because that flag ships OFF.
+- `10-device-details` shows **no trust-score panel**, because `s1.identity.device-trust-score` ships
+  OFF. The screen is built to drop the panel and still render every stored fact — the score is
+  advisory and gates nothing (§22.3, ADR-081). To photograph the gauge, enable that flag first.
+- `08-data-export` renders its full flow only because `s1.identity.data-export` was flipped ON at
+  100% rollout on 2026-08-05. With it OFF the screen shows "not available yet" instead.
+
+The emulator reports `Never checked` / `Not reported on this platform` under Platform Integrity. That
+is correct for a device enrolled before attestation existed, and it is exactly the distinction
+ADR-083 required the screen to keep separate from "failed" — the frame is evidence the four-state
+rendering works, not evidence of a broken check.
 
 Captured by
 [`apps/mobile/scripts/capture-android-transparency.mjs`](../../../apps/mobile/scripts/capture-android-transparency.mjs)

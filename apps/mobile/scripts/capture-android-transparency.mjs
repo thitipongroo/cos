@@ -70,12 +70,22 @@ const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 async function dump() {
   for (let i = 0; i < 12; i++) {
     adb('shell', 'rm', '-f', '/sdcard/ui.xml');
-    if (adb('shell', 'uiautomator', 'dump', '/sdcard/ui.xml').includes('dumped to')) {
-      return adb('shell', 'cat', '/sdcard/ui.xml').split('<');
+    // uiautomator EXITS NON-ZERO on "ERROR: could not get idle state", which execFileSync turns into
+    // a throw — so this must be caught, or the retry below never runs. That is not a hypothetical:
+    // React Native keeps a view animating whenever a screen is loading (the app-launch spinner, the
+    // ActivityIndicator on the network/device screens), and uiautomator refuses to dump until the
+    // UI has been idle. Before this try/catch the first such moment aborted the whole run, which is
+    // exactly what happened twice on 2026-08-05 — once mid-run, once immediately after login.
+    try {
+      if (adb('shell', 'uiautomator', 'dump', '/sdcard/ui.xml').includes('dumped to')) {
+        return adb('shell', 'cat', '/sdcard/ui.xml').split('<');
+      }
+    } catch {
+      // Not idle yet. Fall through to the delay and try again.
     }
     await delay(1000);
   }
-  throw new Error('capture: uiautomator never produced a dump');
+  throw new Error('capture: uiautomator never produced a dump (UI never became idle)');
 }
 
 function centreOf(node) {

@@ -56,20 +56,23 @@ The route prefix also changed: ADR-078 rejected the `/api/v1/identity/me/...` pa
 originally, because `identity` is not a route prefix in this API and inventing a third namespace for
 one feature would have left two ways to say "me". The paths below are the ones that exist.
 
-| ID      | PDPA ref | Right               | Implementation on disk                                                                                                                                                                                                                            | Status    | Verified   |
-| ------- | -------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- | ---------- |
-| PDPA-10 | §30      | Access              | `POST /api/v1/users/me/data-export` (step-up verified) · `GET /api/v1/users/me/data-export` · `GET …/:id/download`. Collector reads all five @pdpa categories across BOTH databases; mobile screen at `apps/mobile/src/app/(app)/data-export.tsx` | `PARTIAL` | 2026-08-05 |
-| PDPA-11 | §31      | Portability         | Same endpoints; `format: JSON \| CSV` — JSON preserves types, CSV is one file per table. Archive assembled by `data-export.workflow.ts`, delivered as a signed URL minted per request                                                             | `PARTIAL` | 2026-08-05 |
-| PDPA-12 | §32      | Object              | Marketing opt-out — not applicable at Stage 1                                                                                                                                                                                                     | `N/A S1`  | 2026-08-03 |
-| PDPA-13 | §33      | Erasure             | `DELETE /api/v1/identity/me` → anonymisation. Not implemented                                                                                                                                                                                     | `OPEN`    | 2026-08-03 |
-| PDPA-14 | §34      | Restrict processing | Account suspension (ADMIN action). Not implemented                                                                                                                                                                                                | `OPEN`    | 2026-08-03 |
+| ID      | PDPA ref | Right               | Implementation on disk                                                                                                                                                                                                                            | Status   | Verified   |
+| ------- | -------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------- |
+| PDPA-10 | §30      | Access              | `POST /api/v1/users/me/data-export` (step-up verified) · `GET /api/v1/users/me/data-export` · `GET …/:id/download`. Collector reads all five @pdpa categories across BOTH databases; mobile screen at `apps/mobile/src/app/(app)/data-export.tsx` | `DONE`   | 2026-08-05 |
+| PDPA-11 | §31      | Portability         | Same endpoints; `format: JSON \| CSV` — JSON preserves types, CSV is one file per table. Archive assembled by `data-export.workflow.ts`, delivered as a signed URL minted per request                                                             | `DONE`   | 2026-08-05 |
+| PDPA-12 | §32      | Object              | Marketing opt-out — not applicable at Stage 1                                                                                                                                                                                                     | `N/A S1` | 2026-08-03 |
+| PDPA-13 | §33      | Erasure             | `DELETE /api/v1/identity/me` → anonymisation. Not implemented                                                                                                                                                                                     | `OPEN`   | 2026-08-03 |
+| PDPA-14 | §34      | Restrict processing | Account suspension (ADMIN action). Not implemented                                                                                                                                                                                                | `OPEN`   | 2026-08-03 |
 
-**PDPA-10 and PDPA-11 are `PARTIAL`, not `DONE`, and the reason is a switch rather than a gap.** The
-mechanism is complete and tested, but `s1.identity.data-export` ships **OFF** — new features default
-off in `docs/feature-flags/registry.md` — so the right is not exercisable by a data subject until
-that flag reaches 100%. The flag registry records that it must then be flipped permanently ON,
-because a fail-closed fallback on this surface would let an Unleash outage suspend a statutory right.
-**These rows become `DONE` on the day the flag is enabled in production, and not before.**
+**PDPA-10 and PDPA-11 became `DONE` on 2026-08-05**, when `s1.identity.data-export` reached 100% and
+its fallback was flipped ON (`docs/feature-flags/registry.md`). They were `PARTIAL` until that day —
+the mechanism was complete and tested, but a flag that ships OFF means the right is not exercisable
+by a data subject, and this file's own rule is that a `PARTIAL` row must never be described to a
+subject as if it were `DONE`.
+
+The flag remains a permanent kill switch. Turning it off is an incident action that **suspends a
+statutory right** for as long as it is off, so it is closed by turning it back on — not by leaving it
+off. If it is ever left off, these two rows revert to `PARTIAL` on the same day.
 
 Response deadline for a verified request: **30 days** (PDPA §32). The platform commits to no shorter
 deadline: the export is produced by a workflow that reads every domain schema, and no SLA for it
