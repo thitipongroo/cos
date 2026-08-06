@@ -8,7 +8,6 @@ import { usePathname } from 'expo-router';
 import { runDeltaSync } from '../../sync/runDeltaSync';
 import { runPushSync } from '../../sync/runPushSync';
 import { checkLocalDbLimit } from '../../db/database';
-import { OfflineBanner } from '../../components/OfflineBanner';
 import { TopBar } from '../../components/TopBar';
 import { Breadcrumb } from '../../components/Breadcrumb';
 import { MobileNav } from '../../components/MobileNav';
@@ -59,13 +58,6 @@ export default function AppLayout() {
       <TopBar variant={variant} />
       {/* Clickable breadcrumb for pushed child screens (null on main tabs / terminal screens). */}
       <Breadcrumb variant={variant} />
-      {/* OfflineBanner is kept for all roles — it only appears while actually offline.
-          The full-width green <SyncStatusBar /> strip that used to sit here is GONE (PO decision
-          2026-08-04): the compact <SyncPill /> in the top bar is now the standard sync indicator for
-          every role, as 01_home_dashboard draws it. It was previously dropped only for the two
-          dark-shell dashboards; making the pill universal removes the last piece of chrome whose
-          presence depended on which role was signed in. */}
-      <OfflineBanner />
       <View style={styles.tabs}>
         <MobileNav />
       </View>

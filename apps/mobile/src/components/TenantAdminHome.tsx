@@ -31,7 +31,15 @@ import { getAiUsage, type AiUsage } from '../api/ai';
 import { QuickAddMenu } from './QuickAddMenu';
 import { LoadingBoundary } from './LoadingBoundary';
 import { useT } from '../i18n';
-import { darkColors, fontFamily, spacing, typography, touchTarget } from '../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../theme/tokens';
 
 function asList<T>(res: { items?: T[] } | T[]): T[] {
   return Array.isArray(res) ? res : (res.items ?? []);
@@ -292,7 +300,7 @@ const styles = StyleSheet.create({
   countBadgeText: { fontFamily: fontFamily.bold, fontSize: 11, color: darkColors.danger },
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -316,12 +324,12 @@ const styles = StyleSheet.create({
   pctUnit: { fontFamily: fontFamily.semibold, fontSize: 18, color: darkColors.muted },
   track: {
     height: 6,
-    borderRadius: 3,
+    borderRadius: 999, // capsule end on a 6px bar — a shape, not a scale step
     backgroundColor: darkColors.elevated,
     marginTop: spacing.sm,
     overflow: 'hidden',
   },
-  trackFill: { height: '100%', borderRadius: 3, backgroundColor: darkColors.cyan },
+  trackFill: { height: '100%', borderRadius: 999, backgroundColor: darkColors.cyan },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
@@ -329,7 +337,7 @@ const styles = StyleSheet.create({
   iconPlate: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: plateRadius(40),
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -358,7 +366,7 @@ const styles = StyleSheet.create({
     gap: 2,
     minHeight: touchTarget.listItem,
     paddingHorizontal: spacing.sm,
-    borderRadius: 8,
+    borderRadius: radius.md,
     backgroundColor: `${darkColors.primary}1A`,
   },
   reviewText: {

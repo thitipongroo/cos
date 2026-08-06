@@ -1,6 +1,7 @@
 // useNetworkStatus — @react-native-community/netinfo integration
 // Returns isOnline boolean and connection type.
-// Used by OfflineBanner, DeltaSyncClient, and SyncManager.
+// Used by DeltaSyncClient and SyncManager. (OfflineBanner was deleted 2026-08-06 — offline is not a
+// separate UI state; writes enqueue and <SyncPill /> shows the pending count, §32.7.)
 
 import { useState, useEffect } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';

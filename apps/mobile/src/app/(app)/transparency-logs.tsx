@@ -69,12 +69,10 @@ export default function TransparencyLogsScreen(): React.JSX.Element {
         />
       ))}
 
+      {/* No `title` — the SectionLabel above already says it (see InfoCard). The redaction card
+          below KEEPS its title: it is a second card in the same section, not the section restated. */}
       <SectionLabel>{t('transparency.logs.retention')}</SectionLabel>
-      <InfoCard
-        icon="schedule"
-        title={t('transparency.logs.retention')}
-        body={t('transparency.logs.retentionBody')}
-      />
+      <InfoCard icon="schedule" body={t('transparency.logs.retentionBody')} />
       <InfoCard
         testID="logs-redaction"
         icon="visibility-off"

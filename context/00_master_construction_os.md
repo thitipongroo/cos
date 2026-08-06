@@ -1032,8 +1032,27 @@ Source: construction_os_wordmark_brand_palette_v_1.md §5
   --cos-white:        #F8FAFC   Concrete White — page backgrounds, surfaces, reports
 
 Dark theme tokens (source: brand_palette §6):
-  --cos-dark-bg:          #020617   Page background
+  --cos-dark-bg:          #020617   Page background — AND the mobile <TopBar /> (PO decision
+                                    2026-08-06, reversing the 2026-07-16 rule that put chrome "on a
+                                    surface background distinct from the content area").
+                                    --cos-dark-surface is the CARD colour, so chrome drawn in it read
+                                    as a card welded to the edge of the screen. Source: mockup/mobile/
+                                    04_tenant_admin/01_home/01_home_dashboard/code.html — header is
+                                    `bg-surface dark:bg-dark-bg`, and with <html class="dark"> +
+                                    darkMode:"class" the dark: utility wins on SPECIFICITY (.dark
+                                    .dark\:bg-dark-bg = 2 classes) over the 1-class utilities, so
+                                    source order does not decide it. Light is unaffected — there `bg`
+                                    is the grey page and `surface` the white card, already distinct.
   --cos-dark-surface:     #0F172A   Card / panel surface
+  --cos-dark-surface-container:
+                          #102034   The mobile <MobileNav /> bottom bar, and ONLY it (added
+                                    2026-08-06, PO decision). The two bars deliberately DIFFER: the
+                                    nav is `bg-surface-container dark:bg-surface-container` — same
+                                    value both modes — plus rounded-t-xl + top border, i.e. a raised
+                                    sheet, while the header is flat against the page. The set had no
+                                    token meaning "chrome sheet", which is why the nav sat on the card
+                                    colour. 217 of the mockup/mobile/** code.html files define
+                                    surface-container as #102034, 5 as #0F172A.
   --cos-dark-elevated:    #111827   Elevated modal / dropdown surface
   --cos-dark-text:        #F8FAFC   Primary text
   --cos-dark-muted:       #94A3B8   Secondary text / inactive
@@ -1042,6 +1061,27 @@ Dark theme tokens (source: brand_palette §6):
   --cos-dark-success:     #10B981   Success state
   --cos-dark-warning:     #F59E0B   Warning state
   --cos-dark-danger:      #EF4444   Error / danger state
+  --cos-dark-accent:      #4CD7F6   Accent ON dark bg — icons, eyebrows, card titles, tags
+                                    (added 2026-08-06, ACCESSIBILITY not style: --mobile-primary
+                                    #0066FF is 4.17:1 on --cos-dark-bg — passes 3:1 for a non-text
+                                    control, FAILS the 4.5:1 AA text threshold that §20.8 gates on.
+                                    #4CD7F6 is 11.87:1. CTAs KEEP --mobile-primary: a filled button
+                                    puts blue behind white text, so contrast is the button's.)
+  --cos-dark-outline:     #46464C   Card / input border on dark surfaces (added 2026-08-06). This is
+                                    the MINORITY mockup value and is kept on purpose (PO decision
+                                    2026-08-07): outline-variant is #434655 in 189 of the
+                                    mockup/mobile/** code.html files and #46464C in 28. The spec once
+                                    justified it as "the value the mockups use" — untrue, and that
+                                    sentence is gone. (70,70,76) vs (67,70,85): the neutral grey reads
+                                    as an EDGE on a navy surface where the bluer one blends in, which
+                                    is why the translucent glow was replaced at all. It is also every
+                                    card/row/chip/chrome hairline in the dark app — 16,504 px in
+                                    01-identity.png alone — so changing it invalidates every dark
+                                    capture for 9 points of blue. See §32.7 before "correcting" it.
+                                    Before this the set had NO outline token and borders were
+                                    invented per call site — mobile had drifted to
+                                    rgba(148,163,184,0.24), a glow rather than an edge.
+                                    Value is the outline-variant used by mockup/mobile/**.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MOBILE COLOR TOKENS (field app — React Native)
@@ -1121,6 +1161,63 @@ SPACING TOKENS (mobile — source: MOBILE_UX_GUIDELINES.md)
   --mobile-space-lg: 24px   Screen edge padding
   --mobile-space-xl: 32px   Major section separation
 
+  Mobile border radius (added 2026-08-05, corrected 2026-08-06 — TIGHTER THAN WEB, from the mockups):
+  --mobile-radius-sm:   2px   Chips, inline tags, small status pills
+  --mobile-radius-md:   4px   List rows, icon tiles, accordion items, BUTTONS
+  --mobile-radius-lg:   8px   Cards, inputs
+  --mobile-radius-xl:  12px   Hero / summary cards, emphasised panels
+  --mobile-radius-2xl: 16px   Dashed closing panel (left at Tailwind's default in the mockups)
+  EVERY status pill / badge takes xl 12px — one token, no exceptions. The mockups DISAGREE: counted
+  2026-08-06, 153 of 226 mockup/mobile/**/code.html keep rounded-full at 9999px (tenant admin,
+  procurement, CRM, dashboards) and 52 override it to 0.75rem = 12px (authen, privacy policy,
+  loading, site-engineer issues/AI, executive, worker). This is a platform ruling, not a reading, and
+  it costs nothing: these badges are 18-26px tall, so 12px is at or within 1px of a capsule and the
+  two families were never apart on screen. 999 stays for circles only (avatars, status dots, radio
+  marks, round icon plates) where the radius is half the width, off this scale entirely.
+
+  Card body length (added 2026-08-06): a card's detail text renders at most THREE lines and
+  truncates with an ellipsis. Two layers — CARD_BODY_LINES=3 + ellipsizeMode="tail" in
+  TransparencyKit is the runtime guarantee (holds under Thai, larger system fonts, narrow
+  handsets); a 140-character budget on *Body / *.body / *.desc i18n keys, tested by
+  cardBodyLength.spec.ts, is the editorial rule that stops the clamp ever firing. 140 = three lines
+  at the 42-48 chars/line a card body gets between a 44px icon tile and a chevron. Truncation is a
+  SAFETY NET: an ellipsis on a transparency screen hides what the reader opened it for. 17 bodies
+  were over budget when the rule landed (retentionBody was 306 chars = 5 lines); all were shortened,
+  none clamped. Does NOT apply to user- or API-supplied text.
+
+  A heading is stated once (added 2026-08-06, PO approval): a card directly under a SectionLabel
+  does not repeat that label as its own title, so InfoCard's `title` is OPTIONAL. Eight pairs
+  shipped reading the same i18n key twice — delete.why, delete.how, identity.access, iot.note,
+  location.where, logs.retention, network.retention, portal.rights — giving "HOW LONG THIS IS KEPT /
+  How long this is kept" on seven screens. The mockups head a section once. Both elements set
+  accessibilityRole="header", so the duplicate was also announced twice in a row. A card that is one
+  of SEVERAL in a section KEEPS its title: there it names the card, not the section. Held by
+  headingStutter.spec.ts, which scans screen SOURCE — a redundantly-titled card renders perfectly,
+  so no render test can see it.
+
+  HOW FAR MOCKUP AUTHORITY RUNS (ADR-085, 2026-08-06). Mockups are authoritative for STYLE — radius,
+  colour, spacing, alignment, badge shape, copy length — and a difference there is a bug in the code.
+  They are NOT authoritative for COMPOSITION. Where a screen's structure has outgrown its mockup, the
+  IMPLEMENTED STRUCTURE STANDS; a drawing does not remove reviewed working capability. Examples on
+  record: the user list keeps its search, role filter chips and audit card (the mockup has none of
+  them); the transparency hub keeps navigation rows rather than the mockup's accordion, whose
+  contents — biometric hash, 500m geofence, employee ID, "real-time" sync — this platform does not
+  have. EVERY structural deviation carries its reason in the screen's header comment; an unrecorded
+  one cannot be told apart from an oversight, which is how the hub's rows were flagged as a gap when
+  they were correct. Mockup files are NOT edited to match — that would erase the record of what was
+  originally specified.
+
+  mobile-radius-lg 8px =/= web-radius-lg 12px. Shared names, different values, held at different
+  distances — do NOT harmonise them. Source: mockup/mobile/**/code.html overrides Tailwind
+  borderRadius to lg 0.25rem / xl 0.5rem (full varies as counted above).
+  Before 2026-08-05 mobile had NO radius token while web did, so each RN component invented its own:
+  253 literals in 56 files using 21 distinct numbers. The 2026-08-06 sweep took that to 28 and
+  theme/__tests__/radiusRatchet.spec.ts holds the count so it can only fall. SQUARE ICON PLATES
+  (tinted glyph tiles, avatar boxes, logo boxes) are neither on the scale nor circles: a plate >=28px
+  takes plateRadius(side) = round(side/4) so the corner scales with the plate; below 28px it takes
+  md; round means HALF the width, a different shape. What remains after that is circles plus ONE
+  named exception — the bottom-nav active-tab highlight at 20, neither a square plate nor a capsule.
+
 Web/Desktop spacing scale:
   Base unit: 4px (industry standard — compatible with Tailwind's default scale)
 
@@ -1176,7 +1273,12 @@ Core components (React Native — implement in apps/mobile/):
   <QuickActionCard />   60px min height, icon + label + badge, single tap
   <PhotoCapture />      Camera + gallery grid, inline annotation, offline queue
   <VoiceNoteButton />   Hold-to-record, waveform animation, auto-transcription
-  <OfflineBanner />     Fixed top, queue count, auto-dismiss on reconnect
+  <SyncPill />          Top-bar glyph carrying EVERY sync state, offline included.
+                        States: error > syncing > pending > synced. Offline is NOT a
+                        separate state — it PRODUCES pending (writes enqueue), and
+                        offline with an empty queue genuinely is synced.
+                        OfflineBanner deleted 2026-08-06 (PO): two indicators of one
+                        subject in one shell, and the red strip pushed pages down.
   <TaskCard />          Swipeable (swipe-right = done), status badge, photo count
   <StatusChip />        Visual status: Todo / InProgress / Done / Syncing / Synced
   <OptimisticList />    Instant UI update, rollback on failure, retry option
@@ -3225,7 +3327,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
                   Four tabs is within the 4–5 spec §32.7 allows for <MobileNav />.
 
     RBAC enforcement: JWT role claim → bottom nav + screen access
-    Shared components: PhotoCapture, VoiceNoteButton, OfflineBanner, SyncStatusBar
+    Shared components: PhotoCapture, VoiceNoteButton, SyncPill (OfflineBanner + SyncStatusBar deleted)
 
   React Native App Stack:
     Framework:      React Native + Expo (managed workflow)
@@ -3281,7 +3383,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
     - React hooks: useSyncStatus(), usePendingCount(), useConflicts()
     - Zustand store slices: syncStore, offlineStore
     - Unit tests: SyncManager, ConflictHandler, DeltaSyncClient
-    - UI components: SyncStatusBar, ConflictBadge, OfflineBanner
+    - UI components: SyncPill, ConflictBadge
     - Feature screens (role-based, FULL functional + offline + testIDs — per the Role-based
       navigation spec above). ADDED per product-owner ruling: the role screens were specified in
       the navigation section but were absent from this Generate list; the mobile feature UI is owned
@@ -3306,7 +3408,7 @@ ARCHITECTURE DECISION (resolves previous contradiction — aligned with source �
         * PROCUREMENT_OFFICER/PROC_MANAGER: home · rfqs · orders · deliveries (record via
           POST /procurement/deliveries, photo + qty, offline) · profile
     - Shared mobile components (§32.7 Mobile Core Component Library): MobileNav, PhotoCapture,
-      VoiceNoteButton, TaskCard, QuickActionCard, StatusChip, OptimisticList, OfflineBanner
+      VoiceNoteButton, TaskCard, QuickActionCard, StatusChip, OptimisticList, SyncPill
     - Every screen exposes the testIDs consumed by the Detox E2E specs (apps/mobile/e2e/*)
 
   Generate (Web App — apps/web/):

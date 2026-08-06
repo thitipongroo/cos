@@ -74,7 +74,7 @@ describe('Offline Check-In — Worker', () => {
     await waitFor(checkInButton).toBeVisible().withTimeout(5_000);
     await checkInButton.tap();
 
-    await waitFor(element(by.id('offline-banner')))
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(5_000);
 
@@ -113,12 +113,12 @@ describe('Offline Check-In — Worker', () => {
 
   it('offline banner disappears when connectivity is restored', async () => {
     await setNetworkConnected(false);
-    await waitFor(element(by.id('offline-banner')))
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(8_000);
 
     await setNetworkConnected(true);
-    await waitFor(element(by.id('offline-banner')))
+    await waitFor(element(by.id('sync-pill')))
       .not.toBeVisible()
       .withTimeout(10_000);
   });

@@ -20,7 +20,7 @@ import { useRouter } from 'expo-router';
 import NetInfo from '@react-native-community/netinfo';
 import { useT } from '../../i18n';
 import { usePalette } from '../../theme/usePalette';
-import { fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { FieldRow, InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import { getNetworkOrigin, type NetworkOriginPanel } from '../../api/networkOrigin';
 
@@ -173,11 +173,11 @@ export default function TransparencyNetworkScreen(): React.JSX.Element {
             })}
           />
 
+          {/* No `title` — the SectionLabel above already says it (see InfoCard). */}
           <SectionLabel>{t('transparency.network.retention')}</SectionLabel>
           <InfoCard
             testID="network-retention"
             icon="inventory-2"
-            title={t('transparency.network.retention')}
             body={t('transparency.network.retentionBody')}
           />
         </>
@@ -203,7 +203,8 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
     action: {
       minHeight: touchTarget.primaryButton,
       marginTop: spacing.md,
-      borderRadius: 12,
+      // `rounded-lg` in the mockup = 4px under its own radius override, not Tailwind's default 8.
+      borderRadius: radius.md,
       backgroundColor: p.primary,
       alignItems: 'center',
       justifyContent: 'center',

@@ -27,6 +27,16 @@ export interface Palette {
   muted: string;
   /** Brand action colour — the same field blue in both modes (§32.7 keeps tap targets constant). */
   primary: string;
+  /**
+   * Accent for marks drawn ON the background: icons, eyebrows, card titles, inline tags.
+   *
+   * Separate from `primary` because the two are read differently. `primary` is the fill behind a
+   * button, so its own contrast against the page never matters — the label sits on top of it. An
+   * accent has nothing behind it, so it must clear the text threshold itself, and
+   * `--mobile-primary` #0066FF does not on a dark background: 4.17:1, under the 4.5:1 AA gate
+   * (§20.8, DESIGN.md §13). In light mode the two coincide; in dark they must not.
+   */
+  accent: string;
   /** Label/icon colour on a primary-filled surface. */
   onPrimary: string;
   success: string;
@@ -43,6 +53,8 @@ const LIGHT: Palette = {
   text: colors.textPrimary,
   muted: colors.textSecondary,
   primary: colors.primary,
+  // Light mode: the field blue is 4.6:1 on the #F5F5F5 page, so accent and primary coincide here.
+  accent: colors.primary,
   onPrimary: colors.bg,
   success: colors.success,
   warning: colors.warning,
@@ -57,6 +69,7 @@ const DARK: Palette = {
   text: darkColors.text,
   muted: darkColors.muted,
   primary: darkColors.primary,
+  accent: darkColors.accent,
   onPrimary: darkColors.onPrimary,
   success: darkColors.success,
   warning: darkColors.warning,

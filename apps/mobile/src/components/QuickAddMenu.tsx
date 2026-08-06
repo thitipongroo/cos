@@ -41,7 +41,15 @@ import { BrandLogo } from './BrandLogo';
 import activeProjectsBg from '../../assets/tenant-admin/digital_archectural_blueprint.jpg';
 import systemHealthBg from '../../assets/tenant-admin/micro_server.jpg';
 import { useT } from '../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../theme/tokens';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -329,7 +337,7 @@ const styles = StyleSheet.create({
     borderBottomColor: darkColors.border,
   },
   brand: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1, minWidth: 0 },
-  brandIcon: { width: 28, height: 28, borderRadius: 6 },
+  brandIcon: { width: 28, height: 28, borderRadius: plateRadius(28) },
   wordmark: {
     fontFamily: fontFamily.bold,
     fontSize: 16,
@@ -343,7 +351,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: radius.xl,
   },
   pillText: { fontFamily: fontFamily.bold, fontSize: 10, letterSpacing: 1 },
   closeBtn: {
@@ -369,7 +377,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     borderLeftWidth: 4,
@@ -378,7 +386,7 @@ const styles = StyleSheet.create({
   iconPlate: {
     width: 48,
     height: 48,
-    borderRadius: 10,
+    borderRadius: plateRadius(48),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -400,7 +408,7 @@ const styles = StyleSheet.create({
   // AI report card — taller, cyan accent, honest (no fabricated confidence/source).
   aiCard: {
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     borderLeftWidth: 4,
@@ -435,7 +443,7 @@ const styles = StyleSheet.create({
   bentoTile: {
     flex: 1,
     backgroundColor: darkColors.elevated,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -445,7 +453,7 @@ const styles = StyleSheet.create({
   bentoImage: {
     width: '100%',
     height: 96,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     marginBottom: spacing.sm,
     opacity: 0.6,
   },
@@ -464,5 +472,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: darkColors.border,
   },
-  handle: { width: 64, height: 4, borderRadius: 2, backgroundColor: darkColors.border },
+  handle: { width: 64, height: 4, borderRadius: radius.sm, backgroundColor: darkColors.border },
 });

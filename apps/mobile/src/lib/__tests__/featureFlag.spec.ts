@@ -2,7 +2,10 @@
 
 import { FEATURE_DISABLED_CODE, isFeatureDisabled } from '../featureFlag';
 
-const flagOff = { response: { status: 503, data: { code: FEATURE_DISABLED_CODE } } };
+// QM-10 envelope: `{ error: { code } }`, which is what the server actually sends. The fixture used
+// to be flat, which is why nothing caught that `isFeatureDisabled` read `data.code` and could never
+// return true (fixed 2026-08-06 against the live endpoint).
+const flagOff = { response: { status: 503, data: { error: { code: FEATURE_DISABLED_CODE } } } };
 
 describe('isFeatureDisabled', () => {
   it('recognises the guard’s own 503', () => {
@@ -20,7 +23,9 @@ describe('isFeatureDisabled', () => {
     // Requiring both means this can only ever match FeatureFlagGuard, even if an error envelope is
     // reshaped elsewhere in the platform.
     expect(
-      isFeatureDisabled({ response: { status: 500, data: { code: FEATURE_DISABLED_CODE } } }),
+      isFeatureDisabled({
+        response: { status: 500, data: { error: { code: FEATURE_DISABLED_CODE } } },
+      }),
     ).toBe(false);
   });
 

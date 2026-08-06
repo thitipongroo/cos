@@ -12,7 +12,7 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface DeliveryRow {
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   poRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   poChip: {
-    borderRadius: 16,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.textSecondary,
     paddingHorizontal: spacing.md,
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.sm,
     textAlign: 'right',
     fontSize: typography.body.fontSize,

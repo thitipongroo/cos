@@ -24,9 +24,11 @@ export class AnnotationService {
     const row = await this.repo.findByFileId(fileId);
     if (!row) {
       throw new NotFoundException({
-        code: 'COS-FILE-015',
-        message: 'No annotation for this file',
-        messageKey: 'files.annotation.notFound',
+        error: {
+          code: 'COS-FILE-015',
+          message: 'No annotation for this file',
+          messageKey: 'files.annotation.notFound',
+        },
       });
     }
     return toResponse(row);
@@ -49,9 +51,11 @@ export class AnnotationService {
     // photo does not exist.
     if (!(await this.repo.fileExistsInTenant(fileId))) {
       throw new NotFoundException({
-        code: 'COS-FILE-019',
-        message: 'File not found',
-        messageKey: 'files.notFound',
+        error: {
+          code: 'COS-FILE-019',
+          message: 'File not found',
+          messageKey: 'files.notFound',
+        },
       });
     }
 

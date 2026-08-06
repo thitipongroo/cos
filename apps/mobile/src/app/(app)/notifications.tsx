@@ -18,7 +18,14 @@ import {
 } from '../../api/notifications';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useI18n } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 export default function NotificationsScreen() {
   const { t, formatDate } = useI18n();
@@ -146,7 +153,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     minHeight: touchTarget.listItem,
     backgroundColor: darkColors.surface,
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.sm,
@@ -156,7 +163,7 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
     marginTop: 6,
   },

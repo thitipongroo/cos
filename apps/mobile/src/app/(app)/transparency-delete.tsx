@@ -55,19 +55,12 @@ export default function TransparencyDeleteScreen(): React.JSX.Element {
         />
       ))}
 
+      {/* No `title` — the SectionLabel above already says it (see InfoCard). */}
       <SectionLabel>{t('transparency.delete.why')}</SectionLabel>
-      <InfoCard
-        icon="balance"
-        title={t('transparency.delete.why')}
-        body={t('transparency.delete.whyBody')}
-      />
+      <InfoCard icon="balance" body={t('transparency.delete.whyBody')} />
 
       <SectionLabel>{t('transparency.delete.how')}</SectionLabel>
-      <InfoCard
-        icon="mail"
-        title={t('transparency.delete.how')}
-        body={t('transparency.delete.howBody')}
-      />
+      <InfoCard icon="mail" body={t('transparency.delete.howBody')} />
       <DisabledAction
         testID="delete-request"
         icon="delete-forever"

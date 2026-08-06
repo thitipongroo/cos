@@ -4,7 +4,7 @@
 import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import { useConflicts } from '../hooks/useConflicts';
 import { useT } from '../i18n';
-import { colors, fontFamily } from '../theme/tokens';
+import { colors, fontFamily, radius } from '../theme/tokens';
 
 interface ConflictBadgeProps {
   onPress?: () => void;
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   badge: {
     minWidth: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: radius.xl,
     backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',

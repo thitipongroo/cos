@@ -18,7 +18,16 @@ import { getUserProjects, type UserProject } from '../../api/projects';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { getUsers, type TenantUser } from '../../api/users';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
+import { formatNationalPhone } from '@cos/ui-logic';
+import { shortId } from '../../lib/shortId';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -122,7 +131,7 @@ export default function UserProfileScreen(): React.JSX.Element {
           <Text style={styles.name}>{name}</Text>
           <View style={styles.metaRow}>
             <Text style={styles.uid}>
-              {t('adminUsers.uid')}: {userId.slice(0, 8).toUpperCase()}
+              {t('adminUsers.uid')}: {shortId(userId)}
             </Text>
             <View style={styles.dotSep} />
             <Text style={styles.roleText}>{formatRole(role).toUpperCase()}</Text>
@@ -174,7 +183,7 @@ export default function UserProfileScreen(): React.JSX.Element {
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>{t('userProfile.phone')}</Text>
-            <Text style={styles.fieldValue}>{phone !== '' ? phone : '—'}</Text>
+            <Text style={styles.fieldValue}>{phone !== '' ? formatNationalPhone(phone) : '—'}</Text>
           </View>
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>{t('userProfile.department')}</Text>
@@ -271,13 +280,19 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
   },
   avatarWrap: { width: 96, height: 96, marginBottom: spacing.sm },
-  avatar: { width: 96, height: 96, borderRadius: 12, borderWidth: 2, borderColor: darkColors.cyan },
+  avatar: {
+    width: 96,
+    height: 96,
+    borderRadius: radius.xl,
+    borderWidth: 2,
+    borderColor: darkColors.cyan,
+  },
   avatarFallback: {
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
@@ -308,7 +323,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     color: darkColors.muted,
   },
-  dotSep: { width: 3, height: 3, borderRadius: 2, backgroundColor: darkColors.muted },
+  dotSep: { width: 3, height: 3, borderRadius: radius.sm, backgroundColor: darkColors.muted },
   roleText: {
     fontFamily: fontFamily.bold,
     fontSize: 11,
@@ -322,7 +337,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     borderWidth: 1,
   },
   statusBadgeDot: { width: 6, height: 6, borderRadius: 3 },
@@ -332,7 +347,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: 2,
   },
@@ -355,7 +370,7 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -401,7 +416,7 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.elevated,
     borderLeftWidth: 2,
     borderLeftColor: darkColors.primary,
-    borderRadius: 6,
+    borderRadius: radius.md,
     padding: spacing.sm,
   },
   projectInfo: { flex: 1, minWidth: 0 },
@@ -418,7 +433,7 @@ const styles = StyleSheet.create({
   },
   projectBadge: {
     borderWidth: 1,
-    borderRadius: 4,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
   },
@@ -437,7 +452,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   primaryText: {
@@ -453,7 +468,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
   },

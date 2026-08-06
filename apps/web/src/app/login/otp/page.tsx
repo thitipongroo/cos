@@ -92,7 +92,10 @@ export default function OtpVerifyPage() {
   const country = findCountry(countryIso2);
   const phoneNumber = toE164(country.dialCode, nationalNumber);
   const otp = digits.join('');
-  const maskedPhone = `${country.dialCode} •••• ${nationalNumber.slice(-4)}`;
+  // Parenthesised dial code per §20.5, so the masked form matches the shape used everywhere a full
+  // number is shown. The number itself stays masked and therefore ungrouped — hyphenating digits
+  // that are hidden would imply a grouping the reader cannot check.
+  const maskedPhone = `(${country.dialCode}) •••• ${nationalNumber.slice(-4)}`;
 
   // The six boxes stay as they are — one-character inputs with their own paste and arrow-key
   // handling. react-hook-form holds the joined result, so the "six digits" rule lives in the

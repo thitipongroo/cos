@@ -82,7 +82,7 @@ describe('Sync Conflict Resolution — Max-Wins for progress_percent', () => {
       .withTimeout(10_000);
 
     await setNetworkConnected(false);
-    await waitFor(element(by.id('offline-banner')))
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(5_000);
 

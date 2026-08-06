@@ -31,7 +31,15 @@ import { createUser } from '../../api/users';
 import { getMyProjects, type MyProject } from '../../api/projects';
 import { useInviteRoleStore } from '../../store/inviteRoleStore';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
+import { formatRole } from '../../lib/formatRole';
 
 type Method = 'phone' | 'email';
 
@@ -51,14 +59,6 @@ const ROLES: CosRole[] = [
   CosRole.VIEWER,
 ];
 const DEFAULT_VISIBLE = 4;
-
-/** SITE_ENGINEER → "Site Engineer" (mirrors users.tsx — role labels are formatted, not i18n keys). */
-function formatRole(role: string): string {
-  return role
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
 
 export default function InviteUserScreen(): React.JSX.Element {
   const t = useT();
@@ -430,7 +430,7 @@ const styles = StyleSheet.create({
   toggle: {
     flexDirection: 'row',
     backgroundColor: darkColors.bg,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: 4,
@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: radius.md,
   },
   toggleActive: {
     backgroundColor: `${darkColors.cyan}22`,
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 2,
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   roleList: { gap: spacing.sm },
   roleCard: {
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     borderLeftWidth: 3,
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     backgroundColor: darkColors.elevated,
-    borderRadius: 999,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: darkColors.border,
     paddingHorizontal: spacing.sm,
@@ -553,14 +553,14 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     padding: spacing.md,
   },
   aiLeft: { alignItems: 'center', gap: spacing.xs },
   aiBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radius.md,
     backgroundColor: `${darkColors.cyan}22`,
     borderWidth: 1,
     borderColor: `${darkColors.cyan}55`,
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   sendBtnBusy: { opacity: 0.7 },
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
     height: touchTarget.primaryButton + 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: darkColors.border,
   },

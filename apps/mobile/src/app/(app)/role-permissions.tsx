@@ -17,18 +17,18 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getRolePermissions } from '../../api/roles';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
+import { formatRole } from '../../lib/formatRole';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 type Level = 'FULL' | 'RW' | 'R';
-
-/** SITE_ENGINEER → "Site Engineer" (mirrors invite-user / users — role labels are formatted). */
-function formatRole(role: string): string {
-  return role
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
 
 // Resource metadata — label + icon are the real RBAC resource keys (permissions.ts); the description is
 // a generic, role-independent summary of the resource (PO decision 2026-07-29). Order is the canonical
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
 
   hero: {
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.primary,
     padding: spacing.md,
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}1A`,
     borderWidth: 1,
     borderColor: `${darkColors.cyan}4D`,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     padding: spacing.md,
     marginBottom: spacing.md,
   },
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.sm,
@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   cardIcon: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: radius.md,
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     color: darkColors.muted,
   },
   cardRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.xl },
   badgeText: { fontFamily: fontFamily.bold, fontSize: 10, letterSpacing: 0.5 },
   levelLabel: { fontFamily: fontFamily.semibold, fontSize: 11 },
 
@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   backText: {

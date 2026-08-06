@@ -76,6 +76,27 @@ export interface UserRow {
   role: string; // joined from platform.tenant_memberships
 }
 
+/**
+ * What `GET /users/me` returns: the user row plus the employer-assigned code, if the account is
+ * linked to a worker.
+ *
+ * A SEPARATE TYPE, not a field on `UserRow`. Every other query in this service selects `UserRow`
+ * columns from `platform.users` alone; widening `UserRow` would make those results structurally
+ * incomplete, and raw SQL is exactly where TypeScript cannot tell you so.
+ */
+export interface MeRow extends UserRow {
+  /**
+   * `workforce.workers.employee_code` — the employer's own identifier for the person
+   * (`@pdpa(category: "identity")`).
+   *
+   * NULL IS THE COMMON CASE, not an edge case: the `workforce.workers.user_id` link is nullable and
+   * only site workers have a worker record at all. Office roles — project managers, tenant admins,
+   * finance — legitimately have none, and callers must render that as "no code issued" rather than
+   * as missing data. In the seeded dev tenant exactly 1 of 19 workers is linked to an account.
+   */
+  employee_code: string | null;
+}
+
 export interface PaginationParams {
   limit: number;
   offset: number;
@@ -158,18 +179,30 @@ export class UserService implements OnModuleDestroy {
    * of this service — but it is still tenant-scoped, and the user_id comes from the JWT, never from
    * the caller, so it cannot be pointed at anyone else's row.
    */
-  async getMe(tenantId: string, userId: string): Promise<UserRow> {
-    const rows = await this.prisma.$queryRaw<UserRow[]>`
+  async getMe(tenantId: string, userId: string): Promise<MeRow> {
+    // LEFT JOIN, never an inner one: most accounts have no worker record (see `MeRow.employee_code`),
+    // and an inner join would turn "this person has no employee code" into "this person does not
+    // exist" — a 404 on your own profile.
+    //
+    // The join is keyed on tenant_id as well as user_id even though `uq_workers_user_id` is already
+    // per-tenant. `workforce.workers` carries an RLS policy on `app.current_tenant_id`, which this
+    // client does not set (it connects as the owning role), so the tenant predicate here is the
+    // isolation rather than a redundancy.
+    const rows = await this.prisma.$queryRaw<MeRow[]>`
       SELECT
         u.user_id, u.tenant_id, u.keycloak_user_id, u.email, u.phone_number, u.display_name,
-        u.photo_url, u.is_active, u.mfa_enabled, u.last_seen_at, u.created_at, u.updated_at, m.role
+        u.photo_url, u.is_active, u.mfa_enabled, u.last_seen_at, u.created_at, u.updated_at, m.role,
+        w.employee_code
       FROM platform.users u
       JOIN platform.tenant_memberships m
         ON m.user_id = u.user_id AND m.tenant_id = u.tenant_id
+      LEFT JOIN workforce.workers w
+        ON w.user_id = u.user_id AND w.tenant_id = u.tenant_id
       WHERE u.user_id = ${userId}::uuid AND u.tenant_id = ${tenantId}::uuid
     `;
     const me = rows[0];
-    if (!me) throw new NotFoundException({ code: 'COS-USER-404', message: 'User not found' });
+    if (!me)
+      throw new NotFoundException({ error: { code: 'COS-USER-404', message: 'User not found' } });
     return me;
   }
 
@@ -177,7 +210,7 @@ export class UserService implements OnModuleDestroy {
    * Set or clear the signed-in user's profile photo. `null` clears it, which is the only way back to
    * initials once a photo is set.
    */
-  async updateMyPhoto(tenantId: string, userId: string, photoUrl: string | null): Promise<UserRow> {
+  async updateMyPhoto(tenantId: string, userId: string, photoUrl: string | null): Promise<MeRow> {
     await this.prisma.$executeRaw`
       UPDATE platform.users
       SET photo_url = ${photoUrl}::text, updated_at = now()

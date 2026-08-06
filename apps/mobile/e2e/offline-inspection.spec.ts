@@ -79,7 +79,7 @@ describe('Offline Inspection — Inspector', () => {
 
     await setNetworkConnected(false);
 
-    await waitFor(element(by.id('offline-banner')))
+    await waitFor(element(by.id('sync-pill')))
       .toBeVisible()
       .withTimeout(5_000);
 

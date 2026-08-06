@@ -27,7 +27,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
 import { usePalette } from '../../theme/usePalette';
-import { fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import { listDevices, revokeDevice, type TrustedDeviceSummary } from '../../api/devices';
 import { getDeviceId } from '../../lib/deviceTrust';
@@ -212,7 +212,7 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
     content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
     deviceCard: {
       backgroundColor: p.surface,
-      borderRadius: 12,
+      borderRadius: radius.lg, // card
       padding: spacing.sm,
       gap: spacing.xs,
     },
@@ -234,7 +234,7 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
       alignItems: 'center',
       gap: spacing.sm,
       backgroundColor: p.surface,
-      borderRadius: 12,
+      borderRadius: radius.md, // list row (minHeight: listItem)
       padding: spacing.sm,
       minHeight: touchTarget.listItem,
     },

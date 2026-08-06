@@ -94,6 +94,29 @@ async function assertOn(id, what) {
   await find(byId(id), what);
 }
 
+/**
+ * Tap something, then prove the tap LANDED — retrying if it did not.
+ *
+ * `assertOn` only proves a node is in the view tree, and on this app that is true well before the
+ * app will accept a touch: `app/_layout.tsx` wraps everything in a `<LoadingBoundary>` that mounts
+ * its children underneath the launch loader (that is what makes the crossfade possible), so
+ * uiautomator reports `privacy-policy-link` while the gate is still closed. The first tap is
+ * swallowed, the script asserts on the destination, and the run dies with "Privacy Policy screen
+ * never appeared" — on a screen that works perfectly when tapped by hand a second later.
+ *
+ * `capture-android-transparency.mjs` never hits this because it sleeps a flat 30s after launch. That
+ * hides the race rather than handling it, and it costs 30s on every run.
+ */
+async function tapUntil(id, expectId, what, tries = 6) {
+  for (let attempt = 0; attempt < tries; attempt++) {
+    await tap(byId(id), what);
+    await delay(1200);
+    const arrived = (await dump()).some((n) => n.includes(`resource-id="${expectId}"`));
+    if (arrived) return;
+  }
+  throw new Error(`capture: ${what} did not open ${expectId} after ${tries} taps`);
+}
+
 function grab(path) {
   const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
   if (png.length < 20_000) throw new Error(`capture: ${path} screenshot looks empty`);
@@ -147,17 +170,29 @@ async function main() {
   adb('shell', 'monkey', '-p', PKG, '-c', 'android.intent.category.LAUNCHER', '1');
   await assertOn('privacy-policy-link', 'login screen');
 
-  await tap(byId('privacy-policy-link'), 'Privacy Policy footer link');
-  await assertOn('privacy-policy', 'Privacy Policy screen');
+  await tapUntil('privacy-policy-link', 'privacy-policy', 'Privacy Policy footer link');
   await delay(600);
   await stitchFull('05-privacy-policy');
 
-  // Alternate state: Data Collection expanded. The collapsed screen shows only section headings, so
-  // without this the captures never show the policy text itself.
-  await tap(byId('privacy-section-collection'), 'Data Collection accordion');
-  await assertOn('privacy-section-collection-body', 'expanded Data Collection body');
-  await delay(600);
-  await stitchFull('05-privacy-policy-data-collection');
+  // Every section expanded, one page each. The collapsed screen shows only headings, so without
+  // these the captures never show the policy text itself — and until 2026-08-06 only `collection`
+  // was opened, which left FOUR of the five sections undocumented and, with them, three block types
+  // that appear nowhere else: the pull-quote (Data Usage), the icon+text cards (PDPA & GDPR) and the
+  // monospace control block (Technical Security). Two of those had an invisible background for an
+  // unknown length of time precisely because no frame ever rendered them.
+  //
+  // The accordion is single-open (`openId` in PrivacyPolicyDocument.tsx), so tapping the next
+  // section closes the previous one — no need to collapse between shots. `collection` is absent from
+  // this list only because it already has its own step above. It IS an accordion here: the link
+  // behaviour (`links = section.id === 'collection' && onDataCollection !== undefined`) belongs to
+  // the POST-AUTH route, which passes `onDataCollection` to reach the transparency portal; this
+  // pre-auth route deliberately does not.
+  const SECTIONS = ['usage', 'compliance', 'security', 'rights'];
+  for (const id of SECTIONS) {
+    await tapUntil(`privacy-section-${id}`, `privacy-section-${id}-body`, `${id} accordion`);
+    await delay(600);
+    await stitchFull(`05-privacy-policy-${id}`);
+  }
 
   console.log(`\nDone → ${OUT}`);
 }

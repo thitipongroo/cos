@@ -12,7 +12,7 @@ import { get } from '../../api/client';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface ExecRow {
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
     fontFamily: fontFamily.semibold,
     paddingHorizontal: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radius.xl,
     overflow: 'hidden',
   },
   badgeRisk: { color: colors.bg, backgroundColor: colors.danger, paddingVertical: 2 },

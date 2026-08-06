@@ -20,7 +20,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useI18n } from '../../i18n';
-import { darkColors, fontFamily, spacing, typography, touchTarget } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 import {
   getNotificationPreferences,
   updateNotificationPreferences,
@@ -392,7 +399,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.danger}22`,
     borderWidth: 1,
     borderColor: `${darkColors.danger}55`,
-    borderRadius: 4,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.xs,
     paddingVertical: 2,
   },
@@ -404,7 +411,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -436,7 +443,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: darkColors.elevated,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
   },
@@ -449,7 +456,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    borderRadius: 8,
+    borderRadius: radius.xl,
     borderWidth: 1,
     paddingVertical: spacing.xs,
   },
@@ -458,7 +465,7 @@ const styles = StyleSheet.create({
   channelChipText: { fontFamily: fontFamily.bold, fontSize: 9, letterSpacing: 0.5 },
   quietStack: {
     backgroundColor: darkColors.elevated,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -467,7 +474,7 @@ const styles = StyleSheet.create({
   stepperBtn: {
     width: touchTarget.iconButton,
     height: touchTarget.iconButton,
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
     alignItems: 'center',
@@ -502,7 +509,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     minHeight: touchTarget.primaryButton + 8,
     backgroundColor: darkColors.primary,
-    borderRadius: 8,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
   },
   saveButton: { marginTop: spacing.md },
@@ -542,7 +549,7 @@ const styles = StyleSheet.create({
   auditCard: {
     alignSelf: 'stretch',
     backgroundColor: darkColors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.success,
     padding: spacing.md,

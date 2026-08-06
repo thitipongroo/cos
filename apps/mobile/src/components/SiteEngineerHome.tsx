@@ -57,7 +57,7 @@ import {
   type TaskUrgency,
   type UpcomingTask as TaskRow,
 } from '../lib/siteEngineerHome';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../theme/tokens';
+import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 
 /** Normalise a list endpoint that may return `T[]` or `{ items: T[] }`. */
 function asList<T>(res: { items?: T[] } | T[]): T[] {
@@ -507,7 +507,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
   pill: {
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 999,
+    borderRadius: radius.xl,
     maxWidth: '60%',
   },
   pillText: {
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   },
   track: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: radius.md,
     backgroundColor: darkColors.elevated,
     // No overflow:hidden — it would clip the fill's glow (ADR-071); the fill rounds its own corners.
     marginTop: spacing.xs,
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
   // Glow on the progress fill (ADR-071 — kept by product-owner decision 2026-07-26).
   fill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
     shadowColor: darkColors.primary,
     shadowOffset: { width: 0, height: 0 },
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     minHeight: touchTarget.listItem,
     backgroundColor: darkColors.surface,
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
     borderLeftWidth: 4,
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   chevronBox: {
     width: 36,
     height: 36,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',

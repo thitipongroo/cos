@@ -93,6 +93,29 @@ async function tap(pred, what) {
   await delay(900);
 }
 
+/**
+ * Tap, then prove the tap LANDED — retrying if it did not.
+ *
+ * A node being in the view tree does not mean the app will accept a touch on it. `app/_layout.tsx`
+ * wraps everything in a `<LoadingBoundary>` that mounts its children UNDERNEATH the launch loader
+ * (that is what makes the crossfade possible), so uiautomator reports `office-login-button` while
+ * the launch gate is still closed. The tap is swallowed, and the run then dies waiting for a
+ * destination that was never opened — "Keycloak Sign In button never appeared" on a button that
+ * works when pressed by hand a moment later.
+ *
+ * `freshApp()` used to paper over this with `delay(2500)`. That is a guess about how long a cold
+ * start takes, and a cold-booted emulator takes longer than it. Verifying the outcome does not need
+ * the guess and does not pay the wait when the app is already up.
+ */
+async function tapUntil(tapPred, expectPred, what, tries = 6) {
+  for (let attempt = 0; attempt < tries; attempt++) {
+    await tap(tapPred, what);
+    await delay(1500);
+    if ((await dump()).some(expectPred)) return;
+  }
+  throw new Error(`capture: ${what} never reached its destination after ${tries} taps`);
+}
+
 /** RN's LogBox notification ("Open debugger to view warnings.") — debug-only, keep it out of docs. */
 async function dismissDevBanners() {
   for (let i = 0; i < 4; i++) {
@@ -229,11 +252,52 @@ function shot(name) {
   console.log(`  ✓ ${name}.png (${(png.length / 1024).toFixed(0)} KB)`);
 }
 
+/**
+ * Dismiss a Chrome Custom Tab left over from a previous Path B run.
+ *
+ * Path B hands off to Keycloak in a Custom Tab, which belongs to CHROME, not to us. If a run dies
+ * while it is open — and a run that dies is exactly when a re-run happens — it is still the resumed
+ * activity on the next attempt. `pm clear` wipes OUR data and relaunches OUR app underneath it, so
+ * the script then waits out its whole budget for a login screen that is mounted but covered, and
+ * reports "office login button never appeared" on a build whose login screen is fine.
+ *
+ * BACK, not `am force-stop com.android.chrome`. force-stop kills Chrome's PROCESS but leaves its
+ * TASK in recents, and Android resurrects that task the moment our own process goes away — measured
+ * here: after force-stop the top activity was ours, and after the subsequent `pm clear` it was the
+ * Custom Tab again. One BACK closes the tab and lands on our activity, which is what a person would
+ * press and what the OS actually treats as dismissal.
+ */
+async function closeCustomTab(tries = 5) {
+  for (let attempt = 0; attempt < tries; attempt++) {
+    const top = adb('shell', 'dumpsys', 'activity', 'activities');
+    const resumed = /topResumedActivity=\S+ \S+ (\S+)/.exec(top)?.[1] ?? '';
+    if (!resumed.startsWith('com.android.chrome')) return;
+    adb('shell', 'input', 'keyevent', '4');
+    await delay(1500);
+  }
+  throw new Error('capture: a Chrome Custom Tab stayed in the foreground and would cover the app');
+}
+
 /** `pm clear` wipes app data (session + offline DB + stored locale) → deterministic login screen. */
 async function freshApp() {
+  // Close any Chrome Custom Tab first. Path B hands off to Keycloak in a Custom Tab, which is a
+  // CHROME activity, not ours — `pm clear` wipes our data and leaves it sitting in the foreground.
+  // The next `freshApp()` then relaunches the app UNDERNEATH it and waits for a login screen that is
+  // on screen but covered, which is how this script failed with "office login button never appeared"
+  // on a build whose login screen was fine. Only reachable when a previous run died mid-Path-B, which
+  // is precisely when a re-run is being attempted.
+  // AFTER `pm clear`, not before. Clearing our app kills our process, and Android then resumes the
+  // next task in recents — Chrome's — so a tab dismissed first is simply back by the time the app
+  // launches. Measured: dismiss-then-clear left the Custom Tab on top; clear-then-dismiss does not.
   adb('shell', 'pm', 'clear', PKG);
+  await closeCustomTab();
   adb('shell', 'monkey', '-p', PKG, '-c', 'android.intent.category.LAUNCHER', '1');
-  await find(byId('office-login-button'), 'login screen');
+  // 90 tries, not the default 20. `pm clear` drops the JS bundle cache with everything else, so this
+  // is a genuine cold start: Metro re-serves the bundle and the app re-runs it before anything is on
+  // screen. The default budget (~25-40s including dump time) is enough on a warm emulator and is not
+  // enough on one that was just booted, which is exactly when a capture run tends to start.
+  // `capture-android-transparency.mjs` sleeps a flat 30s here for the same reason.
+  await find(byId('office-login-button'), 'login screen', 90);
   await delay(2500); // let the hero/card finish laying out
   await dismissDevBanners();
   // The docs set is English (so are the mockups). The login header's LanguageSwitcher is named for the
@@ -290,9 +354,8 @@ async function main() {
 async function capturePathB() {
   await freshApp();
   await dismissDevBanners();
-  await tap(byId('office-login-button'), 'office login button');
+  await tapUntil(byId('office-login-button'), byText('Sign In'), 'office login button');
   // Keycloak's page autofocuses the email field, so the IME covers half of it.
-  await find(byText('Sign In'), 'Keycloak Sign In button');
   await hideKeyboard();
   await delay(1000);
   shot('03-login-password');

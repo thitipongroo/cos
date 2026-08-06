@@ -10,6 +10,7 @@
 import { StyleSheet } from 'react-native';
 import { colors, fontFamily, spacing, typography } from './tokens';
 import type { Palette } from './palette';
+import { radius } from '../theme/tokens';
 
 export const screen = StyleSheet.create({
   // Root view of a list/form screen: 16px section padding, 12px gap between children.
@@ -45,7 +46,7 @@ export const screen = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
@@ -56,7 +57,7 @@ export const screen = StyleSheet.create({
   primaryButton: {
     minHeight: 48,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -134,7 +135,7 @@ export const makeScreenStyles = (p: Palette) =>
       minHeight: 48,
       borderWidth: 1,
       borderColor: p.border,
-      borderRadius: 8,
+      borderRadius: radius.lg,
       paddingHorizontal: spacing.md,
       fontSize: typography.body.fontSize,
       fontFamily: fontFamily.regular,
@@ -145,7 +146,7 @@ export const makeScreenStyles = (p: Palette) =>
     primaryButton: {
       minHeight: 48,
       backgroundColor: p.primary,
-      borderRadius: 8,
+      borderRadius: radius.md,
       alignItems: 'center',
       justifyContent: 'center',
     },

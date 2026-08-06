@@ -16,7 +16,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CosRole } from '@cos/types';
 import { useInviteRoleStore } from '../../store/inviteRoleStore';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -204,7 +211,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
@@ -239,7 +246,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -253,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     color: darkColors.primary,
   },
-  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.xl },
   badgeText: {
     fontFamily: fontFamily.bold,
     fontSize: 9,
@@ -285,7 +292,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     padding: spacing.md,
     gap: 6,
   },
@@ -305,7 +312,7 @@ const styles = StyleSheet.create({
   aiBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radius.md,
     backgroundColor: `${darkColors.cyan}1A`,
   },
   aiBadgeText: { fontFamily: fontFamily.bold, fontSize: 9, color: darkColors.cyan },
@@ -335,7 +342,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   confirmBtnDisabled: { opacity: 0.5 },

@@ -8,7 +8,7 @@ import type { Project } from '../db/database';
 import { useCollection } from '../hooks/useCollection';
 import { refreshProjectsCache } from '../api/projects';
 import { useT } from '../i18n';
-import { colors, darkColors, fontFamily, spacing, typography } from '../theme/tokens';
+import { colors, darkColors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 /** The minimum a chip needs. The offline-cache Project satisfies it; so does a scoped server list. */
 export interface PickerProject {
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   chip: {
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },

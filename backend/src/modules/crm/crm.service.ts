@@ -54,7 +54,7 @@ export class CrmService {
   async createOpportunity(dto: CreateOpportunityDto): Promise<OpportunityRow> {
     const lead = await this.repo.findLeadById(dto.lead_id);
     if (!lead) {
-      throw new NotFoundException({ code: 'COS-CRM-001', message: 'Lead not found' });
+      throw new NotFoundException({ error: { code: 'COS-CRM-001', message: 'Lead not found' } });
     }
     const opportunity = await this.repo.createOpportunity({
       lead_id: dto.lead_id,
@@ -80,12 +80,16 @@ export class CrmService {
   async convertOpportunity(opportunityId: string): Promise<CrmCustomerRow> {
     const opportunity = await this.repo.findOpportunityById(opportunityId);
     if (!opportunity) {
-      throw new NotFoundException({ code: 'COS-CRM-002', message: 'Opportunity not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-CRM-002', message: 'Opportunity not found' },
+      });
     }
     if (opportunity.status === 'WON') {
       throw new UnprocessableEntityException({
-        code: 'COS-CRM-003',
-        message: 'Opportunity already converted',
+        error: {
+          code: 'COS-CRM-003',
+          message: 'Opportunity already converted',
+        },
       });
     }
     const lead = await this.repo.findLeadById(opportunity.lead_id);
@@ -108,7 +112,7 @@ export class CrmService {
   async createContact(dto: CreateContactDto): Promise<ContactRow> {
     const lead = await this.repo.findLeadById(dto.lead_id);
     if (!lead) {
-      throw new NotFoundException({ code: 'COS-CRM-001', message: 'Lead not found' });
+      throw new NotFoundException({ error: { code: 'COS-CRM-001', message: 'Lead not found' } });
     }
     return this.repo.createContact({
       lead_id: dto.lead_id,

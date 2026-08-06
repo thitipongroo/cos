@@ -115,7 +115,9 @@ export class SafetyService {
   async acknowledgeIncident(incidentId: string): Promise<IncidentRow> {
     const incident = await this.repo.findIncidentById(incidentId);
     if (!incident) {
-      throw new NotFoundException({ code: 'COS-SAFE-001', message: 'Incident not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SAFE-001', message: 'Incident not found' },
+      });
     }
     const updated = await this.repo.acknowledgeIncident(incidentId, this.userId);
     logger.info({ incident_id: incidentId, by: this.userId }, 'incident.acknowledged');
@@ -149,7 +151,7 @@ export class SafetyService {
   async getPermit(permitId: string): Promise<PermitRow> {
     const permit = await this.repo.findPermitById(permitId);
     if (!permit) {
-      throw new NotFoundException({ code: 'COS-SAFE-002', message: 'Permit not found' });
+      throw new NotFoundException({ error: { code: 'COS-SAFE-002', message: 'Permit not found' } });
     }
     return permit;
   }
@@ -168,8 +170,10 @@ export class SafetyService {
     }
     if (permit.permit_type === 'SAFETY_PERMIT' && tier === 'SAFETY_OFFICER') {
       throw new ForbiddenException({
-        code: 'COS-SAFE-004',
-        message: 'Safety permits require PM (final) approval',
+        error: {
+          code: 'COS-SAFE-004',
+          message: 'Safety permits require PM (final) approval',
+        },
       });
     }
     const updated = await this.repo.updatePermitStatus(permitId, 'ACTIVE');

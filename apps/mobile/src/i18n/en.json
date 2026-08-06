@@ -115,7 +115,7 @@
         },
         "usage": {
           "title": "Data Usage",
-          "body": "Your data is used to operate your projects, to record safety and quality compliance, and to produce the reports and analytics your organisation relies on.",
+          "body": "Your data is used to operate your projects, to record safety and quality compliance, and to produce the reports your organisation relies on.",
           "quote": "Analytics run on aggregated figures and pseudonymous identifiers, and personal data is removed before any text is sent to an AI model.",
           "processors": "Processing takes place on our platform and with a limited set of service providers under data processing agreements: cloud infrastructure and storage, identity, edge protection, workflow, and the AI report service.",
           "residency": "Data is stored in your organisation's assigned home region — Thailand (ap-southeast-7) for Thai organisations, Ireland (eu-west-1) for EU organisations, and Singapore (ap-southeast-1) otherwise — with Singapore acting as the disaster-recovery region for Thai data. One exception: sign-in codes are delivered through an SMS gateway in Singapore, so your phone number reaches that gateway when you sign in."
@@ -145,7 +145,7 @@
         },
         "rights": {
           "title": "User Rights",
-          "body": "You can review and change which notifications you receive in the app's notification settings. Access, portability, erasure and restriction requests are handled by our Data Protection Office.",
+          "body": "Change which notifications you receive in notification settings. Access, portability, erasure and restriction requests go to our DPO.",
           "contact": "Withdrawing consent for safety-related data collection may limit access to areas of a site where that data is required."
         }
       },
@@ -1107,19 +1107,19 @@
     },
     "comingSoon": "Coming soon",
     "portal": {
-      "title": "Transparency Portal",
+      "title": "Data Collection",
       "entry": "Transparency Portal",
       "entryHint": "See exactly what this app collects about you",
       "lede": "What Construction OS records about you, category by category. Each entry names the data, why it exists, and how long it is kept. Capabilities marked Planned are described in our specifications but are not running yet — nothing under them is being collected today.",
       "summaryLabel": "Categories in use",
-      "summaryValue": "5",
+      "summaryValue": "5 data categories",
       "summaryNote": "Identity, contact, location, payroll and operational records. Encrypted at rest with AES-256; separated per organisation by database-enforced policy.",
       "breakdown": "What is collected",
       "inputs": "How it reaches us",
       "retention": "How long it is kept",
-      "retentionBody": "There is no single retention period — each record type has its own, set by contract or by law. Check-in coordinates are reduced to a daily count after 90 days; worker records are anonymised two years after employment ends; site reports are kept for the project's life plus seven years under accounting law.",
+      "retentionBody": "Each record type has its own period: coordinates 90 days, worker records two years after employment, site reports the project plus 7 years.",
       "rights": "Your rights",
-      "rightsBody": "You can ask for a copy of your data, ask for it to be corrected, or ask for it to be erased. A copy is self-service — start it below and confirm with a code. Correction and erasure are handled by our Data Protection Office and answered within 30 days.",
+      "rightsBody": "Ask for a copy, a correction, or erasure. A copy is self-service below; the other two are answered by our DPO within 30 days.",
       "cat": {
         "identity": {
           "title": "Identity & contact",
@@ -1183,7 +1183,8 @@
           "title": "Timestamps",
           "body": "How the time of every record is captured and how long it is kept."
         }
-      }
+      },
+      "requestDeletion": "Request data deletion"
     },
     "identity": {
       "title": "Identity & contact",
@@ -1191,16 +1192,19 @@
       "stored": "Stored on your account",
       "purpose": "Why it is needed",
       "access": "Who can see it",
-      "accessBody": "Access follows role-based permissions: administrators in your own organisation, and the project managers you are assigned to. Every read of an administrative screen is written to the audit log.",
+      "accessBody": "Role-based: administrators in your organisation and the project managers you are assigned to. Every administrative read is audit-logged.",
       "manage": "Manage this data",
       "field": {
+        "employeeCode": "Employee code",
+        "noEmployeeCode": "None issued to you",
+        "uid": "User ID",
         "name": "Full name",
         "email": "Email address",
         "phone": "Phone number",
         "photo": "Profile photo",
         "role": "Role",
         "photoSet": "Set",
-        "photoNone": "Not set — your initials are shown instead",
+        "photoNone": "Not set",
         "none": "Not set"
       },
       "purposeAuth": {
@@ -1217,13 +1221,17 @@
       },
       "actionExport": "Request a copy of my data",
       "actionUpdate": "Change contact preferences",
-      "offline": "Showing what is cached on this device — connect to load your current record."
+      "offline": "Showing what is cached on this device — connect to load your current record.",
+      "heroEyebrow": "Identity schema",
+      "schemaTag": "ENCRYPTED AT REST",
+      "sourceAccount": "From your account",
+      "sourceWorkforce": "From your employer’s workforce records"
     },
     "location": {
       "title": "Site & location",
       "lede": "Coordinates are attached to field records, not tracked continuously. Your device is not followed between records, and location is optional on every one of them.",
       "where": "Where coordinates are attached",
-      "whereBody": "Five record types can carry a coordinate: check-in and check-out, daily site reports, issues, safety incidents and inspections. If a record has no coordinate, none was captured.",
+      "whereBody": "Five record types can carry one: check-in/out, site reports, issues, incidents and inspections. No coordinate means none was captured.",
       "pipeline": "What happens to a coordinate",
       "safeguards": "Safeguards",
       "rec": {
@@ -1291,7 +1299,7 @@
       "collected": "What each entry holds",
       "path": "Where an entry travels",
       "retention": "Retention",
-      "retentionBody": "Application logs are kept 30 days for day-to-day work and archived for one year. Audit entries — the ones attributing an action to a person — are held for seven years in write-once storage, because safety and accounting rules require it.",
+      "retentionBody": "Application logs: 30 days live, then a year archived. Audit entries: seven years, write-once, as safety and accounting rules require.",
       "item": {
         "actor": {
           "title": "Who",
@@ -1380,7 +1388,7 @@
       "lede": "None of this is running today. Sensor telemetry is specified for a later phase, and no device data is being collected from you or your equipment now.",
       "planned": "Planned capabilities",
       "note": "Why it is listed",
-      "noteBody": "It appears here so the picture is complete: when equipment telemetry is switched on you will see it described here first, with its own retention period, rather than discovering it after the fact.",
+      "noteBody": "Listed so the picture is complete: if equipment telemetry is switched on, you will read about it here first, with its own retention period.",
       "cap": {
         "location": {
           "title": "Machinery location",
@@ -1440,7 +1448,7 @@
       "lede": "What we can and cannot erase, and what happens to the rest. Please read this before making a request — parts of it are fixed by law, not by preference.",
       "what": "What happens to each type",
       "how": "How to make a request",
-      "howBody": "Send the request to our Data Protection Office; the address is published in the Privacy Policy. We answer within 30 days. A self-service button is not built yet, which is why the control below is inactive.",
+      "howBody": "Send the request to our Data Protection Office — the address is in the Privacy Policy. We answer within 30 days. No self-service button yet.",
       "rec": {
         "identity": {
           "title": "Your identity and contact details",
@@ -1460,7 +1468,7 @@
         }
       },
       "why": "Why some records stay",
-      "whyBody": "Erasure does not override a legal duty to keep a record. Where a record must be kept, the personal parts of it are removed instead, so the record survives without identifying you — the approach our data protection policy requires.",
+      "whyBody": "Erasure cannot override a duty in law to keep a record. Where one must be kept, its personal parts are removed so it stops identifying you.",
       "action": "Request erasure"
     },
     "session": {
@@ -1473,7 +1481,7 @@
       "card": {
         "offlineQueue": {
           "title": "Working offline",
-          "body": "When the signal drops, what you write is queued on this device and sent when you are back online. Nothing you enter is lost between the two states."
+          "body": "When the signal drops, what you write is queued on this device and sent when you are back online. Nothing is lost between the two."
         },
         "rolePermissions": {
           "title": "What your role may do",
@@ -1481,7 +1489,7 @@
         },
         "tokenRotation": {
           "title": "Renewing your session",
-          "body": "Your sign-in is renewed in the background so you are not interrupted mid-task. Each renewal replaces the previous credential rather than extending it."
+          "body": "Your sign-in renews in the background so you are not interrupted. Each renewal replaces the previous credential rather than extending it."
         }
       },
       "param": {
@@ -1506,15 +1514,15 @@
         },
         "precision": {
           "title": "Down to the microsecond",
-          "body": "Timestamps are stored at the precision the database provides, which is finer than the events being ordered — two actions a fraction of a second apart stay in the order they happened."
+          "body": "Timestamps are stored finer than the events they order, so two actions a fraction of a second apart stay in the order they happened."
         },
         "appendOnly": {
           "title": "Audit entries cannot be deleted",
-          "body": "The application has no permission to delete rows from the audit log. This is enforced by the database itself, not by application code, so it holds even if the application is wrong."
+          "body": "The app cannot delete rows from the audit log. The database enforces this, not application code, so it holds even if the app is wrong."
         },
         "retention": {
           "title": "How long they are kept",
-          "body": "Application logs are kept {hot} days for immediate use, then a further {cold} year in cold storage. Audit entries are kept {worm} years in write-once storage."
+          "body": "Application logs: {hot} days live, then {cold} year in cold storage. Audit entries: {worm} years in write-once storage."
         }
       }
     },
@@ -1530,7 +1538,7 @@
       "isp": "Internet provider",
       "ispNote": "The network operator your connection belongs to.",
       "noOrigin": "Location lookup not available",
-      "noOriginBody": "This installation has no location database, so your address is not resolved to a place at all. Nothing about you is missing — the lookup simply is not running here.",
+      "noOriginBody": "This installation has no location database, so your address is not resolved to a place at all. The lookup simply is not running here.",
       "device": "Measured on this device",
       "connection": "Connection type",
       "connectionNote": "Read from this handset, not guessed from your address.",
@@ -1550,7 +1558,7 @@
       "ms": "{n} ms",
       "behaviour": "Behavioural context",
       "behaviourOff": "Not enabled",
-      "behaviourOffBody": "You have not agreed to operational profiling, so no behavioural label is worked out for you. This is different from having too little data — the platform is not doing this at all.",
+      "behaviourOffBody": "You have not agreed to operational profiling, so no behavioural label is worked out for you. This is not the same as having too little data.",
       "context": {
         "STATIONARY": "Stationary",
         "MOBILE": "Moving between sites",
@@ -1562,9 +1570,9 @@
         "INSUFFICIENT_DATA": "Fewer than {min} check-ins with a location in the last {days} days. Not enough to say anything, so nothing is said."
       },
       "rule": "The rule",
-      "ruleBody": "You are counted as stationary when every check-in with a location in the last {days} days is within {radius} m of their centre point, and there are at least {min} of them. Fewer than that reads as “not enough check-ins”, never as stationary.",
+      "ruleBody": "Stationary: all located check-ins in the last {days} days within {radius} m of their centre, at least {min}. Fewer is never stationary.",
       "retention": "How long this is kept",
-      "retentionBody": "Your network address is stored with each audit entry. Application logs are kept 30 days, then a year in cold storage; audit entries are kept 7 years. The location and provider on this screen are not stored at all.",
+      "retentionBody": "Your address is stored with each audit entry: logs 30 days then a year archived, audit entries 7 years. Place and provider are not stored.",
       "reattest": "Re-verify this device"
     }
   },
@@ -1603,7 +1611,7 @@
     "at": "Verified at",
     "atNote": "Recorded in UTC.",
     "unavailable": "Could not be re-verified",
-    "unavailableBody": "This device could not produce its security key just now. Nothing is wrong with your account — the proof simply could not be made, and nothing has changed.",
+    "unavailableBody": "This device could not produce its security key just now. Nothing is wrong with your account — no proof was made, and nothing changed.",
     "back": "Back"
   },
   "deviceDetails": {
@@ -1747,7 +1755,7 @@
       "CSV": "One spreadsheet file per table. Best if you plan to open it yourself."
     },
     "verification": "You will be asked to confirm it is you",
-    "verificationBody": "A code is sent to your registered phone or email before the archive is built. The archive contains everything the platform holds about you, so it is worth confirming.",
+    "verificationBody": "A code goes to your registered phone or email before the archive is built. It holds everything about you, so confirming is worth it.",
     "request": "Request my data",
     "stepUpFailed": "The confirmation code could not be sent. Please try again.",
     "codeSent": {

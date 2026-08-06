@@ -42,7 +42,7 @@ import {
   type LoadingTheme,
   type LoadingPalette,
 } from '../lib/loadingState';
-import { fontFamily, spacing, typography } from '../theme/tokens';
+import { fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -550,7 +550,7 @@ function Waveform({
           style={{
             width: 3,
             height,
-            borderRadius: 2,
+            borderRadius: radius.sm,
             backgroundColor: palette.accent ?? palette.primary,
             opacity: pulse.interpolate({
               inputRange: [0.4, 1],
@@ -571,7 +571,7 @@ const makeStyles = (palette: LoadingPalette) =>
   StyleSheet.create({
     card: {
       backgroundColor: palette.surface,
-      borderRadius: 4, // §32.7 shape language — 4px, no pills
+      borderRadius: radius.lg, // §32.7 shape language — 4px, no pills
       padding: spacing.md,
       gap: spacing.sm,
       overflow: 'hidden',
@@ -648,15 +648,15 @@ const makeStyles = (palette: LoadingPalette) =>
     },
     track: {
       height: 6,
-      borderRadius: 3,
+      borderRadius: 999, // capsule end on a 6px bar — a shape, not a scale step
       backgroundColor: palette.skeleton,
       overflow: 'hidden',
     },
-    fill: { height: '100%', borderRadius: 3, backgroundColor: palette.primary },
+    fill: { height: '100%', borderRadius: 999, backgroundColor: palette.primary },
     // Clustered container (mockup B) — a bordered group; the 2px gaps show the tinted ground through.
     list: {
       gap: 2,
-      borderRadius: 4,
+      borderRadius: radius.md,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: palette.skeleton,

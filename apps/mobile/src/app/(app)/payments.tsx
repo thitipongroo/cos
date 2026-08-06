@@ -8,8 +8,9 @@ import { get, mutate } from '../../api/client';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
+import { formatMoney } from '@cos/financial';
 
 interface PaymentRow {
   payment_id: string;
@@ -77,7 +78,7 @@ export default function PaymentsScreen() {
                 </TouchableOpacity>
                 {item.amount ? (
                   <Text style={styles.sub}>
-                    {item.amount} {item.currency_code ?? ''}
+                    {formatMoney(item.amount, item.currency_code ?? undefined)}
                   </Text>
                 ) : null}
 
@@ -128,7 +129,7 @@ const styles = StyleSheet.create({
   approve: {
     alignSelf: 'flex-start',
     backgroundColor: colors.success,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },

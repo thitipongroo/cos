@@ -399,10 +399,39 @@ describe('UserService self-service', () => {
 
   describe('getMe', () => {
     it('returns the caller’s own row', async () => {
-      const me = { ...mockUserRow, role: CosRole.SITE_ENGINEER };
+      const me = { ...mockUserRow, role: CosRole.SITE_ENGINEER, employee_code: 'EMP-001' };
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([me]);
 
       expect(await service.getMe(TENANT_ID, USER_ID)).toBe(me);
+    });
+
+    it('reads employee_code from workforce.workers with a LEFT join', async () => {
+      // An inner join would turn "no worker record" into "user not found" — a 404 on your own
+      // profile — and most accounts genuinely have none (1 of 19 workers is linked in the dev seed).
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([mockUserRow]);
+      await service.getMe(TENANT_ID, USER_ID);
+
+      const sql = (prismaMock.$queryRaw as jest.Mock).mock.calls[0]?.[0] as {
+        join(s: string): string;
+      };
+      const text = Array.isArray(sql) ? sql.join('?') : String(sql);
+      expect(text).toContain('LEFT JOIN workforce.workers');
+      expect(text).toContain('w.employee_code');
+      // Tenant-scoped as well as user-scoped: this client connects as the owning role, so the RLS
+      // policy on workforce.workers does not apply and the predicate here IS the isolation.
+      expect(text).toContain('w.tenant_id = u.tenant_id');
+    });
+
+    it('returns a null employee_code for an account with no worker record', async () => {
+      // The common case: office roles have no row in workforce.workers. It must read as "no code
+      // issued", never as a missing field the screen should hide.
+      const officeUser = { ...mockUserRow, employee_code: null };
+      (prismaMock.$queryRaw as jest.Mock).mockResolvedValueOnce([officeUser]);
+
+      await expect(service.getMe(TENANT_ID, USER_ID)).resolves.toHaveProperty(
+        'employee_code',
+        null,
+      );
     });
 
     it('throws COS-USER-404 when the row is missing', async () => {

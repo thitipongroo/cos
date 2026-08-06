@@ -314,7 +314,15 @@ text in component source. Thai is the primary field language for site workers.
 
 - Date format: `DD/MM/YYYY` (Buddhist Era optional, configurable per tenant)
 - Currency: THB as default for Thai tenants; format `฿1,234,567.89`
-- Phone numbers: `+66` prefix; 9-digit local format displayed as `0XX-XXX-XXXX`
+- Phone numbers: displayed as `(+66) 0XX-XXX-XXXX` — the dial code in parentheses, then the national
+  number with its leading trunk `0` and hyphen groups. Amended 2026-08-06; the rule previously said
+  only `0XX-XXX-XXXX`, which dropped the country from a screen a person may be reading precisely to
+  check which number the platform holds for them. Storage is unchanged: E.164 (`+66811000003`) on
+  the wire and in the database, this format on screen only.
+  - **Other countries keep their own grouping**, not Thailand's. The dial code is stripped, the
+    national number is grouped by that country's convention, and the same parenthesised `(+CC)`
+    prefix is applied. A number whose country has no grouping rule on file is shown as stored rather than
+    forced into 3-3-4 — a wrongly grouped phone number reads as a typo in the record.
 - Number separators: `.` for decimal, `,` for thousands (standard Thai business convention)
 
 ### Localisation Gap Tracking

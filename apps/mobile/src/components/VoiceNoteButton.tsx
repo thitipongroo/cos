@@ -11,7 +11,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync } from 'expo-audio';
 import { useT } from '../i18n';
 import { transcribeAudio } from '../api/transcribe';
-import { colors, fontFamily, spacing, typography } from '../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 type Phase = 'idle' | 'recording' | 'transcribing';
 
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: radius.md,
   },
   // Round icon-only FAB variant (mockup parity, SITE_ENGINEER home). 56×56 per the DESIGN.md FAB spec.
   fab: {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   bar: {
     width: 4,
     height: 24,
-    borderRadius: 2,
+    borderRadius: radius.sm,
     backgroundColor: colors.bg,
   },
   error: {

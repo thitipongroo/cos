@@ -14,7 +14,15 @@ import { View, Text, ScrollView, TextInput, Pressable, StyleSheet, Alert } from 
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 type IconName = keyof typeof MaterialIcons.glyphMap;
 
@@ -201,7 +209,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
@@ -230,7 +238,7 @@ const styles = StyleSheet.create({
     width: '47%',
     flexGrow: 1,
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -242,7 +250,7 @@ const styles = StyleSheet.create({
   moduleIcon: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: plateRadius(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -267,7 +275,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -293,7 +301,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     backgroundColor: darkColors.surface,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -301,7 +309,7 @@ const styles = StyleSheet.create({
   extIcon: {
     width: 52,
     height: 52,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     alignItems: 'center',
     justifyContent: 'center',
   },

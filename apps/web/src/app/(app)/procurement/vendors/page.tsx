@@ -3,6 +3,7 @@
 import { DataTable, type Column } from '../../../../components/ui/DataTable';
 import { useI18n } from '../../../../i18n';
 import { useVendors, useVendorScore } from '../../../../lib/api/queries';
+import { formatNationalPhone } from '../../../../lib/countries';
 import type { VendorRow } from '../../../../lib/api/types';
 
 /** Vendor master + scorecard grade (§20.7.3 → GET /vendors; per-row grade → GET /vendors/:id/score, G-W5). */
@@ -13,7 +14,13 @@ export default function VendorsPage() {
   const columns: Column<VendorRow>[] = [
     { headerKey: 'proc.colCode', cell: (v) => v.vendor_code },
     { headerKey: 'proc.colName', cell: (v) => v.vendor_name },
-    { headerKey: 'proc.colContact', cell: (v) => v.contact_email ?? v.contact_phone ?? '—' },
+    {
+      headerKey: 'proc.colContact',
+      // §20.5 applies wherever a stored number is shown to a person, not only on the screens about
+      // the reader's own data — a vendor's phone was previously printed as raw E.164.
+      cell: (v) =>
+        v.contact_email ?? (v.contact_phone ? formatNationalPhone(v.contact_phone) : null) ?? '—',
+    },
     {
       headerKey: 'table.status',
       cell: (v) => (

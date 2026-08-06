@@ -58,8 +58,10 @@ export function enforceMfaForPrivilegedRoles(user: {
   }
 
   throw new ForbiddenException({
-    code: 'COS-AUTH-001',
-    message: 'Multi-factor authentication is required for this role',
-    messageKey: 'auth.mfa.required',
+    error: {
+      code: 'COS-AUTH-001',
+      message: 'Multi-factor authentication is required for this role',
+      messageKey: 'auth.mfa.required',
+    },
   });
 }

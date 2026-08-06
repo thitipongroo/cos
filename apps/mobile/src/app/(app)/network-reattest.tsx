@@ -16,7 +16,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useT } from '../../i18n';
 import { usePalette } from '../../theme/usePalette';
-import { fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { InfoCard, FieldRow, Lede } from '../../components/TransparencyKit';
 import { requestAttestationChallenge } from '../../api/devices';
 import { getDeviceId, signChallenge } from '../../lib/deviceTrust';
@@ -123,7 +123,8 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
     action: {
       minHeight: touchTarget.primaryButton,
       marginTop: spacing.md,
-      borderRadius: 12,
+      // Same button shape as the screen that opens it — `rounded-lg` in the mockup = 4px.
+      borderRadius: radius.md,
       backgroundColor: p.primary,
       alignItems: 'center',
       justifyContent: 'center',

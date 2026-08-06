@@ -55,12 +55,9 @@ export default function TransparencyLocationScreen(): React.JSX.Element {
     >
       <Lede>{t('transparency.location.lede')}</Lede>
 
+      {/* No `title` — the SectionLabel above already says it (see InfoCard). */}
       <SectionLabel>{t('transparency.location.where')}</SectionLabel>
-      <InfoCard
-        icon="place"
-        title={t('transparency.location.where')}
-        body={t('transparency.location.whereBody')}
-      />
+      <InfoCard icon="place" body={t('transparency.location.whereBody')} />
       {RECORDS.map((r) => (
         <InfoCard
           key={r.key}

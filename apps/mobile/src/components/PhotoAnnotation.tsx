@@ -32,7 +32,7 @@ import {
 // API has no drop-in for a one-shot base64 write). Same choice as src/api/transcribe.ts.
 import * as FileSystem from 'expo-file-system/legacy';
 import { useT } from '../i18n';
-import { colors, darkColors, fontFamily, spacing, typography } from '../theme/tokens';
+import { colors, darkColors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 /** One freehand stroke, stored resolution-independently. */
 export interface AnnotationStroke {
@@ -247,7 +247,7 @@ function ToolButton({
         minHeight: 44,
         paddingHorizontal: spacing.md,
         justifyContent: 'center',
-        borderRadius: 4,
+        borderRadius: radius.md,
         opacity: disabled ? 0.4 : 1,
         backgroundColor: primary ? palette.primary : 'transparent',
       }}

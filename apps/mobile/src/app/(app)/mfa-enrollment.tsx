@@ -26,7 +26,15 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useI18n } from '../../i18n';
-import { darkColors, fontFamily, spacing, typography, touchTarget } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -287,7 +295,7 @@ const styles = StyleSheet.create({
   shieldPlate: {
     width: 96,
     height: 96,
-    borderRadius: 24,
+    borderRadius: plateRadius(96),
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -340,7 +348,7 @@ const styles = StyleSheet.create({
   stepsCard: {
     alignSelf: 'stretch',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -381,7 +389,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     minHeight: touchTarget.primaryButton + 8,
     backgroundColor: darkColors.primary,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
   },
   buttonDisabled: { opacity: 0.6 },
@@ -398,7 +406,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'stretch',
     minHeight: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.muted,
     paddingHorizontal: spacing.lg,
@@ -420,7 +428,7 @@ const styles = StyleSheet.create({
   auditCard: {
     alignSelf: 'stretch',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.success,
     overflow: 'hidden',
@@ -462,7 +470,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
   },
-  activeDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: darkColors.success },
+  activeDot: { width: 8, height: 8, borderRadius: radius.md, backgroundColor: darkColors.success },
   activeText: {
     fontFamily: fontFamily.bold,
     fontSize: typography.label.fontSize,
@@ -472,7 +480,7 @@ const styles = StyleSheet.create({
   fileCard: {
     alignSelf: 'stretch',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.primary,
     overflow: 'hidden',
@@ -490,7 +498,7 @@ const styles = StyleSheet.create({
   pdfPlate: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     backgroundColor: `${darkColors.primary}1A`,
     alignItems: 'center',
     justifyContent: 'center',

@@ -7,6 +7,7 @@ import {
   convertCurrency,
   sumDecimals,
   formatForDisplay,
+  formatMoney,
   toDecimal,
 } from '../index';
 
@@ -120,5 +121,57 @@ describe('toDecimal', () => {
     // toDecimal('0.1') from string preserves exact value
     const d = toDecimal('0.1');
     expect(d.plus(toDecimal('0.2')).toFixed(1)).toBe('0.3');
+  });
+});
+
+describe('formatMoney', () => {
+  it('renders THB exactly as DESIGN.md §9.5 specifies', () => {
+    expect(formatMoney(toDecimal('1234567.89'))).toBe('฿1,234,567.89');
+  });
+
+  it('always shows two decimals, even on whole amounts', () => {
+    // §9.5: "display 2 decimal places". A price that renders as ฿1,200 and one that renders as
+    // ฿1,200.00 look like different degrees of precision to a reader approving a payment.
+    expect(formatMoney(toDecimal('1200'))).toBe('฿1,200.00');
+    expect(formatMoney(toDecimal('0'))).toBe('฿0.00');
+  });
+
+  it('rounds HALF_UP from the stored 4 decimal places', () => {
+    // Storage is DECIMAL(19,4); display is 2. The rounding is the same commercial rounding the rest
+    // of this module uses, so the figure shown is the figure stored, correctly rounded.
+    expect(formatMoney(toDecimal('10.005'))).toBe('฿10.01');
+    expect(formatMoney(toDecimal('10.0049'))).toBe('฿10.00');
+  });
+
+  it('groups thousands without depending on the device locale', () => {
+    // Deliberately not Intl/toLocaleString: that would render 1.234,56 on a German handset and
+    // degrade silently on Android builds with trimmed ICU. One presentation, everywhere.
+    expect(formatMoney(toDecimal('999'))).toBe('฿999.00');
+    expect(formatMoney(toDecimal('1000'))).toBe('฿1,000.00');
+    expect(formatMoney(toDecimal('1000000000'))).toBe('฿1,000,000,000.00');
+  });
+
+  it('puts the sign before the symbol for credits and reversals', () => {
+    expect(formatMoney(toDecimal('-1200'))).toBe('-฿1,200.00');
+  });
+
+  it('does not render a negative zero', () => {
+    expect(formatMoney(toDecimal('-0.001'))).toBe('฿0.00');
+  });
+
+  it('accepts a string or number as well as a Decimal', () => {
+    expect(formatMoney('1234.5')).toBe('฿1,234.50');
+    expect(formatMoney(1234.5)).toBe('฿1,234.50');
+  });
+
+  it('uses the ISO 4217 symbol for the currencies the platform handles', () => {
+    expect(formatMoney(toDecimal('1234.5'), 'USD')).toBe('$1,234.50');
+    expect(formatMoney(toDecimal('1234.5'), 'sgd')).toBe('S$1,234.50');
+  });
+
+  it('prints an unknown code rather than inventing a glyph', () => {
+    // An unrecognised currency is shown unambiguously. Guessing a symbol would put the wrong
+    // currency in front of a real number.
+    expect(formatMoney(toDecimal('1234.5'), 'XAF')).toBe('XAF 1,234.50');
   });
 });

@@ -8,8 +8,9 @@ import { get, post } from '../../api/client';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { StatusChip } from '../../components/StatusChip';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
+import { formatMoney } from '@cos/financial';
 
 const STATUSES = ['RECEIVED', 'VERIFIED', 'APPROVED', 'PAID', 'DISPUTED'] as const;
 
@@ -81,7 +82,7 @@ export default function InvoicesScreen() {
   if (detail) {
     const fields: Array<[string, string]> = [
       [t('finance.invoices.number'), detail.invoice_number],
-      [t('finance.invoices.amount'), `${detail.amount} ${detail.currency_code}`],
+      [t('finance.invoices.amount'), formatMoney(detail.amount, detail.currency_code)],
       [t('finance.invoices.statusLabel'), detail.status],
       [t('finance.invoices.dueDate'), detail.due_date.slice(0, 10)],
       [t('finance.invoices.poRef'), detail.po_id],
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
   boundary: { flex: 1 },
   filterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
-    borderRadius: 16,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.textSecondary,
     paddingHorizontal: spacing.md,
@@ -207,7 +208,7 @@ const styles = StyleSheet.create({
     minHeight: 72,
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     textAlignVertical: 'top',
     fontSize: typography.body.fontSize,
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
   noteButton: {
     minHeight: 44,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.xs,

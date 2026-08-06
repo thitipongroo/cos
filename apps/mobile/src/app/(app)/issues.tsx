@@ -18,7 +18,7 @@ import { ProjectPicker } from '../../components/ProjectPicker';
 import { PhotoCapture } from '../../components/PhotoCapture';
 import { OptimisticList } from '../../components/OptimisticList';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 export default function IssuesScreen() {
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   list: { marginTop: spacing.sm },
   chips: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },
   escalate: {
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.warning,
     paddingHorizontal: spacing.md,

@@ -6,9 +6,9 @@
 // re-exported here so this module stays the single import surface. The country catalogue itself is
 // web-specific (no `nationalDigits`, asset-based flags, BCP-47 locale detection).
 
-import { DEFAULT_COUNTRY_ISO2, toE164 } from '@cos/ui-logic';
+import { DEFAULT_COUNTRY_ISO2, formatNationalPhone, toE164 } from '@cos/ui-logic';
 
-export { DEFAULT_COUNTRY_ISO2, toE164 };
+export { DEFAULT_COUNTRY_ISO2, formatNationalPhone, toE164 };
 
 export interface Country {
   /** ISO 3166-1 alpha-2, lowercased to match the bundled public/flags/<iso2>.svg asset. */

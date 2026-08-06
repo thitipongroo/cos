@@ -3,7 +3,7 @@
 
 import { View, Text, StyleSheet } from 'react-native';
 import { useI18n } from '../i18n';
-import { colors, fontFamily, typography } from '../theme/tokens';
+import { colors, fontFamily, radius, typography } from '../theme/tokens';
 
 const STATUS_COLOR: Record<string, string> = {
   // success-ish
@@ -40,6 +40,11 @@ export function StatusChip({ label, testID }: { label: string; testID?: string }
 }
 
 const styles = StyleSheet.create({
-  chip: { alignSelf: 'flex-start', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  chip: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.xl,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
   text: { color: colors.bg, fontSize: typography.label.fontSize, fontFamily: fontFamily.medium },
 });

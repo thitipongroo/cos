@@ -32,7 +32,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useI18n } from '../i18n';
-import { fontFamily, spacing, typography, touchTarget } from '../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 import type { Palette } from '../theme/palette';
 import appIcon from '../../assets/icon.png';
 
@@ -396,12 +396,12 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
       gap: spacing.xs,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs / 2,
-      borderRadius: 999,
+      borderRadius: radius.xl,
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.surface,
     },
-    complianceDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: p.success },
+    complianceDot: { width: 8, height: 8, borderRadius: radius.md, backgroundColor: p.success },
     complianceText: {
       color: p.success,
       fontFamily: fontFamily.semibold,
@@ -430,7 +430,7 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
     card: {
       borderWidth: 1,
       borderColor: p.border,
-      borderRadius: 12,
+      borderRadius: radius.lg,
       backgroundColor: p.surface,
       overflow: 'hidden',
     },
@@ -476,7 +476,10 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
       borderLeftColor: p.primary,
       paddingLeft: spacing.sm,
       paddingVertical: spacing.xs,
-      backgroundColor: p.elevated,
+      // `bg` for the same reason as `rightCard` below. This one was never invisible — the blue left
+      // rule carries it — but its fill was inert, so a quote block and the card around it were the
+      // same navy and the tint the design asked for never appeared.
+      backgroundColor: p.bg,
     },
     quoteText: {
       color: p.text,
@@ -491,8 +494,13 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
       alignItems: 'flex-start',
       gap: spacing.xs,
       padding: spacing.sm,
-      borderRadius: 8,
-      backgroundColor: p.elevated,
+      borderRadius: radius.lg,
+      // `bg`, not `elevated` — an inner panel nested in a `surface` card, exactly the relationship
+      // TransparencyKit's sourceChip had. `elevated` #111827 inside `surface` #0F172A is a
+      // 2-per-channel difference, so this panel had no edge of any kind: no border either, so each
+      // right rendered as loose text on the parent card instead of its own plate. `bg` #020617 is
+      // this palette's step below `surface`, which is the direction the mockups step an inner panel.
+      backgroundColor: p.bg,
     },
     rightCardText: {
       flex: 1,
@@ -503,7 +511,7 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
     },
 
     controlBlock: {
-      borderRadius: 8,
+      borderRadius: radius.lg,
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.elevated,
@@ -529,7 +537,7 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
     },
     secondaryButton: {
       minHeight: touchTarget.formInput,
-      borderRadius: 12,
+      borderRadius: radius.md,
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.surface,
@@ -548,7 +556,7 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
     primaryButton: {
       marginTop: spacing.sm,
       minHeight: touchTarget.primaryButton,
-      borderRadius: 12,
+      borderRadius: radius.md,
       backgroundColor: p.primary,
       flexDirection: 'row',
       alignItems: 'center',
@@ -567,7 +575,15 @@ const makeStyles = (p: Palette, accent: string, glow: boolean) =>
     comingSoonChip: {
       paddingHorizontal: spacing.xs,
       paddingVertical: 2,
-      borderRadius: 6,
+      // Outlined, for the same reason TransparencyKit's chip of this name is: the fill alone does not
+      // carry it. This one sits inside the disabled download button, whose `buttonDisabled` fill is
+      // `elevated` (#111827) against the chip's `surface` (#0F172A) — two navies 2-per-channel apart,
+      // which is no chip at all. The kit's twin rendered as bare text on `07-erasure.png` until its
+      // border went back on; this was the second copy, found by sweeping for filled plates with no
+      // border rather than by waiting for it to show up in a capture.
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: p.border,
       backgroundColor: p.surface,
     },
     comingSoonText: {

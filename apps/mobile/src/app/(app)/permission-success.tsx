@@ -12,7 +12,14 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 export default function PermissionSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -104,7 +111,7 @@ const styles = StyleSheet.create({
   accentLine: {
     width: 48,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.sm,
     backgroundColor: `${darkColors.success}80`,
     marginBottom: spacing.md,
   },
@@ -120,7 +127,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.xs,
   },
@@ -151,7 +158,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   primaryText: {
@@ -167,7 +174,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: darkColors.border,
   },

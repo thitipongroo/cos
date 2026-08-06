@@ -7,7 +7,7 @@ import { get } from '../../api/client';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useI18n } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface PmDashboardRow {
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   kpis: { gap: spacing.sm, marginTop: spacing.sm },
   dayCard: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.xs,
   },

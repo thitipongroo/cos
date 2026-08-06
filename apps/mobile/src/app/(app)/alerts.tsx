@@ -6,7 +6,7 @@ import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { get } from '../../api/client';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface ExecutiveDashboardRow {
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   boundary: { flex: 1 },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     marginBottom: spacing.sm,
     gap: spacing.xs,

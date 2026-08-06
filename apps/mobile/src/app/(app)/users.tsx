@@ -1,4 +1,11 @@
 // Tenant Admin — User Management (mockup 04_tenant_admin/02_users/02_user_management; §32.7 dark).
+//
+// THIS SCREEN IS AHEAD OF ITS MOCKUP AND STAYS THAT WAY (ADR-085, PO decision 2026-08-06). The
+// mockup has user cards and a `more_vert` menu, and nothing else — no search field, no role filter
+// chips, no user-audit card, no ROLE/STATUS columns. All four shipped here and were reviewed. The
+// mockup is not a different design of this screen; it is an earlier, smaller one, and it does not
+// get to remove working capability.
+//
 // Reached from the "Users" bottom-nav tab. Everything is REAL data from GET /users (TENANT_ADMIN-only,
 // spec §14.3), never mockup placeholders:
 //   - Search + role filter chips run client-side over the loaded users (roles derived from the data).
@@ -29,8 +36,18 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { getUsers, type TenantUser } from '../../api/users';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
+import { formatRole } from '../../lib/formatRole';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
+import { shortId } from '../../lib/shortId';
 
 const AUDIT_DORMANT_DAYS = 30;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -38,14 +55,6 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
-}
-
-/** SITE_ENGINEER → "Site Engineer"; keeps the raw enum honest but readable in chips/badges. */
-function formatRole(role: string): string {
-  return role
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
 }
 
 function isDormant(u: TenantUser): boolean {
@@ -303,7 +312,7 @@ export default function UsersScreen(): React.JSX.Element {
                       {selected.display_name}
                     </Text>
                     <Text style={styles.sheetUid}>
-                      {t('adminUsers.uid')}: {selected.user_id.slice(0, 8).toUpperCase()}
+                      {t('adminUsers.uid')}: {shortId(selected.user_id)}
                     </Text>
                   </View>
                 </View>
@@ -439,7 +448,7 @@ function UserCard({
                 {u.display_name}
               </Text>
               <Text style={styles.uid}>
-                {t('adminUsers.uid')}: {u.user_id.slice(0, 8).toUpperCase()}
+                {t('adminUsers.uid')}: {shortId(u.user_id)}
               </Text>
             </View>
           </View>
@@ -515,7 +524,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     height: touchTarget.formInput,
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
@@ -530,7 +539,7 @@ const styles = StyleSheet.create({
   chip: {
     height: 36,
     paddingHorizontal: spacing.md,
-    borderRadius: 999,
+    borderRadius: radius.xl,
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -548,7 +557,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     backgroundColor: darkColors.elevated,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     borderLeftWidth: 4,
@@ -598,7 +607,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
     marginTop: spacing.xs,
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: `${darkColors.cyan}55`,
     backgroundColor: `${darkColors.cyan}1A`,
@@ -626,7 +635,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     overflow: 'hidden',
@@ -702,7 +711,7 @@ const styles = StyleSheet.create({
     fontSize: typography.label.fontSize,
   },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusDot: { width: 8, height: 8, borderRadius: radius.md },
   statusText: { fontFamily: fontFamily.semibold, fontSize: typography.label.fontSize },
   cardFooter: {
     flexDirection: 'row',
@@ -749,7 +758,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.sm,
     backgroundColor: darkColors.muted,
     opacity: 0.5,
     alignSelf: 'center',
@@ -765,11 +774,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: darkColors.border,
   },
-  sheetAvatar: { width: 52, height: 52, borderRadius: 14 },
+  sheetAvatar: { width: 52, height: 52, borderRadius: plateRadius(52) },
   sheetAvatarFallback: {
     width: 52,
     height: 52,
-    borderRadius: 14,
+    borderRadius: plateRadius(52),
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',

@@ -537,7 +537,7 @@ describe('TenantService', () => {
       (prismaMock.$queryRaw as jest.Mock).mockResolvedValue([]);
       await expect(service.getMyTenant('tenant-1')).rejects.toThrow(NotFoundException);
       await expect(service.getMyTenant('tenant-1')).rejects.toMatchObject({
-        response: { code: 'COS-TENANT-404', message: 'Tenant not found' },
+        response: { error: { code: 'COS-TENANT-404', message: 'Tenant not found' } },
       });
     });
   });

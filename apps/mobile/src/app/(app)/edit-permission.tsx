@@ -27,7 +27,15 @@ import { getUserRoles, setUserRoles } from '../../api/users';
 import { getRolePermissions } from '../../api/roles';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
+import { formatRole } from '../../lib/formatRole';
 
 type IconName = React.ComponentProps<typeof MaterialIcons>['name'];
 
@@ -77,13 +85,6 @@ const RESOURCE_META: Record<string, { icon: IconName; labelKey: string }> = {
   ai: { icon: 'auto-awesome', labelKey: 'res.ai.label' },
 };
 const ACTIONS = ['read', 'write', 'approve', 'delete'] as const;
-
-function formatRole(role: string): string {
-  return role
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
 
 /** Resources (canonical order) present in the union permission set; `*:*` shows every resource. */
 function resourcesFor(perms: string[]): string[] {
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: 4,
     marginBottom: spacing.xs,
@@ -390,7 +391,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: touchTarget.formInput,
     paddingHorizontal: spacing.md,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
     gap: 4,
     height: 36,
     paddingHorizontal: spacing.md,
-    borderRadius: 999,
+    borderRadius: radius.xl,
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -437,7 +438,7 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -458,7 +459,7 @@ const styles = StyleSheet.create({
   crudDot: {
     width: 40,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -482,7 +483,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   saveBtnDisabled: { opacity: 0.5 },
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
     height: touchTarget.primaryButton + 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
   },
@@ -522,7 +523,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 40,
     height: 4,
-    borderRadius: 2,
+    borderRadius: radius.sm,
     backgroundColor: darkColors.muted,
     opacity: 0.5,
     alignSelf: 'center',

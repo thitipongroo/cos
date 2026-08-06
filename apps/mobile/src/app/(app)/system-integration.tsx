@@ -24,7 +24,14 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 // Bundled server-room photo for the enterprise band (PO decision 2026-07-29).
 import enterpriseBg from '../../../assets/tenant-admin/server_room.jpg';
 
@@ -151,7 +158,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     paddingHorizontal: spacing.md,
@@ -170,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     padding: spacing.md,
   },
   aiIcon: {
@@ -200,7 +207,7 @@ const styles = StyleSheet.create({
   list: { gap: spacing.md, marginTop: spacing.xs },
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 16,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.lg,
@@ -217,14 +224,14 @@ const styles = StyleSheet.create({
   cardIcon: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     backgroundColor: darkColors.elevated,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -253,7 +260,9 @@ const styles = StyleSheet.create({
   enterprise: {
     marginTop: spacing.lg,
     height: 168,
-    borderRadius: 20,
+    // A full-width 168px card, not an icon plate — it escaped the 2026-08-06 sweep only because the
+    // style is named for its subject rather than its shape. Cards take `lg` (§32.7).
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     backgroundColor: darkColors.elevated,

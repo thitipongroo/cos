@@ -47,12 +47,9 @@ export default function TransparencyIotScreen(): React.JSX.Element {
         />
       ))}
 
+      {/* No `title` — the SectionLabel above already says it (see InfoCard). */}
       <SectionLabel>{t('transparency.iot.note')}</SectionLabel>
-      <InfoCard
-        icon="info"
-        title={t('transparency.iot.note')}
-        body={t('transparency.iot.noteBody')}
-      />
+      <InfoCard icon="info" body={t('transparency.iot.noteBody')} />
     </ScrollView>
   );
 }

@@ -215,9 +215,25 @@ export function MobileNav() {
         tabBarActiveTintColor: darkColors.text,
         tabBarInactiveTintColor: dark ? darkColors.muted : colors.textSecondary,
         tabBarActiveBackgroundColor: colors.primary,
+        // 20 is a NAMED EXCEPTION to §32.7, not a leftover magic number (PO decision 2026-08-06).
+        // This is the filled highlight behind the active tab, and it is neither a square plate (so
+        // `plateRadius` does not apply) nor a capsule (the bar's height comes from
+        // @react-navigation/bottom-tabs and is nearer 56 than 40, so 20 draws a rounded rectangle,
+        // which is what the mockups show). Left at 20 deliberately, recorded so the next radius
+        // audit does not flag it again.
         tabBarItemStyle: { borderRadius: 20, marginHorizontal: 4 },
+        // `surfaceContainer` #102034 — the mockups' own value for this bar, resolved from
+        // 04_tenant_admin/01_home/01_home_dashboard rather than inferred (PO decision 2026-08-06).
+        //
+        // The two bars do NOT share a colour, which is why this went wrong twice. The header there is
+        // `bg-surface dark:bg-dark-bg` and the file sets `<html class="dark">` + `darkMode: "class"`,
+        // so `.dark .dark\:bg-dark-bg` beats the single-class utilities on specificity and the top bar
+        // is the page colour. The nav is `bg-surface-container dark:bg-surface-container` — same value
+        // either mode — plus `rounded-t-xl` and a top border: a raised sheet, not a flat strip. It was
+        // `surface` (#0F172A, the card colour), then briefly `bg` when the top bar moved and I assumed
+        // the two had to agree.
         tabBarStyle: dark
-          ? { backgroundColor: darkColors.surface, borderTopColor: darkColors.border }
+          ? { backgroundColor: darkColors.surfaceContainer, borderTopColor: darkColors.border }
           : undefined,
       }}
     >

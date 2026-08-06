@@ -28,7 +28,7 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { ConflictBadge } from '../../components/ConflictBadge';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useI18n } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface ReportRow {
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   button: {
     minHeight: 44,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
   summaryCard: {
     marginTop: spacing.sm,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.xs,
   },

@@ -14,7 +14,7 @@
 export const FEATURE_DISABLED_CODE = 'COS-FLAG-001';
 
 interface AxiosLikeError {
-  response?: { status?: number; data?: { code?: unknown } };
+  response?: { status?: number; data?: { error?: { code?: unknown } } };
 }
 
 /**
@@ -27,5 +27,11 @@ interface AxiosLikeError {
 export function isFeatureDisabled(err: unknown): boolean {
   if (typeof err !== 'object' || err === null) return false;
   const res = (err as AxiosLikeError).response;
-  return res?.status === 503 && res.data?.code === FEATURE_DISABLED_CODE;
+  // `data.error.code`, not `data.code`. QM-10 puts every error under an `error` envelope —
+  // `{"error":{"code":"COS-FLAG-001",…}}` — so the flat read was `undefined` on every response and
+  // this function could never return true, whatever the server sent. Verified against the live
+  // endpoint on 2026-08-06, not inferred: the backend was also throwing the flat shape, which its
+  // own exception filter silently rewrote to `COS-GENERAL-503`, so both ends were wrong at once and
+  // each hid the other.
+  return res?.status === 503 && res.data?.error?.code === FEATURE_DISABLED_CODE;
 }

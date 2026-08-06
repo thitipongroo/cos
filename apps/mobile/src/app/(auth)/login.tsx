@@ -41,7 +41,14 @@ import { useAuthStore } from '../../store/authStore';
 import { decodeJwtPayload } from '../../lib/jwt';
 import Constants from 'expo-constants';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  typography,
+} from '../../theme/tokens';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { VerifyingOverlay } from '../../components/VerifyingOverlay';
 import { checkBackendHealth } from '../../api/health';
@@ -562,7 +569,7 @@ const styles = StyleSheet.create({
   logoBox: {
     width: 88,
     height: 88,
-    borderRadius: 20,
+    borderRadius: plateRadius(88),
     backgroundColor: darkColors.elevated,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -572,7 +579,7 @@ const styles = StyleSheet.create({
   logoBoxWhite: {
     width: 72,
     height: 72,
-    borderRadius: 16,
+    borderRadius: radius.xxl,
     backgroundColor: darkColors.elevated,
     borderWidth: 1,
     borderColor: darkColors.border,
@@ -597,7 +604,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.md,
   },
@@ -626,7 +633,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     borderColor: darkColors.border,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     fontSize: typography.body.fontSize,
     fontFamily: fontFamily.regular,
@@ -638,7 +645,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 60,
     backgroundColor: darkColors.elevated,
-    borderRadius: 8,
+    borderRadius: radius.md,
     overflow: 'hidden',
   },
   // The capture field: fills the row, its text coloured to the row fill (so glyphs never show) and
@@ -667,7 +674,7 @@ const styles = StyleSheet.create({
     height: 60,
     borderWidth: 1,
     borderColor: darkColors.border,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -683,7 +690,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.xs,
     backgroundColor: darkColors.primary,
-    borderRadius: 8,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -694,7 +701,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: darkColors.border,
     backgroundColor: 'transparent',
-    borderRadius: 8,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -751,7 +758,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     backgroundColor: darkColors.elevated,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.sm,
@@ -773,7 +780,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     borderWidth: 1,
     borderColor: darkColors.border,
-    borderRadius: 8,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.md,
   },
   dialCode: {
@@ -784,7 +791,7 @@ const styles = StyleSheet.create({
   phoneInput: { flex: 1 },
   footer: { alignItems: 'center', gap: spacing.xs, paddingTop: spacing.lg },
   footerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: darkColors.success },
+  statusDot: { width: 8, height: 8, borderRadius: radius.md, backgroundColor: darkColors.success },
   footerLinks: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -827,7 +834,7 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: darkColors.bg,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     maxHeight: '70%',
     overflow: 'hidden',
   },

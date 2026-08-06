@@ -72,18 +72,41 @@
 
 ### 2.2 Web dark theme
 
-| Token                 | Hex       |
-| --------------------- | --------- |
-| `--cos-dark-bg`       | `#020617` |
-| `--cos-dark-surface`  | `#0F172A` |
-| `--cos-dark-elevated` | `#111827` |
-| `--cos-dark-text`     | `#F8FAFC` |
-| `--cos-dark-muted`    | `#94A3B8` |
-| `--cos-dark-blue`     | `#2563EB` |
-| `--cos-dark-cyan`     | `#22D3EE` |
-| `--cos-dark-success`  | `#10B981` |
-| `--cos-dark-warning`  | `#F59E0B` |
-| `--cos-dark-danger`   | `#EF4444` |
+| Token                          | Hex       |
+| ------------------------------ | --------- |
+| `--cos-dark-bg`                | `#020617` |
+| `--cos-dark-surface`           | `#0F172A` |
+| `--cos-dark-elevated`          | `#111827` |
+| `--cos-dark-text`              | `#F8FAFC` |
+| `--cos-dark-muted`             | `#94A3B8` |
+| `--cos-dark-blue`              | `#2563EB` |
+| `--cos-dark-cyan`              | `#22D3EE` |
+| `--cos-dark-success`           | `#10B981` |
+| `--cos-dark-warning`           | `#F59E0B` |
+| `--cos-dark-danger`            | `#EF4444` |
+| `--cos-dark-outline`           | `#46464C` |
+| `--cos-dark-accent`            | `#4CD7F6` |
+| `--cos-dark-surface-container` | `#102034` |
+
+`--cos-dark-outline` is the **minority** mockup value, kept deliberately (PO decision 2026-08-07).
+`outline-variant` is `#434655` in 189 of the `mockup/mobile/**` files and `#46464C` in 28; spec 32
+§32.7 once justified the token as "the value the mockups use", which was untrue and has been removed.
+`(70,70,76)` reads as an edge against a navy surface where `(67,70,85)` blends into it — and the
+token is every card, row, chip and chrome hairline in the dark app, so changing it would invalidate
+every committed dark capture. Re-deriving tokens from the mockups lands on `#434655`; read §32.7
+first.
+
+`--cos-dark-accent` is the accent for marks drawn **on** a dark background — icons, eyebrows, card
+titles, inline tags. Added 2026-08-06 for an accessibility reason, not a stylistic one: dark screens
+had been using `--mobile-primary` `#0066FF`, which is **4.17:1** against `--cos-dark-bg` — enough for
+a non-text control (3:1) but **below the 4.5:1 AA text threshold** that §13 makes a shipping gate.
+`#4CD7F6` is 11.87:1. **CTAs keep `--mobile-primary`**: a filled button puts the blue behind white
+text, so its contrast is the button's, not the blue's.
+
+`--cos-dark-outline` is the card/input border on dark surfaces. Added 2026-08-06: the set had no
+outline token, so borders were invented per call site (mobile had drifted to
+`rgba(148,163,184,0.24)`, a glow rather than an edge). The value is the `outline-variant` the
+`mockup/mobile/**` designs use — an opaque grey, so a card edge reads as an edge.
 
 ### 2.3 Mobile colours (React Native field app — optimised for direct sunlight)
 
@@ -157,10 +180,56 @@ gaps) · `--web-space-3` 12px (form-field internal padding) · `--web-space-4` 1
 internal padding) · `--web-space-6` 24px (card padding / section gap) · `--web-space-8`
 32px (between cards) · `--web-space-12` 48px (major page section gap).
 
-**Border radius:** `--web-radius-sm` 4px · `md` 8px · `lg` 12px · `xl` 16px.
+**Border radius (web):** `--web-radius-sm` 4px · `md` 8px · `lg` 12px · `xl` 16px.
 
 **Mobile:** `--mobile-space-xs` 8px (icon padding) · `sm` 12px (card internal) ·
 `md` 16px (section) · `lg` 24px (screen edge) · `xl` 32px (major section separation).
+
+**Border radius (mobile):** `--mobile-radius-sm` 2px (chips, tags) · `md` 4px (list rows, icon
+tiles, accordion items, **buttons**) · `lg` 8px (cards, inputs) · `xl` 12px (hero / summary cards) ·
+`2xl` 16px (the dashed closing panel).
+**Deliberately TIGHTER than web** — a phone is held closer than a monitor, and every mockup under
+`mockup/mobile/` overrides Tailwind to exactly this scale (`lg` 0.25rem, `xl` 0.5rem, `full`
+0.75rem). `--mobile-radius-lg` 8px ≠ `--web-radius-lg` 12px; the names are shared, the values are
+not, and they must not be harmonised. Added 2026-08-05 and corrected 2026-08-06 — the first version
+copied the web scale on an unchecked assumption about the mockups (spec 32 §32.7 Mobile Border
+Radius). **Every status pill and badge takes `xl` 12px — one token, no exceptions.** The mockups
+disagree (153 of 226 keep `rounded-full` at 9999px; 52 override it to 12px), so this is a platform
+ruling, not a reading — and a free one: at the 18–26px heights these badges actually have, 12px is
+at or within a pixel of a capsule, so the two families were never apart on screen. `999` is reserved
+for genuinely circular elements (avatars, status dots, radio marks, round icon plates), where the
+radius is half the width and is not on this scale at all.
+
+**Square icon plates** (tinted glyph tiles, avatar boxes, logo boxes) are not on this scale and are
+not circles: a plate 28px or larger takes `plateRadius(side)` = a quarter of its side, so the corner
+scales with the plate. Below 28px, `md`. Round means half the width, which is a different shape.
+
+Swept 2026-08-06: 253 hardcoded radii across 56 files → 28, held by a ratchet test. What is left is
+circles plus one named exception — the bottom-nav active-tab highlight at 20, which is neither a
+square plate nor a capsule (spec 32 §32.7 Square icon plates / Sweep and ratchet).
+
+**Card body length (mobile):** at most **three lines**, truncating with `…` past that — the mockups
+run one to two. The clamp (`CARD_BODY_LINES` in `TransparencyKit`) is the guarantee; a
+140-character budget on `*Body` / `*.body` / `*.desc` i18n keys is the editorial rule that keeps it
+from firing, since an ellipsis on a transparency screen hides what the reader came for. Authored
+copy only — user- and API-supplied text is not truncated (spec 32 §32.7 Card body length).
+
+**A heading is stated once (mobile):** a card sitting directly under a section label does not repeat
+that label as its own title — `InfoCard`'s `title` is optional for exactly this. Eight pairs shipped
+reading the same i18n key twice ("HOW LONG THIS IS KEPT / How long this is kept") across seven
+transparency screens; the mockups head a section once, and both elements are `role="header"`, so the
+duplicate was announced twice to a screen reader. A card that is one of several in a section keeps
+its title — there it names the card, not the section (spec 32 §32.7 A heading is stated once).
+
+**How far the mockups' authority runs (ADR-085, 2026-08-06).** They are authoritative for **style** —
+radius, colour, spacing, alignment, badge shape, copy length — and a difference there is a bug in the
+code. They are **not** authoritative for **composition**. Where a screen's structure has outgrown its
+mockup, the implemented structure stands: the drawing does not get to remove reviewed, working
+capability (the user list keeps its search, filter chips and audit card; the transparency hub keeps
+navigation rows rather than the mockup's accordion, whose contents — a biometric hash, a 500m
+geofence — this platform does not have). **Every structural deviation carries its reason in the
+screen's header comment.** An unrecorded one cannot be told apart from an oversight, which is exactly
+how the hub's rows came to be flagged as a gap when they were the right call all along.
 
 ### 2.6 Touch targets (mobile — spec 32 §32.7, WCAG-driven)
 
@@ -338,6 +407,16 @@ full screen specs in §15.3.
 ### 5.5 Mobile app IA (spec 17, 32 §32.7, 20 §20.3)
 
 - **Bottom navigation, 4–5 items max** (`<MobileNav />`), icons + labels.
+- **The two bars do not share a background (dark).** `<TopBar />` takes `--cos-dark-bg` `#020617`
+  (the page colour); `<MobileNav />` takes the new `--cos-dark-surface-container` `#102034`, because
+  the mockup draws it as a raised sheet — `rounded-t-xl` + top border — not a flat strip. Both
+  reverse the 2026-07-16 "each on a surface background distinct from the content area" rule (PO
+  decision 2026-08-06): `--cos-dark-surface` `#0F172A` is the **card** colour, so chrome drawn in it
+  reads as a card welded to the edge. Resolved from
+  `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/code.html`, where `<html class="dark">` +
+  `darkMode: "class"` makes `.dark .dark\:bg-dark-bg` win the header on specificity. Light is
+  unaffected — there `bg` is the grey page and `surface` the white card (spec 32 §32.7 Standard Top
+  Bar).
 - Role-based screen sets; both auth paths on mobile.
 - Known role screens from delta-sync spec (spec 17 §17.9): Site Engineer — reports screen
   with embedded material consumption; Safety Officer — dedicated `incidents` tab; issues
@@ -355,7 +434,7 @@ full screen specs in §15.3.
 | `<QuickActionCard />` | 60px min height, icon + label + badge, single tap         |
 | `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue   |
 | `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription    |
-| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect         |
+| `<SyncPill />`        | Top-bar glyph carrying every sync state, offline included |
 | `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count |
 | `<StatusChip />`      | Todo / InProgress / Done / Syncing / Synced               |
 | `<OptimisticList />`  | Instant UI update, rollback on failure, retry option      |
@@ -376,7 +455,7 @@ full screen specs in §15.3.
 
 Local records carry `sync_status`: **PENDING → SYNCING → SYNCED** (colour tokens:
 `--mobile-offline #8E8E93`, `--mobile-syncing #FFD60A`, `--mobile-synced #00C853`).
-Design badges on cards/lists, a queue count in `<OfflineBanner />`, and optimistic writes
+Design badges on cards/lists, a queue count announced by `<SyncPill />`, and optimistic writes
 with rollback (`<OptimisticList />`).
 
 ### 6.2 What works offline (spec 17 §17.4 — do not design offline writes beyond this list)
@@ -639,8 +718,10 @@ executive-summary (Exec) · delay-risk (Exec/PM) · history list (spec 14 §14.3
   `{domain}.{screen}.{element}` (e.g. `procurement.list.emptyState`). Design deliverables
   should name keys, not just literal copy.
 - **Thai formats:** dates `DD/MM/YYYY` with optional **Buddhist Era** (พ.ศ. 2569 not 2026;
-  configurable per tenant); currency `฿1,234,567.89`; phones `+66` displayed
-  `0XX-XXX-XXXX`; `.` decimal / `,` thousands.
+  configurable per tenant); currency `฿1,234,567.89`; phones stored E.164 and displayed
+  `(+66) 0XX-XXX-XXXX` (amended 2026-08-06 — the dial code was previously dropped from the display);
+  `.` decimal / `,` thousands. Other countries keep their own grouping behind the same `(+CC)`
+  prefix; a country with no grouping on file is shown as stored, never forced into Thailand's 3-3-4.
 - ICU plural forms for all count strings; text must survive Thai/English length variance.
 - **RTL support** is a platform mandate (test vs `ar-SA`) — avoid direction-locked layouts.
 - Timestamps stored UTC, displayed in user timezone.

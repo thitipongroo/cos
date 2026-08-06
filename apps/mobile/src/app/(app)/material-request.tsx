@@ -15,7 +15,14 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { createPurchaseRequest, type PurchaseRequestItem } from '../../api/procurement';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { useI18n } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 interface DraftItem {
   description: string;
@@ -161,7 +168,7 @@ const styles = StyleSheet.create({
   content: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.sm,
@@ -176,7 +183,7 @@ const styles = StyleSheet.create({
     minHeight: touchTarget.formInput,
     borderWidth: 1,
     borderColor: darkColors.border,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.sm,
     color: darkColors.text,
     fontFamily: fontFamily.regular,
@@ -204,7 +211,7 @@ const styles = StyleSheet.create({
   },
   submit: {
     minHeight: touchTarget.primaryButton,
-    borderRadius: 8,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
     alignItems: 'center',
     justifyContent: 'center',

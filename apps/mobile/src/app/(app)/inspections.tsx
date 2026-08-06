@@ -14,7 +14,7 @@ import { PhotoCapture } from '../../components/PhotoCapture';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface InspectionRow {
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   },
   resultButtons: { flexDirection: 'row', gap: spacing.xs },
   pass: {
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.success,
     paddingHorizontal: spacing.md,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     fontSize: typography.caption.fontSize,
   },
   fail: {
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.danger,
     paddingHorizontal: spacing.md,
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   severityChip: {
-    borderRadius: 16,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.textSecondary,
     paddingHorizontal: spacing.md,

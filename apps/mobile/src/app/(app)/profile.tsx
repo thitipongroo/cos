@@ -9,7 +9,7 @@ import { useBiometricStore } from '../../store/biometricStore';
 import { get, mutate } from '../../api/client';
 import { useI18n } from '../../i18n';
 import type { Locale } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 interface Preference {
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   toggle: {
-    borderRadius: 12,
+    borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.textSecondary,
     paddingHorizontal: spacing.md,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
   localeChip: {
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   logout: {
     marginTop: spacing.lg,
     minHeight: 48,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',

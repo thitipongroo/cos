@@ -17,7 +17,7 @@ import { SyncPill } from './SyncPill';
 import { listNotifications, unreadCount } from '../api/notifications';
 import { useUiStore } from '../store/uiStore';
 import { useT } from '../i18n';
-import { colors, darkColors, fontFamily, spacing, touchTarget } from '../theme/tokens';
+import { colors, darkColors, fontFamily, radius, spacing, touchTarget } from '../theme/tokens';
 
 // The bar shows one uniform CONSTRUCTION OS logo on EVERY screen (PO decision 2026-07-31): the wordmark
 // logo doubles as the drawer trigger. Pushed child screens get BOTH a leading "<" back control (PO
@@ -151,7 +151,17 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
     borderBottomWidth: 1,
   },
-  barDark: { backgroundColor: darkColors.surface, borderBottomColor: darkColors.border },
+  // `bg`, not `surface` (PO decision 2026-08-06). §32.7's Standard Top Bar entry had put both pieces
+  // of chrome "on a surface background distinct from the content area" since 2026-07-16 — but on the
+  // dark default that lands the bar on #0F172A, the exact colour of every card, so the bar reads as a
+  // card stuck to the top rather than as chrome. The mockups run the other way: the tenant-admin home
+  // header is `bg-surface dark:bg-dark-bg`, and the dark: variant wins on specificity, giving #020617
+  // — the page colour. `02-quick-action.png` is what that looks like in the product already, because
+  // QuickAddMenu draws its own header on `bg`. The hairline is what separates the bar, not a fill.
+  //
+  // Light is untouched: there `bg` is the grey #F5F5F5 page and `surface` the white card, so the
+  // chrome is already distinct from the content without borrowing the card colour.
+  barDark: { backgroundColor: darkColors.bg, borderBottomColor: darkColors.border },
   barLight: { backgroundColor: colors.surface, borderBottomColor: colors.textSecondary },
   // flex:1 + minWidth:0 keeps the logo left-aligned and lets it shrink rather than pushing the right-hand
   // actions (sync pill / help / bell / avatar) off-screen.
@@ -183,7 +193,7 @@ const styles = StyleSheet.create({
     right: 6,
     minWidth: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     backgroundColor: darkColors.danger,
     alignItems: 'center',
     justifyContent: 'center',

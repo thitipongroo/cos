@@ -1,4 +1,9 @@
-import { Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { createLogger } from '@cos/logger';
 
 const logger = createLogger('keycloak-admin-service');
@@ -102,24 +107,50 @@ export class KeycloakAdminService {
     realm: string,
     ephemeralCredential: string,
   ): Promise<KeycloakTokenResponse> {
-    const client = await this.getAuthenticatedClient(realm);
+    // The Keycloak leg is wrapped so an IDENTITY-PROVIDER failure stops looking like a crash
+    // (PO decision 2026-08-06). Until now a tenant pointing at a realm that does not exist, an
+    // account missing from the realm, and Keycloak being down all surfaced identically as
+    // `500 COS-GENERAL-500` — indistinguishable from a bug in our own code, in the response, in the
+    // logs and to any alerting.
+    //
+    // 503, matching what `AnalyticsService` already does when ClickHouse is unreachable: this is a
+    // dependency the request cannot proceed without, not a fault in the caller's input. The realm is
+    // logged because it is the field that is wrong in every misconfiguration case, and the one thing
+    // an operator cannot recover from the response.
+    //
+    // The message stays generic — a caller must not learn from an error whether a given phone number
+    // has a Keycloak account.
+    try {
+      const client = await this.getAuthenticatedClient(realm);
 
-    await client.users.resetPassword({
-      id: keycloakUserId,
-      credential: { type: 'password', value: ephemeralCredential, temporary: false },
-    });
+      await client.users.resetPassword({
+        id: keycloakUserId,
+        credential: { type: 'password', value: ephemeralCredential, temporary: false },
+      });
 
-    return this.callTokenEndpoint(
-      realm,
-      new URLSearchParams({
-        grant_type: 'password',
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        username: phone,
-        password: ephemeralCredential,
-      }),
-      'directgrant',
-    );
+      return await this.callTokenEndpoint(
+        realm,
+        new URLSearchParams({
+          grant_type: 'password',
+          client_id: this.clientId,
+          client_secret: this.clientSecret,
+          username: phone,
+          password: ephemeralCredential,
+        }),
+        'directgrant',
+      );
+    } catch (err) {
+      logger.error(
+        { realm, keycloakUserId, err },
+        'keycloak.directgrant.failed — identity provider unreachable or misconfigured',
+      );
+      // Wrapped in `error`, which is the shape `GlobalExceptionFilter.isQm10Body` recognises. A flat
+      // `{ code, message }` does NOT survive: the filter falls through to its generic branch, keeps
+      // the message and rewrites the code to `COS-GENERAL-503` — verified against the live endpoint.
+      throw new ServiceUnavailableException({
+        error: { code: 'COS-AUTH-503', message: 'Identity provider unavailable' },
+      });
+    }
   }
 
   /** Proxy refresh_token grant to Keycloak. Returns new access + refresh tokens (rotation). */

@@ -662,18 +662,63 @@ throughout; only its use as a _brand_ colour is prohibited.
 
 #### Dark Theme Tokens
 
-| Token                 | Hex       |
-| --------------------- | --------- |
-| `--cos-dark-bg`       | `#020617` |
-| `--cos-dark-surface`  | `#0F172A` |
-| `--cos-dark-elevated` | `#111827` |
-| `--cos-dark-text`     | `#F8FAFC` |
-| `--cos-dark-muted`    | `#94A3B8` |
-| `--cos-dark-blue`     | `#2563EB` |
-| `--cos-dark-cyan`     | `#22D3EE` |
-| `--cos-dark-success`  | `#10B981` |
-| `--cos-dark-warning`  | `#F59E0B` |
-| `--cos-dark-danger`   | `#EF4444` |
+| Token                          | Hex       |
+| ------------------------------ | --------- |
+| `--cos-dark-bg`                | `#020617` |
+| `--cos-dark-surface`           | `#0F172A` |
+| `--cos-dark-elevated`          | `#111827` |
+| `--cos-dark-text`              | `#F8FAFC` |
+| `--cos-dark-muted`             | `#94A3B8` |
+| `--cos-dark-blue`              | `#2563EB` |
+| `--cos-dark-cyan`              | `#22D3EE` |
+| `--cos-dark-success`           | `#10B981` |
+| `--cos-dark-warning`           | `#F59E0B` |
+| `--cos-dark-danger`            | `#EF4444` |
+| `--cos-dark-outline`           | `#46464C` |
+| `--cos-dark-accent`            | `#4CD7F6` |
+| `--cos-dark-surface-container` | `#102034` |
+
+> `--cos-dark-accent` added 2026-08-06 (product-owner decision), and it exists for an accessibility
+> reason rather than a stylistic one. Dark screens previously drew their accent — icons, eyebrows,
+> card titles, inline tags — in `--mobile-primary` `#0066FF`, which measures **4.17:1** against
+> `--cos-dark-bg`. That clears SC 1.4.11's 3:1 for a non-text control but **fails SC 1.4.3's 4.5:1
+> for text**, and §20.8 makes WCAG 2.2 AA a shipping gate. `#4CD7F6` measures 11.87:1.
+>
+> **`--mobile-primary` remains the CTA colour**, unchanged: a filled button puts the blue behind
+> white text, so the text contrast is the button's, not the blue's, and the tap target a field worker
+> learns never changes colour (§32.7 Mobile Colour Tokens). This token is only for accent marks drawn
+> **on** the dark background.
+>
+> This narrows, and does not contradict, the note under Mobile Dark Surfaces that scopes
+> `--cos-dark-cyan` to auth entry screens: that rule exists so the AI/technical cyan does not leak
+> into ordinary product chrome as decoration. An accent that a legibility requirement forces is a
+> different thing from a decorative one.
+>
+> `--cos-dark-outline` added 2026-08-06 (product-owner decision). This set previously had **no**
+> outline token, so every dark card border was invented at the call site — `apps/mobile` had settled
+> on `rgba(148, 163, 184, 0.24)` (muted at low alpha), which reads as a soft glow rather than an
+> edge and made cards look blurrier than the approved mockups. The border is now a specified opaque
+> grey rather than a derived translucent one. Same class of gap as Mobile Border Radius below — a
+> token that existed for web and not for dark surfaces.
+>
+> > **Why `#46464C` and not `#434655` — the mockups do not agree with each other.** This entry
+> > originally justified the value as "the `outline-variant` value the `mockup/mobile/**` designs
+> > use". That is not what the designs say. Counted across every `code.html` on 2026-08-06,
+> > `outline-variant` is `#434655` in **189** files and `#46464C` in **28** — so the value shipped is
+> > the _minority_ one, and the sentence claiming otherwise has been removed rather than left to be
+> > cited again.
+> >
+> > **`#46464C` stands (product-owner decision 2026-08-07).** A 189-to-28 count is evidence about the
+> > mockups, not an instruction: the two differ by `(70,70,76)` against `(67,70,85)` — nine steps of
+> > blue — and the neutral grey is the one that reads as an _edge_ against a navy surface rather than
+> > blending into it, which is the whole reason this token replaced the translucent glow. The token
+> > is also not free to change: it is every card, field row, chip and chrome hairline in the dark app
+> > (16,504 pixels in `01-identity.png` alone — the rule under the top bar at `y=309` full width, and
+> > the USER ID card's edges at `y=1000, x=42–43 / 1036–1037`), so switching it would invalidate
+> > every committed dark capture for a difference of nine points in one channel.
+> >
+> > Recorded because the count is real and will be re-discovered: anyone re-deriving tokens from
+> > `mockup/mobile/**` will land on `#434655` and should find this note before "correcting" it.
 
 ### Mobile Colour Tokens (React Native — field app)
 
@@ -760,6 +805,25 @@ Two consequences worth knowing:
 - The component `components/SyncStatusBar.tsx` is gone. The three Detox specs that asserted
   `by.id('sync-status-bar')` now assert `by.id('sync-pill')`, and because the pill is icon-only they
   match its `accessibilityLabel` (`sync.pill.*`) with `by.label()` rather than on-screen text.
+
+**Extended 2026-08-06 (product-owner decision): `<OfflineBanner />` is gone too, and the pill carries
+offline as well.** The 2026-08-04 change left two indicators of the same subject in the same shell —
+a compact glyph in the top bar, and a full-width red strip below it that appeared whenever the device
+lost network. On the transparency screens the strip pushed the whole page down and dominated a screen
+whose job is to be read calmly. One surface now answers "is my work saved": the pill.
+
+**Offline is not a distinct pill state — it is what produces the `pending` one.** Every write made
+without a network enqueues, `pendingCount` rises, and the pill already reads `cloud-upload` with the
+count. Adding an `offline` branch would give one fact two names, and offline with an empty queue
+genuinely is synced: nothing is waiting. The states stay `error → syncing → pending → synced`.
+
+The spec's `queue count` requirement is therefore already satisfied by the pending state, whose
+`accessibilityLabel` (`sync.pill.pending`) announces the number. Colour is never the only signal —
+the glyph changes with the state — per Mobile Colour Tokens.
+
+- `components/OfflineBanner.tsx` is deleted. The five Detox assertions across `offline-checkin`,
+  `offline-inspection` and `sync-conflict` that matched `by.id('offline-banner')` now match the pill
+  by label, exactly as the `SyncStatusBar` migration above did.
 - The signed-in shell got **64px shorter** on a 1080×2400 frame, which moves the fixed band the
   full-page screenshot stitcher clips to (`TOP` 375 → 311 in the capture scripts).
 
@@ -897,6 +961,145 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
 | `--mobile-space-lg` | 24px  | Screen edge padding      |
 | `--mobile-space-xl` | 32px  | Major section separation |
 
+#### Mobile Border Radius
+
+Added 2026-08-05, **corrected 2026-08-06** (product-owner decision both times). Until then this
+section defined mobile colour, type and spacing but **no radius**, while `--web-radius-*` existed —
+so every React Native card picked its own corner value and `TransparencyKit` had drifted to three
+invented numbers (10 / 12 / 18) that appear in no specification.
+
+**Mobile deliberately uses a TIGHTER scale than web, and the values are taken from the approved
+mockups rather than copied from `--web-radius-*`.** The first version of this section copied the web
+scale on the stated grounds that "the mockups were already drawn against it" — that claim was not
+checked and was wrong. Every mockup under `mockup/mobile/` overrides Tailwind's radius in its own
+`tailwind.config` (`theme.extend.borderRadius`): `DEFAULT` 0.125rem = 2px, `lg` 0.25rem = 4px, `xl`
+0.5rem = 8px, `full` 0.75rem = 12px. A phone is held closer than a monitor, and the mockups reflect
+that with corners half the size of the web scale.
+
+| Token                 | Value | Usage                                                                             |
+| --------------------- | ----- | --------------------------------------------------------------------------------- |
+| `--mobile-radius-sm`  | 2px   | Chips, inline tags, small status pills                                            |
+| `--mobile-radius-md`  | 4px   | List rows, icon tiles, accordion items, **buttons**                               |
+| `--mobile-radius-lg`  | 8px   | Standard cards, input fields                                                      |
+| `--mobile-radius-xl`  | 12px  | Hero / summary cards, emphasised panels                                           |
+| `--mobile-radius-2xl` | 16px  | The dashed closing panel — the one radius the mockups leave at Tailwind's default |
+
+**`--mobile-radius-lg` 8px ≠ `--web-radius-lg` 12px.** The names are shared but the values are not,
+because the two surfaces are viewed at different distances. Do not "harmonise" them.
+
+**Every status pill and badge takes `--mobile-radius-xl` (12px) — one token, no exceptions.**
+
+The mockups do not agree with each other, so this is a platform ruling rather than a reading.
+Counted 2026-08-06 across all 226 `mockup/mobile/**/code.html`:
+
+| `borderRadius.full` in the file's own `tailwind.config` | files   | families                                                                    |
+| ------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
+| `9999px` (Tailwind default — a true capsule)            | **153** | tenant admin, procurement, CRM, most dashboards                             |
+| `0.75rem` / `12px` (overridden)                         | **52**  | authen, privacy policy, loading, site-engineer issues/AI, executive, worker |
+
+Two earlier versions of this paragraph were each wrong in one direction: the first assumed every
+`rounded-full` was a capsule; the second (2026-08-06) read the override in the data-collection family
+and generalised it to "every badge in `mockup/mobile/**`", which the count above disproves.
+
+**The ruling costs nothing visually, which is why it is safe to make.** These badges run 18–26px
+tall. Any radius at or above half the height renders identically, so at 18px `xl` IS a capsule, and
+at 26px it is one pixel shy of one. The two mockup families were never more than ~1px apart on the
+elements in question — the disagreement is in the config, not on the screen. One token therefore
+serves both, and `borderRadius: 999` is not used for badges anywhere in `apps/mobile`.
+
+This does not extend to genuinely round things — status dots, avatars, radio marks — which are
+circles by construction (`borderRadius` = half the width) and are not on this scale at all.
+
+`borderRadius: 999` is reserved for elements that are genuinely circular — avatars, the round icon
+plate on a flow node, a dot indicator. Those are shapes, not steps on this scale.
+
+#### Square icon plates — a quarter of the side
+
+**A square plate 28px or larger takes `plateRadius(side)` = `round(side / 4)`.** Added 2026-08-06.
+
+These are the tinted tile behind a glyph, an avatar box, a logo box. They are neither on the five-step
+scale nor circles, which is why they were the last cluster of magic numbers left after the sweep:
+nine sizes from 28px to 96px carrying six hand-picked radii. A fixed step cannot serve them — `md`
+(4) reads as a hard square at 96px and `xxl` (16) swallows a 28px plate — so the radius scales with
+the plate instead.
+
+Below 28px a quarter is under 7px and stops reading as deliberate; those take `md` like any other
+icon tile. A plate meant to be **round** takes half its width, not a quarter — a different shape, not
+a smaller radius.
+
+Applying the rule moved six plates by 1–2px, left three unchanged, and moved one — the 64px avatar on
+the reset-password screen, which had been carrying a 40px plate's radius — by 6px.
+
+| Plate                                   | Side | Was | Now |
+| --------------------------------------- | ---- | --- | --- |
+| `shieldPlate` (MFA)                     | 96   | 24  | 24  |
+| `logoBox` (login)                       | 88   | 20  | 22  |
+| `avatar` (reset-password)               | 64   | 10  | 16  |
+| `sheetAvatar` / `sheetAvatarFallback`   | 52   | 14  | 13  |
+| `iconPlate` (QuickAddMenu)              | 48   | 10  | 12  |
+| `methodIcon` (reset-password)           | 44   | 10  | 11  |
+| `moduleIcon` · `iconPlate` (admin home) | 40   | 10  | 10  |
+| `brandIcon` (QuickAddMenu)              | 28   | 6   | 7   |
+
+**One named exception remains**, recorded in place rather than left to be re-discovered: the
+bottom-nav active-tab highlight (`MobileNav.tabBarItemStyle`) stays at 20. It is not a square plate,
+and it is not a capsule either — the bar's height comes from `@react-navigation/bottom-tabs` and is
+nearer 56 than 40, so 20 draws the rounded rectangle the mockups show.
+
+**Sweep and ratchet (2026-08-06).** Because mobile had no radius token until 2026-08-05, components
+had invented **253 literals across 56 files, using 21 distinct numbers** for a five-step scale. The
+sweep took that to **28**, and `theme/__tests__/radiusRatchet.spec.ts` holds the count so it can only
+fall. What remains is **circles** — radius = half the width, off this scale by the rule above — plus
+the one named tab-highlight exception documented above. The square plates that were the last real
+cluster now follow `plateRadius()` rather than nine hand-picked numbers.
+
+#### Card body length — three lines, ellipsis past it
+
+**A card's detail text renders at most three lines and truncates with `…`.** Added 2026-08-06.
+
+Enforced in two places, and the distinction matters:
+
+| Layer                                                      | What it does                                                                            |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `CARD_BODY_LINES = 3` + `ellipsizeMode="tail"` in the kit  | The runtime guarantee. Holds under Thai, a larger system font and a narrow handset.     |
+| 140-character budget on `*Body` / `*.body` / `*.desc` keys | The editorial rule, tested in `cardBodyLength.spec.ts`, so the clamp never has to fire. |
+
+140 characters is three lines measured off `01-identity.png` at 1080px, where a card body sits
+between a 44px icon tile and a chevron and fits 42–48 characters per line. It is a proxy for the
+line count, which no unit test can measure; the mockups (one to two lines per card throughout
+`mockup/mobile/01_authen/05_privacy_policy/01_data_collection`) are the reason for the number.
+
+**Truncation is a safety net, not a layout tool.** An ellipsis on a transparency screen hides the
+thing the reader opened the screen for, and gives them no way to recover it. A card that truncates
+in practice has copy that needs editing, not a ceiling that needs raising. Seventeen bodies were
+over budget when this rule landed — `transparency.portal.retentionBody` was 306 characters, five
+rendered lines — and all were shortened rather than clamped.
+
+**Dynamic content is out of scope.** The clamp applies to the kit's card bodies, whose text is
+authored copy. User- and API-supplied strings — issue descriptions, report bodies, vendor notes —
+are not truncated by this rule; cutting a user's own words off at three lines is a different
+decision and has not been taken.
+
+#### A heading is stated once
+
+**A card directly under a section label does not repeat that label as its own title.** Added
+2026-08-06 (PO approval).
+
+Eight pairs shipped with the label and the card's `title` reading from the SAME i18n key, so seven
+screens said things like "HOW LONG THIS IS KEPT / How long this is kept": `delete.why`,
+`delete.how`, `identity.access`, `iot.note`, `location.where`, `logs.retention`,
+`network.retention`, `portal.rights`. The mockups under
+`mockup/mobile/01_authen/05_privacy_policy/01_data_collection` head a section once — the identity
+mockup puts "Who Can Access?" above the card and leaves the card body alone.
+
+`InfoCard`'s `title` is therefore optional, and omitting it is correct wherever the enclosing
+`SectionLabel` already carries the words. A card that is one of SEVERAL in a section keeps its title:
+there it names that card, it does not restate the section. Both elements set
+`accessibilityRole="header"`, so a duplicate was also announced twice in a row with nothing between.
+
+Held by `theme/__tests__/headingStutter.spec.ts`, which scans the screen sources rather than a render
+tree: the defect is in what a screen passes, and a redundantly-titled card renders perfectly.
+
 ### Touch Target Standards (mobile)
 
 | Element                 | Minimum         | Recommended    |
@@ -918,7 +1121,7 @@ These constraints are enforced by the CI `build` gate (`turbo run build`), not b
 | `<QuickActionCard />` | 60px min height, icon + label + badge, single tap                  |
 | `<PhotoCapture />`    | Camera + gallery grid, inline annotation, offline queue            |
 | `<VoiceNoteButton />` | Hold-to-record, waveform animation, auto-transcription             |
-| `<OfflineBanner />`   | Fixed top, queue count, auto-dismiss on reconnect                  |
+| `<SyncPill />`        | Top-bar glyph carrying **every** sync state, offline included      |
 | `<TaskCard />`        | Swipeable (swipe-right = done), status badge, photo count          |
 | `<StatusChip />`      | Visual status: Todo / InProgress / Done / Syncing / Synced         |
 | `<OptimisticList />`  | Instant UI update, rollback on failure, retry option               |
@@ -1007,8 +1210,40 @@ Rules:
 #### Standard Top Bar (`<TopBar />`)
 
 Every role's authenticated screens carry one shared top app bar (product-owner decision 2026-07-16),
-so the mobile app frames its content between two pieces of chrome — the top bar and the bottom nav —
-each on a **surface** background distinct from the content area, exactly as the bottom nav is:
+so the mobile app frames its content between two pieces of chrome — the top bar and the bottom nav.
+
+**On dark the two bars take DIFFERENT backgrounds, and neither is `--cos-dark-surface`
+(product-owner decision 2026-08-06, reversing the "each on a **surface** background distinct from the
+content area" wording that stood here from 2026-07-16):**
+
+| Bar             | Dark background                          | Mockup class                                     |
+| --------------- | ---------------------------------------- | ------------------------------------------------ |
+| `<TopBar />`    | `--cos-dark-bg` `#020617`                | `bg-surface dark:bg-dark-bg`                     |
+| `<MobileNav />` | `--cos-dark-surface-container` `#102034` | `bg-surface-container dark:bg-surface-container` |
+
+Resolved from `mockup/mobile/04_tenant_admin/01_home/01_home_dashboard/code.html`, which sets
+`<html class="dark">` with `darkMode: "class"`. The header carries three background utilities; the
+`dark:` one is emitted as `.dark .dark\:bg-dark-bg`, so it wins on **specificity** (two classes to
+one) over `bg-surface` and `bg-surface-container-low` regardless of source order. The nav names the
+same value in both modes, and additionally carries `rounded-t-xl` and a top border — it is drawn as a
+raised sheet, which is why it does not follow the header onto the page colour.
+
+The original rule assumed chrome must differ from the content. On the dark default what matters is
+that `--cos-dark-surface` `#0F172A` is the **card** colour, so chrome drawn in it reads as a card
+welded to the edge of the screen. `TENANT-ADMIN/01-Home/02-quick-action.png` shows the intended top
+bar already, because `QuickAddMenu` draws its own header on `bg`.
+
+Light is unaffected. There the mobile palette inverts — `bg` is the grey `#F5F5F5` page and `surface`
+the white card — so chrome on `surface` is already distinct from the content without borrowing the
+card colour; `<MobileNav />` overrides `tabBarStyle` only on dark.
+
+> `--cos-dark-surface-container` `#102034` was added by this decision: the set had no token meaning
+> "chrome sheet", which is why the nav had been on the card colour. Counted across `mockup/mobile/**`,
+> 217 `code.html` files define `surface-container` as `#102034` and 5 as `#0F172A`.
+>
+> **Still open — the bar's other mockup properties.** The nav also has `rounded-t-xl` (12px top
+> corners), `shadow-lg`, and `border-t border-outline-variant/10` — a 10%-alpha hairline, against the
+> opaque `--cos-dark-outline` the implementation uses. Only the background was decided here.
 
 | Element | Content                                                                                    |
 | ------- | ------------------------------------------------------------------------------------------ |
@@ -1016,10 +1251,10 @@ each on a **surface** background distinct from the content area, exactly as the 
 | Right   | Notification bell (unread badge → `/notifications`) · avatar (photo/initials → `/profile`) |
 
 - **One component, all roles.** It is not per-screen; it lives in the authenticated layout so a role
-  screen never renders its own header. The safe-area strip above it takes the same surface colour, so
+  screen never renders its own header. The safe-area strip above it takes the same background, so
   the notch region reads as part of the bar.
 - **Palette follows the theme** (product-owner decision 2026-08-04; previously "follows the screen").
-  In dark mode the bar uses `--cos-dark-surface`, in light mode `--mobile-surface`.
+  In dark mode the bar uses `--cos-dark-bg`, in light mode `--mobile-surface`.
 - Avatar falls back to initials, then a person glyph, when there is no `photo_url` (§11 `platform.users`).
 - **Back control on child screens.** A pushed child screen carries a leading bare chevron `<`
   (product-owner decision 2026-08-04, reversing the 2026-07-31 removal). It is rendered **in addition

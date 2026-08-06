@@ -4,7 +4,10 @@
 // mfa-enrollment / notifications routes as broken (tofu-icon) bottom tabs. Those routes are now
 // href:null in components/MobileNav.tsx, so a fresh capture shows the correct 4-tab bar:
 //   docs/screens/android/02-shared/02-navigation-drawer.png     — the drawer (opened from the top bar)
-//   docs/screens/android/02-shared/01-notification-preferences.png — the notification-preferences route
+//   docs/screens/android/02-shared/01-notification-preferences.png — the notification-preferences
+//     route, stitched as ONE full-length page (PO decision 2026-08-06). It used to be a single
+//     viewport plus a hand-made `-quiet` side file holding the rest of the same page; two frames of
+//     one screen drift apart, and that one had gone stale by two chrome changes.
 //   docs/screens/android/03-mfa/01-app-intro.png           — the in-app MFA enrolment intro
 // The Keycloak browser steps of the MFA flow (02–07) are captured by hand; this script covers only the
 // in-app screens it can drive. Prereqs are the same as capture-android-home.mjs, plus Metro started
@@ -19,6 +22,15 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_BASE = resolve(HERE, '../../../docs/screens/android');
 const PKG = 'com.constructionos.cos';
+const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE;
+const STITCH = join(HERE, 'stitch-fullpage.py');
+
+// Fixed chrome bands of the signed-in shell on the Medium_Phone AVD (1080×2400), shared with
+// capture-android-transparency.mjs: scrolling content starts at row 311 (below the TopBar and the
+// breadcrumb strip) and the bottom nav owns 2210 down. The stitcher drops those bands from every
+// frame but the first/last so the bars appear once in a full-page PNG.
+const TOP = 311;
+const BOT = 2210;
 
 const OTP_PHONE = process.env['E2E_OTP_PHONE'] ?? '0811000010'; // Somsak Duangdee — SITE_WORKER
 const OTP_CODE = process.env['E2E_TEST_OTP'] ?? '123456';
@@ -107,6 +119,48 @@ async function shot(rel) {
   console.log(`  saved ${rel}.png (${png.length} bytes)`);
 }
 
+/**
+ * Rewind to the top, shoot descending viewports, stitch ONE full-page PNG.
+ *
+ * WHY a scrollable route must not use `shot()`. A single `screencap` is one 2400px viewport, so a
+ * page taller than that gets documented as its top third and nothing else. Notification preferences
+ * ran that way and the remainder was carried by hand-made side files
+ * (`01-notification-preferences-quiet.png`) — the same page, split across frames, going stale on its
+ * own schedule: that one still showed the light top bar and the full-width green SyncStatusBar, both
+ * gone since 2026-08-04. One stitched page cannot drift out of step with itself.
+ *
+ * Ported from capture-android-transparency.mjs rather than shared, because these two scripts already
+ * keep their own adb/dump helpers and a shared module would be the only thing they import.
+ */
+async function stitchFull(rel) {
+  const dest = join(OUT_BASE, `${rel}.png`);
+  mkdirSync(dirname(dest), { recursive: true });
+  for (let i = 0; i < 8; i++) {
+    adb('shell', 'input', 'swipe', '540', '700', '540', '1900', '300');
+    await delay(400);
+  }
+  await delay(900);
+  const SHOTS = 12;
+  const shots = [];
+  for (let i = 0; i < SHOTS; i++) {
+    const png = execFileSync(ADB, ['exec-out', 'screencap', '-p'], { maxBuffer: 64 * 1024 * 1024 });
+    if (png.length < 20_000) throw new Error(`capture: ${rel} frame ${i} looks empty`);
+    const p = join(TMP, `sm_${rel.replace(/[^a-z0-9]/gi, '_')}_${i}.png`);
+    writeFileSync(p, png);
+    shots.push(p);
+    if (i < SHOTS - 1) {
+      adb('shell', 'input', 'swipe', '540', '1800', '540', '1000', '500');
+      await delay(1100);
+    }
+  }
+  process.stdout.write(
+    execFileSync('python', [STITCH, dest, String(TOP), String(BOT), ...shots], {
+      encoding: 'utf-8',
+    }),
+  );
+  console.log(`  stitched ${rel}.png`);
+}
+
 /** Open a route by its cos:// deep link (app scheme in app.json). */
 function deepLink(path) {
   adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', `cos://${path}`, PKG);
@@ -157,7 +211,25 @@ async function main() {
   await find(byId('notification-preferences'), 'notification-preferences', 25);
   await dismissDevBanners();
   await delay(1500);
-  await shot('02-shared/01-notification-preferences');
+  // Stitched, not `shot()` — this page is ~2× a viewport (channel cards, then QUIET HOURS and Save
+  // changes). See stitchFull().
+  await stitchFull('02-shared/01-notification-preferences');
+
+  // The post-save confirmation (PO decision 2026-08-06). This step PRESSES SAVE FOR REAL and writes
+  // the signed-in user's row in `notification_preferences` — there is no other way to reach the
+  // `if (saved)` branch, and the alternative was a hand-made frame that had gone stale by two chrome
+  // changes and carried a `fetch failed` toast. It is idempotent and harmless here: nothing was
+  // toggled first, so the values written are the ones already on screen, and the account is the
+  // capture fixture (Somsak Duangdee), not a real user's.
+  //
+  // stitchFull() would rewind by swiping, which this screen does not need and cannot survive — it is
+  // a short centred panel — so it takes a plain shot().
+  console.log('· notification preferences — saved state');
+  await tap(byId('prefs-save'), 'SAVE CHANGES');
+  await find(byId('prefs-saved-back'), 'saved confirmation (prefs-saved-back)', 20);
+  await dismissDevBanners();
+  await delay(1200);
+  await shot('02-shared/01-notification-preferences-saved');
 
   // In-app MFA enrolment intro ("Two-factor authentication" / "Set up authenticator").
   console.log('· MFA enrolment intro');

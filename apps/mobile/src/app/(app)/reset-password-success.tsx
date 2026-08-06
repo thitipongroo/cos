@@ -21,7 +21,14 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 export default function ResetPasswordSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -143,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.success,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -174,7 +181,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.md,
     backgroundColor: darkColors.elevated,
-    borderRadius: 8,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -198,7 +205,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.xs,
   },
@@ -220,7 +227,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     gap: spacing.xs,
     marginTop: spacing.xs,
@@ -252,7 +259,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   primaryText: {

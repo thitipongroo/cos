@@ -296,7 +296,7 @@ async function main() {
   await dismissDevBanners();
   await delay(800);
 
-  await stitchFull('00-portal');
+  await stitchFull('00-data-collection');
   await rewindToTop();
 
   for (const c of CATEGORIES) {

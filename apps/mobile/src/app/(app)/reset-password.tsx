@@ -30,19 +30,22 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { resetUserPassword, sendResetLinkEmail } from '../../api/users';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  plateRadius,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
+import { formatRole } from '../../lib/formatRole';
+import { shortId } from '../../lib/shortId';
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/);
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
 }
-function formatRole(role: string): string {
-  return role
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
-
 export default function ResetPasswordScreen(): React.JSX.Element {
   const t = useT();
   const router = useRouter();
@@ -131,7 +134,7 @@ export default function ResetPasswordScreen(): React.JSX.Element {
             </Text>
             <View style={styles.pill}>
               <Text style={styles.pillText}>
-                {t('adminUsers.uid')}: {userId.slice(0, 8).toUpperCase()}
+                {t('adminUsers.uid')}: {shortId(userId)}
               </Text>
             </View>
             <View style={styles.rolePill}>
@@ -283,12 +286,18 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.primary,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
   avatarWrap: { width: 64, height: 64 },
-  avatar: { width: 64, height: 64, borderRadius: 10, borderWidth: 2, borderColor: darkColors.cyan },
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: plateRadius(64),
+    borderWidth: 2,
+    borderColor: darkColors.cyan,
+  },
   avatarFallback: {
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
@@ -301,7 +310,7 @@ const styles = StyleSheet.create({
     bottom: -2,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 3,
     borderColor: darkColors.surface,
   },
@@ -313,7 +322,7 @@ const styles = StyleSheet.create({
   },
   pill: {
     backgroundColor: darkColors.elevated,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
@@ -325,7 +334,7 @@ const styles = StyleSheet.create({
   },
   rolePill: {
     backgroundColor: darkColors.elevated,
-    borderRadius: 6,
+    borderRadius: radius.xl,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
@@ -340,7 +349,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     gap: spacing.xs,
@@ -375,7 +384,7 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.surface,
     borderWidth: 2,
     borderColor: darkColors.border,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
@@ -384,7 +393,7 @@ const styles = StyleSheet.create({
   methodIcon: {
     width: 44,
     height: 44,
-    borderRadius: 10,
+    borderRadius: plateRadius(44),
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -399,7 +408,7 @@ const styles = StyleSheet.create({
   },
   recommendBadge: {
     backgroundColor: `${darkColors.cyan}1A`,
-    borderRadius: 4,
+    borderRadius: radius.md,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
@@ -420,7 +429,7 @@ const styles = StyleSheet.create({
   radioOn: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: darkColors.primary,
     alignItems: 'center',
@@ -430,7 +439,7 @@ const styles = StyleSheet.create({
   radioOff: {
     width: 24,
     height: 24,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     borderWidth: 2,
     borderColor: darkColors.border,
   },
@@ -470,7 +479,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   btnBusy: { opacity: 0.7 },
@@ -485,7 +494,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: touchTarget.primaryButton + 8,
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: darkColors.border,
   },

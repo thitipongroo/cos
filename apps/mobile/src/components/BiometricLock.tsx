@@ -14,7 +14,7 @@ import { useBiometricStore } from '../store/biometricStore';
 import { useAuthStore } from '../store/authStore';
 import { useT } from '../i18n';
 import { usePalette } from '../theme/usePalette';
-import { fontFamily, spacing, typography } from '../theme/tokens';
+import { fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 export function BiometricLock() {
   const locked = useBiometricStore((s) => s.locked);
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   primary: {
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
-    borderRadius: 8,
+    borderRadius: radius.md,
   },
   primaryText: {
     fontFamily: fontFamily.semibold,

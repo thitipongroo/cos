@@ -198,7 +198,7 @@ export class TasksService {
   async getTask(taskId: string): Promise<TaskRow> {
     const task = await this.repo.findTaskById(taskId);
     if (!task) {
-      throw new NotFoundException({ code: 'COS-TASK-002', message: 'Task not found' });
+      throw new NotFoundException({ error: { code: 'COS-TASK-002', message: 'Task not found' } });
     }
     return task;
   }
@@ -226,9 +226,11 @@ export class TasksService {
 
       if (blocking.length > 0) {
         throw new UnprocessableEntityException({
-          code: 'COS-TASK-001',
-          message: 'Task completion blocked by hard-block gates',
-          blocking_gates: blocking,
+          error: {
+            code: 'COS-TASK-001',
+            message: 'Task completion blocked by hard-block gates',
+            blocking_gates: blocking,
+          },
         });
       }
     }

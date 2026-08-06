@@ -20,7 +20,7 @@ import { photoQueueStatus } from '../sync/photoQueueLimit';
 import { canDeletePhoto, GALLERY_COLUMNS } from '../lib/photoGallery';
 import { PhotoAnnotation, type AnnotationStroke } from './PhotoAnnotation';
 import { useT } from '../i18n';
-import { colors, fontFamily, spacing, typography } from '../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 interface PhotoCaptureProps {
   entityType: PhotoEntityType;
@@ -200,11 +200,11 @@ const GUTTER = spacing.xs / 2;
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
-  preview: { height: 200, borderRadius: 8, overflow: 'hidden' },
+  preview: { height: 200, borderRadius: radius.lg, overflow: 'hidden' },
   button: {
     minHeight: 48,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -241,7 +241,12 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xs,
     gap: 2,
   },
-  thumb: { width: '100%', aspectRatio: 1, borderRadius: 8, backgroundColor: colors.surface },
+  thumb: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+  },
   // Positioned against the card's padding box, which starts at the thumbnail's top-left corner.
   deleteButton: {
     position: 'absolute',

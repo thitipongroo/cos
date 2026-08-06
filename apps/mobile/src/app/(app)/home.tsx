@@ -31,8 +31,9 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import SiteEngineerHome from '../../components/SiteEngineerHome';
 import TenantAdminHome from '../../components/TenantAdminHome';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
+import { formatMoney } from '@cos/financial';
 
 // ── shared presentational bits ──────────────────────────────────────────────
 function KpiCard({ testID, value, label }: { testID: string; value: string; label: string }) {
@@ -191,7 +192,9 @@ function ExecHome() {
     void Promise.allSettled([execFetch, issuesFetch]).then(() => setLoading(false));
   }, []);
 
-  const money = (n: number | null): string => (n === null ? '—' : n.toLocaleString());
+  // DESIGN.md §9.5 — one presentation everywhere, and never a bare toLocaleString: that renders
+  // 1.234,56 on a German handset and degrades on Android builds with trimmed ICU.
+  const money = (n: number | null): string => (n === null ? '—' : formatMoney(n));
 
   return (
     <Screen testID="home-screen">
@@ -423,7 +426,7 @@ const styles = StyleSheet.create({
   kpi: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.md,
     alignItems: 'center',
     gap: spacing.xs,
@@ -441,7 +444,7 @@ const styles = StyleSheet.create({
   },
   checkIn: {
     minHeight: 52,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

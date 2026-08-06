@@ -1,10 +1,17 @@
 -- Demo dataset for screenshot capture (docs/screens/*) and manual QA.
 -- Reconstructs the DEMO-001 "Bangkok Tower — Phase 1" dataset that was previously
 -- authored ad-hoc in a session scratchpad (now lost). Committed here so screen captures
--- are reproducible: `bash backend/prisma/apply-demo-seed.sh` after `pnpm seed`.
+-- are reproducible: apply with
+--   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backend/prisma/demo-seed.sql
+-- after `pnpm seed` AND `pnpm seed:realistic` (the EKC tenant must exist first — see below).
 --
--- Tenant  : 00000000-0000-4000-8000-000000000001 (dev tenant from seed.ts)
--- Actor   : 00000000-0000-4000-8000-000000000012 (+66800000002, capture user)
+-- Tenant  : EKC, resolved by tenant_code — NOT hardcoded. The capture user moved out of the dev
+--           tenant (its keycloak_realm pointed at a realm that does not exist, so Path A could
+--           never log in), and demo rows left behind in the dev tenant would be invisible to it:
+--           RLS scopes every read to the caller's tenant, so the captured screens would come out
+--           empty. EKC's id is derived (sha256 of 'cos-demo:tenant/ekachai'), so it is looked up
+--           rather than written down.
+-- Actor   : 00000000-0000-4000-8000-000000000012 (+66800000002, capture user — an EKC user)
 -- Project : b0000000-0000-4000-8000-000000000001 (== capture.spec.ts PROJECT_ID)
 --
 -- Idempotent (ON CONFLICT DO NOTHING). Inserted as the DB owner (RLS-exempt); the GUC is
@@ -12,7 +19,14 @@
 
 -- set_config(..., false) == a session-level SET; spelled this way because sqlfluff's postgres
 -- dialect cannot parse `SET <dotted.custom.guc>` and fails the lint gate on it.
-SELECT set_config('app.current_tenant_id', '00000000-0000-4000-8000-000000000001', false);
+-- Every INSERT below reads the tenant back out of this GUC instead of repeating a literal, so the
+-- session scope and the rows can never disagree. If EKC is absent this yields '' and the first
+-- `::uuid` cast aborts the script — loudly, rather than seeding a tenant nobody asked for.
+SELECT set_config(
+    'app.current_tenant_id',
+    (SELECT tenant_id::text FROM platform.tenants WHERE tenant_code = 'EKC'),
+    false
+);
 
 -- ── Project ──────────────────────────────────────────────────────────────────
 INSERT INTO projects.projects
@@ -22,7 +36,7 @@ INSERT INTO projects.projects
 )
 VALUES
 (
-    'b0000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000001', current_setting('app.current_tenant_id')::uuid,
     'DEMO-001', 'Bangkok Tower — Phase 1', 'COMMERCIAL', 'ACTIVE',
     5000000.0000, 'THB', DATE '2026-01-15', DATE '2026-12-31',
     '00000000-0000-4000-8000-000000000012'
@@ -38,7 +52,7 @@ INSERT INTO boq.boq_versions
 VALUES
 (
     'b0000000-0000-4000-8000-000000000101', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 1, 'Baseline BOQ', 'APPROVED',
+    current_setting('app.current_tenant_id')::uuid, 1, 'Baseline BOQ', 'APPROVED',
     5000000.0000, 'THB', '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (version_id) DO NOTHING;
@@ -48,7 +62,7 @@ INSERT INTO boq.boq_categories
 VALUES
 (
     'b0000000-0000-4000-8000-000000000102', 'b0000000-0000-4000-8000-000000000101',
-    '00000000-0000-4000-8000-000000000001', 'FOUNDATION', 'Foundation', 1, 3000000.0000
+    current_setting('app.current_tenant_id')::uuid, 'FOUNDATION', 'Foundation', 1, 3000000.0000
 )
 ON CONFLICT (category_id) DO NOTHING;
 
@@ -60,12 +74,12 @@ INSERT INTO boq.boq_items
 VALUES
 (
     'b0000000-0000-4000-8000-000000000103', 'b0000000-0000-4000-8000-000000000102',
-    'b0000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000101', current_setting('app.current_tenant_id')::uuid,
     'FND-001', 'Pour foundation — Zone A', 'm3', 500.0000, 4000.0000, 2000000.0000, 'THB', 1
 ),
 (
     'b0000000-0000-4000-8000-000000000104', 'b0000000-0000-4000-8000-000000000102',
-    'b0000000-0000-4000-8000-000000000101', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000101', current_setting('app.current_tenant_id')::uuid,
     'FND-002', 'Install rebar — Level 2', 'ton', 40.0000, 25000.0000, 1000000.0000, 'THB', 2
 )
 ON CONFLICT (item_id) DO NOTHING;
@@ -75,7 +89,7 @@ INSERT INTO procurement.vendors
 (vendor_id, tenant_id, vendor_code, vendor_name, tax_id, contact_email, contact_phone, is_active)
 VALUES
 (
-    'b0000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000201', current_setting('app.current_tenant_id')::uuid,
     'VEN-001', 'Siam Cement Co., Ltd.', '0105536000000', 'sales@siamcement.co.th', '+6620000000', true
 )
 ON CONFLICT (vendor_id) DO NOTHING;
@@ -85,7 +99,7 @@ INSERT INTO procurement.purchase_requests
 VALUES
 (
     'b0000000-0000-4000-8000-000000000301', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 'PR-2026-001', 'PO_CREATED',
+    current_setting('app.current_tenant_id')::uuid, 'PR-2026-001', 'PO_CREATED',
     '00000000-0000-4000-8000-000000000012', DATE '2026-07-20'
 )
 ON CONFLICT (pr_id) DO NOTHING;
@@ -95,7 +109,7 @@ INSERT INTO procurement.rfqs
 VALUES
 (
     'b0000000-0000-4000-8000-000000000302', 'b0000000-0000-4000-8000-000000000301',
-    'b0000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000001', current_setting('app.current_tenant_id')::uuid,
     'RFQ-2026-001', 'DRAFT', TIMESTAMPTZ '2026-07-25 00:00:00+07',
     '00000000-0000-4000-8000-000000000012'
 )
@@ -106,7 +120,7 @@ INSERT INTO procurement.quotations
 VALUES
 (
     'b0000000-0000-4000-8000-000000000303', 'b0000000-0000-4000-8000-000000000302',
-    'b0000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000201', current_setting('app.current_tenant_id')::uuid,
     250000.0000, 'THB', 30, TIMESTAMPTZ '2026-07-01 09:00:00+07', true
 )
 ON CONFLICT (quotation_id) DO NOTHING;
@@ -120,7 +134,7 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000304', 'b0000000-0000-4000-8000-000000000302',
     'b0000000-0000-4000-8000-000000000201', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 'PO-2026-001', 'DRAFT',
+    current_setting('app.current_tenant_id')::uuid, 'PO-2026-001', 'DRAFT',
     250000.0000, 'THB', DATE '2026-07-30', '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (po_id) DO NOTHING;
@@ -130,7 +144,7 @@ INSERT INTO procurement.deliveries
 VALUES
 (
     'b0000000-0000-4000-8000-000000000305', 'b0000000-0000-4000-8000-000000000304',
-    '00000000-0000-4000-8000-000000000001', 'DN-2026-001', TIMESTAMPTZ '2026-07-05 14:00:00+07',
+    current_setting('app.current_tenant_id')::uuid, 'DN-2026-001', TIMESTAMPTZ '2026-07-05 14:00:00+07',
     '00000000-0000-4000-8000-000000000012', 'Partial delivery — 50%'
 )
 ON CONFLICT (delivery_id) DO NOTHING;
@@ -143,7 +157,7 @@ INSERT INTO procurement.invoices
 VALUES
 (
     'b0000000-0000-4000-8000-000000000306', 'b0000000-0000-4000-8000-000000000304',
-    'b0000000-0000-4000-8000-000000000201', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000201', current_setting('app.current_tenant_id')::uuid,
     'INV-2026-001', 125000.0000, 'THB', DATE '2026-07-05', DATE '2026-08-04', 'RECEIVED'
 )
 ON CONFLICT (invoice_id) DO NOTHING;
@@ -157,7 +171,7 @@ INSERT INTO finance.project_budgets
 VALUES
 (
     'b0000000-0000-4000-8000-000000000401', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 5000000.0000, 'THB',
+    current_setting('app.current_tenant_id')::uuid, 5000000.0000, 'THB',
     3000000.0000, 250000.0000, 125000.0000, 10.00
 )
 ON CONFLICT (budget_id) DO NOTHING;
@@ -167,7 +181,7 @@ INSERT INTO finance.budget_lines
 VALUES
 (
     'b0000000-0000-4000-8000-000000000402', 'b0000000-0000-4000-8000-000000000401',
-    'b0000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000001', current_setting('app.current_tenant_id')::uuid,
     'b0000000-0000-4000-8000-000000000102', 'Foundation', 3000000.0000, 'THB'
 )
 ON CONFLICT (line_id) DO NOTHING;
@@ -177,7 +191,7 @@ INSERT INTO finance.payments
 VALUES
 (
     'b0000000-0000-4000-8000-000000000403', 'b0000000-0000-4000-8000-000000000306',
-    'b0000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000001', current_setting('app.current_tenant_id')::uuid,
     125000.0000, 'THB', DATE '2026-07-06', 'PENDING', '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (payment_id) DO NOTHING;
@@ -200,13 +214,13 @@ INSERT INTO projects.tasks
 )
 VALUES
 (
-    'b0000000-0000-4000-8000-000000000501', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000501', current_setting('app.current_tenant_id')::uuid,
     'b0000000-0000-4000-8000-000000000001', 'Pour foundation — Zone A', 'FOUNDATION',
     'IN_PROGRESS', 'b0000000-0000-4000-8000-000000000103', 85, 'NONE',
     DATE '2026-01-15', DATE '2026-09-30', DATE '2026-01-20'
 ),
 (
-    'b0000000-0000-4000-8000-000000000502', '00000000-0000-4000-8000-000000000001',
+    'b0000000-0000-4000-8000-000000000502', current_setting('app.current_tenant_id')::uuid,
     'b0000000-0000-4000-8000-000000000001', 'Install rebar — Level 2', 'STRUCTURE',
     'IN_PROGRESS', 'b0000000-0000-4000-8000-000000000104', 30, 'NONE',
     DATE '2026-06-01', DATE '2026-11-30', DATE '2026-06-03'
@@ -227,31 +241,31 @@ INSERT INTO projects.project_phases
 VALUES
 (
     'b0000000-0000-4000-8000-000000000801', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 1, 'Foundation', 'IN_PROGRESS',
+    current_setting('app.current_tenant_id')::uuid, 1, 'Foundation', 'IN_PROGRESS',
     DATE '2026-01-15', DATE '2026-04-30', DATE '2026-01-20', null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000802', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 2, 'Structure', 'IN_PROGRESS',
+    current_setting('app.current_tenant_id')::uuid, 2, 'Structure', 'IN_PROGRESS',
     DATE '2026-04-15', DATE '2026-08-31', DATE '2026-06-01', null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000803', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 3, 'MEP', 'NOT_STARTED',
+    current_setting('app.current_tenant_id')::uuid, 3, 'MEP', 'NOT_STARTED',
     DATE '2026-08-01', DATE '2026-10-31', null, null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000804', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 4, 'Architecture', 'NOT_STARTED',
+    current_setting('app.current_tenant_id')::uuid, 4, 'Architecture', 'NOT_STARTED',
     DATE '2026-10-15', DATE '2026-12-15', null, null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000805', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 5, 'Handover', 'NOT_STARTED',
+    current_setting('app.current_tenant_id')::uuid, 5, 'Handover', 'NOT_STARTED',
     DATE '2026-12-10', DATE '2026-12-31', null, null,
     '00000000-0000-4000-8000-000000000012'
 )
@@ -263,13 +277,13 @@ INSERT INTO site_ops.site_reports
 VALUES
 (
     'b0000000-0000-4000-8000-000000000601', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', DATE '2026-07-04',
+    current_setting('app.current_tenant_id')::uuid, DATE '2026-07-04',
     '00000000-0000-4000-8000-000000000012', 'DRAFT',
     'Foundation formwork 60% complete. Rebar delivery expected tomorrow.', 'Partly cloudy', 24
 ),
 (
     'b0000000-0000-4000-8000-000000000602', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', DATE '2026-07-03',
+    current_setting('app.current_tenant_id')::uuid, DATE '2026-07-03',
     '00000000-0000-4000-8000-000000000012', 'DRAFT',
     'Site cleared. Excavation for Zone A footings completed.', 'Sunny', 18
 )
@@ -281,13 +295,13 @@ INSERT INTO site_ops.issues
 VALUES
 (
     'b0000000-0000-4000-8000-000000000701', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000601',
+    current_setting('app.current_tenant_id')::uuid, 'b0000000-0000-4000-8000-000000000601',
     'Water leak in basement — Zone B', 'Groundwater seepage observed at the north wall.',
     'MEDIUM', 'OPEN', 'DEFECT'
 ),
 (
     'b0000000-0000-4000-8000-000000000702', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', 'b0000000-0000-4000-8000-000000000602',
+    current_setting('app.current_tenant_id')::uuid, 'b0000000-0000-4000-8000-000000000602',
     'Delayed concrete delivery', 'Supplier pushed the pour date by one day.',
     'LOW', 'OPEN', 'GENERAL'
 )
@@ -299,7 +313,7 @@ INSERT INTO site_ops.inspections
 VALUES
 (
     'b0000000-0000-4000-8000-000000000801', 'b0000000-0000-4000-8000-000000000001',
-    '00000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-000000000051', 'PENDING',
+    current_setting('app.current_tenant_id')::uuid, '00000000-0000-4000-8000-000000000051', 'PENDING',
     '00000000-0000-4000-8000-000000000012', now(), 'DEMO-001 inspection for e2e'
 )
 ON CONFLICT (inspection_id) DO NOTHING;

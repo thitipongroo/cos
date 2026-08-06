@@ -31,9 +31,11 @@ export function resolveTenantId(req: TenantRequest, _queryTenantId?: string): st
   const tenantId = req.tenantId ?? clsTenantId();
   if (!tenantId) {
     throw new UnauthorizedException({
-      code: 'COS-ANALYTICS-001',
-      message: 'Tenant context missing from request',
-      messageKey: 'analytics.tenantContextMissing',
+      error: {
+        code: 'COS-ANALYTICS-001',
+        message: 'Tenant context missing from request',
+        messageKey: 'analytics.tenantContextMissing',
+      },
     });
   }
   return tenantId;

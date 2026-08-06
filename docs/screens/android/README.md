@@ -566,27 +566,39 @@ upload + primary-colour picker, Autodesk BIM 360 sync, Security policy, and Dele
 "LINE token expires in 3 days / 98 % confidence" — there is no such signal, so the card renders its shell
 with an honest empty state (**"No AI insights available yet."**), never the fabricated prediction.
 
-## Shared — Notification settings — [`01`](02-shared/01-notification-preferences.png) · [`quiet hours`](02-shared/01-notification-preferences-quiet.png) · [`saved`](02-shared/01-notification-preferences-saved.png)
+## Shared — Notification settings — [`01`](02-shared/01-notification-preferences.png) · [`saved`](02-shared/01-notification-preferences-saved.png)
 
 The cross-role notification-preferences route, reached from the navigation drawer (below) rather than
-from a tab. Three states of the same screen.
+from a tab. **Two files: the page, and the state you reach after saving it.**
 
-**`01-notification-preferences.png`** — the top of the list. Preferences are grouped by
-consequence, not by channel. **CRITICAL INFRASTRUCTURE** holds a single row, _Safety incident
-(immediate)_, badged **REQUIRED** with a padlock and its `IN_APP` + `LINE` channels shown as
-green ticks rather than toggles — that row cannot be switched off, which is spec §19.6's
-"critical safety notifications cannot be disabled or quieted" rendered as UI rather than
-enforced silently server-side. **PROJECT & OPERATIONS** below it (_Daily site report_,
-_Inspection failed_, _Budget variance alert_) uses ordinary per-channel toggle chips.
+**`01-notification-preferences.png`** — the whole route as **one stitched page** (1080×4389), not a
+viewport. Preferences are grouped by consequence, not by channel. **CRITICAL INFRASTRUCTURE** holds a
+single row, _Safety incident (immediate)_, badged **REQUIRED** with a padlock and its `IN_APP` +
+`LINE` channels shown as green ticks rather than toggles — that row cannot be switched off, which is
+spec §19.6's "critical safety notifications cannot be disabled or quieted" rendered as UI rather than
+enforced silently server-side. **PROJECT & OPERATIONS** below it (_Daily site report_, _Inspection
+failed_, _Budget variance alert_, _Purchase approval requested_, _AI risk prediction_) uses ordinary
+per-channel toggle chips. It ends with **QUIET HOURS (PUSH ONLY)** — `START 22:00` / `END 07:00` on
+±steppers, the `quiet_hours_start` / `quiet_hours_end` defaults from the `notification_preferences`
+table — whose note repeats the §19.6 carve-out: _"Push is muted during this window. Critical safety
+alerts are never quieted."_ — and the **SAVE CHANGES** button.
 
-**`01-notification-preferences-quiet.png`** — scrolled to the bottom: _Purchase approval requested_
-and _AI risk prediction_, then **QUIET HOURS (PUSH ONLY)** with `START 22:00` / `END 07:00` on
-±steppers — the `quiet_hours_start` / `quiet_hours_end` defaults from the
-`notification_preferences` table. The note under it repeats the §19.6 carve-out: _"Push is muted
-during this window. Critical safety alerts are never quieted."_
+> There was a third file, `01-notification-preferences-quiet.png`, holding the lower half of this
+> same page (product-owner decision 2026-08-06 to fold it in). Splitting one screen across two frames
+> let them rot separately: that one still showed the light top bar and the full-width green
+> `SyncStatusBar`, both retired 2026-08-04, plus a dev banner and a seven-tab bottom bar from before
+> the extra routes were hidden. `capture-android-shared-mfa.mjs` now stitches this route instead of
+> taking a single `screencap`, so the page cannot disagree with itself.
 
-**`01-notification-preferences-saved.png`** — the post-save confirmation: _Changes saved_, with
-`STATUS Active` and `LAST SYNC Just now`, and a **Back** button.
+**`01-notification-preferences-saved.png`** — a **different screen**, not part of the page above:
+the `if (saved)` branch in `notification-preferences.tsx` (mockup `06_notification/02_success_state`).
+_Changes saved_, with `STATUS Active` and `LAST SYNC Just now`, and a **Back** button.
+
+> Scripted since 2026-08-06 (product-owner decision). The step **presses SAVE CHANGES for real** and
+> writes the fixture user's row in `notification_preferences` — there is no other way to reach this
+> branch. It is idempotent: nothing is toggled first, so the values written are the ones already on
+> screen. Before this it was hand-made and had gone stale by two chrome changes, with a
+> `Uncaught (in promise): Error: fetch failed` toast in frame.
 
 ## CRM Sales Manager — [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/)
 
@@ -649,7 +661,7 @@ screen carries the `<` back control restored to the top bar on 2026-08-04, along
 | #   | Screen                                                                                          | What it shows                                                                   |
 | --- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | 00  | [Privacy Policy (post-auth)](02-shared/privacy-policy/00-privacy-policy-postauth.png)           | The drawer's policy route — same document as the pre-auth one, in the app shell |
-| 00  | [Portal hub](02-shared/privacy-policy/01-data-collection/00-portal.png)                         | Category count, what is collected, how it arrives, retention and rights         |
+| 00  | [Data Collection](02-shared/privacy-policy/01-data-collection/00-data-collection.png)           | Category count, what is collected, how it arrives, retention and rights         |
 | 01  | [Identity & contact](02-shared/privacy-policy/01-data-collection/01-identity.png)               | The signed-in account's real name / email / phone / photo / role                |
 | 02  | [Site & location](02-shared/privacy-policy/01-data-collection/02-location.png)                  | The five record types that carry a coordinate; geofencing marked Planned        |
 | 03  | [Technical logs](02-shared/privacy-policy/01-data-collection/03-technical-logs.png)             | Audit-log fields, the path an entry travels, retention tiers                    |
@@ -789,10 +801,13 @@ framebuffer inside the splash window. The launcher app icon is untouched: it rea
 
 The 21 flat files are the same route set as [iOS](../ios/README.md), captured by
 [`apps/mobile/e2e/capture.spec.ts`](../../../apps/mobile/e2e/capture.spec.ts) from **one
-`PROJECT_MANAGER` session** (`+66800000002` — the role with the widest data access), deep-linking
-each route via `cos:///<route>`. That flat dump documents routes as one user sees them, matching the iOS
-layout — a different thing from the **committed** per-role captures here, which are grouped into role
-folders (see [Structure](#structure--grouped-by-role) above), like [`../web/`](../web).
+`SITE_ENGINEER` session** (`+66800000002`, an EKC user), deep-linking
+each route via `cos:///<route>`. This said `PROJECT_MANAGER` — "the role with the widest data
+access" — until 2026-08-06; the fixture never carried that role, in the realm import or in
+`platform.tenant_memberships`. Routes needing an office role are therefore empty or forbidden in
+that dump by construction. It documents routes as one user sees them, matching the iOS layout — a
+different thing from the **committed** per-role captures here, which are grouped into role folders
+(see [Structure](#structure--grouped-by-role) above), like [`../web/`](../web).
 
 `00-login.png` from that dump predated the login redesign — `01-public/02-login.png` is the current landing.
 
@@ -810,17 +825,18 @@ folders (see [Structure](#structure--grouped-by-role) above), like [`../web/`](.
     `editUsernameAllowed: false`, and Keycloak rejects a username change with
     `400 error-user-attribute-read-only` — so the script deletes and recreates them, then re-links
     `platform.users.keycloak_user_id`. Re-run it once against an existing realm to migrate.
-- **Three cross-role shots predate the tab-bar fix and need recapturing.**
-  `02-shared/01-notification-preferences-quiet.png`,
-  `02-shared/01-notification-preferences-saved.png` and `03-mfa/05-app-enrollment-success.png` still
-  show a **seven**-tab bottom bar ending in truncated `mfa-en…` / `notific…` entries, plus a dev
-  LogBox toast. Both are exactly what
+- **One hand-made shot predates the tab-bar fix and needs recapturing.**
+  `03-mfa/05-app-enrollment-success.png` still shows a **seven**-tab bottom bar ending in truncated
+  `mfa-en…` / `notific…` entries, plus a dev LogBox toast. That is exactly what
   [`capture-android-shared-mfa.mjs`](../../../apps/mobile/scripts/capture-android-shared-mfa.mjs)
   exists to avoid — `MobileNav.tsx` now sets `href: null` on those two routes, and Metro must be
-  started with `EXPO_PUBLIC_CAPTURE=1` to suppress the toast. The clean pair captured after that fix
-  (`01-notification-preferences.png`, `02-navigation-drawer.png`) shows the correct five-tab bar with
-  no toast. The `-saved` shot additionally carries a red `Uncaught (in promise …) Error: fetch failed`
-  toast, so its backend was unreachable at capture time.
+  started with `EXPO_PUBLIC_CAPTURE=1` to suppress the toast. The screens that script drives
+  (`01-notification-preferences.png`, `-saved`, `02-navigation-drawer.png`, `03-mfa/01-app-intro.png`)
+  show the correct four-tab bar with no toast. This one cannot be scripted without completing a real
+  TOTP enrolment against Keycloak's own pages.
+  - Two entries left this list on 2026-08-06. `01-notification-preferences-quiet.png` is gone — it
+    held the lower half of `01-notification-preferences.png`, now captured as one stitched page.
+    `01-notification-preferences-saved.png` is now scripted, by pressing SAVE CHANGES for real.
 - **`03-mfa/04-keycloak-totp-verify.png` does not show what its name claims.** It is the TOTP _setup_
   page again, with Chrome's "Save password?" prompt covering the header and the Android keyboard
   toolbar covering the left edge; the six verification boxes are still empty. A genuine "code

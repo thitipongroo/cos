@@ -8,7 +8,7 @@
 
 import type { ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { colors, darkColors, fontFamily, spacing, typography } from '../theme/tokens';
+import { colors, darkColors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 export type QuickActionVariant = 'light' | 'dark';
 
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 60,
     backgroundColor: colors.surface,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     alignItems: 'center',
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     right: spacing.xs,
     minWidth: 18,
     height: 18,
-    borderRadius: 9,
+    borderRadius: radius.xl,
     backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',

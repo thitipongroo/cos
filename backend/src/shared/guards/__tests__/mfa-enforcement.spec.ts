@@ -41,7 +41,9 @@ describe('enforceMfaForPrivilegedRoles', () => {
       throw new Error('expected ForbiddenException');
     } catch (e) {
       expect(e).toBeInstanceOf(ForbiddenException);
-      expect((e as ForbiddenException).getResponse()).toMatchObject({ code: 'COS-AUTH-001' });
+      expect((e as ForbiddenException).getResponse()).toMatchObject({
+        error: { code: 'COS-AUTH-001' },
+      });
     }
   });
 

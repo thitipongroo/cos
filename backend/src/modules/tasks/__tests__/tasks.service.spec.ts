@@ -115,17 +115,19 @@ it('updateTask → COMPLETED blocked lists all 7 gates + budget overrun (COS-TAS
     service.updateTask('task-1', { status: 'COMPLETED' } as never),
   ).rejects.toMatchObject({
     response: {
-      code: 'COS-TASK-001',
-      blocking_gates: [
-        'inspections',
-        'issues',
-        'dependencies',
-        'permits',
-        'incidents',
-        'material',
-        'delay',
-        'budget_overrun',
-      ],
+      error: {
+        code: 'COS-TASK-001',
+        blocking_gates: [
+          'inspections',
+          'issues',
+          'dependencies',
+          'permits',
+          'incidents',
+          'material',
+          'delay',
+          'budget_overrun',
+        ],
+      },
     },
   });
   expect(mockRepo.updateTask).not.toHaveBeenCalled();

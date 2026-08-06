@@ -12,16 +12,7 @@
 // route in this app, so they are omitted rather than linking to a dead path (no guessing).
 
 import { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  Image,
-  Pressable,
-  Animated,
-  StyleSheet,
-  ScrollView,
-  BackHandler,
-} from 'react-native';
+import { View, Text, Pressable, Animated, StyleSheet, ScrollView, BackHandler } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
@@ -29,8 +20,8 @@ import { useUiStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n';
 import { Avatar } from './Avatar';
-import { darkColors, fontFamily, spacing, typography, touchTarget } from '../theme/tokens';
-import brandMark from '../../assets/favicon.png';
+import { BrandLogo } from './BrandLogo';
+import { darkColors, fontFamily, radius, spacing, touchTarget, typography } from '../theme/tokens';
 
 const DRAWER_WIDTH = 310;
 
@@ -170,10 +161,14 @@ export function NavigationDrawer(): React.JSX.Element | null {
           { paddingTop: insets.top + spacing.md, transform: [{ translateX: slide }] },
         ]}
       >
-        {/* Brand */}
+        {/* Brand — the same <BrandLogo /> the top bar uses, tagline included (product-owner
+            decision 2026-08-06). This row previously hand-rolled the mark from `favicon.png` plus a
+            <Text> wordmark, which meant the drawer showed the brand name WITHOUT the tagline while
+            the bar directly above it showed both. DESIGN.md §1.2 makes the tagline part of the
+            brand identity, so one component now renders it everywhere and the drawer cannot drift
+            from the bar again. */}
         <View style={styles.brandRow}>
-          <Image source={brandMark} style={styles.brandMark} resizeMode="contain" />
-          <Text style={styles.brandText}>{t('common.appName')}</Text>
+          <BrandLogo variant="dark" height={26} />
         </View>
 
         {/* Profile header */}
@@ -256,16 +251,9 @@ const styles = StyleSheet.create({
   },
   // The favicon is a transparent dark-navy hexagon mark, so it needs no plate — it sits on the drawer
   // surface directly.
-  brandMark: { width: 40, height: 40 },
-  brandText: {
-    fontFamily: fontFamily.bold,
-    fontSize: typography.title.fontSize,
-    color: darkColors.primary,
-    letterSpacing: 0.3,
-  },
   profileCard: {
     backgroundColor: darkColors.elevated,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -291,7 +279,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     backgroundColor: darkColors.bg,
-    borderRadius: 8,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
   },
@@ -312,7 +300,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: touchTarget.listItem,
     paddingHorizontal: spacing.sm,
-    borderRadius: 8,
+    borderRadius: radius.md,
   },
   navItemActive: { backgroundColor: `${darkColors.primary}1A` },
   activePill: {
@@ -341,7 +329,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: touchTarget.primaryButton,
     paddingHorizontal: spacing.md,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     backgroundColor: `${darkColors.danger}1A`,
   },
   logoutText: {

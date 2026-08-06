@@ -37,7 +37,16 @@ describe('resolveTenantId', () => {
   // context surfaced as a 500 from the driver instead of an auth error.
   it('throws 401 rather than returning an empty tenant when context is missing entirely', () => {
     expect(() => resolveTenantId({})).toThrow(UnauthorizedException);
-    expect(() => resolveTenantId({})).toThrow('Tenant context missing from request');
+    // Asserted on the QM-10 envelope, not on `exception.message`: wrapping the body in `error` (so
+    // GlobalExceptionFilter stops rewriting the code to COS-GENERAL-401) moves the text off the
+    // exception's own message, which becomes the Nest default.
+    try {
+      resolveTenantId({});
+    } catch (e) {
+      expect((e as UnauthorizedException).getResponse()).toMatchObject({
+        error: { code: 'COS-ANALYTICS-001', message: 'Tenant context missing from request' },
+      });
+    }
   });
 });
 

@@ -29,7 +29,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import { useT } from '../../i18n';
 import { usePalette } from '../../theme/usePalette';
-import { fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import { fontFamily, radius, spacing, touchTarget, typography } from '../../theme/tokens';
 import { InfoCard, Lede, SectionLabel } from '../../components/TransparencyKit';
 import {
   exportDownloadUrl,
@@ -314,7 +314,7 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
       gap: spacing.sm,
       minHeight: touchTarget.checkbox,
       backgroundColor: p.surface,
-      borderRadius: 12,
+      borderRadius: radius.md, // list row (minHeight: checkbox)
       padding: spacing.sm,
     },
     checkLabel: { flex: 1, gap: 2 },
@@ -326,7 +326,7 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
       minHeight: touchTarget.checkbox,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: 12,
+      borderRadius: radius.md, // segmented button
       borderWidth: 1,
       borderColor: p.muted,
     },
@@ -341,7 +341,7 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
     error: { fontSize: typography.caption.fontSize, color: p.danger },
     codeInput: {
       minHeight: touchTarget.primaryButton,
-      borderRadius: 12,
+      borderRadius: radius.lg, // input
       backgroundColor: p.surface,
       color: p.text,
       textAlign: 'center',
@@ -365,7 +365,7 @@ const makeStyles = (p: ReturnType<typeof usePalette>) =>
       alignSelf: 'stretch',
       minHeight: touchTarget.primaryButton,
       marginTop: spacing.md,
-      borderRadius: 12,
+      borderRadius: radius.md, // primary button
       backgroundColor: p.primary,
       alignItems: 'center',
       justifyContent: 'center',

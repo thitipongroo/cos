@@ -5,7 +5,7 @@
 
 import type { ReactNode } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
-import { colors, fontFamily, spacing, typography } from '../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../theme/tokens';
 
 export interface OptimisticListProps<T> {
   data: T[];
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   pending: { opacity: 0.5 },
   retry: {
-    borderRadius: 8,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.danger,
     paddingHorizontal: spacing.md,

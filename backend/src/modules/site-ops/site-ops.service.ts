@@ -109,7 +109,9 @@ export class SiteOpsService {
   async getSiteReport(reportId: string) {
     const report = await this.repo.findReportById(reportId);
     if (!report) {
-      throw new NotFoundException({ code: 'COS-SITE-001', message: 'Site report not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-001', message: 'Site report not found' },
+      });
     }
     return report;
   }
@@ -306,7 +308,7 @@ export class SiteOpsService {
   async escalateIssue(issueId: string) {
     const issue = await this.repo.findIssueById(issueId);
     if (!issue) {
-      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+      throw new NotFoundException({ error: { code: 'COS-SITE-002', message: 'Issue not found' } });
     }
     await this.emitEvent('site.issue.escalated.v1', {
       issue_id: issue.issue_id,
@@ -328,7 +330,7 @@ export class SiteOpsService {
   async updateIssue(issueId: string, dto: UpdateIssueDto) {
     const existing = await this.repo.findIssueById(issueId);
     if (!existing) {
-      throw new NotFoundException({ code: 'COS-SITE-002', message: 'Issue not found' });
+      throw new NotFoundException({ error: { code: 'COS-SITE-002', message: 'Issue not found' } });
     }
 
     // Apply FIELD_LEVEL_MERGE conflict strategy
@@ -405,7 +407,9 @@ export class SiteOpsService {
   async submitInspection(dto: SubmitInspectionDto) {
     const checklist = await this.repo.findChecklistById(dto.checklist_id);
     if (!checklist) {
-      throw new NotFoundException({ code: 'COS-SITE-003', message: 'Safety checklist not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-003', message: 'Safety checklist not found' },
+      });
     }
 
     const inspectionId = randomUUID();
@@ -475,7 +479,9 @@ export class SiteOpsService {
   async getInspection(inspectionId: string): Promise<InspectionRow> {
     const inspection = await this.repo.findInspectionById(inspectionId);
     if (!inspection) {
-      throw new NotFoundException({ code: 'COS-SITE-006', message: 'Inspection not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-006', message: 'Inspection not found' },
+      });
     }
     return inspection;
   }
@@ -488,8 +494,11 @@ export class SiteOpsService {
     const inspection = await this.getInspection(inspectionId);
     if (inspection.status === 'PASSED') {
       throw new UnprocessableEntityException({
-        code: 'COS-SITE-007',
-        message: 'Inspection already PASSED (terminal); create a new inspection for re-inspection',
+        error: {
+          code: 'COS-SITE-007',
+          message:
+            'Inspection already PASSED (terminal); create a new inspection for re-inspection',
+        },
       });
     }
 
@@ -539,7 +548,9 @@ export class SiteOpsService {
   async createMaterialConsumption(reportId: string, dto: CreateMaterialConsumptionDto) {
     const report = await this.repo.findReportById(reportId);
     if (!report) {
-      throw new NotFoundException({ code: 'COS-SITE-005', message: 'Site report not found' });
+      throw new NotFoundException({
+        error: { code: 'COS-SITE-005', message: 'Site report not found' },
+      });
     }
     const consumptionId = randomUUID();
     // Resolve the typed name against the tenant's material master so the consumption carries a real
@@ -643,8 +654,10 @@ export class SiteOpsService {
     const record = await this.repo.resolveConflictRecord(conflictId, this.userId);
     if (!record) {
       throw new UnprocessableEntityException({
-        code: 'COS-SITE-004',
-        message: 'Conflict record not found or already resolved',
+        error: {
+          code: 'COS-SITE-004',
+          message: 'Conflict record not found or already resolved',
+        },
       });
     }
     logger.info({

@@ -14,7 +14,7 @@ import { enqueue } from '../../db/sync-queue';
 import { ProjectPicker } from '../../components/ProjectPicker';
 import { VoiceNoteButton } from '../../components/VoiceNoteButton';
 import { useT } from '../../i18n';
-import { colors, fontFamily, spacing, typography } from '../../theme/tokens';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme/tokens';
 import { screen } from '../../theme/screenStyles';
 
 function todayIso(): string {
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderWidth: 1,
     borderColor: colors.textSecondary,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: typography.body.fontSize,
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   button: {
     minHeight: 52,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -14,15 +14,15 @@ import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
-
-/** SITE_ENGINEER → "Site Engineer" (mirrors invite-user / roles-selection). */
-function formatRole(role: string): string {
-  return role
-    .split('_')
-    .map((w) => w.charAt(0) + w.slice(1).toLowerCase())
-    .join(' ');
-}
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
+import { formatRole } from '../../lib/formatRole';
 
 export default function InvitationSuccessScreen(): React.JSX.Element {
   const t = useT();
@@ -148,11 +148,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
-  accentLine: { width: 48, height: 4, borderRadius: 2, backgroundColor: `${darkColors.success}80` },
+  accentLine: {
+    width: 48,
+    height: 4,
+    borderRadius: radius.sm,
+    backgroundColor: `${darkColors.success}80`,
+  },
 
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     overflow: 'hidden',
@@ -197,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${darkColors.cyan}0D`,
     borderLeftWidth: 4,
     borderLeftColor: darkColors.cyan,
-    borderRadius: 12,
+    borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.xs,
   },
@@ -218,7 +223,7 @@ const styles = StyleSheet.create({
   aiBody: { fontFamily: fontFamily.regular, fontSize: 13, lineHeight: 19, color: darkColors.muted },
 
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: 4 },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: darkColors.syncing },
+  statusDot: { width: 8, height: 8, borderRadius: radius.md, backgroundColor: darkColors.syncing },
   statusText: {
     fontFamily: fontFamily.bold,
     fontSize: 11,
@@ -240,7 +245,7 @@ const styles = StyleSheet.create({
     height: touchTarget.primaryButton + 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: radius.md,
     borderWidth: 2,
     borderColor: darkColors.border,
   },
@@ -255,7 +260,7 @@ const styles = StyleSheet.create({
     height: touchTarget.primaryButton + 8,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   primaryText: {

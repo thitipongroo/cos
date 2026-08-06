@@ -189,6 +189,29 @@ async function seedInspectionTypes(tx: Tx): Promise<void> {
 // Dev tenant + dev user (platform schema). Required for the dev@cos.local Keycloak login to
 // resolve a valid, active tenant on the backend. Runs as the seed superuser (RLS bypassed).
 async function seedPlatformDevTenant(): Promise<void> {
+  // KNOWN DEFECT, left as-is deliberately — documented 2026-08-06, awaiting a decision.
+  //
+  // `platform.tenants.keycloak_realm` is UNIQUE (`tenants_keycloak_realm_key`), so the model is one
+  // realm per tenant, and the three seeds are consistent with that: DEV → `construction-os`,
+  // EKC → `construction-os-dev`, TVN → `construction-os-tvn`.
+  //
+  // Only ONE of those realms is ever provisioned. `infrastructure/keycloak/realms/
+  // construction-os-realm.json` declares `"realm": "construction-os-dev"` and compose mounts it
+  // under that name — so `construction-os` and `construction-os-tvn` do not exist in Keycloak.
+  //
+  // The consequence lands on the FIELD_USERS below. Their `keycloak_user_id`s are the placeholder
+  // ids `00000000-…-2{1,2,3}`, which the comment there says "mirror the realm users in
+  // construction-os-realm.json" — and they do. But that file IS the `construction-os-dev` realm,
+  // which belongs to the EKC tenant, while these users belong to DEV. So a Path A login for
+  // +6680000000{1,2,3} verifies its OTP, then asks Keycloak for a realm that does not exist.
+  //
+  // It surfaces as a bare 500: `KeycloakAdminService.exchangeOtpForTokens` has no error handling, so
+  // a misconfigured tenant realm is indistinguishable from a crash.
+  //
+  // NOT fixed here because both repairs are decisions, not typos: either provision a real
+  // `construction-os` realm for the DEV tenant, or move the field users to EKC and drop them from
+  // this seed. Changing this literal to `construction-os-dev` — the obvious-looking fix — violates
+  // the unique constraint the moment seed-realistic runs.
   await prisma.$executeRaw`
     INSERT INTO platform.tenants
       (tenant_id, tenant_code, tenant_name, keycloak_realm, plan_type, is_active)
@@ -204,6 +227,30 @@ async function seedPlatformDevTenant(): Promise<void> {
        'dev@cos.local', 'Dev User', true, false)
     ON CONFLICT (user_id) DO NOTHING
   `;
+
+  // The Path A field-staff fixture belongs to the EKACHAI tenant, not the dev one (PO decision
+  // 2026-08-06). It used to sit under DEV, whose `keycloak_realm` is `construction-os` — a realm
+  // that is never provisioned, because `construction-os-realm.json` declares `construction-os-dev`
+  // and `platform.tenants.keycloak_realm` is UNIQUE, so only one tenant can own it. The result was
+  // that +6680000000{1,2,3} verified their OTP and then failed against a realm that does not exist.
+  //
+  // Under EKC they land in the realm that IS provisioned, and `provision-keycloak-demo.ts` — which
+  // reads `tenant_code = 'EKC'` — creates their Keycloak accounts along with everyone else's.
+  //
+  // Resolved by CODE, not by a constant: EKC's id is derived (`uid('tenant/ekachai')`), so hardcoding
+  // it here would be a second copy that can drift. Absent EKC the fixture is SKIPPED LOUDLY rather
+  // than falling back to DEV — a silent fallback is what produced the un-loginable accounts.
+  const [ekc] = await prisma.$queryRaw<Array<{ tenant_id: string }>>`
+    SELECT tenant_id::text FROM platform.tenants WHERE tenant_code = 'EKC'
+  `;
+  if (!ekc) {
+    logger.warn(
+      {},
+      'seed: EKC tenant not found — Path A field-staff fixture SKIPPED. Run seed-realistic.ts first.',
+    );
+    return;
+  }
+  const fixtureTenantId = ekc.tenant_id;
 
   // Field-staff users for SMS-OTP (Path A) login. Phone numbers match the Detox e2e specs
   // (apps/mobile/e2e/*); keycloak_user_id / user_id / role mirror the realm users in
@@ -241,27 +288,33 @@ async function seedPlatformDevTenant(): Promise<void> {
       INSERT INTO platform.users
         (user_id, tenant_id, keycloak_user_id, email, display_name, phone_number, is_active, mfa_enabled)
       VALUES
-        (${u.userId}::uuid, ${SEED_TENANT_ID}::uuid, ${u.kcId}::uuid,
+        (${u.userId}::uuid, ${fixtureTenantId}::uuid, ${u.kcId}::uuid,
          ${u.email}, ${u.name}, ${u.phone}, true, false)
       ON CONFLICT (user_id) DO NOTHING
     `;
     await prisma.$executeRaw`
       INSERT INTO platform.tenant_memberships (tenant_id, user_id, role)
-      VALUES (${SEED_TENANT_ID}::uuid, ${u.userId}::uuid, ${u.role}::platform."CosRoleEnum")
+      VALUES (${fixtureTenantId}::uuid, ${u.userId}::uuid, ${u.role}::platform."CosRoleEnum")
       ON CONFLICT (tenant_id, user_id) DO NOTHING
     `;
   }
 
   // Workforce profile for the SITE_WORKER field user, so GET /workers/me (self check-in, option A)
-  // resolves a worker. Linked via user_id to the +66800000001 account. Superuser insert (RLS bypass).
+  // resolves a worker.
+  //
+  // LINKS the tenant's EXISTING `EMP-001` rather than inserting one. `seed-realistic.ts` already
+  // seeds EMP-001…EMP-019 for EKC, and its EMP-001 is the same person this fixture describes —
+  // "Somchai Jaidee". Inserting a second one violates `uq_worker_employee_code` (tenant_id,
+  // employee_code), which is exactly what aborted the first attempt to move this fixture across.
+  //
+  // `user_id IS NULL` keeps it idempotent and stops a re-run stealing a worker already linked to
+  // someone else. Superuser update (RLS bypass).
   await prisma.$executeRaw`
-    INSERT INTO workforce.workers
-      (worker_id, tenant_id, employee_code, full_name, trade_type, employment_type, is_active, user_id)
-    VALUES
-      ('00000000-0000-4000-8000-000000000031'::uuid, ${SEED_TENANT_ID}::uuid, 'EMP-001',
-       'Somchai Jaidee', 'General Labour', 'PERMANENT'::workforce.employment_type_enum, true,
-       '00000000-0000-4000-8000-000000000011'::uuid)
-    ON CONFLICT (worker_id) DO NOTHING
+    UPDATE workforce.workers
+    SET user_id = '00000000-0000-4000-8000-000000000011'::uuid
+    WHERE tenant_id = ${fixtureTenantId}::uuid
+      AND employee_code = 'EMP-001'
+      AND user_id IS NULL
   `;
 
   // One inspection for the SITE_ENGINEER, so GET /site/inspections returns a row and the offline
@@ -271,7 +324,7 @@ async function seedPlatformDevTenant(): Promise<void> {
       (inspection_id, project_id, tenant_id, checklist_id, status, inspected_by, inspected_at, notes)
     VALUES
       ('00000000-0000-4000-8000-000000000041'::uuid, '00000000-0000-4000-8000-000000000061'::uuid,
-       ${SEED_TENANT_ID}::uuid, '00000000-0000-4000-8000-000000000051'::uuid, 'PENDING',
+       ${fixtureTenantId}::uuid, '00000000-0000-4000-8000-000000000051'::uuid, 'PENDING',
        '00000000-0000-4000-8000-000000000012'::uuid, now(), 'E2E seed inspection')
     ON CONFLICT (inspection_id) DO NOTHING
   `;

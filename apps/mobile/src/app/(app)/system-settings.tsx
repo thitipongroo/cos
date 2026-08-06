@@ -31,7 +31,14 @@ import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { getSettings, updateSettings, type TenantSettings } from '../../api/settings';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 const LINE_GREEN = '#00C300';
 const BIM_BLUE = '#0696D7';
@@ -376,7 +383,7 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     padding: spacing.md,
@@ -395,7 +402,7 @@ const styles = StyleSheet.create({
   },
   readonlyInput: {
     backgroundColor: darkColors.elevated,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     minHeight: touchTarget.formInput,
@@ -410,7 +417,7 @@ const styles = StyleSheet.create({
   codeInput: {
     flex: 1,
     backgroundColor: darkColors.bg,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     height: touchTarget.formInput,
     color: darkColors.muted,
@@ -421,7 +428,7 @@ const styles = StyleSheet.create({
   copyBtn: {
     width: touchTarget.formInput,
     height: touchTarget.formInput,
-    borderRadius: 8,
+    borderRadius: radius.md,
     backgroundColor: darkColors.elevated,
     alignItems: 'center',
     justifyContent: 'center',
@@ -458,7 +465,7 @@ const styles = StyleSheet.create({
   logoPlate: {
     width: 56,
     height: 56,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     backgroundColor: darkColors.elevated,
     borderWidth: 2,
     borderColor: darkColors.border,
@@ -491,14 +498,14 @@ const styles = StyleSheet.create({
   iconPlate: {
     width: 40,
     height: 40,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tokenInput: {
     flex: 1,
     backgroundColor: darkColors.elevated,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
     height: touchTarget.formInput,
     color: darkColors.text,

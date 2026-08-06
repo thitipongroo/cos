@@ -29,6 +29,7 @@ import {
 import { useT } from '../../i18n';
 import { usePalette, useIsDark } from '../../theme/usePalette';
 import { makeScreenStyles } from '../../theme/screenStyles';
+import { radius } from '../../theme/tokens';
 import type { Palette } from '../../theme/palette';
 import { StatusChip } from '../../components/StatusChip';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
@@ -245,7 +246,7 @@ const makeStyles = (p: Palette) =>
     chip: {
       paddingHorizontal: 12,
       paddingVertical: 8,
-      borderRadius: 999,
+      borderRadius: radius.xl,
       borderWidth: 1,
       borderColor: p.border,
       backgroundColor: p.surface,

@@ -18,7 +18,15 @@ import {
 } from '../../api/conflicts';
 import { LoadingBoundary } from '../../components/LoadingBoundary';
 import { useT } from '../../i18n';
-import { darkColors, fontFamily, spacing, touchTarget, typography } from '../../theme/tokens';
+import { shortId } from '../../lib/shortId';
+import {
+  darkColors,
+  fontFamily,
+  radius,
+  spacing,
+  touchTarget,
+  typography,
+} from '../../theme/tokens';
 
 const TYPE_COLOR: Record<ConflictType, string> = {
   REJECTED: darkColors.danger,
@@ -178,9 +186,7 @@ export default function SyncQueueScreen(): React.JSX.Element {
                     <View style={styles.metaRow}>
                       <View style={styles.metaCol}>
                         <Text style={styles.metaLabel}>{t('syncQueue.ref')}</Text>
-                        <Text style={styles.metaValue}>
-                          #{r.entity_id.slice(0, 8).toUpperCase()}
-                        </Text>
+                        <Text style={styles.metaValue}>#{shortId(r.entity_id)}</Text>
                       </View>
                       <View style={styles.metaCol}>
                         <Text style={styles.metaLabel}>{t('syncQueue.failedAt')}</Text>
@@ -268,13 +274,13 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     height: 36,
     paddingHorizontal: spacing.md,
-    borderRadius: 999,
+    borderRadius: radius.xl,
     backgroundColor: darkColors.surface,
     borderWidth: 1,
     borderColor: darkColors.border,
   },
   chipActive: { backgroundColor: darkColors.primary, borderColor: darkColors.primary },
-  chipDot: { width: 8, height: 8, borderRadius: 4 },
+  chipDot: { width: 8, height: 8, borderRadius: radius.md },
   chipText: {
     fontFamily: fontFamily.semibold,
     fontSize: typography.label.fontSize,
@@ -292,7 +298,7 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     backgroundColor: darkColors.surface,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: darkColors.border,
     overflow: 'hidden',
@@ -306,7 +312,7 @@ const styles = StyleSheet.create({
     fontSize: typography.title.fontSize,
     color: darkColors.text,
   },
-  typeBadge: { borderRadius: 6, paddingHorizontal: spacing.xs, paddingVertical: 2 },
+  typeBadge: { borderRadius: radius.xl, paddingHorizontal: spacing.xs, paddingVertical: 2 },
   typeBadgeText: {
     fontFamily: fontFamily.bold,
     fontSize: 10,
@@ -329,7 +335,7 @@ const styles = StyleSheet.create({
   },
   reasonBox: {
     backgroundColor: darkColors.elevated,
-    borderRadius: 8,
+    borderRadius: radius.lg,
     padding: spacing.sm,
     gap: 2,
   },
@@ -364,7 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
     minHeight: touchTarget.primaryButton,
-    borderRadius: 8,
+    borderRadius: radius.md,
     backgroundColor: darkColors.primary,
   },
   reviewText: {
@@ -380,7 +386,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     minHeight: touchTarget.primaryButton,
     paddingHorizontal: spacing.md,
-    borderRadius: 8,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: `${darkColors.success}55`,
     backgroundColor: `${darkColors.success}1A`,

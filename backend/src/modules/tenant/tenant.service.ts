@@ -272,7 +272,10 @@ export class TenantService implements OnModuleDestroy {
       WHERE tenant_id = ${tenantId}::uuid AND is_active = true
       LIMIT 1
     `;
-    if (!t) throw new NotFoundException({ code: 'COS-TENANT-404', message: 'Tenant not found' });
+    if (!t)
+      throw new NotFoundException({
+        error: { code: 'COS-TENANT-404', message: 'Tenant not found' },
+      });
     return t;
   }
 
