@@ -2,7 +2,7 @@
 
 **Source:** FILE REFERENCE MAP — "Keycloak realm daily backup (CronJob spec)"  
 **Frequency:** Daily at 02:00 ICT (UTC+7)  
-**Retention:** 7 days on S3
+**Retention:** UNSPECIFIED — see the note below
 
 ---
 
@@ -10,6 +10,15 @@
 
 Keycloak realm configuration (users, clients, roles, identity providers) must be backed up daily.
 Backup is performed via `kc.sh export` and stored to S3 (MinIO in staging).
+
+> ⚠️ **Retention is UNSPECIFIED.** This page said 7 days and
+> [`keycloak-realm-recovery.md`](keycloak-realm-recovery.md) said 30. **Neither is backed by
+> anything:** the `cos-keycloak-backups` bucket is not provisioned in Terraform —
+> `infrastructure/terraform/` contains no `keycloak` bucket, and the S3 module's lifecycle rules
+> (365-day and 90-day expiration, 30-day noncurrent) belong to other buckets. Retention therefore
+> decides nothing today and the recovery window is unknown. Provision the bucket in IaC with an
+> explicit lifecycle rule before Stage 1→2, then set this line and the recovery runbook to the
+> configured value.
 
 Recovery procedure: `docs/runbooks/keycloak-realm-recovery.md`
 

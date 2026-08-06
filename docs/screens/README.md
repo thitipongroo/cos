@@ -14,7 +14,7 @@ platforms; only Android has been fully recaptured since.
 
 | Platform | Folder                          | Status                                                                                         |
 | -------- | ------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Android  | [`android/`](android/README.md) | ✅ 38 screens — Medium_Phone AVD, live backend + seeded data. Grouped by role / flow.          |
+| Android  | [`android/`](android/README.md) | ✅ 56 screens — Medium_Phone AVD, live backend + seeded data. Grouped by role / flow.          |
 | Web      | [`web/`](web/README.md)         | ⚠️ 4 screens — the pre-auth login flow only (`01-public/`). The 24-route set is not committed. |
 | iOS      | [`ios/`](ios/README.md)         | ❌ 0 screens — all removed by `7d2ba1b`; not recaptured. Its README still indexes the old set. |
 

@@ -1,7 +1,9 @@
 // Per-role web screenshot harness. Logs into the running web app (http://localhost:3001) as each
 // role's demo user via the Keycloak hosted login (Path B), then screenshots every route that role
-// can reach (from apps/web/src/lib/nav.ts) into docs/screens/web/<ROLE>/, where <ROLE> is the role
-// name in UPPER-KEBAB (TENANT-ADMIN, not TENANT_ADMIN) — same convention as docs/screens/android/.
+// can reach (from apps/web/src/lib/nav.ts) into docs/screens/web/<ROLE>/, where <ROLE> is the
+// canonical CosRole spelling in UPPER_SNAKE (TENANT_ADMIN). This deliberately DIFFERS from
+// docs/screens/android/, which uses UPPER-KEBAB (TENANT-ADMIN): the web tree was committed as
+// UPPER_SNAKE and that is the convention it keeps (product-owner decision 2026-08-07).
 // Pre-auth screens go to docs/screens/web/01-public/.
 //
 // Prereqs: web on :3001, backend on :3000, Keycloak on :8090, demo users provisioned
@@ -16,10 +18,9 @@ const BASE = process.env.WEB_BASE || 'http://localhost:3001';
 const PW = process.env.DEMO_USER_PASSWORD || 'Ekachai@2026';
 const OUT = path.resolve(__dirname, '../docs/screens/web');
 
-// Role keys below stay the canonical CosRole spelling (UPPER_SNAKE) — they are role identities, not
-// folder names. Capture folders use UPPER-KEBAB, matching docs/screens/android/ (SITE-ENGINEER,
-// TENANT-ADMIN). Convert only when building a path.
-const folderFor = (role) => role.replace(/_/g, '-');
+// Role keys below are the canonical CosRole spelling (UPPER_SNAKE) and are used verbatim as the
+// folder name — no conversion. A folderFor() helper used to kebab-case them, which wrote
+// PROJECT-MANAGER/ beside the committed PROJECT_MANAGER/; removed 2026-08-07.
 
 // role → { email, routes } (routes = nav.ts NAV_BY_ROLE + landing/extra surfaces).
 const PROC = ['/procurement/requests', '/procurement/rfqs', '/procurement/quotations', '/procurement/orders', '/procurement/deliveries', '/procurement/vendors'];
@@ -77,7 +78,7 @@ async function shot(page, route, dir) {
 
   let total = 0;
   for (const [role, cfg] of Object.entries(ROLES)) {
-    const dir = path.join(OUT, folderFor(role));
+    const dir = path.join(OUT, role);
     fs.mkdirSync(dir, { recursive: true });
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();

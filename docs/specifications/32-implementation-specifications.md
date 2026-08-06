@@ -164,8 +164,18 @@ The platform deploys as distinct units. Do **not** merge runtimes or split prema
 | AI OCR Pipeline (`services/ai-ocr-pipeline/`)         | FastAPI (Python)    | OCR processing                                                                                                                             |
 | Analytics Worker (`services/analytics-worker/`)       | Go                  | ClickHouse aggregation                                                                                                                     |
 | KG Ingestion Worker (`services/kg-ingestion-worker/`) | Go                  | Neo4j ingestion — Kafka client: `github.com/twmb/franz-go` via coskafka (`kgo.ConsumeRegex`; consumer group: `kg-ingestion-worker.shared`) |
+| IoT Ingestion Worker (`services/iot-ingestion-worker/`) | Go                | EMQX (MQTT) → Kafka telemetry forwarding. EMQX's native/Enterprise Kafka data-bridge is a paid feature and is **not** used — see `33-digital-twin-iot.md` §33.8 |
+| BIM Import Worker (`services/bim-import-worker/`)     | Go                  | IFC parsing / quantity extraction for the BIM extension point (§13.4)                                                                      |
+| AI Transcription Pipeline (`services/ai-transcription-pipeline/`) | FastAPI (Python) | Voice-note transcription — the server half of the mobile capture flow (ADR-052)                                                    |
+| Credential Service (`services/credential-service/`)   | Node                | W3C DID/VC issuance and verification — backs contract e-signature (ADR-019, ADR-058; §5.4)                                                 |
 | Web App (`apps/web/`)                                 | Next.js + Serwist   | Tablet/laptop browser — online + offline unified                                                                                           |
 | Mobile (`apps/mobile/`)                               | React Native + Expo | Smartphone native app                                                                                                                      |
+
+> The last four rows were added on 2026-08-07. All four already existed under `services/` and are
+> wired in `docker-compose.yml`; this table listed only the original five, so a reader counting
+> deployables from the spec got nine where the tree has thirteen. Each is backed by the decision
+> cited in its Contents column — `ai-transcription-pipeline` is the one whose _directory name_ is not
+> written in any spec, only its capability (ADR-052).
 
 ### Service Extraction Rules
 

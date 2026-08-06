@@ -76,6 +76,12 @@ allowBuilds:
   esbuild: true
   prisma: true
   protobufjs: true
+  # puppeteer's postinstall downloads the Chromium build that @mermaid-js/mermaid-cli renders with.
+  # Without it `mmdc` fails at launch. DEV TOOLING ONLY: mermaid-cli syntax-checks the ```mermaid
+  # blocks in docs/ before they are committed, and is deliberately NOT wired into CI (product-owner
+  # decision 2026-08-07) — so this ~150 MB download never runs on a CI runner, only on a dev machine
+  # that has installed devDependencies.
+  puppeteer: true
   sharp: true
   ssh2: true
   unrs-resolver: true

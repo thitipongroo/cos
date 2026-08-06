@@ -18,7 +18,8 @@
 //   - AI Token Usage / AI Insights → GET /ai/usage (§26 metering, §31.3 >80% signal). Until the LLM
 //     gateway records real consumption the figure is genuinely 0 %, never the mockup's 78 %.
 //
-// The FAB opens the Quick-Add menu (mockup 01_home/02_quick_add_menu, <QuickAddMenu />): Force System
+// The FAB opens the Quick-Add menu (mockup 01_home/02_quick_action_button/01_quick_action_menu,
+// <QuickAddMenu />): Force System
 // Sync is wired for real; the other actions are honest first-pass placeholders (PO decision 2026-07-28).
 
 import { useEffect, useState } from 'react';

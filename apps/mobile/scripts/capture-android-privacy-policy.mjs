@@ -4,10 +4,13 @@
 // Writes the pre-auth Privacy Policy screen to docs/screens/android/01-public/. It is a PUBLIC screen:
 // it is reached from the login footer and lives in the (auth) route group, so it sits with the other
 // pre-auth captures (00-native-splash … 04-login-loading):
-//   05-privacy-policy                  default state — all five sections collapsed, as the screen opens
-//   05-privacy-policy-data-collection  Data Collection expanded — the alternate state that shows the
-//                                      actual policy text (same number as its base screen, matching how
-//                                      03-login-otp-verify / 03-login-password are numbered)
+//   05-privacy-policy  default state — all five sections collapsed, as the screen opens
+//
+// ONE file, deliberately. The script used to also expand each accordion section and commit a page per
+// section (05-privacy-policy-{data-collection,usage,compliance,security,rights}). Those five frames were
+// removed as duplicates on 2026-08-07 (product-owner decision): the same policy document is already
+// captured post-auth under 02-shared/privacy-policy/, where it is the live route rather than a pre-auth
+// stand-in. Only the collapsed pre-auth entry state is documentation this folder needs.
 //
 // NO BACKEND REQUIRED. Unlike every other capture script here, this screen makes no API call — it
 // renders from the i18n bundle and the app icon only — so Keycloak/NestJS/Postgres do not need to be
@@ -137,9 +140,10 @@ async function stitchFull(name) {
   }
   await delay(900);
   // Short scroll steps (800px against a 2150px content window) on purpose. A 1200px step left the
-  // stitcher only ~950px of overlap to match on, and on the expanded Data Collection section — a wall
-  // of similar-looking body text — it mis-matched and dropped a whole bullet ("Site photos") at the
-  // seam. More, smaller steps cost a few seconds and make the match unambiguous. SHOTS is generous;
+  // stitcher only ~950px of overlap to match on, and when this script still captured the expanded
+  // sections — walls of similar-looking body text — it mis-matched and dropped a whole bullet ("Site
+  // photos") at a seam. The value is kept: it costs a few seconds and makes the match unambiguous
+  // regardless of page content, so it stays correct if a section capture is ever restored. SHOTS is generous;
   // once the bottom is reached the extra frames are detected as zero-scroll and skipped.
   const SHOTS = 12;
   const shots = [];
@@ -174,26 +178,9 @@ async function main() {
   await delay(600);
   await stitchFull('05-privacy-policy');
 
-  // Every section expanded, one page each. The collapsed screen shows only headings, so without
-  // these the captures never show the policy text itself — and until 2026-08-06 only `collection`
-  // was opened, which left FOUR of the five sections undocumented and, with them, three block types
-  // that appear nowhere else: the pull-quote (Data Usage), the icon+text cards (PDPA & GDPR) and the
-  // monospace control block (Technical Security). Two of those had an invisible background for an
-  // unknown length of time precisely because no frame ever rendered them.
-  //
-  // The accordion is single-open (`openId` in PrivacyPolicyDocument.tsx), so tapping the next
-  // section closes the previous one — no need to collapse between shots. `collection` is absent from
-  // this list only because it already has its own step above. It IS an accordion here: the link
-  // behaviour (`links = section.id === 'collection' && onDataCollection !== undefined`) belongs to
-  // the POST-AUTH route, which passes `onDataCollection` to reach the transparency portal; this
-  // pre-auth route deliberately does not.
-  const SECTIONS = ['usage', 'compliance', 'security', 'rights'];
-  for (const id of SECTIONS) {
-    await tapUntil(`privacy-section-${id}`, `privacy-section-${id}-body`, `${id} accordion`);
-    await delay(600);
-    await stitchFull(`05-privacy-policy-${id}`);
-  }
-
+  // The accordion sections are deliberately left collapsed — see the header note. Expanding each one
+  // and committing a page per section produced five frames that duplicated the post-auth capture in
+  // 02-shared/privacy-policy/, so that step was removed on 2026-08-07 (product-owner decision).
   console.log(`\nDone → ${OUT}`);
 }
 

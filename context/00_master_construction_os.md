@@ -522,9 +522,17 @@ DEPLOYABLE UNITS (derived from: docs/specifications/32-implementation-specificat
 │ AI OCR Pipeline                │ FastAPI (Python)  │ OCR processing             │
 │ (services/ai-*)                │                  │                            │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
+│ AI Transcription Pipeline      │ FastAPI (Python) │ Voice-note transcription   │
+│ (services/ai-transcription-…)  │                  │ (ADR-052)                  │
+├────────────────────────────────┼──────────────────┼────────────────────────────┤
 │ Analytics Worker               │ Go               │ ClickHouse aggregation     │
 │ KG Ingestion Worker            │ Go               │ Neo4j ingestion            │
+│ IoT Ingestion Worker           │ Go               │ EMQX (MQTT) → Kafka        │
+│ BIM Import Worker              │ Go               │ IFC parse / quantities     │
 │ (services/*-worker/)           │                  │                            │
+├────────────────────────────────┼──────────────────┼────────────────────────────┤
+│ Credential Service             │ Node             │ W3C DID/VC issuance +      │
+│ (services/credential-service/) │                  │ verification (ADR-019/058) │
 ├────────────────────────────────┼──────────────────┼────────────────────────────┤
 │ Web App (apps/web/)            │ Next.js+Serwist  │ Tablet/laptop online+offline│
 │ Mobile (apps/mobile/)          │ React Native     │ Smartphone native app      │

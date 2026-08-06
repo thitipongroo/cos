@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",
+    "@mermaid-js/mermaid-cli": "^11.16.0",
     "@pact-foundation/pact": "^17.0.0",
     "@playwright/test": "^1.61.1",
     "@types/jest": "^30.0.0",

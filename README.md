@@ -62,9 +62,10 @@ separate deployables only for language-boundary services (Python AI, Go workers)
 
 ### Prerequisites
 
-- [pnpm](https://pnpm.io/) 9.x — `npm install -g pnpm@9`
+- [Node.js](https://nodejs.org/) **24.x** (`package.json` → `engines.node >=24.0.0`)
+- [pnpm](https://pnpm.io/) **11.x** (`engines.pnpm >=11.0.0`) — `corepack enable` picks up the exact
+  build pinned in `packageManager`; only the major line is normative
 - [Docker](https://www.docker.com/) 24.x + Docker Compose v2
-- [Node.js](https://nodejs.org/) 20.x LTS
 - [buf](https://buf.build/docs/installation) CLI (for proto generation)
 
 ### Local Setup

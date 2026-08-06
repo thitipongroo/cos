@@ -1,6 +1,19 @@
 # ArgoCD Application manifests — GitOps sync for all Construction OS services
 # Deploy: kubectl apply -f infrastructure/kubernetes/argocd/argocd-apps.yaml -n argocd
-# Each app watches infrastructure/helm/<chart> in this repo and auto-syncs on push
+# Each app watches infrastructure/helm/<chart> in this repo.
+#
+# PRODUCTION SYNC IS MANUAL — do not add `syncPolicy.automated` to these Applications.
+# Every Application here uses values-prod.yaml on targetRevision: main. QM-16 and the Phase 19
+# readiness checklist require production promotion to be a MANUAL sync gate in the ArgoCD UI, with
+# auto-sync limited to staging. Until 2026-08-07 all ten carried `automated: {prune, selfHeal}`,
+# so a push to main deployed straight to production with no gate — the exact thing that gate exists
+# to prevent. The blocks were removed; `retry` and `syncOptions` are unaffected.
+#
+# STILL MISSING: the staging Application set. Phase 19 checks for an app named `cos-staging` with
+# `syncPolicy.automated` enabled, and every chart already ships a values-staging.yaml — but no
+# staging cluster endpoint or namespace is defined anywhere in this repository, and the AppProject
+# below whitelists only `cos` and `monitoring` on https://kubernetes.default.svc. Add the staging
+# Applications (and the matching AppProject destination) once that endpoint is known; do not guess it.
 
 # ─── AppProject ───────────────────────────────────────────────────────────────
 apiVersion: argoproj.io/v1alpha1
@@ -46,9 +59,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
     retry:
@@ -80,9 +90,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -112,9 +119,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -144,9 +148,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -176,9 +177,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -208,9 +206,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -240,9 +235,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -272,9 +264,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     retry:
       limit: 5
       backoff:
@@ -304,9 +293,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cos
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
     retry:
@@ -341,9 +327,6 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitoring
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
     retry:

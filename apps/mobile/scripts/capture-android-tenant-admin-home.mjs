@@ -25,8 +25,9 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-// Grouped by main-menu tab: each capture's name carries its menu subfolder (Home / Users / Alerts /
-// Settings) under TENANT-ADMIN/, so stitchFull() writes e.g. TENANT-ADMIN/01-Home/01-home-dashboard.png.
+// Grouped by main-menu tab: each capture's name carries its menu subfolder (Home / Alerts / Settings)
+// under TENANT-ADMIN/, so stitchFull() writes e.g. TENANT-ADMIN/01-Home/01-home-dashboard.png.
+// 02-Users/ is NOT written here — capture-android-users-actions.mjs owns that folder's list screen.
 // Every screen is captured as ONE full-page image (scrolling viewports stitched via stitch-fullpage.py).
 const OUT = resolve(HERE, '../../../docs/screens/android/TENANT-ADMIN');
 const TMP = process.env['TEMP'] ?? process.env['TMP'] ?? HERE; // scratch for the intermediate viewports
@@ -219,7 +220,10 @@ async function main() {
   console.log('· full-page Home dashboard');
   await stitchFull('01-Home/01-home-dashboard', 180, 1970);
 
-  // Quick-Add menu — the FAB target (mockup 02_quick_add_menu). A scrolling modal, so capture it
+  // Quick-Add menu — the FAB target (mockup 01_home/02_quick_action_button/01_quick_action_menu).
+  // This script is the ONLY capturer of this screen: a standalone capture-android-quick-action.mjs
+  // shot the same overlay as 01-quick-action.png and was deleted as a duplicate on 2026-08-07.
+  // A scrolling modal, so capture it
   // full-page too (top=150: its own top bar is shorter, no bottom nav); then scroll back up and close.
   console.log('· full-page Quick-Add menu (FAB)');
   await tap(byId('quick-add-fab'), 'quick-add FAB');
@@ -233,15 +237,14 @@ async function main() {
   await tap(byId('quick-add-close'), 'quick-add close');
   await delay(1000);
 
-  // Users tab — the tenant admin's team screen (GET /users), full-page (list + the Invite-user FAB).
-  console.log('· full-page Users tab');
-  await tap(byId('users-tab'), 'Users tab');
-  await find(byId('tenant-admin-users'), 'tenant-admin-users', 20);
-  await delay(3000);
-  await dismissDevBanners();
-  await stitchFull('02-Users/01-dashboard', 180, 1970);
+  // NOTE: the Users tab is deliberately NOT captured here. This script used to stitch it as a second
+  // copy of 02-Users/01-users-dashboard.png, which capture-android-users-actions.mjs already owns (as a
+  // single top viewport, not a full-page stitch). Two scripts writing one file meant the committed frame
+  // depended on whichever ran last. Removed 2026-08-07 (product-owner decision) — capture the Users
+  // screen with `node scripts/capture-android-users-actions.mjs`.
 
-  // Alerts tab — the sync-review queue (mockup 03_alerts), one full-page.
+  // Alerts tab — the sync-review queue (mockup 03_alerts), one full-page. Reached straight from Home:
+  // the bottom nav is present on every tab, so no Users detour is needed.
   console.log('· full-page Alerts tab (sync queue)');
   await tap(byId('sync-queue-tab'), 'Alerts tab');
   await find(byId('tenant-admin-sync-queue'), 'tenant-admin-sync-queue', 20);

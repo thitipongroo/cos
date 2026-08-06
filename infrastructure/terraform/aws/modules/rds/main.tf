@@ -57,6 +57,13 @@ resource "aws_db_parameter_group" "main" {
 resource "aws_db_instance" "main" {
   identifier             = "cos-postgres-${var.environment}"
   engine                 = "postgres"
+  # DRIFT — UNRESOLVED (recorded 2026-08-07). context/00_master_construction_os.md § infrastructure
+  # stack specifies "PostgreSQL 18 — primary relational store"; this module provisions 16.2, and
+  # docs/specifications/04-tech-stack.md names PostgreSQL without a version, so it settles nothing.
+  # Not changed here on purpose: a major-version bump of the primary database is an operational
+  # decision (TimescaleDB extension compatibility per ADR-032, pgvector, RDS availability in
+  # ap-southeast-7, and a migration path for existing instances) — not a documentation edit.
+  # Resolve before Stage 1→2 and make the two documents agree with whatever is provisioned.
   engine_version         = "16.2"
   instance_class         = var.instance_class
   allocated_storage      = var.allocated_storage

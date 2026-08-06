@@ -5,7 +5,7 @@
 // amber cloud_upload with a pending queue, red sync_problem on error. The GLYPH SHAPE carries the state
 // (colour is never the only signal, §32.7) and the accessibilityLabel announces it for screen readers.
 // NB: 01_home_dashboard drew a gold "SYNCED", but gold is the SYNCING token (§6.1); synced is green (as
-// 02_quick_add_menu correctly shows).
+// 02_quick_action_button/01_quick_action_menu correctly shows).
 
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSyncStatus } from '../hooks/useSyncStatus';

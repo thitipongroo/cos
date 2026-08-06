@@ -56,7 +56,7 @@ data was not seeded.
 
 ## How these were captured
 
-A Detox spec ([`apps/mobile/e2e/capture.spec.ts`](../../apps/mobile/e2e/capture.spec.ts))
+A Detox spec ([`apps/mobile/e2e/capture.spec.ts`](../../../apps/mobile/e2e/capture.spec.ts))
 drives the Release build: it logs in once, then deep-links each route (`cos:///<route>`) and
 writes the booted-simulator frame straight to this folder via `xcrun simctl io booted screenshot`.
 

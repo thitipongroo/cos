@@ -537,7 +537,7 @@ Every production deployment must follow this protocol:
 - **Zero-downtime** — required for all production changes; use Kubernetes rolling update by default
 - **Blue-green deployment** — required for: major version releases, authentication system changes, any database migration that cannot be made backward-compatible in a single step
 - **Canary deployment** — required for: API endpoint changes, new background job types, AI model version upgrades; minimum canary duration 30 minutes at 5% traffic before full rollout
-- **Automated rollback** — if error rate exceeds 1% within 10 minutes of deployment → pipeline rolls back automatically; health gate defined in `.github/workflows/deploy.yml`
+- **Automated rollback** — if error rate exceeds 1% within 10 minutes of deployment → pipeline rolls back automatically. **NOT IMPLEMENTED as of 2026-08-07.** This line named `.github/workflows/deploy.yml` as the health gate; that file has never existed (`.github/workflows/` holds ci · codeql · dast · lighthouse · load-tests · mutation-tests · semgrep), and it could not live there anyway — ADR-012 forbids CI from deploying, and Phase 19 greps the workflows for `kubectl apply`/`helm upgrade` expecting zero hits. The gate belongs to the CD side (an Argo Rollouts `AnalysisTemplate`, or an ArgoCD PostSync hook); no `Rollout` or `AnalysisTemplate` manifest exists under `infrastructure/` yet. Build it before Stage 1→2 and point this line at the real artifact
 - **Deployment windows** — production deployments only during defined low-traffic windows; windows in `docs/runbooks/deployment-windows.md`; emergency hotfixes exempt with product owner approval on record
 - Deployment runbook required for every major release in `docs/runbooks/releases/`
 
@@ -957,7 +957,7 @@ context/11_background_civilization.md               — BACKGROUND CIVILIZATION 
 docs/specifications/                                — SOURCE OF TRUTH for all architecture decisions (00–34); master is the compiled execution view
 
 # Engineering Governance & Non-functional Standards (authoritative spec sections)
-docs/specifications/03-system-design.md §3.4        — C4 architecture views (Context / Container / Component)
+docs/specifications/03-system-design.md §3.4        — C4 architecture views (Context / Container / Component); the Context + Container diagram SOURCES live in docs/architecture/README.md (moved there 2026-08-07 per §3.4's own "diagram sources live in architecture/" rule)
 docs/specifications/05-security-compliance.md §5.9  — Threat Model (STRIDE) per external surface; §5.10 supply-chain (SBOM/SLSA)
 docs/specifications/08-enterprise-deployment.md §8.2 — RTO/RPO per tier; §8.10 FinOps; §8.11 compute sustainability
 docs/specifications/09-data-architecture.md §9.8     — Data governance (MDM, lineage, catalog)

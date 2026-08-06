@@ -22,7 +22,8 @@ Like [`../web/`](../web), the committed Android captures are grouped into role /
 flat numbered dump). **Within each role folder the screens are grouped again by the role's main-menu
 tab** (its bottom-nav destinations) — a screen lives under the tab it is reached from, and screens
 opened from the Home FAB's Quick Commands (Invite user, System integration, Apps & Services, …) sit
-under `Home/`. Each menu subfolder is numbered from `00` within itself. **Every committed screen is ONE full-page
+under `Home/`. Each menu subfolder is numbered from its own start — `SITE-ENGINEER/01-Home/` begins at
+`00` (a loading state precedes the dashboard), the `TENANT-ADMIN/` subfolders at `01`. **Every committed screen is ONE full-page
 image** — where a screen is taller than the phone it is stitched from scrolling viewports
 (`scripts/stitch-fullpage.py`) — except where a screen has a genuinely distinct alternate state, which
 gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-expanded view).
@@ -31,17 +32,23 @@ gets its own full-page file (the Invite-user `email` method, the Alerts `diff`-e
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`01-public/`](01-public/)                 | Pre-auth — the native splash (`00`), app-launch loading (`01`), the login flow (`02`–`04`) and the Privacy Policy (`05`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | [`03-mfa/`](03-mfa/)                       | The office-role MFA enrolment flow through Keycloak (`01`–`07`), captured in the browser.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| [`02-shared/`](02-shared/)                 | Cross-role app-shell screens — notification preferences (`01`, three states), the navigation drawer (`02`) and the Transparency Portal ([`transparency/`](02-shared/privacy-policy/01-data-collection/), 8 screens).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| [`02-shared/`](02-shared/)                 | Cross-role app-shell screens — notification preferences (`01`, two states), the navigation drawer (`02`), and [`privacy-policy/`](02-shared/privacy-policy/): the post-auth Privacy Policy (`00`) plus the Transparency Portal ([`01-data-collection/`](02-shared/privacy-policy/01-data-collection/), 14 screens `00`–`13`).                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | [`SITE-ENGINEER/`](SITE-ENGINEER/)         | Tabs: **Home \| Issues \| Inspections \| Reports**. Captured so far: [`01-Home/`](SITE-ENGINEER/01-Home/) — the loading state (`00`) + dashboard (`01`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`00`), Quick-Add (`01`) and the FAB flows: Invite-user (`02`), Role-permissions (`03`), Roles-selection (`04`), Invitation-success (`05`), System-integration (`06`), Apps-&-Services (`07`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`00`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`00`, one full-page). |
+| [`TENANT-ADMIN/`](TENANT-ADMIN/)           | Tabs: **Home \| Users \| Alerts \| Settings**. [`01-Home/`](TENANT-ADMIN/01-Home/) — dashboard (`01`), Quick-Add (`02`) and the FAB flows: Invite-user (`03`), Role-permissions (`04`), Roles-selection (`05`), Invitation-success (`06`), System-integration (`07`), Apps-&-Services (`08`). [`02-Users/`](TENANT-ADMIN/02-Users/) — the users list (`01`), the per-user action sheet (`02`), the user profile (`03`), the multi-role permission editor (`04`) + the save-success screen (`05`), and the password-reset form (`06`) + its two done screens — temp-password (`07`) and email-link-sent (`08`). [`03-Alerts/`](TENANT-ADMIN/03-Alerts/) — the sync-review queue (`01`). [`04-Settings/`](TENANT-ADMIN/04-Settings/) — System Settings (`01`, one full-page). |
 | [`CRM-SALES-MANAGER/`](CRM-SALES-MANAGER/) | Tabs: **Home \| Leads \| Opportunities \| Customers** — the three pages §20.7.10 defines, built 2026-08-04. Leads (`01`), Opportunities (`02`), Customers (`03`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 The two adb dashboard scripts write straight into their role's menu subfolders —
 [`capture-android-home.mjs`](../../../apps/mobile/scripts/capture-android-home.mjs) → `SITE-ENGINEER/01-Home/`,
 [`capture-android-tenant-admin-home.mjs`](../../../apps/mobile/scripts/capture-android-tenant-admin-home.mjs)
-→ `TENANT-ADMIN/{01-Home,02-Users,03-Alerts,04-Settings}/` — and the FAB-flow scripts (`capture-android-invite-user.mjs`,
+→ `TENANT-ADMIN/{01-Home,03-Alerts,04-Settings}/` — and the FAB-flow scripts (`capture-android-invite-user.mjs`,
 `…-role-permissions.mjs`, `…-roles-selection.mjs`, `…-invitation-success.mjs`, `…-system-integration.mjs`)
-each write into `TENANT-ADMIN/01-Home/`. [`capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
+each write into `TENANT-ADMIN/01-Home/`. `TENANT-ADMIN/02-Users/` has its own writers —
+[`capture-android-users-actions.mjs`](../../../apps/mobile/scripts/capture-android-users-actions.mjs)
+(the list `01` + the action sheet `02`), `…-user-profile.mjs`, `…-edit-permission.mjs`,
+`…-permission-success.mjs` and `…-reset-password.mjs`. **Exactly one script writes each committed
+frame**: the tenant-admin-home script used to stitch a second copy of the users list, and that step was
+removed on 2026-08-07 so the file cannot depend on which script ran last.
+[`capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
 writes `01-public/`, as does
 [`capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs)
 (the Privacy Policy screen, `05`) — the one capture here that needs **no backend**: the screen makes no
@@ -63,8 +70,7 @@ login header's language switcher is used to leave the th-TH default (QM-3).
 | 03  | [OTP verify](01-public/03-login-otp-verify.png)                           | Passcode step for `+66 •••• 0010`, requested from the landing                            |
 | 03  | [Email + password](01-public/03-login-password.png)                       | Keycloak's hosted page in a Chrome Custom Tab, `cos` theme (§20.6.1 / QM-4)              |
 | 04  | [Securing session](01-public/04-login-loading.png)                        | `VerifyingOverlay`, shown while the Path B code→token exchange runs                      |
-| 05  | [Privacy Policy](01-public/05-privacy-policy.png)                         | Pre-auth policy screen, reached from the login footer link                               |
-| 05  | [→ Data Collection open](01-public/05-privacy-policy-data-collection.png) | The same screen with the first section expanded — the collapsed view shows only headings |
+| 05  | [Privacy Policy](01-public/05-privacy-policy.png)                         | Pre-auth policy screen, reached from the login footer link — all sections collapsed      |
 
 Captured by [`apps/mobile/scripts/capture-android-login.mjs`](../../../apps/mobile/scripts/capture-android-login.mjs)
 (`cd apps/mobile && pnpm capture:android` — it installs standalone, see the root `pnpm-workspace.yaml`)
@@ -73,6 +79,14 @@ Path B hands off to Keycloak in a Chrome Custom Tab, and while Detox holds the U
 connection a `uiautomator dump` only ever returns the instrumented app's own window, leaving the
 browser undrivable. The script asserts the screen it expects (e.g. `verifying-overlay`) before saving
 each frame, so a mis-tap fails the run instead of writing a screenshot of the wrong thing.
+
+> **`05` is one frame, and only the collapsed state.** Until 2026-08-07 this folder also carried
+> `05-privacy-policy-{data-collection,usage,compliance,security,rights}.png` — the same screen with each
+> accordion section expanded. All five were removed as duplicates (product-owner decision): the identical
+> policy document is captured post-auth under [`02-shared/privacy-policy/`](02-shared/privacy-policy/),
+> where it is the live route rather than a pre-auth stand-in.
+> [`capture-android-privacy-policy.mjs`](../../../apps/mobile/scripts/capture-android-privacy-policy.mjs)
+> no longer expands the sections, so re-running it cannot reintroduce them.
 
 ## Site Engineer dashboard — [`SITE-ENGINEER/01-Home/01-home.png`](SITE-ENGINEER/01-Home/01-home.png)
 
@@ -199,10 +213,12 @@ Captured by [`apps/mobile/scripts/capture-android-tenant-admin-home.mjs`](../../
 (`node scripts/capture-android-tenant-admin-home.mjs`) — adb/uiautomator only. It asserts the
 `tenant-admin-home` landing testID and then the `admin-system-status` card before saving, so a mis-tap or
 an unrendered dashboard fails the run instead of writing the wrong screenshot; it then opens the FAB's
-Quick-Add menu (`TENANT-ADMIN/01-Home/01-quick-action.png`) and the Users tab
-(`TENANT-ADMIN/02-Users/01-users-dashboard.png`).
+Quick-Add menu (`TENANT-ADMIN/01-Home/02-quick-action.png`) and goes on to the Alerts and Settings tabs.
+It does **not** capture the Users tab: that is
+[`capture-android-users-actions.mjs`](../../../apps/mobile/scripts/capture-android-users-actions.mjs)'s
+screen, and having both write it made the committed frame depend on which script ran last.
 
-## Tenant Admin — Users — [`00`](TENANT-ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT-ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT-ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT-ADMIN/02-Users/04-edit-permission.png) · [`success`](TENANT-ADMIN/02-Users/05-success-permission.png) · [`reset`](TENANT-ADMIN/02-Users/06-reset-password.png) · [`temp-done`](TENANT-ADMIN/02-Users/07-temp-password-create.png) · [`link-sent`](TENANT-ADMIN/02-Users/08-reset-link-sent.png)
+## Tenant Admin — Users — [`01`](TENANT-ADMIN/02-Users/01-users-dashboard.png) · [`actions`](TENANT-ADMIN/02-Users/02-users-more.png) · [`profile`](TENANT-ADMIN/02-Users/03-user-profile.png) · [`edit`](TENANT-ADMIN/02-Users/04-edit-permission.png) · [`success`](TENANT-ADMIN/02-Users/05-success-permission.png) · [`reset`](TENANT-ADMIN/02-Users/06-reset-password.png) · [`temp-done`](TENANT-ADMIN/02-Users/07-temp-password-create.png) · [`link-sent`](TENANT-ADMIN/02-Users/08-reset-link-sent.png)
 
 The `TENANT_ADMIN` "Users" tab ([`app/(app)/users.tsx`](<../../../apps/mobile/src/app/(app)/users.tsx>)),
 implementing the
@@ -233,7 +249,14 @@ account** (the last in red). Each targets a sub-flow not built on mobile yet (mo
 on mobile yet" note rather than dead-ending. **Tapping the card itself (or its chevron)** opens the
 **user profile** (below); only the ⋮ opens the sheet.
 
-## Tenant Admin — User profile — [`01`](TENANT-ADMIN/02-Users/03-user-profile.png)
+Both frames are captured by
+[`apps/mobile/scripts/capture-android-users-actions.mjs`](../../../apps/mobile/scripts/capture-android-users-actions.mjs)
+(`node scripts/capture-android-users-actions.mjs`) — single top viewports, not full-page stitches: the
+list frame is deliberately the header + AI audit card + the first ~2 user cards rather than the whole
+scrolled list, and the action sheet fits one viewport. This script is the **only** writer of
+`02-Users/01-users-dashboard.png`.
+
+## Tenant Admin — User profile — [`03`](TENANT-ADMIN/02-Users/03-user-profile.png)
 
 The per-user detail ([`app/(app)/user-profile.tsx`](<../../../apps/mobile/src/app/(app)/user-profile.tsx>)),
 implementing [`02_users/02_user_management/02_user_profile`](../../../mockup/mobile/04_tenant_admin/02_users/02_user_management/02_user_profile).
@@ -366,14 +389,14 @@ Reached via `router.replace` — terminal, wordmark TopBar, no Back.
   truthful audit fact (`identity.user.password_reset.v1`, `method: email_link`).
 - **Return to user list** → `router.replace('/users')`.
 
-## Tenant Admin — Quick-Add menu — [`TENANT-ADMIN/01-Home/01-quick-action.png`](TENANT-ADMIN/01-Home/01-quick-action.png)
+## Tenant Admin — Quick-Add menu — [`TENANT-ADMIN/01-Home/02-quick-action.png`](TENANT-ADMIN/01-Home/02-quick-action.png)
 
 The FAB's full-screen **Quick Commands** overlay
 ([`components/QuickAddMenu.tsx`](../../../apps/mobile/src/components/QuickAddMenu.tsx), mockup
 `04_tenant_admin/01_home/02_quick_action_button/01_quick_action_menu`) — a dark surface with its own top
 bar (brand + SYNCED pill + close), **five action cards** (Invite · New System Integration · Apps &
 Services · Generate Usage Report · Force System Sync), and a small stats bento. Left-accent colour
-follows the action. With the fifth card the overlay now scrolls, so `01` is captured as **one full-page
+follows the action. With the fifth card the overlay now scrolls, so `02` is captured as **one full-page
 stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
 
 - **Force System Sync** — real (`runPushSync()` then `runDeltaSync()`, §17.6 flush + pull); tapping it
@@ -387,7 +410,7 @@ stitch** (`scripts/stitch-fullpage.py`). Real vs honest placeholder:
   `assets/tenant-admin/micro_server.jpg`. Each tile follows the mockup layout — a dimmed photo banner on
   top, then the label + real value stacked below on the card surface.
 - **Invite New User** opens the Invite-user form (below); **New System Integration** opens the
-  connector picker (`06`); **Apps & Services** opens the module hub (`07`). **Generate Usage Report** is an
+  connector picker (`07`); **Apps & Services** opens the module hub (`08`). **Generate Usage Report** is an
   honest placeholder (no AI-report screen yet) — the AI-report card keeps the mockup's richer layout but
   **drops the fabricated "94 % CONFIDENCE / Source"** (no such signal exists).
 
@@ -420,7 +443,7 @@ default `+66` prefix) or **Path B email** — the selected role, and the recipie
   ("…pre-applied for the _Project Manager_ role") but **drops the mockup's fabricated permission
   specifics** ("approval rights for Payouts and Daily Reports") — PO decision 2026-07-29.
 
-## Tenant Admin — Role permissions — [`03`](TENANT-ADMIN/01-Home/04-role-permissions.png)
+## Tenant Admin — Role permissions — [`04`](TENANT-ADMIN/01-Home/04-role-permissions.png)
 
 Reached from Invite-user's **"View permissions"** link
 ([`app/(app)/role-permissions.tsx`](<../../../apps/mobile/src/app/(app)/role-permissions.tsx>), mockup
@@ -442,7 +465,7 @@ breakdown for the role being invited.
   of its own: the global TopBar shows "Role permissions" + a Back arrow; the footer **"Back to
   invitation"** and that arrow both `router.back()`.
 
-## Tenant Admin — Roles selection — [`04`](TENANT-ADMIN/01-Home/05-roles-selection.png)
+## Tenant Admin — Roles selection — [`05`](TENANT-ADMIN/01-Home/05-roles-selection.png)
 
 The full-screen role picker opened from Invite-user's **"Show more roles"**
 ([`app/(app)/roles-selection.tsx`](<../../../apps/mobile/src/app/(app)/roles-selection.tsx>), mockup
@@ -464,7 +487,7 @@ single-select (createUser takes one role).
   hidden `Tabs.Screen` siblings, and the React Navigation default (`firstRoute`) would send Back to Home
   instead of the screen that opened the picker — this also fixes Role-permissions' "Back to invitation".
 
-## Tenant Admin — Invitation success — [`05`](TENANT-ADMIN/01-Home/06-invitation-success.png)
+## Tenant Admin — Invitation success — [`06`](TENANT-ADMIN/01-Home/06-invitation-success.png)
 
 The terminal confirmation shown after Invite-user's **SEND INVITATION** succeeds
 ([`app/(app)/invitation-success.tsx`](<../../../apps/mobile/src/app/(app)/invitation-success.tsx>), mockup
@@ -486,7 +509,7 @@ old success `Alert`**; Invite-user `router.replace`s here on `createUser` 201.
   Qualified to `::platform."CosRoleEnum"` in both `createUser` and `changeRole`; `POST /users` now returns
   **201** and the real SEND → success flow is reachable.
 
-## Tenant Admin — System integration — [`06`](TENANT-ADMIN/01-Home/07-system-integration.png)
+## Tenant Admin — System integration — [`07`](TENANT-ADMIN/01-Home/07-system-integration.png)
 
 The connector picker opened from Quick Commands → **New System Integration**
 ([`app/(app)/system-integration.tsx`](<../../../apps/mobile/src/app/(app)/system-integration.tsx>), mockup
@@ -502,12 +525,12 @@ The connector picker opened from Quick Commands → **New System Integration**
   "full"). The **"Enterprise ready" band uses a bundled server-room photo asset**
   (`assets/tenant-admin/server_room.jpg`, provided by the PO) under an SVG scrim that keeps the caption
   legible (no external image). The global TopBar shows the screen title + a Back arrow.
-- **`06` is one full-page image** (PO decision 2026-07-29 — "one page, not split"): the capture shoots
+- **`07` is one full-page image** (PO decision 2026-07-29 — "one page, not split"): the capture shoots
   several scrolling viewports and stitches them with `scripts/stitch-fullpage.py`. Also visible here: the
   **brand icon in the TopBar is now a rounded-square tile** (`brandIcon` `borderRadius`, Linear/Palantir
   aesthetic) — a global TopBar change, so every screen's header picks it up.
 
-## Tenant Admin — Apps & Services — [`07`](TENANT-ADMIN/01-Home/08-apps-services.png)
+## Tenant Admin — Apps & Services — [`08`](TENANT-ADMIN/01-Home/08-apps-services.png)
 
 The module / tools / extensions hub, opened from Quick Commands → **Apps & Services** (a new action card
 there — `router.push`)
@@ -521,10 +544,10 @@ there — `router.push`)
 - Sections (PO decision 2026-07-29): **Core Modules** (Site Reports · Issue Management · Inventory · BIM
   Viewer · Drone Reality Capture), **Admin Tools** (Audit Logs only — User Management / System Settings
   removed), **Extensions** — the three connectors, ordered **LINE Messaging API · Autodesk BIM 360 · ERP
-  Connect**. `07` is one full-page stitch; no top bar of its own (global TopBar shows the title + Back
+  Connect**. `08` is one full-page stitch; no top bar of its own (global TopBar shows the title + Back
   arrow).
 
-## Tenant Admin — Sync Review Queue (Alerts) — [`00`](TENANT-ADMIN/03-Alerts/01-alerts-dashboard.png)
+## Tenant Admin — Sync Review Queue (Alerts) — [`01`](TENANT-ADMIN/03-Alerts/01-alerts-dashboard.png)
 
 The `TENANT_ADMIN` "Alerts" tab
 ([`app/(app)/sync-queue.tsx`](<../../../apps/mobile/src/app/(app)/sync-queue.tsx>)), implementing
@@ -543,7 +566,7 @@ The five conflicts are demo rows seeded by
 [`seed-realistic.ts`](../../../backend/prisma/seed-realistic.ts) (a realistic tenant accumulates field-sync
 conflicts, like it accumulates issues and reports); the screen renders that real (seed) data.
 
-## Tenant Admin — System Settings — [`00`](TENANT-ADMIN/04-Settings/01-system-settings.png)
+## Tenant Admin — System Settings — [`01`](TENANT-ADMIN/04-Settings/01-system-settings.png)
 
 The `TENANT_ADMIN` "Settings" tab
 ([`app/(app)/system-settings.tsx`](<../../../apps/mobile/src/app/(app)/system-settings.tsx>)), implementing

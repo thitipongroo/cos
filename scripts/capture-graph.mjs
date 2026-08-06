@@ -12,9 +12,11 @@ const BASE = process.env.WEB_BASE || 'http://localhost:3001';
 const PW = process.env.DEMO_USER_PASSWORD || 'Ekachai@2026';
 const EMAIL = 'thanawat.b@ekachai.co.th'; // PROJECT_MANAGER
 const PID = process.env.PID || '88803908-e4b5-57bd-8e6b-ed4662b5d67d';
-// UPPER-KEBAB folder name, matching docs/screens/android/ (SITE-ENGINEER, TENANT-ADMIN) and the
-// other web capture scripts. The role itself is still PROJECT_MANAGER.
-const OUT = path.resolve(__dirname, '../docs/screens/web/PROJECT-MANAGER');
+// UPPER_SNAKE folder name — the canonical CosRole spelling, matching the committed web tree and the
+// other web capture scripts. docs/screens/android/ uses UPPER-KEBAB (SITE-ENGINEER, TENANT-ADMIN);
+// the two trees deliberately differ (product-owner decision 2026-08-07). This wrote PROJECT-MANAGER/
+// until then, i.e. a second folder beside the committed PROJECT_MANAGER/.
+const OUT = path.resolve(__dirname, '../docs/screens/web/PROJECT_MANAGER');
 
 async function login(page, email) {
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });

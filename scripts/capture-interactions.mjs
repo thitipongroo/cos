@@ -1,7 +1,9 @@
 // Interaction-level screenshots: drill-down detail pages, create forms, and the notification
 // popover (the app's real in-page interactions — it uses dedicated /new form pages + detail
-// routes rather than modals). Saves to docs/screens/web/<ROLE>/interactions/, where <ROLE> is the
-// role name in UPPER-KEBAB (TENANT-ADMIN, not TENANT_ADMIN) — same convention as docs/screens/android/.
+// routes rather than modals). Saves to docs/screens/web/<ROLE>/_interactions/, where <ROLE> is the
+// canonical CosRole spelling in UPPER_SNAKE (TENANT_ADMIN) — the convention the committed web tree
+// uses, deliberately unlike docs/screens/android/'s UPPER-KEBAB (product-owner decision 2026-08-07).
+// The subfolder is _interactions (leading underscore), which is what is committed.
 import { chromium } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,10 +14,10 @@ const BASE = process.env.WEB_BASE || 'http://localhost:3001';
 const PW = process.env.DEMO_USER_PASSWORD || 'Ekachai@2026';
 const OUT = path.resolve(__dirname, '../docs/screens/web');
 
-// USERS keys below stay the canonical CosRole spelling (UPPER_SNAKE) — doInteractions() branches on
-// them (`role === 'PROJECT_MANAGER'`), so they are role identities, not folder names. Convert only
-// when building a path.
-const folderFor = (role) => role.replace(/_/g, '-');
+// USERS keys below are the canonical CosRole spelling (UPPER_SNAKE) — doInteractions() branches on
+// them (`role === 'PROJECT_MANAGER'`) AND they are used verbatim as the folder name. A folderFor()
+// helper used to kebab-case the path, which wrote PROJECT-MANAGER/interactions/ beside the committed
+// PROJECT_MANAGER/_interactions/; removed 2026-08-07.
 const SKV45 = '88803908-e4b5-57bd-8e6b-ed4662b5d67d'; // The Sukhumvit 45 Residences (EKC)
 
 const USERS = {
@@ -89,7 +91,7 @@ async function doInteractions(page, role, dir) {
   const browser = await chromium.launch();
   let total = 0;
   for (const [role, email] of Object.entries(USERS)) {
-    const dir = path.join(OUT, folderFor(role), 'interactions');
+    const dir = path.join(OUT, role, '_interactions');
     fs.mkdirSync(dir, { recursive: true });
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();

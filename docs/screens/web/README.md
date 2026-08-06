@@ -33,18 +33,23 @@ files are **not** in the repo. The earlier per-role captures were deleted by `7d
 
 ## Folder layout
 
-Same convention as [`../android/`](../android/README.md): numbered folders for cross-role flows,
-`UPPER-KEBAB` for role folders (`TENANT-ADMIN`, not `TENANT_ADMIN`).
+Numbered folders for cross-role flows, `UPPER_SNAKE` for role folders (`TENANT_ADMIN`) — the canonical
+CosRole spelling, used verbatim. **This differs from [`../android/`](../android/README.md) on purpose:**
+that tree uses `UPPER-KEBAB` (`TENANT-ADMIN`). The two conventions are not being harmonised; each
+matches the tree that is actually committed under it (product-owner decision 2026-08-07).
 
-| Folder                 | Written by                                                 |
-| ---------------------- | ---------------------------------------------------------- |
-| `01-public/`           | `capture-screens.mjs` — pre-auth routes                    |
-| `<ROLE>/`              | `capture-screens.mjs` — every route that role reaches      |
-| `<ROLE>/interactions/` | `capture-interactions.mjs` — detail pages, forms, popovers |
-| `PROJECT-MANAGER/`     | `capture-graph.mjs` — the knowledge-graph pages            |
+| Folder                  | Written by                                                 |
+| ----------------------- | ---------------------------------------------------------- |
+| `01-public/`            | `capture-screens.mjs` — pre-auth routes                    |
+| `<ROLE>/`               | `capture-screens.mjs` — every route that role reaches      |
+| `<ROLE>/_interactions/` | `capture-interactions.mjs` — detail pages, forms, popovers |
+| `PROJECT_MANAGER/`      | `capture-graph.mjs` — the knowledge-graph pages            |
 
-The role **keys inside those scripts** stay `UPPER_SNAKE` (`TENANT_ADMIN`) because they are CosRole
-identities that the scripts branch on; only the folder name is kebab-cased, via a `folderFor()` helper.
+The role **keys inside those scripts** are the same `UPPER_SNAKE` strings — they are CosRole identities
+that the scripts branch on _and_ the folder names, so no conversion happens when a path is built. Until
+2026-08-07 a `folderFor()` helper kebab-cased them and the subfolder was spelled `interactions/`, so a
+run wrote `PROJECT-MANAGER/interactions/` alongside the committed `PROJECT_MANAGER/_interactions/`
+instead of into it.
 
 `capture/web-screens.mjs` is the exception — it still writes its 24-route dump flat into this folder's
 root, not into a subfolder.
