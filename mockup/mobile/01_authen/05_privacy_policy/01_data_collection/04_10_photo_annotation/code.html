@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Image Annotator - Mobile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#102034",
+                        "primary": "#c1c5dc",
+                        "on-surface-variant": "#c7c6cd",
+                        "surface-container-highest": "#26364a",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#00174b",
+                        "surface-container-low": "#0b1c30",
+                        "on-tertiary-fixed": "#001f26",
+                        "tertiary": "#4cd7f6",
+                        "warning": "#F59E0B",
+                        "inverse-surface": "#d3e4fe",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "surface-variant": "#26364a",
+                        "syncing": "#FFD60A",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-secondary": "#002a78",
+                        "concrete-white": "#F8FAFC",
+                        "danger": "#EF4444",
+                        "on-background": "#d3e4fe",
+                        "outline": "#909097",
+                        "tertiary-fixed": "#acedff",
+                        "outline-variant": "#46464c",
+                        "on-tertiary-container": "#0088a0",
+                        "error-container": "#93000a",
+                        "surface-dim": "#031427",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "success": "#10B981",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "on-secondary-container": "#cdd7ff",
+                        "secondary-container": "#0053db",
+                        "surface-tint": "#c1c5dc",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-surface": "#d3e4fe",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#1b2b3f",
+                        "on-primary-fixed": "#161b2b",
+                        "tertiary-container": "#001318",
+                        "inverse-primary": "#595e71",
+                        "offline": "#8E8E93",
+                        "primary-fixed": "#dee1f9",
+                        "inverse-on-surface": "#213145",
+                        "on-primary-container": "#777c90",
+                        "surface": "#031427",
+                        "surface-bright": "#2a3a4f",
+                        "on-tertiary": "#003640",
+                        "mobile-primary": "#0066FF",
+                        "surface-container-lowest": "#000f21",
+                        "on-error": "#690005",
+                        "secondary": "#b4c5ff",
+                        "on-primary": "#2b3041",
+                        "background": "#031427",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "primary-container": "#0b1020"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-base": "4px",
+                        "mobile-card-pad": "12px",
+                        "mobile-section-pad": "16px",
+                        "web-gap-tight": "4px",
+                        "mobile-edge-margin": "24px",
+                        "mobile-base": "8px",
+                        "web-padding-card": "16px",
+                        "touch-target-optimum": "52px",
+                        "web-page-gap": "64px",
+                        "web-margin-component": "32px",
+                        "touch-target-min": "44px",
+                        "mobile-icon-pad": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-h2": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "body-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Hide scrollbar for clean mobile look */
+        ::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen w-full overflow-hidden flex flex-col font-body-md select-none">
+<!-- TopAppBar -->
+<header class="bg-surface-container-low dark:bg-surface-container-low text-primary font-headline-h3 text-headline-h3 fixed top-0 w-full z-50 border-b border-outline-variant flat no shadows flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-highest transition-colors active:scale-95 duration-100">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back">arrow_back</span>
+</button>
+<div class="font-headline-h2 text-headline-h2 font-bold text-primary">
+            Image Annotator
+        </div>
+<button class="text-mobile-primary font-bold hover:bg-surface-container-highest transition-colors active:scale-95 duration-100 px-3 py-1 rounded">
+            Save Changes
+        </button>
+</header>
+<!-- Main Canvas Area -->
+<main class="flex-grow relative w-full h-full pt-touch-target-optimum pb-[104px]">
+<!-- Full Screen Image Container -->
+<div class="absolute inset-0 w-full h-full bg-surface-container-lowest">
+<div class="bg-cover bg-center w-full h-full" data-alt="A high-resolution photograph of an active construction site, focusing on structural rebar laid out for a concrete pour. The lighting is harsh, natural sunlight casting strong shadows, typical of outdoor construction. The aesthetic is gritty and realistic, emphasizing the technical details of the rebar grid. Dark mode UI context with high-contrast elements expected to overlay this image." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDZhvBwX97B_tjZOuo0GII3NIdq8wRCMfhpRGxuQx3MpS_kAH_ve8o4Q1TSFgfC-m0gLk3x2112WCc7wgKRauOyZjvh5cd3sjQHTfCuckqeUJmh0z4IeA74PWJqsMnET94OHDu6dX97lbAmDBWIL8zS3QBm4oHQLcEW17a09tPFMX1B374oh0MhK9QHPult9avMtQ6kpw0h3Y5YDU7QEWv-BmfUXVnODhAh8yRt-R9L7810oq90N-af_w')"></div>
+<!-- Annotation Overlay -->
+<div class="absolute top-[30%] left-[20%] border-2 border-danger rounded shadow-lg p-2 bg-surface-container-lowest/80 backdrop-blur-sm">
+<div class="font-label-tiny text-label-tiny text-danger font-bold uppercase mb-1">REBAR MISALIGNMENT</div>
+<div class="w-32 h-24 border-2 border-danger border-dashed"></div>
+</div>
+<!-- Freehand Drawing Overlay Simulation -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M 40 60 Q 50 40 60 70 T 80 50" fill="transparent" stroke="#00BFFF" stroke-linecap="round" stroke-width="0.5"></path>
+</svg>
+</div>
+</main>
+<!-- Floating Tools Control (Stroke/Color) -->
+<div class="fixed bottom-[60px] left-0 w-full px-mobile-edge-margin z-40 flex justify-between items-end pb-4 pointer-events-none">
+<!-- Stroke Slider -->
+<div class="bg-surface-container border border-outline-variant rounded-full p-2 flex flex-col items-center gap-2 shadow-lg pointer-events-auto">
+<div class="w-1 h-1 rounded-full bg-on-surface"></div>
+<input class="h-24 w-1 bg-surface-container-highest rounded-lg appearance-none cursor-pointer orient-vertical" max="100" min="1" style="writing-mode: bt-lr; -webkit-appearance: slider-vertical;" type="range" value="20"/>
+<div class="w-3 h-3 rounded-full bg-on-surface"></div>
+</div>
+<!-- Color Palette -->
+<div class="bg-surface-container border border-outline-variant rounded-full p-2 flex gap-3 shadow-lg pointer-events-auto items-center">
+<button class="w-8 h-8 rounded-full bg-danger ring-2 ring-surface-container-highest focus:ring-tertiary outline-none"></button>
+<button class="w-8 h-8 rounded-full bg-warning ring-2 ring-surface-container-highest focus:ring-tertiary outline-none"></button>
+<button class="w-8 h-8 rounded-full bg-tertiary ring-2 ring-surface-container-highest focus:ring-tertiary outline-none"></button>
+<button class="w-8 h-8 rounded-full bg-success ring-2 ring-surface-container-highest focus:ring-tertiary outline-none"></button>
+<button class="w-8 h-8 rounded-full bg-concrete-white ring-2 ring-surface-container-highest focus:ring-tertiary outline-none flex items-center justify-center">
+<span class="material-symbols-outlined text-surface-container text-[16px]" data-icon="palette">palette</span>
+</button>
+</div>
+</div>
+<!-- BottomNavBar (Toolbar) -->
+<nav class="bg-surface-dim dark:bg-surface-dim text-primary font-label-tiny text-label-tiny fixed bottom-0 w-full z-50 h-touch-target-optimum border-t border-outline-variant shadow-lg flex justify-around items-center px-mobile-edge-margin">
+<button class="flex flex-col items-center gap-1 active:opacity-70 text-on-surface-variant hover:text-on-surface w-16">
+<span class="material-symbols-outlined text-[24px]" data-icon="brush">brush</span>
+<span>Brush</span>
+</button>
+<button class="flex flex-col items-center gap-1 active:opacity-70 text-tertiary hover:text-on-surface w-16">
+<span class="material-symbols-outlined text-[24px]" data-icon="pentagon">pentagon</span>
+<span>Shapes</span>
+</button>
+<button class="flex flex-col items-center gap-1 active:opacity-70 text-on-surface-variant hover:text-on-surface w-16">
+<span class="material-symbols-outlined text-[24px]" data-icon="title">title</span>
+<span>Text</span>
+</button>
+<button class="flex flex-col items-center gap-1 active:opacity-70 text-on-surface-variant hover:text-on-surface w-16">
+<span class="material-symbols-outlined text-[24px]" data-icon="ink_eraser">ink_eraser</span>
+<span>Eraser</span>
+</button>
+<button class="flex flex-col items-center gap-1 active:opacity-70 text-on-surface-variant hover:text-on-surface w-16">
+<span class="material-symbols-outlined text-[24px]" data-icon="zoom_in">zoom_in</span>
+<span>Zoom</span>
+</button>
+</nav>
+</body></html>

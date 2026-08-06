@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Document Scanner - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#acedff",
+                        "on-secondary": "#002a78",
+                        "on-background": "#d3e4fe",
+                        "surface-container": "#102034",
+                        "surface-bright": "#2a3a4f",
+                        "primary": "#c1c5dc",
+                        "secondary-container": "#0053db",
+                        "surface-container-high": "#1b2b3f",
+                        "tertiary": "#4cd7f6",
+                        "surface-variant": "#26364a",
+                        "tertiary-container": "#001318",
+                        "inverse-primary": "#595e71",
+                        "on-primary-container": "#777c90",
+                        "error-container": "#93000a",
+                        "background": "#031427",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-primary-fixed": "#161b2b",
+                        "success": "#10B981",
+                        "inverse-on-surface": "#213145",
+                        "inverse-surface": "#d3e4fe",
+                        "warning": "#F59E0B",
+                        "on-primary": "#2b3041",
+                        "concrete-white": "#F8FAFC",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "surface-container-highest": "#26364a",
+                        "syncing": "#FFD60A",
+                        "mobile-primary": "#0066FF",
+                        "danger": "#EF4444",
+                        "primary-fixed": "#dee1f9",
+                        "on-tertiary": "#003640",
+                        "secondary": "#b4c5ff",
+                        "surface-container-low": "#0b1c30",
+                        "surface-container-lowest": "#000f21",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-secondary-container": "#cdd7ff",
+                        "offline": "#8E8E93",
+                        "surface-dim": "#031427",
+                        "surface-tint": "#c1c5dc",
+                        "error": "#ffb4ab",
+                        "on-surface-variant": "#c7c6cd",
+                        "on-surface": "#d3e4fe",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "surface": "#031427",
+                        "outline": "#909097",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "on-secondary-fixed": "#00174b",
+                        "on-error-container": "#ffdad6",
+                        "on-error": "#690005",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-tertiary-container": "#0088a0",
+                        "primary-container": "#0b1020",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "outline-variant": "#46464c",
+                        "ai-cyan": "#06B6D4" // Added for specific styling request
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "touch-target-min": "44px",
+                        "mobile-card-pad": "12px",
+                        "mobile-base": "8px",
+                        "mobile-section-pad": "16px",
+                        "web-gap-tight": "4px",
+                        "mobile-icon-pad": "8px",
+                        "web-page-gap": "64px",
+                        "web-base": "4px",
+                        "touch-target-optimum": "52px",
+                        "mobile-edge-margin": "24px",
+                        "web-padding-card": "16px",
+                        "web-margin-component": "32px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "body-md": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-tiny": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .viewfinder-cutout {
+            box-shadow: 0 0 0 9999px rgba(3, 20, 39, 0.85); /* surface color with opacity */
+            border-radius: 4px;
+        }
+        .edge-guide {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: #06B6D4; /* ai-cyan */
+            border-style: solid;
+        }
+        .edge-guide.top-left { top: -2px; left: -2px; border-width: 3px 0 0 3px; border-top-left-radius: 4px; }
+        .edge-guide.top-right { top: -2px; right: -2px; border-width: 3px 3px 0 0; border-top-right-radius: 4px; }
+        .edge-guide.bottom-left { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; border-bottom-left-radius: 4px; }
+        .edge-guide.bottom-right { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-bottom-right-radius: 4px; }
+        
+        /* Shimmer effect for guides */
+        @keyframes shimmer {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        .edge-guide {
+            animation: shimmer 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-black text-on-surface h-screen w-screen overflow-hidden flex flex-col relative font-mobile-body">
+<!-- Camera Feed Mockup Background -->
+<div class="absolute inset-0 z-0 bg-surface">
+<div class="w-full h-full bg-cover bg-center opacity-40" data-alt="A blurred top-down view of an active construction site blueprint spread across a rough wooden table. The lighting is slightly dim and industrial, suggesting a field office environment. The image is out of focus, serving as a background for a camera interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDlNmlCTEAwO0E3peftQgMcw4qq-2kVBjQuYU4xMJNcOwKvplRLYkPAepM4jhtsozC7j_UXtcoeJ8HX35sJH487nYtYueHL2DUMk-0JqiIt1LoXYVc36_HdbBELnk3fr0217xpXgQTePThvbgUAElbXqEjRVamsuWxEdH3D-fsKlNPWpysTomHszUPtgjl9kqPNLh6i5tn4LRALiek9C-RTSWIevs-tMo-Z3R7EsWbhqXFqBcHz7FKa7w')"></div>
+</div>
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant transition-colors duration-200 active:opacity-70 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum fixed top-0 w-full z-50">
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-bright rounded-full p-2 h-touch-target-min w-touch-target-min flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-mobile-title text-mobile-title font-bold text-primary dark:text-primary">Document Capture</h1>
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-bright rounded-full p-2 h-touch-target-min w-touch-target-min flex items-center justify-center">
+<span class="material-symbols-outlined">flash_on</span>
+</button>
+</header>
+<!-- Viewfinder Area -->
+<main class="flex-grow flex flex-col items-center justify-center relative z-10 pt-touch-target-optimum pb-32">
+<!-- Overlay with Cutout -->
+<div class="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
+<div class="w-full h-full max-h-[70vh] border-2 border-transparent relative viewfinder-cutout">
+<!-- AI Edge Detection Guides -->
+<div class="edge-guide top-left"></div>
+<div class="edge-guide top-right"></div>
+<div class="edge-guide bottom-left"></div>
+<div class="edge-guide bottom-right"></div>
+<!-- Center Reticle (Subtle) -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 border border-white/20 rounded-full flex items-center justify-center">
+<div class="w-1 h-1 bg-white/40 rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Guidance Text -->
+<div class="absolute bottom-40 left-0 right-0 text-center px-mobile-edge-margin z-20 pointer-events-none">
+<div class="inline-flex items-center gap-2 bg-surface-container-highest/90 backdrop-blur-sm px-4 py-2 rounded-full border border-ai-cyan/30 shadow-lg">
+<span class="material-symbols-outlined text-ai-cyan text-sm" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+<p class="font-body-md text-body-md text-concrete-white font-medium">Position document within the frame</p>
+</div>
+</div>
+</main>
+<!-- Bottom Controls (Replaces BottomNavBar for task focus) -->
+<div class="fixed bottom-0 w-full bg-surface-container/95 backdrop-blur-md border-t border-outline-variant pb-safe pt-4 px-mobile-edge-margin z-50 flex items-center justify-between h-32">
+<!-- Gallery Button -->
+<button class="flex flex-col items-center justify-center w-touch-target-optimum h-touch-target-optimum group">
+<div class="w-12 h-12 rounded-lg border border-outline-variant overflow-hidden mb-1 group-active:scale-95 transition-transform">
+<div class="w-full h-full bg-cover bg-center" data-alt="A small thumbnail showing a previously scanned construction invoice document with clear black text on white paper, neatly cropped." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA0QSTn8_VGd1h6U66Rwj9vZKId80WiYew1LCz1P9X6zHybKOpL7eOk0DOE7mxjoyGfTV0loOTh7o_LNVtwhcrMNACUF4xe2f9pKYzgFjzM8Vvy43esInBos80n36RVmkvL2c3Wjoq39-fU7c4kzLe17ulirJDRXdeSJPxvvYzNH4aeIpu7trq3_5G4GOCbezV5piK37-OcbuPtU_N7910bNH6KOAhPvXMBEgQLCy2cDWBeQS7vAJKpuA')"></div>
+</div>
+</button>
+<!-- Shutter Button -->
+<button class="relative w-20 h-20 rounded-full border-4 border-outline flex items-center justify-center active:scale-95 transition-transform">
+<div class="w-16 h-16 bg-concrete-white rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+<!-- Inner circle indication for photo -->
+</div>
+</button>
+<!-- Auto-Capture Toggle -->
+<button class="flex flex-col items-center justify-center w-touch-target-optimum h-touch-target-optimum group">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center border border-ai-cyan/50 text-ai-cyan group-active:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant mt-1 uppercase tracking-wider">Auto On</span>
+</button>
+</div>
+</body></html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Site Log Technical View</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "success": "#10B981",
+                      "inverse-surface": "#d3e4fe",
+                      "on-tertiary-fixed": "#001f26",
+                      "on-surface-variant": "#c7c6cd",
+                      "tertiary-container": "#001318",
+                      "surface": "#031427",
+                      "concrete-white": "#F8FAFC",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "on-primary-fixed": "#161b2b",
+                      "inverse-primary": "#595e71",
+                      "on-secondary-container": "#cdd7ff",
+                      "primary-container": "#0b1020",
+                      "syncing": "#FFD60A",
+                      "warning": "#F59E0B",
+                      "surface-dim": "#031427",
+                      "primary": "#c1c5dc",
+                      "primary-fixed": "#dee1f9",
+                      "on-primary": "#2b3041",
+                      "offline": "#8E8E93",
+                      "secondary-container": "#0053db",
+                      "outline": "#909097",
+                      "inverse-on-surface": "#213145",
+                      "on-error": "#690005",
+                      "surface-container-lowest": "#000f21",
+                      "surface-bright": "#2a3a4f",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "on-surface": "#d3e4fe",
+                      "on-tertiary": "#003640",
+                      "on-primary-container": "#777c90",
+                      "background": "#031427",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "surface-container-low": "#0b1c30",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "surface-container-highest": "#26364a",
+                      "secondary-fixed": "#dbe1ff",
+                      "error": "#ffb4ab",
+                      "surface-tint": "#c1c5dc",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "tertiary-fixed": "#acedff",
+                      "on-tertiary-container": "#0088a0",
+                      "on-background": "#d3e4fe",
+                      "on-primary-fixed-variant": "#414658",
+                      "surface-variant": "#26364a",
+                      "on-secondary-fixed": "#00174b",
+                      "danger": "#EF4444",
+                      "on-error-container": "#ffdad6",
+                      "outline-variant": "#46464c",
+                      "on-secondary": "#002a78",
+                      "error-container": "#93000a",
+                      "tertiary": "#4cd7f6",
+                      "surface-container-high": "#1b2b3f",
+                      "surface-container": "#102034",
+                      "secondary": "#b4c5ff",
+                      "mobile-primary": "#0066FF"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-padding-card": "16px",
+                      "touch-target-optimum": "52px",
+                      "mobile-base": "8px",
+                      "web-margin-component": "32px",
+                      "web-gap-tight": "4px",
+                      "web-page-gap": "64px",
+                      "web-base": "4px",
+                      "mobile-section-pad": "16px",
+                      "mobile-icon-pad": "8px",
+                      "mobile-card-pad": "12px",
+                      "mobile-edge-margin": "24px",
+                      "touch-target-min": "44px"
+              },
+              "fontFamily": {
+                      "mobile-hero": [
+                              "Inter"
+                      ],
+                      "headline-h3": [
+                              "Inter"
+                      ],
+                      "headline-h1": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-h2": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "mobile-body": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "mobile-title": [
+                              "Inter"
+                      ],
+                      "label-tiny": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "mobile-hero": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-h3": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mobile-body": [
+                              "17px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mobile-title": [
+                              "22px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-tiny": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-mobile-body antialiased min-h-screen flex flex-col pt-[52px] pb-[52px]">
+<!-- TopAppBar -->
+<header class="bg-surface-container-low dark:bg-surface-container-low docked full-width top-0 border-b border-outline-variant flat no shadows flex items-center justify-between px-mobile-edge-margin w-full h-touch-target-optimum fixed z-40">
+<button aria-label="Go back" class="h-touch-target-optimum w-touch-target-optimum flex items-center justify-center -ml-3 text-primary hover:bg-surface-bright transition-colors active:scale-95 duration-100 rounded-full">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-on-surface flex-1 text-center truncate px-4">Site Log Technical View</h1>
+<button aria-label="Sync" class="h-touch-target-optimum w-touch-target-optimum flex items-center justify-center -mr-3 text-primary hover:bg-surface-bright transition-colors active:scale-95 duration-100 rounded-full">
+<span class="material-symbols-outlined text-[24px]">cloud_sync</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col p-mobile-edge-margin gap-mobile-section-pad overflow-y-auto">
+<!-- Metadata Summary Card -->
+<section class="bg-surface border border-outline rounded-xl p-mobile-card-pad flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider">Log ID</span>
+<span class="font-headline-h3 text-headline-h3 text-concrete-white">#A93-B72</span>
+</div>
+<div class="bg-success/10 border border-success/30 px-3 py-1 rounded-full flex items-center">
+<span class="font-label-tiny text-label-tiny text-success uppercase">VALIDATED</span>
+</div>
+</div>
+<div class="h-px bg-outline-variant w-full"></div>
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider">Version</span>
+<span class="font-body-md text-body-md text-on-surface font-mono">1.0.4-stable</span>
+</div>
+</section>
+<!-- JSON Data Block -->
+<section class="flex flex-col flex-1 gap-2 min-h-[300px]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">code</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider">Raw Payload</span>
+</div>
+<div class="bg-surface-container-highest border border-outline-variant rounded-xl p-4 overflow-x-auto flex-1 shadow-inner relative group">
+<div class="absolute right-2 top-2 bg-surface-container opacity-50 px-2 py-1 rounded text-[10px] font-mono text-on-surface-variant border border-outline-variant">JSON</div>
+<pre class="font-mono text-body-sm leading-relaxed text-concrete-white"><code>{
+  <span class="text-secondary">"log_id"</span>: <span class="text-success">"#A93-B72"</span>,
+  <span class="text-secondary">"zone"</span>: <span class="text-success">"Zone 4"</span>,
+  <span class="text-secondary">"timestamp"</span>: <span class="text-warning">1715428800</span>,
+  <span class="text-secondary">"integrity_score"</span>: <span class="text-warning">0.98</span>,
+  <span class="text-secondary">"inspector"</span>: {
+    <span class="text-secondary">"id"</span>: <span class="text-success">"USR-8821"</span>,
+    <span class="text-secondary">"auth_level"</span>: <span class="text-warning">4</span>
+  },
+  <span class="text-secondary">"readings"</span>: [
+    { <span class="text-secondary">"sensor"</span>: <span class="text-success">"SN-1"</span>, <span class="text-secondary">"val"</span>: <span class="text-warning">42.1</span> },
+    { <span class="text-secondary">"sensor"</span>: <span class="text-success">"SN-2"</span>, <span class="text-secondary">"val"</span>: <span class="text-warning">38.9</span> }
+  ],
+  <span class="text-secondary">"flags"</span>: [],
+  <span class="text-secondary">"metadata"</span>: {
+    <span class="text-secondary">"device"</span>: <span class="text-success">"FieldTablet Pro"</span>,
+    <span class="text-secondary">"os"</span>: <span class="text-success">"IndOS v2.4"</span>,
+    <span class="text-secondary">"sync_status"</span>: <span class="text-success">"COMMITTED"</span>
+  }
+}</code></pre>
+</div>
+</section>
+<!-- Action Buttons -->
+<section class="flex flex-col gap-3 mt-4">
+<button class="bg-mobile-primary text-concrete-white h-touch-target-optimum rounded-lg font-headline-h3 text-headline-h3 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform">
+<span class="material-symbols-outlined text-[20px]">content_copy</span>
+                Copy Raw JSON
+            </button>
+<button class="bg-transparent border border-outline text-on-surface h-touch-target-optimum rounded-lg font-headline-h3 text-headline-h3 flex items-center justify-center gap-2 active:bg-surface-bright transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                Download .json
+            </button>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-touch-target-optimum bg-surface-container-low dark:bg-surface-container-low border-t border-outline-variant flat no shadows rounded-t-xl px-2">
+<!-- Active: Logs -->
+<a aria-current="page" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-90 transition-transform h-[44px] min-w-[64px]" href="#">
+<span class="material-symbols-outlined text-[24px] mb-0.5" style="font-variation-settings: 'FILL' 1;">database</span>
+<span class="font-label-tiny text-label-tiny">Logs</span>
+</a>
+<!-- Inactive: Analytics -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-90 transition-transform h-[44px] min-w-[64px]" href="#">
+<span class="material-symbols-outlined text-[24px] mb-0.5">monitoring</span>
+<span class="font-label-tiny text-label-tiny">Analytics</span>
+</a>
+<!-- Inactive: Sync -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-90 transition-transform h-[44px] min-w-[64px]" href="#">
+<span class="material-symbols-outlined text-[24px] mb-0.5">sync</span>
+<span class="font-label-tiny text-label-tiny">Sync</span>
+</a>
+<!-- Inactive: Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-90 transition-transform h-[44px] min-w-[64px]" href="#">
+<span class="material-symbols-outlined text-[24px] mb-0.5">settings</span>
+<span class="font-label-tiny text-label-tiny">Settings</span>
+</a>
+</nav>
+</body></html>

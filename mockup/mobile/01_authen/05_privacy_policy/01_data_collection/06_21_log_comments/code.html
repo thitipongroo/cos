@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Log Comments &amp; Activity</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-highest": "#26364a",
+                        "on-primary": "#2b3041",
+                        "error-container": "#93000a",
+                        "warning": "#F59E0B",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "inverse-primary": "#595e71",
+                        "surface-bright": "#2a3a4f",
+                        "on-error-container": "#ffdad6",
+                        "offline": "#8E8E93",
+                        "on-surface-variant": "#c7c6cd",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "outline-variant": "#46464c",
+                        "on-tertiary": "#003640",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#d3e4fe",
+                        "surface-dim": "#031427",
+                        "on-secondary-container": "#cdd7ff",
+                        "secondary": "#b4c5ff",
+                        "surface": "#031427",
+                        "surface-tint": "#c1c5dc",
+                        "danger": "#EF4444",
+                        "surface-container-high": "#1b2b3f",
+                        "on-secondary": "#002a78",
+                        "surface-container-low": "#0b1c30",
+                        "syncing": "#FFD60A",
+                        "on-primary-fixed": "#161b2b",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "on-error": "#690005",
+                        "concrete-white": "#F8FAFC",
+                        "on-secondary-fixed": "#00174b",
+                        "on-background": "#d3e4fe",
+                        "tertiary-container": "#001318",
+                        "secondary-container": "#0053db",
+                        "primary-container": "#0b1020",
+                        "secondary-fixed": "#dbe1ff",
+                        "tertiary": "#4cd7f6",
+                        "tertiary-fixed": "#acedff",
+                        "outline": "#909097",
+                        "primary": "#c1c5dc",
+                        "surface-container": "#102034",
+                        "primary-fixed": "#dee1f9",
+                        "on-primary-fixed-variant": "#414658",
+                        "surface-variant": "#26364a",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-container": "#0088a0",
+                        "success": "#10B981",
+                        "surface-container-lowest": "#000f21",
+                        "on-primary-container": "#777c90",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "background": "#031427",
+                        "on-surface": "#d3e4fe",
+                        "inverse-on-surface": "#213145",
+                        "primary-fixed-dim": "#c1c5dc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "mobile-base": "8px",
+                        "web-page-gap": "64px",
+                        "web-padding-card": "16px",
+                        "touch-target-min": "44px",
+                        "mobile-section-pad": "16px",
+                        "mobile-icon-pad": "8px",
+                        "mobile-edge-margin": "24px",
+                        "web-margin-component": "32px",
+                        "mobile-card-pad": "12px",
+                        "touch-target-optimum": "52px",
+                        "web-gap-tight": "4px",
+                        "web-base": "4px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "body-md": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md h-screen flex flex-col overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-container-low docked full-width top-0 border-b border-outline-variant flat no shadows flex justify-between items-center w-full px-mobile-edge-margin h-touch-target-optimum shrink-0 z-10">
+<button class="text-mobile-primary active:opacity-80 transition-opacity flex items-center justify-center w-touch-target-min h-touch-target-min -ml-mobile-base">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-h3 text-headline-h3 font-bold text-on-surface flex-1 text-center truncate px-mobile-section-pad">Comments: Oct 24</h1>
+<div class="w-touch-target-min h-touch-target-min -mr-mobile-base flex items-center justify-center text-on-surface-variant">
+<!-- Placeholder for potential trailing action, keeping balance -->
+<span class="material-symbols-outlined" data-icon="info">info</span>
+</div>
+</header>
+<!-- Content Area (Scrollable Feed) -->
+<main class="flex-1 overflow-y-auto px-mobile-edge-margin py-mobile-section-pad flex flex-col gap-mobile-section-pad pb-[100px]">
+<!-- System Activity -->
+<div class="flex items-start gap-mobile-card-pad opacity-70">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="history">history</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Daily Log created</span>
+<span class="font-label-tiny text-label-tiny text-outline mt-1">07:05 AM</span>
+</div>
+</div>
+<!-- User Comment -->
+<div class="flex flex-col gap-web-gap-tight">
+<div class="flex items-center gap-mobile-icon-pad">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Close up professional headshot portrait of a construction site supervisor in a high visibility vest and hard hat, rugged handsome features, bright outdoor natural lighting, crisp sharp focus, corporate industrial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDmFGz7bV2yaZne-zl16NhoZa0zO9R29NnatLIiMJOoP_ig4o4hdo2C_4D9DhQj_kL0Fiw1MPHF9AI3IFqI6o_JppwYTP607EPhMO8aLh4CCfEZoJGSsJzn4qWSO3TFcYBd88daK491yzWM9odi061-vV9ZJ1_Xwet2pPgND7gWtthlcByQQG24uI5AiuOUkhO9IZnHo-q72pZuTGtXo6-1pJDgfItAzybwVojofXmUW6k_okfKAt1VA"/>
+<span class="font-headline-h3 text-headline-h3">Marcus T.</span>
+<span class="font-label-tiny text-label-tiny text-outline ml-auto">09:30 AM</span>
+</div>
+<div class="bg-surface-container-high rounded-lg p-mobile-card-pad border border-outline-variant ml-10 rounded-tl-none">
+<p class="font-body-md text-body-md text-on-surface">Initial site walk completed. Weather is clear, no immediate hazards identified at Sector 4.</p>
+</div>
+</div>
+<!-- System Activity -->
+<div class="flex items-start gap-mobile-card-pad opacity-70">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="sync_alt">sync_alt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Status changed to In Progress</span>
+<span class="font-label-tiny text-label-tiny text-outline mt-1">09:35 AM</span>
+</div>
+</div>
+<!-- User Comment with Attachment -->
+<div class="flex flex-col gap-web-gap-tight">
+<div class="flex items-center gap-mobile-icon-pad">
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="Close up headshot of a female structural engineer wearing safety glasses and a white hard hat, serious professional expression, construction site background slightly blurred out, natural daylight, industrial corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0AZGROpC8_jNVg2M4YytAA9bS5VZSKxz5l5WOo89Ygqh6knGnEMdVZcgeJpxWs_zsVs0suwTlh4O5zhyhjxX-rrsNF_QezGTmf8UPFUlt5K-iRyMb1JacJsq8vHmtdOElZdp5ndgZKJ2rnJDJqzO-4G-evA40wkHGOUyFoy8AdlZ7-bwCAaxMMZxDj11wf6HIJbZ87RxYJnLO-164zmR3tM4d-FR43cqkygUi6CYRndoKIjSKvVRiUA"/>
+<span class="font-headline-h3 text-headline-h3">Sarah Jenkins</span>
+<span class="font-label-tiny text-label-tiny text-outline ml-auto">11:15 AM</span>
+</div>
+<div class="bg-surface-container-high rounded-lg p-mobile-card-pad border border-outline-variant ml-10 rounded-tl-none flex flex-col gap-mobile-base">
+<p class="font-body-md text-body-md text-on-surface">Found a minor discrepancy in the rebar layout for footing B-12. Need clarification before pouring.</p>
+<div class="rounded overflow-hidden border border-outline-variant relative">
+<img class="w-full h-32 object-cover" data-alt="Close up shot of exposed steel rebar grid laid out for a concrete foundation on a construction site, muddy ground visible beneath, sharp focus on the intersecting metal bars, daytime lighting, raw industrial aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7OxbqpgbKHh0IeIm_ftb0HtWQ4uUTktmUWjXUFn6G8j5AXZ51nE8YPOP52NLILSrKoulQ2ZR4zTyfHlKj2VvpgLidb8r6mgxue2r2DL5HMGg9B6GRIXJ9M-o5dmRM4ihOMom3YyTYsL25EWBscVq_K-wtyRzViwy1H9xfg75dYty6FiviMCJHyqcYD-6xQW1VUIMWyYtbrqmBAY7LOcKtPmlAi1zzBwD3GAvgKowYBSpOdKFxLL1bEQ"/>
+<div class="absolute bottom-1 right-1 bg-surface-dim/80 backdrop-blur-sm px-2 py-0.5 rounded font-label-tiny text-label-tiny flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="attachment">attachment</span> 1
+                    </div>
+</div>
+</div>
+</div>
+<!-- System Activity -->
+<div class="flex items-start gap-mobile-card-pad opacity-70">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center shrink-0 mt-1">
+<span class="material-symbols-outlined text-[14px] text-warning" data-icon="report">report</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-warning">Issue logged: Rebar discrepancy (Footing B-12)</span>
+<span class="font-label-tiny text-label-tiny text-outline mt-1">11:20 AM</span>
+</div>
+</div>
+</main>
+<!-- Input Area -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-low border-t border-outline-variant p-mobile-card-pad pb-6 z-20 flex items-end gap-mobile-base">
+<button class="w-touch-target-min h-touch-target-optimum flex items-center justify-center text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors shrink-0">
+<span class="material-symbols-outlined" data-icon="add_a_photo">add_a_photo</span>
+</button>
+<div class="flex-1 relative">
+<textarea class="w-full bg-surface border border-outline-variant rounded-xl py-3 pl-4 pr-10 text-on-surface font-body-md resize-none focus:outline-none focus:ring-2 focus:ring-tertiary focus:border-transparent block min-h-[52px] max-h-[120px] placeholder:text-on-surface-variant" placeholder="Add a comment..." rows="1"></textarea>
+</div>
+<button class="w-touch-target-min h-touch-target-optimum flex items-center justify-center bg-mobile-primary text-concrete-white rounded-full shadow-lg active:scale-95 transition-transform shrink-0 disabled:opacity-50 disabled:active:scale-100">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</body></html>

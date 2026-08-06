@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>File System - ConstructSafe ERP</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#4cd7f6",
+                    "on-background": "#d3e4fe",
+                    "on-primary-container": "#777c90",
+                    "on-secondary": "#002a78",
+                    "warning": "#F59E0B",
+                    "secondary-container": "#0053db",
+                    "outline-variant": "#46464c",
+                    "on-error": "#690005",
+                    "danger": "#EF4444",
+                    "tertiary-container": "#001318",
+                    "on-primary-fixed-variant": "#414658",
+                    "primary-container": "#0b1020",
+                    "concrete-white": "#F8FAFC",
+                    "tertiary-fixed": "#acedff",
+                    "on-secondary-fixed-variant": "#003ea8",
+                    "surface-container": "#102034",
+                    "background": "#031427",
+                    "success": "#10B981",
+                    "error": "#ffb4ab",
+                    "error-container": "#93000a",
+                    "on-surface": "#d3e4fe",
+                    "inverse-primary": "#595e71",
+                    "inverse-on-surface": "#213145",
+                    "on-surface-variant": "#c7c6cd",
+                    "on-secondary-fixed": "#00174b",
+                    "syncing": "#FFD60A",
+                    "surface-container-high": "#1b2b3f",
+                    "surface-container-lowest": "#000f21",
+                    "surface-tint": "#c1c5dc",
+                    "surface": "#031427",
+                    "surface-dim": "#031427",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "primary-fixed-dim": "#c1c5dc",
+                    "on-primary-fixed": "#161b2b",
+                    "inverse-surface": "#d3e4fe",
+                    "on-tertiary-container": "#0088a0",
+                    "on-primary": "#2b3041",
+                    "on-tertiary": "#003640",
+                    "surface-container-low": "#0b1c30",
+                    "on-tertiary-fixed": "#001f26",
+                    "secondary-fixed": "#dbe1ff",
+                    "surface-bright": "#2a3a4f",
+                    "primary": "#c1c5dc",
+                    "on-secondary-container": "#cdd7ff",
+                    "outline": "#909097",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "secondary": "#b4c5ff",
+                    "offline": "#8E8E93",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "surface-container-highest": "#26364a",
+                    "on-error-container": "#ffdad6",
+                    "mobile-primary": "#0066FF",
+                    "surface-variant": "#26364a",
+                    "primary-fixed": "#dee1f9"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "touch-target-min": "44px",
+                    "web-page-gap": "64px",
+                    "mobile-edge-margin": "24px",
+                    "mobile-base": "8px",
+                    "web-gap-tight": "4px",
+                    "web-base": "4px",
+                    "touch-target-optimum": "52px",
+                    "mobile-icon-pad": "8px",
+                    "mobile-card-pad": "12px",
+                    "web-padding-card": "16px",
+                    "mobile-section-pad": "16px",
+                    "web-margin-component": "32px"
+            },
+            "fontFamily": {
+                    "mobile-body": ["Inter"],
+                    "headline-h1": ["Inter"],
+                    "mobile-hero": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "mobile-title": ["Inter"],
+                    "label-tiny": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-h3": ["Inter"],
+                    "headline-h2": ["Inter"]
+            },
+            "fontSize": {
+                    "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-mobile-body selection:bg-mobile-primary/30 pb-24">
+<!-- TopAppBar -->
+<header class="w-full sticky top-0 z-40 bg-background border-b border-outline-variant flex items-center justify-between px-mobile-edge-margin py-mobile-base">
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-mobile-primary">ConstructSafe ERP</h1>
+<div class="flex items-center gap-mobile-icon-pad">
+<span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 hover:bg-surface-container-highest transition-colors rounded-full p-1" data-icon="sync">sync</span>
+<span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 hover:bg-surface-container-highest transition-colors rounded-full p-1" data-icon="notifications">notifications</span>
+<span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 hover:bg-surface-container-highest transition-colors rounded-full p-1" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="px-mobile-edge-margin py-mobile-section-pad">
+<!-- Screen Title & Global Search -->
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-mobile-hero text-mobile-hero text-on-background">File System</h2>
+<button class="w-touch-target-min h-touch-target-min bg-surface-container-low flex items-center justify-center rounded-lg border border-outline-variant active:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-primary" data-icon="search">search</span>
+</button>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-3 overflow-x-auto no-scrollbar mb-6 pb-2 -mx-mobile-edge-margin px-mobile-edge-margin">
+<button class="h-10 px-5 rounded-full bg-secondary-container text-on-secondary-container font-label-tiny text-label-tiny whitespace-nowrap border border-transparent shadow-sm">All</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant font-label-tiny text-label-tiny whitespace-nowrap active:bg-surface-container-highest transition-colors">Photos</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant font-label-tiny text-label-tiny whitespace-nowrap active:bg-surface-container-highest transition-colors">Logs</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant font-label-tiny text-label-tiny whitespace-nowrap active:bg-surface-container-highest transition-colors">Documents</button>
+</div>
+<!-- File List (Bento-inspired density) -->
+<div class="flex flex-col gap-mobile-base">
+<!-- File Item 1 -->
+<div class="flex items-center gap-4 p-mobile-card-pad bg-surface-container-low rounded-xl border border-outline-variant active:bg-surface-container transition-colors touch-pan-y">
+<div class="w-14 h-14 rounded-lg bg-surface-container-highest flex items-center justify-center border border-surface-variant shrink-0">
+<span class="material-symbols-outlined text-mobile-primary" data-icon="description" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-body-md text-body-md text-on-surface font-semibold truncate">Site_Audit_Q3_Final.pdf</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">2.4 MB • Oct 24, 2023</p>
+</div>
+<button class="p-2 text-on-surface-variant active:bg-surface-container-highest rounded-full transition-colors shrink-0">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- File Item 2 (Photo) -->
+<div class="flex items-center gap-4 p-mobile-card-pad bg-surface-container-low rounded-xl border border-outline-variant active:bg-surface-container transition-colors touch-pan-y">
+<div class="w-14 h-14 rounded-lg bg-surface-container-highest flex items-center justify-center overflow-hidden relative border border-surface-variant shrink-0">
+<img class="w-full h-full object-cover opacity-80 mix-blend-luminosity" data-alt="A high contrast, industrial style thumbnail photograph of a construction site foundation with steel rebar, taken during daylight with sharp shadows, conveying mission-critical structural work." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTmCdKPU-eAFmrOYIKbxd8hsinm5rocgiMtz4PllH8JfJ4wzDc6x9qrZd_W3-7ci3txTlyp7l15itlenq2j29uZ_BnZWBogTYimMiiFTNkmrPuFWHVlFmDH78pYYqQRsK_HceqX8_EMTHsGEmcqpdtddbzlwQbjznhRJThH2a_mHshOMeqpxQXf3Ii12i4t0yp2O2I2BwFjl5La04YLiJv5vSxvSAukLeRYQ6PFH3qkpNzxI48gk4IGg"/>
+<div class="absolute inset-0 flex items-center justify-center bg-black/40">
+<span class="material-symbols-outlined text-white text-lg" data-icon="image">image</span>
+</div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-body-md text-body-md text-on-surface font-semibold truncate">Foundation_Pour_01.jpg</h3>
+<div class="flex items-center gap-2 mt-1">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">4.1 MB • Oct 23, 2023</p>
+</div>
+</div>
+<button class="p-2 text-on-surface-variant active:bg-surface-container-highest rounded-full transition-colors shrink-0">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- File Item 3 (Folder) -->
+<div class="flex items-center gap-4 p-mobile-card-pad bg-surface-container-low rounded-xl border border-outline-variant active:bg-surface-container transition-colors touch-pan-y">
+<div class="w-14 h-14 rounded-lg bg-surface-container-highest flex items-center justify-center border border-surface-variant shrink-0">
+<span class="material-symbols-outlined text-tertiary" data-icon="folder" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-body-md text-body-md text-on-surface font-semibold truncate">Contractor Agreements</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">12 items • Oct 20, 2023</p>
+</div>
+<button class="p-2 text-on-surface-variant active:bg-surface-container-highest rounded-full transition-colors shrink-0">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- File Item 4 (Log) -->
+<div class="flex items-center gap-4 p-mobile-card-pad bg-surface-container-low rounded-xl border border-outline-variant active:bg-surface-container transition-colors touch-pan-y">
+<div class="w-14 h-14 rounded-lg bg-surface-container-highest flex items-center justify-center border border-surface-variant shrink-0">
+<span class="material-symbols-outlined text-mobile-primary" data-icon="list_alt" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-body-md text-body-md text-on-surface font-semibold truncate">Daily_Log_Oct19.csv</h3>
+<div class="flex items-center gap-2 mt-1">
+<div class="w-2 h-2 rounded-full bg-success"></div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">156 KB • Oct 19, 2023</p>
+</div>
+</div>
+<button class="p-2 text-on-surface-variant active:bg-surface-container-highest rounded-full transition-colors shrink-0">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- File Item 5 (Blueprint) -->
+<div class="flex items-center gap-4 p-mobile-card-pad bg-surface-container-low rounded-xl border border-outline-variant active:bg-surface-container transition-colors touch-pan-y">
+<div class="w-14 h-14 rounded-lg bg-surface-container-highest flex items-center justify-center border border-surface-variant shrink-0">
+<span class="material-symbols-outlined text-mobile-primary" data-icon="architecture" style="font-variation-settings: 'FILL' 1;">architecture</span>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-body-md text-body-md text-on-surface font-semibold truncate">HVAC_Layout_v4.dwg</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">14.2 MB • Oct 18, 2023</p>
+</div>
+<button class="p-2 text-on-surface-variant active:bg-surface-container-highest rounded-full transition-colors shrink-0">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+</main>
+<!-- FAB for quick uploads -->
+<button class="fixed bottom-24 right-mobile-edge-margin w-14 h-14 bg-mobile-primary text-white rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform z-40 border border-mobile-primary ring-4 ring-background">
+<span class="material-symbols-outlined text-white" data-icon="add" data-weight="fill" style="font-size: 28px;">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 h-touch-target-optimum bg-surface-container-highest shadow-lg flex justify-around items-center px-mobile-edge-margin pb-safe">
+<!-- Home (Inactive) -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant touch-none active:scale-90 active:bg-surface-container-high w-16 h-full rounded-lg cursor-pointer transition-transform">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-tiny text-label-tiny mt-1">Home</span>
+</div>
+<!-- Files (Active) -->
+<div class="flex flex-col items-center justify-center text-mobile-primary font-bold touch-none active:scale-90 active:bg-surface-container-high w-16 h-full rounded-lg cursor-pointer transition-transform">
+<span class="material-symbols-outlined" data-icon="folder_open" data-weight="fill" style="font-variation-settings: 'FILL' 1;">folder_open</span>
+<span class="font-label-tiny text-label-tiny mt-1">Files</span>
+</div>
+<!-- Photos (Inactive) -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant touch-none active:scale-90 active:bg-surface-container-high w-16 h-full rounded-lg cursor-pointer transition-transform">
+<span class="material-symbols-outlined" data-icon="camera_alt">camera_alt</span>
+<span class="font-label-tiny text-label-tiny mt-1">Photos</span>
+</div>
+<!-- More (Inactive) -->
+<div class="flex flex-col items-center justify-center text-on-surface-variant touch-none active:scale-90 active:bg-surface-container-high w-16 h-full rounded-lg cursor-pointer transition-transform">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+<span class="font-label-tiny text-label-tiny mt-1">More</span>
+</div>
+</nav>
+</body></html>

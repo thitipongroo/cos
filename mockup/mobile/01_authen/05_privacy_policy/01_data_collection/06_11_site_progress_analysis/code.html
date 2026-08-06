@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Site Progress Analysis - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-tint": "#c1c5dc",
+                        "mobile-primary": "#0066FF",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "on-tertiary": "#003640",
+                        "surface-dim": "#031427",
+                        "surface-container-lowest": "#000f21",
+                        "on-surface-variant": "#c7c6cd",
+                        "on-tertiary-container": "#0088a0",
+                        "secondary": "#b4c5ff",
+                        "inverse-surface": "#d3e4fe",
+                        "on-tertiary-fixed": "#001f26",
+                        "primary-fixed": "#dee1f9",
+                        "surface-container-highest": "#26364a",
+                        "inverse-primary": "#595e71",
+                        "inverse-on-surface": "#213145",
+                        "surface-container": "#102034",
+                        "surface-bright": "#2a3a4f",
+                        "surface": "#031427",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "success": "#10B981",
+                        "outline": "#909097",
+                        "on-primary-container": "#777c90",
+                        "on-primary-fixed": "#161b2b",
+                        "secondary-container": "#0053db",
+                        "background": "#031427",
+                        "surface-variant": "#26364a",
+                        "surface-container-low": "#0b1c30",
+                        "on-secondary-container": "#cdd7ff",
+                        "on-background": "#d3e4fe",
+                        "danger": "#EF4444",
+                        "warning": "#F59E0B",
+                        "on-surface": "#d3e4fe",
+                        "tertiary-container": "#001318",
+                        "outline-variant": "#46464c",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-secondary": "#002a78",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed-variant": "#414658",
+                        "primary": "#c1c5dc",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "surface-container-high": "#1b2b3f",
+                        "concrete-white": "#F8FAFC",
+                        "tertiary": "#4cd7f6",
+                        "offline": "#8E8E93",
+                        "tertiary-fixed": "#acedff",
+                        "on-primary": "#2b3041",
+                        "error-container": "#93000a",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "on-error": "#690005",
+                        "syncing": "#FFD60A",
+                        "primary-container": "#0b1020",
+                        "on-secondary-fixed": "#00174b",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "on-error-container": "#ffdad6"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "mobile-edge-margin": "24px",
+                        "web-page-gap": "64px",
+                        "mobile-base": "8px",
+                        "web-margin-component": "32px",
+                        "mobile-card-pad": "12px",
+                        "touch-target-optimum": "52px",
+                        "web-base": "4px",
+                        "mobile-section-pad": "16px",
+                        "web-gap-tight": "4px",
+                        "mobile-icon-pad": "8px",
+                        "web-padding-card": "16px",
+                        "touch-target-min": "44px"
+                    },
+                    fontFamily: {
+                        "label-tiny": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "label-tiny": ["11px", { lineHeight: "1", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "mobile-hero": ["28px", { lineHeight: "1.2", fontWeight: "700" }],
+                        "mobile-body": ["17px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "body-sm": ["12px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "headline-h3": ["16px", { lineHeight: "1.3", fontWeight: "500" }],
+                        "headline-h1": ["24px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "headline-h2": ["20px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "display-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "mobile-title": ["22px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "body-md": ["14px", { lineHeight: "1.6", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #020617; /* Background Layer Deepest */
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 4px;
+            height: 200px;
+            background: #06B6D4; /* AI Cyan */
+            cursor: pointer;
+            border: none;
+        }
+        .slider-thumb::-moz-range-thumb {
+            width: 4px;
+            height: 200px;
+            background: #06B6D4;
+            cursor: pointer;
+            border: none;
+        }
+        
+        /* Circular Progress */
+        .circular-chart {
+            display: block;
+            margin: 0 auto;
+            max-width: 80%;
+            max-height: 250px;
+        }
+        .circle-bg {
+            fill: none;
+            stroke: #26364a;
+            stroke-width: 3.8;
+        }
+        .circle {
+            fill: none;
+            stroke-width: 2.8;
+            stroke-linecap: round;
+            animation: progress 1s ease-out forwards;
+        }
+        @keyframes progress {
+            0% {
+                stroke-dasharray: 0 100;
+            }
+        }
+        
+        /* Hiding scrollbar for neatness */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="antialiased min-h-screen flex flex-col font-mobile-body text-mobile-body overflow-x-hidden">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface w-full top-0 sticky border-b border-outline-variant flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum z-50">
+<div class="flex items-center gap-mobile-base">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+<h1 class="font-headline-h2 text-headline-h2 text-on-surface">Site Progress</h1>
+</div>
+<div class="flex items-center gap-mobile-section-pad text-on-surface">
+<button class="flex items-center justify-center w-touch-target-min h-touch-target-min transition-all duration-200 active:opacity-80">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+</div>
+</header>
+<main class="flex-grow p-mobile-edge-margin flex flex-col gap-mobile-section-pad pb-24">
+<!-- Top Summary Card (Progress) -->
+<section class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline-variant relative overflow-hidden">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface-variant mb-mobile-base">Overall Completion</h2>
+<div class="relative flex justify-center items-center py-mobile-section-pad">
+<svg class="circular-chart w-48 h-48 drop-shadow-md" viewbox="0 0 36 36">
+<path class="circle-bg" d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"></path>
+<path class="circle stroke-mobile-primary" d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831" stroke-dasharray="68, 100"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col justify-center items-center">
+<span class="font-display-lg text-display-lg text-on-surface">68%</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase mt-1">Estimated Finish</span>
+<span class="font-body-sm text-body-sm text-tertiary mt-web-gap-tight">Sep 2024</span>
+</div>
+</div>
+<div class="flex justify-between items-center mt-web-gap-tight pt-mobile-base border-t border-outline-variant">
+<div class="flex items-center gap-web-gap-tight">
+<span class="material-symbols-outlined text-success text-[16px]">check_circle</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">On Schedule</span>
+</div>
+<div class="flex items-center gap-web-gap-tight">
+<span class="material-symbols-outlined text-warning text-[16px]">pending_actions</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">3 Pending Reviews</span>
+</div>
+</div>
+</section>
+<!-- Analysis Section: Photo Comparison Slider -->
+<section class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline-variant border-l-2 border-l-[#06B6D4] relative">
+<div class="flex justify-between items-center mb-mobile-base">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface">BIM vs Reality</h2>
+<span class="font-label-tiny text-label-tiny text-[#06B6D4] uppercase tracking-wider flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span> AI Aligned
+                 </span>
+</div>
+<div class="relative w-full h-[250px] rounded-DEFAULT overflow-hidden group">
+<!-- Under Image (Reality) -->
+<div class="absolute inset-0 w-full h-full bg-cover bg-center" data-alt="High-resolution, gritty photograph of an active construction site showing exposed steel framing, concrete foundations, and industrial equipment under harsh daylight. Dark, moody, high-contrast industrial aesthetic highlighting technical reality over stylized artifice. Mission-critical industrial tone." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBUY08EV_3A6tFZt7taQgsS9mtB0fQkNaLHVxcLISNKZDh3DavQ0VMlDGXubIuGoLdx1VKOoZyCcqs59gOmDsk7dpVOuvU9lr87O2oOyx_sDhYjWXWlxmLNyOyFKIHONRZr50k-j3Z7n5kPED4KHQO52RpbvSLBv5w0q2gP5TlUsuRSHDjfPRUsrKZjxDfcf8iJWb6kc26cvkpWIcg77_HtGVMX47YDU0n4E-gxZUsRUVNI7s9Z92-yjA')"></div>
+<div class="absolute bottom-2 right-2 bg-surface-container-highest/80 px-2 py-1 rounded font-label-tiny text-label-tiny text-on-surface backdrop-blur-sm">Field Reality</div>
+<!-- Over Image (BIM) via clipping mask logic simulated via JS below, for now just basic structure -->
+<div class="absolute inset-0 w-1/2 h-full bg-cover bg-center border-r-2 border-[#06B6D4]" data-alt="Highly detailed, wireframe-style 3D architectural rendering (BIM Model) of the same construction site structure. Neon cyan lines and grid structures overlaying a dark navy, technical architectural blueprint background. Futuristic, intelligent, precision-engineering aesthetic emphasizing data and geometry." id="bim-layer" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDeHmVJTBLmo1EDnQRlhSASekRgmBMmCnJdHLAER9xMug_butV7SyaCUZ8_KXESN0yZIBT8CKprUwphg5JRoEHwh2da713GNMjGA92FnYaxwOT6B83UVo-SAnBEDF9NLrtsEuGwUFIwI15bRA-2IPLfryGAjWZ4_5zBTbRXzNEN8uGN6D4Rjcft4kdU3T8DOMd3l1B77sXvTLiZjETm-i3hcMjD6iqZklXafwFofO7aZqMe4yIvYIu2pg')">
+<div class="absolute bottom-2 left-2 bg-surface-container-highest/80 px-2 py-1 rounded font-label-tiny text-label-tiny text-[#06B6D4] backdrop-blur-sm">BIM Model</div>
+</div>
+<!-- Invisible Slider for Interaction -->
+<input class="slider-thumb absolute inset-0 w-full h-full opacity-0 z-10" max="100" min="0" oninput="document.getElementById('bim-layer').style.width = this.value + '%'" type="range" value="50"/>
+<!-- Custom Handle Visual -->
+<div class="absolute top-0 bottom-0 w-1 bg-[#06B6D4] left-1/2 -ml-[2px] pointer-events-none flex items-center justify-center shadow-[0_0_10px_rgba(6,182,212,0.5)]" id="slider-handle">
+<div class="w-6 h-6 rounded-full bg-[#06B6D4] flex items-center justify-center border-2 border-surface">
+<span class="material-symbols-outlined text-surface text-[14px] transform rotate-90">unfold_more</span>
+</div>
+</div>
+</div>
+<script>
+                // Basic vanilla JS to move the handle visual with the slider
+                const slider = document.querySelector('.slider-thumb');
+                const handle = document.getElementById('slider-handle');
+                slider.addEventListener('input', (e) => {
+                    handle.style.left = e.target.value + '%';
+                });
+            </script>
+</section>
+<!-- Deviation Feed -->
+<section>
+<div class="flex justify-between items-center mb-mobile-section-pad">
+<h2 class="font-headline-h2 text-headline-h2 text-on-surface">Detected Deviations</h2>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">2 Active</span>
+</div>
+<div class="flex flex-col gap-mobile-base">
+<!-- Deviation Card 1 (Unresolved) -->
+<div class="bg-surface-container-low rounded-lg border border-outline-variant p-mobile-card-pad flex gap-mobile-section-pad items-start active:bg-surface-variant transition-colors duration-150">
+<div class="w-12 h-12 rounded bg-surface-variant flex-shrink-0 bg-cover bg-center border border-outline-variant" data-alt="Close-up macro shot of a structural steel I-beam joint where a bolt is visibly misaligned. Industrial lighting, dark steel textures, highlighting a construction flaw. Technical documentary style photography in a harsh industrial environment." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCfZT4gil4eSu5XrDhvlW52MYxmQEMd50P7Y_1qOicmJnGvo0jHQ7BEQHfeDYzNYc5HK3dpg8elC9JSGb18g1oFgYyxmF-BzrFXVojhq1SHhY2Lp5J3EhnjPWbXuW2diCCLI5AWEDeT5ODOTtcVMxCdDpAeoslTFbhu2DEjCRppo_27PW2Ts6MzdnwlHLV65Dnr-V5YFXikjyY69FHUUYnwXMcFrxm4Gn10uh1uDbp6BPqGaRU4-TDYug')"></div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start mb-web-gap-tight">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">Steel Beam Misalignment</h3>
+<span class="bg-danger/20 text-danger border border-danger/30 px-2 py-0.5 rounded-full font-label-tiny text-label-tiny uppercase flex-shrink-0">Unresolved</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mb-1">Sector G - Column 4B</p>
+<div class="flex items-center gap-1 text-tertiary">
+<span class="material-symbols-outlined text-[14px]">straighten</span>
+<span class="font-label-tiny text-label-tiny">Delta: 45mm (Tolerance 10mm)</span>
+</div>
+</div>
+</div>
+<!-- Deviation Card 2 (Acknowledged) -->
+<div class="bg-surface-container-low rounded-lg border border-outline-variant p-mobile-card-pad flex gap-mobile-section-pad items-start opacity-75 active:bg-surface-variant transition-colors duration-150">
+<div class="w-12 h-12 rounded bg-surface-variant flex-shrink-0 bg-cover bg-center border border-outline-variant" data-alt="Close up of a newly poured concrete slab showing a superficial hairline surface crack. Flat, harsh lighting emphasizing the texture of the grey concrete. Clinical, technical documentation style, dark mode industrial context." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCwyGS9KzC5lqZ4gMgkPB4XeEoG7kfE8U9_1oT1rwQKZK5O3_gAO2mBGkkoSODPWM064fzqZa-kmsRttBRnC_mugP_CWf5-iULXl2PChgbQTnP7PGetUHaoyTS_P8bqpk1wBoQSqj7usewtLO-qxFPCEJI2sf_E5hGGMUT0En4iVlKbV1KEBI6gJhgJH_U56bPU268Q_VoI8IUHx016oxnJ-0CNb5IQ7GLWmqj2llEQEmRC1AAu-1QR9g')"></div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-start mb-web-gap-tight">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">Concrete Slab Surface Crack</h3>
+<span class="bg-warning/20 text-warning border border-warning/30 px-2 py-0.5 rounded-full font-label-tiny text-label-tiny uppercase flex-shrink-0">Acknowledged</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate mb-1">Sector F - Level 2</p>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">assignment_ind</span>
+<span class="font-label-tiny text-label-tiny">Assigned to: QA Team Alpha</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Action Button (FAB / Bottom Sticky) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant p-mobile-edge-margin pb-8 z-50">
+<button class="w-full h-touch-target-optimum bg-mobile-primary hover:bg-mobile-primary/90 text-white rounded-xl font-headline-h3 text-headline-h3 font-bold flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(0,102,255,0.3)] transition-transform active:scale-95 duration-150 border border-secondary-container">
+<span class="material-symbols-outlined font-bold">add_circle</span>
+            Log New Deviation
+        </button>
+</div>
+</body></html>

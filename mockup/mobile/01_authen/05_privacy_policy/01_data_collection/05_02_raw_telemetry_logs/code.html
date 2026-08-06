@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Raw Telemetry Logs</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-container-highest": "#26364a",
+                        "offline": "#8E8E93",
+                        "on-background": "#d3e4fe",
+                        "on-primary-fixed": "#161b2b",
+                        "on-tertiary-container": "#0088a0",
+                        "inverse-primary": "#595e71",
+                        "background": "#031427",
+                        "on-primary": "#2b3041",
+                        "success": "#10B981",
+                        "on-primary-container": "#777c90",
+                        "secondary-container": "#0053db",
+                        "surface-bright": "#2a3a4f",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "primary-fixed": "#dee1f9",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "on-tertiary-fixed": "#001f26",
+                        "surface-container-lowest": "#000f21",
+                        "warning": "#F59E0B",
+                        "primary": "#c1c5dc",
+                        "tertiary": "#4cd7f6",
+                        "outline-variant": "#46464c",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "surface-dim": "#031427",
+                        "surface-variant": "#26364a",
+                        "error-container": "#93000a",
+                        "on-surface-variant": "#c7c6cd",
+                        "syncing": "#FFD60A",
+                        "on-surface": "#d3e4fe",
+                        "outline": "#909097",
+                        "surface-container-high": "#1b2b3f",
+                        "surface": "#031427",
+                        "secondary-fixed": "#dbe1ff",
+                        "mobile-primary": "#0066FF",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "inverse-surface": "#d3e4fe",
+                        "concrete-white": "#F8FAFC",
+                        "inverse-on-surface": "#213145",
+                        "tertiary-container": "#001318",
+                        "on-tertiary": "#003640",
+                        "surface-container": "#102034",
+                        "on-error": "#690005",
+                        "danger": "#EF4444",
+                        "on-secondary-container": "#cdd7ff",
+                        "on-secondary": "#002a78",
+                        "surface-container-low": "#0b1c30",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#c1c5dc",
+                        "tertiary-fixed": "#acedff",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-secondary-fixed": "#00174b",
+                        "primary-container": "#0b1020",
+                        "secondary": "#b4c5ff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "web-page-gap": "64px",
+                        "web-base": "4px",
+                        "mobile-base": "8px",
+                        "web-gap-tight": "4px",
+                        "mobile-icon-pad": "8px",
+                        "web-padding-card": "16px",
+                        "mobile-section-pad": "16px",
+                        "web-margin-component": "32px",
+                        "touch-target-min": "44px",
+                        "touch-target-optimum": "52px",
+                        "mobile-edge-margin": "24px",
+                        "mobile-card-pad": "12px"
+                    },
+                    fontFamily: {
+                        "mobile-title": ["Inter", "sans-serif"],
+                        "mobile-body": ["Inter", "sans-serif"],
+                        "headline-h2": ["Inter", "sans-serif"],
+                        "mobile-hero": ["Inter", "sans-serif"],
+                        "headline-h3": ["Inter", "sans-serif"],
+                        "body-sm": ["Inter", "sans-serif"],
+                        "display-lg": ["Inter", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-h1": ["Inter", "sans-serif"],
+                        "label-tiny": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    },
+                    fontSize: {
+                        "mobile-title": ["22px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "mobile-body": ["17px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "headline-h2": ["20px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "mobile-hero": ["28px", { lineHeight: "1.2", fontWeight: "700" }],
+                        "headline-h3": ["16px", { lineHeight: "1.3", fontWeight: "500" }],
+                        "body-sm": ["12px", { lineHeight: "1.5", fontWeight: "400" }],
+                        "display-lg": ["32px", { lineHeight: "1.2", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "body-md": ["14px", { lineHeight: "1.6", fontWeight: "400" }],
+                        "headline-h1": ["24px", { lineHeight: "1.3", fontWeight: "600" }],
+                        "label-tiny": ["11px", { lineHeight: "1", letterSpacing: "0.05em", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Scrollbar styling for high-density feel */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #46464c; border-radius: 2px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-mobile-body h-screen flex flex-col overflow-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-background border-b border-outline-variant flex flex-col pt-safe-top">
+<div class="flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum">
+<button class="text-primary hover:bg-surface-container-highest active:scale-95 transition-transform p-mobile-icon-pad rounded-full flex items-center justify-center h-touch-target-min w-touch-target-min -ml-mobile-icon-pad">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-mobile-title text-mobile-title text-on-surface uppercase tracking-wider flex-1 text-center truncate">System Logs</h1>
+<button class="text-primary hover:bg-surface-container-highest active:scale-95 transition-transform p-mobile-icon-pad rounded-full flex items-center justify-center h-touch-target-min w-touch-target-min -mr-mobile-icon-pad">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-mobile-base px-mobile-edge-margin pb-3 overflow-x-auto no-scrollbar items-center">
+<button class="h-8 px-4 rounded-full bg-surface-variant border border-outline-variant text-on-surface-variant font-body-sm whitespace-nowrap active:bg-surface-container-highest">All</button>
+<button class="h-8 px-4 rounded-full bg-surface border border-tertiary text-tertiary font-body-sm whitespace-nowrap relative">
+                Engine
+                <span class="absolute inset-0 ring-1 ring-tertiary rounded-full opacity-50"></span>
+</button>
+<button class="h-8 px-4 rounded-full bg-surface-variant border border-outline-variant text-on-surface-variant font-body-sm whitespace-nowrap active:bg-surface-container-highest">Fuel</button>
+<button class="h-8 px-4 rounded-full bg-surface-variant border border-outline-variant text-on-surface-variant font-body-sm whitespace-nowrap active:bg-surface-container-highest">Temp</button>
+<button class="h-8 px-4 rounded-full bg-surface-variant border border-outline-variant text-on-surface-variant font-body-sm whitespace-nowrap active:bg-surface-container-highest">Hydraulics</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto mt-[104px] mb-[68px] bg-background">
+<!-- Context Header -->
+<div class="px-mobile-edge-margin py-mobile-section-pad border-b border-surface-container-high bg-surface-container-lowest">
+<p class="font-label-tiny text-label-tiny text-on-surface-variant uppercase mb-1">Asset Context</p>
+<p class="font-headline-h3 text-headline-h3 text-on-surface">Excavator EX-702</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 font-mono">ID: EX702-88B-99A</p>
+</div>
+<!-- Telemetry List -->
+<div class="flex flex-col">
+<!-- Log Entry 1 (Alert) -->
+<div class="flex items-start gap-3 px-mobile-edge-margin py-3 border-b border-surface-container-highest bg-surface-container-low relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-warning"></div>
+<div class="pt-1">
+<span class="material-symbols-outlined text-warning text-[18px]">warning</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant font-mono">14:02:11.452</span>
+<span class="font-label-tiny text-label-tiny text-warning uppercase">TEMP_HI</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface truncate">ENG_COOLANT_TEMP</p>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="font-mono text-tertiary text-lg font-medium">108.5</span>
+<span class="font-mono text-on-surface-variant text-xs">°C</span>
+<span class="font-mono text-outline text-xs ml-auto">THR: 105.0</span>
+</div>
+</div>
+</div>
+<!-- Log Entry 2 -->
+<div class="flex items-start gap-3 px-mobile-edge-margin py-3 border-b border-surface-container-highest bg-surface hover:bg-surface-container-low transition-colors">
+<div class="pt-1 w-[18px]"></div> <!-- Spacer for alignment -->
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant font-mono">14:02:10.920</span>
+<span class="font-label-tiny text-label-tiny text-success uppercase">OK</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface truncate">HYD_SYS_PRESS</p>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="font-mono text-on-surface text-lg font-medium">32.4</span>
+<span class="font-mono text-on-surface-variant text-xs">MPa</span>
+</div>
+</div>
+</div>
+<!-- Log Entry 3 -->
+<div class="flex items-start gap-3 px-mobile-edge-margin py-3 border-b border-surface-container-highest bg-surface hover:bg-surface-container-low transition-colors">
+<div class="pt-1 w-[18px]"></div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant font-mono">14:02:10.155</span>
+<span class="font-label-tiny text-label-tiny text-success uppercase">OK</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface truncate">ENG_OIL_PRESS</p>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="font-mono text-on-surface text-lg font-medium">415.2</span>
+<span class="font-mono text-on-surface-variant text-xs">kPa</span>
+</div>
+</div>
+</div>
+<!-- Log Entry 4 (Critical) -->
+<div class="flex items-start gap-3 px-mobile-edge-margin py-3 border-b border-error-container bg-error-container/20 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-danger"></div>
+<div class="pt-1">
+<span class="material-symbols-outlined text-danger text-[18px]">error</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant font-mono">14:02:09.001</span>
+<span class="font-label-tiny text-label-tiny text-danger uppercase">ERR_VAL</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface truncate">FUEL_RAIL_PRESS</p>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="font-mono text-danger text-lg font-medium">0.0</span>
+<span class="font-mono text-on-surface-variant text-xs">MPa</span>
+<span class="font-mono text-outline text-xs ml-auto">SIG_LOST</span>
+</div>
+</div>
+</div>
+<!-- Log Entry 5 -->
+<div class="flex items-start gap-3 px-mobile-edge-margin py-3 border-b border-surface-container-highest bg-surface hover:bg-surface-container-low transition-colors">
+<div class="pt-1 w-[18px]"></div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-baseline mb-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant font-mono">14:02:08.773</span>
+<span class="font-label-tiny text-label-tiny text-success uppercase">OK</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface truncate">BATTERY_VOLT</p>
+<div class="mt-1 flex items-baseline gap-2">
+<span class="font-mono text-on-surface text-lg font-medium">24.1</span>
+<span class="font-mono text-on-surface-variant text-xs">V</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 h-touch-target-optimum border-t border-outline-variant bg-surface-container-lowest flex justify-around items-center px-mobile-edge-margin pb-2 pt-2 pb-safe">
+<button class="flex flex-col items-center justify-center text-mobile-primary bg-secondary-container rounded-full px-4 py-1 hover:text-on-surface active:opacity-80 transition-colors">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-tiny text-label-tiny uppercase">Diagnostics</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface active:opacity-80 transition-colors px-4 py-1">
+<span class="material-symbols-outlined mb-1">assignment</span>
+<span class="font-label-tiny text-label-tiny uppercase">Tasks</span>
+</button>
+</nav>
+</body></html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Report Data Discrepancy</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "surface-container-lowest": "#000f21",
+                            "primary-fixed": "#dee1f9",
+                            "on-tertiary-container": "#0088a0",
+                            "concrete-white": "#F8FAFC",
+                            "success": "#10B981",
+                            "background": "#031427",
+                            "primary-container": "#0b1020",
+                            "surface-container-highest": "#26364a",
+                            "secondary": "#b4c5ff",
+                            "on-tertiary": "#003640",
+                            "danger": "#EF4444",
+                            "error": "#ffb4ab",
+                            "on-error": "#690005",
+                            "secondary-container": "#0053db",
+                            "inverse-surface": "#d3e4fe",
+                            "tertiary-fixed": "#acedff",
+                            "on-secondary-fixed": "#00174b",
+                            "syncing": "#FFD60A",
+                            "tertiary": "#4cd7f6",
+                            "on-secondary-fixed-variant": "#003ea8",
+                            "surface-dim": "#031427",
+                            "surface-container-high": "#1b2b3f",
+                            "surface": "#031427",
+                            "error-container": "#93000a",
+                            "secondary-fixed-dim": "#b4c5ff",
+                            "surface-container-low": "#0b1c30",
+                            "on-primary-fixed-variant": "#414658",
+                            "surface-variant": "#26364a",
+                            "outline": "#909097",
+                            "on-secondary": "#002a78",
+                            "primary-fixed-dim": "#c1c5dc",
+                            "mobile-primary": "#0066FF",
+                            "tertiary-fixed-dim": "#4cd7f6",
+                            "surface-tint": "#c1c5dc",
+                            "on-primary-container": "#777c90",
+                            "on-primary": "#2b3041",
+                            "surface-container": "#102034",
+                            "tertiary-container": "#001318",
+                            "surface-bright": "#2a3a4f",
+                            "on-surface": "#d3e4fe",
+                            "on-background": "#d3e4fe",
+                            "secondary-fixed": "#dbe1ff",
+                            "on-surface-variant": "#c7c6cd",
+                            "primary": "#c1c5dc",
+                            "on-tertiary-fixed-variant": "#004e5c",
+                            "outline-variant": "#46464c",
+                            "on-secondary-container": "#cdd7ff",
+                            "warning": "#F59E0B",
+                            "on-tertiary-fixed": "#001f26",
+                            "offline": "#8E8E93",
+                            "inverse-primary": "#595e71",
+                            "on-error-container": "#ffdad6",
+                            "inverse-on-surface": "#213145",
+                            "on-primary-fixed": "#161b2b"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "touch-target-min": "44px",
+                            "web-padding-card": "16px",
+                            "web-gap-tight": "4px",
+                            "web-margin-component": "32px",
+                            "mobile-card-pad": "12px",
+                            "mobile-base": "8px",
+                            "web-base": "4px",
+                            "mobile-edge-margin": "24px",
+                            "touch-target-optimum": "52px",
+                            "mobile-section-pad": "16px",
+                            "web-page-gap": "64px",
+                            "mobile-icon-pad": "8px"
+                    },
+                    "fontFamily": {
+                            "mobile-title": ["Inter"],
+                            "headline-h2": ["Inter"],
+                            "body-sm": ["Inter"],
+                            "mobile-hero": ["Inter"],
+                            "body-md": ["Inter"],
+                            "mobile-body": ["Inter"],
+                            "headline-h1": ["Inter"],
+                            "headline-h3": ["Inter"],
+                            "label-tiny": ["Inter"],
+                            "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                            "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                            "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                            "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                            "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                            "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                            "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                            "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                            "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                            "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                            "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #031427;
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Custom scrollbar for textareas */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #46464c;
+            border-radius: 3px;
+        }
+        
+        .ai-glow-focus:focus-within {
+            box-shadow: 0 0 0 1px #06B6D4;
+            border-color: #06B6D4;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-mobile-body pt-[72px] pb-[80px]">
+<!-- TopAppBar JSON Component -->
+<header class="bg-surface-container-highest dark:bg-surface-container-highest fixed top-0 w-full z-50 border-b border-outline-variant dark:border-outline-variant flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum w-full shadow-none">
+<button aria-label="Go back" class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-bright dark:hover:bg-surface-bright active:scale-95 transition-transform flex items-center justify-center h-touch-target-min w-touch-target-min rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-mobile-title text-mobile-title font-bold text-on-surface dark:text-on-surface text-primary dark:text-primary">Report Discrepancy</h1>
+<div class="w-touch-target-min h-touch-target-min flex items-center justify-center">
+<!-- Empty space to balance header if no trailing action exists logically for a report screen, but JSON dictated sync icon previously. We'll use a placeholder space to maintain centering -->
+</div>
+</header>
+<main class="flex-1 flex flex-col px-mobile-edge-margin py-mobile-section-pad gap-mobile-section-pad">
+<!-- Context Card -->
+<section class="bg-surface-container border border-outline-variant rounded-lg p-mobile-card-pad flex flex-col gap-web-base relative overflow-hidden">
+<div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+<div class="flex items-center gap-mobile-icon-pad text-on-surface-variant">
+<span class="material-symbols-outlined text-body-md" data-icon="info">info</span>
+<span class="font-body-sm text-body-sm uppercase tracking-wider text-on-surface-variant">Reporting Context</span>
+</div>
+<div>
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Structural Integrity Audit - Zone 4</h2>
+<div class="flex items-center gap-2">
+<span class="font-label-tiny text-label-tiny bg-surface-container-high border border-outline-variant px-2 py-1 rounded text-primary">Log ID: #A93-B72</span>
+<span class="font-label-tiny text-label-tiny bg-surface-container-high border border-outline-variant px-2 py-1 rounded text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="calendar_today">calendar_today</span>
+                        Today, 09:42 AM
+                    </span>
+</div>
+</div>
+</section>
+<!-- Form Elements -->
+<form class="flex flex-col gap-mobile-section-pad flex-1">
+<!-- Discrepancy Type -->
+<div class="flex flex-col gap-mobile-base">
+<label class="font-body-sm text-body-sm text-on-surface-variant" for="discrepancy-type">Discrepancy Type <span class="text-danger">*</span></label>
+<div class="relative ai-glow-focus bg-surface-container-high border border-outline-variant rounded DEFAULT transition-all">
+<select class="w-full bg-transparent border-none text-on-surface font-mobile-body h-touch-target-optimum px-4 appearance-none focus:ring-0 cursor-pointer" id="discrepancy-type">
+<option class="bg-surface-container-high text-on-surface-variant" disabled="" selected="" value="">Select category...</option>
+<option class="bg-surface-container-high" value="incorrect_values">Incorrect Values / Readings</option>
+<option class="bg-surface-container-high" value="missing_data">Missing Essential Data</option>
+<option class="bg-surface-container-high" value="wrong_status">Incorrect Status State</option>
+<option class="bg-surface-container-high" value="hardware_fault">Hardware Sensor Fault</option>
+<option class="bg-surface-container-high" value="other">Other Observation</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-mobile-base">
+<label class="font-body-sm text-body-sm text-on-surface-variant flex justify-between" for="description">
+<span>Description <span class="text-danger">*</span></span>
+<span class="text-outline">AI Assisted</span>
+</label>
+<div class="ai-glow-focus bg-surface-container-high border border-outline-variant rounded DEFAULT transition-all p-1 relative">
+<textarea class="w-full bg-transparent border-none text-on-surface font-mobile-body p-3 focus:ring-0 resize-none min-h-[120px]" id="description" placeholder="Detail the exact nature of the discrepancy..." rows="4"></textarea>
+<button class="absolute bottom-3 right-3 text-tertiary hover:text-tertiary-fixed transition-colors flex items-center gap-1 bg-surface-container-lowest px-2 py-1 rounded border border-tertiary/30" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-tiny text-label-tiny">Enhance</span>
+</button>
+</div>
+</div>
+<!-- Impact Level -->
+<div class="flex flex-col gap-mobile-base">
+<label class="font-body-sm text-body-sm text-on-surface-variant">Impact Severity <span class="text-danger">*</span></label>
+<div class="grid grid-cols-3 gap-web-base">
+<label class="cursor-pointer relative">
+<input class="peer sr-only" name="impact" type="radio" value="low"/>
+<div class="h-touch-target-min flex items-center justify-center bg-surface-container border border-outline-variant rounded peer-checked:bg-success/20 peer-checked:border-success peer-checked:text-success text-on-surface-variant transition-all font-body-md">
+                            Low
+                        </div>
+</label>
+<label class="cursor-pointer relative">
+<input checked="" class="peer sr-only" name="impact" type="radio" value="medium"/>
+<div class="h-touch-target-min flex items-center justify-center bg-surface-container border border-outline-variant rounded peer-checked:bg-warning/20 peer-checked:border-warning peer-checked:text-warning text-on-surface-variant transition-all font-body-md">
+                            Medium
+                        </div>
+</label>
+<label class="cursor-pointer relative">
+<input class="peer sr-only" name="impact" type="radio" value="high"/>
+<div class="h-touch-target-min flex items-center justify-center bg-surface-container border border-outline-variant rounded peer-checked:bg-danger/20 peer-checked:border-danger peer-checked:text-danger text-on-surface-variant transition-all font-body-md">
+                            High
+                        </div>
+</label>
+</div>
+</div>
+<!-- Evidence Attachment -->
+<div class="flex flex-col gap-mobile-base mt-2">
+<label class="font-body-sm text-body-sm text-on-surface-variant">Supporting Evidence</label>
+<div class="grid grid-cols-2 gap-mobile-base">
+<!-- Photo Capture Button -->
+<button class="h-[100px] border border-dashed border-outline-variant bg-surface-container-high rounded flex flex-col items-center justify-center gap-2 text-on-surface hover:bg-surface-bright active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-mobile-hero text-tertiary" data-icon="photo_camera">photo_camera</span>
+<span class="font-body-sm text-body-sm">Take Photo</span>
+</button>
+<!-- File Upload Button -->
+<button class="h-[100px] border border-dashed border-outline-variant bg-surface-container-high rounded flex flex-col items-center justify-center gap-2 text-on-surface hover:bg-surface-bright active:scale-[0.98] transition-all" type="button">
+<span class="material-symbols-outlined text-mobile-hero text-secondary" data-icon="upload_file">upload_file</span>
+<span class="font-body-sm text-body-sm">Attach Log File</span>
+</button>
+</div>
+</div>
+</form>
+</main>
+<!-- Footer Action -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-highest border-t border-outline-variant p-mobile-edge-margin z-40 pb-safe">
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-concrete-white font-mobile-title text-mobile-title rounded-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-mobile-primary/20" type="button">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+            Submit Report
+        </button>
+</div>
+<script>
+        // Simple optimistic UI interaction for submit button
+        document.querySelector('.bg-mobile-primary').addEventListener('click', function(e) {
+            e.preventDefault();
+            const btn = this;
+            const originalText = btn.innerHTML;
+            
+            // Loading state
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin" data-icon="sync">sync</span> Processing...`;
+            btn.classList.add('opacity-90');
+            
+            // Success state after brief delay
+            setTimeout(() => {
+                btn.classList.remove('bg-mobile-primary', 'shadow-mobile-primary/20');
+                btn.classList.add('bg-success', 'shadow-success/20');
+                btn.innerHTML = `<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span> Report Logged`;
+                
+                // Reset after showing success
+                setTimeout(() => {
+                    btn.classList.remove('bg-success', 'shadow-success/20');
+                    btn.classList.add('bg-mobile-primary', 'shadow-mobile-primary/20');
+                    btn.innerHTML = originalText;
+                }, 2000);
+            }, 800);
+        });
+    </script>
+</body></html>

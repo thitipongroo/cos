@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Model Retraining Status</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "primary-fixed-dim": "#c1c5dc",
+                            "tertiary": "#4cd7f6",
+                            "on-secondary-fixed": "#00174b",
+                            "inverse-on-surface": "#213145",
+                            "surface-container": "#102034",
+                            "on-tertiary-container": "#0088a0",
+                            "inverse-primary": "#595e71",
+                            "tertiary-container": "#001318",
+                            "surface-bright": "#2a3a4f",
+                            "success": "#10B981",
+                            "on-surface": "#d3e4fe",
+                            "on-secondary-container": "#cdd7ff",
+                            "syncing": "#FFD60A",
+                            "surface": "#031427",
+                            "secondary-fixed": "#dbe1ff",
+                            "surface-variant": "#26364a",
+                            "on-tertiary": "#003640",
+                            "on-error-container": "#ffdad6",
+                            "concrete-white": "#F8FAFC",
+                            "mobile-primary": "#0066FF",
+                            "surface-container-high": "#1b2b3f",
+                            "on-tertiary-fixed-variant": "#004e5c",
+                            "surface-container-lowest": "#000f21",
+                            "secondary-container": "#0053db",
+                            "warning": "#F59E0B",
+                            "background": "#031427",
+                            "outline": "#909097",
+                            "on-primary-fixed-variant": "#414658",
+                            "secondary": "#b4c5ff",
+                            "error": "#ffb4ab",
+                            "error-container": "#93000a",
+                            "surface-tint": "#c1c5dc",
+                            "on-primary-container": "#777c90",
+                            "surface-container-low": "#0b1c30",
+                            "inverse-surface": "#d3e4fe",
+                            "on-primary": "#2b3041",
+                            "primary-fixed": "#dee1f9",
+                            "on-secondary": "#002a78",
+                            "on-background": "#d3e4fe",
+                            "surface-dim": "#031427",
+                            "on-surface-variant": "#c7c6cd",
+                            "tertiary-fixed-dim": "#4cd7f6",
+                            "on-error": "#690005",
+                            "tertiary-fixed": "#acedff",
+                            "secondary-fixed-dim": "#b4c5ff",
+                            "on-secondary-fixed-variant": "#003ea8",
+                            "danger": "#EF4444",
+                            "on-primary-fixed": "#161b2b",
+                            "offline": "#8E8E93",
+                            "surface-container-highest": "#26364a",
+                            "on-tertiary-fixed": "#001f26",
+                            "primary": "#c1c5dc",
+                            "primary-container": "#0b1020",
+                            "outline-variant": "#46464c"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "web-gap-tight": "4px",
+                            "mobile-card-pad": "12px",
+                            "mobile-icon-pad": "8px",
+                            "touch-target-min": "44px",
+                            "mobile-base": "8px",
+                            "mobile-edge-margin": "24px",
+                            "web-page-gap": "64px",
+                            "touch-target-optimum": "52px",
+                            "web-padding-card": "16px",
+                            "web-margin-component": "32px",
+                            "web-base": "4px",
+                            "mobile-section-pad": "16px"
+                    },
+                    "fontFamily": {
+                            "mobile-body": ["Inter"],
+                            "headline-h3": ["Inter"],
+                            "display-lg": ["Inter"],
+                            "body-md": ["Inter"],
+                            "label-tiny": ["Inter"],
+                            "mobile-title": ["Inter"],
+                            "headline-h2": ["Inter"],
+                            "body-sm": ["Inter"],
+                            "headline-h1": ["Inter"],
+                            "mobile-hero": ["Inter"]
+                    },
+                    "fontSize": {
+                            "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                            "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                            "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                            "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                            "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                            "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                            "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                            "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                            "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                            "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .5; transform: scale(1.1); }
+        }
+        .progress-bar-fill {
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-mobile-body antialiased md:hidden overflow-x-hidden min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container dark:bg-surface-container border-b border-outline-variant flat no shadows">
+<div class="flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum w-full">
+<button aria-label="Go back" class="text-tertiary hover:bg-surface-variant transition-colors active:opacity-80 transition-opacity flex items-center justify-center w-10 h-10 rounded-full">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-headline-h1 text-headline-h1 text-on-surface uppercase tracking-tight">Model Retraining</h1>
+<button aria-label="Settings" class="text-tertiary hover:bg-surface-variant transition-colors active:opacity-80 transition-opacity flex items-center justify-center w-10 h-10 rounded-full">
+<span class="material-symbols-outlined">settings_input_component</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-touch-target-optimum pb-24 px-mobile-edge-margin flex flex-col gap-6 mt-4">
+<!-- Status Banner -->
+<div class="bg-surface-container-high rounded-xl p-mobile-card-pad border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="relative flex h-3 w-3">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-mobile-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-mobile-primary pulse-animation"></span>
+</div>
+<div>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant block uppercase tracking-widest">Status</span>
+<span class="font-headline-h3 text-headline-h3 text-on-surface">IN PROGRESS</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant block uppercase tracking-widest">Est. Completion</span>
+<span class="font-headline-h3 text-headline-h3 text-on-surface">14:20</span>
+<span class="font-body-sm text-body-sm text-tertiary block">~22 mins</span>
+</div>
+</div>
+<!-- Pipeline Progress -->
+<div class="bg-surface-container rounded-xl p-mobile-card-pad border border-outline-variant">
+<h2 class="font-label-tiny text-label-tiny text-on-surface-variant mb-4 uppercase tracking-widest border-b border-outline-variant pb-2">Pipeline Sequence</h2>
+<div class="relative pl-6">
+<!-- Vertical Line -->
+<div class="absolute left-[11px] top-4 bottom-4 w-[2px] bg-outline-variant"></div>
+<!-- Step 1: Data Ingestion -->
+<div class="relative flex items-start gap-4 mb-6">
+<div class="absolute -left-[25px] w-6 h-6 rounded-full bg-success flex items-center justify-center z-10 border-2 border-surface-container">
+<span class="material-symbols-outlined text-[14px] text-surface-container font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex-1">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Data Ingestion</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">24.5M records validated</p>
+</div>
+</div>
+<!-- Step 2: Feature Engineering -->
+<div class="relative flex items-start gap-4 mb-6">
+<div class="absolute -left-[25px] w-6 h-6 rounded-full bg-success flex items-center justify-center z-10 border-2 border-surface-container">
+<span class="material-symbols-outlined text-[14px] text-surface-container font-bold" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+<div class="flex-1">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Feature Engineering</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">128 features extracted</p>
+</div>
+</div>
+<!-- Step 3: Model Training (Active) -->
+<div class="relative flex items-start gap-4 mb-6">
+<div class="absolute -left-[25px] w-6 h-6 rounded-full bg-surface-container border-2 border-mobile-primary flex items-center justify-center z-10">
+<div class="w-2 h-2 rounded-full bg-mobile-primary pulse-animation"></div>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<h3 class="font-headline-h3 text-headline-h3 text-mobile-primary">Model Training</h3>
+<span class="font-label-tiny text-label-tiny text-mobile-primary">64%</span>
+</div>
+<p class="font-body-sm text-body-sm text-tertiary mb-2">Epoch 32/50</p>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5">
+<div class="bg-mobile-primary h-1.5 rounded-full progress-bar-fill" style="width: 64%"></div>
+</div>
+</div>
+</div>
+<!-- Step 4: Evaluation (Pending) -->
+<div class="relative flex items-start gap-4">
+<div class="absolute -left-[25px] w-6 h-6 rounded-full bg-surface-container border-2 border-outline-variant flex items-center justify-center z-10">
+</div>
+<div class="flex-1 opacity-50">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface-variant">Evaluation</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Pending completion</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Metrics Grid -->
+<div class="grid grid-cols-2 gap-4">
+<!-- Accuracy Card -->
+<div class="bg-surface-container rounded-xl p-mobile-card-pad border border-tertiary/30 relative overflow-hidden group">
+<div class="absolute inset-0 bg-tertiary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-tertiary text-sm">troubleshoot</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-widest">Accuracy</span>
+</div>
+<div class="font-display-lg text-display-lg text-on-surface mb-1">0.84</div>
+<div class="flex items-center gap-1 text-success font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<span>+0.02 from baseline</span>
+</div>
+</div>
+<!-- Loss Card -->
+<div class="bg-surface-container rounded-xl p-mobile-card-pad border border-outline-variant relative overflow-hidden">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">show_chart</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-widest">Loss</span>
+</div>
+<div class="font-display-lg text-display-lg text-on-surface mb-1">0.12</div>
+<div class="flex items-center gap-1 text-tertiary font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+<span>Converging</span>
+</div>
+</div>
+</div>
+<!-- Abort Action -->
+<div class="mt-4">
+<button class="w-full h-touch-target-optimum flex items-center justify-center gap-2 border border-danger text-danger rounded-xl font-headline-h3 text-headline-h3 uppercase tracking-wider bg-transparent active:bg-danger/10 transition-colors">
+<span class="material-symbols-outlined">stop_circle</span>
+                Abort Training
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center h-touch-target-optimum bg-surface-container-highest px-4 pb-safe z-50 border-t border-outline-variant flat no shadows md:hidden">
+<!-- Pipeline Tab (Active based on Intent) -->
+<button class="flex flex-col items-center justify-center text-tertiary border-t-2 border-tertiary pt-2 w-full h-full active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">route</span>
+<span class="font-label-tiny text-label-tiny">Pipeline</span>
+</button>
+<!-- Metrics Tab -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 hover:text-tertiary-fixed transition-colors w-full h-full active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1">query_stats</span>
+<span class="font-label-tiny text-label-tiny">Metrics</span>
+</button>
+<!-- Logs Tab -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 hover:text-tertiary-fixed transition-colors w-full h-full active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1">terminal</span>
+<span class="font-label-tiny text-label-tiny">Logs</span>
+</button>
+<!-- Config Tab -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant pt-2 hover:text-tertiary-fixed transition-colors w-full h-full active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1">manufacturing</span>
+<span class="font-label-tiny text-label-tiny">Config</span>
+</button>
+</nav>
+</body></html>

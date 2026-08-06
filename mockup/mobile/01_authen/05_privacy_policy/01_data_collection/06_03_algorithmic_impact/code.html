@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Algorithmic Impact Assessment</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#213145",
+                      "tertiary": "#4cd7f6",
+                      "on-background": "#d3e4fe",
+                      "surface-container-highest": "#26364a",
+                      "surface-container-lowest": "#000f21",
+                      "secondary": "#b4c5ff",
+                      "offline": "#8E8E93",
+                      "concrete-white": "#F8FAFC",
+                      "syncing": "#FFD60A",
+                      "surface-bright": "#2a3a4f",
+                      "on-surface-variant": "#c7c6cd",
+                      "mobile-primary": "#0066FF",
+                      "inverse-primary": "#595e71",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "on-secondary-container": "#cdd7ff",
+                      "primary-fixed": "#dee1f9",
+                      "on-error": "#690005",
+                      "surface-container-high": "#1b2b3f",
+                      "on-surface": "#d3e4fe",
+                      "on-secondary": "#002a78",
+                      "on-primary-fixed": "#161b2b",
+                      "secondary-container": "#0053db",
+                      "on-primary-container": "#777c90",
+                      "danger": "#EF4444",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "surface-container": "#102034",
+                      "surface-tint": "#c1c5dc",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "surface": "#031427",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "success": "#10B981",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-low": "#0b1c30",
+                      "primary": "#c1c5dc",
+                      "on-primary-fixed-variant": "#414658",
+                      "outline-variant": "#46464c",
+                      "inverse-surface": "#d3e4fe",
+                      "tertiary-container": "#001318",
+                      "primary-container": "#0b1020",
+                      "error-container": "#93000a",
+                      "secondary-fixed": "#dbe1ff",
+                      "tertiary-fixed": "#acedff",
+                      "surface-variant": "#26364a",
+                      "on-tertiary": "#003640",
+                      "on-primary": "#2b3041",
+                      "background": "#031427",
+                      "on-tertiary-container": "#0088a0",
+                      "outline": "#909097",
+                      "surface-dim": "#031427",
+                      "on-secondary-fixed": "#00174b",
+                      "warning": "#F59E0B",
+                      "on-tertiary-fixed": "#001f26",
+                      "error": "#ffb4ab"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-base": "4px",
+                      "web-gap-tight": "4px",
+                      "web-margin-component": "32px",
+                      "web-page-gap": "64px",
+                      "mobile-edge-margin": "24px",
+                      "touch-target-optimum": "52px",
+                      "mobile-card-pad": "12px",
+                      "touch-target-min": "44px",
+                      "mobile-icon-pad": "8px",
+                      "web-padding-card": "16px",
+                      "mobile-section-pad": "16px",
+                      "mobile-base": "8px"
+              },
+              "fontFamily": {
+                      "headline-h3": [
+                              "Inter"
+                      ],
+                      "mobile-hero": [
+                              "Inter"
+                      ],
+                      "mobile-body": [
+                              "Inter"
+                      ],
+                      "mobile-title": [
+                              "Inter"
+                      ],
+                      "headline-h1": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "label-tiny": [
+                              "Inter"
+                      ],
+                      "headline-h2": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-h3": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "mobile-hero": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mobile-body": [
+                              "17px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mobile-title": [
+                              "22px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-tiny": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        /* Custom scrollbar for web */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #031427;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #26364a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #46464c;
+        }
+        
+        .ai-cyan-border {
+            border: 1px solid #06B6D4;
+        }
+        
+        .ai-cyan-glow {
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col antialiased pt-16 pb-20 md:pb-0 md:pt-0">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface fixed top-0 w-full z-50 border-b border-outline-variant dark:border-outline-variant md:hidden">
+<div class="flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum">
+<button class="text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors active:scale-95 transition-transform flex items-center justify-center w-touch-target-min h-touch-target-min rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_back</span>
+</button>
+<h1 class="font-headline-h1 text-headline-h1 tracking-tighter text-on-surface dark:text-on-surface uppercase">CONSTRUCTION OS</h1>
+<button class="text-mobile-primary dark:text-mobile-primary hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors active:scale-95 transition-transform flex items-center justify-center w-touch-target-min h-touch-target-min rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 md:flex-row h-full w-full">
+<!-- NavigationDrawer (Web) -->
+<nav class="hidden md:flex h-screen w-64 fixed left-0 top-0 border-r border-outline-variant dark:border-outline-variant bg-surface-container-low dark:bg-surface-container-low flex-col gap-web-gap-tight p-web-padding-card z-50">
+<div class="flex items-center gap-3 mb-8 px-4 py-2 border-b border-outline-variant pb-6">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
+<img alt="Admin User Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a system administrator in an industrial setting, wearing modern safety gear with a high-tech augmented reality headset. The lighting is crisp and cool, featuring an industrial gray and navy palette with AI cyan accents. The mood is focused and authoritative." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBj8RbtREYHCDbe5JoUSQpZkwlqdnM0PHWY-ZGoM1UTB53zKP9k-0Y8YZEAzc_1vQU-9fTPBT9jDqUurcR3NAQrGN3Nm7lXBHSepxON6RBSZ-vlXEuVgcrN0EXgPtN4rdcAoiWcuKhNt0UimZBLi8xzNMzU4889R8tLOfCKjrMJvM1r9nS40hjlFoqyY3AdPoQ3qcqGQnhFy8dHAdQ_OkTJGwDLeG9ludLld0dkuwssg7agjgjT_GUNVA"/>
+</div>
+<div>
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface font-semibold">System Admin</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Governance Suite v4.0</p>
+<p class="font-label-tiny text-label-tiny text-tertiary mt-1">Security Level 5</p>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<a class="text-tertiary dark:text-tertiary font-bold bg-surface-container-highest dark:bg-surface-container-highest border-l-4 border-tertiary px-4 py-3 flex items-center gap-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all cursor-pointer duration-200 rounded-r" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-body-md text-body-md">Governance</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all cursor-pointer duration-200 px-4 py-3 flex items-center gap-3 rounded border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">precision_manufacturing</span>
+<span class="font-body-md text-body-md">Field Assets</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all cursor-pointer duration-200 px-4 py-3 flex items-center gap-3 rounded border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">checklist</span>
+<span class="font-body-md text-body-md">Task Management</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all cursor-pointer duration-200 px-4 py-3 flex items-center gap-3 rounded border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">shield</span>
+<span class="font-body-md text-body-md">Security Logs</span>
+</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-all cursor-pointer duration-200 px-4 py-3 flex items-center gap-3 rounded border-l-4 border-transparent" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Admin Console</span>
+</a>
+</div>
+<div class="mt-auto px-4">
+<div class="font-headline-h2 text-headline-h2 text-tertiary dark:text-tertiary uppercase tracking-wider text-center py-4 border-t border-outline-variant">
+                    CONSTRUCTION OS
+                </div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full md:ml-64 p-mobile-section-pad md:p-web-page-gap max-w-7xl mx-auto">
+<div class="mb-8 hidden md:flex items-center gap-4 border-b border-outline-variant pb-6">
+<button class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface">Algorithmic Impact Assessment (AIA)</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Deep-dive technical risk evaluation for deployed models.</p>
+</div>
+</div>
+<div class="md:hidden mb-6">
+<h2 class="font-mobile-hero text-mobile-hero text-on-surface mb-2">AIA Deep Dive</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Technical risk evaluation.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-min">
+<!-- Assessment Overview Card (Spans full width on mobile, 8 cols on desktop) -->
+<section class="col-span-1 md:col-span-8 bg-surface-container rounded-xl border border-outline-variant p-6 relative overflow-hidden ai-cyan-border ai-cyan-glow">
+<!-- Subtle AI Background accent -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-tertiary opacity-5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none"></div>
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 relative z-10">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-tertiary text-sm">memory</span>
+<span class="font-label-tiny text-label-tiny text-tertiary uppercase tracking-wider">Model Evaluation</span>
+</div>
+<h3 class="font-headline-h1 text-headline-h1 text-on-surface">Predictive Maintenance v2.4</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Last Audit: Oct 12, 2023 • Evaluator: System Admin</p>
+</div>
+<div class="bg-surface-container-highest border border-success/30 px-4 py-3 rounded-lg flex flex-col items-center min-w-[120px]">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant mb-1 uppercase">Risk Score</span>
+<div class="flex items-baseline gap-1">
+<span class="font-display-lg text-display-lg text-success leading-none">12</span>
+<span class="font-body-sm text-body-sm text-success/70">/100</span>
+</div>
+<div class="mt-2 w-full bg-surface rounded-full h-1.5">
+<div class="bg-success h-1.5 rounded-full" style="width: 12%"></div>
+</div>
+<span class="font-label-tiny text-label-tiny text-success mt-2 uppercase tracking-widest font-bold">Low Risk</span>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10 border-t border-outline-variant pt-6">
+<div>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase block mb-1">Data Source</span>
+<span class="font-body-md text-body-md text-on-surface">IoT Sensor Array (Tier 1)</span>
+</div>
+<div>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase block mb-1">Model Architecture</span>
+<span class="font-body-md text-body-md text-on-surface">Transformer / Timeseries</span>
+</div>
+<div>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase block mb-1">Deployment Zone</span>
+<span class="font-body-md text-body-md text-on-surface">Edge Devices (Sector 7G)</span>
+</div>
+</div>
+</section>
+<!-- Auditor Sign-off Status (Spans full on mobile, 4 cols on desktop) -->
+<section class="col-span-1 md:col-span-4 bg-surface-container rounded-xl border border-outline-variant p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-success">verified</span>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Auditor Sign-off</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Final authorization required before production rollout across secondary sectors.</p>
+<div class="bg-surface-container-highest p-3 rounded-lg border border-outline-variant flex items-center gap-3 mb-6">
+<div class="w-10 h-10 rounded-full bg-surface overflow-hidden flex-shrink-0">
+<img alt="Auditor Avatar" class="w-full h-full object-cover" data-alt="A close up headshot of a female compliance auditor in a modern, stark control room setting. She is wearing professional corporate attire with a slight industrial edge. The scene features deep steel gray tones and sharp artificial lighting, emphasizing a mission-critical and serious atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBp_-X9t0QNjd6Pc5VDPLx6jSxFuIrDHkEd5d9K-yanuQOyzbzZwg9NwdfR39gkyVxB5x7P2W844R_wiETxqnSHCxorYOTSa4mCeZo7EtgIL9wMgm6Tfi3Qlkqank-Pt7cKXDQx2xEMRgWB245qm47bk7Yabw3T7Un-nyAMSgRhqnvDeh24C9-3MgLJ0KIl7btW41Oey7QmEpgmW2IWuwpgdpjIGY5HZQIpnraD1CN1HclEmotA2L12mA"/>
+</div>
+<div>
+<span class="font-body-sm text-body-sm text-on-surface block font-semibold">Sarah Jenkins</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Chief Compliance Officer</span>
+</div>
+</div>
+</div>
+<button class="w-full bg-mobile-primary hover:bg-mobile-primary/90 text-concrete-white font-body-md text-body-md font-semibold h-touch-target-optimum rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95">
+<span class="material-symbols-outlined text-[20px]">signature</span>
+                        Execute Sign-off
+                    </button>
+</section>
+<!-- Key Impacts Section (Spans full on mobile, 6 cols on desktop) -->
+<section class="col-span-1 md:col-span-6 bg-surface-container rounded-xl border border-outline-variant p-6">
+<div class="flex items-center gap-2 mb-6 border-b border-outline-variant pb-4">
+<span class="material-symbols-outlined text-on-surface-variant">policy</span>
+<h3 class="font-headline-h2 text-headline-h2 text-on-surface">Key Impacts</h3>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Impact Item 1 -->
+<div class="bg-surface p-4 rounded-lg border border-outline-variant border-l-4 border-l-warning">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-warning mt-0.5">visibility_off</span>
+<div>
+<h4 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Privacy Impact</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-2">Model processes aggregated location data of field workers to optimize routing. PII is stripped at edge.</p>
+<span class="inline-block bg-surface-container-high text-on-surface-variant font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">Moderate</span>
+</div>
+</div>
+</div>
+<!-- Impact Item 2 -->
+<div class="bg-surface p-4 rounded-lg border border-outline-variant border-l-4 border-l-success">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-success mt-0.5">account_tree</span>
+<div>
+<h4 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Decision-Making Transparency</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-2">SHAP values exposed for all maintenance predictions. Explanations available via UI tooltip.</p>
+<span class="inline-block bg-surface-container-high text-on-surface-variant font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">High</span>
+</div>
+</div>
+</div>
+<!-- Impact Item 3 -->
+<div class="bg-surface p-4 rounded-lg border border-outline-variant border-l-4 border-l-mobile-primary">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-mobile-primary mt-0.5">front_hand</span>
+<div>
+<h4 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Human-in-the-loop Overrides</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-2">All automated shutdown commands require manual acknowledgment from shift supervisor within 30s.</p>
+<span class="inline-block bg-surface-container-high text-on-surface-variant font-label-tiny text-label-tiny px-2 py-1 rounded uppercase tracking-wider">Critical Control</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Mitigation Strategies Section (Spans full on mobile, 6 cols on desktop) -->
+<section class="col-span-1 md:col-span-6 bg-surface-container rounded-xl border border-outline-variant p-6">
+<div class="flex items-center gap-2 mb-6 border-b border-outline-variant pb-4">
+<span class="material-symbols-outlined text-on-surface-variant">health_and_safety</span>
+<h3 class="font-headline-h2 text-headline-h2 text-on-surface">Mitigation Strategies</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6">The following active controls are enforced to maintain the current risk profile.</p>
+<ul class="space-y-4">
+<li class="flex items-center justify-between p-3 bg-surface-container-highest rounded-lg border border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-tertiary text-[18px]">filter_alt</span>
+</div>
+<div>
+<span class="font-body-md text-body-md text-on-surface block font-medium">Input Filtering</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">Sanitizes anomalous sensor spikes</span>
+</div>
+</div>
+<div class="w-10 h-6 bg-mobile-primary/20 rounded-full flex items-center p-1 cursor-pointer">
+<div class="w-4 h-4 bg-mobile-primary rounded-full translate-x-4 transition-transform shadow-sm"></div>
+</div>
+</li>
+<li class="flex items-center justify-between p-3 bg-surface-container-highest rounded-lg border border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-tertiary text-[18px]">model_training</span>
+</div>
+<div>
+<span class="font-body-md text-body-md text-on-surface block font-medium">Regular Retraining</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">Weekly delta updates on new equipment</span>
+</div>
+</div>
+<div class="w-10 h-6 bg-mobile-primary/20 rounded-full flex items-center p-1 cursor-pointer">
+<div class="w-4 h-4 bg-mobile-primary rounded-full translate-x-4 transition-transform shadow-sm"></div>
+</div>
+</li>
+<li class="flex items-center justify-between p-3 bg-surface-container-highest rounded-lg border border-outline-variant">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-surface flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-tertiary text-[18px]">cleaning_services</span>
+</div>
+<div>
+<span class="font-body-md text-body-md text-on-surface block font-medium">Bias Scrubbing</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">Temporal alignment checks on shift data</span>
+</div>
+</div>
+<div class="w-10 h-6 bg-mobile-primary/20 rounded-full flex items-center p-1 cursor-pointer">
+<div class="w-4 h-4 bg-mobile-primary rounded-full translate-x-4 transition-transform shadow-sm"></div>
+</div>
+</li>
+</ul>
+</section>
+</div>
+</main>
+</div>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container dark:bg-surface-container fixed bottom-0 w-full z-50 rounded-t-xl border-t border-outline-variant dark:border-outline-variant md:hidden">
+<div class="flex justify-around items-center h-touch-target-optimum px-mobile-edge-margin">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface active:scale-90 transition-transform w-16" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">construction</span>
+<span class="font-label-tiny text-label-tiny">Field</span>
+</a>
+<a class="flex flex-col items-center justify-center text-tertiary dark:text-tertiary bg-tertiary-container dark:bg-tertiary-container rounded-full px-4 py-1 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">assignment</span>
+<span class="font-label-tiny text-label-tiny">Tasks</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface active:scale-90 transition-transform w-16" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">account_circle</span>
+<span class="font-label-tiny text-label-tiny">Profile</span>
+</a>
+</div>
+</nav>
+<script>
+        // Simple toggle interaction for demonstration
+        document.querySelectorAll('.cursor-pointer').forEach(toggle => {
+            toggle.addEventListener('click', function() {
+                const dot = this.querySelector('div');
+                if (dot) {
+                    if (dot.classList.contains('translate-x-4')) {
+                        dot.classList.remove('translate-x-4');
+                        dot.classList.remove('bg-mobile-primary');
+                        dot.classList.add('bg-outline');
+                        this.classList.remove('bg-mobile-primary/20');
+                        this.classList.add('bg-surface');
+                    } else {
+                        dot.classList.add('translate-x-4');
+                        dot.classList.add('bg-mobile-primary');
+                        dot.classList.remove('bg-outline');
+                        this.classList.add('bg-mobile-primary/20');
+                        this.classList.remove('bg-surface');
+                    }
+                }
+            });
+        });
+    </script>
+</body></html>

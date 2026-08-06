@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Pending Reviews - ConstructIntel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#031427",
+                        "error-container": "#93000a",
+                        "surface-bright": "#2a3a4f",
+                        "syncing": "#FFD60A",
+                        "tertiary-fixed": "#acedff",
+                        "on-surface": "#d3e4fe",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-high": "#1b2b3f",
+                        "on-surface-variant": "#c7c6cd",
+                        "on-primary": "#2b3041",
+                        "outline": "#909097",
+                        "outline-variant": "#46464c",
+                        "inverse-surface": "#d3e4fe",
+                        "primary": "#c1c5dc",
+                        "primary-container": "#0b1020",
+                        "danger": "#EF4444",
+                        "surface-container-highest": "#26364a",
+                        "on-background": "#d3e4fe",
+                        "surface": "#031427",
+                        "inverse-primary": "#595e71",
+                        "inverse-on-surface": "#213145",
+                        "surface-tint": "#c1c5dc",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#001318",
+                        "on-primary-container": "#777c90",
+                        "surface-variant": "#26364a",
+                        "on-primary-fixed": "#161b2b",
+                        "on-secondary-container": "#cdd7ff",
+                        "error": "#ffb4ab",
+                        "warning": "#F59E0B",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-secondary": "#002a78",
+                        "surface-container": "#102034",
+                        "surface-container-low": "#0b1c30",
+                        "primary-fixed": "#dee1f9",
+                        "mobile-primary": "#0066FF",
+                        "secondary-fixed": "#dbe1ff",
+                        "offline": "#8E8E93",
+                        "surface-dim": "#031427",
+                        "on-tertiary": "#003640",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "tertiary": "#4cd7f6",
+                        "secondary": "#b4c5ff",
+                        "on-error": "#690005",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "on-tertiary-fixed": "#001f26",
+                        "success": "#10B981",
+                        "on-secondary-fixed": "#00174b",
+                        "concrete-white": "#F8FAFC",
+                        "secondary-container": "#0053db",
+                        "on-tertiary-container": "#0088a0",
+                        "on-primary-fixed-variant": "#414658"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-margin-component": "32px",
+                        "touch-target-optimum": "52px",
+                        "web-base": "4px",
+                        "mobile-edge-margin": "24px",
+                        "web-gap-tight": "4px",
+                        "mobile-icon-pad": "8px",
+                        "web-padding-card": "16px",
+                        "mobile-section-pad": "16px",
+                        "mobile-card-pad": "12px",
+                        "touch-target-min": "44px",
+                        "web-page-gap": "64px",
+                        "mobile-base": "8px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ai-border-glow {
+            box-shadow: inset 0 0 0 1px #06B6D4;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md antialiased min-h-screen flex flex-col relative pb-32">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background border-b border-outline-variant fixed top-0 w-full z-50 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum">
+<div class="flex items-center gap-3">
+<button aria-label="Go Back" class="h-touch-target-min w-touch-target-min flex items-center justify-center -ml-2 text-primary dark:text-primary active:scale-95 duration-100 hover:bg-surface-container-highest transition-colors rounded-full">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</button>
+<h1 class="font-headline-h1 text-headline-h1 font-bold text-primary tracking-tight">ConstructIntel</h1>
+</div>
+<div class="flex items-center gap-1">
+<button class="h-touch-target-min w-touch-target-min flex items-center justify-center text-primary dark:text-primary active:scale-95 duration-100 hover:bg-surface-container-highest transition-colors rounded-full">
+<span class="material-symbols-outlined">sync</span>
+</button>
+<button class="h-touch-target-min w-touch-target-min flex items-center justify-center text-primary dark:text-primary active:scale-95 duration-100 hover:bg-surface-container-highest transition-colors rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="h-touch-target-min w-touch-target-min flex items-center justify-center text-primary dark:text-primary active:scale-95 duration-100 hover:bg-surface-container-highest transition-colors rounded-full">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-20 px-mobile-edge-margin pb-24">
+<!-- Header Section -->
+<div class="py-mobile-section-pad">
+<h2 class="font-mobile-title text-mobile-title text-primary tracking-tight mb-4">Pending Actions (12)</h2>
+<!-- Category Chips (Horizontal Scroll) -->
+<div class="flex overflow-x-auto gap-3 hide-scrollbar pb-2 -mx-mobile-edge-margin px-mobile-edge-margin">
+<button class="h-10 px-5 rounded-full bg-mobile-primary text-concrete-white font-body-sm text-body-sm whitespace-nowrap active:scale-95 transition-transform shadow-md border border-mobile-primary">All</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-body-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant hover:border-outline">AI Flags</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-body-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant hover:border-outline">Logs</button>
+<button class="h-10 px-5 rounded-full bg-surface-container-high text-on-surface-variant font-body-sm text-body-sm whitespace-nowrap active:scale-95 transition-transform border border-outline-variant hover:border-outline">Signs</button>
+</div>
+</div>
+<!-- Review Cards List -->
+<div class="flex flex-col gap-4">
+<!-- Card 1: AI-Detected Deviation -->
+<article class="bg-[#0F172A] rounded-lg border border-outline-variant relative overflow-hidden flex flex-col ai-border-glow">
+<!-- Urgency Indicator Bar -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-danger"></div>
+<div class="p-mobile-card-pad pl-5 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-danger">
+<span class="material-symbols-outlined text-[18px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-tiny text-label-tiny uppercase text-danger">AI Insight • Urgent</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">10:42 AM</span>
+</div>
+<div>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Steel Beam Delta: 45mm</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Project: Sector G</p>
+</div>
+<div class="flex justify-end mt-2">
+<button class="h-touch-target-min px-6 bg-surface-container-highest text-primary font-headline-h3 text-headline-h3 rounded border border-outline-variant active:bg-surface-container-high transition-colors">Review</button>
+</div>
+</div>
+</article>
+<!-- Card 2: Daily Log -->
+<article class="bg-[#0F172A] rounded-lg border border-outline-variant relative overflow-hidden flex flex-col">
+<!-- Urgency Indicator Bar -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-warning"></div>
+<div class="p-mobile-card-pad pl-5 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-warning">
+<span class="material-symbols-outlined text-[18px]">description</span>
+<span class="font-label-tiny text-label-tiny uppercase text-warning">Awaiting Sign-off</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Yesterday</span>
+</div>
+<div>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Daily Report - Oct 24</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Submitter: M. Chen</p>
+</div>
+<div class="flex justify-end mt-2">
+<button class="h-touch-target-min px-6 bg-surface-container-highest text-primary font-headline-h3 text-headline-h3 rounded border border-outline-variant active:bg-surface-container-high transition-colors">View Log</button>
+</div>
+</div>
+</article>
+<!-- Card 3: Quality Check -->
+<article class="bg-[#0F172A] rounded-lg border border-outline-variant relative overflow-hidden flex flex-col">
+<!-- Urgency Indicator Bar -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-success"></div>
+<div class="p-mobile-card-pad pl-5 flex flex-col gap-3">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-2 text-success">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+<span class="font-label-tiny text-label-tiny uppercase text-success">Quality Check</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Oct 23</span>
+</div>
+<div>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface mb-1">Concrete Slab Pour</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Sector: Zone 4</p>
+</div>
+<div class="flex justify-end mt-2">
+<button class="h-touch-target-min px-6 bg-surface-container-highest text-primary font-headline-h3 text-headline-h3 rounded border border-outline-variant active:bg-surface-container-high transition-colors">Inspect</button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Bottom Sticky Action -->
+<div class="fixed bottom-16 left-0 w-full p-4 bg-background/90 backdrop-blur-sm z-40 border-t border-outline-variant">
+<button class="w-full h-[52px] bg-mobile-primary text-concrete-white font-headline-h3 text-headline-h3 rounded-lg flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg">
+<span class="material-symbols-outlined">done_all</span>
+            Quick Verify All (12)
+        </button>
+</div>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-outline-variant shadow-lg md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-16 px-mobile-edge-margin pb-safe rounded-t-xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high scale-90 duration-75 h-full w-16 group">
+<div class="flex flex-col items-center justify-center px-4 py-1 rounded-full group-hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-tiny text-label-tiny mt-1">Home</span>
+</div>
+</button>
+<!-- Active Tab -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:bg-surface-container-high scale-90 duration-75 h-12 my-auto">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">pending_actions</span>
+<span class="font-label-tiny text-label-tiny mt-1">Reviews</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high scale-90 duration-75 h-full w-16 group">
+<div class="flex flex-col items-center justify-center px-4 py-1 rounded-full group-hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">add_a_photo</span>
+<span class="font-label-tiny text-label-tiny mt-1">Photos</span>
+</div>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant active:bg-surface-container-high scale-90 duration-75 h-full w-16 group">
+<div class="flex flex-col items-center justify-center px-4 py-1 rounded-full group-hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">menu</span>
+<span class="font-label-tiny text-label-tiny mt-1">Menu</span>
+</div>
+</button>
+</nav>
+</body></html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Transmission Details (Mobile)</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#c1c5dc",
+                      "on-secondary-container": "#cdd7ff",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "on-secondary-fixed": "#00174b",
+                      "surface": "#031427",
+                      "surface-dim": "#031427",
+                      "secondary-container": "#0053db",
+                      "warning": "#F59E0B",
+                      "tertiary": "#4cd7f6",
+                      "background": "#031427",
+                      "on-primary-container": "#777c90",
+                      "error": "#ffb4ab",
+                      "surface-container-lowest": "#000f21",
+                      "primary-fixed": "#dee1f9",
+                      "syncing": "#FFD60A",
+                      "primary": "#c1c5dc",
+                      "outline": "#909097",
+                      "primary-container": "#0b1020",
+                      "on-error": "#690005",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-primary-fixed-variant": "#414658",
+                      "on-tertiary-fixed": "#001f26",
+                      "on-background": "#d3e4fe",
+                      "on-tertiary-container": "#0088a0",
+                      "error-container": "#93000a",
+                      "secondary": "#b4c5ff",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "offline": "#8E8E93",
+                      "surface-variant": "#26364a",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "surface-tint": "#c1c5dc",
+                      "mobile-primary": "#0066FF",
+                      "surface-container": "#102034",
+                      "on-primary-fixed": "#161b2b",
+                      "tertiary-container": "#001318",
+                      "tertiary-fixed": "#acedff",
+                      "outline-variant": "#46464c",
+                      "danger": "#EF4444",
+                      "inverse-surface": "#d3e4fe",
+                      "surface-container-high": "#1b2b3f",
+                      "secondary-fixed": "#dbe1ff",
+                      "on-surface-variant": "#c7c6cd",
+                      "on-secondary": "#002a78",
+                      "inverse-primary": "#595e71",
+                      "concrete-white": "#F8FAFC",
+                      "surface-bright": "#2a3a4f",
+                      "on-tertiary": "#003640",
+                      "on-error-container": "#ffdad6",
+                      "on-surface": "#d3e4fe",
+                      "on-primary": "#2b3041",
+                      "surface-container-low": "#0b1c30",
+                      "inverse-on-surface": "#213145",
+                      "success": "#10B981",
+                      "surface-container-highest": "#26364a",
+                      "ai-cyan": "#06B6D4"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-margin-component": "32px",
+                      "mobile-base": "8px",
+                      "web-page-gap": "64px",
+                      "mobile-icon-pad": "8px",
+                      "touch-target-optimum": "52px",
+                      "mobile-card-pad": "12px",
+                      "web-gap-tight": "4px",
+                      "touch-target-min": "44px",
+                      "mobile-edge-margin": "24px",
+                      "web-padding-card": "16px",
+                      "web-base": "4px",
+                      "mobile-section-pad": "16px"
+              },
+              "fontFamily": {
+                      "mobile-title": ["Inter"],
+                      "body-md": ["Inter"],
+                      "label-tiny": ["Inter"],
+                      "headline-h1": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "mobile-hero": ["Inter"],
+                      "mobile-body": ["Inter"],
+                      "headline-h2": ["Inter"],
+                      "headline-h3": ["Inter"],
+                      "mono": ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "Liberation Mono", "Courier New", "monospace"]
+              },
+              "fontSize": {
+                      "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                      "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: #020617; /* Deepest foundation from guidance */
+            color: #d3e4fe; /* on-surface */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-[#020617] text-on-surface pb-[100px]">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-40 bg-surface-container border-b border-outline-variant flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum w-full">
+<button class="text-primary hover:bg-surface-variant transition-colors active:scale-95 duration-100 p-2 -ml-2 rounded flex items-center justify-center h-touch-target-min w-touch-target-min">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-primary">Transmission Details</h1>
+<button class="text-primary hover:bg-surface-variant transition-colors active:scale-95 duration-100 p-2 -mr-2 rounded flex items-center justify-center h-touch-target-min w-touch-target-min">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</header>
+<main class="flex flex-col px-mobile-edge-margin pt-6 pb-24 gap-6">
+<!-- Status Banner -->
+<section class="flex flex-col items-center justify-center py-6 bg-surface-container rounded-lg border border-ai-cyan/30 text-center gap-3">
+<div class="h-16 w-16 rounded-full bg-ai-cyan/10 flex items-center justify-center border border-ai-cyan/50">
+<span class="material-symbols-outlined text-[32px] text-ai-cyan filled" data-icon="shield">shield</span>
+</div>
+<h2 class="font-headline-h3 text-headline-h3 text-ai-cyan">Delivered securely to recipient server</h2>
+</section>
+<!-- General Info Card -->
+<section class="bg-[#0F172A] border border-outline-variant rounded-lg p-web-padding-card flex flex-col gap-4">
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Recipient</span>
+<p class="font-body-md text-body-md text-on-surface">Legal Team (audit@legal.const)</p>
+</div>
+<div class="w-full h-[1px] bg-outline-variant"></div>
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Subject</span>
+<p class="font-body-md text-body-md text-on-surface">Site 102 - Structural Incident Report</p>
+</div>
+</section>
+<!-- Security Metadata Section -->
+<section class="bg-[#0F172A] border border-ai-cyan/40 rounded-lg p-web-padding-card flex flex-col gap-4 relative overflow-hidden">
+<!-- Subtle AI Cyan glow effect -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-ai-cyan/5 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
+<h3 class="font-label-tiny text-label-tiny text-ai-cyan uppercase flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px]" data-icon="memory">memory</span>
+                Security Metadata
+            </h3>
+<div class="flex flex-col gap-4 mt-2">
+<div class="flex justify-between items-start gap-4">
+<div class="flex flex-col gap-1 overflow-hidden">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Transmission ID</span>
+<p class="font-mono text-body-sm text-on-surface truncate">TX-8842-99A1-BCD4-001F</p>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors p-2 -m-2 rounded">
+<span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Encryption Level</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-success" data-icon="lock">lock</span>
+<p class="font-body-md text-body-md text-on-surface">AES-256 (E2EE)</p>
+</div>
+</div>
+<div class="flex justify-between items-start gap-4">
+<div class="flex flex-col gap-1 overflow-hidden">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Blockchain Hash</span>
+<p class="font-mono text-body-sm text-on-surface truncate">0x9f86d081884c7d659a2feaa0c55ad015...</p>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors p-2 -m-2 rounded">
+<span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Attached Evidence Section -->
+<section class="flex flex-col gap-3">
+<h3 class="font-label-tiny text-label-tiny text-on-surface-variant uppercase ml-1">Attached Evidence</h3>
+<div class="flex flex-col gap-2">
+<div class="bg-[#0F172A] border border-outline-variant rounded-lg p-3 flex items-center gap-4">
+<div class="h-10 w-10 bg-surface-variant rounded flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="image">image</span>
+</div>
+<div class="flex flex-col flex-grow overflow-hidden">
+<p class="font-body-md text-body-md text-on-surface truncate">IMG_20231025_0911.jpg</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">4.2MB</p>
+</div>
+</div>
+<div class="bg-[#0F172A] border border-outline-variant rounded-lg p-3 flex items-center gap-4">
+<div class="h-10 w-10 bg-surface-variant rounded flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+</div>
+<div class="flex flex-col flex-grow overflow-hidden">
+<p class="font-body-md text-body-md text-on-surface truncate">Incident_Report_V2.pdf</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">1.1MB</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Timeline -->
+<section class="flex flex-col gap-3 mt-2">
+<h3 class="font-label-tiny text-label-tiny text-on-surface-variant uppercase ml-1">Timeline</h3>
+<div class="bg-[#0F172A] border border-outline-variant rounded-lg p-web-padding-card flex flex-col gap-0 relative">
+<!-- Vertical Line -->
+<div class="absolute left-[27px] top-6 bottom-8 w-[2px] bg-surface-variant"></div>
+<!-- Item 1 -->
+<div class="flex gap-4 relative z-10 pb-6">
+<div class="h-[24px] w-[24px] rounded-full bg-surface-variant border-2 border-[#0F172A] flex items-center justify-center shrink-0 mt-0.5">
+<div class="h-2 w-2 rounded-full bg-on-surface-variant"></div>
+</div>
+<div class="flex flex-col">
+<p class="font-body-md text-body-md text-on-surface">Sent</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Today, 14:32</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-4 relative z-10 pb-6">
+<div class="h-[24px] w-[24px] rounded-full bg-surface-variant border-2 border-[#0F172A] flex items-center justify-center shrink-0 mt-0.5">
+<div class="h-2 w-2 rounded-full bg-on-surface-variant"></div>
+</div>
+<div class="flex flex-col">
+<p class="font-body-md text-body-md text-on-surface">Delivered</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Today, 14:35</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex gap-4 relative z-10">
+<div class="h-[24px] w-[24px] rounded-full bg-ai-cyan/20 border-2 border-[#0F172A] flex items-center justify-center shrink-0 mt-0.5">
+<div class="h-2 w-2 rounded-full bg-ai-cyan shadow-[0_0_8px_rgba(6,182,212,0.8)]"></div>
+</div>
+<div class="flex flex-col">
+<p class="font-body-md text-body-md text-ai-cyan font-medium">Opened</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Today, 16:10</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-mobile-edge-margin pb-4 pt-2 bg-surface-container-lowest md:hidden">
+<!-- Logs (Active) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 hover:text-primary transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined filled mb-1 text-[24px]" data-icon="receipt_long">receipt_long</span>
+<span class="font-label-tiny text-label-tiny">Logs</span>
+</button>
+<!-- Security -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-mobile-icon-pad hover:text-primary transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="shield">shield</span>
+<span class="font-label-tiny text-label-tiny">Security</span>
+</button>
+<!-- Files -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-mobile-icon-pad hover:text-primary transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="description">description</span>
+<span class="font-label-tiny text-label-tiny">Files</span>
+</button>
+<!-- Network -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-mobile-icon-pad hover:text-primary transition-all active:scale-90 duration-200">
+<span class="material-symbols-outlined mb-1 text-[24px]" data-icon="hub">hub</span>
+<span class="font-label-tiny text-label-tiny">Network</span>
+</button>
+</nav>
+</body></html>

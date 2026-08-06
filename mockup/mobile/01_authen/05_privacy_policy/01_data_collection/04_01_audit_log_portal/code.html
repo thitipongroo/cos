@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audit Log - Field Worker Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#102034",
+                    "error-container": "#93000a",
+                    "inverse-surface": "#d3e4fe",
+                    "concrete-white": "#F8FAFC",
+                    "offline": "#8E8E93",
+                    "surface": "#031427",
+                    "on-secondary": "#002a78",
+                    "on-tertiary-container": "#0088a0",
+                    "inverse-on-surface": "#213145",
+                    "on-primary-container": "#777c90",
+                    "on-secondary-fixed-variant": "#003ea8",
+                    "on-error-container": "#ffdad6",
+                    "syncing": "#FFD60A",
+                    "on-secondary-fixed": "#00174b",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "primary": "#c1c5dc",
+                    "surface-container-highest": "#26364a",
+                    "primary-fixed": "#dee1f9",
+                    "tertiary": "#4cd7f6",
+                    "secondary-container": "#0053db",
+                    "outline": "#909097",
+                    "danger": "#EF4444",
+                    "on-primary-fixed": "#161b2b",
+                    "secondary-fixed": "#dbe1ff",
+                    "on-surface-variant": "#c7c6cd",
+                    "on-surface": "#d3e4fe",
+                    "surface-container-low": "#0b1c30",
+                    "primary-fixed-dim": "#c1c5dc",
+                    "on-tertiary": "#003640",
+                    "background": "#031427",
+                    "tertiary-container": "#001318",
+                    "on-error": "#690005",
+                    "inverse-primary": "#595e71",
+                    "warning": "#F59E0B",
+                    "surface-variant": "#26364a",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "on-primary": "#2b3041",
+                    "surface-bright": "#2a3a4f",
+                    "success": "#10B981",
+                    "on-tertiary-fixed": "#001f26",
+                    "tertiary-fixed": "#acedff",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "on-secondary-container": "#cdd7ff",
+                    "surface-container-high": "#1b2b3f",
+                    "on-background": "#d3e4fe",
+                    "surface-container-lowest": "#000f21",
+                    "outline-variant": "#46464c",
+                    "error": "#ffb4ab",
+                    "on-primary-fixed-variant": "#414658",
+                    "surface-tint": "#c1c5dc",
+                    "secondary": "#b4c5ff",
+                    "primary-container": "#0b1020",
+                    "surface-dim": "#031427",
+                    "mobile-primary": "#0066FF"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "mobile-edge-margin": "24px",
+                    "touch-target-optimum": "52px",
+                    "web-margin-component": "32px",
+                    "mobile-section-pad": "16px",
+                    "web-padding-card": "16px",
+                    "web-base": "4px",
+                    "web-gap-tight": "4px",
+                    "mobile-icon-pad": "8px",
+                    "mobile-card-pad": "12px",
+                    "touch-target-min": "44px",
+                    "web-page-gap": "64px",
+                    "mobile-base": "8px"
+            },
+            "fontFamily": {
+                    "headline-h1": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "mobile-hero": ["Inter"],
+                    "label-tiny": ["Inter"],
+                    "mobile-body": ["Inter"],
+                    "mobile-title": ["Inter"],
+                    "headline-h2": ["Inter"],
+                    "headline-h3": ["Inter"],
+                    "body-sm": ["Inter"]
+            },
+            "fontSize": {
+                    "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                    "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                    "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                    "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                    "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                    "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #031427; /* Fallback for surface/background */
+            color: #d3e4fe;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* Hide scrollbar for filter chips but allow scrolling */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .filled-icon .material-symbols-outlined {
+             font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface flex flex-col min-h-screen font-body-md md:hidden pb-[72px] pt-[52px]">
+<!-- TopAppBar from JSON -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-surface border-b border-outline-variant dark:border-outline-variant flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum">
+<button aria-label="Go Back" class="h-touch-target-min w-touch-target-min flex items-center justify-start text-primary dark:text-primary active:scale-95 transition-transform duration-100 hover:bg-surface-container-highest rounded-full -ml-2">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 text-on-surface flex-grow text-center">Audit Log</h1>
+<button aria-label="Sync Data" class="h-touch-target-min w-touch-target-min flex items-center justify-end text-primary dark:text-primary active:scale-95 transition-transform duration-100 hover:bg-surface-container-highest rounded-full -mr-2">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col w-full">
+<!-- Filter Chip Bar -->
+<section class="w-full py-mobile-section-pad px-mobile-edge-margin overflow-x-auto no-scrollbar flex items-center gap-mobile-base bg-surface-container-low border-b border-outline-variant sticky top-[52px] z-40">
+<button class="flex-shrink-0 px-mobile-card-pad py-mobile-icon-pad bg-secondary-container text-on-secondary-container rounded-full font-label-tiny text-label-tiny border border-secondary-container uppercase tracking-wider active:scale-95 transition-transform duration-100 h-[36px] flex items-center justify-center">
+                All
+            </button>
+<button class="flex-shrink-0 px-mobile-card-pad py-mobile-icon-pad bg-surface text-on-surface-variant rounded-full font-label-tiny text-label-tiny border border-outline-variant uppercase tracking-wider active:scale-95 transition-transform duration-100 h-[36px] flex items-center justify-center">
+                Site Logs
+            </button>
+<button class="flex-shrink-0 px-mobile-card-pad py-mobile-icon-pad bg-surface text-on-surface-variant rounded-full font-label-tiny text-label-tiny border border-outline-variant uppercase tracking-wider active:scale-95 transition-transform duration-100 h-[36px] flex items-center justify-center">
+                Safety
+            </button>
+<button class="flex-shrink-0 px-mobile-card-pad py-mobile-icon-pad bg-surface text-on-surface-variant rounded-full font-label-tiny text-label-tiny border border-outline-variant uppercase tracking-wider active:scale-95 transition-transform duration-100 h-[36px] flex items-center justify-center">
+                Procurement
+            </button>
+<button class="flex-shrink-0 px-mobile-card-pad py-mobile-icon-pad bg-surface text-on-surface-variant rounded-full font-label-tiny text-label-tiny border border-outline-variant uppercase tracking-wider active:scale-95 transition-transform duration-100 h-[36px] flex items-center justify-center">
+                Incidents
+            </button>
+</section>
+<!-- Activity List Container -->
+<section class="flex flex-col px-mobile-edge-margin py-mobile-section-pad gap-mobile-base">
+<!-- Date Divider -->
+<div class="w-full flex items-center gap-4 py-2">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface-variant">Today</h2>
+<div class="flex-1 h-px bg-outline-variant"></div>
+</div>
+<!-- Activity Card 1 -->
+<article class="bg-[#0F172A] border border-[#64748B] rounded-lg p-mobile-card-pad flex items-start gap-mobile-section-pad active:bg-surface-container-high transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded bg-[#06B6D4]/10 border border-[#06B6D4] flex items-center justify-center flex-shrink-0 mt-1 filled-icon text-[#06B6D4]">
+<span class="material-symbols-outlined" data-icon="assignment">assignment</span>
+</div>
+<div class="flex flex-col flex-grow">
+<div class="flex justify-between items-start w-full">
+<h3 class="font-mobile-body text-mobile-body text-on-surface leading-tight">Daily Log Updated</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">14:20:05</span>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-1 bg-surface-container rounded font-label-tiny text-label-tiny text-primary uppercase">
+                            Miller - PM
+                        </span>
+<span class="inline-flex items-center px-2 py-1 bg-success/20 border border-success/30 rounded font-label-tiny text-label-tiny text-success uppercase">
+                            Synced
+                        </span>
+</div>
+</div>
+</article>
+<!-- Activity Card 2 -->
+<article class="bg-[#0F172A] border border-[#64748B] rounded-lg p-mobile-card-pad flex items-start gap-mobile-section-pad active:bg-surface-container-high transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded bg-warning/10 border border-warning flex items-center justify-center flex-shrink-0 mt-1 filled-icon text-warning">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+<div class="flex flex-col flex-grow">
+<div class="flex justify-between items-start w-full">
+<h3 class="font-mobile-body text-mobile-body text-on-surface leading-tight">Safety Violation Reported</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">11:05:22</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">Zone C scaffolding missing secondary railing tie-offs.</p>
+<div class="mt-2 flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-1 bg-surface-container rounded font-label-tiny text-label-tiny text-primary uppercase">
+                            Davis - HSE
+                        </span>
+<span class="inline-flex items-center px-2 py-1 bg-warning/20 border border-warning/30 rounded font-label-tiny text-label-tiny text-warning uppercase">
+                            High Priority
+                        </span>
+</div>
+</div>
+</article>
+<!-- Activity Card 3 -->
+<article class="bg-[#0F172A] border border-[#64748B] rounded-lg p-mobile-card-pad flex items-start gap-mobile-section-pad active:bg-surface-container-high transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded bg-surface-container-highest border border-outline-variant flex items-center justify-center flex-shrink-0 mt-1 filled-icon text-on-surface">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+</div>
+<div class="flex flex-col flex-grow">
+<div class="flex justify-between items-start w-full">
+<h3 class="font-mobile-body text-mobile-body text-on-surface leading-tight">Material Delivery Logged</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">09:15:00</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-1">3T Rebar, Grade 60</p>
+<div class="mt-2 flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-1 bg-surface-container rounded font-label-tiny text-label-tiny text-primary uppercase">
+                            Chen - Log
+                        </span>
+</div>
+</div>
+</article>
+<!-- Date Divider -->
+<div class="w-full flex items-center gap-4 py-2 mt-4">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface-variant">Yesterday</h2>
+<div class="flex-1 h-px bg-outline-variant"></div>
+</div>
+<!-- Activity Card 4 -->
+<article class="bg-[#0F172A] border border-[#64748B] rounded-lg p-mobile-card-pad flex items-start gap-mobile-section-pad active:bg-surface-container-high transition-colors cursor-pointer">
+<div class="w-10 h-10 rounded bg-mobile-primary/10 border border-mobile-primary flex items-center justify-center flex-shrink-0 mt-1 filled-icon text-mobile-primary">
+<span class="material-symbols-outlined" data-icon="engineering">engineering</span>
+</div>
+<div class="flex flex-col flex-grow">
+<div class="flex justify-between items-start w-full">
+<h3 class="font-mobile-body text-mobile-body text-on-surface leading-tight">Crew Shift Ended</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">17:00:12</span>
+</div>
+<div class="mt-2 flex items-center gap-2">
+<span class="inline-flex items-center px-2 py-1 bg-surface-container rounded font-label-tiny text-label-tiny text-primary uppercase">
+                            System
+                        </span>
+</div>
+</div>
+</article>
+</section>
+</main>
+<!-- BottomNavBar from JSON -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center h-[72px] px-mobile-edge-margin bg-surface-container dark:bg-surface-container border-t border-outline-variant dark:border-outline-variant">
+<button aria-label="Projects" class="flex flex-col items-center justify-center text-on-surface-variant font-label-tiny text-label-tiny active:scale-90 transition-all duration-200 hover:bg-surface-container-high w-full h-full">
+<span class="material-symbols-outlined mb-1" data-icon="construction">construction</span>
+<span>Projects</span>
+</button>
+<button aria-label="Logs" class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-mobile-section-pad py-1 font-label-tiny text-label-tiny active:scale-90 transition-all duration-200 hover:bg-surface-container-high h-[44px]">
+<span class="material-symbols-outlined mb-1" data-icon="assignment_late">assignment_late</span>
+<span>Logs</span>
+</button>
+<button aria-label="Safety" class="flex flex-col items-center justify-center text-on-surface-variant font-label-tiny text-label-tiny active:scale-90 transition-all duration-200 hover:bg-surface-container-high w-full h-full">
+<span class="material-symbols-outlined mb-1" data-icon="security">security</span>
+<span>Safety</span>
+</button>
+<button aria-label="Profile" class="flex flex-col items-center justify-center text-on-surface-variant font-label-tiny text-label-tiny active:scale-90 transition-all duration-200 hover:bg-surface-container-high w-full h-full">
+<span class="material-symbols-outlined mb-1" data-icon="person">person</span>
+<span>Profile</span>
+</button>
+</nav>
+</body></html>

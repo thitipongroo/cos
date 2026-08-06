@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Share to Slack - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface": "#031427",
+                      "primary": "#c1c5dc",
+                      "outline-variant": "#46464c",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-background": "#d3e4fe",
+                      "secondary-fixed": "#dbe1ff",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "on-secondary-container": "#cdd7ff",
+                      "on-tertiary": "#003640",
+                      "surface-tint": "#c1c5dc",
+                      "on-tertiary-fixed": "#001f26",
+                      "inverse-primary": "#595e71",
+                      "error-container": "#93000a",
+                      "on-primary-fixed": "#161b2b",
+                      "offline": "#8E8E93",
+                      "primary-fixed": "#dee1f9",
+                      "surface-variant": "#26364a",
+                      "tertiary-container": "#001318",
+                      "on-primary": "#2b3041",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "success": "#10B981",
+                      "surface-container-high": "#1b2b3f",
+                      "error": "#ffb4ab",
+                      "tertiary-fixed": "#acedff",
+                      "primary-container": "#0b1020",
+                      "on-secondary-fixed": "#00174b",
+                      "mobile-primary": "#0066FF",
+                      "syncing": "#FFD60A",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "on-tertiary-container": "#0088a0",
+                      "surface-bright": "#2a3a4f",
+                      "secondary": "#b4c5ff",
+                      "inverse-on-surface": "#213145",
+                      "warning": "#F59E0B",
+                      "on-error": "#690005",
+                      "surface-dim": "#031427",
+                      "on-primary-fixed-variant": "#414658",
+                      "on-secondary": "#002a78",
+                      "inverse-surface": "#d3e4fe",
+                      "tertiary": "#4cd7f6",
+                      "surface-container": "#102034",
+                      "surface-container-low": "#0b1c30",
+                      "background": "#031427",
+                      "outline": "#909097",
+                      "on-surface": "#d3e4fe",
+                      "surface-container-highest": "#26364a",
+                      "on-error-container": "#ffdad6",
+                      "danger": "#EF4444",
+                      "on-primary-container": "#777c90",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "surface-container-lowest": "#000f21",
+                      "secondary-container": "#0053db",
+                      "on-surface-variant": "#c7c6cd",
+                      "concrete-white": "#F8FAFC"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-margin-component": "32px",
+                      "mobile-edge-margin": "24px",
+                      "mobile-base": "8px",
+                      "web-base": "4px",
+                      "touch-target-optimum": "52px",
+                      "mobile-icon-pad": "8px",
+                      "touch-target-min": "44px",
+                      "mobile-section-pad": "16px",
+                      "web-page-gap": "64px",
+                      "web-gap-tight": "4px",
+                      "mobile-card-pad": "12px",
+                      "web-padding-card": "16px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-h3": [
+                              "Inter"
+                      ],
+                      "mobile-body": [
+                              "Inter"
+                      ],
+                      "headline-h2": [
+                              "Inter"
+                      ],
+                      "headline-h1": [
+                              "Inter"
+                      ],
+                      "mobile-title": [
+                              "Inter"
+                      ],
+                      "mobile-hero": [
+                              "Inter"
+                      ],
+                      "label-tiny": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-h3": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "mobile-body": [
+                              "17px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mobile-title": [
+                              "22px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mobile-hero": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-tiny": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #46464c;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #909097;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex flex-col h-screen overflow-hidden selection:bg-mobile-primary selection:text-white">
+<!-- TopAppBar (From JSON) -->
+<header class="fixed top-0 w-full z-50 bg-surface border-b border-outline-variant flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum">
+<button class="w-10 h-10 flex items-center justify-start text-primary active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-2xl">close</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 text-primary flex-1 text-center">Share to Slack</h1>
+<button class="h-10 px-4 flex items-center justify-end font-headline-h3 text-headline-h3 text-mobile-primary active:opacity-80 transition-opacity">
+            Send
+        </button>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 mt-[52px] overflow-y-auto px-mobile-edge-margin py-mobile-section-pad flex flex-col gap-6">
+<!-- Evidence Preview Card -->
+<section class="bg-surface-container-high rounded-xl border border-outline-variant p-mobile-card-pad flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-success" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-tiny text-label-tiny text-success uppercase tracking-wider">Verified Capture</span>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-24 h-24 rounded-lg overflow-hidden border border-outline-variant shrink-0 bg-surface-container-highest relative">
+<img class="w-full h-full object-cover" data-alt="Close up of an industrial server rack in a dimly lit server room. Multiple glowing green and blue LED status lights indicate operational status. Thick cables are neatly organized. High-contrast, gritty, technical aesthetic suitable for mission-critical infrastructure monitoring." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoU9nfWRtOtnPAbJnWuZ2UCUXQ966yoxw-9wsXAzxgkYk8D0eZoZ5ix5F79KeZsn2ZN9PybXcQ4MMNlwuQ9mh3BfZAYm45Fq5FL6ukbB_bFn6-2hY02zrL5PPYhEBh4jGpQiPA8FogUdu-kVXCgP0mqLrlz78CwqNzqJmOTb2pisjAg7Eh4_6O4_3rGRib4kC4F45QJM8wbXamdzPg3_c_XR5SxvZSkpTBjKag3BQx_CHbf0NxAnFvaA"/>
+<!-- Overlay indicator for image type -->
+<div class="absolute bottom-1 right-1 bg-surface/80 backdrop-blur-sm rounded p-1">
+<span class="material-symbols-outlined text-[14px] text-primary">image</span>
+</div>
+</div>
+<div class="flex flex-col justify-center gap-1">
+<span class="font-headline-h3 text-headline-h3 text-primary truncate max-w-[180px]">node7_rack_status.jpg</span>
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">calendar_today</span>
+<span>Today, 14:32</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+<span>Sector 4G</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Channel Selector -->
+<section class="flex flex-col gap-2">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider pl-1">Post to</label>
+<button class="w-full min-h-[52px] bg-surface-container border border-outline-variant rounded-lg px-4 flex items-center justify-between hover:bg-surface-bright active:scale-[0.99] transition-all group" id="channel-selector-btn">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary group-hover:bg-surface-container-highest">
+<span class="material-symbols-outlined text-[18px]">tag</span>
+</div>
+<div class="flex flex-col items-start">
+<span class="font-mobile-body text-mobile-body text-primary">#site-alerts</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Mission Critical Notifications</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">keyboard_arrow_down</span>
+</button>
+</section>
+<!-- Message Field -->
+<section class="flex flex-col gap-2 flex-1">
+<label class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-wider pl-1">Message</label>
+<div class="relative flex-1 min-h-[200px]">
+<textarea class="w-full h-full bg-surface-container border border-outline-variant rounded-lg p-4 font-mobile-body text-mobile-body text-primary placeholder-on-surface-variant focus:ring-2 focus:ring-tertiary-fixed-dim focus:border-transparent resize-none outline-none transition-shadow" placeholder="Add a comment to provide context...">Issue identified on Rack 7 cooling unit. Immediate inspection required by maintenance team. Thermal imaging confirms hotspot.</textarea>
+<!-- Action Bar within textarea context -->
+<div class="absolute bottom-2 left-2 right-2 flex justify-between items-center bg-surface-container/90 backdrop-blur-md rounded-md p-2 border border-surface-variant">
+<div class="flex gap-2">
+<button class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">alternate_email</span>
+</button>
+<button class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">sentiment_satisfied</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Contextual FAB - Intentionally Suppressed based on logic rules for transactional/modal screens -->
+<!-- BottomNavBar - Intentionally Suppressed based on logic rules for transactional/modal screens -->
+<!-- Optional: Channel Picker Modal Overlay (Hidden by default, shown via JS if implemented) -->
+<div class="fixed inset-0 z-[60] bg-background/80 backdrop-blur-sm hidden flex-col justify-end" id="channel-modal">
+<div class="bg-surface w-full h-[80vh] rounded-t-xl border-t border-outline-variant flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.5)] transform translate-y-full transition-transform duration-300" id="channel-modal-content">
+<div class="h-14 border-b border-outline-variant flex items-center px-4 shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant mr-3">search</span>
+<input class="flex-1 bg-transparent border-none text-primary font-mobile-body text-mobile-body focus:ring-0 placeholder-on-surface-variant outline-none" placeholder="Search channels..." type="text"/>
+<button class="ml-3 p-2 text-on-surface-variant hover:text-primary" id="close-modal-btn">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-2">
+<!-- Channel List Items -->
+<button class="w-full p-4 flex items-center gap-3 hover:bg-surface-container rounded-lg group text-left">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">tag</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-primary group-hover:text-tertiary-fixed-dim transition-colors">#site-alerts</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Mission Critical Notifications</span>
+</div>
+<span class="material-symbols-outlined text-success ml-auto opacity-100" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</button>
+<button class="w-full p-4 flex items-center gap-3 hover:bg-surface-container rounded-lg group text-left">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">tag</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-primary group-hover:text-tertiary-fixed-dim transition-colors">#project-alpha</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">General project discussion</span>
+</div>
+</button>
+<button class="w-full p-4 flex items-center gap-3 hover:bg-surface-container rounded-lg group text-left">
+<div class="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mobile-body text-mobile-body text-primary group-hover:text-tertiary-fixed-dim transition-colors">#maintenance-crew</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Private channel for on-site techs</span>
+</div>
+</button>
+</div>
+</div>
+</div>
+<script>
+        // Simple micro-interaction for the channel selector modal
+        const channelBtn = document.getElementById('channel-selector-btn');
+        const modal = document.getElementById('channel-modal');
+        const modalContent = document.getElementById('channel-modal-content');
+        const closeBtn = document.getElementById('close-modal-btn');
+
+        channelBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Small delay to allow display change before animating transform
+            setTimeout(() => {
+                modalContent.classList.remove('translate-y-full');
+            }, 10);
+        });
+
+        function closeModal() {
+            modalContent.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300); // match duration-300
+        }
+
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if(e.target === modal) closeModal();
+        });
+    </script>
+</body></html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Construction OS - Success</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Design System Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#2b3041",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "concrete-white": "#F8FAFC",
+                        "on-primary-fixed": "#161b2b",
+                        "on-primary-fixed-variant": "#414658",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-primary-container": "#777c90",
+                        "background": "#031427",
+                        "on-tertiary-container": "#0088a0",
+                        "danger": "#EF4444",
+                        "success": "#10B981",
+                        "on-surface": "#d3e4fe",
+                        "surface-tint": "#c1c5dc",
+                        "warning": "#F59E0B",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "mobile-primary": "#0066FF",
+                        "surface-container-low": "#0b1c30",
+                        "surface-container": "#102034",
+                        "secondary-fixed": "#dbe1ff",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "on-secondary-fixed": "#00174b",
+                        "on-background": "#d3e4fe",
+                        "secondary-container": "#0053db",
+                        "offline": "#8E8E93",
+                        "primary-container": "#0b1020",
+                        "surface-variant": "#26364a",
+                        "on-surface-variant": "#c7c6cd",
+                        "secondary": "#b4c5ff",
+                        "on-secondary-container": "#cdd7ff",
+                        "surface": "#031427",
+                        "surface-dim": "#031427",
+                        "on-tertiary": "#003640",
+                        "surface-container-highest": "#26364a",
+                        "inverse-primary": "#595e71",
+                        "tertiary": "#4cd7f6",
+                        "primary-fixed": "#dee1f9",
+                        "on-error": "#690005",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "syncing": "#FFD60A",
+                        "inverse-on-surface": "#213145",
+                        "inverse-surface": "#d3e4fe",
+                        "outline-variant": "#46464c",
+                        "surface-bright": "#2a3a4f",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#001318",
+                        "outline": "#909097",
+                        "tertiary-fixed": "#acedff",
+                        "on-secondary": "#002a78",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#1b2b3f",
+                        "surface-container-lowest": "#000f21",
+                        "primary": "#c1c5dc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "touch-target-optimum": "52px",
+                        "web-base": "4px",
+                        "web-page-gap": "64px",
+                        "web-margin-component": "32px",
+                        "mobile-section-pad": "16px",
+                        "touch-target-min": "44px",
+                        "mobile-edge-margin": "24px",
+                        "web-padding-card": "16px",
+                        "web-gap-tight": "4px",
+                        "mobile-base": "8px",
+                        "mobile-card-pad": "12px",
+                        "mobile-icon-pad": "8px"
+                    },
+                    "fontFamily": {
+                        "label-tiny": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-h1": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .hex-pulse {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 215, 246, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 20px rgba(76, 215, 246, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(76, 215, 246, 0); }
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col antialiased selection:bg-tertiary selection:text-tertiary-container">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky border-b border-surface-variant bg-surface dark:bg-surface flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum z-50">
+<button class="text-on-surface-variant hover:bg-surface-variant transition-colors active:scale-95 flex items-center justify-center w-touch-target-min h-touch-target-min rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<div class="font-mobile-title text-mobile-title font-bold text-mobile-primary text-center flex-1">
+            Construction OS
+        </div>
+<button class="text-on-surface-variant hover:bg-surface-variant transition-colors active:scale-95 flex items-center justify-center w-touch-target-min h-touch-target-min rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sync</span>
+</button>
+</header>
+<!-- Main Canvas (Success Screen) -->
+<!-- NOTE: BottomNavBar is intentionally suppressed per the 'Automatic Suppression' rule for Success/Confirmation screens to prioritize the canvas. -->
+<main class="flex-1 flex flex-col justify-center px-mobile-edge-margin py-web-page-gap relative overflow-hidden">
+<!-- Ambient Glow -->
+<div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-tertiary/10 rounded-full blur-[80px] pointer-events-none"></div>
+<!-- Success Icon -->
+<div class="fade-in-up flex justify-center mb-8 relative z-10">
+<div class="relative w-32 h-32 flex items-center justify-center hex-pulse rounded-full">
+<!-- Hexagon SVG mapped to AI Cyan (tertiary token) -->
+<svg class="absolute w-full h-full text-tertiary fill-tertiary/20 stroke-tertiary" style="stroke-width: 2px; stroke-linejoin: round;" viewbox="0 0 100 100">
+<polygon points="50 3, 93 28, 93 72, 50 97, 7 72, 7 28"></polygon>
+</svg>
+<span class="material-symbols-outlined text-[48px] text-tertiary" style="font-variation-settings: 'FILL' 0; font-weight: 700;">check</span>
+</div>
+</div>
+<!-- Messaging -->
+<div class="fade-in-up delay-100 flex flex-col items-center text-center mb-10 z-10">
+<h1 class="font-mobile-hero text-mobile-hero text-on-surface mb-4">Report Submitted Successfully</h1>
+<p class="font-mobile-body text-mobile-body text-on-surface-variant max-w-md">
+                Your discrepancy report for 'Structural Integrity Audit - Zone 4' has been recorded and flagged for manual review.
+            </p>
+</div>
+<!-- Detail Card -->
+<div class="fade-in-up delay-200 bg-surface-container rounded-xl p-mobile-card-pad border border-outline-variant mb-auto z-10 shadow-[0_4px_24px_rgba(0,0,0,0.2)]">
+<div class="flex flex-col gap-mobile-base">
+<div class="flex justify-between items-center py-2 border-b border-surface-variant/50">
+<span class="font-body-md text-body-md text-on-surface-variant">Report ID</span>
+<span class="font-headline-h3 text-headline-h3 text-on-surface tracking-wider">#DR-992-X</span>
+</div>
+<div class="flex justify-between items-center py-2 border-b border-surface-variant/50">
+<span class="font-body-md text-body-md text-on-surface-variant">Submission Time</span>
+<span class="font-headline-h3 text-headline-h3 text-on-surface">Today, 10:45 AM</span>
+</div>
+<div class="flex justify-between items-center py-2">
+<span class="font-body-md text-body-md text-on-surface-variant">Priority</span>
+<div class="bg-warning/20 border border-warning/50 rounded-full px-3 py-1 flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-warning"></span>
+<span class="font-label-tiny text-label-tiny text-warning uppercase">Medium</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="fade-in-up delay-300 flex flex-col gap-mobile-section-pad mt-10 w-full z-10">
+<button class="w-full h-touch-target-optimum bg-mobile-primary hover:bg-secondary-container text-concrete-white rounded-lg flex items-center justify-center font-headline-h2 text-headline-h2 transition-all active:scale-[0.98] shadow-[0_0_20px_rgba(0,102,255,0.3)] border border-mobile-primary/50">
+                Return to Dashboard
+            </button>
+<button class="w-full h-touch-target-optimum bg-transparent border border-outline-variant hover:bg-surface-variant text-on-surface rounded-lg flex items-center justify-center font-headline-h3 text-headline-h3 transition-all active:scale-[0.98]">
+                View Report Details
+            </button>
+</div>
+</main>
+<script>
+        // Simple entry animation sequencer
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.fade-in-up');
+            elements.forEach((el, i) => {
+                el.style.opacity = '0';
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                }, 100 + (i * 100));
+            });
+        });
+    </script>
+</body></html>

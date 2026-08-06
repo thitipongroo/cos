@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Evidence Export Options</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary-container": "#0053db",
+                    "on-primary-fixed-variant": "#414658",
+                    "secondary": "#b4c5ff",
+                    "primary-fixed-dim": "#c1c5dc",
+                    "on-primary-fixed": "#161b2b",
+                    "on-secondary-fixed": "#00174b",
+                    "on-tertiary-container": "#0088a0",
+                    "surface-container-lowest": "#000f21",
+                    "on-secondary": "#002a78",
+                    "on-error": "#690005",
+                    "inverse-on-surface": "#213145",
+                    "tertiary-container": "#001318",
+                    "on-primary-container": "#777c90",
+                    "surface-variant": "#26364a",
+                    "primary": "#c1c5dc",
+                    "on-tertiary-fixed-variant": "#004e5c",
+                    "surface-container-highest": "#26364a",
+                    "surface": "#031427",
+                    "error": "#ffb4ab",
+                    "danger": "#EF4444",
+                    "offline": "#8E8E93",
+                    "surface-bright": "#2a3a4f",
+                    "on-tertiary-fixed": "#001f26",
+                    "success": "#10B981",
+                    "on-surface": "#d3e4fe",
+                    "tertiary-fixed-dim": "#4cd7f6",
+                    "concrete-white": "#F8FAFC",
+                    "syncing": "#FFD60A",
+                    "outline-variant": "#46464c",
+                    "surface-tint": "#c1c5dc",
+                    "on-background": "#d3e4fe",
+                    "surface-dim": "#031427",
+                    "on-error-container": "#ffdad6",
+                    "warning": "#F59E0B",
+                    "tertiary-fixed": "#acedff",
+                    "error-container": "#93000a",
+                    "surface-container": "#102034",
+                    "secondary-fixed": "#dbe1ff",
+                    "on-secondary-container": "#cdd7ff",
+                    "surface-container-low": "#0b1c30",
+                    "outline": "#909097",
+                    "on-tertiary": "#003640",
+                    "on-surface-variant": "#c7c6cd",
+                    "mobile-primary": "#0066FF",
+                    "primary-fixed": "#dee1f9",
+                    "tertiary": "#4cd7f6",
+                    "on-secondary-fixed-variant": "#003ea8",
+                    "primary-container": "#0b1020",
+                    "surface-container-high": "#1b2b3f",
+                    "on-primary": "#2b3041",
+                    "secondary-fixed-dim": "#b4c5ff",
+                    "background": "#031427",
+                    "inverse-primary": "#595e71",
+                    "inverse-surface": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "web-gap-tight": "4px",
+                    "touch-target-min": "44px",
+                    "mobile-card-pad": "12px",
+                    "web-base": "4px",
+                    "touch-target-optimum": "52px",
+                    "mobile-edge-margin": "24px",
+                    "mobile-base": "8px",
+                    "web-page-gap": "64px",
+                    "mobile-section-pad": "16px",
+                    "web-margin-component": "32px",
+                    "web-padding-card": "16px",
+                    "mobile-icon-pad": "8px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Inter"],
+                    "headline-h2": ["Inter"],
+                    "mobile-title": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "headline-h3": ["Inter"],
+                    "mobile-body": ["Inter"],
+                    "mobile-hero": ["Inter"],
+                    "body-md": ["Inter"],
+                    "headline-h1": ["Inter"],
+                    "label-tiny": ["Inter"]
+            },
+            "fontSize": {
+                    "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                    "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                    "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                    "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                    "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                    "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                    "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface text-primary font-headline-h1 text-headline-h1 docked full-width top-0 border-b border-outline-variant flat no shadows flex justify-between items-center w-full px-mobile-edge-margin h-[64px] fixed z-50">
+<button class="hover:bg-surface-container-high transition-colors active:scale-95 duration-150 p-2 rounded-full text-on-surface-variant flex items-center justify-center h-[44px] w-[44px]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-h1 text-headline-h1 text-on-surface truncate">Export Evidence</h1>
+<button class="hover:bg-surface-container-high transition-colors active:scale-95 duration-150 p-2 rounded-full text-on-surface-variant flex items-center justify-center h-[44px] w-[44px]">
+<span class="material-symbols-outlined">cloud_sync</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="pt-[80px] pb-[160px] px-mobile-edge-margin flex flex-col gap-mobile-section-pad flex-grow overflow-y-auto">
+<!-- Evidence Thumbnail Header -->
+<div class="bg-surface-container rounded-xl p-mobile-card-pad border border-outline-variant flex items-center gap-4 mt-mobile-section-pad shadow-sm">
+<div class="h-16 w-16 rounded-lg bg-surface-container-high border border-outline-variant overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="A highly detailed close-up shot of a complex industrial server rack wiring harness in a dimly lit, high-tech server room. Deep navy shadows contrast with glowing LED status lights and pristine white zip ties. The mood is critical, precise, and technologically advanced, fitting a mission-critical infrastructure audit." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeVKZ4VS_jiP3X_P0nzOhLvqt6cVRHGOEtSRmzlxGjHj-2uiUZmq1hLLCrbwe1hyCUOVIKqiYgCE7RUMDi92ojQDzfROhX8PhDRUo5du5nfX1rJtJTmxD9qYJMraxJWwYmZkY9ArSRPFXgVvIQwYjPAAarUCcFVuGax8ogeZV6pm78gX3OreGeK-a4Q9lIGuQGOoBZi2IfnapbN0iOXzqJYNjm38VS6e96zQYznZv0fqlYpKJtMZ_rmg"/>
+</div>
+<div class="flex flex-col flex-grow overflow-hidden">
+<span class="font-headline-h3 text-headline-h3 text-on-surface truncate">node7_rack_status.jpg</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                    Verified Capture
+                </span>
+</div>
+</div>
+<!-- Export Options Section -->
+<section class="flex flex-col gap-3 mt-2">
+<h2 class="font-label-tiny text-label-tiny text-on-surface-variant tracking-wider uppercase mb-1">Select Format</h2>
+<!-- Option 1: PDF Audit Proof (Primary/Selected) -->
+<button class="w-full text-left bg-surface-container rounded-xl p-4 border-2 border-tertiary flex items-start gap-4 active:scale-[0.98] transition-transform relative overflow-hidden group shadow-md shadow-tertiary/10">
+<div class="absolute inset-0 bg-tertiary opacity-10 group-hover:opacity-20 transition-opacity"></div>
+<div class="h-10 w-10 rounded-full bg-tertiary-container flex items-center justify-center shrink-0 text-tertiary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">picture_as_pdf</span>
+</div>
+<div class="flex flex-col gap-1 pr-6 relative z-10">
+<span class="font-headline-h3 text-headline-h3 text-on-surface">PDF Audit Proof</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">Include technical metadata, AI analysis, and digital signature</span>
+</div>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center z-10">
+<div class="h-6 w-6 rounded-full border-2 border-tertiary flex items-center justify-center bg-surface-container">
+<div class="h-3 w-3 rounded-full bg-tertiary"></div>
+</div>
+</div>
+</button>
+<!-- Option 2: High-Res Image -->
+<button class="w-full text-left bg-surface-container rounded-xl p-4 border border-outline-variant flex items-start gap-4 active:scale-[0.98] transition-transform hover:bg-surface-container-high relative pr-12">
+<div class="h-10 w-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 text-on-surface-variant border border-outline-variant">
+<span class="material-symbols-outlined">image</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-headline-h3 text-headline-h3 text-on-surface">High-Res Image</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">Export original 4K resolution photo without markups</span>
+</div>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+<div class="h-6 w-6 rounded-full border-2 border-outline-variant"></div>
+</div>
+</button>
+<!-- Option 3: Technical Data -->
+<button class="w-full text-left bg-surface-container rounded-xl p-4 border border-outline-variant flex items-start gap-4 active:scale-[0.98] transition-transform hover:bg-surface-container-high relative pr-12">
+<div class="h-10 w-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 text-on-surface-variant border border-outline-variant">
+<span class="material-symbols-outlined">data_object</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-headline-h3 text-headline-h3 text-on-surface">Technical Data (CSV/JSON)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">Export raw sensor logs, GPS coordinates, and EXIF data</span>
+</div>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+<div class="h-6 w-6 rounded-full border-2 border-outline-variant"></div>
+</div>
+</button>
+</section>
+<!-- Recent Destinations Section -->
+<section class="mt-4 pb-4">
+<h2 class="font-label-tiny text-label-tiny text-on-surface-variant tracking-wider uppercase mb-3">Quick Share</h2>
+<div class="flex gap-4 overflow-x-auto pb-2 snap-x hide-scrollbar">
+<!-- Destination 1 -->
+<button class="snap-start shrink-0 flex flex-col items-center gap-2 w-20 group">
+<div class="h-14 w-14 rounded-full bg-surface-container border border-outline-variant flex items-center justify-center text-on-surface group-active:bg-surface-variant group-hover:border-tertiary transition-colors relative overflow-hidden">
+<span class="material-symbols-outlined relative z-10">tag</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant text-center leading-tight">Project Slack</span>
+</button>
+<!-- Destination 2 -->
+<button class="snap-start shrink-0 flex flex-col items-center gap-2 w-20 group">
+<div class="h-14 w-14 rounded-full bg-surface-container border border-outline-variant flex items-center justify-center text-on-surface group-active:bg-surface-variant group-hover:border-tertiary transition-colors relative overflow-hidden">
+<span class="material-symbols-outlined relative z-10">mail</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant text-center leading-tight">Site Email</span>
+</button>
+<!-- Destination 3 -->
+<button class="snap-start shrink-0 flex flex-col items-center gap-2 w-20 group">
+<div class="h-14 w-14 rounded-full bg-surface-container border border-outline-variant flex items-center justify-center text-on-surface group-active:bg-surface-variant group-hover:border-tertiary transition-colors relative overflow-hidden">
+<span class="material-symbols-outlined relative z-10">dns</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant text-center leading-tight">Internal Archive</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Fixed Action Button -->
+<div class="md:hidden fixed bottom-[80px] left-0 w-full px-mobile-edge-margin py-4 bg-gradient-to-t from-background via-background to-transparent z-40">
+<button class="w-full bg-mobile-primary text-concrete-white font-headline-h3 text-headline-h3 py-[14px] rounded-xl flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-mobile-primary/20">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+                Generate &amp; Export
+            </button>
+</div>
+<!-- BottomNavBar -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center bg-surface-container-low border-t border-outline-variant z-50 h-[80px] pb-safe">
+<!-- Review -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant w-16 h-full hover:bg-surface-variant active:scale-90 transition-transform">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="mt-1 font-label-tiny text-label-tiny">Review</span>
+</button>
+<!-- Evidence -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant w-16 h-full hover:bg-surface-variant active:scale-90 transition-transform">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="mt-1 font-label-tiny text-label-tiny">Evidence</span>
+</button>
+<!-- Export (Active) -->
+<button class="flex flex-col items-center justify-center text-on-primary-container w-16 h-full active:scale-90 transition-transform">
+<div class="bg-primary-container rounded-full w-14 h-8 flex items-center justify-center mb-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">ios_share</span>
+</div>
+<span class="font-label-tiny text-label-tiny font-bold text-on-surface">Export</span>
+</button>
+<!-- Sync -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant w-16 h-full hover:bg-surface-variant active:scale-90 transition-transform">
+<span class="material-symbols-outlined">sync</span>
+<span class="mt-1 font-label-tiny text-label-tiny">Sync</span>
+</button>
+</nav>
+</body></html>

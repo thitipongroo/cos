@@ -1,0 +1,280 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Update Deviation Status - Construction OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#26364a",
+                      "surface-bright": "#2a3a4f",
+                      "surface": "#031427",
+                      "secondary-container": "#0053db",
+                      "on-surface": "#d3e4fe",
+                      "on-tertiary-fixed": "#001f26",
+                      "inverse-on-surface": "#213145",
+                      "surface-dim": "#031427",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "on-primary-container": "#777c90",
+                      "on-secondary-container": "#cdd7ff",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "inverse-surface": "#d3e4fe",
+                      "secondary-fixed": "#dbe1ff",
+                      "primary-container": "#0b1020",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "tertiary-container": "#001318",
+                      "on-surface-variant": "#c7c6cd",
+                      "background": "#031427",
+                      "concrete-white": "#F8FAFC",
+                      "on-error-container": "#ffdad6",
+                      "primary-fixed": "#dee1f9",
+                      "on-error": "#690005",
+                      "on-secondary": "#002a78",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "on-tertiary-container": "#0088a0",
+                      "tertiary": "#4cd7f6",
+                      "on-primary": "#2b3041",
+                      "success": "#10B981",
+                      "tertiary-fixed": "#acedff",
+                      "outline-variant": "#46464c",
+                      "danger": "#EF4444",
+                      "primary": "#c1c5dc",
+                      "warning": "#F59E0B",
+                      "on-primary-fixed": "#161b2b",
+                      "on-tertiary": "#003640",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-primary-fixed-variant": "#414658",
+                      "on-secondary-fixed": "#00174b",
+                      "secondary": "#b4c5ff",
+                      "error": "#ffb4ab",
+                      "offline": "#8E8E93",
+                      "surface-container-high": "#1b2b3f",
+                      "error-container": "#93000a",
+                      "syncing": "#FFD60A",
+                      "surface-variant": "#26364a",
+                      "surface-container": "#102034",
+                      "on-background": "#d3e4fe",
+                      "surface-container-lowest": "#000f21",
+                      "surface-container-low": "#0b1c30",
+                      "inverse-primary": "#595e71",
+                      "mobile-primary": "#0066FF",
+                      "surface-tint": "#c1c5dc",
+                      "outline": "#909097"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "mobile-icon-pad": "8px",
+                      "mobile-edge-margin": "24px",
+                      "touch-target-min": "44px",
+                      "mobile-card-pad": "12px",
+                      "web-margin-component": "32px",
+                      "web-padding-card": "16px",
+                      "web-gap-tight": "4px",
+                      "touch-target-optimum": "52px",
+                      "mobile-base": "8px",
+                      "web-base": "4px",
+                      "mobile-section-pad": "16px",
+                      "web-page-gap": "64px"
+              },
+              "fontFamily": {
+                      "headline-h2": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "mobile-hero": [
+                              "Inter"
+                      ],
+                      "label-tiny": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "mobile-title": [
+                              "Inter"
+                      ],
+                      "headline-h1": [
+                              "Inter"
+                      ],
+                      "headline-h3": [
+                              "Inter"
+                      ],
+                      "mobile-body": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mobile-hero": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-tiny": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mobile-title": [
+                              "22px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-h3": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "mobile-body": [
+                              "17px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md md:hidden pb-[100px]">
+<!-- TopAppBar (Suppressed navigation, task focused) -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum bg-surface border-b border-outline-variant flat no shadows transition-colors duration-200">
+<button aria-label="Go Back" class="h-touch-target-optimum flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-on-surface">Update Status</h1>
+<button aria-label="Device Settings" class="h-touch-target-optimum w-touch-target-optimum flex items-center justify-center text-on-surface-variant rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings_remote</span>
+</button> <!-- Spacer for center alignment -->
+</header>
+<main class="mt-touch-target-optimum px-mobile-edge-margin py-mobile-section-pad flex flex-col gap-mobile-section-pad">
+<!-- Deviation Summary Card -->
+<div class="bg-surface-container rounded-lg border border-outline-variant p-mobile-card-pad flex flex-col gap-web-gap-tight">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-widest">Deviation Ref: DEV-492</span>
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface">Steel Beam Misalignment</h2>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="">Column 4B, Level 2</span>
+</div>
+</div>
+<!-- Status Selection -->
+<section class="flex flex-col gap-mobile-base">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">New Status</h3>
+<div class="flex flex-col gap-mobile-base">
+<label class="flex items-center justify-between bg-surface-container border border-outline-variant rounded-lg p-mobile-card-pad cursor-pointer h-touch-target-optimum focus-within:border-[#06B6D4] focus-within:ring-1 focus-within:ring-[#06B6D4]">
+<span class="font-body-md text-body-md text-on-surface">RESOLVED</span>
+<input class="form-radio text-success bg-surface-container border-outline-variant focus:ring-[#06B6D4]" name="status" type="radio" value="resolved">
+</label>
+<label class="flex items-center justify-between bg-surface-container border border-outline-variant rounded-lg p-mobile-card-pad cursor-pointer h-touch-target-optimum focus-within:border-[#06B6D4] focus-within:ring-1 focus-within:ring-[#06B6D4]">
+<span class="font-body-md text-body-md text-on-surface">REQUIRES REWORK</span>
+<input class="form-radio text-warning bg-surface-container border-outline-variant focus:ring-[#06B6D4]" name="status" type="radio" value="rework">
+</label>
+<label class="flex items-center justify-between bg-surface-container border border-outline-variant rounded-lg p-mobile-card-pad cursor-pointer h-touch-target-optimum focus-within:border-[#06B6D4] focus-within:ring-1 focus-within:ring-[#06B6D4]">
+<span class="font-body-md text-body-md text-on-surface">ACCEPTED AS-IS</span>
+<input class="form-radio text-tertiary bg-surface-container border-outline-variant focus:ring-[#06B6D4]" name="status" type="radio" value="accepted">
+</label>
+</div>
+</section>
+<!-- Resolution Notes -->
+<section class="flex flex-col gap-mobile-base">
+<label class="font-headline-h3 text-headline-h3 text-on-surface" for="resolution-notes">Engineering/Resolution Notes</label>
+<textarea class="bg-surface-container border border-outline-variant rounded-lg p-mobile-card-pad font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant focus:border-[#06B6D4] focus:ring-1 focus:ring-[#06B6D4] resize-none w-full" id="resolution-notes" placeholder="Enter detailed corrective actions taken..." rows="4"></textarea>
+</section>
+<!-- Evidence Upload -->
+<section class="flex flex-col gap-mobile-base">
+<div class="flex justify-between items-center">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Attach Evidence</h3>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">0/3 Photos</span>
+</div>
+<button class="bg-surface-container border border-outline-variant border-dashed rounded-lg h-24 flex flex-col items-center justify-center gap-2 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[32px]">photo_camera</span>
+<span class="font-body-sm text-body-sm">Tap to capture photo</span>
+</button>
+</section>
+<!-- Secondary Fields -->
+<section class="flex flex-col gap-mobile-base">
+<label class="font-headline-h3 text-headline-h3 text-on-surface">Date of Resolution</label>
+<div class="relative">
+<input class="w-full bg-surface-container border border-outline-variant rounded-lg p-mobile-card-pad font-body-md text-body-md text-on-surface h-touch-target-optimum focus:border-[#06B6D4] focus:ring-1 focus:ring-[#06B6D4]" type="date">
+</div>
+</section>
+<section class="flex flex-col gap-mobile-base">
+<label class="font-headline-h3 text-headline-h3 text-on-surface">Verification Signature</label>
+<div class="bg-surface-container border border-outline-variant rounded-lg h-32 flex items-center justify-center text-on-surface-variant font-body-sm text-body-sm relative">
+                Sign here
+                <div class="absolute bottom-2 right-2 text-label-tiny font-label-tiny text-on-surface-variant">Digital Signature Pad</div>
+</div>
+</section>
+</main>
+<!-- Sticky Primary Action -->
+<div class="fixed bottom-0 w-full p-mobile-edge-margin bg-background border-t border-outline-variant z-50">
+<button class="w-full h-touch-target-optimum bg-mobile-primary text-concrete-white font-headline-h3 text-headline-h3 rounded-lg flex items-center justify-center gap-2 active:scale-95 transition-transform">
+<span class="">Confirm Status Update</span>
+<span class="material-symbols-outlined">check_circle</span>
+</button>
+</div>
+
+
+</body></html>
