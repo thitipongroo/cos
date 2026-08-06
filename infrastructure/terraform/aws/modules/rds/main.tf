@@ -57,14 +57,22 @@ resource "aws_db_parameter_group" "main" {
 resource "aws_db_instance" "main" {
   identifier             = "cos-postgres-${var.environment}"
   engine                 = "postgres"
-  # DRIFT — UNRESOLVED (recorded 2026-08-07). context/00_master_construction_os.md § infrastructure
-  # stack specifies "PostgreSQL 18 — primary relational store"; this module provisions 16.2, and
-  # docs/specifications/04-tech-stack.md names PostgreSQL without a version, so it settles nothing.
-  # Not changed here on purpose: a major-version bump of the primary database is an operational
-  # decision (TimescaleDB extension compatibility per ADR-032, pgvector, RDS availability in
-  # ap-southeast-7, and a migration path for existing instances) — not a documentation edit.
-  # Resolve before Stage 1→2 and make the two documents agree with whatever is provisioned.
-  engine_version         = "16.2"
+  # PostgreSQL 18 per context/00_master_construction_os.md § infrastructure stack. Raised from 16.2
+  # on 2026-08-07 (product-owner decision) to close a real dev/prod parity gap: docker-compose.yml
+  # already runs timescale/timescaledb:latest-pg18, so local development and production were two
+  # major versions apart. Prisma 7.8 + pg 8.22 support 18, and no migration in backend/prisma uses a
+  # version-gated feature.
+  #
+  # ⚠️ VERIFY BEFORE `terraform apply` — two preconditions were NOT verifiable from this repository:
+  #   1. AWS RDS must offer PostgreSQL 18 in ap-southeast-7 (Bangkok). Check
+  #      `aws rds describe-db-engine-versions --engine postgres --region ap-southeast-7`.
+  #      If 18 is unavailable there, pin the highest offered major and fix 00_master to match.
+  #   2. TimescaleDB must be available for that engine version — ADR-032 co-locates TimescaleDB on
+  #      this instance through Stages 1–3, so an engine RDS supports but Timescale does not is a
+  #      broken deployment, not an upgrade.
+  # An already-provisioned instance additionally needs a planned major-version upgrade; changing this
+  # value alone does not migrate it.
+  engine_version         = "18"
   instance_class         = var.instance_class
   allocated_storage      = var.allocated_storage
   max_allocated_storage  = var.allocated_storage * 3

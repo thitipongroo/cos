@@ -3,8 +3,7 @@
 **STUB** — detailed procedures to be defined before Stage 1→2 transition (production launch).
 
 > **Why this is still a STUB.** QM-11 closes a runbook by **executing it end-to-end in staging**. A
-> realm restore has never been rehearsed, and the retention conflict below means the recovery window
-> this procedure can actually cover is currently unknown.
+> realm restore has never been rehearsed.
 
 ## Scope
 
@@ -18,17 +17,12 @@ rebuilds it from another store.
 
 - Keycloak realm export (JSON) backed up daily via the `keycloak-realm-backup` CronJob in namespace
   `cos`, schedule `0 19 * * *` (02:00 ICT) — see [`keycloak-realm-backup.md`](keycloak-realm-backup.md)
-- Backup stored in S3 bucket `cos-keycloak-backups/{environment}/`
+- Backup stored in S3 bucket `cos-keycloak-backups/{environment}/`, **90-day retention** (+ 30 days
+  for noncurrent versions) — `aws_s3_bucket.keycloak_backups` in
+  `infrastructure/terraform/aws/modules/s3/main.tf`. **90 days is the recovery window**: an export
+  older than that is gone.
 - Protocol mapper configuration is critical — missing mappers block all authentication
   (see `05-security-compliance` §5.4.2 and `07-multi-tenant-architecture` §7.6 step 3)
-
-> ⚠️ **Retention is UNSPECIFIED — do not rely on a number here.** This page said 30 days and
-> [`keycloak-realm-backup.md`](keycloak-realm-backup.md) says 7 days. **Neither is backed by
-> anything:** `cos-keycloak-backups` is not provisioned in Terraform — `infrastructure/terraform/`
-> contains no `keycloak` bucket, and the S3 module's lifecycle rules (365-day and 90-day expiration,
-> 30-day noncurrent) belong to other buckets. Until the bucket is created in IaC with an explicit
-> lifecycle rule, **how far back a recovery can reach is unknown**. Provision it before Stage 1→2 and
-> set both pages to the configured value.
 
 ## Recovery Steps
 
@@ -71,5 +65,6 @@ to become healthy and verify authentication resumes.
 ## To close this STUB
 
 1. Restore a realm export into a scratch realm in staging and complete both login paths against it.
-2. Reconcile the backup retention conflict above against the bucket's actual lifecycle policy.
-3. Record the real S3 bucket name per environment (this page uses a placeholder).
+2. Apply the Terraform that creates the bucket, and confirm the `expire-old-backups` rule is live.
+3. Record the real S3 bucket name per environment (this page uses a placeholder;
+   `s3_keycloak_backups_bucket_name` is the Terraform input).

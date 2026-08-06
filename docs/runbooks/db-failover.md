@@ -56,9 +56,11 @@ From `infrastructure/terraform/aws/modules/rds/main.tf`:
 Dedicated ENTERPRISE instances come from `infrastructure/terraform/modules/rds-tenant/`
 (`aws_db_instance.tenant`); the tenant's URL is in `platform.tenants.dedicated_db_url`.
 
-> **Version drift to resolve before a drill.** The Terraform module pins `engine_version = "16.2"`,
-> while `00_master_construction_os.md` § infrastructure stack specifies **PostgreSQL 18**. Confirm the
-> engine version actually running before assuming any version-specific failover behaviour.
+> **Confirm the engine version actually running.** Terraform now specifies `engine_version = "18"`
+> (raised from 16.2 on 2026-08-07), matching `00_master_construction_os.md` and the
+> `timescale/timescaledb:latest-pg18` image used in development. An instance provisioned before that
+> change is still on 16 until a major-version upgrade is performed — check the instance, not the
+> module, before assuming version-specific failover behaviour.
 >
 > **Staging cannot rehearse production failover.** `multi_az` is false outside production, so there
 > is no standby to fail over to in staging. Rehearsing the drill needs a temporary Multi-AZ staging
@@ -124,6 +126,7 @@ File an incident report if the failover was unplanned — [`incident-response.md
 
 1. Run a failover drill and record RTO/RPO achieved in
    [`disaster-recovery/drill-log.md`](disaster-recovery/drill-log.md).
-2. Resolve the engine-version drift above.
+2. Verify AWS RDS offers PostgreSQL 18 in `ap-southeast-7` and that TimescaleDB is available for it,
+   then plan the major-version upgrade for any instance still on 16.
 3. Decide how staging rehearses this given `multi_az` is production-only.
 4. Confirm the PgBouncer restart step is actually required (or not) by observing a real failover.

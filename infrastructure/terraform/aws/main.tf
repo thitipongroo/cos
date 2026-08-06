@@ -169,11 +169,12 @@ module "msk" {
 }
 
 module "s3" {
-  source               = "./modules/s3"
-  environment          = var.environment
-  files_bucket_name    = var.s3_files_bucket_name
-  backups_bucket_name  = var.s3_backups_bucket_name
-  eks_oidc_provider    = module.eks.oidc_provider_arn
-  kms_master_key_id    = aws_kms_key.s3.arn
-  tags                 = var.tags
+  source                       = "./modules/s3"
+  environment                  = var.environment
+  files_bucket_name            = var.s3_files_bucket_name
+  backups_bucket_name          = var.s3_backups_bucket_name
+  keycloak_backups_bucket_name = var.s3_keycloak_backups_bucket_name
+  eks_oidc_provider            = module.eks.oidc_provider_arn
+  kms_master_key_id            = aws_kms_key.s3.arn
+  tags                         = var.tags
 }

@@ -139,6 +139,11 @@ variable "s3_backups_bucket_name" {
   type        = string
 }
 
+variable "s3_keycloak_backups_bucket_name" {
+  description = "S3 bucket name for the daily Keycloak realm export (docs/runbooks/keycloak-realm-backup.md)"
+  type        = string
+}
+
 variable "tags" {
   description = "Common tags applied to all resources"
   type        = map(string)

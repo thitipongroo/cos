@@ -1,0 +1,75 @@
+# Argo Rollouts AnalysisTemplate — the QM-16 automated-rollback health gate.
+# Deploy: kubectl apply -f infrastructure/kubernetes/argo-rollouts/analysis-template-error-rate.yaml -n cos
+#
+# QM-16: "if error rate exceeds 1% within 10 minutes of deployment → pipeline rolls back
+# automatically". Until 2026-08-07 that line pointed at .github/workflows/deploy.yml, which has never
+# existed and could not: ADR-012 forbids CI from deploying, and the Phase 19 checklist greps the
+# workflows for `kubectl apply`/`helm upgrade` expecting zero hits. The gate belongs on the CD side —
+# this is it.
+#
+# PREREQUISITE — the Argo Rollouts controller is NOT installed yet. This template is inert until it
+# is, and a Rollout that references a missing AnalysisTemplate fails its step rather than passing it.
+# Install the controller and convert the target Deployments to Rollouts before relying on this.
+#
+# The PromQL below is lifted from the APIHighErrorRate rule in
+# infrastructure/monitoring/prometheus/rules/cos-alerts.yml — same metric (`http_requests_total`),
+# same 5xx selector, same 1% threshold — so an alert firing and a rollout failing mean the same
+# thing. Prometheus address matches the Grafana datasource (infrastructure/monitoring/grafana/
+# provisioning/datasources.yml: http://prometheus:9090).
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+  namespace: cos
+spec:
+  args:
+    # Passed by the Rollout: the value of the `service` label to scope the query to the workload
+    # being rolled out. Without it the query would average every service and mask a single bad one.
+    - name: service
+  metrics:
+    - name: error-rate
+      # 10 one-minute evaluations = the 10-minute window QM-16 specifies.
+      interval: 1m
+      count: 10
+      # One breach aborts. `failureLimit: 0` is deliberate: at 1% sustained over a minute the
+      # deployment is already serving errors to users, and waiting for a second sample doubles the
+      # blast radius for no diagnostic value.
+      failureLimit: 0
+      # A scrape gap must not read as success. Prometheus returns no series when a target is down —
+      # which is itself a failing deployment — so treat an empty result as a failure, not as 0%.
+      failureCondition: len(result) == 0 || result[0] >= 0.01
+      successCondition: len(result) > 0 && result[0] < 0.01
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            sum(rate(http_requests_total{service="{{args.service}}", status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{service="{{args.service}}"}[5m]))
+---
+# Latency guard — QM-6/QM-14 write-path SLO is p95 < 500ms; this trips at the QM-8 alerting
+# threshold (p99 > 5s, the APIHighLatency rule) rather than the SLO, so a canary is aborted only on
+# a clear regression and not on ordinary SLO noise.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: p99-latency
+  namespace: cos
+spec:
+  args:
+    - name: service
+  metrics:
+    - name: p99-latency
+      interval: 1m
+      count: 10
+      failureLimit: 0
+      failureCondition: len(result) == 0 || result[0] >= 5
+      successCondition: len(result) > 0 && result[0] < 5
+      provider:
+        prometheus:
+          address: http://prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            histogram_quantile(0.99,
+              sum by (le) (rate(http_request_duration_seconds_bucket{service="{{args.service}}"}[5m]))
+            )

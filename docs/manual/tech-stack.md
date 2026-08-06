@@ -42,7 +42,7 @@ Kafka is an internal event bus inside the monolith boundary — it is not a sign
 
 | Component                     | Role                                                                 |
 | ----------------------------- | ---------------------------------------------------------------------- |
-| PostgreSQL 18 ⚠️              | Primary relational store; **RLS on every domain table** (spec §7.7). **The AWS module provisions 16.2**, not 18 — see the drift note below |
+| PostgreSQL 18                 | Primary relational store; **RLS on every domain table** (spec §7.7)   |
 | TimescaleDB 2.x               | Time-series (equipment, IoT, workforce) — a PostgreSQL extension co-located on the primary through Stages 1–3 (ADR-032) |
 | pgvector                      | Vector embeddings in PostgreSQL                                       |
 | PgBouncer                     | **Mandatory** connection pooler, transaction mode (QM-18)             |
@@ -60,12 +60,13 @@ Kafka is an internal event bus inside the monolith boundary — it is not a sign
 | Istio 1.21+                   | Service mesh, mTLS across VPC/node boundaries                         |
 | Kubernetes 1.29+ · Terraform 1.7+ · ArgoCD | Orchestration, IaC, GitOps CD                            |
 
-> ⚠️ **PostgreSQL version drift, unresolved.** `00_master_construction_os.md` specifies **18**;
-> `infrastructure/terraform/aws/modules/rds/main.tf` provisions **`engine_version = "16.2"`**; and
-> `04-tech-stack.md` names PostgreSQL with no version, so it settles nothing. Do not assume 18 is
-> running — check the instance. A bump is an operational decision (TimescaleDB compatibility per
-> ADR-032, pgvector, RDS availability in `ap-southeast-7`, migration of existing instances), not a
-> documentation edit; it is flagged in the Terraform module and must be resolved before Stage 1→2.
+> **PostgreSQL 18 everywhere — but verify RDS before applying.** The Terraform modules provisioned
+> `16.2` until 2026-08-07 while `docker-compose.yml` ran `timescale/timescaledb:latest-pg18`, so dev
+> and production were two major versions apart. Both modules are now `18`. **Two preconditions were
+> not verifiable from this repository and must be checked before `terraform apply`:** that AWS RDS
+> offers PostgreSQL 18 in `ap-southeast-7`, and that TimescaleDB is available for it (ADR-032
+> co-locates TimescaleDB on the primary instance). An already-provisioned instance also needs a
+> planned major-version upgrade — the Terraform value alone does not migrate it.
 
 ## Shared packages — `packages/@cos/`
 

@@ -84,9 +84,10 @@ declaration (QM-17).
 ## To close this STUB
 
 1. Perform a real rollback in staging and record revision numbers and timings.
-2. Prove the automatic error-rate rollback fires. **QM-16 says the health gate is defined in
-   `.github/workflows/deploy.yml` — that file does not exist.** `.github/workflows/` holds `ci.yml`,
-   `codeql.yml`, `dast.yml`, `lighthouse.yml`, `load-tests.yml`, `mutation-tests.yml` and
-   `semgrep.yml` only. Either the gate lives elsewhere (an ArgoCD/Argo Rollouts analysis) or it is
-   not implemented; resolve that before relying on automatic rollback.
+2. Prove the automatic error-rate rollback fires. The gate now exists as
+   `infrastructure/kubernetes/argo-rollouts/analysis-template-error-rate.yaml`, but **the Argo
+   Rollouts controller is not installed and the workloads are still `Deployment`s, so nothing
+   evaluates it yet** — see
+   [`argo-rollouts/README.md`](../../infrastructure/kubernetes/argo-rollouts/README.md) for the
+   activation steps. Until then, automatic rollback does not happen: watch the deploy yourself.
 3. Rehearse one migration rollback from `prisma/rollbacks/` end to end.
