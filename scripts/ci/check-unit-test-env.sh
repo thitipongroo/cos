@@ -29,6 +29,13 @@ KEYS="$(grep -rzoP "getOrThrow(<[^>]*>)?\(\s*'[A-Z0-9_]+'" "$ROOT/backend/src" -
 # The unit-tests job's env block: from `unit-tests:` to the first `steps:` after it.
 ENV_BLOCK="$(awk '/^  unit-tests:/{f=1} f&&/^    steps:/{exit} f' "$WORKFLOW")"
 
+# A key may instead be set by the spec that needs it. That is not a loophole — for a variable read
+# as `process.env['X'] ?? 'default'` it is the ONLY correct place: istanbul counts `a ?? b` per
+# operand, so setting such a key job-wide short-circuits the fallback and drops branch coverage
+# below the QM-1 100% gate. REDIS_URL is set in app.module.spec.ts for exactly this reason.
+SPEC_SET="$(grep -rhoE "process\.env\['[A-Z0-9_]+'\]\s*=" "$ROOT/backend/src" --include=*.spec.ts 2>/dev/null |
+  grep -oE "'[A-Z0-9_]+'" | tr -d "'" | sort -u)"
+
 MISSING=()
 CHECKED=0
 echo "==> Unit Tests env covers every getOrThrow key"
@@ -37,9 +44,11 @@ echo ""
 for KEY in $KEYS; do
   CHECKED=$((CHECKED + 1))
   if echo "$ENV_BLOCK" | grep -qE "^\s+$KEY:"; then
-    echo "  ✓ $KEY"
+    echo "  ✓ $KEY — workflow job env"
+  elif echo "$SPEC_SET" | grep -qxF "$KEY"; then
+    echo "  ✓ $KEY — set by the spec that needs it"
   else
-    echo "  ✗ $KEY — read by a module factory but not set in the unit-tests job"
+    echo "  ✗ $KEY — read by a module factory, but set neither in the unit-tests job nor in a spec"
     MISSING+=("$KEY")
   fi
 done

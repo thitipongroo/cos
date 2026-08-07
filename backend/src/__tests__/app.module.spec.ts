@@ -30,6 +30,29 @@ import { Test } from '@nestjs/testing';
 import { AppModule } from '../app.module';
 
 describe('AppModule', () => {
+  // REDIS_URL is set HERE and nowhere else — deliberately not in the workflow's job env.
+  //
+  // ThrottlerModule's factory calls cfg.getOrThrow('REDIS_URL'), so compiling AppModule needs it.
+  // But five services (exchange-rate, mfa, otp, device-trust, step-up) read it as
+  // `process.env['REDIS_URL'] ?? 'redis://localhost:6379'`, and istanbul instruments `a ?? b` as one
+  // branch with a location per operand. With the variable UNSET, `undefined ?? '…'` evaluates both
+  // operands and the branch is fully covered; SET, it short-circuits, the right operand is never
+  // evaluated, and each of those files drops to ~94-97% branch — which failed the QM-1 100% gate.
+  // Measured both ways on exchange-rate.service.spec.ts: 100% unset, 94.44% set.
+  //
+  // Scoping it to this file gets both: every other spec still sees it unset (fallback operand
+  // covered), and this one gets a value. Coverage is cumulative across the run, so the left operand
+  // this file exercises only adds to the total. afterAll restores the previous state because jest
+  // workers reuse a process across spec files.
+  const previousRedisUrl = process.env['REDIS_URL'];
+  beforeAll(() => {
+    process.env['REDIS_URL'] = 'redis://localhost:6379';
+  });
+  afterAll(() => {
+    if (previousRedisUrl === undefined) delete process.env['REDIS_URL'];
+    else process.env['REDIS_URL'] = previousRedisUrl;
+  });
+
   it('resolves every provider in every module', async () => {
     // If a provider anywhere in the application asks for something no imported module exports, this
     // throws UnknownDependenciesException naming the provider and the missing argument — the exact

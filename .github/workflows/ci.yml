@@ -193,8 +193,12 @@ jobs:
       #   appDatabaseUrl() — backend/src/shared/prisma/app-database-url.ts — throws instead of
       #   silently falling back to the RLS-bypassing superuser DATABASE_URL (ADR-031, QM-18).
       APP_DATABASE_URL: postgresql://app_user:ci@localhost:5432/ci
-      #   ThrottlerModule storage — app.module.ts, analytics.module.ts
-      REDIS_URL: redis://localhost:6379
+      #   REDIS_URL is DELIBERATELY ABSENT — do not add it here. It is set inside
+      #   src/__tests__/app.module.spec.ts instead. Five services read it as
+      #   `process.env['REDIS_URL'] ?? '…'`, and istanbul counts `a ?? b` per operand: unset
+      #   evaluates both and covers the branch, set short-circuits and leaves the fallback operand
+      #   unexecuted. Setting it job-wide took backend branch coverage from 100% to 99.84% and broke
+      #   the QM-1 gate. The spec file explains it in full.
       #   ClickHouse client factory — analytics.module.ts
       CLICKHOUSE_URL: http://localhost:8123
       CLICKHOUSE_USER: ci
