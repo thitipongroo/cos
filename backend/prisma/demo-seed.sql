@@ -24,7 +24,10 @@
 -- `::uuid` cast aborts the script — loudly, rather than seeding a tenant nobody asked for.
 SELECT set_config(
     'app.current_tenant_id',
-    (SELECT tenant_id::text FROM platform.tenants WHERE tenant_code = 'EKC'),
+    (
+        SELECT tenant_id::text FROM platform.tenants
+        WHERE tenant_code = 'EKC'
+    ),
     false
 );
 
@@ -38,7 +41,7 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000001', current_setting('app.current_tenant_id')::uuid,
     'DEMO-001', 'Bangkok Tower — Phase 1', 'COMMERCIAL', 'ACTIVE',
-    5000000.0000, 'THB', DATE '2026-01-15', DATE '2026-12-31',
+    5000000.0000, 'THB', date '2026-01-15', date '2026-12-31',
     '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (project_id) DO NOTHING;
@@ -100,7 +103,7 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000301', 'b0000000-0000-4000-8000-000000000001',
     current_setting('app.current_tenant_id')::uuid, 'PR-2026-001', 'PO_CREATED',
-    '00000000-0000-4000-8000-000000000012', DATE '2026-07-20'
+    '00000000-0000-4000-8000-000000000012', date '2026-07-20'
 )
 ON CONFLICT (pr_id) DO NOTHING;
 
@@ -110,7 +113,7 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000302', 'b0000000-0000-4000-8000-000000000301',
     'b0000000-0000-4000-8000-000000000001', current_setting('app.current_tenant_id')::uuid,
-    'RFQ-2026-001', 'DRAFT', TIMESTAMPTZ '2026-07-25 00:00:00+07',
+    'RFQ-2026-001', 'DRAFT', timestamptz '2026-07-25 00:00:00+07',
     '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (rfq_id) DO NOTHING;
@@ -121,7 +124,7 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000303', 'b0000000-0000-4000-8000-000000000302',
     'b0000000-0000-4000-8000-000000000201', current_setting('app.current_tenant_id')::uuid,
-    250000.0000, 'THB', 30, TIMESTAMPTZ '2026-07-01 09:00:00+07', true
+    250000.0000, 'THB', 30, timestamptz '2026-07-01 09:00:00+07', true
 )
 ON CONFLICT (quotation_id) DO NOTHING;
 
@@ -135,7 +138,7 @@ VALUES
     'b0000000-0000-4000-8000-000000000304', 'b0000000-0000-4000-8000-000000000302',
     'b0000000-0000-4000-8000-000000000201', 'b0000000-0000-4000-8000-000000000001',
     current_setting('app.current_tenant_id')::uuid, 'PO-2026-001', 'DRAFT',
-    250000.0000, 'THB', DATE '2026-07-30', '00000000-0000-4000-8000-000000000012'
+    250000.0000, 'THB', date '2026-07-30', '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (po_id) DO NOTHING;
 
@@ -144,7 +147,7 @@ INSERT INTO procurement.deliveries
 VALUES
 (
     'b0000000-0000-4000-8000-000000000305', 'b0000000-0000-4000-8000-000000000304',
-    current_setting('app.current_tenant_id')::uuid, 'DN-2026-001', TIMESTAMPTZ '2026-07-05 14:00:00+07',
+    current_setting('app.current_tenant_id')::uuid, 'DN-2026-001', timestamptz '2026-07-05 14:00:00+07',
     '00000000-0000-4000-8000-000000000012', 'Partial delivery — 50%'
 )
 ON CONFLICT (delivery_id) DO NOTHING;
@@ -158,7 +161,7 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000306', 'b0000000-0000-4000-8000-000000000304',
     'b0000000-0000-4000-8000-000000000201', current_setting('app.current_tenant_id')::uuid,
-    'INV-2026-001', 125000.0000, 'THB', DATE '2026-07-05', DATE '2026-08-04', 'RECEIVED'
+    'INV-2026-001', 125000.0000, 'THB', date '2026-07-05', date '2026-08-04', 'RECEIVED'
 )
 ON CONFLICT (invoice_id) DO NOTHING;
 
@@ -192,7 +195,7 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000403', 'b0000000-0000-4000-8000-000000000306',
     'b0000000-0000-4000-8000-000000000001', current_setting('app.current_tenant_id')::uuid,
-    125000.0000, 'THB', DATE '2026-07-06', 'PENDING', '00000000-0000-4000-8000-000000000012'
+    125000.0000, 'THB', date '2026-07-06', 'PENDING', '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (payment_id) DO NOTHING;
 
@@ -217,13 +220,13 @@ VALUES
     'b0000000-0000-4000-8000-000000000501', current_setting('app.current_tenant_id')::uuid,
     'b0000000-0000-4000-8000-000000000001', 'Pour foundation — Zone A', 'FOUNDATION',
     'IN_PROGRESS', 'b0000000-0000-4000-8000-000000000103', 85, 'NONE',
-    DATE '2026-01-15', DATE '2026-09-30', DATE '2026-01-20'
+    date '2026-01-15', date '2026-09-30', date '2026-01-20'
 ),
 (
     'b0000000-0000-4000-8000-000000000502', current_setting('app.current_tenant_id')::uuid,
     'b0000000-0000-4000-8000-000000000001', 'Install rebar — Level 2', 'STRUCTURE',
     'IN_PROGRESS', 'b0000000-0000-4000-8000-000000000104', 30, 'NONE',
-    DATE '2026-06-01', DATE '2026-11-30', DATE '2026-06-03'
+    date '2026-06-01', date '2026-11-30', date '2026-06-03'
 )
 ON CONFLICT (task_id) DO NOTHING;
 
@@ -242,31 +245,31 @@ VALUES
 (
     'b0000000-0000-4000-8000-000000000801', 'b0000000-0000-4000-8000-000000000001',
     current_setting('app.current_tenant_id')::uuid, 1, 'Foundation', 'IN_PROGRESS',
-    DATE '2026-01-15', DATE '2026-04-30', DATE '2026-01-20', null,
+    date '2026-01-15', date '2026-04-30', date '2026-01-20', null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000802', 'b0000000-0000-4000-8000-000000000001',
     current_setting('app.current_tenant_id')::uuid, 2, 'Structure', 'IN_PROGRESS',
-    DATE '2026-04-15', DATE '2026-08-31', DATE '2026-06-01', null,
+    date '2026-04-15', date '2026-08-31', date '2026-06-01', null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000803', 'b0000000-0000-4000-8000-000000000001',
     current_setting('app.current_tenant_id')::uuid, 3, 'MEP', 'NOT_STARTED',
-    DATE '2026-08-01', DATE '2026-10-31', null, null,
+    date '2026-08-01', date '2026-10-31', null, null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000804', 'b0000000-0000-4000-8000-000000000001',
     current_setting('app.current_tenant_id')::uuid, 4, 'Architecture', 'NOT_STARTED',
-    DATE '2026-10-15', DATE '2026-12-15', null, null,
+    date '2026-10-15', date '2026-12-15', null, null,
     '00000000-0000-4000-8000-000000000012'
 ),
 (
     'b0000000-0000-4000-8000-000000000805', 'b0000000-0000-4000-8000-000000000001',
     current_setting('app.current_tenant_id')::uuid, 5, 'Handover', 'NOT_STARTED',
-    DATE '2026-12-10', DATE '2026-12-31', null, null,
+    date '2026-12-10', date '2026-12-31', null, null,
     '00000000-0000-4000-8000-000000000012'
 )
 ON CONFLICT (phase_id) DO NOTHING;
@@ -277,13 +280,13 @@ INSERT INTO site_ops.site_reports
 VALUES
 (
     'b0000000-0000-4000-8000-000000000601', 'b0000000-0000-4000-8000-000000000001',
-    current_setting('app.current_tenant_id')::uuid, DATE '2026-07-04',
+    current_setting('app.current_tenant_id')::uuid, date '2026-07-04',
     '00000000-0000-4000-8000-000000000012', 'DRAFT',
     'Foundation formwork 60% complete. Rebar delivery expected tomorrow.', 'Partly cloudy', 24
 ),
 (
     'b0000000-0000-4000-8000-000000000602', 'b0000000-0000-4000-8000-000000000001',
-    current_setting('app.current_tenant_id')::uuid, DATE '2026-07-03',
+    current_setting('app.current_tenant_id')::uuid, date '2026-07-03',
     '00000000-0000-4000-8000-000000000012', 'DRAFT',
     'Site cleared. Excavation for Zone A footings completed.', 'Sunny', 18
 )

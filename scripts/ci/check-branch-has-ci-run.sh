@@ -26,13 +26,24 @@
 #   The invariant that holds is: THE TIP of a branch must have a run. Whatever else is in the push,
 #   the tip is always what GitHub builds — so a tip with no run means no run happened at all.
 #
-# Usage: ./scripts/ci/check-branch-has-ci-run.sh [branch ...]     (default: develop main)
+# STATUS: the scheduled wrapper (.github/workflows/ci-coverage-guard.yml) is NOT running. GitHub
+#   fires `schedule` and `workflow_dispatch` only from the default branch, which here is `main` —
+#   stuck at "Initial commit" with no `.github/` at all. Until that is resolved (PO decision
+#   2026-08-07: keep and document, do not move the branch), run this by hand:
+#       ./scripts/ci/check-branch-has-ci-run.sh develop
+#
+# `main` IS EXCLUDED FROM THE DEFAULT BRANCH LIST for the same reason. Its tip genuinely has no
+#   workflow run, but not because of the failure this guard is about: there are no workflow files on
+#   that branch to run. Reporting it every time would be a permanent red with no action attached —
+#   which is how a guard gets ignored. Pass it explicitly if you want it checked anyway.
+#
+# Usage: ./scripts/ci/check-branch-has-ci-run.sh [branch ...]     (default: develop)
 # Exit:  0 = every branch tip has a run (or is within the grace period), 1 = at least one has none
 
 set -euo pipefail
 
 BRANCHES=("$@")
-[[ ${#BRANCHES[@]} -eq 0 ]] && BRANCHES=(develop main)
+[[ ${#BRANCHES[@]} -eq 0 ]] && BRANCHES=(develop)
 
 # A run is created a few seconds after a push, and this may execute mid-push. Don't report a tip
 # that is younger than this.
@@ -75,8 +86,17 @@ for BRANCH in "${BRANCHES[@]}"; do
     echo "  ✗ $BRANCH — tip $SHORT has NO workflow run (commit date unavailable)"
   fi
 
-  echo "      Nothing has verified this commit. Re-run CI on it before trusting the branch:"
-  echo "      gh workflow run CI --ref $BRANCH"
+  # Two very different causes, and the advice differs. `gh workflow run CI --ref <branch>` only
+  # works if CI exists on that branch AND is registered from the default branch — on a branch with
+  # no .github/ it fails with "Workflow does not exist", which is useless advice to print.
+  if git ls-tree --name-only "origin/$BRANCH" .github/workflows/ 2>/dev/null | grep -q .; then
+    echo "      The branch has workflow files but no run was created — this is the 8857bb1 symptom."
+    echo "      Re-run CI on it before trusting the branch:  gh workflow run CI --ref $BRANCH"
+  else
+    echo "      This branch has NO workflow files, so no run was ever possible — a different problem"
+    echo "      from the one this guard watches for. Nothing to re-run; fix the branch or drop it"
+    echo "      from the argument list."
+  fi
   FAIL=$((FAIL + 1))
 done
 

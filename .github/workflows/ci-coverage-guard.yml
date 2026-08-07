@@ -11,6 +11,26 @@ name: CI Coverage Guard
 #
 # Deliberately on `schedule`, not `push`: a push-triggered guard cannot fire in exactly the
 # situation it exists to catch — the one where the push creates no run.
+#
+# ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+# │ NOT RUNNING YET — and it cannot, until the default branch is dealt with.                     │
+# │                                                                                             │
+# │ GitHub triggers `schedule` and `workflow_dispatch` ONLY from the repository's default        │
+# │ branch. This repository's default branch is `main`, which sits at dd9a001 "Initial commit"   │
+# │ (2026-05-29), is 520 commits behind `develop`, and contains no `.github/` directory at all.  │
+# │ So this file is on `develop`, where nothing will ever start it:                              │
+# │                                                                                             │
+# │   gh api repos/:owner/:repo/actions/workflows/ci-coverage-guard.yml  →  404 Not Found        │
+# │                                                                                             │
+# │ Product-owner decision 2026-08-07: keep the guard and record why, rather than delete it or   │
+# │ move the branch. Two ways to activate it, both branch-topology decisions, neither taken yet: │
+# │   • point the default branch at `develop` — one setting, no code change; or                  │
+# │   • bring `main` forward, which also makes it a real release branch again. Note that a push  │
+# │     to `main` runs build-docker → Trivy → push-ecr → update-gitops, i.e. it deploys.         │
+# │                                                                                             │
+# │ Until then this is documentation of a known gap, not an active check. Run it by hand with:   │
+# │   ./scripts/ci/check-branch-has-ci-run.sh develop                                            │
+# └─────────────────────────────────────────────────────────────────────────────────────────────┘
 
 on:
   schedule:
@@ -28,7 +48,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check develop and main
+      # `develop` only — see the script header: `main` has no workflow files at all, so its tip
+      # having no run is expected, not the symptom this guard exists to surface.
+      - name: Check develop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./scripts/ci/check-branch-has-ci-run.sh develop main
+        run: ./scripts/ci/check-branch-has-ci-run.sh develop

@@ -166,14 +166,28 @@ jobs:
     name: Unit Tests (coverage 100% lines / 100% branches)
     runs-on: ubuntu-latest
     env:
-      # AppModule wiring resolves AuditInterceptor, whose field initialiser calls appDatabaseUrl()
-      # (backend/src/shared/prisma/app-database-url.ts). That helper THROWS when APP_DATABASE_URL is
-      # unset rather than falling back to the RLS-bypassing superuser DATABASE_URL (ADR-031, QM-18) —
-      # so `AppModule › resolves every provider in every module` failed at construction time, with no
-      # database involved. Dummy value: these are unit tests, nothing connects. Same pattern and
-      # intent as the repo-level DIRECT_DATABASE_URL above; the app_user role name mirrors
-      # .env.example, where this URL is the non-superuser connection RLS is enforced through.
+      # `AppModule › resolves every provider in every module` (src/__tests__/app.module.spec.ts)
+      # builds the whole injector. Nothing CONNECTS — Test.compile() never calls onModuleInit — but
+      # every module factory RUNS, and the ones below abort on a missing variable rather than pick a
+      # default. Locally the repo-root .env supplies them, which is why this only ever failed in CI.
+      #
+      # These are dummies; no service is reachable from a unit-test runner. Shapes mirror
+      # .env.example so a reader is not misled about what the real values look like, and the pattern
+      # matches the repo-level DIRECT_DATABASE_URL above.
+      #
+      # Whoever adds the next ConfigService.getOrThrow() to a module factory must add it here too,
+      # or this job goes red with a message that names the key. Current list is the complete set of
+      # getOrThrow keys in backend/src plus appDatabaseUrl():
+      #
+      #   appDatabaseUrl() — backend/src/shared/prisma/app-database-url.ts — throws instead of
+      #   silently falling back to the RLS-bypassing superuser DATABASE_URL (ADR-031, QM-18).
       APP_DATABASE_URL: postgresql://app_user:ci@localhost:5432/ci
+      #   ThrottlerModule storage — backend/src/app.module.ts
+      REDIS_URL: redis://localhost:6379
+      #   ClickHouse client factory — analytics module
+      CLICKHOUSE_URL: http://localhost:8123
+      CLICKHOUSE_USER: ci
+      CLICKHOUSE_PASSWORD: ci
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
