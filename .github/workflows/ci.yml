@@ -23,6 +23,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,6 +111,7 @@ jobs:
   mlops-tests:
     name: MLOps Tests (Python)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -128,6 +130,7 @@ jobs:
   type-check:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -151,6 +154,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -176,6 +180,7 @@ jobs:
   unit-tests:
     name: Unit Tests (coverage 100% lines / 100% branches)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       # `AppModule › resolves every provider in every module` (src/__tests__/app.module.spec.ts)
       # builds the whole injector. Nothing CONNECTS — Test.compile() never calls onModuleInit — but
@@ -303,6 +308,7 @@ jobs:
   mobile-tests:
     name: Mobile Tests (apps/mobile — type-check + eslint + jest)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -340,6 +346,7 @@ jobs:
   go-tests:
     name: Go Tests — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -390,6 +397,7 @@ jobs:
   python-tests:
     name: Python Tests — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -432,6 +440,7 @@ jobs:
   integration-tests:
     name: Integration Tests (Testcontainers)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     needs: [lint, type-check, unit-tests]
     steps:
       - uses: actions/checkout@v4
@@ -458,6 +467,7 @@ jobs:
   isolation-tests:
     name: Multi-tenant Isolation Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: [lint, type-check, unit-tests]
     steps:
       - uses: actions/checkout@v4
@@ -483,6 +493,7 @@ jobs:
   contract-tests:
     name: API Contract Tests (Pact)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
@@ -499,6 +510,7 @@ jobs:
   build-docker:
     name: Build Docker — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs:
       [
         lint,
@@ -582,6 +594,7 @@ jobs:
   dependency-audit:
     name: Dependency Audit (pnpm audit + govulncheck)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [lint, type-check]
     steps:
       - uses: actions/checkout@v4
@@ -636,6 +649,7 @@ jobs:
   secret-scan:
     name: Secret Scan (gitleaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -650,6 +664,7 @@ jobs:
   security-scan:
     name: Security Scan (Trivy) — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [build-docker]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     strategy:
@@ -732,6 +747,7 @@ jobs:
   push-ecr:
     name: Push to ECR — ${{ matrix.service }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [security-scan]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
@@ -776,6 +792,7 @@ jobs:
   update-gitops:
     name: Update GitOps image tags
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: [push-ecr]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     steps:
@@ -805,6 +822,7 @@ jobs:
   e2e-tests:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     needs: [update-gitops]
     # Spec §30.5/§30.12 + ADR-020 (PO decision 2026-07-04): E2E runs on merge to `staging` —
     # the staging branch deploys to the staging env (update-gitops → ArgoCD auto-sync) and the
