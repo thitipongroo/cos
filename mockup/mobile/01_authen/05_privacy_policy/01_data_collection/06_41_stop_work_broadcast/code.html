@@ -1,0 +1,335 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Stop Work Confirmation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "mobile-primary": "#0066FF",
+                      "warning": "#F59E0B",
+                      "surface-bright": "#2a3a4f",
+                      "on-tertiary-fixed": "#001f26",
+                      "on-secondary": "#002a78",
+                      "success": "#10B981",
+                      "on-surface": "#d3e4fe",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "on-primary-fixed": "#161b2b",
+                      "on-primary-container": "#777c90",
+                      "danger": "#EF4444",
+                      "on-primary": "#2b3041",
+                      "on-background": "#d3e4fe",
+                      "surface-variant": "#26364a",
+                      "surface-container-highest": "#26364a",
+                      "offline": "#8E8E93",
+                      "error-container": "#93000a",
+                      "outline": "#909097",
+                      "surface-container-low": "#0b1c30",
+                      "on-error": "#690005",
+                      "surface-tint": "#c1c5dc",
+                      "on-secondary-fixed": "#00174b",
+                      "surface": "#031427",
+                      "tertiary": "#4cd7f6",
+                      "inverse-on-surface": "#213145",
+                      "on-primary-fixed-variant": "#414658",
+                      "secondary-container": "#0053db",
+                      "secondary-fixed": "#dbe1ff",
+                      "primary": "#c1c5dc",
+                      "syncing": "#FFD60A",
+                      "error": "#ffb4ab",
+                      "on-tertiary-container": "#0088a0",
+                      "primary-container": "#0b1020",
+                      "secondary": "#b4c5ff",
+                      "surface-container-lowest": "#000f21",
+                      "inverse-primary": "#595e71",
+                      "inverse-surface": "#d3e4fe",
+                      "primary-fixed": "#dee1f9",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "on-secondary-container": "#cdd7ff",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "surface-dim": "#031427",
+                      "outline-variant": "#46464c",
+                      "concrete-white": "#F8FAFC",
+                      "tertiary-container": "#001318",
+                      "on-surface-variant": "#c7c6cd",
+                      "on-error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "tertiary-fixed": "#acedff",
+                      "background": "#031427",
+                      "on-tertiary": "#003640",
+                      "surface-container": "#102034",
+                      "surface-container-high": "#1b2b3f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "mobile-section-pad": "16px",
+                      "touch-target-min": "44px",
+                      "web-margin-component": "32px",
+                      "web-padding-card": "16px",
+                      "mobile-card-pad": "12px",
+                      "web-page-gap": "64px",
+                      "web-gap-tight": "4px",
+                      "mobile-icon-pad": "8px",
+                      "touch-target-optimum": "52px",
+                      "web-base": "4px",
+                      "mobile-edge-margin": "24px",
+                      "mobile-base": "8px"
+              },
+              "fontFamily": {
+                      "headline-h1": [
+                              "Inter"
+                      ],
+                      "headline-h3": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "label-tiny": [
+                              "Inter"
+                      ],
+                      "mobile-hero": [
+                              "Inter"
+                      ],
+                      "headline-h2": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "mobile-body": [
+                              "Inter"
+                      ],
+                      "mobile-title": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-h3": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-tiny": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mobile-hero": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mobile-body": [
+                              "17px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mobile-title": [
+                              "22px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .hexagon {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .pulse-effect::before {
+            content: '';
+            position: absolute;
+            top: -4px; left: -4px; right: -4px; bottom: -4px;
+            border-radius: inherit;
+            border: 2px solid #F59E0B;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-sans selection:bg-mobile-primary selection:text-white">
+<!-- TopAppBar -->
+<header class="bg-surface-container-highest fixed top-0 w-full z-50 border-b border-outline">
+<div class="flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum w-full">
+<button class="text-on-surface-variant hover:bg-on-surface/10 transition-all duration-150 active:scale-95 flex items-center justify-center w-touch-target-min h-touch-target-min rounded-full">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-black text-warning uppercase tracking-tighter">EMERGENCY ACTIVE</h1>
+<div class="flex items-center text-warning font-headline-h3 text-headline-h3">
+<span class="material-symbols-outlined mr-1" style="font-variation-settings: 'FILL' 1;">warning</span>
+                04:12
+            </div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 mt-[72px] mb-8 overflow-y-auto px-mobile-edge-margin flex flex-col gap-mobile-section-pad">
+<!-- Hero Section -->
+<section class="flex flex-col items-center justify-center pt-8 pb-4">
+<div class="relative w-32 h-32 mb-6 flex items-center justify-center">
+<div class="hexagon absolute inset-0 bg-warning/20"></div>
+<div class="hexagon absolute inset-2 bg-warning flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.5)]">
+<span class="material-symbols-outlined text-background text-[64px]" style="font-variation-settings: 'FILL' 1;">back_hand</span>
+</div>
+</div>
+<h2 class="font-mobile-title text-mobile-title text-center uppercase tracking-wide text-warning mb-3">
+                Stop Work Broadcast Active
+            </h2>
+<div class="relative flex items-center gap-2 bg-warning/10 border border-warning/30 rounded-full px-4 py-2 pulse-effect">
+<div class="w-2 h-2 rounded-full bg-warning"></div>
+<span class="font-label-tiny text-label-tiny text-warning uppercase">Status: Transmitting</span>
+</div>
+</section>
+<!-- Transmission Summary Card -->
+<section class="bg-surface rounded-xl border border-outline p-mobile-card-pad flex flex-col gap-4 active:scale-[0.98] transition-transform cursor-pointer hover:bg-surface-bright">
+<div class="flex justify-between items-center border-b border-outline pb-2">
+<h3 class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Transmission Summary</h3>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">TARGET ZONE</span>
+<span class="font-body-sm text-body-sm text-on-surface font-semibold">ZONE 04: NORTH SECTOR</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">DIRECTIVE TYPE</span>
+<div class="flex items-center gap-1 text-warning font-semibold font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]" style="font-variation-settings: 'FILL' 1;">block</span>
+                        STOP WORK
+                    </div>
+</div>
+<div class="flex flex-col gap-1 col-span-2">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">TIMESTAMP</span>
+<span class="font-body-sm text-body-sm text-on-surface font-mono text-primary-fixed-dim">2023-10-27 15:20:10 UTC</span>
+</div>
+</div>
+</section>
+<!-- Delivery Channels -->
+<section class="bg-surface rounded-xl border border-outline p-mobile-card-pad flex flex-col gap-3">
+<h3 class="font-label-tiny text-label-tiny text-on-surface-variant uppercase border-b border-outline pb-2">Delivery Channels</h3>
+<ul class="flex flex-col gap-2"><li class="flex items-center justify-between p-2 -mx-2 rounded-lg active:scale-[0.98] transition-all cursor-pointer hover:bg-surface-bright duration-150">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">smartphone</span>
+<span class="font-body-md text-body-md text-on-surface">App Push</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-tiny text-label-tiny text-success bg-success/10 px-2 py-1 rounded">SENT</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-2 -mx-2 rounded-lg active:scale-[0.98] transition-all cursor-pointer hover:bg-surface-bright duration-150">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">sms</span>
+<span class="font-body-md text-body-md text-on-surface">SMS Alerts</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-tiny text-label-tiny text-success bg-success/10 px-2 py-1 rounded">SENT</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-2 -mx-2 rounded-lg active:scale-[0.98] transition-all cursor-pointer hover:bg-surface-bright duration-150">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">volume_up</span>
+<span class="font-body-md text-body-md text-on-surface">Zone Sirens</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-tiny text-label-tiny text-warning bg-warning/10 px-2 py-1 rounded">ACTIVE</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</li>
+<li class="flex items-center justify-between p-2 -mx-2 rounded-lg active:scale-[0.98] transition-all cursor-pointer hover:bg-surface-bright duration-150">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">watch</span>
+<span class="font-body-md text-body-md text-on-surface">Wearable Haptics</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-label-tiny text-label-tiny text-success bg-success/10 px-2 py-1 rounded">SENT</span>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</li></ul>
+</section>
+<!-- Actions -->
+<div class="flex flex-col gap-4 mt-4">
+<button class="h-touch-target-optimum w-full bg-mobile-primary hover:bg-secondary-container active:scale-[0.98] transition-all text-white font-headline-h3 text-headline-h3 rounded-lg flex items-center justify-center shadow-lg">
+                MONITOR ROLL CALL
+            </button>
+<button class="h-touch-target-optimum w-full border border-outline hover:bg-surface-variant active:scale-[0.98] transition-all text-on-surface font-headline-h3 text-headline-h3 rounded-lg flex items-center justify-center">
+                VIEW BROADCAST LOGS
+            </button>
+</div>
+</main>
+
+
+</body></html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Log Entry Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-container": "#102034",
+                "on-secondary-fixed": "#00174b",
+                "on-secondary": "#002a78",
+                "primary-fixed-dim": "#c1c5dc",
+                "tertiary-container": "#001318",
+                "on-secondary-fixed-variant": "#003ea8",
+                "primary-container": "#0b1020",
+                "tertiary": "#4cd7f6",
+                "surface-container-low": "#0b1c30",
+                "on-tertiary-container": "#0088a0",
+                "background": "#031427",
+                "on-tertiary-fixed-variant": "#004e5c",
+                "offline": "#8E8E93",
+                "on-secondary-container": "#cdd7ff",
+                "inverse-on-surface": "#213145",
+                "tertiary-fixed-dim": "#4cd7f6",
+                "on-primary-fixed": "#161b2b",
+                "on-tertiary-fixed": "#001f26",
+                "inverse-primary": "#595e71",
+                "secondary": "#b4c5ff",
+                "surface-container-high": "#1b2b3f",
+                "surface-bright": "#2a3a4f",
+                "error-container": "#93000a",
+                "inverse-surface": "#d3e4fe",
+                "outline-variant": "#46464c",
+                "danger": "#EF4444",
+                "on-tertiary": "#003640",
+                "surface-variant": "#26364a",
+                "primary-fixed": "#dee1f9",
+                "error": "#ffb4ab",
+                "surface-tint": "#c1c5dc",
+                "outline": "#909097",
+                "secondary-fixed-dim": "#b4c5ff",
+                "primary": "#c1c5dc",
+                "success": "#10B981",
+                "on-error-container": "#ffdad6",
+                "syncing": "#FFD60A",
+                "secondary-fixed": "#dbe1ff",
+                "on-primary-container": "#777c90",
+                "concrete-white": "#F8FAFC",
+                "warning": "#F59E0B",
+                "on-primary-fixed-variant": "#414658",
+                "tertiary-fixed": "#acedff",
+                "on-surface": "#d3e4fe",
+                "on-background": "#d3e4fe",
+                "surface-container-lowest": "#000f21",
+                "on-primary": "#2b3041",
+                "mobile-primary": "#0066FF",
+                "surface-container-highest": "#26364a",
+                "on-error": "#690005",
+                "secondary-container": "#0053db",
+                "on-surface-variant": "#c7c6cd",
+                "surface-dim": "#031427",
+                "surface": "#031427"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "touch-target-min": "44px",
+                "mobile-section-pad": "16px",
+                "web-margin-component": "32px",
+                "mobile-card-pad": "12px",
+                "web-padding-card": "16px",
+                "touch-target-optimum": "52px",
+                "web-gap-tight": "4px",
+                "mobile-base": "8px",
+                "web-base": "4px",
+                "mobile-edge-margin": "24px",
+                "mobile-icon-pad": "8px",
+                "web-page-gap": "64px"
+        },
+        "fontFamily": {
+                "headline-h3": ["Inter"],
+                "mobile-hero": ["Inter"],
+                "body-sm": ["Inter"],
+                "headline-h1": ["Inter"],
+                "headline-h2": ["Inter"],
+                "mobile-title": ["Inter"],
+                "label-tiny": ["Inter"],
+                "body-md": ["Inter"],
+                "mobile-body": ["Inter"],
+                "display-lg": ["Inter"]
+        },
+        "fontSize": {
+                "headline-h3": ["16px", {"lineHeight": "1.3", "fontWeight": "500"}],
+                "mobile-hero": ["28px", {"lineHeight": "1.2", "fontWeight": "700"}],
+                "body-sm": ["12px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "headline-h1": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "headline-h2": ["20px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "mobile-title": ["22px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                "label-tiny": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                "body-md": ["14px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                "mobile-body": ["17px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                "display-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+        }
+      }
+    }
+  }
+</script>
+<style>
+  /* Custom scrollbar for horizontal gallery */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  body { font-family: 'Inter', sans-serif; }
+</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface-container-lowest text-on-surface min-h-screen pt-[52px] pb-[80px] antialiased">
+<!-- TopAppBar (from JSON) -->
+<header class="bg-surface-container dark:bg-surface-container border-b border-outline-variant dark:border-outline-variant fixed top-0 left-0 w-full z-50 flex items-center px-mobile-edge-margin h-touch-target-optimum justify-between">
+<button aria-label="Back" class="flex items-center justify-center w-touch-target-min h-touch-target-min -ml-2 text-primary dark:text-primary hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors duration-200 rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-on-surface dark:text-on-surface truncate px-2">Incident Log #8292</h1>
+<button aria-label="More options" class="flex items-center justify-center w-touch-target-min h-touch-target-min -mr-2 text-primary dark:text-primary hover:bg-surface-variant dark:hover:bg-surface-variant transition-colors duration-200 rounded-full">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</header>
+<!-- Main Canvas -->
+<main class="px-mobile-edge-margin py-mobile-section-pad flex flex-col gap-6">
+<!-- Hero Card -->
+<section class="bg-surface-container border border-outline-variant rounded-xl p-mobile-card-pad flex flex-col gap-3 relative overflow-hidden">
+<!-- Decorative geometric accent -->
+<div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-danger/10 to-transparent rounded-bl-full pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm border border-danger bg-error-container/20 text-error font-label-tiny text-label-tiny uppercase tracking-wider">
+<span class="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+          Critical
+        </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">08:42 AM · Today</span>
+</div>
+<h2 class="font-mobile-title text-mobile-title text-on-surface">Zone 04 Structural Alert</h2>
+<div class="flex items-center gap-2 text-on-surface-variant mt-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="font-body-sm text-body-sm">Sector B, Sub-Level 2, Pillar Grid 7-F</span>
+</div>
+</section>
+<!-- Full Observation (AI Insight Panel) -->
+<section class="bg-surface-container border border-outline-variant border-l-4 border-l-tertiary rounded-xl p-mobile-card-pad flex flex-col gap-3">
+<div class="flex items-center gap-2 border-b border-outline-variant/50 pb-2">
+<span class="material-symbols-outlined text-tertiary text-[18px]">memory</span>
+<h3 class="font-headline-h3 text-headline-h3 text-tertiary">AI Observation &amp; Forecast</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+        High-resolution spatial scan detects acute shear cracking along primary load-bearing strut 7-F. Width exceeds acceptable tolerances by 4.2mm. 
+        <br/><br/>
+<span class="text-tertiary font-medium">Risk Forecast:</span> Probable cascading stress transfer to adjacent grid points within 48-72 hours under current vibration loads. Immediate reinforcement protocols recommended.
+      </p>
+</section>
+<!-- Technical Evidence Gallery -->
+<section class="flex flex-col gap-3">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface-variant uppercase tracking-wide text-sm">Technical Evidence</h3>
+<div class="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 -mx-mobile-edge-margin px-mobile-edge-margin hide-scrollbar">
+<!-- Photo 1 -->
+<div class="snap-center shrink-0 w-[240px] aspect-[4/3] rounded-lg border border-outline-variant bg-surface-dim relative overflow-hidden group">
+<div class="w-full h-full bg-cover bg-center absolute inset-0 mix-blend-luminosity opacity-80 group-hover:opacity-100 transition-opacity duration-300" data-alt="A highly detailed close-up photograph of a massive concrete pillar in a dimly lit industrial construction site. A severe, jagged structural crack runs diagonally across the rough concrete surface, highlighted by a stark white beam from an inspector's flashlight. Technical overlays and a bright cyan measurement bracket hover over the crack, indicating a critical 4.2mm gap. The atmosphere is tense, industrial, and hyper-realistic, emphasizing mission-critical engineering failure." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD6GktWwecyhw2R7Yp0dTtuKO2tYYPzD4kf7N5Sjo0B9tqhkWdzITzWkkue1wBv3c6quYfYRXlWjWtit_pDs7x0s_da7TyGuu1CvVwLobwEeznA1HJxKYhJn4XoeDxokI6h64uY2gu10Dqmhh1FcnYT41KZ8CW1hwV_ZSCkPO3KmzVlyU4AWhRNiAl0mZNo8iWPH3PBJx1EOZMjOhGaMSHkJkv2w7PyuNJbRLi-FM6HN-SoScdftUUJYg')"></div>
+<div class="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm border border-outline-variant px-2 py-0.5 rounded font-label-tiny text-label-tiny text-on-surface">SCAN-A.RAW</div>
+</div>
+<!-- Photo 2 -->
+<div class="snap-center shrink-0 w-[240px] aspect-[4/3] rounded-lg border border-outline-variant bg-surface-dim relative overflow-hidden group">
+<div class="w-full h-full bg-cover bg-center absolute inset-0 mix-blend-luminosity opacity-80 group-hover:opacity-100 transition-opacity duration-300" data-alt="A wide angle photograph of a subterranean concrete bunker under construction, illuminated by harsh, cold work lights. The focal point is a massive load-bearing column marked '7-F' in stenciled yellow paint. The concrete shows signs of intense stress and spalling near the base. The color palette is dominated by cold grays, deep shadows, and jarring utility lights, creating a gritty, high-stakes infrastructure environment." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDfdnNz6p6mEw6LtWm0W25qJBOrSoYeQz7_QteuD1L3NUHngNXFH7xKWnPZUwfCVpDvN_9V0pNoln2E0qoyttxYRlNLLOufZRn5kPUOkQbn1veJLVadud2TZmiiJgHd5GUiKV9UprOvfOxXCEIBBg0oUkwSVgmm-J6dxgoMT03NqxXpI2AHrzAeyRFThdvz9235k9ZJ1TMOQPpczq2fCPLtUP5a9InhtveJzeO5UQjfXYnl21u-cyc75Q')"></div>
+<div class="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm border border-outline-variant px-2 py-0.5 rounded font-label-tiny text-label-tiny text-on-surface">ENV-W.RAW</div>
+</div>
+<!-- Photo 3 -->
+<div class="snap-center shrink-0 w-[240px] aspect-[4/3] rounded-lg border border-outline-variant bg-surface-dim relative overflow-hidden group">
+<div class="w-full h-full bg-cover bg-center absolute inset-0 mix-blend-luminosity opacity-80 group-hover:opacity-100 transition-opacity duration-300" data-alt="A thermographic thermal imaging scan of a concrete structural pillar. The image uses a technical false-color scale where deep blues indicate cold areas and bright, intense oranges and reds highlight a concentrated stress fracture generating heat from friction. A stark, modular UI overlay displays temperature gradients and vector stress lines in crisp white and cyan. The aesthetic is purely analytical, machine-vision focused, and highly technical." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAfT6UE5ClN5mI6OlPhWvYUxVbNRqSAzEHHXphUyaHPy7ck4YnGapWCEKlqu2Xmamv__rQspNL2RamDRYEVD2ZzxDVcFja-BvZmPSnBsUArLXogRUrj6HRbbXz0ozASDMy7Bk1-b93BQ8IJIcuWesNNxAJzByRQxfwzToeGa6nf_XeSZd88jm6e4ZrEli3VVop0GlqY8NCgCzTg7Ca9TWtuMk6SMXEJjibkByBau7wq7FBqx605NTmlPw')"></div>
+<div class="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm border border-outline-variant px-2 py-0.5 rounded font-label-tiny text-label-tiny text-on-surface">THERM-X.RAW</div>
+</div>
+</div>
+</section>
+<!-- Audit Metadata -->
+<section class="bg-surface-dim border border-outline-variant rounded-xl p-mobile-card-pad flex flex-col gap-3 font-mono text-[11px] leading-tight text-on-surface-variant">
+<div class="flex items-center justify-between border-b border-outline-variant/40 pb-2">
+<span class="uppercase tracking-wider text-on-surface">Audit Metadata</span>
+<span class="material-symbols-outlined text-[14px]">verified_user</span>
+</div>
+<div class="grid grid-cols-3 gap-1">
+<span class="text-primary-fixed-dim">GPS</span>
+<span class="col-span-2 text-right">13.7563 N, 100.5018 E</span>
+<span class="text-primary-fixed-dim mt-1">DEVICE</span>
+<span class="col-span-2 text-right mt-1">COS-MOB-772</span>
+<span class="text-primary-fixed-dim mt-1">HASH</span>
+<span class="col-span-2 text-right mt-1 truncate" title="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855">e3b0c442...b7852b855</span>
+</div>
+</section>
+<!-- Activity Thread -->
+<section class="flex flex-col gap-4 mt-2">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface-variant uppercase tracking-wide text-sm">Activity Thread</h3>
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded bg-surface-variant flex items-center justify-center shrink-0 border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">engineering</span>
+</div>
+<div class="flex flex-col gap-1 bg-surface-container rounded-lg rounded-tl-none border border-outline-variant p-3 w-full">
+<div class="flex justify-between items-end">
+<span class="font-headline-h3 text-headline-h3 text-on-surface text-sm">Site Engineer (J. Doe)</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">08:45 AM</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Initial scan complete. The spalling is worse than it looked on the drone feed. Requesting immediate shoring team dispatch.</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center shrink-0 border border-primary/30">
+<span class="material-symbols-outlined text-primary text-[20px]">admin_panel_settings</span>
+</div>
+<div class="flex flex-col gap-1 bg-surface-container rounded-lg rounded-tl-none border border-outline-variant p-3 w-full">
+<div class="flex justify-between items-end">
+<span class="font-headline-h3 text-headline-h3 text-primary text-sm">HQ Command</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">08:51 AM</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Acknowledged. Heavy shoring unit en route. ETA 12 mins. Clear the immediate 20m radius.</p>
+</div>
+</div>
+<!-- Input Field -->
+<div class="mt-2 relative flex items-center w-full">
+<input class="w-full bg-surface-dim border border-outline-variant rounded-lg py-3 px-4 text-on-surface font-body-md placeholder-on-surface-variant/50 focus:outline-none focus:border-tertiary focus:ring-1 focus:ring-tertiary transition-all h-[52px]" placeholder="Add operational update..." type="text"/>
+<button class="absolute right-2 w-10 h-10 flex items-center justify-center text-primary hover:text-mobile-primary bg-transparent rounded-md transition-colors">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (from JSON) -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-outline-variant dark:border-outline-variant fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2">
+<!-- Active: Logs -->
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 active:scale-95 transition-transform min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="font-label-tiny text-label-tiny">Logs</span>
+</a>
+<!-- Inactive: Field Ops -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface active:scale-95 transition-transform min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">engineering</span>
+<span class="font-label-tiny text-label-tiny">Field Ops</span>
+</a>
+<!-- Inactive: Intel -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface active:scale-95 transition-transform min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">insights</span>
+<span class="font-label-tiny text-label-tiny">Intel</span>
+</a>
+<!-- Inactive: Registry -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface active:scale-95 transition-transform min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined text-[24px] mb-1">database</span>
+<span class="font-label-tiny text-label-tiny">Registry</span>
+</a>
+</nav>
+</body></html>

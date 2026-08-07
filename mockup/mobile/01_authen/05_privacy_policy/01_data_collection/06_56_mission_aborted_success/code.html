@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mission Aborted Success - Construction OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#001f26",
+                        "mobile-primary": "#0066FF",
+                        "warning": "#F59E0B",
+                        "on-tertiary-container": "#0088a0",
+                        "on-primary-fixed": "#161b2b",
+                        "on-error-container": "#ffdad6",
+                        "on-primary-container": "#777c90",
+                        "inverse-primary": "#595e71",
+                        "outline-variant": "#46464c",
+                        "on-tertiary": "#003640",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "surface-container-lowest": "#000f21",
+                        "danger": "#EF4444",
+                        "background": "#031427",
+                        "surface-tint": "#c1c5dc",
+                        "surface-bright": "#2a3a4f",
+                        "outline": "#909097",
+                        "success": "#10B981",
+                        "primary-fixed": "#dee1f9",
+                        "syncing": "#FFD60A",
+                        "offline": "#8E8E93",
+                        "secondary-fixed": "#dbe1ff",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "on-primary": "#2b3041",
+                        "on-surface": "#d3e4fe",
+                        "on-background": "#d3e4fe",
+                        "concrete-white": "#F8FAFC",
+                        "tertiary": "#4cd7f6",
+                        "tertiary-container": "#001318",
+                        "surface-container": "#102034",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "surface-container-high": "#1b2b3f",
+                        "on-surface-variant": "#c7c6cd",
+                        "tertiary-fixed": "#acedff",
+                        "on-primary-fixed-variant": "#414658",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "primary": "#c1c5dc",
+                        "on-secondary-container": "#cdd7ff",
+                        "on-secondary": "#002a78",
+                        "inverse-on-surface": "#213145",
+                        "secondary-container": "#0053db",
+                        "secondary": "#b4c5ff",
+                        "surface-dim": "#031427",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "surface": "#031427",
+                        "on-secondary-fixed": "#00174b",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#26364a",
+                        "primary-container": "#0b1020",
+                        "surface-variant": "#26364a",
+                        "surface-container-low": "#0b1c30",
+                        "inverse-surface": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "mobile-icon-pad": "8px",
+                        "mobile-card-pad": "12px",
+                        "web-padding-card": "16px",
+                        "mobile-edge-margin": "24px",
+                        "mobile-base": "8px",
+                        "web-page-gap": "64px",
+                        "web-base": "4px",
+                        "mobile-section-pad": "16px",
+                        "touch-target-min": "44px",
+                        "web-gap-tight": "4px",
+                        "touch-target-optimum": "52px",
+                        "web-margin-component": "32px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "mobile-body": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "mobile-title": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "headline-h1": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col antialiased select-none">
+<!-- Top App Bar -->
+<header class="bg-surface border-b border-outline-variant flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum w-full sticky top-0 z-50">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-danger text-[24px]">hexagon</span>
+<h1 class="font-headline-h2 text-headline-h2 text-primary font-bold tracking-tight">MISSION STATUS</h1>
+</div>
+<!-- No back button as per requirements -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col w-full max-w-md mx-auto px-mobile-edge-margin py-mobile-section-pad space-y-6 pb-24">
+<!-- Success/Terminal Indicator -->
+<div class="flex flex-col items-center justify-center pt-8 pb-4">
+<div class="relative flex items-center justify-center w-24 h-24 mb-6">
+<!-- Hexagon Background -->
+<svg class="absolute inset-0 w-full h-full text-surface-container-high fill-current" viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<polygon points="50 3, 93 25, 93 75, 50 97, 7 75, 7 25" stroke="currentColor" stroke-width="2"></polygon>
+</svg>
+<!-- Animated Inner Hexagon -->
+<svg class="absolute inset-0 w-full h-full text-danger fill-current opacity-20 animate-pulse" viewbox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+<polygon points="50 10, 85 30, 85 70, 50 90, 15 70, 15 30"></polygon>
+</svg>
+<span class="material-symbols-outlined text-danger text-[48px] z-10 font-bold" style="font-variation-settings: 'FILL' 1;">close</span>
+</div>
+<h2 class="font-headline-h1 text-headline-h1 text-danger uppercase tracking-wider text-center mb-2">MISSION TERMINATED</h2>
+<div class="flex flex-col items-center space-y-1">
+<span class="font-headline-h3 text-headline-h3 text-on-surface-variant font-mono">MISSION #04-ALPHA</span>
+<span class="font-label-tiny text-label-tiny text-outline font-mono">OCT 27, 2023 - 14:42:10 UTC</span>
+</div>
+</div>
+<!-- Final Status Summary Card -->
+<div class="bg-surface-container p-web-padding-card rounded-lg border border-outline-variant flex flex-col space-y-4">
+<h3 class="font-label-tiny text-label-tiny text-primary uppercase tracking-widest border-b border-outline-variant pb-2">Final Status Summary</h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col space-y-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Elapsed Time</span>
+<span class="font-headline-h2 text-headline-h2 text-on-surface font-mono">04:12:38</span>
+</div>
+<div class="flex flex-col space-y-1">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Personnel Status</span>
+<span class="font-headline-h2 text-headline-h2 text-on-surface font-mono">0 / 14 <span class="text-body-sm font-sans text-on-surface-variant">Found</span></span>
+</div>
+</div>
+<div class="flex flex-col space-y-1 pt-2">
+<span class="font-label-tiny text-label-tiny text-on-surface-variant uppercase">Reason for Abort</span>
+<div class="bg-surface-container-highest p-3 rounded border border-danger/30 flex items-start space-x-2">
+<span class="material-symbols-outlined text-danger text-[18px] mt-0.5" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-body-sm text-body-sm text-on-surface">Unsafe weather conditions detected. High wind speeds exceeding operational safety limits.</span>
+</div>
+</div>
+</div>
+<!-- System Actions Confirmation -->
+<div class="flex flex-col space-y-3">
+<div class="flex items-center space-x-3 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/50">
+<span class="material-symbols-outlined text-success text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Notification broadcasted to all field units.</span>
+</div>
+<div class="flex items-center space-x-3 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/50">
+<span class="material-symbols-outlined text-success text-[20px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Event recorded in technical audit trail.</span>
+</div>
+</div>
+</main>
+<!-- Fixed Bottom Actions -->
+<div class="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant p-mobile-section-pad pb-6 z-40 space-y-3 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+<button class="w-full h-touch-target-optimum flex items-center justify-center bg-mobile-primary text-white font-headline-h3 text-headline-h3 rounded-DEFAULT hover:bg-secondary-container transition-colors active:scale-95 duration-150 shadow-lg">
+            RETURN TO DASHBOARD
+        </button>
+<button class="w-full h-touch-target-optimum flex items-center justify-center bg-transparent border border-outline-variant text-primary font-headline-h3 text-headline-h3 rounded-DEFAULT hover:bg-surface-variant transition-colors active:scale-95 duration-150">
+            VIEW MISSION LOG
+        </button>
+</div>
+</body></html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Incident Timeline / Mission Log</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "warning": "#F59E0B",
+                "on-secondary-fixed": "#00174b",
+                "surface-tint": "#c1c5dc",
+                "danger": "#EF4444",
+                "surface": "#031427",
+                "on-primary-container": "#777c90",
+                "tertiary-fixed-dim": "#4cd7f6",
+                "on-error": "#690005",
+                "offline": "#8E8E93",
+                "on-primary-fixed": "#161b2b",
+                "surface-container-highest": "#26364a",
+                "on-secondary-fixed-variant": "#003ea8",
+                "surface-variant": "#26364a",
+                "error": "#ffb4ab",
+                "success": "#10B981",
+                "on-tertiary": "#003640",
+                "on-secondary-container": "#cdd7ff",
+                "on-secondary": "#002a78",
+                "secondary-fixed": "#dbe1ff",
+                "outline": "#909097",
+                "tertiary-fixed": "#acedff",
+                "tertiary": "#4cd7f6",
+                "background": "#031427",
+                "on-tertiary-container": "#0088a0",
+                "surface-container-low": "#0b1c30",
+                "on-tertiary-fixed-variant": "#004e5c",
+                "on-surface-variant": "#c7c6cd",
+                "on-primary-fixed-variant": "#414658",
+                "inverse-primary": "#595e71",
+                "on-tertiary-fixed": "#001f26",
+                "error-container": "#93000a",
+                "mobile-primary": "#0066FF",
+                "surface-dim": "#031427",
+                "secondary": "#b4c5ff",
+                "inverse-on-surface": "#213145",
+                "primary": "#c1c5dc",
+                "surface-container": "#102034",
+                "secondary-container": "#0053db",
+                "surface-container-lowest": "#000f21",
+                "outline-variant": "#46464c",
+                "surface-container-high": "#1b2b3f",
+                "on-primary": "#2b3041",
+                "primary-fixed": "#dee1f9",
+                "secondary-fixed-dim": "#b4c5ff",
+                "on-surface": "#d3e4fe",
+                "inverse-surface": "#d3e4fe",
+                "surface-bright": "#2a3a4f",
+                "tertiary-container": "#001318",
+                "concrete-white": "#F8FAFC",
+                "on-background": "#d3e4fe",
+                "syncing": "#FFD60A",
+                "on-error-container": "#ffdad6",
+                "primary-fixed-dim": "#c1c5dc",
+                "primary-container": "#0b1020"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+        },
+        "spacing": {
+                "touch-target-optimum": "52px",
+                "mobile-edge-margin": "24px",
+                "mobile-section-pad": "16px",
+                "web-page-gap": "64px",
+                "web-padding-card": "16px",
+                "mobile-card-pad": "12px",
+                "web-base": "4px",
+                "touch-target-min": "44px",
+                "mobile-base": "8px",
+                "web-gap-tight": "4px",
+                "web-margin-component": "32px",
+                "mobile-icon-pad": "8px"
+        },
+        "fontFamily": {
+                "label-tiny": [
+                        "Inter"
+                ],
+                "body-md": [
+                        "Inter"
+                ],
+                "mobile-title": [
+                        "Inter"
+                ],
+                "mobile-body": [
+                        "Inter"
+                ],
+                "body-sm": [
+                        "Inter"
+                ],
+                "headline-h3": [
+                        "Inter"
+                ],
+                "mobile-hero": [
+                        "Inter"
+                ],
+                "display-lg": [
+                        "Inter"
+                ],
+                "headline-h1": [
+                        "Inter"
+                ],
+                "headline-h2": [
+                        "Inter"
+                ]
+        },
+        "fontSize": {
+                "label-tiny": [
+                        "11px",
+                        {
+                                "lineHeight": "1",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "body-md": [
+                        "14px",
+                        {
+                                "lineHeight": "1.6",
+                                "fontWeight": "400"
+                        }
+                ],
+                "mobile-title": [
+                        "22px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "600"
+                        }
+                ],
+                "mobile-body": [
+                        "17px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "body-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "1.5",
+                                "fontWeight": "400"
+                        }
+                ],
+                "headline-h3": [
+                        "16px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "500"
+                        }
+                ],
+                "mobile-hero": [
+                        "28px",
+                        {
+                                "lineHeight": "1.2",
+                                "fontWeight": "700"
+                        }
+                ],
+                "display-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "1.2",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-h1": [
+                        "24px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-h2": [
+                        "20px",
+                        {
+                                "lineHeight": "1.3",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            -webkit-font-smoothing: antialiased;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="font-body-md text-body-md overflow-x-hidden pt-[52px] pb-[80px] bg-background text-on-background">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-highest border-b border-outline flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum transition-all duration-150">
+<button class="text-on-background hover:bg-on-surface/10 p-mobile-icon-pad rounded-full active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-black text-danger uppercase tracking-tighter">INCIDENT TIMELINE</h1>
+<div class="text-danger font-headline-h3 text-headline-h3 font-bold">04:12</div>
+</header>
+<main class="px-mobile-edge-margin py-mobile-section-pad flex flex-col gap-mobile-section-pad max-w-2xl mx-auto">
+<!-- Summary Card -->
+<section class="bg-surface-container-high rounded-xl p-web-padding-card border border-outline flex flex-col gap-mobile-base">
+<div class="flex justify-between items-center">
+<h2 class="font-headline-h3 text-headline-h3 text-on-surface">MISSION ID: #RESC-042</h2>
+<span class="bg-danger/20 text-danger font-label-tiny text-label-tiny px-2 py-1 rounded-full uppercase tracking-widest border border-danger/50">IN PROGRESS</span>
+</div>
+<div class="flex items-center gap-2 text-on-background font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="schedule">schedule</span>
+<span class="">Elapsed Time: 04:12:33</span>
+</div>
+</section>
+<!-- Filter Section -->
+<section class="overflow-x-auto hide-scrollbar -mx-mobile-edge-margin px-mobile-edge-margin">
+<div class="flex gap-mobile-base w-max pb-2">
+<button class="bg-mobile-primary text-concrete-white font-label-tiny text-label-tiny px-4 py-2 rounded-full uppercase tracking-widest transition-transform active:scale-95 border border-mobile-primary">All</button>
+<button class="bg-surface-container-highest text-on-background font-label-tiny text-label-tiny px-4 py-2 rounded-full uppercase tracking-widest transition-transform active:scale-95 border border-outline hover:bg-surface-bright">Critical</button>
+<button class="bg-surface-container-highest text-on-background font-label-tiny text-label-tiny px-4 py-2 rounded-full uppercase tracking-widest transition-transform active:scale-95 border border-outline hover:bg-surface-bright">Comms</button>
+<button class="bg-surface-container-highest text-on-background font-label-tiny text-label-tiny px-4 py-2 rounded-full uppercase tracking-widest transition-transform active:scale-95 border border-outline hover:bg-surface-bright">Dispatch</button>
+<button class="bg-surface-container-highest text-on-background font-label-tiny text-label-tiny px-4 py-2 rounded-full uppercase tracking-widest transition-transform active:scale-95 border border-outline hover:bg-surface-bright">Manual Notes</button>
+</div>
+</section>
+<!-- Chronological Timeline -->
+<section class="flex flex-col relative before:absolute before:inset-y-0 before:w-px before:bg-on-background/50 pb-8 before:left-[40px]">
+<!-- Timeline Item: 04:12 -->
+<div class="relative flex gap-mobile-section-pad py-mobile-section-pad group">
+<div class="flex flex-col items-center shrink-0 z-10 pt-1 w-[80px]">
+<span class="font-label-tiny text-label-tiny text-on-background bg-background px-1 mb-2">04:12</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-mobile-primary flex items-center justify-center text-mobile-primary">
+<span class="material-symbols-outlined text-[16px]" data-icon="person">person</span>
+</div>
+</div>
+<div class="bg-surface-container border border-outline rounded-xl p-4 flex-1 flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.4)] transition-all active:scale-[0.98] hover:bg-surface-bright cursor-pointer group/card">
+<div class="flex justify-between items-start">
+<div class="flex flex-col gap-2 flex-1">
+<div class="flex justify-between items-start">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Team Alpha Selected</h3>
+<span class="bg-surface-variant text-on-background font-label-tiny text-label-tiny px-2 py-0.5 rounded uppercase">DISPATCHER</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-background">Team Alpha - West selected for dispatch.</p>
+</div>
+<span class="material-symbols-outlined text-on-background/30 group-hover/card:text-on-background transition-colors ml-2 self-center" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item: 03:50 -->
+<div class="relative flex gap-mobile-section-pad py-mobile-section-pad group">
+<div class="flex flex-col items-center shrink-0 z-10 pt-1 w-[80px]">
+<span class="font-label-tiny text-label-tiny text-on-background bg-background px-1 mb-2">03:50</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-danger flex items-center justify-center text-danger">
+<span class="material-symbols-outlined text-[16px]" data-icon="wifi_off">wifi_off</span>
+</div>
+</div>
+<div class="bg-surface-container border border-danger/50 rounded-xl p-4 flex-1 flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.4)] relative overflow-hidden transition-all active:scale-[0.98] hover:bg-surface-bright cursor-pointer group/card">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-danger"></div>
+<div class="flex justify-between items-center pl-2">
+<div class="flex flex-col gap-2 flex-1">
+<div class="flex justify-between items-start">
+<h3 class="font-headline-h3 text-headline-h3 text-danger">Signal Lost</h3>
+<span class="bg-surface-variant text-on-background font-label-tiny text-label-tiny px-2 py-0.5 rounded uppercase">SYSTEM</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-background">Chen, L. - Sector C</p>
+</div>
+<span class="material-symbols-outlined text-danger/30 group-hover/card:text-danger transition-colors ml-2" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item: 03:45 -->
+<div class="relative flex gap-mobile-section-pad py-mobile-section-pad group">
+<div class="flex flex-col items-center shrink-0 z-10 pt-1 w-[80px]">
+<span class="font-label-tiny text-label-tiny text-on-background bg-background px-1 mb-2">03:45</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-danger flex items-center justify-center text-danger">
+<span class="material-symbols-outlined text-[16px]" data-icon="warning">warning</span>
+</div>
+</div>
+<div class="bg-surface-container border border-danger/50 rounded-xl p-4 flex-1 flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.4)] relative overflow-hidden transition-all active:scale-[0.98] hover:bg-surface-bright cursor-pointer group/card">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-danger"></div>
+<div class="flex justify-between items-center pl-2">
+<div class="flex flex-col gap-2 flex-1">
+<div class="flex justify-between items-start">
+<h3 class="font-headline-h3 text-headline-h3 text-danger">No Response</h3>
+<span class="bg-surface-variant text-on-background font-label-tiny text-label-tiny px-2 py-0.5 rounded uppercase">SYSTEM</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-background">Miller, J. - Level -2</p>
+</div>
+<span class="material-symbols-outlined text-danger/30 group-hover/card:text-danger transition-colors ml-2" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item: 02:30 -->
+<div class="relative flex gap-mobile-section-pad py-mobile-section-pad group">
+<div class="flex flex-col items-center shrink-0 z-10 pt-1 w-[80px]">
+<span class="font-label-tiny text-label-tiny text-on-background bg-background px-1 mb-2">02:30</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-tertiary flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="memory">memory</span>
+</div>
+</div>
+<div class="bg-surface-container border border-tertiary/50 rounded-xl p-4 flex-1 flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.4)] relative overflow-hidden transition-all active:scale-[0.98] hover:bg-surface-bright cursor-pointer group/card">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="flex justify-between items-center pl-2">
+<div class="flex flex-col gap-2 flex-1">
+<div class="flex justify-between items-start">
+<h3 class="font-headline-h3 text-headline-h3 text-tertiary">Zone 04 identified as high risk</h3>
+<span class="bg-tertiary/10 text-tertiary font-label-tiny text-label-tiny px-2 py-0.5 rounded uppercase border border-tertiary/30">AI FORECAST</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-background">Predictive modeling indicates structural instability.</p>
+</div>
+<span class="material-symbols-outlined text-tertiary/30 group-hover/card:text-tertiary transition-colors ml-2" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Timeline Item: 00:00 -->
+<div class="relative flex gap-mobile-section-pad py-mobile-section-pad group">
+<div class="flex flex-col items-center shrink-0 z-10 pt-1 w-[80px]">
+<span class="font-label-tiny text-label-tiny text-on-background bg-background px-1 mb-2">00:00</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border-2 border-danger flex items-center justify-center text-danger">
+<span class="material-symbols-outlined text-[16px]" data-icon="campaign">campaign</span>
+</div>
+</div>
+<div class="bg-surface-container border border-danger rounded-xl p-4 flex-1 flex flex-col gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.4)] relative overflow-hidden transition-all active:scale-[0.98] hover:bg-surface-bright cursor-pointer group/card">
+<div class="absolute left-0 top-0 bottom-0 w-2 bg-danger"></div>
+<div class="flex justify-between items-center pl-3">
+<div class="flex flex-col gap-2 flex-1">
+<div class="flex justify-between items-start">
+<h3 class="font-headline-h3 text-headline-h3 text-danger font-bold uppercase">EMERGENCY ACTIVE</h3>
+<span class="bg-surface-variant text-on-background font-label-tiny text-label-tiny px-2 py-0.5 rounded uppercase">SYSTEM</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-background">Stop Work Broadcast active. Evacuation initiated.</p>
+</div>
+<span class="material-symbols-outlined text-danger/30 group-hover/card:text-danger transition-colors ml-2" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB -->
+<button class="fixed bottom-[100px] right-mobile-edge-margin bg-mobile-primary text-concrete-white h-touch-target-optimum px-4 rounded-full flex items-center gap-2 shadow-[0_4px_12px_rgba(0,0,0,0.5)] z-40 active:scale-95 transition-transform border border-mobile-primary">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span class="font-label-tiny text-label-tiny uppercase tracking-widest">Add Note</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center h-20 pb-safe px-4 z-50 bg-surface-container-low rounded-t-xl border-t border-outline-variant shadow-[0_-4px_24px_rgba(0,0,0,0.5)] md:hidden">
+<button class="flex flex-col items-center justify-center text-on-background hover:bg-surface-bright transition-transform active:scale-90 p-2 rounded-lg gap-1 min-w-[64px]">
+<span class="material-symbols-outlined text-[24px]" data-icon="groups">groups</span>
+<span class="font-label-tiny text-label-tiny uppercase">ROLL CALL</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-background hover:bg-surface-bright transition-transform active:scale-90 p-2 rounded-lg gap-1 min-w-[64px]">
+<span class="material-symbols-outlined text-[24px]" data-icon="explore">explore</span>
+<span class="font-label-tiny text-label-tiny uppercase">MAP</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-background hover:bg-surface-bright transition-transform active:scale-90 p-2 rounded-lg gap-1 min-w-[64px]">
+<span class="material-symbols-outlined text-[24px]" data-icon="emergency">emergency</span>
+<span class="font-label-tiny text-label-tiny uppercase">RESCUE</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 transition-transform active:scale-90 gap-1 min-w-[64px]">
+<span class="material-symbols-outlined text-[24px]" data-icon="history" data-weight="fill" style="font-variation-settings: 'FILL' 1;">history</span>
+<span class="font-label-tiny text-label-tiny uppercase">LOGS</span>
+</button>
+</nav>
+
+
+</body></html>

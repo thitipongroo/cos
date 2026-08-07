@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SITREP Submission Success</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline": "#909097",
+                      "secondary": "#b4c5ff",
+                      "secondary-container": "#0053db",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#213145",
+                      "on-primary": "#2b3041",
+                      "on-surface-variant": "#c7c6cd",
+                      "on-primary-fixed": "#161b2b",
+                      "concrete-white": "#F8FAFC",
+                      "syncing": "#FFD60A",
+                      "on-tertiary": "#003640",
+                      "tertiary": "#4cd7f6",
+                      "outline-variant": "#46464c",
+                      "danger": "#EF4444",
+                      "surface": "#031427",
+                      "mobile-primary": "#0066FF",
+                      "on-surface": "#d3e4fe",
+                      "error-container": "#93000a",
+                      "on-tertiary-fixed": "#001f26",
+                      "primary-container": "#0b1020",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "on-error": "#690005",
+                      "tertiary-fixed": "#acedff",
+                      "warning": "#F59E0B",
+                      "on-primary-fixed-variant": "#414658",
+                      "surface-container-lowest": "#000f21",
+                      "primary-fixed": "#dee1f9",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "tertiary-container": "#001318",
+                      "inverse-surface": "#d3e4fe",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "secondary-fixed": "#dbe1ff",
+                      "on-secondary": "#002a78",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "surface-container": "#102034",
+                      "offline": "#8E8E93",
+                      "on-secondary-container": "#cdd7ff",
+                      "primary": "#c1c5dc",
+                      "surface-container-high": "#1b2b3f",
+                      "surface-variant": "#26364a",
+                      "background": "#031427",
+                      "inverse-primary": "#595e71",
+                      "success": "#10B981",
+                      "on-tertiary-container": "#0088a0",
+                      "on-primary-container": "#777c90",
+                      "surface-container-highest": "#26364a",
+                      "surface-bright": "#2a3a4f",
+                      "on-secondary-fixed": "#00174b",
+                      "surface-tint": "#c1c5dc",
+                      "on-background": "#d3e4fe",
+                      "error": "#ffb4ab",
+                      "surface-container-low": "#0b1c30",
+                      "surface-dim": "#031427"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "touch-target-optimum": "52px",
+                      "touch-target-min": "44px",
+                      "mobile-base": "8px",
+                      "mobile-card-pad": "12px",
+                      "web-gap-tight": "4px",
+                      "mobile-section-pad": "16px",
+                      "mobile-edge-margin": "24px",
+                      "web-margin-component": "32px",
+                      "mobile-icon-pad": "8px",
+                      "web-base": "4px",
+                      "web-padding-card": "16px",
+                      "web-page-gap": "64px"
+              },
+              "fontFamily": {
+                      "label-tiny": [
+                              "Inter"
+                      ],
+                      "headline-h3": [
+                              "Inter"
+                      ],
+                      "headline-h1": [
+                              "Inter"
+                      ],
+                      "mobile-hero": [
+                              "Inter"
+                      ],
+                      "headline-h2": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "mobile-body": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "mobile-title": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-tiny": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-h3": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-h1": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "mobile-hero": [
+                              "28px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-h2": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "mobile-body": [
+                              "17px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mobile-title": [
+                              "22px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .hexagon {
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col pt-[52px]">
+<!-- TopAppBar (Suppressed default nav for transactional flow, keeping header as requested) -->
+<header class="fixed top-0 w-full z-50 bg-surface-container-highest dark:bg-surface-container-highest border-b border-outline dark:border-outline flex justify-between items-center px-mobile-edge-margin h-touch-target-optimum w-full transition-all duration-150">
+<div class="flex items-center space-x-2">
+<span class="material-symbols-outlined text-success" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<h1 class="font-headline-h2 text-headline-h2 font-black text-success uppercase tracking-tighter">SITREP SUBMITTED</h1>
+</div>
+<div class="flex items-center">
+<span class="font-body-sm text-body-sm text-on-surface-variant font-mono">14:02 UTC</span>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center justify-center p-mobile-edge-margin">
+<!-- Hero Section -->
+<div class="flex flex-col items-center mb-web-page-gap mt-8">
+<div class="hexagon w-32 h-32 bg-surface-container border-2 border-success flex items-center justify-center mb-6 relative shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+<span class="material-symbols-outlined text-success text-[64px]" style="font-variation-settings: 'FILL' 1;">done</span>
+</div>
+<h2 class="font-mobile-hero text-mobile-hero text-center mb-2 tracking-tight">Transmission Verified</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-center max-w-sm">Situation Report #402 successfully logged and distributed to central command.</p>
+</div>
+<!-- Summary Card -->
+<div class="bg-surface-container border border-outline w-full max-w-md rounded-xl p-web-padding-card mb-8 shadow-sm">
+<div class="flex justify-between items-center border-b border-outline-variant pb-3 mb-3">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface">Data Payload</h3>
+<span class="bg-surface-bright px-2 py-1 rounded-sm font-label-tiny text-label-tiny text-tertiary border border-outline-variant">SECURE</span>
+</div>
+<ul class="space-y-4 mb-6">
+<li class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">group</span>
+                        Personnel Found
+                    </span>
+<div class="text-right">
+<span class="font-headline-h3 text-headline-h3 text-success block">+2</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant">(Current: 14/14)</span>
+</div>
+</li>
+<li class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">radar</span>
+                        Team Status
+                    </span>
+<span class="bg-warning/20 text-warning px-2 py-1 rounded-full font-label-tiny text-label-tiny border border-warning/50">SEARCHING</span>
+</li>
+<li class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">warning</span>
+                        Hazards
+                    </span>
+<span class="font-body-md text-body-md text-on-surface">None reported</span>
+</li>
+<li class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">schedule</span>
+                        Timestamp
+                    </span>
+<span class="font-body-sm text-body-sm text-on-surface font-mono">14:02:45 UTC</span>
+</li>
+</ul>
+<!-- Forensic Hash -->
+<div class="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-tertiary text-[16px]">lock</span>
+<span class="font-label-tiny text-label-tiny text-on-surface-variant font-mono truncate">tx_88294a7b19c00e34f2a</span>
+</div>
+<button class="text-secondary hover:text-mobile-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Actions -->
+<div class="w-full max-w-md flex flex-col gap-4">
+<button class="bg-mobile-primary hover:bg-secondary-container text-concrete-white font-headline-h3 text-headline-h3 h-touch-target-optimum w-full rounded-lg transition-colors flex items-center justify-center gap-2 border border-mobile-primary">
+<span class="material-symbols-outlined">satellite_alt</span>
+                RETURN TO MISSION MONITOR
+            </button>
+<button class="bg-transparent hover:bg-surface-container text-on-surface font-headline-h3 text-headline-h3 h-touch-target-optimum w-full rounded-lg transition-colors flex items-center justify-center gap-2 border border-outline">
+<span class="material-symbols-outlined">timeline</span>
+                VIEW INCIDENT TIMELINE
+            </button>
+</div>
+</main>
+</body></html>

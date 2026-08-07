@@ -1,0 +1,307 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
+<title>Emergency Call Log - Construction OS</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-variant": "#26364a",
+                      "background": "#031427",
+                      "on-background": "#d3e4fe",
+                      "on-secondary-fixed-variant": "#003ea8",
+                      "danger": "#EF4444",
+                      "outline": "#909097",
+                      "inverse-surface": "#d3e4fe",
+                      "on-surface": "#d3e4fe",
+                      "concrete-white": "#F8FAFC",
+                      "secondary-fixed": "#dbe1ff",
+                      "surface-container": "#102034",
+                      "primary-fixed-dim": "#c1c5dc",
+                      "surface-container-lowest": "#000f21",
+                      "surface-bright": "#2a3a4f",
+                      "on-tertiary-fixed": "#001f26",
+                      "primary": "#c1c5dc",
+                      "on-secondary": "#002a78",
+                      "error-container": "#93000a",
+                      "surface-tint": "#c1c5dc",
+                      "error": "#ffb4ab",
+                      "tertiary-fixed": "#acedff",
+                      "surface-container-highest": "#26364a",
+                      "mobile-primary": "#0066FF",
+                      "inverse-primary": "#595e71",
+                      "on-primary-container": "#777c90",
+                      "on-error-container": "#ffdad6",
+                      "on-error": "#690005",
+                      "surface-container-high": "#1b2b3f",
+                      "on-surface-variant": "#c7c6cd",
+                      "surface-container-low": "#0b1c30",
+                      "tertiary-container": "#001318",
+                      "on-secondary-fixed": "#00174b",
+                      "primary-fixed": "#dee1f9",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "on-tertiary-container": "#0088a0",
+                      "secondary-fixed-dim": "#b4c5ff",
+                      "secondary-container": "#0053db",
+                      "inverse-on-surface": "#213145",
+                      "on-tertiary": "#003640",
+                      "secondary": "#b4c5ff",
+                      "tertiary": "#4cd7f6",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "syncing": "#FFD60A",
+                      "primary-container": "#0b1020",
+                      "on-secondary-container": "#cdd7ff",
+                      "surface": "#031427",
+                      "outline-variant": "#46464c",
+                      "success": "#10B981",
+                      "on-primary": "#2b3041",
+                      "warning": "#F59E0B",
+                      "on-primary-fixed": "#161b2b",
+                      "offline": "#8E8E93",
+                      "on-primary-fixed-variant": "#414658",
+                      "surface-dim": "#031427"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "web-margin-component": "32px",
+                      "mobile-edge-margin": "24px",
+                      "mobile-card-pad": "12px",
+                      "web-page-gap": "64px",
+                      "touch-target-min": "44px",
+                      "web-base": "4px",
+                      "mobile-base": "8px",
+                      "touch-target-optimum": "52px",
+                      "mobile-section-pad": "16px",
+                      "web-gap-tight": "4px",
+                      "web-padding-card": "16px",
+                      "mobile-icon-pad": "8px"
+              },
+              "fontFamily": {
+                      "headline-h3": ["Inter"],
+                      "label-tiny": ["Inter"],
+                      "headline-h2": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "mobile-hero": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "headline-h1": ["Inter"],
+                      "mobile-title": ["Inter"],
+                      "mobile-body": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                      "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                      "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                      "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                      "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                      "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                      "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                      "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                      "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                      "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Utilities for hiding scrollbar but keeping functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col selection:bg-mobile-primary selection:text-concrete-white">
+<!-- TopAppBar from JSON -->
+<header class="bg-surface-container-high border-b border-outline-variant flex items-center px-mobile-edge-margin h-touch-target-optimum w-full sticky top-0 z-50">
+<button aria-label="Go back" class="text-primary mr-4 hover:bg-surface-variant transition-colors duration-200 active:scale-95 flex items-center justify-center w-10 h-10 rounded-full">
+<span class="material-symbols-outlined" data-icon="arrow_back" data-weight="regular">arrow_back</span>
+</button>
+<h1 class="font-headline-h2 text-headline-h2 font-bold text-on-surface truncate">Emergency Call Log</h1>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col pb-24 overflow-y-auto">
+<!-- Filters (Horizontal Scroll) -->
+<section class="flex overflow-x-auto gap-mobile-base px-mobile-edge-margin py-mobile-section-pad no-scrollbar border-b border-outline-variant/30 bg-surface-container/50">
+<button class="flex-shrink-0 px-4 h-touch-target-min rounded-full bg-surface-variant text-on-surface border border-outline font-label-tiny text-label-tiny uppercase tracking-widest flex items-center justify-center transition-colors">
+                All
+            </button>
+<button class="flex-shrink-0 px-4 h-touch-target-min rounded-full bg-transparent text-on-surface-variant border border-outline-variant hover:bg-surface-variant/50 font-label-tiny text-label-tiny uppercase tracking-widest flex items-center justify-center transition-colors">
+                Critical
+            </button>
+<button class="flex-shrink-0 px-4 h-touch-target-min rounded-full bg-transparent text-on-surface-variant border border-outline-variant hover:bg-surface-variant/50 font-label-tiny text-label-tiny uppercase tracking-widest flex items-center justify-center transition-colors">
+                Assistance
+            </button>
+<button class="flex-shrink-0 px-4 h-touch-target-min rounded-full bg-transparent text-on-surface-variant border border-outline-variant hover:bg-surface-variant/50 font-label-tiny text-label-tiny uppercase tracking-widest flex items-center justify-center transition-colors">
+                Medical
+            </button>
+</section>
+<!-- Log List -->
+<section class="flex flex-col px-mobile-edge-margin py-mobile-section-pad gap-mobile-section-pad">
+<!-- Card 1: Medical (Ongoing) -->
+<article class="bg-surface-container-high border border-outline-variant rounded-xl p-mobile-card-pad flex flex-col gap-3 shadow-sm relative overflow-hidden transition-all duration-200 active:scale-[0.98] hover:bg-surface-bright cursor-pointer">
+<div class="absolute top-0 left-0 w-full h-1 bg-warning"></div>
+<div class="flex justify-between items-start w-full">
+<div class="flex items-center gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 flex items-center justify-center text-warning">
+<span class="material-symbols-outlined" data-icon="medical_services" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+</div>
+<div>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">A. Somsak</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Excavator Operator</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="bg-warning/10 text-warning border border-warning/20 px-2 py-1 rounded-full font-label-tiny text-label-tiny uppercase tracking-widest flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+ONGOING
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface-variant">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+10:45 AM | June 12, 2024
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+04:12 min
+</div>
+</div>
+<div class="bg-surface-container-low border border-outline-variant/50 border-dashed rounded-lg p-3 mt-1">
+<p class="font-body-sm text-body-sm text-on-surface text-opacity-90 leading-relaxed">
+Medical assistance dispatched to Zone 04. Operator reported severe heat exhaustion symptoms in cab. Paramedic unit en route.
+</p>
+</div>
+</article>
+<!-- Card 2: Technical (Completed) -->
+<article class="bg-surface-container-high border border-outline-variant rounded-xl p-mobile-card-pad flex flex-col gap-3 shadow-sm transition-all duration-200 active:scale-[0.98] hover:bg-surface-bright cursor-pointer">
+<div class="flex justify-between items-start w-full">
+<div class="flex items-center gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 flex items-center justify-center text-mobile-primary">
+<span class="material-symbols-outlined" data-icon="engineering" style="font-variation-settings: 'FILL' 1;">engineering</span>
+</div>
+<div>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">M. Chen</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Site Supervisor</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="bg-success/10 text-success border border-success/20 px-2 py-1 rounded-full font-label-tiny text-label-tiny uppercase tracking-widest flex items-center gap-1">
+COMPLETED
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface-variant">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+08:15 AM | June 12, 2024
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+01:45 min
+</div>
+</div>
+<div class="bg-surface-container-low border border-outline-variant/50 border-dashed rounded-lg p-3 mt-1">
+<p class="font-body-sm text-body-sm text-on-surface text-opacity-90 leading-relaxed">
+Crane 2 hydraulic fluid leak confirmed. Maintenance team notified and isolation procedures initiated. No immediate risk.
+</p>
+</div>
+</article>
+<!-- Card 3: Fire (Missed) -->
+<article class="bg-surface-container-high border border-danger/30 rounded-xl p-mobile-card-pad flex flex-col gap-3 shadow-sm relative overflow-hidden transition-all duration-200 active:scale-[0.98] hover:bg-surface-bright cursor-pointer">
+<div class="absolute top-0 left-0 w-1 h-full bg-danger"></div>
+<div class="flex justify-between items-start w-full pl-2">
+<div class="flex items-center gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 flex items-center justify-center text-danger">
+<span class="material-symbols-outlined" data-icon="local_fire_department" style="font-variation-settings: 'FILL' 1;">local_fire_department</span>
+</div>
+<div>
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">Unknown Radio</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant truncate">Channel 4 (Emergency)</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="bg-danger/10 text-danger border border-danger/30 px-2 py-1 rounded-full font-label-tiny text-label-tiny uppercase tracking-widest flex items-center gap-1">
+MISSED
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">chevron_right</span>
+</div>
+</div>
+<div class="flex items-center justify-between font-body-sm text-body-sm text-on-surface-variant pl-2">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">schedule</span>
+03:30 AM | June 12, 2024
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+00:00 min
+</div>
+</div>
+<div class="bg-surface-container-low border border-outline-variant/50 border-dashed rounded-lg p-3 mt-1 ml-2">
+<p class="font-body-sm text-body-sm text-danger text-opacity-90 leading-relaxed font-medium">
+Automated ping from thermal sensor array Sector 7. Attempted call back failed. Security dispatched to investigate perimeter.
+</p>
+</div>
+</article>
+</section>
+</main>
+<!-- BottomNavBar from JSON -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-mobile-edge-margin h-touch-target-optimum bg-surface-container-lowest border-t border-outline-variant shadow-[0_-4px_24px_rgba(0,0,0,0.5)] pb-[env(safe-area-inset-bottom)] pt-2 box-content">
+<!-- Registry (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-on-surface transition-transform duration-150 active:scale-90 group w-16">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="assignment">assignment</span>
+<span class="font-label-tiny text-label-tiny">Registry</span>
+</button>
+<!-- Safety (Active) -->
+<button class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-4 py-1 transition-transform duration-150 active:scale-90 w-16">
+<span class="material-symbols-outlined mb-1" data-icon="security" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="font-label-tiny text-label-tiny">Safety</span>
+</button>
+<!-- Sync (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-on-surface transition-transform duration-150 active:scale-90 group w-16">
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="sync">sync</span>
+<span class="font-label-tiny text-label-tiny">Sync</span>
+</button>
+<!-- Alerts (Inactive) -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant px-4 py-1 hover:text-on-surface transition-transform duration-150 active:scale-90 group w-16 relative">
+<!-- Indicator dot -->
+<span class="absolute top-1 right-3 w-2 h-2 bg-danger rounded-full border border-surface-container-lowest"></span>
+<span class="material-symbols-outlined mb-1 group-hover:scale-110 transition-transform" data-icon="notifications">notifications</span>
+<span class="font-label-tiny text-label-tiny">Alerts</span>
+</button>
+</nav>
+
+
+</body></html>

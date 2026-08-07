@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Personnel Registry Overview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#414658",
+                        "outline": "#909097",
+                        "tertiary-container": "#001318",
+                        "surface-variant": "#26364a",
+                        "syncing": "#FFD60A",
+                        "warning": "#F59E0B",
+                        "primary": "#c1c5dc",
+                        "danger": "#EF4444",
+                        "concrete-white": "#F8FAFC",
+                        "surface-container-high": "#1b2b3f",
+                        "on-surface-variant": "#c7c6cd",
+                        "on-primary-fixed": "#161b2b",
+                        "primary-fixed": "#dee1f9",
+                        "on-tertiary-fixed-variant": "#004e5c",
+                        "offline": "#8E8E93",
+                        "surface-container-low": "#0b1c30",
+                        "primary-container": "#0b1020",
+                        "on-secondary": "#002a78",
+                        "on-tertiary-fixed": "#001f26",
+                        "on-secondary-fixed-variant": "#003ea8",
+                        "secondary-container": "#0053db",
+                        "surface-container": "#102034",
+                        "success": "#10B981",
+                        "on-error": "#690005",
+                        "on-background": "#d3e4fe",
+                        "surface-container-highest": "#26364a",
+                        "tertiary-fixed-dim": "#4cd7f6",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#2b3041",
+                        "inverse-primary": "#595e71",
+                        "error-container": "#93000a",
+                        "background": "#031427",
+                        "surface-dim": "#031427",
+                        "surface-bright": "#2a3a4f",
+                        "inverse-on-surface": "#213145",
+                        "secondary": "#b4c5ff",
+                        "on-secondary-fixed": "#00174b",
+                        "on-tertiary": "#003640",
+                        "surface": "#031427",
+                        "mobile-primary": "#0066FF",
+                        "secondary-fixed": "#dbe1ff",
+                        "tertiary-fixed": "#acedff",
+                        "error": "#ffb4ab",
+                        "inverse-surface": "#d3e4fe",
+                        "tertiary": "#4cd7f6",
+                        "surface-tint": "#c1c5dc",
+                        "outline-variant": "#46464c",
+                        "primary-fixed-dim": "#c1c5dc",
+                        "secondary-fixed-dim": "#b4c5ff",
+                        "on-surface": "#d3e4fe",
+                        "on-secondary-container": "#cdd7ff",
+                        "on-primary-container": "#777c90",
+                        "on-tertiary-container": "#0088a0",
+                        "surface-container-lowest": "#000f21"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "web-padding-card": "16px",
+                        "web-gap-tight": "4px",
+                        "web-base": "4px",
+                        "mobile-base": "8px",
+                        "mobile-section-pad": "16px",
+                        "mobile-icon-pad": "8px",
+                        "web-page-gap": "64px",
+                        "touch-target-optimum": "52px",
+                        "mobile-card-pad": "12px",
+                        "web-margin-component": "32px",
+                        "touch-target-min": "44px",
+                        "mobile-edge-margin": "24px"
+                    },
+                    "fontFamily": {
+                        "mobile-title": ["Inter"],
+                        "headline-h3": ["Inter"],
+                        "body-md": ["Inter"],
+                        "headline-h1": ["Inter"],
+                        "mobile-hero": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "label-tiny": ["Inter"],
+                        "headline-h2": ["Inter"],
+                        "mobile-body": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mobile-title": ["22px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "headline-h3": ["16px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "body-md": ["14px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-h1": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-hero": ["28px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "display-lg": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["12px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-tiny": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-h2": ["20px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "mobile-body": ["17px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen flex flex-col pb-safe">
+<!-- TopAppBar -->
+<header class="bg-surface-dim dark:bg-surface-dim fixed top-0 w-full z-50 flex items-center justify-between px-mobile-edge-margin h-touch-target-optimum w-full max-w-full">
+<button class="text-primary dark:text-primary active:scale-95 transition-transform duration-150 p-mobile-icon-pad hover:bg-surface-container-highest dark:hover:bg-surface-container-highest rounded-full flex items-center justify-center h-touch-target-min w-touch-target-min">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+</button>
+<h1 class="font-headline-h2-mobile text-headline-h2-mobile uppercase tracking-tighter text-on-surface dark:text-on-surface font-bold flex-1 text-center truncate px-4">PERSONNEL REGISTRY</h1>
+<button class="text-primary dark:text-primary active:scale-95 transition-transform duration-150 p-mobile-icon-pad hover:bg-surface-container-highest dark:hover:bg-surface-container-highest rounded-full flex items-center justify-center h-touch-target-min w-touch-target-min">
+<span class="material-symbols-outlined" data-icon="search">search</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-1 pt-touch-target-optimum pb-24 px-mobile-edge-margin flex flex-col gap-6 mt-4">
+<!-- Search & Filter -->
+<section class="flex flex-col gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">search</span>
+<input class="w-full bg-surface-container border border-outline rounded-lg pl-12 pr-4 h-touch-target-optimum text-body-md font-body-md text-on-surface focus:ring-2 focus:ring-tertiary focus:border-tertiary focus:outline-none transition-all placeholder-on-surface-variant" placeholder="Search registry..." type="text"/>
+</div>
+<div class="flex overflow-x-auto no-scrollbar gap-2 pb-2">
+<button class="whitespace-nowrap px-4 h-10 rounded-full bg-secondary-container text-on-secondary-container font-label-tiny text-label-tiny uppercase flex items-center justify-center flex-shrink-0 border border-transparent">ALL TRADES</button>
+<button class="whitespace-nowrap px-4 h-10 rounded-full bg-surface-container text-on-surface font-label-tiny text-label-tiny uppercase flex items-center justify-center flex-shrink-0 border border-outline hover:bg-surface-container-highest transition-colors">ENGINEERS</button>
+<button class="whitespace-nowrap px-4 h-10 rounded-full bg-surface-container text-on-surface font-label-tiny text-label-tiny uppercase flex items-center justify-center flex-shrink-0 border border-outline hover:bg-surface-container-highest transition-colors">OPERATORS</button>
+<button class="whitespace-nowrap px-4 h-10 rounded-full bg-surface-container text-on-surface font-label-tiny text-label-tiny uppercase flex items-center justify-center flex-shrink-0 border border-outline hover:bg-surface-container-highest transition-colors">ELECTRICIANS</button>
+<button class="whitespace-nowrap px-4 h-10 rounded-full bg-surface-container text-on-surface font-label-tiny text-label-tiny uppercase flex items-center justify-center flex-shrink-0 border border-outline hover:bg-surface-container-highest transition-colors">LABORERS</button>
+</div>
+</section>
+<!-- Summary Card -->
+<section>
+<div class="bg-surface-container rounded-xl p-mobile-card-pad border border-outline flex flex-col gap-4">
+<div class="flex justify-between items-center border-b border-outline-variant pb-3">
+<span class="font-headline-h3 text-headline-h3 text-on-surface">TOTAL PERSONNEL</span>
+<span class="font-display-lg text-display-lg text-primary">142</span>
+</div>
+<div class="flex justify-between gap-4">
+<div class="flex-1 bg-surface-container-high rounded-lg p-3 border border-outline-variant flex flex-col justify-center items-center">
+<span class="font-label-tiny text-label-tiny text-success mb-1">ON SITE</span>
+<span class="font-headline-h2 text-headline-h2 text-on-surface">86</span>
+</div>
+<div class="flex-1 bg-surface-container-high rounded-lg p-3 border border-outline-variant flex flex-col justify-center items-center">
+<span class="font-label-tiny text-label-tiny text-warning mb-1">OFF SITE</span>
+<span class="font-headline-h2 text-headline-h2 text-on-surface">56</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Personnel List -->
+<section class="flex flex-col gap-3">
+<h2 class="font-label-tiny text-label-tiny text-on-surface-variant uppercase tracking-widest mb-1">Active Roster</h2>
+<!-- Worker Card 1 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline flex items-center gap-4 active:scale-[0.98] transition-transform duration-150">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-outline-variant bg-surface-container-highest">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a construction worker wearing a high-visibility vest and a hard hat, set against a blurred industrial background. High contrast lighting with a cool color palette reflecting a corporate enterprise aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC6k4AuIa0JVBB4iPTq8U5-NfCOuMXAyYtqQYLCQQUA39arV_LA-UcNlzjybMZ0dVOIYPsC6ZaAgUAbti_-kZ1WDnz7ohnu2V9TGOuyTarQ-UMLkXaiBKuEdnEgFprwZNXeK9_eGvMgIRQfSCXxE8C4Q7vMoSCanSBn9P6J_GwqFDNgw5oX39j4iAnKUmaSgQtDj0vPawzGIXkdDWJxSQMJxQBpKAS8HOydwkCxFZa2PgmO6el87uavSg"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-surface-container"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">A. Somsak</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Lead Engineer</span>
+<span class="w-1 h-1 bg-outline rounded-full"></span>
+<span class="font-label-tiny text-label-tiny text-tertiary uppercase truncate">ZONE 04</span>
+</div>
+</div>
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary hover:bg-surface-container-high rounded-full transition-colors flex-shrink-0">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Worker Card 2 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline flex items-center gap-4 active:scale-[0.98] transition-transform duration-150">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-outline-variant bg-surface-container-highest">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a construction operator looking directly at the camera, wearing protective eyewear and a standard hard hat, with a slightly blurred steel structure in the background. Industrial and precise lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHG9gQcP3nFKCkjWO4XbZgCdxMpKahnD-srVbK4cYNSh-ccOAwTNDN48Usc1iejCkXBcpu-dnpLex1b7spRq1ZU4fl91TzxkGP6YOn0CClHy8BeOt2V00UHAfWLzVw480qjRKf_5gEO2B2JR3NDugsTNA97nGMeH_vGbeNd08G5CJJb0LhDX9Psy7FDp7gI0TPKEUSIx2AyRjmFcCwRM7HYbWN5yIYTWidIzfp6pfjy0QfKint_fN-DQ"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-surface-container"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">M. Reyes</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Heavy Operator</span>
+<span class="w-1 h-1 bg-outline rounded-full"></span>
+<span class="font-label-tiny text-label-tiny text-tertiary uppercase truncate">ZONE 01</span>
+</div>
+</div>
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary hover:bg-surface-container-high rounded-full transition-colors flex-shrink-0">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Worker Card 3 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline flex items-center gap-4 opacity-75 active:scale-[0.98] transition-transform duration-150">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-outline-variant bg-surface-container-highest grayscale">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A professional portrait of an electrician in standard safety gear, looking off-camera. The background is a dim construction site interior. High contrast, cool tones, and a serious industrial mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLtMRM9uNUuzgY6mKaguWDAcGeFWKQdC9hFoaiYP0lWi6Bq5w_vHSOqrVgxF00k-OpSTeqWRzbrzuSyQiJNugdj3ouxoD_4p4cAtazXXaQ5ll3RMUf3wMf0Gd05imwqLJ84yItWhBtFA7UvduF65F7s59cKaYo6fWBlV8Jjc13H--HkMcf9zOC_kXr1KRcnE2njOWGXtitWqobCuZV5N5fH1vE3vw3kwlKRwQ1br6NfibS3I5Ale1wfg"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-warning rounded-full border-2 border-surface-container"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">J. O'Connor</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Electrician</span>
+<span class="w-1 h-1 bg-outline rounded-full"></span>
+<span class="font-label-tiny text-label-tiny text-warning uppercase truncate">OFF DUTY</span>
+</div>
+</div>
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary hover:bg-surface-container-high rounded-full transition-colors flex-shrink-0">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Worker Card 4 -->
+<div class="bg-surface-container rounded-lg p-mobile-card-pad border border-outline flex items-center gap-4 active:scale-[0.98] transition-transform duration-150">
+<div class="relative flex-shrink-0">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-outline-variant bg-surface-container-highest">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a site supervisor in a white hard hat and dark corporate jacket, standing in front of concrete pillars. Sharp focus, high contrast, industrial style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG7_bgDDpuRWJrdC-wXSpcR-vvCLhT9zbdIL0e-4O33nvN0W8SodoTNUkvu29l-iiWaX0I2h2iiyXutjSc1CQSfFqFB2BYX6JjTmnqVAoWXcYFOgJ_El3CU3_Ya_IdMgR6SKIJvHNMCLO6o0xwV-esCyeOdKzhhFA7WrCKxKQzv1iG_lRv-aQY4UKs0L5J_l2AyC84KU1_ibFjRGUkGqVLmylEFlSWyWa9vqaFuCx0cV160jEI_bEm2g"/>
+</div>
+<div class="absolute -bottom-1 -right-1 w-4 h-4 bg-success rounded-full border-2 border-surface-container"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-headline-h3 text-headline-h3 text-on-surface truncate">S. Miller</h3>
+<div class="flex items-center gap-2 mt-1">
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Supervisor</span>
+<span class="w-1 h-1 bg-outline rounded-full"></span>
+<span class="font-label-tiny text-label-tiny text-tertiary uppercase truncate">HQ</span>
+</div>
+</div>
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary hover:bg-surface-container-high rounded-full transition-colors flex-shrink-0">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest fixed bottom-0 left-0 w-full z-50 flex justify-around items-center h-20 px-4 pb-safe border-none">
+<!-- Active Tab: REGISTRY -->
+<button class="flex flex-col items-center justify-center bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container rounded-full px-4 py-1 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span class="font-label-tiny text-label-tiny mt-1">REGISTRY</span>
+</button>
+<!-- Inactive Tab: SAFETY -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-full px-4 py-1 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span class="font-label-tiny text-label-tiny mt-1">SAFETY</span>
+</button>
+<!-- Inactive Tab: SYNC -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-full px-4 py-1 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+<span class="font-label-tiny text-label-tiny mt-1">SYNC</span>
+</button>
+<!-- Inactive Tab: ALERTS -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-full px-4 py-1 active:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span class="font-label-tiny text-label-tiny mt-1">ALERTS</span>
+</button>
+</nav>
+<!-- Fade for bottom nav -->
+<div class="fixed bottom-0 left-0 w-full h-24 bg-gradient-to-t from-background to-transparent pointer-events-none z-40"></div>
+</body></html>
