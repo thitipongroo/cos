@@ -95,7 +95,12 @@ export function formatMoney(amount: Decimal | string | number, currency = 'THB')
   // as a credit that does not exist.
   const rounded = value.toDecimalPlaces(2, Decimal.ROUND_HALF_UP);
   const fixed = formatForDisplay(rounded.abs());
-  const [intPart = '0', fracPart = '00'] = fixed.split('.');
+  // No destructuring defaults here on purpose. `fixed` comes from formatForDisplay, which is
+  // `toFixed(2)` — always exactly one '.' and two decimals — so `split('.')` always yields two
+  // non-empty parts and any default is dead code. istanbul counts each default as a branch, so the
+  // pair that used to sit here (`= '0'`, `= '00'`) was permanently unreachable and held this package
+  // at 81.81% branch coverage, below the QM-1 100% gate.
+  const [intPart, fracPart] = fixed.split('.');
   const symbol = CURRENCY_SYMBOL[currency.toUpperCase()] ?? `${currency.toUpperCase()} `;
   const sign = rounded.isNegative() && !rounded.isZero() ? '-' : '';
   return `${sign}${symbol}${groupThousands(intPart)}.${fracPart}`;
